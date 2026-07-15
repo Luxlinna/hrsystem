@@ -11,6 +11,76 @@ interface Branch {
   status: string;
 }
 
+interface AppRole {
+  id: number;
+  name: string;
+  is_admin: boolean;
+  allowed_modules: string[];
+}
+
+const PERMISSION_COLUMNS = [
+  { key: "employees", label: "Employees" },
+  { key: "payroll", label: "Payroll" },
+  { key: "finance", label: "Finance" },
+  { key: "settings", label: "Settings" },
+];
+
+function PermissionsSection() {
+  const [roles, setRoles] = useState<AppRole[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("app_roles")
+      .select("id, name, is_admin, allowed_modules")
+      .order("id")
+      .then(({ data }) => {
+        setRoles(data || []);
+        setLoadingRoles(false);
+      });
+  }, []);
+
+  if (loadingRoles) {
+    return (
+      <div className="flex items-center gap-2 text-gray-400">
+        <div className="w-4 h-4 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <span className="text-[13px]">Loading roles...</span>
+      </div>
+    );
+  }
+
+  if (roles.length === 0) {
+    return (
+      <p className="text-[13px] text-gray-400">
+        No roles defined yet. Create roles from the{" "}
+        <Link to="/admin" className="text-[#0D7377] font-semibold hover:underline">Admin Portal</Link>.
+      </p>
+    );
+  }
+
+  return (
+    <div className="border border-gray-100 rounded-xl overflow-hidden">
+      <div className="grid grid-cols-5 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+        <span>Role</span>
+        {PERMISSION_COLUMNS.map((c) => <span key={c.key}>{c.label}</span>)}
+      </div>
+      {roles.map((r) => (
+        <div key={r.id} className="grid grid-cols-5 px-5 py-4 border-t border-gray-50 items-center">
+          <span className="text-[13px] font-medium text-gray-900">{r.name}</span>
+          {PERMISSION_COLUMNS.map((c) => (
+            <span key={c.key} className="text-[13px] text-gray-600">
+              {r.is_admin || r.allowed_modules.includes("*") ? "Full" : r.allowed_modules.includes(c.key) ? "Access" : "None"}
+            </span>
+          ))}
+        </div>
+      ))}
+      <div className="px-5 py-3 border-t border-gray-50 bg-gray-50/50">
+        <Link to="/admin" className="text-[12px] text-[#0D7377] font-semibold hover:underline">Manage roles in Admin Portal →</Link>
+      </div>
+    </div>
+  );
+}
+
 function BranchesSection() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
@@ -594,37 +664,7 @@ export default function Settings() {
       )}
 
       {/* Permissions */}
-      {section === "permissions" && (
-        <div className="border border-gray-100 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-5 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-            <span>Role</span>
-            <span>Employees</span>
-            <span>Payroll</span>
-            <span>Finance</span>
-            <span>Settings</span>
-          </div>
-          {[
-            { role: "HR Admin", emp: "Full", pay: "Full", fin: "Full", set: "Full" },
-            { role: "Branch Manager", emp: "Read/Write", pay: "Read", fin: "Read", set: "None" },
-            { role: "Finance Lead", emp: "Read", pay: "Full", fin: "Full", set: "None" },
-            { role: "IT Admin", emp: "Read", pay: "None", fin: "None", set: "Partial" },
-            { role: "Employee", emp: "Self Only", pay: "Self Only", fin: "Self Only", set: "None" },
-          ].map((r, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-5 px-5 py-4 border-t border-gray-50 items-center"
-            >
-              <span className="text-[13px] font-medium text-gray-900">
-                {r.role}
-              </span>
-              <span className="text-[13px] text-gray-600">{r.emp}</span>
-              <span className="text-[13px] text-gray-600">{r.pay}</span>
-              <span className="text-[13px] text-gray-600">{r.fin}</span>
-              <span className="text-[13px] text-gray-600">{r.set}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {section === "permissions" && <PermissionsSection />}
 
       {/* Branches */}
       {section === "branches" && (

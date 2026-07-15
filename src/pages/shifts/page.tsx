@@ -74,7 +74,7 @@ export default function Shifts() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentWeek, setCurrentWeek] = useState(new Date("2026-05-14"));
+  const [currentWeek, setCurrentWeek] = useState(new Date());
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [filterBranch, setFilterBranch] = useState("all");
   const [filterDept, setFilterDept] = useState("all");
@@ -211,7 +211,7 @@ export default function Shifts() {
               <button onClick={() => { const d = new Date(currentWeek); d.setDate(d.getDate() + 7); setCurrentWeek(d); }} className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer">
                 <i className="ri-arrow-right-s-line text-gray-600" />
               </button>
-              <button onClick={() => setCurrentWeek(new Date("2026-05-14"))} className="text-[12px] text-[#0D7377] font-medium hover:underline cursor-pointer">Today</button>
+              <button onClick={() => setCurrentWeek(new Date())} className="text-[12px] text-[#0D7377] font-medium hover:underline cursor-pointer">Today</button>
             </div>
             <div className="flex gap-2">
               <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
@@ -230,7 +230,7 @@ export default function Shifts() {
             {/* Day Headers */}
             <div className="grid grid-cols-7 border-b border-gray-100">
               {weekDates.map((date, i) => {
-                const isToday = formatDate(date) === "2026-05-14";
+                const isToday = formatDate(date) === formatDate(new Date());
                 const dayShifts = getShiftsForDay(date);
                 return (
                   <div key={i} className={`p-3 border-r border-gray-100 last:border-r-0 text-center ${isToday ? "bg-[#0D7377]/5" : ""}`}>
@@ -248,7 +248,7 @@ export default function Shifts() {
             <div className="grid grid-cols-7 min-h-[320px]">
               {weekDates.map((date, i) => {
                 const dayShifts = getShiftsForDay(date);
-                const isToday = formatDate(date) === "2026-05-14";
+                const isToday = formatDate(date) === formatDate(new Date());
                 return (
                   <div key={i} className={`border-r border-gray-100 last:border-r-0 p-2 space-y-1.5 ${isToday ? "bg-[#0D7377]/3" : ""}`}>
                     {dayShifts.map((sh) => {

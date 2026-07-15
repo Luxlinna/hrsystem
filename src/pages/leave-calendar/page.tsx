@@ -36,8 +36,8 @@ const DEPARTMENTS = ["All Departments","Engineering","Sales","Operations","Marke
 
 export default function LeaveCalendar() {
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
-  const [year, setYear] = useState(2026);
-  const [month, setMonth] = useState(4);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(new Date().getMonth());
   const [deptFilter, setDeptFilter] = useState("All Departments");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("approved");

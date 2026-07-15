@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { useAuth } from "@/context/AuthContext";
 import { UnityApp, AppAccess, AppUsageLog, Employee } from "../types";
 
 interface AppDetailPanelProps {
@@ -53,6 +54,8 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
   const [selectedEmpId, setSelectedEmpId] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("user");
   const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const granterName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
 
   const appLogs = usageLogs.filter((l) => l.app_id === app.id);
   const appAccesses = accesses.filter((a) => a.app_id === app.id && a.is_active);
@@ -68,11 +71,11 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
       app_id: app.id,
       employee_id: selectedEmpId,
       access_level: selectedLevel,
-      granted_by: "HR Admin",
+      granted_by: granterName,
     });
     setSaving(false);
-    if (error) { toast.error("Failed to grant access"); return; }
-    toast.success("Access granted successfully");
+    if (error) { toast("Error", "Failed to grant access", "error"); return; }
+    toast("Success", "Access granted successfully", "success");
     setGrantModal(false);
     setSelectedEmpId("");
     onRefresh();
@@ -80,8 +83,8 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
 
   const handleRevoke = async (accessId: number, empName: string) => {
     const { error } = await supabase.from("app_access").update({ is_active: false }).eq("id", accessId);
-    if (error) { toast.error("Failed to revoke access"); return; }
-    toast.success(`Access revoked for ${empName}`);
+    if (error) { toast("Error", "Failed to revoke access", "error"); return; }
+    toast("Success", `Access revoked for ${empName}`, "success");
     onRefresh();
   };
 

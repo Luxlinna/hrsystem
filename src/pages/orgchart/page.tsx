@@ -176,8 +176,8 @@ export default function OrgChart() {
     const managerId = newManagerId === "none" ? null : newManagerId || null;
     const { error } = await supabase.from("employees").update({ reports_to: managerId }).eq("id", selectedEmployee.id);
     setSaving(false);
-    if (error) { toast.error("Failed to update reporting manager"); return; }
-    toast.success("Reporting relationship updated");
+    if (error) { toast("Error", "Failed to update reporting manager", "error"); return; }
+    toast("Success", "Reporting relationship updated", "success");
     setEditManagerModal(false);
     setSelectedEmployee(null);
     setNewManagerId("");

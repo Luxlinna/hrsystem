@@ -12,6 +12,7 @@ export default function Employees() {
   }, []);
 
   const depts = Array.from(new Set(employees.map((e) => e.department)));
+  const branchCount = new Set(employees.map((e) => e.branch_id).filter(Boolean)).size;
 
   const filtered = employees.filter((e) => {
     const matchesSearch = `${e.first_name} ${e.last_name} ${e.email} ${e.role}`.toLowerCase().includes(search.toLowerCase());
@@ -24,7 +25,7 @@ export default function Employees() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Employee Directory</h1>
-          <p className="text-[13px] text-gray-500 mt-1">Manage and search all employees across {employees.length > 0 ? "11" : "11"} branches</p>
+          <p className="text-[13px] text-gray-500 mt-1">Manage and search all employees across {branchCount} branch{branchCount === 1 ? "" : "es"}</p>
         </div>
         <Link to="/hire" className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap">
           <i className="ri-user-add-line" />

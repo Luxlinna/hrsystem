@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 interface ChecklistTask {
   id: string;
@@ -48,6 +49,8 @@ const PRIORITY_META: Record<string, { label: string; color: string }> = {
 };
 
 export default function OnboardingChecklist() {
+  const { user } = useAuth();
+  const completerName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [hires, setHires] = useState<OnboardingHire[]>([]);
   const [tasks, setTasks] = useState<ChecklistTask[]>([]);
   const [selectedHire, setSelectedHire] = useState<OnboardingHire | null>(null);
@@ -109,12 +112,12 @@ export default function OnboardingChecklist() {
       .update({
         completed: !task.completed,
         completed_at: !task.completed ? new Date().toISOString() : null,
-        completed_by: !task.completed ? "Sarah Mitchell" : null,
+        completed_by: !task.completed ? completerName : null,
       })
       .eq("id", task.id);
     setToggling(null);
     if (error) { setToast({ type: "error", message: "Failed to update task" }); return; }
-    setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, completed: !t.completed, completed_at: !t.completed ? new Date().toISOString() : null, completed_by: !t.completed ? "Sarah Mitchell" : null } : t));
+    setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, completed: !t.completed, completed_at: !t.completed ? new Date().toISOString() : null, completed_by: !t.completed ? completerName : null } : t));
     setToast({ type: "success", message: task.completed ? "Task marked pending" : "Task completed!" });
   };
 

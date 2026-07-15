@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 interface PayrollRun {
   id: string;
@@ -37,6 +38,8 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
 };
 
 export default function PayrollApproval() {
+  const { user } = useAuth();
+  const submitterName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [approvals, setApprovals] = useState<PayrollApproval[]>([]);
   const [tab, setTab] = useState<"pending" | "history" | "create">("pending");
@@ -120,7 +123,7 @@ export default function PayrollApproval() {
       total_net: net,
       employee_count: Number(createForm.employee_count || 0),
       status: "pending_approval",
-      submitted_by: "Sarah Mitchell",
+      submitted_by: submitterName,
       submitted_at: new Date().toISOString(),
       notes: createForm.notes || null,
     }).select().single();
@@ -129,8 +132,8 @@ export default function PayrollApproval() {
 
     if (data) {
       await supabase.from("payroll_approvals").insert([
-        { run_id: data.id, approver_name: "Sarah Mitchell", approver_role: "Chief HR Officer", status: "pending" },
-        { run_id: data.id, approver_name: "Finance Lead", approver_role: "Finance Director", status: "pending" },
+        { run_id: data.id, approver_name: "HR Director", approver_role: "Chief HR Officer", status: "pending" },
+        { run_id: data.id, approver_name: "Finance Director", approver_role: "Finance Director", status: "pending" },
       ]);
     }
 

@@ -76,6 +76,8 @@ export default function Dashboard() {
     inProgressTrainings: 0,
     attendanceTrend: [] as { day: string; rate: number }[],
   });
+  const [attendanceData, setAttendanceData] = useState<{ day: string; present: number; absent: number; late: number }[]>([]);
+  const [hiringTrend, setHiringTrend] = useState<{ month: string; hires: number; terminations: number }[]>([]);
 
   // Refresh handler
   const handleRefresh = async () => {
@@ -107,6 +109,7 @@ export default function Dashboard() {
 
   // Real-time data load
   const loadAllData = async () => {
+    const currentMonth = new Date().toISOString().slice(0, 7);
     const [
       { data: b },
       { data: e },
@@ -121,7 +124,7 @@ export default function Dashboard() {
       supabase.from("employees").select("*, branches(name)"),
       supabase.from("onboarding_requests").select("*, employees(first_name, last_name, role, branch_id)").eq("status", "pending"),
       supabase.from("leave_requests").select("*, employees(first_name, last_name, role, department)").order("created_at", { ascending: false }).limit(5),
-      supabase.from("payroll_records").select("*").eq("month", "2026-05"),
+      supabase.from("payroll_records").select("*").eq("month", currentMonth),
       supabase.from("notifications").select("*").eq("is_read", false).limit(3),
       supabase.from("job_postings").select("*"),
       supabase.from("candidates").select("*"),
@@ -132,10 +135,11 @@ export default function Dashboard() {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const fromDate = sevenDaysAgo.toISOString().split("T")[0];
-    const [{ data: attData }, { data: trainEnroll }, { data: discData }] = await Promise.all([
+    const [{ data: attData }, { data: trainEnroll }, { data: discData }, { data: offData }] = await Promise.all([
       supabase.from("attendance_records").select("status, date, hours_worked").gte("date", fromDate),
       supabase.from("training_enrollments").select("status"),
       supabase.from("disciplinary_records").select("status"),
+      supabase.from("offboarding_requests").select("last_day, created_at"),
     ]);
     const attRecords = attData || [];
     const totalAtt = attRecords.length;
@@ -160,6 +164,43 @@ export default function Dashboard() {
     });
     setHrKpis({ attendanceRate: attRate, avgHoursWorked: avgHours, lateRate, trainingCompletionRate: trainingRate, openDisciplinaryCases: openDisc, inProgressTrainings, attendanceTrend: trendDays });
     setAnnouncements(announcementsData || []);
+
+    // Weekly attendance breakdown (present/absent/late counts per weekday, last 7 days)
+    const dayBuckets: Record<string, { present: number; absent: number; late: number }> = {};
+    attRecords.forEach((r: any) => {
+      const label = new Date(r.date).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+      if (!dayBuckets[label]) dayBuckets[label] = { present: 0, absent: 0, late: 0 };
+      if (r.status === "absent") dayBuckets[label].absent++;
+      else {
+        dayBuckets[label].present++;
+        if (r.status === "late") dayBuckets[label].late++;
+      }
+    });
+    const weekOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    setAttendanceData(weekOrder.filter((d) => dayBuckets[d]).map((d) => ({ day: d, ...dayBuckets[d] })));
+
+    // Hiring vs termination trend (last 5 months, from real join dates / offboarding requests)
+    const monthsBack = 5;
+    const now = new Date();
+    const offList = offData || [];
+    const monthBuckets = Array.from({ length: monthsBack }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (monthsBack - 1 - i), 1);
+      return { year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleDateString("en-US", { month: "short" }) };
+    });
+    setHiringTrend(monthBuckets.map(({ year, month, label }) => ({
+      month: label,
+      hires: (e || []).filter((emp: any) => {
+        if (!emp.join_date) return false;
+        const jd = new Date(emp.join_date);
+        return jd.getFullYear() === year && jd.getMonth() === month;
+      }).length,
+      terminations: offList.filter((o: any) => {
+        const dateStr = o.last_day || o.created_at;
+        if (!dateStr) return false;
+        const td = new Date(dateStr);
+        return td.getFullYear() === year && td.getMonth() === month;
+      }).length,
+    })));
 
     const empList = e || [];
     const active = empList.filter((x: any) => x.status === "active").length;
@@ -236,22 +277,7 @@ export default function Dashboard() {
   }, []);
 
   const pieData = Object.entries(deptData ?? {}).map(([name, value]) => ({ name, value }));
-
-  const attendanceData = [
-    { day: "Mon", present: 1120, absent: 34, late: 12 },
-    { day: "Tue", present: 1145, absent: 28, late: 8 },
-    { day: "Wed", present: 1108, absent: 42, late: 18 },
-    { day: "Thu", present: 1132, absent: 30, late: 10 },
-    { day: "Fri", present: 1089, absent: 55, late: 22 },
-  ];
-
-  const hiringTrend = [
-    { month: "Jan", hires: 12, terminations: 3 },
-    { month: "Feb", hires: 18, terminations: 5 },
-    { month: "Mar", hires: 15, terminations: 4 },
-    { month: "Apr", hires: 22, terminations: 6 },
-    { month: "May", hires: stats.hiredThisMonth, terminations: 2 },
-  ];
+  const currentMonthLabel = new Date().toLocaleDateString("en-US", { month: "long" });
 
   if (loading) {
     return (
@@ -340,7 +366,7 @@ export default function Dashboard() {
             { label: "Pending Leaves", value: stats.leavePending.toString(), icon: "ri-time-line", color: "text-amber-600", link: "/leave" },
             { label: "Onboarding", value: stats.onboardingPending.toString(), icon: "ri-user-add-line", color: "text-violet-600", link: "/onboarding" },
             { label: "Candidates", value: stats.totalCandidates.toString(), icon: "ri-team-line", color: "text-rose-600", link: "/hire" },
-            { label: "Payroll (May)", value: `$${(stats.payrollTotal / 1000).toFixed(1)}k`, icon: "ri-money-dollar-circle-line", color: "text-teal-600", link: "/payroll-module" },
+            { label: `Payroll (${currentMonthLabel.slice(0, 3)})`, value: `$${(stats.payrollTotal / 1000).toFixed(1)}k`, icon: "ri-money-dollar-circle-line", color: "text-teal-600", link: "/payroll-module" },
             { label: "Processed", value: `${stats.payrollProcessed}`, icon: "ri-check-double-line", color: "text-green-600", link: "/payroll-module" },
           ].map((s) => (
             <Link
@@ -379,13 +405,9 @@ export default function Dashboard() {
               </div>
             </Link>
           )) : (
-            <div className="min-w-[220px] rounded-2xl p-5 bg-gradient-to-br from-gray-400 to-gray-500 text-white">
-              <span className="absolute top-4 right-4 bg-white/20 text-[11px] px-2.5 py-1 rounded-full">Day 3</span>
-              <div className="mt-8">
-                <p className="text-base font-semibold">Thomas Reed</p>
-                <p className="text-[13px] text-white/80 mt-1">Senior Engineer</p>
-                <p className="text-[11px] text-white/60 mt-3">Stage: Document</p>
-              </div>
+            <div className="min-w-[220px] rounded-2xl p-5 bg-gray-50 border border-gray-100 flex flex-col items-center justify-center text-gray-400 text-center">
+              <i className="ri-user-add-line text-2xl mb-2" />
+              <p className="text-[13px] font-medium">No pending onboarding</p>
             </div>
           )}
           <Link
@@ -462,7 +484,7 @@ export default function Dashboard() {
 
           {/* Right: Payroll Overview */}
           <div className="lg:w-[45%]">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A] mb-6">May Payroll</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A] mb-6">{currentMonthLabel} Payroll</h2>
             <div className="border border-gray-100 rounded-xl p-5 md:p-6 bg-white">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[13px] text-gray-500">Total Net Pay</span>

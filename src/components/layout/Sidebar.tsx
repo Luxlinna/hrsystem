@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSidebar } from "./SidebarContext";
+import { useAuth } from "@/context/AuthContext";
 
 const navGroups = [
   {
@@ -63,10 +64,13 @@ const navGroups = [
 export default function Sidebar() {
   const location = useLocation();
   const { collapsed, setCollapsed } = useSidebar();
+  const { user } = useAuth();
   const [hovered, setHovered] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const isExpanded = !collapsed || hovered;
+  const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "HR Admin";
+  const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   useEffect(() => {
     supabase
@@ -179,15 +183,13 @@ export default function Sidebar() {
           to="/settings"
           className={`flex items-center gap-3 rounded-lg transition-all duration-200 ${isExpanded ? "px-2" : "justify-center"}`}
         >
-          <img
-            src="https://readdy.ai/api/search-image?query=professional%20headshot%20portrait%20of%20a%20confident%20female%20HR%20manager%20in%20business%20attire%20with%20a%20warm%20smile%20against%20a%20neutral%20office%20background%2C%20high%20quality%20corporate%20photography&width=80&height=80&seq=hr-admin-avatar&orientation=squarish"
-            alt="Admin"
-            className="w-9 h-9 rounded-lg object-cover shrink-0 border border-white/10"
-          />
+          <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white text-[12px] font-bold shrink-0 border border-white/10">
+            {initials}
+          </div>
           {isExpanded && (
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-white truncate">Sarah Mitchell</p>
-              <p className="text-[11px] text-gray-500 truncate">HR Administrator</p>
+              <p className="text-[13px] font-semibold text-white truncate">{displayName}</p>
+              <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
             </div>
           )}
         </Link>

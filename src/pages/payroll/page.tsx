@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "@/lib/supabase";
 
+const currentMonth = new Date().toISOString().slice(0, 7);
+const currentMonthLabel = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
 export default function Payroll() {
   const [payroll, setPayroll] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase.from("payroll_records").select("*").eq("month", "2026-05").then(({ data }) => setPayroll(data || []));
+    supabase.from("payroll_records").select("*, employees(first_name, last_name)").eq("month", currentMonth).then(({ data }) => setPayroll(data || []));
   }, []);
 
   const totalNet = payroll.reduce((s, p) => s + Number(p.net_pay || 0), 0);
@@ -14,8 +17,8 @@ export default function Payroll() {
   const totalBonus = payroll.reduce((s, p) => s + Number(p.bonus || 0), 0);
   const totalDeductions = payroll.reduce((s, p) => s + Number(p.deductions || 0), 0);
 
-  const chartData = payroll.map((p, i) => ({
-    name: `E${i + 1}`,
+  const chartData = payroll.map((p) => ({
+    name: p.employees ? `${p.employees.first_name} ${p.employees.last_name[0]}.` : "—",
     base: Number(p.base_salary / 1000).toFixed(1),
     bonus: Number(p.bonus / 1000).toFixed(1),
     deductions: Number(p.deductions / 1000).toFixed(1),
@@ -26,7 +29,7 @@ export default function Payroll() {
     <div className="p-6 lg:p-10 min-h-screen bg-white">
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Payroll Overview</h1>
-        <p className="text-[13px] text-gray-500 mt-1">Manage and review payroll for May 2026 across all branches</p>
+        <p className="text-[13px] text-gray-500 mt-1">Manage and review payroll for {currentMonthLabel} across all branches</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -69,9 +72,9 @@ export default function Payroll() {
           <span>Net Pay</span>
           <span>Status</span>
         </div>
-        {payroll.map((p, i) => (
+        {payroll.map((p) => (
           <div key={p.id} className="grid grid-cols-6 px-5 py-4 border-t border-gray-50 items-center">
-            <span className="text-[13px] font-semibold text-gray-900">Employee {i + 1}</span>
+            <span className="text-[13px] font-semibold text-gray-900">{p.employees ? `${p.employees.first_name} ${p.employees.last_name}` : "—"}</span>
             <span className="text-[13px] text-gray-700">${Number(p.base_salary).toLocaleString()}</span>
             <span className="text-[13px] text-green-600">+${Number(p.bonus).toLocaleString()}</span>
             <span className="text-[13px] text-red-600">-${Number(p.deductions).toLocaleString()}</span>

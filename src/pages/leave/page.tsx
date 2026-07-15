@@ -45,8 +45,8 @@ export default function Leave() {
   const [approvalNote, setApprovalNote] = useState("");
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalAction, setApprovalAction] = useState<"approved" | "rejected">("approved");
-  const [calendarYear, setCalendarYear] = useState(2026);
-  const [calendarMonth, setCalendarMonth] = useState(4); // May (0-indexed)
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const calendarRef = useRef<HTMLDivElement>(null);
 
   // Load leave requests with employee details
