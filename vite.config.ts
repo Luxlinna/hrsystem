@@ -5,6 +5,7 @@ import AutoImport from "unplugin-auto-import/vite";
 // import { readdyJsxRuntimeProxyPlugin } from "./vite.jsx-runtime-proxy";
 
 const base = process.env.BASE_PATH || "/";
+const port = Number(process.env.PORT) || 3000;
 const isPreview = process.env.IS_PREVIEW ? true : false;
 //const proxyPlugins = isPreview ? [readdyJsxRuntimeProxyPlugin()] : [];
 // https://vite.dev/config/
@@ -73,6 +74,7 @@ export default defineConfig({
   build: {
     sourcemap: true,
     outDir: 'out',
+    chunkSizeWarningLimit: 1000,
   },
   resolve: {
     alias: {
@@ -80,7 +82,13 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port,
     host: "0.0.0.0",
+    allowedHosts: [".onrender.com"],
+  },
+  preview: {
+    port,
+    host: "0.0.0.0",
+    allowedHosts: [".onrender.com"],
   },
 });
