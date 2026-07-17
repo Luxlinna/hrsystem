@@ -185,7 +185,7 @@ export default function OnboardingChecklist() {
       )}
 
       {/* Left Panel - New Hires List */}
-      <div className="w-72 shrink-0 border-r border-gray-100 flex flex-col overflow-hidden">
+      <div className={`${selectedHire ? "hidden lg:flex" : "flex"} w-full lg:w-72 lg:shrink-0 border-r border-gray-100 flex-col overflow-hidden`}>
         <div className="p-5 border-b border-gray-100">
           <h1 className="text-[16px] font-bold text-gray-900">Onboarding Checklist</h1>
           <p className="text-[12px] text-gray-500 mt-0.5">Track new hire task completion</p>
@@ -228,13 +228,19 @@ export default function OnboardingChecklist() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`${selectedHire ? "flex" : "hidden lg:flex"} flex-1 flex-col overflow-hidden`}>
         {selectedHire ? (
           <>
             {/* Header */}
             <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-[15px] font-bold">
+                <button
+                  onClick={() => setSelectedHire(null)}
+                  className="lg:hidden w-9 h-9 shrink-0 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"
+                >
+                  <i className="ri-arrow-left-line text-lg" />
+                </button>
+                <div className="w-12 h-12 rounded-xl bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-[15px] font-bold shrink-0">
                   {selectedHire.employees ? `${selectedHire.employees.first_name[0]}${selectedHire.employees.last_name[0]}` : "NH"}
                 </div>
                 <div>
@@ -254,7 +260,7 @@ export default function OnboardingChecklist() {
             </div>
 
             {/* Stats bar */}
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-6">
+            <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center gap-x-6 gap-y-3">
               {[
                 { label: "Total", value: totalStats.total, color: "text-gray-700" },
                 { label: "Completed", value: totalStats.completed, color: "text-green-600" },
@@ -266,8 +272,8 @@ export default function OnboardingChecklist() {
                   <span className="text-[12px] text-gray-400">{s.label}</span>
                 </div>
               ))}
-              <div className="flex-1" />
-              <div className="flex gap-1.5">
+              <div className="hidden lg:block flex-1" />
+              <div className="flex gap-1.5 flex-wrap">
                 {(["all","completed","pending","overdue"] as const).map((f) => (
                   <button
                     key={f}

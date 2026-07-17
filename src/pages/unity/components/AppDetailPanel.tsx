@@ -91,7 +91,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/20" onClick={onClose} />
-      <div className="w-[480px] bg-white h-full overflow-y-auto flex flex-col">
+      <div className="w-full sm:w-[480px] bg-white h-full overflow-y-auto flex flex-col">
         <div className="p-6 border-b border-gray-100 flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg flex-shrink-0" style={{ backgroundColor: app.color }}>
             <i className={`${app.icon} w-6 h-6 flex items-center justify-center`} />

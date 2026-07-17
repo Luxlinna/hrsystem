@@ -183,7 +183,7 @@ export default function DisciplinaryPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
           { label: "Open Cases", value: openCount, icon: "ri-folder-open-line", color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Active PIPs", value: pipCount, icon: "ri-focus-3-line", color: "text-violet-600", bg: "bg-violet-50" },
@@ -205,7 +205,7 @@ export default function DisciplinaryPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit max-w-full overflow-x-auto">
         {([["all", "All Cases"], ["open", "Open & Active"], ["pip", "PIPs"]] as const).map(([t, label]) => (
           <button
             key={t}
@@ -329,7 +329,7 @@ export default function DisciplinaryPage() {
       {selectedRecord && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/20" onClick={() => setSelectedRecord(null)} />
-          <div className="relative w-[480px] bg-white h-full overflow-y-auto shadow-2xl">
+          <div className="relative w-full sm:w-[480px] bg-white h-full overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-gray-100 flex items-start justify-between">
               <div className="flex-1 min-w-0 pr-4">
                 <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full mb-2 ${TYPE_CONFIG[selectedRecord.type].color}`}>
@@ -479,9 +479,9 @@ export default function DisciplinaryPage() {
 
       {/* New Record Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white rounded-2xl w-[580px] max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-2xl w-full max-w-[580px] max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <h3 className="text-base font-semibold text-gray-900">Log Disciplinary Record</h3>
               <p className="text-sm text-gray-400 mt-0.5">Document a warning, incident, or performance plan</p>

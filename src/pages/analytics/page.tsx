@@ -582,7 +582,7 @@ export default function Analytics() {
 
       {activeTab === "it" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="grid grid-cols-3 gap-4 lg:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:col-span-2">
             {[
               { label: "Total Assets", value: itAssets.length, color: "bg-sky-50 text-sky-700" },
               { label: "Assigned", value: assignedAssets, color: "bg-green-50 text-green-700" },
@@ -647,7 +647,7 @@ export default function Analytics() {
 
       {activeTab === "finance" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="grid grid-cols-3 gap-4 lg:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:col-span-2">
             {[
               { label: "Total Expenses", value: `$${Math.round(totalExpense).toLocaleString()}`, color: "bg-gray-50 text-gray-700" },
               { label: "Paid Out", value: `$${Math.round(paidExpense).toLocaleString()}`, color: "bg-green-50 text-green-700" },
@@ -688,7 +688,7 @@ export default function Analytics() {
 
       {activeTab === "benefits" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="grid grid-cols-3 gap-4 lg:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:col-span-2">
             {[
               { label: "Active Plans", value: benefitPlans.length, color: "bg-[#0D7377]/10 text-[#0D7377]" },
               { label: "Total Enrolled", value: benefitEnrollments.filter((e) => e.status === "active").length, color: "bg-emerald-50 text-emerald-700" },

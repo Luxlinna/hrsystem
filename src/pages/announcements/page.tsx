@@ -163,9 +163,9 @@ export default function Announcements() {
           </select>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Main List */}
-          <div className={`flex-1 transition-all ${selectedItem ? "max-w-[60%]" : ""}`}>
+          <div className={`flex-1 min-w-0 transition-all ${selectedItem ? "lg:max-w-[60%]" : ""}`}>
             {/* Pinned */}
             {pinned.length > 0 && (
               <div className="mb-6">
@@ -197,7 +197,7 @@ export default function Announcements() {
 
           {/* Detail Panel */}
           {selectedItem && (
-            <div className="w-[380px] shrink-0">
+            <div className="w-full lg:w-[380px] lg:shrink-0">
               <div className="bg-white border border-gray-100 rounded-xl overflow-hidden sticky top-6">
                 <div className="p-5 border-b border-gray-100">
                   <div className="flex items-start justify-between">

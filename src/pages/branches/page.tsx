@@ -125,7 +125,7 @@ export default function Branches() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex">
       {/* Main */}
-      <div className={`flex-1 transition-all duration-300 ${selectedBranch ? "mr-[420px]" : ""}`}>
+      <div className={`flex-1 min-w-0 transition-all duration-300 ${selectedBranch ? "sm:mr-[420px]" : ""}`}>
         <div className="p-6 lg:p-10">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -257,7 +257,7 @@ export default function Branches() {
 
       {/* Detail Panel */}
       {selectedBranch && (
-        <div className="fixed right-0 top-0 h-full w-[420px] bg-white border-l border-gray-100 overflow-y-auto z-40 flex flex-col">
+        <div className="fixed right-0 top-0 h-full w-full sm:w-[420px] bg-white border-l border-gray-100 overflow-y-auto z-40 flex flex-col">
           {/* Panel Header */}
           <div className="bg-gradient-to-br from-[#0D7377] to-[#14919B] p-6 text-white">
             <div className="flex items-start justify-between">

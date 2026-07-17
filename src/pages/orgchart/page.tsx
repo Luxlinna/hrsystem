@@ -211,7 +211,7 @@ export default function OrgChart() {
           <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Organization Chart</h1>
           <p className="text-[13px] text-gray-500 mt-1">{employees.length} employees · {departments.length} departments</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
             <button
               onClick={() => setViewMode("tree")}

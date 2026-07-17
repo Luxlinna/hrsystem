@@ -312,7 +312,7 @@ export default function Leave() {
         {/* Right: Leave Table */}
         <div className="lg:col-span-2">
           {/* Filters */}
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4">
             {["all", "pending", "approved", "rejected"].map((f) => (
               <button
                 key={f}

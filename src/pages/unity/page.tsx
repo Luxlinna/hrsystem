@@ -122,7 +122,7 @@ export default function UnityApps() {
         ))}
       </div>
 
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit max-w-full overflow-x-auto">
         {[
           { key: "directory", label: "App Directory" },
           { key: "activity", label: "Live Activity" },

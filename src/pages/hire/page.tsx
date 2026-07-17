@@ -315,7 +315,7 @@ export default function Hire() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {["jobs", "candidates", "interviews", "pipeline"].map((t) => (
           <button
             key={t}
@@ -332,7 +332,7 @@ export default function Hire() {
       {/* Jobs Tab */}
       {tab === "jobs" && (
         <div>
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <span className="text-[12px] text-gray-500 font-medium">Filter:</span>
             {["all", "active", "interviewing", "closed"].map((s) => (
               <button
@@ -400,7 +400,7 @@ export default function Hire() {
       {/* Candidates Tab */}
       {tab === "candidates" && (
         <div>
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <span className="text-[12px] text-gray-500 font-medium">Filter stage:</span>
             {["all", "applied", "screening", "interview", "offer"].map((s) => (
               <button

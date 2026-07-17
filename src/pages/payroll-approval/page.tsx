@@ -189,7 +189,7 @@ export default function PayrollApproval() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1.5 mb-6 border-b border-gray-100">
+      <div className="flex gap-1.5 mb-6 border-b border-gray-100 overflow-x-auto">
         {([["pending", "Pending Approval", pendingRuns.length], ["history", "History", historyRuns.length], ["create", "Create Run", null]] as const).map(([id, label, count]) => (
           <button key={id} onClick={() => setTab(id)} className={`px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${tab === id ? "border-[#0D7377] text-[#0D7377]" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
             {label}

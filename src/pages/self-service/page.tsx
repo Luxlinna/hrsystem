@@ -95,7 +95,7 @@ export default function SelfServicePage() {
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">{selectedEmployee.first_name} {selectedEmployee.last_name}</h2>
                   <p className="text-sm text-gray-500">{selectedEmployee.role} · {selectedEmployee.department}</p>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                     <span className="text-xs text-gray-400 flex items-center gap-1">
                       <i className="ri-building-line" />{selectedEmployee.branches?.name || "HQ"}
                     </span>

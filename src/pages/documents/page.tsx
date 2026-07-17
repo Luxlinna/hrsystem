@@ -206,9 +206,9 @@ export default function DocumentsPage() {
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-129px)]">
+      <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-129px)]">
         {/* Sidebar Categories */}
-        <aside className="w-[240px] shrink-0 bg-white border-r border-gray-100 overflow-y-auto p-4">
+        <aside className="w-full lg:w-[240px] lg:shrink-0 bg-white border-r border-gray-100 lg:overflow-y-auto p-4">
           <div className="space-y-1">
             {CATEGORIES.map((cat) => (
               <button
@@ -273,7 +273,7 @@ export default function DocumentsPage() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 lg:overflow-y-auto p-6">
           {/* Search */}
           <div className="relative mb-6">
             <i className="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
@@ -358,7 +358,7 @@ export default function DocumentsPage() {
 
         {/* Detail Panel */}
         {selectedDoc && (
-          <aside className="w-[340px] shrink-0 bg-white border-l border-gray-100 overflow-y-auto p-6">
+          <aside className="w-full lg:w-[340px] lg:shrink-0 bg-white border-l border-gray-100 lg:overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-[14px] font-bold text-gray-900">Document Details</h3>
               <button onClick={() => setSelectedDoc(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 cursor-pointer">

@@ -163,7 +163,7 @@ export default function Shifts() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex">
-      <div className={`flex-1 transition-all ${selectedShift ? "mr-[380px]" : ""}`}>
+      <div className={`flex-1 min-w-0 transition-all ${selectedShift ? "sm:mr-[380px]" : ""}`}>
         <div className="p-6 lg:p-10">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -201,7 +201,7 @@ export default function Shifts() {
 
           {/* Week Navigation + Filters */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <button onClick={() => { const d = new Date(currentWeek); d.setDate(d.getDate() - 7); setCurrentWeek(d); }} className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer">
                 <i className="ri-arrow-left-s-line text-gray-600" />
               </button>
@@ -213,12 +213,12 @@ export default function Shifts() {
               </button>
               <button onClick={() => setCurrentWeek(new Date())} className="text-[12px] text-[#0D7377] font-medium hover:underline cursor-pointer">Today</button>
             </div>
-            <div className="flex gap-2">
-              <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)} className="flex-1 sm:flex-none min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
                 <option value="all">All Branches</option>
                 {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
-              <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
+              <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="flex-1 sm:flex-none min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
                 <option value="all">All Departments</option>
                 {departments.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
@@ -226,64 +226,66 @@ export default function Shifts() {
           </div>
 
           {/* Weekly Calendar Grid */}
-          <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-            {/* Day Headers */}
-            <div className="grid grid-cols-7 border-b border-gray-100">
-              {weekDates.map((date, i) => {
-                const isToday = formatDate(date) === formatDate(new Date());
-                const dayShifts = getShiftsForDay(date);
-                return (
-                  <div key={i} className={`p-3 border-r border-gray-100 last:border-r-0 text-center ${isToday ? "bg-[#0D7377]/5" : ""}`}>
-                    <p className={`text-[11px] font-semibold uppercase tracking-wider ${isToday ? "text-[#0D7377]" : "text-gray-500"}`}>{DAYS[i]}</p>
-                    <p className={`text-[18px] font-bold mt-0.5 ${isToday ? "text-[#0D7377]" : "text-gray-800"}`}>{date.getDate()}</p>
-                    {dayShifts.length > 0 && (
-                      <span className="text-[10px] bg-[#0D7377]/10 text-[#0D7377] px-1.5 py-0.5 rounded-full font-medium">{dayShifts.length}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+          <div className="bg-white border border-gray-100 rounded-xl overflow-x-auto">
+            <div className="min-w-[700px]">
+              {/* Day Headers */}
+              <div className="grid grid-cols-7 border-b border-gray-100">
+                {weekDates.map((date, i) => {
+                  const isToday = formatDate(date) === formatDate(new Date());
+                  const dayShifts = getShiftsForDay(date);
+                  return (
+                    <div key={i} className={`p-3 border-r border-gray-100 last:border-r-0 text-center ${isToday ? "bg-[#0D7377]/5" : ""}`}>
+                      <p className={`text-[11px] font-semibold uppercase tracking-wider ${isToday ? "text-[#0D7377]" : "text-gray-500"}`}>{DAYS[i]}</p>
+                      <p className={`text-[18px] font-bold mt-0.5 ${isToday ? "text-[#0D7377]" : "text-gray-800"}`}>{date.getDate()}</p>
+                      {dayShifts.length > 0 && (
+                        <span className="text-[10px] bg-[#0D7377]/10 text-[#0D7377] px-1.5 py-0.5 rounded-full font-medium">{dayShifts.length}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
-            {/* Shift Cells */}
-            <div className="grid grid-cols-7 min-h-[320px]">
-              {weekDates.map((date, i) => {
-                const dayShifts = getShiftsForDay(date);
-                const isToday = formatDate(date) === formatDate(new Date());
-                return (
-                  <div key={i} className={`border-r border-gray-100 last:border-r-0 p-2 space-y-1.5 ${isToday ? "bg-[#0D7377]/3" : ""}`}>
-                    {dayShifts.map((sh) => {
-                      const aCount = assignments.filter((a) => a.shift_id === sh.id).length;
-                      const isFull = aCount >= sh.capacity;
-                      return (
-                        <div
-                          key={sh.id}
-                          onClick={() => setSelectedShift(selectedShift?.id === sh.id ? null : sh)}
-                          className={`rounded-lg p-2 cursor-pointer transition-all border ${selectedShift?.id === sh.id ? "ring-2 ring-offset-1" : ""}`}
-                          style={{
-                            backgroundColor: sh.color + "18",
-                            borderColor: sh.color + "40",
-                            ringColor: sh.color,
-                          }}
-                        >
-                          <p className="text-[11px] font-bold truncate" style={{ color: sh.color }}>{sh.name}</p>
-                          <p className="text-[10px] text-gray-500 mt-0.5">{sh.start_time} – {sh.end_time}</p>
-                          <div className="flex items-center justify-between mt-1.5">
-                            <p className="text-[9px] text-gray-500 truncate">{sh.department}</p>
-                            <span className={`text-[9px] font-semibold px-1 py-0.5 rounded ${isFull ? "bg-red-50 text-red-600" : "bg-white/80 text-gray-600"}`}>
-                              {aCount}/{sh.capacity}
-                            </span>
+              {/* Shift Cells */}
+              <div className="grid grid-cols-7 min-h-[320px]">
+                {weekDates.map((date, i) => {
+                  const dayShifts = getShiftsForDay(date);
+                  const isToday = formatDate(date) === formatDate(new Date());
+                  return (
+                    <div key={i} className={`border-r border-gray-100 last:border-r-0 p-2 space-y-1.5 ${isToday ? "bg-[#0D7377]/3" : ""}`}>
+                      {dayShifts.map((sh) => {
+                        const aCount = assignments.filter((a) => a.shift_id === sh.id).length;
+                        const isFull = aCount >= sh.capacity;
+                        return (
+                          <div
+                            key={sh.id}
+                            onClick={() => setSelectedShift(selectedShift?.id === sh.id ? null : sh)}
+                            className={`rounded-lg p-2 cursor-pointer transition-all border ${selectedShift?.id === sh.id ? "ring-2 ring-offset-1" : ""}`}
+                            style={{
+                              backgroundColor: sh.color + "18",
+                              borderColor: sh.color + "40",
+                              ringColor: sh.color,
+                            }}
+                          >
+                            <p className="text-[11px] font-bold truncate" style={{ color: sh.color }}>{sh.name}</p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">{sh.start_time} – {sh.end_time}</p>
+                            <div className="flex items-center justify-between mt-1.5">
+                              <p className="text-[9px] text-gray-500 truncate">{sh.department}</p>
+                              <span className={`text-[9px] font-semibold px-1 py-0.5 rounded ${isFull ? "bg-red-50 text-red-600" : "bg-white/80 text-gray-600"}`}>
+                                {aCount}/{sh.capacity}
+                              </span>
+                            </div>
                           </div>
+                        );
+                      })}
+                      {dayShifts.length === 0 && (
+                        <div className="h-full flex items-center justify-center py-8">
+                          <span className="text-[11px] text-gray-200">—</span>
                         </div>
-                      );
-                    })}
-                    {dayShifts.length === 0 && (
-                      <div className="h-full flex items-center justify-center py-8">
-                        <span className="text-[11px] text-gray-200">—</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -301,7 +303,7 @@ export default function Shifts() {
 
       {/* Shift Detail Panel */}
       {selectedShift && (
-        <div className="fixed right-0 top-0 h-full w-[380px] bg-white border-l border-gray-100 overflow-y-auto z-40 flex flex-col">
+        <div className="fixed right-0 top-0 h-full w-full sm:w-[380px] bg-white border-l border-gray-100 overflow-y-auto z-40 flex flex-col">
           <div className="p-5 border-b border-gray-100" style={{ backgroundColor: selectedShift.color + "15" }}>
             <div className="flex items-start justify-between">
               <div>

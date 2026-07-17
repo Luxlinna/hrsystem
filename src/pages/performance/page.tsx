@@ -207,8 +207,8 @@ export default function PerformanceReviews() {
 
         {/* Reviews Tab */}
         {activeTab === "reviews" && (
-          <div className="flex gap-6">
-            <div className={`flex-1 transition-all ${selectedReview ? "max-w-[60%]" : ""}`}>
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className={`flex-1 min-w-0 transition-all ${selectedReview ? "lg:max-w-[60%]" : ""}`}>
               {/* Filters */}
               <div className="flex flex-wrap gap-3 mb-4">
                 <select value={filterQ} onChange={(e) => setFilterQ(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
@@ -234,9 +234,9 @@ export default function PerformanceReviews() {
                     onClick={() => setSelectedReview(selectedReview?.id === r.id ? null : r)}
                     className={`bg-white border rounded-xl p-5 cursor-pointer hover:border-[#0D7377]/30 transition-all ${selectedReview?.id === r.id ? "border-[#0D7377] ring-2 ring-[#0D7377]/10" : "border-gray-100"}`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] font-bold text-xs">
+                        <div className="w-10 h-10 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] font-bold text-xs shrink-0">
                           {r.employee?.first_name?.[0]}{r.employee?.last_name?.[0]}
                         </div>
                         <div>
@@ -244,7 +244,7 @@ export default function PerformanceReviews() {
                           <p className="text-[11px] text-gray-500">{r.employee?.role} &middot; {r.employee?.department}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{r.quarter} {r.year}</span>
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${r.status === "submitted" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
                           {r.status}
@@ -292,7 +292,7 @@ export default function PerformanceReviews() {
 
             {/* Detail Panel */}
             {selectedReview && (
-              <div className="w-[380px] shrink-0">
+              <div className="w-full lg:w-[380px] lg:shrink-0">
                 <div className="bg-white border border-gray-100 rounded-xl overflow-hidden sticky top-6">
                   <div className="bg-gradient-to-br from-[#0D7377] to-[#14919B] p-5 text-white">
                     <div className="flex items-start justify-between">

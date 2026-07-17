@@ -151,7 +151,7 @@ export default function Finance() {
             </button>
           ))}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {["all", "pending", "approved", "paid"].map((s) => (
             <button
               key={s}
@@ -171,43 +171,45 @@ export default function Finance() {
           <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <div className="grid grid-cols-7 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider items-center">
-            <span>Category</span>
-            <span>Branch</span>
-            <span>Amount</span>
-            <span>Date</span>
-            <span>Status</span>
-            <span>Submitted By</span>
-            <span>Action</span>
-          </div>
-          {filtered.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 text-[13px]">No expenses found</div>
-          ) : (
-            filtered.map((d) => (
-              <div key={d.id} className="grid grid-cols-7 px-5 py-4 border-t border-gray-50 items-center">
-                <span className="text-[13px] font-medium text-gray-900">{d.category}</span>
-                <span className="text-[13px] text-gray-600">{d.branches?.name || "—"}</span>
-                <span className="text-[13px] font-semibold text-gray-900">${Number(d.amount).toLocaleString()}</span>
-                <span className="text-[13px] text-gray-500">{new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-                <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${statusColors[d.status] || "bg-gray-50 text-gray-600"}`}>
-                  {d.status}
-                </span>
-                <span className="text-[13px] text-gray-500">{d.submitted_by || "—"}</span>
-                <div className="flex gap-1">
-                  {d.status === "pending" && (
-                    <>
-                      <button onClick={() => updateStatus(d.id, "approved")} className="text-[11px] text-blue-600 font-medium hover:underline">Approve</button>
-                      <button onClick={() => updateStatus(d.id, "rejected")} className="text-[11px] text-red-500 font-medium hover:underline ml-2">Reject</button>
-                    </>
-                  )}
-                  {d.status === "approved" && (
-                    <button onClick={() => updateStatus(d.id, "paid")} className="text-[11px] text-green-600 font-medium hover:underline">Mark Paid</button>
-                  )}
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+          <div className="min-w-[820px]">
+            <div className="grid grid-cols-7 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider items-center">
+              <span>Category</span>
+              <span>Branch</span>
+              <span>Amount</span>
+              <span>Date</span>
+              <span>Status</span>
+              <span>Submitted By</span>
+              <span>Action</span>
+            </div>
+            {filtered.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 text-[13px]">No expenses found</div>
+            ) : (
+              filtered.map((d) => (
+                <div key={d.id} className="grid grid-cols-7 px-5 py-4 border-t border-gray-50 items-center">
+                  <span className="text-[13px] font-medium text-gray-900">{d.category}</span>
+                  <span className="text-[13px] text-gray-600">{d.branches?.name || "—"}</span>
+                  <span className="text-[13px] font-semibold text-gray-900">${Number(d.amount).toLocaleString()}</span>
+                  <span className="text-[13px] text-gray-500">{new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                  <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${statusColors[d.status] || "bg-gray-50 text-gray-600"}`}>
+                    {d.status}
+                  </span>
+                  <span className="text-[13px] text-gray-500">{d.submitted_by || "—"}</span>
+                  <div className="flex gap-1">
+                    {d.status === "pending" && (
+                      <>
+                        <button onClick={() => updateStatus(d.id, "approved")} className="text-[11px] text-blue-600 font-medium hover:underline">Approve</button>
+                        <button onClick={() => updateStatus(d.id, "rejected")} className="text-[11px] text-red-500 font-medium hover:underline ml-2">Reject</button>
+                      </>
+                    )}
+                    {d.status === "approved" && (
+                      <button onClick={() => updateStatus(d.id, "paid")} className="text-[11px] text-green-600 font-medium hover:underline">Mark Paid</button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       )}
 

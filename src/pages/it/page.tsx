@@ -229,46 +229,48 @@ export default function ITManagement() {
                   </button>
                 ))}
               </div>
-              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <div className="grid grid-cols-7 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider items-center">
-                  <span>Asset</span>
-                  <span>Tag</span>
-                  <span>Type</span>
-                  <span>Assigned To</span>
-                  <span>Branch</span>
-                  <span>Status</span>
-                  <span>Serial</span>
+              <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+                <div className="min-w-[820px]">
+                  <div className="grid grid-cols-7 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider items-center">
+                    <span>Asset</span>
+                    <span>Tag</span>
+                    <span>Type</span>
+                    <span>Assigned To</span>
+                    <span>Branch</span>
+                    <span>Status</span>
+                    <span>Serial</span>
+                  </div>
+                  {filteredAssets.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500 text-[13px]">No assets found</div>
+                  ) : (
+                    filteredAssets.map((a) => (
+                      <div key={a.id} className="grid grid-cols-7 px-5 py-4 border-t border-gray-50 items-center">
+                        <span className="text-[13px] font-medium text-gray-900 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0">
+                            <i className={`${assetTypeIcons[a.type] || "ri-box-3-line"} text-sm text-[#0D7377] w-4 h-4 flex items-center justify-center`} />
+                          </div>
+                          {a.name}
+                        </span>
+                        <span className="text-[13px] text-gray-600">{a.asset_tag}</span>
+                        <span className="text-[13px] text-gray-600">{a.type}</span>
+                        <span className="text-[13px] text-gray-700">
+                          {a.employees ? (
+                            <Link to={`/employees/${a.employee_id}`} className="hover:text-[#0D7377] transition-colors">
+                              {a.employees.first_name} {a.employees.last_name}
+                            </Link>
+                          ) : (
+                            <span className="text-gray-400">Unassigned</span>
+                          )}
+                        </span>
+                        <span className="text-[13px] text-gray-600">{a.branches?.name || "—"}</span>
+                        <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${statusColors[a.status] || "bg-gray-50 text-gray-600"}`}>
+                          {a.status}
+                        </span>
+                        <span className="text-[13px] text-gray-500">{a.serial_number || "—"}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
-                {filteredAssets.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500 text-[13px]">No assets found</div>
-                ) : (
-                  filteredAssets.map((a) => (
-                    <div key={a.id} className="grid grid-cols-7 px-5 py-4 border-t border-gray-50 items-center">
-                      <span className="text-[13px] font-medium text-gray-900 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0">
-                          <i className={`${assetTypeIcons[a.type] || "ri-box-3-line"} text-sm text-[#0D7377] w-4 h-4 flex items-center justify-center`} />
-                        </div>
-                        {a.name}
-                      </span>
-                      <span className="text-[13px] text-gray-600">{a.asset_tag}</span>
-                      <span className="text-[13px] text-gray-600">{a.type}</span>
-                      <span className="text-[13px] text-gray-700">
-                        {a.employees ? (
-                          <Link to={`/employees/${a.employee_id}`} className="hover:text-[#0D7377] transition-colors">
-                            {a.employees.first_name} {a.employees.last_name}
-                          </Link>
-                        ) : (
-                          <span className="text-gray-400">Unassigned</span>
-                        )}
-                      </span>
-                      <span className="text-[13px] text-gray-600">{a.branches?.name || "—"}</span>
-                      <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${statusColors[a.status] || "bg-gray-50 text-gray-600"}`}>
-                        {a.status}
-                      </span>
-                      <span className="text-[13px] text-gray-500">{a.serial_number || "—"}</span>
-                    </div>
-                  ))
-                )}
               </div>
             </div>
           )}
@@ -288,46 +290,48 @@ export default function ITManagement() {
                   </button>
                 ))}
               </div>
-              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <div className="grid grid-cols-6 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider items-center">
-                  <span>Ticket</span>
-                  <span>Requester</span>
-                  <span>Priority</span>
-                  <span>Category</span>
-                  <span>Status</span>
-                  <span>Action</span>
+              <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+                <div className="min-w-[720px]">
+                  <div className="grid grid-cols-6 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider items-center">
+                    <span>Ticket</span>
+                    <span>Requester</span>
+                    <span>Priority</span>
+                    <span>Category</span>
+                    <span>Status</span>
+                    <span>Action</span>
+                  </div>
+                  {filteredTickets.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500 text-[13px]">No tickets found</div>
+                  ) : (
+                    filteredTickets.map((t) => (
+                      <div key={t.id} className="grid grid-cols-6 px-5 py-4 border-t border-gray-50 items-center">
+                        <div>
+                          <span className="text-[13px] font-semibold text-[#0D7377]">#{t.id.slice(0, 8)}</span>
+                          <p className="text-[12px] text-gray-600 mt-0.5 truncate max-w-[200px]">{t.title}</p>
+                        </div>
+                        <span className="text-[13px] text-gray-600">{t.requester_name}</span>
+                        <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${priorityColors[t.priority]}`}>
+                          {t.priority}
+                        </span>
+                        <span className="text-[13px] text-gray-600">{t.category}</span>
+                        <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${ticketStatusColors[t.status]}`}>
+                          {t.status.replace("_", " ")}
+                        </span>
+                        <div className="flex gap-1">
+                          {t.status === "open" && (
+                            <button onClick={() => updateTicketStatus(t.id, "in_progress")} className="text-[11px] text-[#0D7377] font-medium hover:underline">Start</button>
+                          )}
+                          {(t.status === "open" || t.status === "in_progress") && (
+                            <button onClick={() => updateTicketStatus(t.id, "resolved")} className="text-[11px] text-green-600 font-medium hover:underline ml-2">Resolve</button>
+                          )}
+                          {t.status === "resolved" && (
+                            <button onClick={() => updateTicketStatus(t.id, "closed")} className="text-[11px] text-gray-500 font-medium hover:underline">Close</button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-                {filteredTickets.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500 text-[13px]">No tickets found</div>
-                ) : (
-                  filteredTickets.map((t) => (
-                    <div key={t.id} className="grid grid-cols-6 px-5 py-4 border-t border-gray-50 items-center">
-                      <div>
-                        <span className="text-[13px] font-semibold text-[#0D7377]">#{t.id.slice(0, 8)}</span>
-                        <p className="text-[12px] text-gray-600 mt-0.5 truncate max-w-[200px]">{t.title}</p>
-                      </div>
-                      <span className="text-[13px] text-gray-600">{t.requester_name}</span>
-                      <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${priorityColors[t.priority]}`}>
-                        {t.priority}
-                      </span>
-                      <span className="text-[13px] text-gray-600">{t.category}</span>
-                      <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${ticketStatusColors[t.status]}`}>
-                        {t.status.replace("_", " ")}
-                      </span>
-                      <div className="flex gap-1">
-                        {t.status === "open" && (
-                          <button onClick={() => updateTicketStatus(t.id, "in_progress")} className="text-[11px] text-[#0D7377] font-medium hover:underline">Start</button>
-                        )}
-                        {(t.status === "open" || t.status === "in_progress") && (
-                          <button onClick={() => updateTicketStatus(t.id, "resolved")} className="text-[11px] text-green-600 font-medium hover:underline ml-2">Resolve</button>
-                        )}
-                        {t.status === "resolved" && (
-                          <button onClick={() => updateTicketStatus(t.id, "closed")} className="text-[11px] text-gray-500 font-medium hover:underline">Close</button>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
               </div>
             </div>
           )}

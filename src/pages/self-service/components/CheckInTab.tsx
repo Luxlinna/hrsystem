@@ -279,33 +279,35 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
       {/* Attendance History */}
       <div>
         <p className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Attendance History (30 days)</p>
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-5 bg-gray-50 px-4 py-2.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-            <span>Date</span>
-            <span>Clock In</span>
-            <span>Clock Out</span>
-            <span>Hours</span>
-            <span>Status</span>
+        <div className="bg-white border border-gray-100 rounded-xl overflow-x-auto">
+          <div className="min-w-[480px]">
+            <div className="grid grid-cols-5 bg-gray-50 px-4 py-2.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+              <span>Date</span>
+              <span>Clock In</span>
+              <span>Clock Out</span>
+              <span>Hours</span>
+              <span>Status</span>
+            </div>
+            {records.slice(0, 20).map((r) => (
+              <div key={r.id} className="grid grid-cols-5 px-4 py-3 border-t border-gray-50 text-[12px]">
+                <span className="text-gray-700 font-medium">
+                  {new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+                <span className="text-gray-600">{r.clock_in?.slice(0, 5) || "—"}</span>
+                <span className="text-gray-600">{r.clock_out?.slice(0, 5) || "—"}</span>
+                <span className="text-gray-600 font-medium">{r.hours_worked ? `${r.hours_worked}h` : "—"}</span>
+                <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize w-fit ${getStatusColor(r.status)}`}>
+                  {r.status}
+                </span>
+              </div>
+            ))}
+            {records.length === 0 && (
+              <div className="text-center py-10 text-gray-400">
+                <i className="ri-fingerprint-line text-3xl mb-2 block" />
+                <p className="text-[13px]">No attendance records yet</p>
+              </div>
+            )}
           </div>
-          {records.slice(0, 20).map((r) => (
-            <div key={r.id} className="grid grid-cols-5 px-4 py-3 border-t border-gray-50 text-[12px]">
-              <span className="text-gray-700 font-medium">
-                {new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
-              <span className="text-gray-600">{r.clock_in?.slice(0, 5) || "—"}</span>
-              <span className="text-gray-600">{r.clock_out?.slice(0, 5) || "—"}</span>
-              <span className="text-gray-600 font-medium">{r.hours_worked ? `${r.hours_worked}h` : "—"}</span>
-              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize w-fit ${getStatusColor(r.status)}`}>
-                {r.status}
-              </span>
-            </div>
-          ))}
-          {records.length === 0 && (
-            <div className="text-center py-10 text-gray-400">
-              <i className="ri-fingerprint-line text-3xl mb-2 block" />
-              <p className="text-[13px]">No attendance records yet</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -253,7 +253,7 @@ export default function AdminPortal() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 bg-white border border-gray-100 rounded-xl p-1 mb-6 w-fit">
+      <div className="flex items-center gap-1 bg-white border border-gray-100 rounded-xl p-1 mb-6 w-fit max-w-full overflow-x-auto">
         {[
           { id: "roles", label: "Roles & Permissions", icon: "ri-shield-user-line" },
           { id: "users", label: "User Management", icon: "ri-team-line" },

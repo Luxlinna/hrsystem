@@ -273,31 +273,33 @@ export default function Offboard() {
           )}
 
           {tab === "tasks" && (
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <div className="grid grid-cols-5 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                <span>Task</span>
-                <span>Type</span>
-                <span>Employee</span>
-                <span>Status</span>
-                <span>Assignee</span>
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+              <div className="min-w-[640px]">
+                <div className="grid grid-cols-5 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                  <span>Task</span>
+                  <span>Type</span>
+                  <span>Employee</span>
+                  <span>Status</span>
+                  <span>Assignee</span>
+                </div>
+                {allTasks.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500 text-[13px]">No tasks found</div>
+                ) : (
+                  allTasks.map((t) => (
+                    <div key={t.id} className="grid grid-cols-5 px-5 py-4 border-t border-gray-50 items-center">
+                      <span className="text-[13px] font-medium text-gray-900">{t.title}</span>
+                      <span className="text-[13px] text-gray-600">{t.type}</span>
+                      <span className="text-[13px] text-gray-700">{t.employeeName}</span>
+                      <button onClick={() => toggleTask(t.id, t.status)} className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit cursor-pointer ${
+                        t.status === "completed" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+                      }`}>
+                        {t.status}
+                      </button>
+                      <span className="text-[13px] text-gray-500">{t.assignee}</span>
+                    </div>
+                  ))
+                )}
               </div>
-              {allTasks.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 text-[13px]">No tasks found</div>
-              ) : (
-                allTasks.map((t) => (
-                  <div key={t.id} className="grid grid-cols-5 px-5 py-4 border-t border-gray-50 items-center">
-                    <span className="text-[13px] font-medium text-gray-900">{t.title}</span>
-                    <span className="text-[13px] text-gray-600">{t.type}</span>
-                    <span className="text-[13px] text-gray-700">{t.employeeName}</span>
-                    <button onClick={() => toggleTask(t.id, t.status)} className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit cursor-pointer ${
-                      t.status === "completed" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
-                    }`}>
-                      {t.status}
-                    </button>
-                    <span className="text-[13px] text-gray-500">{t.assignee}</span>
-                  </div>
-                ))
-              )}
             </div>
           )}
         </>

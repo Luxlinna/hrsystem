@@ -161,7 +161,7 @@ export default function AttendancePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
           { label: "Checked In Today", value: presentToday, icon: "ri-user-follow-line", color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Late Arrivals", value: lateToday, icon: "ri-alarm-warning-line", color: "text-amber-600", bg: "bg-amber-50" },
@@ -183,7 +183,7 @@ export default function AttendancePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit max-w-full overflow-x-auto">
         {(["records", "summary"] as const).map((t) => (
           <button
             key={t}
@@ -198,8 +198,8 @@ export default function AttendancePage() {
       {activeTab === "records" && (
         <>
           {/* Filters */}
-          <div className="flex gap-3 mb-4">
-            <div className="relative flex-1 max-w-xs">
+          <div className="flex flex-wrap gap-3 mb-4">
+            <div className="relative flex-1 min-w-[180px] max-w-xs">
               <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
               <input
                 type="text"
@@ -501,7 +501,7 @@ export default function AttendancePage() {
       {selectedRecord && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/20" onClick={() => setSelectedRecord(null)} />
-          <div className="relative w-[420px] bg-white h-full overflow-y-auto shadow-2xl">
+          <div className="relative w-full sm:w-[420px] bg-white h-full overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-gray-100 flex items-start justify-between">
               <div>
                 <h3 className="text-base font-semibold text-gray-900">Attendance Detail</h3>
@@ -570,9 +570,9 @@ export default function AttendancePage() {
 
       {/* Log Attendance Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white rounded-2xl w-[520px] max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <h3 className="text-base font-semibold text-gray-900">Log Attendance</h3>
               <p className="text-sm text-gray-400 mt-0.5">Manually record an attendance entry</p>

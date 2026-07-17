@@ -34,11 +34,11 @@ function LayoutContent() {
     <div className="flex min-h-screen bg-white">
       <Sidebar />
       <div
-        className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out"
+        className="flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ease-in-out"
         style={{ marginLeft: isMobile ? 0 : (collapsed ? 64 : 260) }}
       >
         <TopBar transparent={isHome && !scrolled} />
-        <main className="flex-1 pb-16 lg:pb-0">
+        <main className="flex-1 min-w-0 pb-16 lg:pb-0">
           <Outlet />
         </main>
         <BottomNav />

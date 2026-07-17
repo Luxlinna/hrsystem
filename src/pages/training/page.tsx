@@ -158,14 +158,14 @@ export default function TrainingPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F8F6] p-6">
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             Employee Training
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">Assign courses, track progress, and issue completion certificates</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setShowEnrollModal(true)}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#0D7377] border border-[#0D7377] rounded-lg hover:bg-[#0D7377]/5 transition-colors cursor-pointer whitespace-nowrap"
@@ -184,7 +184,7 @@ export default function TrainingPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
           { label: "Total Courses", value: courses.filter((c) => c.status === "active").length, icon: "ri-book-open-line", color: "text-[#0D7377]", bg: "bg-[#0D7377]/10" },
           { label: "Active Enrollments", value: totalEnrolled, icon: "ri-user-star-line", color: "text-amber-600", bg: "bg-amber-50" },
@@ -206,7 +206,7 @@ export default function TrainingPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit max-w-full overflow-x-auto">
         {(["courses", "enrollments", "certificates"] as const).map((t) => (
           <button
             key={t}
@@ -219,8 +219,8 @@ export default function TrainingPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-4">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative flex-1 min-w-[160px] max-w-xs">
           <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
           <input
             type="text"
@@ -254,9 +254,9 @@ export default function TrainingPage() {
 
       {/* Courses Grid */}
       {activeTab === "courses" && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? (
-            <div className="col-span-3 text-center py-12 text-gray-400 text-sm">Loading courses...</div>
+            <div className="col-span-full text-center py-12 text-gray-400 text-sm">Loading courses...</div>
           ) : filteredCourses.map((course) => {
             const courseEnrollments = enrollments.filter((e) => e.course_id === course.id);
             const completed = courseEnrollments.filter((e) => e.status === "completed").length;
@@ -399,9 +399,9 @@ export default function TrainingPage() {
 
       {/* Certificates */}
       {activeTab === "certificates" && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {certificates.length === 0 && (
-            <div className="col-span-3 text-center py-12 text-gray-400 text-sm">No certificates issued yet.</div>
+            <div className="col-span-full text-center py-12 text-gray-400 text-sm">No certificates issued yet.</div>
           )}
           {certificates.map((e) => {
             const emp = e.employees;
@@ -437,7 +437,7 @@ export default function TrainingPage() {
       {selectedCourse && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/20" onClick={() => setSelectedCourse(null)} />
-          <div className="relative w-[460px] bg-white h-full overflow-y-auto shadow-2xl">
+          <div className="relative w-full sm:w-[460px] bg-white h-full overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-gray-100 flex items-start justify-between">
               <div>
                 <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{selectedCourse.category}</span>
@@ -505,9 +505,9 @@ export default function TrainingPage() {
 
       {/* Add Course Modal */}
       {showCourseModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowCourseModal(false)} />
-          <div className="relative bg-white rounded-2xl w-[540px] max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-2xl w-full max-w-[540px] max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <h3 className="text-base font-semibold text-gray-900">Add Training Course</h3>
             </div>
@@ -592,9 +592,9 @@ export default function TrainingPage() {
 
       {/* Enroll Employee Modal */}
       {showEnrollModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowEnrollModal(false)} />
-          <div className="relative bg-white rounded-2xl w-[440px]">
+          <div className="relative bg-white rounded-2xl w-full max-w-[440px] max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <h3 className="text-base font-semibold text-gray-900">Enroll Employee in Course</h3>
             </div>

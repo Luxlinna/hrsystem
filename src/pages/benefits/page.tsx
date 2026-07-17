@@ -121,39 +121,41 @@ export default function Benefits() {
       ) : (
         <>
           {tab === "plans" && (
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <div className="grid grid-cols-7 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider items-center">
-                <span>Plan</span>
-                <span>Provider</span>
-                <span>Type</span>
-                <span>Eligible</span>
-                <span>Enrolled</span>
-                <span>Rate</span>
-                <span>Status</span>
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+              <div className="min-w-[760px]">
+                <div className="grid grid-cols-7 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider items-center">
+                  <span>Plan</span>
+                  <span>Provider</span>
+                  <span>Type</span>
+                  <span>Eligible</span>
+                  <span>Enrolled</span>
+                  <span>Rate</span>
+                  <span>Status</span>
+                </div>
+                {plans.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500 text-[13px]">No benefit plans found</div>
+                ) : (
+                  plans.map((b) => {
+                    const enrolledCount = enrollments.filter((e) => e.plan_id === b.id && e.status === "enrolled").length;
+                    const rate = b.eligible_count > 0 ? ((enrolledCount / b.eligible_count) * 100).toFixed(1) : "0.0";
+                    return (
+                      <div key={b.id} className="grid grid-cols-7 px-5 py-4 border-t border-gray-50 items-center">
+                        <span className="text-[13px] font-medium text-gray-900">{b.name}</span>
+                        <span className="text-[13px] text-gray-600">{b.provider || "—"}</span>
+                        <span className="text-[13px] text-gray-600">{b.type}</span>
+                        <span className="text-[13px] text-gray-500">{b.eligible_count.toLocaleString()}</span>
+                        <span className="text-[13px] font-bold text-[#0D7377]">{enrolledCount}</span>
+                        <span className="text-[13px] font-semibold text-gray-900">{rate}%</span>
+                        <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${
+                          b.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-50 text-gray-600"
+                        }`}>
+                          {b.status}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
               </div>
-              {plans.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 text-[13px]">No benefit plans found</div>
-              ) : (
-                plans.map((b) => {
-                  const enrolledCount = enrollments.filter((e) => e.plan_id === b.id && e.status === "enrolled").length;
-                  const rate = b.eligible_count > 0 ? ((enrolledCount / b.eligible_count) * 100).toFixed(1) : "0.0";
-                  return (
-                    <div key={b.id} className="grid grid-cols-7 px-5 py-4 border-t border-gray-50 items-center">
-                      <span className="text-[13px] font-medium text-gray-900">{b.name}</span>
-                      <span className="text-[13px] text-gray-600">{b.provider || "—"}</span>
-                      <span className="text-[13px] text-gray-600">{b.type}</span>
-                      <span className="text-[13px] text-gray-500">{b.eligible_count.toLocaleString()}</span>
-                      <span className="text-[13px] font-bold text-[#0D7377]">{enrolledCount}</span>
-                      <span className="text-[13px] font-semibold text-gray-900">{rate}%</span>
-                      <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${
-                        b.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-50 text-gray-600"
-                      }`}>
-                        {b.status}
-                      </span>
-                    </div>
-                  );
-                })
-              )}
             </div>
           )}
 

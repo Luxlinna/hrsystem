@@ -63,29 +63,31 @@ export default function Payroll() {
         </div>
       </div>
 
-      <div className="border border-gray-100 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-6 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-          <span>Employee</span>
-          <span>Base Salary</span>
-          <span>Bonus</span>
-          <span>Deductions</span>
-          <span>Net Pay</span>
-          <span>Status</span>
-        </div>
-        {payroll.map((p) => (
-          <div key={p.id} className="grid grid-cols-6 px-5 py-4 border-t border-gray-50 items-center">
-            <span className="text-[13px] font-semibold text-gray-900">{p.employees ? `${p.employees.first_name} ${p.employees.last_name}` : "—"}</span>
-            <span className="text-[13px] text-gray-700">${Number(p.base_salary).toLocaleString()}</span>
-            <span className="text-[13px] text-green-600">+${Number(p.bonus).toLocaleString()}</span>
-            <span className="text-[13px] text-red-600">-${Number(p.deductions).toLocaleString()}</span>
-            <span className="text-[13px] font-bold text-gray-900">${Number(p.net_pay).toLocaleString()}</span>
-            <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit ${
-              p.status === "processed" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
-            }`}>
-              {p.status}
-            </span>
+      <div className="border border-gray-100 rounded-xl overflow-x-auto">
+        <div className="min-w-[700px]">
+          <div className="grid grid-cols-6 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+            <span>Employee</span>
+            <span>Base Salary</span>
+            <span>Bonus</span>
+            <span>Deductions</span>
+            <span>Net Pay</span>
+            <span>Status</span>
           </div>
-        ))}
+          {payroll.map((p) => (
+            <div key={p.id} className="grid grid-cols-6 px-5 py-4 border-t border-gray-50 items-center">
+              <span className="text-[13px] font-semibold text-gray-900">{p.employees ? `${p.employees.first_name} ${p.employees.last_name}` : "—"}</span>
+              <span className="text-[13px] text-gray-700">${Number(p.base_salary).toLocaleString()}</span>
+              <span className="text-[13px] text-green-600">+${Number(p.bonus).toLocaleString()}</span>
+              <span className="text-[13px] text-red-600">-${Number(p.deductions).toLocaleString()}</span>
+              <span className="text-[13px] font-bold text-gray-900">${Number(p.net_pay).toLocaleString()}</span>
+              <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit ${
+                p.status === "processed" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+              }`}>
+                {p.status}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
