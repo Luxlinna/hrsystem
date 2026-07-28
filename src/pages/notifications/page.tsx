@@ -74,7 +74,6 @@ export default function Notifications() {
           const newNotif = payload.new as Notification;
           setNotifs((prev) => [newNotif, ...prev]);
           setUnreadCount((c) => c + 1);
-          toast(newNotif.title, newNotif.message, newNotif.type);
         }
       )
       .on(

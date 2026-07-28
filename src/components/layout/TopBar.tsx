@@ -3,6 +3,16 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "@/components/Toast";
+
+interface NotificationRow {
+  id: string;
+  title: string;
+  message: string;
+  type: "info" | "success" | "warning" | "error";
+  is_read: boolean;
+  created_at: string;
+}
 
 interface SearchResult {
   id: string;
@@ -354,6 +364,44 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
       .select("id", { count: "exact", head: true })
       .eq("is_read", false)
       .then(({ count }) => setUnreadCount(count || 0));
+
+    const channel = supabase
+      .channel("topbar-notifs")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications" },
+        (payload) => {
+          const row = payload.new as NotificationRow;
+          setNotifs((prev) => [row, ...prev].slice(0, 6));
+          setUnreadCount((c) => c + 1);
+          toast(row.title, row.message, row.type);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "notifications" },
+        (payload) => {
+          const row = payload.new as NotificationRow;
+          const old = payload.old as NotificationRow;
+          setNotifs((prev) => prev.map((n) => (n.id === row.id ? row : n)));
+          if (!old.is_read && row.is_read) setUnreadCount((c) => Math.max(0, c - 1));
+          else if (old.is_read && !row.is_read) setUnreadCount((c) => c + 1);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "notifications" },
+        (payload) => {
+          const old = payload.old as NotificationRow;
+          setNotifs((prev) => prev.filter((n) => n.id !== old.id));
+          if (!old.is_read) setUnreadCount((c) => Math.max(0, c - 1));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

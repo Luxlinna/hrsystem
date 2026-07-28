@@ -5,7 +5,6 @@ import TopBar from "./TopBar";
 import BottomNav from "./BottomNav";
 import { SidebarProvider, useSidebar } from "./SidebarContext";
 import { useFCM } from "@/hooks/useFCM";
-import { useFirestoreSync } from "@/hooks/useFirestoreSync";
 
 function LayoutContent() {
   const [scrolled, setScrolled] = useState(false);
@@ -26,9 +25,7 @@ function LayoutContent() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Real-time sync hooks
   useFCM();
-  useFirestoreSync();
 
   return (
     <div className="flex min-h-screen bg-white">
