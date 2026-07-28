@@ -78,6 +78,37 @@ export default function Sidebar() {
       .select("id", { count: "exact", head: true })
       .eq("is_read", false)
       .then(({ count }) => setUnreadCount(count || 0));
+
+    const channel = supabase
+      .channel("sidebar-notifs")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications" },
+        () => setUnreadCount((c) => c + 1)
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "notifications" },
+        (payload) => {
+          const old = payload.old as { is_read: boolean };
+          const row = payload.new as { is_read: boolean };
+          if (!old.is_read && row.is_read) setUnreadCount((c) => Math.max(0, c - 1));
+          else if (old.is_read && !row.is_read) setUnreadCount((c) => c + 1);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "notifications" },
+        (payload) => {
+          const old = payload.old as { is_read: boolean };
+          if (!old.is_read) setUnreadCount((c) => Math.max(0, c - 1));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleMouseEnter = useCallback(() => setHovered(true), []);
