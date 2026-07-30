@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { distanceMeters, getCurrentPosition } from "@/lib/geo";
 
 interface AttendanceRecord {
   id: string;
@@ -14,10 +15,19 @@ interface AttendanceRecord {
   created_at: string;
 }
 
+interface BranchGeofence {
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  geofence_radius_m: number;
+}
+
 interface Props {
   employeeId: string;
   employeeName: string;
 }
+
+type CheckInStep = "idle" | "locating" | "confirm" | "denied" | "error";
 
 export default function CheckInTab({ employeeId, employeeName }: Props) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -27,6 +37,11 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
   const [notes, setNotes] = useState("");
+
+  const [branch, setBranch] = useState<BranchGeofence | null>(null);
+  const [checkInStep, setCheckInStep] = useState<CheckInStep>("idle");
+  const [checkInMessage, setCheckInMessage] = useState("");
+  const [checkInDistance, setCheckInDistance] = useState<number | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -65,6 +80,59 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
     loadRecords();
   }, [employeeId]);
 
+  useEffect(() => {
+    if (!employeeId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("employees")
+        .select("branches(name, latitude, longitude, geofence_radius_m)")
+        .eq("id", employeeId)
+        .maybeSingle();
+      const b = (data as any)?.branches as BranchGeofence | undefined;
+      setBranch(b || null);
+    })();
+  }, [employeeId]);
+
+  // Ask the browser for the current GPS position and check it against the
+  // employee's branch geofence before allowing the actual clock-in insert.
+  const handleRequestClockIn = async () => {
+    if (!branch?.latitude || !branch?.longitude) {
+      // No geofence configured for this branch — clock in without a location check.
+      handleClockIn();
+      return;
+    }
+
+    setCheckInStep("locating");
+    try {
+      const pos = await getCurrentPosition();
+      const dist = Math.round(
+        distanceMeters(pos.coords.latitude, pos.coords.longitude, branch.latitude, branch.longitude)
+      );
+      setCheckInDistance(dist);
+
+      if (dist <= branch.geofence_radius_m) {
+        setCheckInMessage(`You're ${dist}m from ${branch.name} — within range. Confirm to clock in.`);
+        setCheckInStep("confirm");
+      } else {
+        setCheckInMessage(`You're ${dist}m from ${branch.name} — you need to be within ${branch.geofence_radius_m}m to check in.`);
+        setCheckInStep("denied");
+      }
+    } catch (err: any) {
+      setCheckInMessage(
+        err?.code === 1
+          ? "Location access was denied. Please enable location permissions for this site and try again."
+          : "Couldn't get your location. Check your device's location settings and try again."
+      );
+      setCheckInStep("error");
+    }
+  };
+
+  const resetCheckInFlow = () => {
+    setCheckInStep("idle");
+    setCheckInMessage("");
+    setCheckInDistance(null);
+  };
+
   const handleClockIn = async () => {
     setProcessing(true);
     const now = new Date();
@@ -83,6 +151,7 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
     });
 
     setProcessing(false);
+    resetCheckInFlow();
     if (error) {
       showToast("error", "Failed to clock in. Please try again.");
     } else {
@@ -166,8 +235,8 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
             </p>
           </div>
 
-          <div className="flex flex-col gap-2">
-            {!isCheckedIn && (
+          <div className="flex flex-col gap-2 md:w-80">
+            {!isCheckedIn && checkInStep === "idle" && (
               <div className="space-y-2">
                 <input
                   type="text"
@@ -177,12 +246,64 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
                   className="w-full px-3 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-[12px] text-white placeholder:text-white/50 focus:outline-none focus:border-white/60"
                 />
                 <button
+                  onClick={handleRequestClockIn}
+                  disabled={processing}
+                  className="w-full flex items-center justify-center gap-2 bg-white text-[#0D7377] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
+                >
+                  <i className="ri-map-pin-line text-lg" />
+                  Clock In
+                </button>
+                {branch?.latitude && (
+                  <p className="text-white/60 text-[11px] text-center">
+                    Requires location — within {branch.geofence_radius_m}m of {branch.name}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {!isCheckedIn && checkInStep === "locating" && (
+              <div className="bg-white/20 rounded-xl px-5 py-4 text-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                <p className="text-[13px] font-semibold">Checking your location...</p>
+              </div>
+            )}
+
+            {!isCheckedIn && checkInStep === "confirm" && (
+              <div className="space-y-2">
+                <div className="bg-white/20 rounded-xl px-4 py-3 flex items-start gap-2">
+                  <i className="ri-checkbox-circle-fill text-emerald-300 text-base shrink-0 mt-0.5" />
+                  <p className="text-[12px] leading-relaxed">{checkInMessage}</p>
+                </div>
+                <button
                   onClick={handleClockIn}
                   disabled={processing}
                   className="w-full flex items-center justify-center gap-2 bg-white text-[#0D7377] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   <i className="ri-login-circle-line text-lg" />
-                  {processing ? "Processing..." : "Clock In"}
+                  {processing ? "Processing..." : "Confirm Clock In"}
+                </button>
+                <button
+                  onClick={resetCheckInFlow}
+                  disabled={processing}
+                  className="w-full text-white/70 text-[11px] hover:text-white transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {!isCheckedIn && (checkInStep === "denied" || checkInStep === "error") && (
+              <div className="space-y-2">
+                <div className="bg-white/20 rounded-xl px-4 py-3 flex items-start gap-2">
+                  <i className={`${checkInStep === "denied" ? "ri-map-pin-off-line text-amber-300" : "ri-error-warning-line text-red-300"} text-base shrink-0 mt-0.5`} />
+                  <p className="text-[12px] leading-relaxed">{checkInMessage}</p>
+                </div>
+                <button
+                  onClick={handleRequestClockIn}
+                  className="w-full flex items-center justify-center gap-2 bg-white/20 backdrop-blur border border-white/40 text-white font-bold py-2.5 px-6 rounded-xl text-[13px] hover:bg-white/30 transition-colors cursor-pointer"
+                >
+                  <i className="ri-refresh-line text-base" />
+                  Try Again
                 </button>
               </div>
             )}
