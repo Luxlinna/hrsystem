@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface LeaveRequest {
   id: string;
@@ -25,11 +27,37 @@ interface Employee {
   last_name: string;
   role: string;
   department: string;
+  annual_leave_days?: number;
 }
 
+interface LeaveTypePolicy {
+  type: string;
+  default_days: number | null;
+}
+
+const LEAVE_TYPE_LABELS: Record<string, string> = {
+  annual: "Annual Leave",
+  sick: "Sick Leave",
+  maternity: "Maternity Leave",
+  paternity: "Paternity Leave",
+  unpaid: "Unpaid Leave",
+  bereavement: "Bereavement",
+  study: "Study Leave",
+};
+
 export default function Leave() {
+  const { user } = useAuth();
+  const { role, isAdmin, loading: permsLoading } = usePermissions();
+  const canViewAll = isAdmin || !!role?.leave_view_all_employees;
+
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  // Calendar always shows company-wide approved leave (a lightweight "who's
+  // out when" schedule view), independent of canViewAll — only the request
+  // table + approve/reject controls are scoped.
+  const [calendarRequests, setCalendarRequests] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
+  const [leaveTypePolicies, setLeaveTypePolicies] = useState<LeaveTypePolicy[]>([]);
   const [filter, setFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -51,17 +79,54 @@ export default function Leave() {
 
   // Load leave requests with employee details
   const loadData = async () => {
-    const { data: lr } = await supabase
+    // Calendar dataset: always company-wide approved leave, regardless of role.
+    const { data: calReqs } = await supabase
       .from("leave_requests")
       .select("*, employees(first_name, last_name, role, department)")
-      .order("created_at", { ascending: false });
-    setRequests(lr || []);
+      .eq("status", "approved");
+    setCalendarRequests(calReqs || []);
 
-    const { data: emp } = await supabase.from("employees").select("id, first_name, last_name, role, department").eq("status", "active");
-    setEmployees(emp || []);
+    if (canViewAll) {
+      const { data: lr } = await supabase
+        .from("leave_requests")
+        .select("*, employees(first_name, last_name, role, department)")
+        .order("created_at", { ascending: false });
+      setRequests(lr || []);
+
+      const { data: emp } = await supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days").eq("status", "active");
+      setEmployees(emp || []);
+      return;
+    }
+
+    // Restricted role: only my own employee record + my own requests.
+    if (!user?.email) return;
+    const { data: me } = await supabase
+      .from("employees")
+      .select("id, first_name, last_name, role, department, annual_leave_days")
+      .eq("email", user.email)
+      .maybeSingle();
+    setMyEmployee(me);
+
+    if (me) {
+      setEmployees([me]);
+      const { data: lr } = await supabase
+        .from("leave_requests")
+        .select("*, employees(first_name, last_name, role, department)")
+        .eq("employee_id", me.id)
+        .order("created_at", { ascending: false });
+      setRequests(lr || []);
+    } else {
+      setEmployees([]);
+      setRequests([]);
+    }
   };
 
   useEffect(() => {
+    supabase.from("leave_type_policies").select("type, default_days").then(({ data }) => setLeaveTypePolicies(data || []));
+  }, []);
+
+  useEffect(() => {
+    if (permsLoading) return;
     loadData();
     // Request notification permission so employees can receive push alerts
     if ("Notification" in window && Notification.permission === "default") {
@@ -72,7 +137,7 @@ export default function Leave() {
       .on("postgres_changes", { event: "*", schema: "public", table: "leave_requests" }, () => loadData())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [permsLoading, canViewAll, user?.email]);
 
   useEffect(() => {
     if (toast) {
@@ -87,6 +152,20 @@ export default function Leave() {
     return Math.max(Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1, 1);
   };
 
+  // Two date ranges (inclusive, yyyy-mm-dd strings) overlap if each starts
+  // on or before the other's end.
+  const rangesOverlap = (aStart: string, aEnd: string, bStart: string, bEnd: string) => aStart <= bEnd && bStart <= aEnd;
+
+  // Blocks double-booking: an employee shouldn't have two pending/approved
+  // requests covering the same days, regardless of leave type.
+  const findOverlappingRequest = (employeeId: string, start: string, end: string, statuses: string[], excludeId?: string) =>
+    requests.find((r) =>
+      r.employee_id === employeeId &&
+      r.id !== excludeId &&
+      statuses.includes(r.status) &&
+      rangesOverlap(start, end, r.start_date, r.end_date)
+    );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.employee_id || !formData.start_date || !formData.end_date) {
@@ -95,6 +174,11 @@ export default function Leave() {
     }
     if (new Date(formData.end_date) < new Date(formData.start_date)) {
       setToast({ type: "error", message: "End date must be after start date" });
+      return;
+    }
+    const dupe = findOverlappingRequest(formData.employee_id, formData.start_date, formData.end_date, ["pending", "approved"]);
+    if (dupe) {
+      setToast({ type: "error", message: `This overlaps an existing ${dupe.status} ${dupe.leave_type} request (${dupe.start_date} to ${dupe.end_date}).` });
       return;
     }
 
@@ -130,6 +214,17 @@ export default function Leave() {
 
   const confirmApproval = async () => {
     if (!selectedRequest) return;
+
+    if (approvalAction === "approved") {
+      const dupe = findOverlappingRequest(selectedRequest.employee_id, selectedRequest.start_date, selectedRequest.end_date, ["approved"], selectedRequest.id);
+      if (dupe) {
+        setToast({ type: "error", message: `Can't approve — this employee already has an approved ${dupe.leave_type} request covering these dates (${dupe.start_date} to ${dupe.end_date}).` });
+        setShowApprovalModal(false);
+        setSelectedRequest(null);
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("leave_requests")
       .update({ status: approvalAction })
@@ -171,11 +266,37 @@ export default function Leave() {
 
   const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
 
+  const currentYear = new Date().getFullYear();
+  const usedAnnualDaysThisYear = requests
+    .filter((r) => r.status === "approved" && r.leave_type === "annual" && new Date(r.start_date).getFullYear() === currentYear)
+    .reduce((sum, r) => sum + (r.days || 0), 0);
+  const daysRemaining = Math.max(0, (myEmployee?.annual_leave_days ?? 18) - usedAnnualDaysThisYear);
+
   const stats = {
     pending: requests.filter((r) => r.status === "pending").length,
     approved: requests.filter((r) => r.status === "approved").length,
     rejected: requests.filter((r) => r.status === "rejected").length,
     totalDays: requests.filter((r) => r.status === "approved").reduce((sum, r) => sum + (r.days || 0), 0),
+    daysRemaining,
+  };
+
+  // Per-type leave balances — null entitlement means uncapped (e.g. unpaid).
+  const getEntitlement = (employeeId: string, type: string): number | null => {
+    if (type === "annual") {
+      const emp = employees.find((e) => e.id === employeeId);
+      return emp?.annual_leave_days ?? 18;
+    }
+    const policy = leaveTypePolicies.find((p) => p.type === type);
+    return policy ? policy.default_days : null;
+  };
+
+  const getRemaining = (employeeId: string, type: string): number | null => {
+    const entitlement = getEntitlement(employeeId, type);
+    if (entitlement === null) return null;
+    const used = requests
+      .filter((r) => r.employee_id === employeeId && r.leave_type === type && r.status === "approved" && new Date(r.start_date).getFullYear() === currentYear)
+      .reduce((sum, r) => sum + (r.days || 0), 0);
+    return Math.max(0, entitlement - used);
   };
 
   // Calendar helpers
@@ -189,7 +310,7 @@ export default function Leave() {
     for (let i = 0; i < startPadding; i++) days.push({ date: 0, requests: [] });
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      const dayReqs = requests.filter((r) => {
+      const dayReqs = calendarRequests.filter((r) => {
         if (r.status !== "approved") return false;
         return dateStr >= r.start_date && dateStr <= r.end_date;
       });
@@ -217,11 +338,17 @@ export default function Leave() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Leave Requests</h1>
-          <p className="text-[13px] text-gray-500 mt-1">Submit, track, and approve employee leave applications</p>
+          <p className="text-[13px] text-gray-500 mt-1">
+            {canViewAll ? "Submit, track, and approve employee leave applications" : "Submit and track your own leave requests"}
+          </p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap"
+          onClick={() => {
+            if (!canViewAll) setFormData((p) => ({ ...p, employee_id: myEmployee?.id || "" }));
+            setShowForm(true);
+          }}
+          disabled={!canViewAll && !myEmployee}
+          className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <i className="ri-calendar-event-line" />
           Submit Leave
@@ -234,7 +361,9 @@ export default function Leave() {
           { label: "Pending", count: stats.pending, color: "bg-amber-50 text-amber-700" },
           { label: "Approved", count: stats.approved, color: "bg-green-50 text-green-700" },
           { label: "Rejected", count: stats.rejected, color: "bg-red-50 text-red-700" },
-          { label: "Approved Days", count: stats.totalDays, color: "bg-[#0D7377]/10 text-[#0D7377]" },
+          canViewAll
+            ? { label: "Approved Days", count: stats.totalDays, color: "bg-[#0D7377]/10 text-[#0D7377]" }
+            : { label: "Days Remaining", count: stats.daysRemaining, color: "bg-[#0D7377]/10 text-[#0D7377]" },
         ].map((s) => (
           <div key={s.label} className={`rounded-xl p-4 ${s.color}`}>
             <p className="text-2xl font-bold">{s.count}</p>
@@ -353,7 +482,7 @@ export default function Leave() {
                 <span className="text-[13px] text-gray-500 mt-1 md:mt-0">{r.end_date}</span>
                 <span className="text-[13px] font-semibold text-gray-900 mt-1 md:mt-0">{r.days}d</span>
                 <div className="flex gap-2 mt-2 md:mt-0">
-                  {r.status === "pending" && (
+                  {canViewAll && r.status === "pending" && (
                     <>
                       <button
                         onClick={() => openApproval(r, "approved")}
@@ -369,9 +498,9 @@ export default function Leave() {
                       </button>
                     </>
                   )}
-                  {r.status !== "pending" && (
+                  {(!canViewAll || r.status !== "pending") && (
                     <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full capitalize whitespace-nowrap ${
-                      r.status === "approved" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                      r.status === "approved" ? "bg-green-50 text-green-700" : r.status === "pending" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
                     }`}>
                       {r.status}
                     </span>
@@ -407,19 +536,25 @@ export default function Leave() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
-                <select
-                  value={formData.employee_id}
-                  onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] bg-white"
-                  required
-                >
-                  <option value="">Select employee</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name} — {emp.department}
-                    </option>
-                  ))}
-                </select>
+                {canViewAll ? (
+                  <select
+                    value={formData.employee_id}
+                    onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] bg-white"
+                    required
+                  >
+                    <option value="">Select employee</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.first_name} {emp.last_name} — {emp.department}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700">
+                    {myEmployee ? `${myEmployee.first_name} ${myEmployee.last_name} — ${myEmployee.department}` : "—"}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Leave Type *</label>
@@ -428,15 +563,37 @@ export default function Leave() {
                   onChange={(e) => setFormData({ ...formData, leave_type: e.target.value })}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] bg-white"
                 >
-                  <option value="annual">Annual Leave</option>
-                  <option value="sick">Sick Leave</option>
-                  <option value="maternity">Maternity Leave</option>
-                  <option value="paternity">Paternity Leave</option>
-                  <option value="unpaid">Unpaid Leave</option>
-                  <option value="bereavement">Bereavement</option>
-                  <option value="study">Study Leave</option>
+                  {Object.entries(LEAVE_TYPE_LABELS).map(([type, label]) => {
+                    const remaining = formData.employee_id ? getRemaining(formData.employee_id, type) : null;
+                    return (
+                      <option key={type} value={type}>
+                        {label}{formData.employee_id ? ` — ${remaining === null ? "Unlimited" : `${remaining} day${remaining !== 1 ? "s" : ""} left`}` : ""}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
+
+              {formData.employee_id && (
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Leave Balances</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(LEAVE_TYPE_LABELS).map(([type, label]) => {
+                      const remaining = getRemaining(formData.employee_id, type);
+                      const isSelected = formData.leave_type === type;
+                      return (
+                        <div
+                          key={type}
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg text-[11px] ${isSelected ? "bg-[#0D7377]/10 text-[#0D7377] font-semibold" : "bg-gray-50 text-gray-500"}`}
+                        >
+                          <span>{label}</span>
+                          <span className="font-semibold">{remaining === null ? "∞" : remaining}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Start Date *</label>

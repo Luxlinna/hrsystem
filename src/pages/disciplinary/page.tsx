@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Employee {
   id: string;
@@ -74,6 +76,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 export default function DisciplinaryPage() {
+  const { user } = useAuth();
+  const { role, isAdmin, loading: permsLoading } = usePermissions();
+  const canViewAll = isAdmin || !!role?.disciplinary_view_all_employees;
+
   const [records, setRecords] = useState<DisciplinaryRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,19 +98,47 @@ export default function DisciplinaryPage() {
     created_by: "Sarah Mitchell", witnesses: "", action_taken: "", pip_start_date: "", pip_end_date: "", pip_goals: "",
   });
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    if (permsLoading) return;
+    fetchData();
+  }, [permsLoading, canViewAll, user?.email]);
 
   async function fetchData() {
     setLoading(true);
-    const [rRes, eRes] = await Promise.all([
-      supabase
+
+    if (canViewAll) {
+      const [rRes, eRes] = await Promise.all([
+        supabase
+          .from("disciplinary_records")
+          .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+          .order("created_at", { ascending: false }),
+        supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url").eq("status", "active").order("first_name"),
+      ]);
+      if (rRes.data) setRecords(rRes.data as DisciplinaryRecord[]);
+      if (eRes.data) setEmployees(eRes.data);
+      setLoading(false);
+      return;
+    }
+
+    if (!user?.email) { setLoading(false); return; }
+    const { data: me } = await supabase
+      .from("employees")
+      .select("id, first_name, last_name, department, role, avatar_url")
+      .eq("email", user.email)
+      .maybeSingle();
+
+    if (me) {
+      setEmployees([me]);
+      const { data: rData } = await supabase
         .from("disciplinary_records")
         .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
-        .order("created_at", { ascending: false }),
-      supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url").eq("status", "active").order("first_name"),
-    ]);
-    if (rRes.data) setRecords(rRes.data as DisciplinaryRecord[]);
-    if (eRes.data) setEmployees(eRes.data);
+        .eq("employee_id", me.id)
+        .order("created_at", { ascending: false });
+      setRecords((rData as DisciplinaryRecord[]) || []);
+    } else {
+      setEmployees([]);
+      setRecords([]);
+    }
     setLoading(false);
   }
 
@@ -171,15 +205,19 @@ export default function DisciplinaryPage() {
           <h1 className="text-2xl font-semibold text-gray-900" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             Disciplinary &amp; Incidents
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Log warnings, incidents, and performance improvement plans with follow-up tracking</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {canViewAll ? "Log warnings, incidents, and performance improvement plans with follow-up tracking" : "Your warnings, incidents, and performance improvement plans"}
+          </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white text-sm font-medium rounded-lg hover:bg-[#0a5f62] transition-colors cursor-pointer whitespace-nowrap"
-        >
-          <i className="ri-add-line" />
-          Log Incident
-        </button>
+        {canViewAll && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white text-sm font-medium rounded-lg hover:bg-[#0a5f62] transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <i className="ri-add-line" />
+            Log Incident
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -220,16 +258,18 @@ export default function DisciplinaryPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4">
-        <div className="relative flex-1 max-w-xs">
-          <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-          <input
-            type="text"
-            placeholder="Search employee or title..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
-          />
-        </div>
+        {canViewAll && (
+          <div className="relative flex-1 max-w-xs">
+            <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+            <input
+              type="text"
+              placeholder="Search employee or title..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+            />
+          </div>
+        )}
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
@@ -429,7 +469,7 @@ export default function DisciplinaryPage() {
                 </div>
               )}
               {/* Status update actions */}
-              {selectedRecord.status !== "resolved" && selectedRecord.status !== "closed" && (
+              {canViewAll && selectedRecord.status !== "resolved" && selectedRecord.status !== "closed" && (
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Update Status</p>
                   <div className="flex gap-2 flex-wrap">
