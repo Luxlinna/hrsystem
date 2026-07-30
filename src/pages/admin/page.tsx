@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { usePermissions, invalidatePermissionsCache } from "@/hooks/usePermissions";
+import { invalidatePermissionsCache } from "@/hooks/usePermissions";
 
 interface AppRole {
   id: number;
@@ -9,6 +9,12 @@ interface AppRole {
   color: string;
   is_admin: boolean;
   allowed_modules: string[];
+  self_service_all_employees: boolean;
+  leave_view_all_employees: boolean;
+  payroll_view_all_employees: boolean;
+  attendance_view_all_employees: boolean;
+  performance_view_all_employees: boolean;
+  disciplinary_view_all_employees: boolean;
   created_at: string;
 }
 
@@ -61,10 +67,23 @@ const COLORS = [
   "#0D7377","#7C3AED","#059669","#D97706","#DC2626","#2563EB","#DB2777","#EA580C","#64748B","#0369A1",
 ];
 
-const BLANK_ROLE = { name: "", description: "", color: "#0D7377", is_admin: false, allowed_modules: [] as string[] };
+// "Own record only" pages — each has a per-role override so admins decide
+// who's allowed to see every employee's data instead of just their own.
+const SCOPE_OVERRIDES = [
+  { key: "self_service_all_employees", label: "Can view/switch other employees in Self-Service", hint: "Off by default — this role only sees the employee record matching their own account email." },
+  { key: "leave_view_all_employees", label: "Can view/approve all employees' leave requests", hint: "Off by default — this role only sees and submits their own leave requests (the team calendar stays visible either way)." },
+  { key: "payroll_view_all_employees", label: "Can view all employees' payroll", hint: "Off by default — this role only sees their own payslip data." },
+  { key: "attendance_view_all_employees", label: "Can view all employees' attendance records", hint: "Off by default — this role only sees their own attendance history." },
+  { key: "performance_view_all_employees", label: "Can view/manage all employees' performance reviews", hint: "Off by default — this role only sees their own reviews and goals." },
+  { key: "disciplinary_view_all_employees", label: "Can view all employees' disciplinary records", hint: "Off by default — this role only sees their own records, if any." },
+] as const;
+
+const BLANK_ROLE = {
+  name: "", description: "", color: "#0D7377", is_admin: false, allowed_modules: [] as string[],
+  ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, false])) as Record<typeof SCOPE_OVERRIDES[number]["key"], boolean>,
+};
 
 export default function AdminPortal() {
-  const { isAdmin } = usePermissions();
   const [activeTab, setActiveTab] = useState<"roles" | "users">("roles");
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [users, setUsers] = useState<UserAssignment[]>([]);
@@ -109,7 +128,10 @@ export default function AdminPortal() {
 
   const openEditRole = (r: AppRole) => {
     setEditingRole(r);
-    setRoleForm({ name: r.name, description: r.description || "", color: r.color, is_admin: r.is_admin, allowed_modules: [...r.allowed_modules] });
+    setRoleForm({
+      name: r.name, description: r.description || "", color: r.color, is_admin: r.is_admin, allowed_modules: [...r.allowed_modules],
+      ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, r[o.key]])) as Record<typeof SCOPE_OVERRIDES[number]["key"], boolean>,
+    });
     setShowRoleForm(true);
   };
 
@@ -142,6 +164,7 @@ export default function AdminPortal() {
       color: roleForm.color,
       is_admin: roleForm.is_admin,
       allowed_modules: roleForm.is_admin ? ["*"] : roleForm.allowed_modules,
+      ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, roleForm[o.key]])),
       updated_at: new Date().toISOString(),
     };
 
@@ -213,20 +236,6 @@ export default function AdminPortal() {
     showToast("User removed");
     loadData();
   };
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8F8F7]">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <i className="ri-lock-line text-3xl text-red-400" />
-          </div>
-          <h2 className="text-lg font-bold text-gray-900">Access Denied</h2>
-          <p className="text-sm text-gray-500 mt-1">You don&apos;t have permission to access the admin portal.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#F8F8F7] p-4 md:p-6">
@@ -414,6 +423,29 @@ export default function AdminPortal() {
 
                         {!roleForm.is_admin && (
                           <div>
+                            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Data Visibility Overrides</label>
+                            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                              {SCOPE_OVERRIDES.map((o) => (
+                                <div key={o.key} className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl">
+                                  <input
+                                    type="checkbox"
+                                    id={o.key}
+                                    checked={roleForm[o.key]}
+                                    onChange={(e) => setRoleForm((p) => ({ ...p, [o.key]: e.target.checked }))}
+                                    className="w-4 h-4 rounded cursor-pointer accent-[#0D7377] shrink-0"
+                                  />
+                                  <label htmlFor={o.key} className="text-sm font-medium text-gray-800 cursor-pointer">
+                                    {o.label}
+                                    <span className="block text-xs font-normal text-gray-500 mt-0.5">{o.hint}</span>
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {!roleForm.is_admin && (
+                          <div>
                             <div className="flex items-center justify-between mb-3">
                               <label className="text-xs font-semibold text-gray-600">Module Permissions</label>
                               <div className="flex gap-2">
@@ -542,7 +574,7 @@ export default function AdminPortal() {
                         onChange={(e) => setNewUser((p) => ({ ...p, role_id: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 cursor-pointer"
                       >
-                        <option value="">No role (Full access)</option>
+                        <option value="">No role (no access until assigned)</option>
                         {roles.map((r) => (
                           <option key={r.id} value={r.id}>{r.name}</option>
                         ))}
@@ -587,7 +619,7 @@ export default function AdminPortal() {
                             onChange={(e) => updateUserRole(user.id, e.target.value ? parseInt(e.target.value) : null)}
                             className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 cursor-pointer"
                           >
-                            <option value="">No role (Full access)</option>
+                            <option value="">No role (no access until assigned)</option>
                             {roles.map((r) => (
                               <option key={r.id} value={r.id}>{r.name}</option>
                             ))}
@@ -619,7 +651,7 @@ export default function AdminPortal() {
                 <div>
                   <p className="text-sm font-semibold text-amber-800">How it works</p>
                   <p className="text-xs text-amber-700 mt-1">
-                    Users are matched by their account email. You can add a user by email before they sign up — the assignment links automatically the first time they log in. Users with no assignment get full access by default. Role restrictions affect which modules appear in the sidebar and navigation.
+                    Users are matched by their account email. You can add a user by email before they sign up — the assignment links automatically the first time they log in. Users with no role assigned have no access until an admin assigns one. Role restrictions determine which modules a user can open, including in the sidebar and navigation.
                   </p>
                 </div>
               </div>
