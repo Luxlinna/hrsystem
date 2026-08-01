@@ -62,6 +62,17 @@ export default function LeaveCalendar() {
     return true;
   });
 
+  // Same Department/Type filters as filteredLeaves, but deliberately ignores
+  // the Approved/Pending/All toggle — the "Pending Approval" stat should
+  // always reflect pending requests regardless of which status you're
+  // viewing on the calendar, while still narrowing by dept/type like the
+  // other three stat cards do.
+  const deptTypeFilteredLeaves = leaves.filter((l) => {
+    if (deptFilter !== "All Departments" && l.employees?.department !== deptFilter) return false;
+    if (typeFilter !== "all" && l.leave_type !== typeFilter) return false;
+    return true;
+  });
+
   const getDateStr = (d: number) => `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
   const getDayLeaves = (d: number) => {
@@ -103,7 +114,7 @@ export default function LeaveCalendar() {
       return l.status === "approved" && l.start_date.startsWith(`${year}-${String(month + 1).padStart(2, "0")}`);
     }).length,
     totalDays: filteredLeaves.filter((l) => l.status === "approved").reduce((s, l) => s + (l.days || 0), 0),
-    pending: leaves.filter((l) => l.status === "pending").length,
+    pending: deptTypeFilteredLeaves.filter((l) => l.status === "pending").length,
   };
 
   const getInitials = (l: LeaveRequest) => l.employees ? `${l.employees.first_name[0]}${l.employees.last_name[0]}` : "?";

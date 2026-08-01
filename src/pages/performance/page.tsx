@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { toast } from "@/components/Toast";
+
+const MIN_COMMENT_LENGTH = 15;
 
 interface Review {
   id: string;
@@ -124,6 +127,19 @@ export default function PerformanceReviews() {
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!reviewForm.employee_id || !reviewForm.reviewer_id) {
+      toast("Missing info", "Select both the employee and the reviewer.", "error");
+      return;
+    }
+    if (reviewForm.employee_id === reviewForm.reviewer_id) {
+      toast("Invalid reviewer", "The reviewer can't be the same person as the employee being reviewed.", "error");
+      return;
+    }
+    if (reviewForm.comments.trim().length < MIN_COMMENT_LENGTH) {
+      toast("Comment too short", `Write a meaningful summary (at least ${MIN_COMMENT_LENGTH} characters) — this review will be visible to the employee.`, "error");
+      return;
+    }
+
     setSubmitting(true);
     const overall = ((reviewForm.communication_score + reviewForm.teamwork_score + reviewForm.technical_score + reviewForm.leadership_score) / 4);
     await supabase.from("performance_reviews").insert({
@@ -451,7 +467,12 @@ export default function PerformanceReviews() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
-                    <select required value={reviewForm.employee_id} onChange={(e) => setReviewForm({ ...reviewForm, employee_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                    <select
+                      required
+                      value={reviewForm.employee_id}
+                      onChange={(e) => setReviewForm((p) => ({ ...p, employee_id: e.target.value, reviewer_id: p.reviewer_id === e.target.value ? "" : p.reviewer_id }))}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                    >
                       <option value="">Select employee</option>
                       {employees.map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
                     </select>
@@ -460,7 +481,7 @@ export default function PerformanceReviews() {
                     <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Reviewer *</label>
                     <select required value={reviewForm.reviewer_id} onChange={(e) => setReviewForm({ ...reviewForm, reviewer_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
                       <option value="">Select reviewer</option>
-                      {employees.map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
+                      {employees.filter((e) => e.id !== reviewForm.employee_id).map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
                     </select>
                   </div>
                 </div>
@@ -516,14 +537,19 @@ export default function PerformanceReviews() {
                 </div>
 
                 <div>
-                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Comments</label>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Comments *</label>
                   <textarea
                     value={reviewForm.comments}
                     onChange={(e) => setReviewForm({ ...reviewForm, comments: e.target.value })}
                     rows={3}
+                    required
+                    minLength={MIN_COMMENT_LENGTH}
                     placeholder="Overall performance summary..."
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] resize-none"
                   />
+                  <p className={`text-[11px] mt-1 ${reviewForm.comments.trim().length < MIN_COMMENT_LENGTH ? "text-gray-400" : "text-emerald-600"}`}>
+                    {reviewForm.comments.trim().length}/{MIN_COMMENT_LENGTH} minimum characters
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -549,8 +575,14 @@ export default function PerformanceReviews() {
                 </div>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="w-full py-3 bg-[#0D7377] text-white font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-60 cursor-pointer"
+                  disabled={
+                    submitting ||
+                    !reviewForm.employee_id ||
+                    !reviewForm.reviewer_id ||
+                    reviewForm.employee_id === reviewForm.reviewer_id ||
+                    reviewForm.comments.trim().length < MIN_COMMENT_LENGTH
+                  }
+                  className="w-full py-3 bg-[#0D7377] text-white font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {submitting ? "Submitting..." : "Submit Review"}
                 </button>
