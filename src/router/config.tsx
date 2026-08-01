@@ -35,6 +35,7 @@ const PayrollApproval = lazy(() => import("../pages/payroll-approval/page"));
 const Performance = lazy(() => import("../pages/performance/page"));
 const Announcements = lazy(() => import("../pages/announcements/page"));
 const Shifts = lazy(() => import("../pages/shifts/page"));
+const MeetingRooms = lazy(() => import("../pages/meeting-rooms/page"));
 const Attendance = lazy(() => import("../pages/attendance/page"));
 const Training = lazy(() => import("../pages/training/page"));
 const Disciplinary = lazy(() => import("../pages/disciplinary/page"));
@@ -89,6 +90,7 @@ const routes: RouteObject[] = [
       { path: "performance", element: mod("performance", <Performance />) },
       { path: "announcements", element: mod("announcements", <Announcements />) },
       { path: "shifts", element: mod("shifts", <Shifts />) },
+      { path: "meeting-rooms", element: mod("meeting-rooms", <MeetingRooms />) },
       { path: "attendance", element: mod("attendance", <Attendance />) },
       { path: "training", element: mod("training", <Training />) },
       { path: "disciplinary", element: mod("disciplinary", <Disciplinary />) },

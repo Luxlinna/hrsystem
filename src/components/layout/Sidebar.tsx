@@ -23,6 +23,7 @@ const navGroups = [
       { path: "/leave", label: "Leave", icon: "ri-calendar-event-line", module: "leave" },
       { path: "/leave-calendar", label: "Leave Calendar", icon: "ri-calendar-2-line", module: "leave-calendar" },
       { path: "/shifts", label: "Shifts", icon: "ri-calendar-schedule-line", module: "shifts" },
+      { path: "/meeting-rooms", label: "Meeting Rooms", icon: "ri-door-open-line", module: "meeting-rooms" },
       { path: "/hire", label: "Hire", icon: "ri-briefcase-line", module: "hire" },
       { path: "/offboard", label: "Off Board", icon: "ri-user-unfollow-line", module: "offboard" },
       { path: "/org-chart", label: "Org Chart", icon: "ri-organization-chart", module: "org-chart" },

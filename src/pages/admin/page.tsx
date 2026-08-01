@@ -45,6 +45,7 @@ const ALL_MODULES = [
   { key: "training", label: "Training", icon: "ri-graduation-cap-line", group: "Workforce" },
   { key: "disciplinary", label: "Disciplinary", icon: "ri-alert-line", group: "Workforce" },
   { key: "shifts", label: "Shifts", icon: "ri-calendar-schedule-line", group: "Workforce" },
+  { key: "meeting-rooms", label: "Meeting Rooms", icon: "ri-door-open-line", group: "Workforce" },
   { key: "payroll", label: "Payroll", icon: "ri-money-dollar-circle-line", group: "Operations" },
   { key: "payroll-approval", label: "Payroll Approval", icon: "ri-file-check-line", group: "Operations" },
   { key: "finance", label: "Finance", icon: "ri-bank-line", group: "Operations" },
