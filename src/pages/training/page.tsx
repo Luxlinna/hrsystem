@@ -278,7 +278,7 @@ export default function TrainingPage() {
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span className="flex items-center gap-1"><i className="ri-user-line" /> {courseEnrollments.length} enrolled</span>
                   <span className="flex items-center gap-1"><i className="ri-checkbox-circle-line text-emerald-500" /> {completed} done</span>
-                  {course.duration_hours && <span className="flex items-center gap-1"><i className="ri-time-line" /> {course.duration_hours}h</span>}
+                  {course.duration_hours != null && <span className="flex items-center gap-1"><i className="ri-time-line" /> {course.duration_hours}h</span>}
                 </div>
                 <div className="mt-3">
                   <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
@@ -420,7 +420,7 @@ export default function TrainingPage() {
                 <p className="text-xs text-gray-400 mb-3">{e.training_courses?.category} • {e.training_courses?.duration_hours}h</p>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-400">Completed {e.completed_at ? new Date(e.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}</span>
-                  {e.score && <span className="font-semibold text-emerald-600">Score: {e.score}%</span>}
+                  {e.score != null && <span className="font-semibold text-emerald-600">Score: {e.score}%</span>}
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-100">
                   <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full">
