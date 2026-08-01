@@ -179,6 +179,7 @@ const keyLabels: Record<string, string> = {
   timezone: "Timezone",
   fiscal_year_start: "Fiscal Year Start",
   week_start_day: "Week Start Day",
+  work_start_time: "Work Start Time",
   default_work_hours: "Default Work Hours / Week",
   overtime_threshold: "Overtime Threshold (hours)",
   leave_approval_required: "Leave Approval Required",
@@ -468,6 +469,30 @@ export default function Settings() {
               {edited["week_start_day"] !== undefined && (
                 <button
                   onClick={() => saveSetting("week_start_day")}
+                  disabled={saving}
+                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                >
+                  Save
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
+              Work Start Time
+            </label>
+            <p className="text-[11px] text-gray-400 mt-0.5">Used by Clock In to mark arrivals late — e.g. 08:00 for an 8am start, every workday.</p>
+            <div className="flex gap-2 mt-1">
+              <input
+                type="time"
+                value={getVal("work_start_time")}
+                onChange={(e) => updateValue("work_start_time", e.target.value)}
+                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+              />
+              {edited["work_start_time"] !== undefined && (
+                <button
+                  onClick={() => saveSetting("work_start_time")}
                   disabled={saving}
                   className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
                 >
