@@ -9,6 +9,12 @@ export interface UserRole {
   color: string;
   is_admin: boolean;
   allowed_modules: string[];
+  self_service_all_employees: boolean;
+  leave_view_all_employees: boolean;
+  payroll_view_all_employees: boolean;
+  attendance_view_all_employees: boolean;
+  performance_view_all_employees: boolean;
+  disciplinary_view_all_employees: boolean;
 }
 
 interface UsePermissionsReturn {
@@ -45,21 +51,18 @@ export function usePermissions(): UsePermissionsReturn {
     }
 
     (async () => {
-      // Link this auth user to any pre-provisioned assignment row (matched by email)
-      // and to their own row (matched by user_id) on first appearance.
-      await supabase
-        .from("user_role_assignments")
-        .update({ user_id: user.id, updated_at: new Date().toISOString() })
-        .eq("email", user.email)
-        .is("user_id", null);
+      // Link this auth user to any pre-provisioned assignment row (matched by
+      // email) via a SECURITY DEFINER RPC — it can only ever set user_id on a
+      // row that already matches this user's own email, never touch role_id.
+      await supabase.rpc("link_my_role_assignment");
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_role_assignments")
         .select("*, app_roles(*)")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (data?.app_roles) {
+      if (!error && data?.app_roles) {
         const r = data.app_roles as any;
         const userRole: UserRole = {
           id: r.id,
@@ -68,12 +71,19 @@ export function usePermissions(): UsePermissionsReturn {
           color: r.color,
           is_admin: r.is_admin,
           allowed_modules: r.allowed_modules || [],
+          self_service_all_employees: !!r.self_service_all_employees,
+          leave_view_all_employees: !!r.leave_view_all_employees,
+          payroll_view_all_employees: !!r.payroll_view_all_employees,
+          attendance_view_all_employees: !!r.attendance_view_all_employees,
+          performance_view_all_employees: !!r.performance_view_all_employees,
+          disciplinary_view_all_employees: !!r.disciplinary_view_all_employees,
         };
         cachedRole = userRole;
         cachedUid = user.id;
         setRole(userRole);
       } else {
-        // No assignment = treat as Super Admin by default (first-run / unassigned)
+        // No assignment (or the read failed) = no access until an admin
+        // assigns a role via the Admin Portal. Never fail open.
         cachedRole = null;
         cachedUid = user.id;
         setRole(null);
@@ -83,13 +93,14 @@ export function usePermissions(): UsePermissionsReturn {
   }, [user, authLoading]);
 
   const can = (module: string): boolean => {
-    if (!role) return true; // unassigned = full access
+    if (loading) return false;
+    if (!role) return false; // unassigned = no access
     if (role.is_admin) return true;
     if (role.allowed_modules.includes("*")) return true;
     return role.allowed_modules.includes(module);
   };
 
-  const isAdmin = !role || role.is_admin || role.allowed_modules.includes("*");
+  const isAdmin = !loading && !!role && (role.is_admin || role.allowed_modules.includes("*"));
 
   return { role, loading, can, isAdmin };
 }

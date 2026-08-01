@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { toast } from "@/components/Toast";
+
+const MIN_COMMENT_LENGTH = 15;
 
 interface Review {
   id: string;
@@ -62,6 +67,10 @@ const progressColor = (p: number) => {
 };
 
 export default function PerformanceReviews() {
+  const { user } = useAuth();
+  const { role, isAdmin, loading: permsLoading } = usePermissions();
+  const canViewAll = isAdmin || !!role?.performance_view_all_employees;
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -81,23 +90,56 @@ export default function PerformanceReviews() {
   const [submitting, setSubmitting] = useState(false);
 
   const loadData = async () => {
-    const [{ data: r }, { data: g }, { data: e }] = await Promise.all([
-      supabase.from("performance_reviews").select(`*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`).order("created_at", { ascending: false }),
-      supabase.from("performance_goals").select("*").order("target_date"),
-      supabase.from("employees").select("id, first_name, last_name, role, department").order("first_name"),
+    if (canViewAll) {
+      const [{ data: r }, { data: g }, { data: e }] = await Promise.all([
+        supabase.from("performance_reviews").select(`*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`).order("created_at", { ascending: false }),
+        supabase.from("performance_goals").select("*").order("target_date"),
+        supabase.from("employees").select("id, first_name, last_name, role, department").order("first_name"),
+      ]);
+      setReviews(r || []);
+      setGoals(g || []);
+      setEmployees(e || []);
+      setLoading(false);
+      return;
+    }
+
+    if (!user?.email) { setLoading(false); return; }
+    const { data: me } = await supabase.from("employees").select("id, first_name, last_name, role, department").eq("email", user.email).maybeSingle();
+    if (!me) {
+      setReviews([]); setGoals([]); setEmployees([]);
+      setLoading(false);
+      return;
+    }
+    setEmployees([me]);
+    const [{ data: r }, { data: g }] = await Promise.all([
+      supabase.from("performance_reviews").select(`*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`).eq("employee_id", me.id).order("created_at", { ascending: false }),
+      supabase.from("performance_goals").select("*").eq("employee_id", me.id).order("target_date"),
     ]);
     setReviews(r || []);
     setGoals(g || []);
-    setEmployees(e || []);
     setLoading(false);
   };
 
   useEffect(() => {
+    if (permsLoading) return;
     loadData();
-  }, []);
+  }, [permsLoading, canViewAll, user?.email]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!reviewForm.employee_id || !reviewForm.reviewer_id) {
+      toast("Missing info", "Select both the employee and the reviewer.", "error");
+      return;
+    }
+    if (reviewForm.employee_id === reviewForm.reviewer_id) {
+      toast("Invalid reviewer", "The reviewer can't be the same person as the employee being reviewed.", "error");
+      return;
+    }
+    if (reviewForm.comments.trim().length < MIN_COMMENT_LENGTH) {
+      toast("Comment too short", `Write a meaningful summary (at least ${MIN_COMMENT_LENGTH} characters) — this review will be visible to the employee.`, "error");
+      return;
+    }
+
     setSubmitting(true);
     const overall = ((reviewForm.communication_score + reviewForm.teamwork_score + reviewForm.technical_score + reviewForm.leadership_score) / 4);
     await supabase.from("performance_reviews").insert({
@@ -156,22 +198,26 @@ export default function PerformanceReviews() {
             <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]" style={{ fontFamily: "'Playfair Display', serif" }}>
               Performance Reviews
             </h1>
-            <p className="text-[13px] text-gray-500 mt-1">Quarterly ratings, comments, and goals tracking</p>
+            <p className="text-[13px] text-gray-500 mt-1">
+              {canViewAll ? "Quarterly ratings, comments, and goals tracking" : "Your quarterly ratings, comments, and goals"}
+            </p>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowGoalModal(true)}
-              className="inline-flex items-center gap-2 border border-[#0D7377] text-[#0D7377] px-4 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0D7377]/5 transition-colors whitespace-nowrap cursor-pointer"
-            >
-              <i className="ri-flag-line" /> Add Goal
-            </button>
-            <button
-              onClick={() => setActiveTab("submit")}
-              className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-4 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap cursor-pointer"
-            >
-              <i className="ri-add-line" /> Submit Review
-            </button>
-          </div>
+          {canViewAll && (
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowGoalModal(true)}
+                className="inline-flex items-center gap-2 border border-[#0D7377] text-[#0D7377] px-4 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0D7377]/5 transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <i className="ri-flag-line" /> Add Goal
+              </button>
+              <button
+                onClick={() => setActiveTab("submit")}
+                className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-4 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <i className="ri-add-line" /> Submit Review
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Stats */}
@@ -192,7 +238,7 @@ export default function PerformanceReviews() {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
-          {(["reviews", "goals", "submit"] as const).map((t) => (
+          {(canViewAll ? (["reviews", "goals", "submit"] as const) : (["reviews", "goals"] as const)).map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
@@ -200,7 +246,7 @@ export default function PerformanceReviews() {
                 activeTab === t ? "bg-white text-gray-900" : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {t === "submit" ? "Submit Review" : t === "goals" ? "Goals Tracker" : "All Reviews"}
+              {t === "submit" ? "Submit Review" : t === "goals" ? "Goals Tracker" : canViewAll ? "All Reviews" : "My Reviews"}
             </button>
           ))}
         </div>
@@ -421,7 +467,12 @@ export default function PerformanceReviews() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
-                    <select required value={reviewForm.employee_id} onChange={(e) => setReviewForm({ ...reviewForm, employee_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                    <select
+                      required
+                      value={reviewForm.employee_id}
+                      onChange={(e) => setReviewForm((p) => ({ ...p, employee_id: e.target.value, reviewer_id: p.reviewer_id === e.target.value ? "" : p.reviewer_id }))}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                    >
                       <option value="">Select employee</option>
                       {employees.map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
                     </select>
@@ -430,7 +481,7 @@ export default function PerformanceReviews() {
                     <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Reviewer *</label>
                     <select required value={reviewForm.reviewer_id} onChange={(e) => setReviewForm({ ...reviewForm, reviewer_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
                       <option value="">Select reviewer</option>
-                      {employees.map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
+                      {employees.filter((e) => e.id !== reviewForm.employee_id).map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
                     </select>
                   </div>
                 </div>
@@ -486,14 +537,19 @@ export default function PerformanceReviews() {
                 </div>
 
                 <div>
-                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Comments</label>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Comments *</label>
                   <textarea
                     value={reviewForm.comments}
                     onChange={(e) => setReviewForm({ ...reviewForm, comments: e.target.value })}
                     rows={3}
+                    required
+                    minLength={MIN_COMMENT_LENGTH}
                     placeholder="Overall performance summary..."
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] resize-none"
                   />
+                  <p className={`text-[11px] mt-1 ${reviewForm.comments.trim().length < MIN_COMMENT_LENGTH ? "text-gray-400" : "text-emerald-600"}`}>
+                    {reviewForm.comments.trim().length}/{MIN_COMMENT_LENGTH} minimum characters
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -519,8 +575,14 @@ export default function PerformanceReviews() {
                 </div>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="w-full py-3 bg-[#0D7377] text-white font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-60 cursor-pointer"
+                  disabled={
+                    submitting ||
+                    !reviewForm.employee_id ||
+                    !reviewForm.reviewer_id ||
+                    reviewForm.employee_id === reviewForm.reviewer_id ||
+                    reviewForm.comments.trim().length < MIN_COMMENT_LENGTH
+                  }
+                  className="w-full py-3 bg-[#0D7377] text-white font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {submitting ? "Submitting..." : "Submit Review"}
                 </button>

@@ -18,6 +18,13 @@ interface ChecklistTask {
   sort_order: number;
 }
 
+interface StaffMember {
+  id: string;
+  first_name: string;
+  last_name: string;
+  department: string;
+}
+
 interface OnboardingHire {
   id: string;
   employee_id: string | null;
@@ -53,6 +60,7 @@ export default function OnboardingChecklist() {
   const completerName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [hires, setHires] = useState<OnboardingHire[]>([]);
   const [tasks, setTasks] = useState<ChecklistTask[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [selectedHire, setSelectedHire] = useState<OnboardingHire | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "completed" | "pending" | "overdue">("all");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -64,13 +72,15 @@ export default function OnboardingChecklist() {
   const [submitting, setSubmitting] = useState(false);
 
   const loadData = async () => {
-    const [{ data: hr }, { data: tk }] = await Promise.all([
+    const [{ data: hr }, { data: tk }, { data: st }] = await Promise.all([
       supabase.from("onboarding_requests").select("*, employees(first_name, last_name, role, department, avatar_url)").order("created_at", { ascending: false }),
       supabase.from("onboarding_checklist_tasks").select("*").order("sort_order"),
+      supabase.from("employees").select("id, first_name, last_name, department").eq("status", "active").order("first_name"),
     ]);
     const hiresData = (hr || []) as OnboardingHire[];
     setHires(hiresData);
     setTasks(tk || []);
+    setStaff(st || []);
     if (!selectedHire && hiresData.length > 0) setSelectedHire(hiresData[0]);
   };
 
@@ -174,6 +184,10 @@ export default function OnboardingChecklist() {
   };
 
   const getName = (hire: OnboardingHire) => hire.employees ? `${hire.employees.first_name} ${hire.employees.last_name}` : `New Hire`;
+
+  const staffDepartments = [...new Set(staff.map((s) => s.department).filter(Boolean))].sort();
+  const staffFullName = (s: StaffMember) => `${s.first_name} ${s.last_name}`;
+  const departmentForStaffName = (name: string) => staff.find((s) => staffFullName(s) === name)?.department || "";
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
@@ -436,11 +450,27 @@ export default function OnboardingChecklist() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Assign To</label>
-                  <input type="text" value={newTask.assigned_to} onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="Name" />
+                  <select
+                    value={newTask.assigned_to}
+                    onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value, assigned_to_role: departmentForStaffName(e.target.value) || newTask.assigned_to_role })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                  >
+                    <option value="">Unassigned</option>
+                    {staff.map((s) => (
+                      <option key={s.id} value={staffFullName(s)}>{staffFullName(s)} — {s.department}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Role</label>
-                  <input type="text" value={newTask.assigned_to_role} onChange={(e) => setNewTask({ ...newTask, assigned_to_role: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="e.g. HR, IT" />
+                  <select
+                    value={newTask.assigned_to_role}
+                    onChange={(e) => setNewTask({ ...newTask, assigned_to_role: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                  >
+                    <option value="">No department</option>
+                    {staffDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
                 </div>
               </div>
               <div>
@@ -468,11 +498,27 @@ export default function OnboardingChecklist() {
             <div className="space-y-3">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Assign To</label>
-                <input type="text" value={selectedTask.assigned_to || ""} onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="Name" />
+                <select
+                  value={selectedTask.assigned_to || ""}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to: e.target.value, assigned_to_role: departmentForStaffName(e.target.value) || selectedTask.assigned_to_role })}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                >
+                  <option value="">Unassigned</option>
+                  {staff.map((s) => (
+                    <option key={s.id} value={staffFullName(s)}>{staffFullName(s)} — {s.department}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Role</label>
-                <input type="text" value={selectedTask.assigned_to_role || ""} onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to_role: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="e.g. HR, IT, Legal" />
+                <select
+                  value={selectedTask.assigned_to_role || ""}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to_role: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                >
+                  <option value="">No department</option>
+                  {staffDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
               </div>
             </div>
             <div className="flex gap-3 mt-5">

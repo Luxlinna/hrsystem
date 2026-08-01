@@ -14,6 +14,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (updates: { display_name?: string; avatar_url?: string }) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +24,8 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   signup: async () => {},
   logout: async () => {},
+  updateProfile: async () => {},
+  updatePassword: async () => {},
 });
 
 export function useAuth() {
@@ -71,8 +75,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const updateProfile = async (updates: { display_name?: string; avatar_url?: string }) => {
+    const { data, error } = await supabase.auth.updateUser({ data: updates });
+    if (error) throw error;
+    if (data.user) setUser(data.user);
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, updateProfile, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { distanceMeters, getCurrentPosition } from "@/lib/geo";
+import { hasRegisteredFingerprint, registerDeviceFingerprint, verifyDeviceFingerprint } from "@/lib/webauthn";
+import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
 
 interface AttendanceRecord {
   id: string;
@@ -14,12 +17,22 @@ interface AttendanceRecord {
   created_at: string;
 }
 
+interface BranchGeofence {
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  geofence_radius_m: number;
+}
+
 interface Props {
   employeeId: string;
   employeeName: string;
+  autoStart?: boolean;
 }
 
-export default function CheckInTab({ employeeId, employeeName }: Props) {
+type CheckInStep = "idle" | "locating" | "confirm" | "denied" | "error";
+
+export default function CheckInTab({ employeeId, employeeName, autoStart }: Props) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [todayRecord, setTodayRecord] = useState<AttendanceRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,6 +40,15 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
   const [notes, setNotes] = useState("");
+
+  const [branch, setBranch] = useState<BranchGeofence | null>(null);
+  const [checkInStep, setCheckInStep] = useState<CheckInStep>("idle");
+  const [checkInMessage, setCheckInMessage] = useState("");
+  const [checkInDistance, setCheckInDistance] = useState<number | null>(null);
+  const [checkInAccuracy, setCheckInAccuracy] = useState<number | null>(null);
+  const [workStartTime, setWorkStartTime] = useState("09:00");
+  const [hasFingerprint, setHasFingerprint] = useState(false);
+  const [biometricError, setBiometricError] = useState("");
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -39,6 +61,17 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    supabase.from("system_settings").select("value").eq("key", "work_start_time").maybeSingle().then(({ data }) => {
+      if (data?.value) setWorkStartTime(data.value);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!employeeId) return;
+    hasRegisteredFingerprint(employeeId).then(setHasFingerprint);
+  }, [employeeId]);
 
   const loadRecords = async () => {
     if (!employeeId) return;
@@ -65,12 +98,110 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
     loadRecords();
   }, [employeeId]);
 
+  const [branchLoading, setBranchLoading] = useState(true);
+  useEffect(() => {
+    if (!employeeId) return;
+    setBranchLoading(true);
+    (async () => {
+      const { data } = await supabase
+        .from("employees")
+        .select("branches(name, latitude, longitude, geofence_radius_m)")
+        .eq("id", employeeId)
+        .maybeSingle();
+      const b = (data as any)?.branches as BranchGeofence | undefined;
+      setBranch(b || null);
+      setBranchLoading(false);
+    })();
+  }, [employeeId]);
+
+  // Ask the browser for the current GPS position and check it against the
+  // employee's branch geofence before allowing the actual clock-in insert.
+  const handleRequestClockIn = async () => {
+    if (branchLoading) return; // branch data isn't in yet — avoid misreading "no geofence" as "not configured"
+    if (!branch?.latitude || !branch?.longitude) {
+      // No geofence configured for this branch — clock in without a location check.
+      handleClockIn();
+      return;
+    }
+
+    setCheckInStep("locating");
+    try {
+      const pos = await getCurrentPosition();
+      const dist = Math.round(
+        distanceMeters(pos.coords.latitude, pos.coords.longitude, branch.latitude, branch.longitude)
+      );
+      const accuracy = Math.round(pos.coords.accuracy);
+      setCheckInDistance(dist);
+      setCheckInAccuracy(accuracy);
+
+      if (dist <= branch.geofence_radius_m) {
+        setCheckInMessage(`You're ${dist}m from ${branch.name} — within range. Confirm to clock in.`);
+        setCheckInStep("confirm");
+      } else {
+        const accuracyNote =
+          accuracy > branch.geofence_radius_m
+            ? ` Your device's location is only accurate to about ±${accuracy}m right now (common on desktop/laptop computers without GPS), so this reading may not be exact — try again on a phone with GPS/location services on for a more precise result.`
+            : "";
+        setCheckInMessage(`You're ${dist}m from ${branch.name} — you need to be within ${branch.geofence_radius_m}m to check in.${accuracyNote}`);
+        setCheckInStep("denied");
+      }
+    } catch (err: any) {
+      setCheckInMessage(
+        err?.code === 1
+          ? "Location access was denied. Please enable location permissions for this site and try again."
+          : "Couldn't get your location. Check your device's location settings and try again."
+      );
+      setCheckInStep("error");
+    }
+  };
+
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (!autoStart || loading || branchLoading || autoStartedRef.current || todayRecord?.clock_in) return;
+    autoStartedRef.current = true;
+    handleRequestClockIn();
+  }, [autoStart, loading, branchLoading, todayRecord]);
+
+  const resetCheckInFlow = () => {
+    setCheckInStep("idle");
+    setCheckInMessage("");
+    setCheckInDistance(null);
+    setCheckInAccuracy(null);
+    setBiometricError("");
+  };
+
+  const handleConfirmClockIn = async () => {
+    if (!browserSupportsWebAuthn()) {
+      setBiometricError("This browser/device doesn't support fingerprint verification. Try a modern phone or laptop browser (Chrome, Safari, Edge).");
+      return;
+    }
+    setBiometricError("");
+    setProcessing(true);
+    try {
+      if (hasFingerprint) {
+        await verifyDeviceFingerprint();
+      } else {
+        await registerDeviceFingerprint(navigator.platform || "This device");
+        setHasFingerprint(true);
+      }
+    } catch (err: any) {
+      setProcessing(false);
+      setBiometricError(
+        err?.name === "NotAllowedError"
+          ? "Fingerprint check was cancelled or didn't match. Try again."
+          : err?.message || "Fingerprint verification failed."
+      );
+      return;
+    }
+    await handleClockIn();
+  };
+
   const handleClockIn = async () => {
     setProcessing(true);
     const now = new Date();
     const timeStr = now.toTimeString().split(" ")[0];
-    const workStartHour = 9;
-    const lateMinutes = Math.max(0, (now.getHours() - workStartHour) * 60 + now.getMinutes());
+    const [startH, startM] = workStartTime.split(":").map(Number);
+    const lateMinutes = Math.max(0, (now.getHours() * 60 + now.getMinutes()) - (startH * 60 + startM));
     const status = lateMinutes > 15 ? "late" : "present";
 
     const { error } = await supabase.from("attendance_records").insert({
@@ -83,6 +214,7 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
     });
 
     setProcessing(false);
+    resetCheckInFlow();
     if (error) {
       showToast("error", "Failed to clock in. Please try again.");
     } else {
@@ -166,8 +298,8 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
             </p>
           </div>
 
-          <div className="flex flex-col gap-2">
-            {!isCheckedIn && (
+          <div className="flex flex-col gap-2 md:w-80">
+            {!isCheckedIn && checkInStep === "idle" && (
               <div className="space-y-2">
                 <input
                   type="text"
@@ -177,12 +309,78 @@ export default function CheckInTab({ employeeId, employeeName }: Props) {
                   className="w-full px-3 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-[12px] text-white placeholder:text-white/50 focus:outline-none focus:border-white/60"
                 />
                 <button
-                  onClick={handleClockIn}
+                  onClick={handleRequestClockIn}
+                  disabled={processing || branchLoading}
+                  className="w-full flex items-center justify-center gap-2 bg-white text-[#0D7377] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
+                >
+                  <i className="ri-map-pin-line text-lg" />
+                  Clock In
+                </button>
+                {branch?.latitude && (
+                  <p className="text-white/60 text-[11px] text-center">
+                    Requires location (within {branch.geofence_radius_m}m of {branch.name}) and fingerprint verification
+                  </p>
+                )}
+                <p className="text-white/60 text-[11px] text-center">
+                  Work starts at {new Date(`2000-01-01T${workStartTime}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} — arrivals after that are marked late
+                </p>
+              </div>
+            )}
+
+            {!isCheckedIn && checkInStep === "locating" && (
+              <div className="bg-white/20 rounded-xl px-5 py-4 text-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                <p className="text-[13px] font-semibold">Checking your location...</p>
+              </div>
+            )}
+
+            {!isCheckedIn && checkInStep === "confirm" && (
+              <div className="space-y-2">
+                <div className="bg-white/20 rounded-xl px-4 py-3 flex items-start gap-2">
+                  <i className="ri-checkbox-circle-fill text-emerald-300 text-base shrink-0 mt-0.5" />
+                  <p className="text-[12px] leading-relaxed">{checkInMessage}</p>
+                </div>
+                {biometricError && (
+                  <div className="bg-red-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
+                    <i className="ri-fingerprint-line text-red-200 text-base shrink-0 mt-0.5" />
+                    <p className="text-[12px] leading-relaxed">{biometricError}</p>
+                  </div>
+                )}
+                <button
+                  onClick={handleConfirmClockIn}
                   disabled={processing}
                   className="w-full flex items-center justify-center gap-2 bg-white text-[#0D7377] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
                 >
-                  <i className="ri-login-circle-line text-lg" />
-                  {processing ? "Processing..." : "Clock In"}
+                  <i className="ri-fingerprint-line text-lg" />
+                  {processing ? "Verifying fingerprint..." : hasFingerprint ? "Confirm with Fingerprint" : "Register Fingerprint & Clock In"}
+                </button>
+                <p className="text-white/60 text-[11px] text-center">
+                  {hasFingerprint
+                    ? "Your device will ask for Touch ID / fingerprint / Windows Hello to confirm it's you."
+                    : "First time here — you'll be asked to register this device's fingerprint, then it'll be required every time you clock in."}
+                </p>
+                <button
+                  onClick={resetCheckInFlow}
+                  disabled={processing}
+                  className="w-full text-white/70 text-[11px] hover:text-white transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {!isCheckedIn && (checkInStep === "denied" || checkInStep === "error") && (
+              <div className="space-y-2">
+                <div className="bg-white/20 rounded-xl px-4 py-3 flex items-start gap-2">
+                  <i className={`${checkInStep === "denied" ? "ri-map-pin-off-line text-amber-300" : "ri-error-warning-line text-red-300"} text-base shrink-0 mt-0.5`} />
+                  <p className="text-[12px] leading-relaxed">{checkInMessage}</p>
+                </div>
+                <button
+                  onClick={handleRequestClockIn}
+                  className="w-full flex items-center justify-center gap-2 bg-white/20 backdrop-blur border border-white/40 text-white font-bold py-2.5 px-6 rounded-xl text-[13px] hover:bg-white/30 transition-colors cursor-pointer"
+                >
+                  <i className="ri-refresh-line text-base" />
+                  Try Again
                 </button>
               </div>
             )}

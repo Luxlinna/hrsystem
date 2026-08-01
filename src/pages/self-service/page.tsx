@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import PayslipTab from "./components/PayslipTab";
 import LeaveTab from "./components/LeaveTab";
 import BenefitsTab from "./components/BenefitsTab";
@@ -28,29 +31,63 @@ const TABS = [
 ];
 
 export default function SelfServicePage() {
+  const { user } = useAuth();
+  const { role, isAdmin, loading: permsLoading } = usePermissions();
+  const canViewAll = isAdmin || !!role?.self_service_all_employees;
+
+  const [searchParams] = useSearchParams();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [activeTab, setActiveTab] = useState("payslips");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "payslips");
+  const quickCheckIn = searchParams.get("quickCheckIn") === "1";
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [noOwnRecord, setNoOwnRecord] = useState(false);
 
   useEffect(() => {
+    if (permsLoading) return;
+
+    const SELECT = "id, first_name, last_name, role, department, status, join_date, email, avatar_url, branches(name)";
+
+    if (canViewAll) {
+      supabase
+        .from("employees")
+        .select(SELECT)
+        .eq("status", "active")
+        .order("first_name")
+        .then(({ data }) => {
+          setEmployees((data as unknown as Employee[]) || []);
+          if (data && data.length > 0) {
+            const emp = data[0] as unknown as Employee;
+            setSelectedId(emp.id);
+            setSelectedEmployee(emp);
+          }
+          setLoading(false);
+        });
+      return;
+    }
+
+    // Locked to the employee record matching this account's own email —
+    // no cross-employee switcher for roles without explicit override.
+    if (!user?.email) { setLoading(false); return; }
     supabase
       .from("employees")
-      .select("id, first_name, last_name, role, department, status, join_date, email, avatar_url, branches(name)")
-      .eq("status", "active")
-      .order("first_name")
+      .select(SELECT)
+      .eq("email", user.email)
+      .maybeSingle()
       .then(({ data }) => {
-        setEmployees((data as unknown as Employee[]) || []);
-        if (data && data.length > 0) {
-          const emp = data[0] as unknown as Employee;
+        const emp = data as unknown as Employee | null;
+        if (emp) {
+          setEmployees([emp]);
           setSelectedId(emp.id);
           setSelectedEmployee(emp);
+        } else {
+          setNoOwnRecord(true);
         }
         setLoading(false);
       });
-  }, []);
+  }, [canViewAll, permsLoading, user?.email]);
 
   const handleSelect = (emp: Employee) => {
     setSelectedId(emp.id);
@@ -63,10 +100,24 @@ export default function SelfServicePage() {
     ? Math.floor((new Date().getTime() - new Date(selectedEmployee.join_date).getTime()) / (365.25 * 86400000))
     : 0;
 
-  if (loading) {
+  if (loading || permsLoading) {
     return (
       <div className="min-h-screen bg-[#F8F8F7] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (noOwnRecord) {
+    return (
+      <div className="min-h-screen bg-[#F8F8F7] flex items-center justify-center p-6">
+        <div className="text-center max-w-sm">
+          <i className="ri-user-search-line text-3xl text-gray-300 mb-3 block" />
+          <h2 className="text-lg font-bold text-gray-900">No employee record found</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            We couldn't find an employee record matching your account email ({user?.email}). Ask HR to link your profile.
+          </p>
+        </div>
       </div>
     );
   }
@@ -111,39 +162,41 @@ export default function SelfServicePage() {
             )}
           </div>
 
-          {/* Employee Picker */}
-          <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <i className="ri-exchange-line" />
-              Switch Employee
-              {dropdownOpen ? <i className="ri-arrow-up-s-line text-gray-400" /> : <i className="ri-arrow-down-s-line text-gray-400" />}
-            </button>
-            {dropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-100 rounded-xl overflow-hidden z-30 max-h-72 overflow-y-auto">
-                {employees.map((emp) => (
-                  <button
-                    key={emp.id}
-                    onClick={() => handleSelect(emp)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer text-left ${selectedId === emp.id ? "bg-[#0D7377]/5" : ""}`}
-                  >
-                    <img
-                      src={emp.avatar_url || `https://readdy.ai/api/search-image?query=professional%20headshot%20portrait%20person%20in%20business%20attire%20against%20neutral%20background&width=40&height=40&seq=picker-${emp.id}&orientation=squarish`}
-                      alt={emp.first_name}
-                      className="w-8 h-8 rounded-lg object-cover shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{emp.first_name} {emp.last_name}</p>
-                      <p className="text-xs text-gray-400 truncate">{emp.role}</p>
-                    </div>
-                    {selectedId === emp.id && <i className="ri-checkbox-circle-fill text-[#0D7377] shrink-0" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Employee Picker — only for roles allowed to view other employees' Self-Service data */}
+          {canViewAll && (
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <i className="ri-exchange-line" />
+                Switch Employee
+                {dropdownOpen ? <i className="ri-arrow-up-s-line text-gray-400" /> : <i className="ri-arrow-down-s-line text-gray-400" />}
+              </button>
+              {dropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-100 rounded-xl overflow-hidden z-30 max-h-72 overflow-y-auto">
+                  {employees.map((emp) => (
+                    <button
+                      key={emp.id}
+                      onClick={() => handleSelect(emp)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer text-left ${selectedId === emp.id ? "bg-[#0D7377]/5" : ""}`}
+                    >
+                      <img
+                        src={emp.avatar_url || `https://readdy.ai/api/search-image?query=professional%20headshot%20portrait%20person%20in%20business%20attire%20against%20neutral%20background&width=40&height=40&seq=picker-${emp.id}&orientation=squarish`}
+                        alt={emp.first_name}
+                        className="w-8 h-8 rounded-lg object-cover shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{emp.first_name} {emp.last_name}</p>
+                        <p className="text-xs text-gray-400 truncate">{emp.role}</p>
+                      </div>
+                      {selectedId === emp.id && <i className="ri-checkbox-circle-fill text-[#0D7377] shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -180,7 +233,11 @@ export default function SelfServicePage() {
               <AttendanceTab employeeId={selectedEmployee.id} />
             )}
             {activeTab === "checkin" && (
-              <CheckInTab employeeId={selectedEmployee.id} employeeName={`${selectedEmployee.first_name} ${selectedEmployee.last_name}`} />
+              <CheckInTab
+                employeeId={selectedEmployee.id}
+                employeeName={`${selectedEmployee.first_name} ${selectedEmployee.last_name}`}
+                autoStart={quickCheckIn}
+              />
             )}
             {activeTab === "benefits" && (
               <BenefitsTab employeeId={selectedEmployee.id} />

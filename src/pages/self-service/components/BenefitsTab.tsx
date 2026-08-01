@@ -44,6 +44,8 @@ export default function BenefitsTab({ employeeId }: Props) {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("");
   const [enrolling, setEnrolling] = useState(false);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState<Enrollment | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const fetchData = async () => {
@@ -60,19 +62,34 @@ export default function BenefitsTab({ employeeId }: Props) {
 
   useEffect(() => { fetchData(); }, [employeeId]);
 
-  const enrolledPlanIds = new Set(enrollments.map((e) => e.benefit_plans ? allPlans.find((p) => p.name === e.benefit_plans!.name)?.id : null).filter(Boolean));
+  // Only a currently-enrolled row blocks re-enrolling; a cancelled ("opted
+  // out") plan goes back into the available pool.
+  const activeEnrollments = enrollments.filter((e) => e.status === "enrolled");
+  const enrolledPlanIds = new Set(activeEnrollments.map((e) => e.benefit_plans ? allPlans.find((p) => p.name === e.benefit_plans!.name)?.id : null).filter(Boolean));
   const availablePlans = allPlans.filter((p) => !enrolledPlanIds.has(p.id));
 
   const handleEnroll = async () => {
     if (!selectedPlan) return;
     setEnrolling(true);
-    const { error } = await supabase.from("benefit_enrollments").insert({ employee_id: employeeId, plan_id: selectedPlan, status: "active" });
+    const { error } = await supabase.from("benefit_enrollments").insert({ employee_id: employeeId, plan_id: selectedPlan, status: "enrolled" });
     setEnrolling(false);
     if (error) { setToast("Enrollment failed. Please try again."); setTimeout(() => setToast(null), 3000); return; }
     setToast("Successfully enrolled in plan!");
     setTimeout(() => setToast(null), 3000);
     setShowEnrollModal(false);
     setSelectedPlan("");
+    fetchData();
+  };
+
+  const handleCancel = async () => {
+    if (!confirmCancel) return;
+    setCancelingId(confirmCancel.id);
+    const { error } = await supabase.from("benefit_enrollments").update({ status: "opted_out" }).eq("id", confirmCancel.id);
+    setCancelingId(null);
+    setConfirmCancel(null);
+    if (error) { setToast("Couldn't cancel enrollment. Please try again."); setTimeout(() => setToast(null), 3000); return; }
+    setToast("Enrollment cancelled.");
+    setTimeout(() => setToast(null), 3000);
     fetchData();
   };
 
@@ -87,7 +104,7 @@ export default function BenefitsTab({ employeeId }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-gray-900">{enrollments.length} Active Enrollment{enrollments.length !== 1 ? "s" : ""}</p>
+          <p className="text-sm font-semibold text-gray-900">{activeEnrollments.length} Active Enrollment{activeEnrollments.length !== 1 ? "s" : ""}</p>
           <p className="text-xs text-gray-500">{availablePlans.length} plans available to enroll</p>
         </div>
         {availablePlans.length > 0 && (
@@ -102,14 +119,14 @@ export default function BenefitsTab({ employeeId }: Props) {
       </div>
 
       {/* Enrolled Plans */}
-      {enrollments.length === 0 ? (
+      {activeEnrollments.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-40 bg-gray-50 rounded-xl text-gray-400">
           <i className="ri-heart-pulse-line text-3xl mb-2" />
           <p className="text-sm">Not enrolled in any benefit plans yet</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {enrollments.map((e) => {
+          {activeEnrollments.map((e) => {
             const plan = e.benefit_plans;
             if (!plan) return null;
             const type = plan.type || "health";
@@ -128,13 +145,13 @@ export default function BenefitsTab({ employeeId }: Props) {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  {plan.coverage_amount && (
+                  {plan.coverage_amount != null && (
                     <div className="bg-gray-50 rounded-lg p-3">
                       <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Coverage</p>
                       <p className="text-sm font-bold text-gray-900">${Number(plan.coverage_amount).toLocaleString()}</p>
                     </div>
                   )}
-                  {plan.employee_contribution && (
+                  {plan.employee_contribution != null && (
                     <div className="bg-gray-50 rounded-lg p-3">
                       <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Your Contribution</p>
                       <p className="text-sm font-bold text-gray-900">${Number(plan.employee_contribution).toLocaleString()}/mo</p>
@@ -142,7 +159,15 @@ export default function BenefitsTab({ employeeId }: Props) {
                   )}
                 </div>
                 {plan.description && <p className="text-xs text-gray-500 mt-3 leading-relaxed">{plan.description}</p>}
-                <p className="text-[11px] text-gray-400 mt-3">Enrolled {new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-[11px] text-gray-400">Enrolled {new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                  <button
+                    onClick={() => setConfirmCancel(e)}
+                    className="text-[11px] font-semibold text-red-500 hover:text-red-600 cursor-pointer"
+                  >
+                    Cancel Enrollment
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -188,6 +213,34 @@ export default function BenefitsTab({ employeeId }: Props) {
               >
                 {enrolling ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
                 Enroll Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation */}
+      {confirmCancel && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            <h3 className="text-base font-bold text-gray-900 mb-1.5">Cancel Enrollment?</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              You'll be removed from <span className="font-semibold text-gray-700">{confirmCancel.benefit_plans?.name}</span>. You can re-enroll later if the plan is still active.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmCancel(null)}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
+              >
+                Keep Plan
+              </button>
+              <button
+                onClick={handleCancel}
+                disabled={cancelingId === confirmCancel.id}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl text-sm hover:bg-red-600 disabled:opacity-50 cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
+              >
+                {cancelingId === confirmCancel.id ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
+                Cancel Enrollment
               </button>
             </div>
           </div>

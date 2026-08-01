@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { NOTIFICATION_SOURCE_ROUTES } from "@/lib/notificationRoutes";
 
 interface Notification {
   id: string;
@@ -55,6 +58,8 @@ const sourceLabels: Record<string, string> = {
 };
 
 export default function Notifications() {
+  const navigate = useNavigate();
+  const { can } = usePermissions();
   const [notifs, setNotifs] = useState<Notification[]>([]);
   const [filter, setFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("");
@@ -173,6 +178,12 @@ export default function Notifications() {
     if (wasUnread) setUnreadCount((c) => Math.max(0, c - 1));
   };
 
+  const openNotification = (n: Notification) => {
+    if (!n.is_read) markRead(n.id);
+    const target = NOTIFICATION_SOURCE_ROUTES[n.source];
+    if (target && can(target.module)) navigate(target.path);
+  };
+
   const sources = Array.from(new Set(notifs.map((n) => n.source))).sort();
 
   if (loading) {
@@ -271,9 +282,7 @@ export default function Notifications() {
           return (
             <div
               key={n.id}
-              onClick={() => {
-                if (!n.is_read) markRead(n.id);
-              }}
+              onClick={() => openNotification(n)}
               className={`flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
                 !n.is_read
                   ? "bg-[#0D7377]/[0.03] border-[#0D7377]/10"

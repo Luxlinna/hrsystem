@@ -3,60 +3,62 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const navGroups = [
   {
     label: "Core",
     items: [
-      { path: "/", label: "Dashboard", icon: "ri-dashboard-line" },
-      { path: "/employees", label: "Directory", icon: "ri-user-search-line" },
-      { path: "/branches", label: "Branches", icon: "ri-building-line" },
-      { path: "/analytics", label: "Analytics", icon: "ri-bar-chart-2-line" },
+      { path: "/", label: "Dashboard", icon: "ri-dashboard-line", module: "dashboard" },
+      { path: "/employees", label: "Directory", icon: "ri-user-search-line", module: "employees" },
+      { path: "/branches", label: "Branches", icon: "ri-building-line", module: "branches" },
+      { path: "/analytics", label: "Analytics", icon: "ri-bar-chart-2-line", module: "analytics" },
     ],
   },
   {
     label: "Workforce",
     items: [
-      { path: "/onboarding", label: "Onboarding", icon: "ri-user-add-line" },
-      { path: "/onboarding-checklist", label: "Checklists", icon: "ri-task-line" },
-      { path: "/leave", label: "Leave", icon: "ri-calendar-event-line" },
-      { path: "/leave-calendar", label: "Leave Calendar", icon: "ri-calendar-2-line" },
-      { path: "/shifts", label: "Shifts", icon: "ri-calendar-schedule-line" },
-      { path: "/hire", label: "Hire", icon: "ri-briefcase-line" },
-      { path: "/offboard", label: "Off Board", icon: "ri-user-unfollow-line" },
-      { path: "/org-chart", label: "Org Chart", icon: "ri-organization-chart" },
-      { path: "/performance", label: "Performance", icon: "ri-star-line" },
-      { path: "/attendance", label: "Attendance", icon: "ri-fingerprint-line" },
-      { path: "/training", label: "Training", icon: "ri-graduation-cap-line" },
-      { path: "/disciplinary", label: "Disciplinary", icon: "ri-alert-line" },
+      { path: "/onboarding", label: "Onboarding", icon: "ri-user-add-line", module: "onboarding" },
+      { path: "/onboarding-checklist", label: "Checklists", icon: "ri-task-line", module: "onboarding-checklist" },
+      { path: "/leave", label: "Leave", icon: "ri-calendar-event-line", module: "leave" },
+      { path: "/leave-calendar", label: "Leave Calendar", icon: "ri-calendar-2-line", module: "leave-calendar" },
+      { path: "/shifts", label: "Shifts", icon: "ri-calendar-schedule-line", module: "shifts" },
+      { path: "/meeting-rooms", label: "Meeting Rooms", icon: "ri-door-open-line", module: "meeting-rooms" },
+      { path: "/hire", label: "Hire", icon: "ri-briefcase-line", module: "hire" },
+      { path: "/offboard", label: "Off Board", icon: "ri-user-unfollow-line", module: "offboard" },
+      { path: "/org-chart", label: "Org Chart", icon: "ri-organization-chart", module: "org-chart" },
+      { path: "/performance", label: "Performance", icon: "ri-star-line", module: "performance" },
+      { path: "/attendance", label: "Attendance", icon: "ri-fingerprint-line", module: "attendance" },
+      { path: "/training", label: "Training", icon: "ri-graduation-cap-line", module: "training" },
+      { path: "/disciplinary", label: "Disciplinary", icon: "ri-alert-line", module: "disciplinary" },
     ],
   },
   {
     label: "Operations",
     items: [
-      { path: "/payroll-module", label: "Payroll", icon: "ri-money-dollar-circle-line" },
-      { path: "/payroll-approval", label: "Pay Approval", icon: "ri-file-check-line" },
-      { path: "/finance", label: "Finance", icon: "ri-bank-line" },
-      { path: "/it-management", label: "IT", icon: "ri-computer-line" },
-      { path: "/benefits", label: "Benefits", icon: "ri-heart-pulse-line" },
-      { path: "/tools", label: "Tools", icon: "ri-tools-line" },
-      { path: "/announcements", label: "Announcements", icon: "ri-megaphone-line" },
-      { path: "/documents", label: "Documents", icon: "ri-folder-line" },
+      { path: "/payroll-module", label: "Payroll", icon: "ri-money-dollar-circle-line", module: "payroll" },
+      { path: "/payroll-approval", label: "Pay Approval", icon: "ri-file-check-line", module: "payroll-approval" },
+      { path: "/finance", label: "Finance", icon: "ri-bank-line", module: "finance" },
+      { path: "/it-management", label: "IT", icon: "ri-computer-line", module: "it-management" },
+      { path: "/benefits", label: "Benefits", icon: "ri-heart-pulse-line", module: "benefits" },
+      { path: "/tools", label: "Tools", icon: "ri-tools-line", module: "tools" },
+      { path: "/announcements", label: "Announcements", icon: "ri-megaphone-line", module: "announcements" },
+      { path: "/documents", label: "Documents", icon: "ri-folder-line", module: "documents" },
     ],
   },
   {
     label: "Insights",
     items: [
-      { path: "/reports", label: "Reports", icon: "ri-file-chart-line" },
-      { path: "/audit-log", label: "Audit Log", icon: "ri-shield-check-line" },
-      { path: "/self-service", label: "Self-Service", icon: "ri-user-settings-line" },
+      { path: "/reports", label: "Reports", icon: "ri-file-chart-line", module: "reports" },
+      { path: "/audit-log", label: "Audit Log", icon: "ri-shield-check-line", module: "audit-log" },
+      { path: "/self-service", label: "Self-Service", icon: "ri-user-settings-line", module: "self-service" },
     ],
   },
   {
     label: "System",
     items: [
-      { path: "/unity-apps", label: "Unity", icon: "ri-apps-line" },
-      { path: "/settings", label: "Settings", icon: "ri-settings-3-line" },
+      { path: "/unity-apps", label: "Unity", icon: "ri-apps-line", module: "unity-apps" },
+      { path: "/settings", label: "Settings", icon: "ri-settings-3-line", module: "settings" },
     ],
   },
 ];
@@ -65,12 +67,18 @@ export default function Sidebar() {
   const location = useLocation();
   const { collapsed, setCollapsed } = useSidebar();
   const { user } = useAuth();
+  const { can, isAdmin } = usePermissions();
   const [hovered, setHovered] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const visibleGroups = navGroups
+    .map((group) => ({ ...group, items: group.items.filter((item) => can(item.module)) }))
+    .filter((group) => group.items.length > 0);
 
   const isExpanded = !collapsed || hovered;
   const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "HR Admin";
   const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   useEffect(() => {
     supabase
@@ -140,7 +148,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden py-2 space-y-5 min-h-0">
-        {navGroups.map((group) => (
+        {visibleGroups.map((group) => (
           <div key={group.label}>
             {isExpanded && (
               <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider px-5 mb-1.5 block">
@@ -179,44 +187,74 @@ export default function Sidebar() {
         ))}
 
         {/* Notifications */}
-        <div className={`${isExpanded ? "mx-3" : "mx-2"}`}>
-          <Link
-            to="/notifications"
-            className={`flex items-center rounded-lg transition-all duration-200 group relative ${
-              isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
-            } ${
-              location.pathname === "/notifications"
-                ? "bg-[#0D7377]/20 text-[#0D7377]"
-                : "text-gray-400 hover:bg-white/5 hover:text-white"
-            }`}
-          >
-            <div className="relative">
-              <i className="ri-notification-3-line text-lg w-5 h-5 flex items-center justify-center shrink-0" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
+        {can("notifications") && (
+          <div className={`${isExpanded ? "mx-3" : "mx-2"}`}>
+            <Link
+              to="/notifications"
+              className={`flex items-center rounded-lg transition-all duration-200 group relative ${
+                isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
+              } ${
+                location.pathname === "/notifications"
+                  ? "bg-[#0D7377]/20 text-[#0D7377]"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <div className="relative">
+                <i className="ri-notification-3-line text-lg w-5 h-5 flex items-center justify-center shrink-0" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
+              {isExpanded && <span className="text-[13px] whitespace-nowrap">Notifications</span>}
+              {!isExpanded && (
+                <span className="absolute left-full ml-3 px-2.5 py-1 bg-gray-800 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity shadow-lg border border-gray-700">
+                  Notifications
                 </span>
               )}
-            </div>
-            {isExpanded && <span className="text-[13px] whitespace-nowrap">Notifications</span>}
-            {!isExpanded && (
-              <span className="absolute left-full ml-3 px-2.5 py-1 bg-gray-800 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity shadow-lg border border-gray-700">
-                Notifications
-              </span>
-            )}
-          </Link>
-        </div>
+            </Link>
+          </div>
+        )}
+
+        {/* Admin Portal — Super Admins only */}
+        {isAdmin && (
+          <div className={`${isExpanded ? "mx-3" : "mx-2"}`}>
+            <Link
+              to="/admin"
+              className={`flex items-center rounded-lg transition-all duration-200 group relative ${
+                isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
+              } ${
+                location.pathname === "/admin"
+                  ? "bg-[#0D7377]/20 text-[#0D7377]"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <i className="ri-admin-line text-lg w-5 h-5 flex items-center justify-center shrink-0" />
+              {isExpanded && <span className="text-[13px] whitespace-nowrap">Admin Portal</span>}
+              {!isExpanded && (
+                <span className="absolute left-full ml-3 px-2.5 py-1 bg-gray-800 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity shadow-lg border border-gray-700">
+                  Admin Portal
+                </span>
+              )}
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* User */}
       <div className="shrink-0 border-t border-white/10 px-3 py-4">
         <Link
-          to="/settings"
+          to="/profile"
           className={`flex items-center gap-3 rounded-lg transition-all duration-200 ${isExpanded ? "px-2" : "justify-center"}`}
         >
-          <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white text-[12px] font-bold shrink-0 border border-white/10">
-            {initials}
-          </div>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={displayName} className="w-9 h-9 rounded-lg object-cover shrink-0 border border-white/10" />
+          ) : (
+            <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white text-[12px] font-bold shrink-0 border border-white/10">
+              {initials}
+            </div>
+          )}
           {isExpanded && (
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-white truncate">{displayName}</p>

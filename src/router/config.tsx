@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import type { RouteObject } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { RequireAdmin, RequireModule } from "@/components/RequirePermission";
 
 const Home = lazy(() => import("../pages/home/page"));
 const NotFound = lazy(() => import("../pages/NotFound"));
@@ -34,13 +35,25 @@ const PayrollApproval = lazy(() => import("../pages/payroll-approval/page"));
 const Performance = lazy(() => import("../pages/performance/page"));
 const Announcements = lazy(() => import("../pages/announcements/page"));
 const Shifts = lazy(() => import("../pages/shifts/page"));
+const MeetingRooms = lazy(() => import("../pages/meeting-rooms/page"));
 const Attendance = lazy(() => import("../pages/attendance/page"));
 const Training = lazy(() => import("../pages/training/page"));
 const Disciplinary = lazy(() => import("../pages/disciplinary/page"));
 const Documents = lazy(() => import("../pages/documents/page"));
 const AdminPortal = lazy(() => import("../pages/admin/page"));
+const Profile = lazy(() => import("../pages/profile/page"));
 
 const fallback = <div className="p-10 text-center text-gray-400">Loading...</div>;
+
+// Wraps a lazy page in its Suspense boundary plus a module-permission guard.
+// `module` must match a key in ALL_MODULES / app_roles.allowed_modules.
+function mod(module: string, element: JSX.Element) {
+  return (
+    <Suspense fallback={fallback}>
+      <RequireModule module={module}>{element}</RequireModule>
+    </Suspense>
+  );
+}
 
 const routes: RouteObject[] = [
   { path: "/login", element: <Suspense fallback={fallback}><Login /></Suspense> },
@@ -49,39 +62,44 @@ const routes: RouteObject[] = [
     path: "/",
     element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
     children: [
-      { index: true, element: <Suspense fallback={fallback}><Home /></Suspense> },
-      { path: "employees", element: <Suspense fallback={fallback}><Employees /></Suspense> },
-      { path: "employees/:id", element: <Suspense fallback={fallback}><EmployeeProfile /></Suspense> },
-      { path: "onboarding", element: <Suspense fallback={fallback}><Onboarding /></Suspense> },
-      { path: "leave", element: <Suspense fallback={fallback}><Leave /></Suspense> },
-      { path: "payroll-module", element: <Suspense fallback={fallback}><PayrollModule /></Suspense> },
-      { path: "finance", element: <Suspense fallback={fallback}><Finance /></Suspense> },
-      { path: "it-management", element: <Suspense fallback={fallback}><ITManagement /></Suspense> },
-      { path: "hire", element: <Suspense fallback={fallback}><Hire /></Suspense> },
-      { path: "hire/candidate/:id", element: <Suspense fallback={fallback}><CandidateDetail /></Suspense> },
-      { path: "offboard", element: <Suspense fallback={fallback}><Offboard /></Suspense> },
-      { path: "org-chart", element: <Suspense fallback={fallback}><OrgChart /></Suspense> },
-      { path: "tools", element: <Suspense fallback={fallback}><Tools /></Suspense> },
-      { path: "benefits", element: <Suspense fallback={fallback}><Benefits /></Suspense> },
-      { path: "settings", element: <Suspense fallback={fallback}><Settings /></Suspense> },
-      { path: "unity-apps", element: <Suspense fallback={fallback}><UnityApps /></Suspense> },
-      { path: "branches", element: <Suspense fallback={fallback}><Branches /></Suspense> },
-      { path: "notifications", element: <Suspense fallback={fallback}><Notifications /></Suspense> },
-      { path: "analytics", element: <Suspense fallback={fallback}><Analytics /></Suspense> },
-      { path: "reports", element: <Suspense fallback={fallback}><Reports /></Suspense> },
-      { path: "audit-log", element: <Suspense fallback={fallback}><AuditLog /></Suspense> },
-      { path: "self-service", element: <Suspense fallback={fallback}><SelfService /></Suspense> },
-      { path: "onboarding-checklist", element: <Suspense fallback={fallback}><OnboardingChecklist /></Suspense> },
-      { path: "leave-calendar", element: <Suspense fallback={fallback}><LeaveCalendar /></Suspense> },
-      { path: "payroll-approval", element: <Suspense fallback={fallback}><PayrollApproval /></Suspense> },
-      { path: "performance", element: <Suspense fallback={fallback}><Performance /></Suspense> },
-      { path: "announcements", element: <Suspense fallback={fallback}><Announcements /></Suspense> },
-      { path: "shifts", element: <Suspense fallback={fallback}><Shifts /></Suspense> },
-      { path: "attendance", element: <Suspense fallback={fallback}><Attendance /></Suspense> },
-      { path: "training", element: <Suspense fallback={fallback}><Training /></Suspense> },
-      { path: "disciplinary", element: <Suspense fallback={fallback}><Disciplinary /></Suspense> },
-      { path: "documents", element: <Suspense fallback={fallback}><Documents /></Suspense> },
-      { path: "admin", element: <Suspense fallback={fallback}><AdminPortal /></Suspense> },
+      { index: true, element: mod("dashboard", <Home />) },
+      { path: "employees", element: mod("employees", <Employees />) },
+      { path: "employees/:id", element: mod("employees", <EmployeeProfile />) },
+      { path: "onboarding", element: mod("onboarding", <Onboarding />) },
+      { path: "leave", element: mod("leave", <Leave />) },
+      { path: "payroll-module", element: mod("payroll", <PayrollModule />) },
+      { path: "finance", element: mod("finance", <Finance />) },
+      { path: "it-management", element: mod("it-management", <ITManagement />) },
+      { path: "hire", element: mod("hire", <Hire />) },
+      { path: "hire/candidate/:id", element: mod("hire", <CandidateDetail />) },
+      { path: "offboard", element: mod("offboard", <Offboard />) },
+      { path: "org-chart", element: mod("org-chart", <OrgChart />) },
+      { path: "tools", element: mod("tools", <Tools />) },
+      { path: "benefits", element: mod("benefits", <Benefits />) },
+      { path: "settings", element: mod("settings", <Settings />) },
+      { path: "unity-apps", element: mod("unity-apps", <UnityApps />) },
+      { path: "branches", element: mod("branches", <Branches />) },
+      { path: "notifications", element: mod("notifications", <Notifications />) },
+      { path: "analytics", element: mod("analytics", <Analytics />) },
+      { path: "reports", element: mod("reports", <Reports />) },
+      { path: "audit-log", element: mod("audit-log", <AuditLog />) },
+      { path: "self-service", element: mod("self-service", <SelfService />) },
+      { path: "onboarding-checklist", element: mod("onboarding-checklist", <OnboardingChecklist />) },
+      { path: "leave-calendar", element: mod("leave-calendar", <LeaveCalendar />) },
+      { path: "payroll-approval", element: mod("payroll-approval", <PayrollApproval />) },
+      { path: "performance", element: mod("performance", <Performance />) },
+      { path: "announcements", element: mod("announcements", <Announcements />) },
+      { path: "shifts", element: mod("shifts", <Shifts />) },
+      { path: "meeting-rooms", element: mod("meeting-rooms", <MeetingRooms />) },
+      { path: "attendance", element: mod("attendance", <Attendance />) },
+      { path: "training", element: mod("training", <Training />) },
+      { path: "disciplinary", element: mod("disciplinary", <Disciplinary />) },
+      { path: "documents", element: mod("documents", <Documents />) },
+      { path: "profile", element: <Suspense fallback={fallback}><Profile /></Suspense> },
+      {
+        path: "admin",
+        element: <Suspense fallback={fallback}><RequireAdmin><AdminPortal /></RequireAdmin></Suspense>,
+      },
     ],
   },
   { path: "*", element: <NotFound /> },

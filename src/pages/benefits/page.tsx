@@ -51,6 +51,13 @@ export default function Benefits() {
     setLoading(false);
   };
 
+  const toggleEnrollmentStatus = async (enrollment: Enrollment) => {
+    const nextStatus = enrollment.status === "enrolled" ? "opted_out" : "enrolled";
+    await supabase.from("benefit_enrollments").update({ status: nextStatus }).eq("id", enrollment.id);
+    toast(nextStatus === "enrolled" ? "Re-enrolled" : "Opted out", `${enrollment.employees?.first_name ?? "Employee"} is now ${nextStatus.replace("_", " ")}.`, "success");
+    loadData();
+  };
+
   const enrollEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!enrollForm.employee_id || !enrollForm.plan_id) return;
@@ -190,11 +197,15 @@ export default function Benefits() {
                               <Link to={`/employees/${e.employee_id}`} className="text-gray-700 hover:text-[#0D7377] transition-colors">
                                 {e.employees?.first_name} {e.employees?.last_name}
                               </Link>
-                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                                e.status === "enrolled" ? "bg-green-50 text-green-700" : e.status === "opted_out" ? "bg-gray-50 text-gray-500" : "bg-amber-50 text-amber-700"
-                              }`}>
+                              <button
+                                onClick={() => toggleEnrollmentStatus(e)}
+                                title={e.status === "enrolled" ? "Click to opt out" : "Click to re-enroll"}
+                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full cursor-pointer transition-colors ${
+                                  e.status === "enrolled" ? "bg-green-50 text-green-700 hover:bg-green-100" : e.status === "opted_out" ? "bg-gray-50 text-gray-500 hover:bg-gray-100" : "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                }`}
+                              >
                                 {e.status.replace("_", " ")}
-                              </span>
+                              </button>
                             </div>
                           ))}
                           {planEnrollments.length > 4 && (

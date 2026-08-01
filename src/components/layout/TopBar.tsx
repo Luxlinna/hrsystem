@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { NOTIFICATION_SOURCE_ROUTES } from "@/lib/notificationRoutes";
 import { toast } from "@/components/Toast";
 
 interface NotificationRow {
@@ -10,6 +12,7 @@ interface NotificationRow {
   title: string;
   message: string;
   type: "info" | "success" | "warning" | "error";
+  source: string;
   is_read: boolean;
   created_at: string;
 }
@@ -49,6 +52,13 @@ const moduleResults: SearchResult[] = [
   { id: "m-notifications", label: "Notifications", sublabel: "Alerts & updates", icon: "ri-notification-3-line", path: "/notifications", category: "Module" },
 ];
 
+// module keys mirror ALL_MODULES in src/pages/admin/page.tsx; paths that
+// don't map 1:1 (e.g. /payroll-module → "payroll") are listed explicitly.
+const PATH_MODULE_OVERRIDES: Record<string, string> = { "/": "dashboard", "/payroll-module": "payroll" };
+function pathToModule(path: string): string {
+  return PATH_MODULE_OVERRIDES[path] || path.slice(1);
+}
+
 // ── Mobile Drawer with swipe-to-dismiss ──
 function MobileDrawer({
   open,
@@ -57,6 +67,8 @@ function MobileDrawer({
   displayName,
   user,
   handleLogout,
+  can,
+  isAdmin,
 }: {
   open: boolean;
   onClose: () => void;
@@ -64,6 +76,8 @@ function MobileDrawer({
   displayName: string;
   user: any;
   handleLogout: () => void;
+  can: (module: string) => boolean;
+  isAdmin: boolean;
 }) {
   const touchStartX = useRef<number>(0);
   const touchCurrentX = useRef<number>(0);
@@ -100,60 +114,70 @@ function MobileDrawer({
     {
       label: "Core",
       items: [
-        { path: "/", label: "Dashboard", icon: "ri-dashboard-line" },
-        { path: "/employees", label: "Directory", icon: "ri-user-search-line" },
-        { path: "/branches", label: "Branches", icon: "ri-building-line" },
-        { path: "/analytics", label: "Analytics", icon: "ri-bar-chart-2-line" },
+        { path: "/", label: "Dashboard", icon: "ri-dashboard-line", module: "dashboard" },
+        { path: "/employees", label: "Directory", icon: "ri-user-search-line", module: "employees" },
+        { path: "/branches", label: "Branches", icon: "ri-building-line", module: "branches" },
+        { path: "/analytics", label: "Analytics", icon: "ri-bar-chart-2-line", module: "analytics" },
       ],
     },
     {
       label: "Workforce",
       items: [
-        { path: "/onboarding", label: "Onboarding", icon: "ri-user-add-line" },
-        { path: "/onboarding-checklist", label: "Checklists", icon: "ri-task-line" },
-        { path: "/leave", label: "Leave", icon: "ri-calendar-event-line" },
-        { path: "/leave-calendar", label: "Leave Calendar", icon: "ri-calendar-2-line" },
-        { path: "/shifts", label: "Shifts", icon: "ri-calendar-schedule-line" },
-        { path: "/hire", label: "Hire", icon: "ri-briefcase-line" },
-        { path: "/offboard", label: "Off Board", icon: "ri-user-unfollow-line" },
-        { path: "/org-chart", label: "Org Chart", icon: "ri-organization-chart" },
-        { path: "/performance", label: "Performance", icon: "ri-star-line" },
-        { path: "/attendance", label: "Attendance", icon: "ri-fingerprint-line" },
-        { path: "/training", label: "Training", icon: "ri-graduation-cap-line" },
-        { path: "/disciplinary", label: "Disciplinary", icon: "ri-alert-line" },
+        { path: "/onboarding", label: "Onboarding", icon: "ri-user-add-line", module: "onboarding" },
+        { path: "/onboarding-checklist", label: "Checklists", icon: "ri-task-line", module: "onboarding-checklist" },
+        { path: "/leave", label: "Leave", icon: "ri-calendar-event-line", module: "leave" },
+        { path: "/leave-calendar", label: "Leave Calendar", icon: "ri-calendar-2-line", module: "leave-calendar" },
+        { path: "/shifts", label: "Shifts", icon: "ri-calendar-schedule-line", module: "shifts" },
+        { path: "/hire", label: "Hire", icon: "ri-briefcase-line", module: "hire" },
+        { path: "/offboard", label: "Off Board", icon: "ri-user-unfollow-line", module: "offboard" },
+        { path: "/org-chart", label: "Org Chart", icon: "ri-organization-chart", module: "org-chart" },
+        { path: "/performance", label: "Performance", icon: "ri-star-line", module: "performance" },
+        { path: "/attendance", label: "Attendance", icon: "ri-fingerprint-line", module: "attendance" },
+        { path: "/training", label: "Training", icon: "ri-graduation-cap-line", module: "training" },
+        { path: "/disciplinary", label: "Disciplinary", icon: "ri-alert-line", module: "disciplinary" },
       ],
     },
     {
       label: "Operations",
       items: [
-        { path: "/payroll-module", label: "Payroll", icon: "ri-money-dollar-circle-line" },
-        { path: "/payroll-approval", label: "Pay Approval", icon: "ri-file-check-line" },
-        { path: "/finance", label: "Finance", icon: "ri-bank-line" },
-        { path: "/it-management", label: "IT", icon: "ri-computer-line" },
-        { path: "/benefits", label: "Benefits", icon: "ri-heart-pulse-line" },
-        { path: "/tools", label: "Tools", icon: "ri-tools-line" },
-        { path: "/announcements", label: "Announcements", icon: "ri-megaphone-line" },
-        { path: "/documents", label: "Documents", icon: "ri-folder-line" },
+        { path: "/payroll-module", label: "Payroll", icon: "ri-money-dollar-circle-line", module: "payroll" },
+        { path: "/payroll-approval", label: "Pay Approval", icon: "ri-file-check-line", module: "payroll-approval" },
+        { path: "/finance", label: "Finance", icon: "ri-bank-line", module: "finance" },
+        { path: "/it-management", label: "IT", icon: "ri-computer-line", module: "it-management" },
+        { path: "/benefits", label: "Benefits", icon: "ri-heart-pulse-line", module: "benefits" },
+        { path: "/tools", label: "Tools", icon: "ri-tools-line", module: "tools" },
+        { path: "/announcements", label: "Announcements", icon: "ri-megaphone-line", module: "announcements" },
+        { path: "/documents", label: "Documents", icon: "ri-folder-line", module: "documents" },
       ],
     },
     {
       label: "Insights",
       items: [
-        { path: "/reports", label: "Reports", icon: "ri-file-chart-line" },
-        { path: "/audit-log", label: "Audit Log", icon: "ri-shield-check-line" },
-        { path: "/self-service", label: "Self-Service", icon: "ri-user-settings-line" },
+        { path: "/reports", label: "Reports", icon: "ri-file-chart-line", module: "reports" },
+        { path: "/audit-log", label: "Audit Log", icon: "ri-shield-check-line", module: "audit-log" },
+        { path: "/self-service", label: "Self-Service", icon: "ri-user-settings-line", module: "self-service" },
       ],
     },
     {
       label: "System",
       items: [
-        { path: "/notifications", label: "Notifications", icon: "ri-notification-3-line" },
-        { path: "/unity-apps", label: "Unity", icon: "ri-apps-line" },
-        { path: "/settings", label: "Settings", icon: "ri-settings-3-line" },
-        { path: "/admin", label: "Admin Portal", icon: "ri-admin-line" },
+        { path: "/notifications", label: "Notifications", icon: "ri-notification-3-line", module: "notifications" },
+        { path: "/unity-apps", label: "Unity", icon: "ri-apps-line", module: "unity-apps" },
+        { path: "/settings", label: "Settings", icon: "ri-settings-3-line", module: "settings" },
       ],
     },
   ];
+
+  const visibleDrawerGroups = DRAWER_GROUPS
+    .map((group) => ({ ...group, items: group.items.filter((item) => can(item.module)) }))
+    .filter((group) => group.items.length > 0);
+
+  if (isAdmin) {
+    visibleDrawerGroups.push({
+      label: "Admin",
+      items: [{ path: "/admin", label: "Admin Portal", icon: "ri-admin-line", module: "admin" }],
+    });
+  }
 
   if (!open) return null;
 
@@ -196,7 +220,7 @@ function MobileDrawer({
 
         {/* Drawer nav */}
         <div className="flex-1 overflow-y-auto py-3 space-y-4">
-          {DRAWER_GROUPS.map((group) => (
+          {visibleDrawerGroups.map((group) => (
             <div key={group.label}>
               <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-5 mb-1 block">
                 {group.label}
@@ -228,13 +252,19 @@ function MobileDrawer({
         {/* Drawer user footer */}
         <div className="shrink-0 border-t border-white/10 px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#0D7377] flex items-center justify-center text-white text-[12px] font-bold shrink-0">
-              {displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-semibold text-white truncate">{displayName}</p>
-              <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
-            </div>
+            <Link to="/profile" onClick={onClose} className="flex items-center gap-3 min-w-0 flex-1">
+              {user?.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} alt={displayName} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+              ) : (
+                <div className="w-9 h-9 rounded-lg bg-[#0D7377] flex items-center justify-center text-white text-[12px] font-bold shrink-0">
+                  {displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-white truncate">{displayName}</p>
+                <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
+              </div>
+            </Link>
             <button
               onClick={handleLogout}
               className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 cursor-pointer transition-colors"
@@ -254,6 +284,7 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
   const navigate = useNavigate();
   const { collapsed, toggle } = useSidebar();
   const { user, logout } = useAuth();
+  const { can, isAdmin } = usePermissions();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -329,8 +360,8 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
 
     const matchedModules = moduleResults.filter(
       (m) =>
-        m.label.toLowerCase().includes(query) ||
-        m.sublabel.toLowerCase().includes(query)
+        can(pathToModule(m.path)) &&
+        (m.label.toLowerCase().includes(query) || m.sublabel.toLowerCase().includes(query))
     ).slice(0, 4);
     results.push(...matchedModules);
 
@@ -425,6 +456,13 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
     setUnreadCount((c) => Math.max(0, c - 1));
   };
 
+  const openNotification = (n: NotificationRow) => {
+    if (!n.is_read) markRead(n.id);
+    setNotifOpen(false);
+    const target = NOTIFICATION_SOURCE_ROUTES[n.source];
+    if (target && can(target.module)) navigate(target.path);
+  };
+
   const handleLogout = async () => {
     await logout();
     setProfileOpen(false);
@@ -436,6 +474,7 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
   const bgClass = transparent ? "bg-transparent" : "bg-white/80 backdrop-blur-md border-b border-gray-100";
 
   const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "HR Admin";
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   return (
     <>
@@ -447,6 +486,8 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
       displayName={displayName}
       user={user}
       handleLogout={handleLogout}
+      can={can}
+      isAdmin={isAdmin}
     />
     <header className={`sticky top-0 z-40 ${bgClass} transition-all duration-300`}>
       <div className="flex items-center justify-between px-4 lg:px-8 py-3">
@@ -469,15 +510,21 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
           </button>
 
           <nav className="hidden md:flex items-center gap-5">
-            <Link to="/employees" className={`text-[13px] font-medium ${textColor} transition-colors`}>
-              Directory
-            </Link>
-            <Link to="/branches" className={`text-[13px] font-medium ${textColor} transition-colors`}>
-              Branches
-            </Link>
-            <Link to="/analytics" className={`text-[13px] font-medium ${textColor} transition-colors`}>
-              Analytics
-            </Link>
+            {can("employees") && (
+              <Link to="/employees" className={`text-[13px] font-medium ${textColor} transition-colors`}>
+                Directory
+              </Link>
+            )}
+            {can("branches") && (
+              <Link to="/branches" className={`text-[13px] font-medium ${textColor} transition-colors`}>
+                Branches
+              </Link>
+            )}
+            {can("analytics") && (
+              <Link to="/analytics" className={`text-[13px] font-medium ${textColor} transition-colors`}>
+                Analytics
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -554,9 +601,6 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link to="/notifications" className={`hidden sm:block text-[13px] font-medium ${textColor} transition-colors`}>
-            Notifications
-          </Link>
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setNotifOpen(!notifOpen)}
@@ -581,7 +625,7 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
                   {notifs.map((n) => (
                     <button
                       key={n.id}
-                      onClick={() => markRead(n.id)}
+                      onClick={() => openNotification(n)}
                       className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer ${
                         !n.is_read ? "bg-[#0D7377]/5" : ""
                       }`}
@@ -604,9 +648,13 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-black/5 transition-colors cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#0D7377] flex items-center justify-center text-white text-[12px] font-bold">
-                {displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-              </div>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="w-8 h-8 rounded-lg object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-[#0D7377] flex items-center justify-center text-white text-[12px] font-bold">
+                  {displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+              )}
               <span className={`hidden md:block text-[13px] font-medium ${isHome && transparent ? "text-white/80" : "text-gray-700"}`}>
                 {displayName}
               </span>
@@ -620,29 +668,43 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
                 </div>
                 <div className="py-1">
                   <Link
-                    to="/settings"
+                    to="/profile"
                     onClick={() => setProfileOpen(false)}
                     className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
                   >
-                    <i className="ri-settings-3-line text-sm text-gray-400" />
-                    Settings
+                    <i className="ri-user-line text-sm text-gray-400" />
+                    My Profile
                   </Link>
-                  <Link
-                    to="/admin"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <i className="ri-admin-line text-sm text-gray-400" />
-                    Admin Portal
-                  </Link>
-                  <Link
-                    to="/analytics"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <i className="ri-bar-chart-2-line text-sm text-gray-400" />
-                    Analytics
-                  </Link>
+                  {can("settings") && (
+                    <Link
+                      to="/settings"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <i className="ri-settings-3-line text-sm text-gray-400" />
+                      Settings
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <i className="ri-admin-line text-sm text-gray-400" />
+                      Admin Portal
+                    </Link>
+                  )}
+                  {can("analytics") && (
+                    <Link
+                      to="/analytics"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <i className="ri-bar-chart-2-line text-sm text-gray-400" />
+                      Analytics
+                    </Link>
+                  )}
                 </div>
                 <div className="border-t border-gray-100 py-1">
                   <button

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Employee {
   id: string;
@@ -42,8 +44,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
 };
 
 export default function AttendancePage() {
+  const { user } = useAuth();
+  const { role, isAdmin, loading: permsLoading } = usePermissions();
+  const canViewAll = isAdmin || !!role?.attendance_view_all_employees;
+
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterEmployee, setFilterEmployee] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -64,21 +71,49 @@ export default function AttendancePage() {
   });
 
   useEffect(() => {
+    if (permsLoading) return;
     fetchData();
-  }, []);
+  }, [permsLoading, canViewAll, user?.email]);
 
   async function fetchData() {
     setLoading(true);
-    const [recRes, empRes] = await Promise.all([
-      supabase
+
+    if (canViewAll) {
+      const [recRes, empRes] = await Promise.all([
+        supabase
+          .from("attendance_records")
+          .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+          .order("date", { ascending: false })
+          .limit(200),
+        supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url").eq("status", "active").order("first_name"),
+      ]);
+      if (recRes.data) setRecords(recRes.data as AttendanceRecord[]);
+      if (empRes.data) setEmployees(empRes.data);
+      setLoading(false);
+      return;
+    }
+
+    if (!user?.email) { setLoading(false); return; }
+    const { data: me } = await supabase
+      .from("employees")
+      .select("id, first_name, last_name, department, role, avatar_url")
+      .eq("email", user.email)
+      .maybeSingle();
+    setMyEmployee(me || null);
+
+    if (me) {
+      setEmployees([me]);
+      const { data: recData } = await supabase
         .from("attendance_records")
         .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+        .eq("employee_id", me.id)
         .order("date", { ascending: false })
-        .limit(200),
-      supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url").eq("status", "active").order("first_name"),
-    ]);
-    if (recRes.data) setRecords(recRes.data as AttendanceRecord[]);
-    if (empRes.data) setEmployees(empRes.data);
+        .limit(200);
+      setRecords((recData as AttendanceRecord[]) || []);
+    } else {
+      setEmployees([]);
+      setRecords([]);
+    }
     setLoading(false);
   }
 
@@ -149,11 +184,17 @@ export default function AttendancePage() {
           <h1 className="text-2xl font-semibold text-gray-900" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             Time &amp; Attendance
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Track daily clock-in/out records, late arrivals, and absences</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {canViewAll ? "Track daily clock-in/out records, late arrivals, and absences" : "Track your own clock-in/out records, late arrivals, and absences"}
+          </p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white text-sm font-medium rounded-lg hover:bg-[#0a5f62] transition-colors whitespace-nowrap cursor-pointer"
+          onClick={() => {
+            if (!canViewAll) setNewRecord((p) => ({ ...p, employee_id: myEmployee?.id || "" }));
+            setShowModal(true);
+          }}
+          disabled={!canViewAll && !myEmployee}
+          className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white text-sm font-medium rounded-lg hover:bg-[#0a5f62] transition-colors whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <i className="ri-add-line" />
           Log Attendance
@@ -183,22 +224,25 @@ export default function AttendancePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit max-w-full overflow-x-auto">
-        {(["records", "summary"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all cursor-pointer whitespace-nowrap ${activeTab === t ? "bg-white text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
-          >
-            {t === "records" ? "Attendance Records" : "Employee Summary"}
-          </button>
-        ))}
-      </div>
+      {canViewAll && (
+        <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit max-w-full overflow-x-auto">
+          {(["records", "summary"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setActiveTab(t)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all cursor-pointer whitespace-nowrap ${activeTab === t ? "bg-white text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+            >
+              {t === "records" ? "Attendance Records" : "Employee Summary"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {activeTab === "records" && (
         <>
           {/* Filters */}
           <div className="flex flex-wrap gap-3 mb-4">
+            {canViewAll && (
             <div className="relative flex-1 min-w-[180px] max-w-xs">
               <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
               <input
@@ -209,6 +253,7 @@ export default function AttendancePage() {
                 className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
               />
             </div>
+            )}
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
@@ -580,16 +625,22 @@ export default function AttendancePage() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Employee *</label>
-                <select
-                  value={newRecord.employee_id}
-                  onChange={(e) => setNewRecord({ ...newRecord, employee_id: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
-                >
-                  <option value="">Select employee...</option>
-                  {employees.map((e) => (
-                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name} — {e.department}</option>
-                  ))}
-                </select>
+                {canViewAll ? (
+                  <select
+                    value={newRecord.employee_id}
+                    onChange={(e) => setNewRecord({ ...newRecord, employee_id: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                  >
+                    <option value="">Select employee...</option>
+                    {employees.map((e) => (
+                      <option key={e.id} value={e.id}>{e.first_name} {e.last_name} — {e.department}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                    {myEmployee ? `${myEmployee.first_name} ${myEmployee.last_name} — ${myEmployee.department}` : "—"}
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
