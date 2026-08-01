@@ -4,13 +4,13 @@ import { getFirebaseMessaging } from "@/lib/firebase";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
-const VAPID_KEY = "BPLrP9vKZn3v1f3n2v9KZn3v1f3n2v9KZn3v1f3n2v9KZn3v1f3n2v9KZn3v1f3n2v9KZn3v1f3n2"; // placeholder
+const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
 
 export function useFCM() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !VAPID_KEY) return;
 
     let unsub: (() => void) | null = null;
 
@@ -33,8 +33,10 @@ export function useFCM() {
       unsub = onMessage(msg, (payload) => {
         const title = payload.notification?.title || "HR Nexus";
         const body = payload.notification?.body || "";
+        const link = payload.data?.link;
         if (Notification.permission === "granted") {
-          new Notification(title, { body, icon: "/favicon.ico" });
+          const n = new Notification(title, { body, icon: "/favicon.ico" });
+          if (link) n.onclick = () => { window.focus(); window.location.href = link; };
         }
       });
     };

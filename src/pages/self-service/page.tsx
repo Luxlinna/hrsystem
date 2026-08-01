@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -34,10 +35,12 @@ export default function SelfServicePage() {
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const canViewAll = isAdmin || !!role?.self_service_all_employees;
 
+  const [searchParams] = useSearchParams();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [activeTab, setActiveTab] = useState("payslips");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "payslips");
+  const quickCheckIn = searchParams.get("quickCheckIn") === "1";
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [noOwnRecord, setNoOwnRecord] = useState(false);
@@ -230,7 +233,11 @@ export default function SelfServicePage() {
               <AttendanceTab employeeId={selectedEmployee.id} />
             )}
             {activeTab === "checkin" && (
-              <CheckInTab employeeId={selectedEmployee.id} employeeName={`${selectedEmployee.first_name} ${selectedEmployee.last_name}`} />
+              <CheckInTab
+                employeeId={selectedEmployee.id}
+                employeeName={`${selectedEmployee.first_name} ${selectedEmployee.last_name}`}
+                autoStart={quickCheckIn}
+              />
             )}
             {activeTab === "benefits" && (
               <BenefitsTab employeeId={selectedEmployee.id} />

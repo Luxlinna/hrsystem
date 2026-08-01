@@ -5,6 +5,7 @@ import TopBar from "./TopBar";
 import BottomNav from "./BottomNav";
 import { SidebarProvider, useSidebar } from "./SidebarContext";
 import { useFCM } from "@/hooks/useFCM";
+import GeofenceCheckInAlert from "@/components/GeofenceCheckInAlert";
 
 function LayoutContent() {
   const [scrolled, setScrolled] = useState(false);
@@ -40,6 +41,7 @@ function LayoutContent() {
         </main>
         <BottomNav />
       </div>
+      <GeofenceCheckInAlert />
     </div>
   );
 }
