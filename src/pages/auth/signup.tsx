@@ -60,7 +60,7 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
-              placeholder="jane@hrnexus.com"
+              placeholder="jane@hrmops.com"
             />
           </div>
           <div>

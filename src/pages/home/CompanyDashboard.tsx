@@ -920,7 +920,7 @@ export default function CompanyDashboard() {
               <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Support Email</label>
               <input
                 type="email"
-                placeholder="support@hrnexus.com"
+                placeholder="support@hrmops.com"
                 className="mt-1 w-full max-w-xs bg-transparent border-b border-gray-300 py-2 text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#253C7D]"
               />
             </div>
