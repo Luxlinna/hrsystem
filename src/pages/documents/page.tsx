@@ -174,7 +174,7 @@ export default function DocumentsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -182,7 +182,7 @@ export default function DocumentsPage() {
   return (
     <div className="min-h-screen bg-[#F8F8F7]">
       {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-[13px] font-medium text-white ${toast.type === "success" ? "bg-[#0D7377]" : "bg-red-500"}`}>
+        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-[13px] font-medium text-white ${toast.type === "success" ? "bg-[#253C7D]" : "bg-red-500"}`}>
           {toast.message}
         </div>
       )}
@@ -198,7 +198,7 @@ export default function DocumentsPage() {
           </div>
           <button
             onClick={() => setShowUploadModal(true)}
-            className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap"
           >
             <i className="ri-upload-2-line" />
             Upload Document
@@ -216,7 +216,7 @@ export default function DocumentsPage() {
                 onClick={() => setActiveCategory(cat.id)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] transition-colors cursor-pointer ${
                   activeCategory === cat.id
-                    ? "bg-[#0D7377]/10 text-[#0D7377] font-semibold"
+                    ? "bg-[#253C7D]/10 text-[#253C7D] font-semibold"
                     : "text-gray-600 hover:bg-gray-50 font-medium"
                 }`}
               >
@@ -224,7 +224,7 @@ export default function DocumentsPage() {
                   <i className={cat.icon} />
                   {cat.label}
                 </span>
-                <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${activeCategory === cat.id ? "bg-[#0D7377]/20 text-[#0D7377]" : "bg-gray-100 text-gray-500"}`}>
+                <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${activeCategory === cat.id ? "bg-[#253C7D]/20 text-[#253C7D]" : "bg-gray-100 text-gray-500"}`}>
                   {categoryCounts[cat.id] || 0}
                 </span>
               </button>
@@ -255,10 +255,10 @@ export default function DocumentsPage() {
           {/* Stats */}
           <div className="mt-5 pt-5 border-t border-gray-100 space-y-3">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-1">Stats</p>
-            <div className="bg-[#0D7377]/5 rounded-xl p-3 space-y-2">
+            <div className="bg-[#253C7D]/5 rounded-xl p-3 space-y-2">
               <div className="flex justify-between text-[12px]">
                 <span className="text-gray-500">Total Downloads</span>
-                <span className="font-bold text-[#0D7377]">{documents.reduce((s, d) => s + d.download_count, 0).toLocaleString()}</span>
+                <span className="font-bold text-[#253C7D]">{documents.reduce((s, d) => s + d.download_count, 0).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-[12px]">
                 <span className="text-gray-500">Archived</span>
@@ -282,7 +282,7 @@ export default function DocumentsPage() {
               placeholder="Search documents by title or description..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] placeholder:text-gray-400"
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] placeholder:text-gray-400"
             />
             {search && (
               <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -304,9 +304,9 @@ export default function DocumentsPage() {
                 <div
                   key={doc.id}
                   onClick={() => setSelectedDoc(doc)}
-                  className={`bg-white border rounded-2xl p-5 cursor-pointer hover:border-[#0D7377]/30 transition-all group ${
+                  className={`bg-white border rounded-2xl p-5 cursor-pointer hover:border-[#253C7D]/30 transition-all group ${
                     doc.status === "archived" ? "opacity-60" : "border-gray-100"
-                  } ${selectedDoc?.id === doc.id ? "border-[#0D7377]/50 ring-1 ring-[#0D7377]/20" : ""}`}
+                  } ${selectedDoc?.id === doc.id ? "border-[#253C7D]/50 ring-1 ring-[#253C7D]/20" : ""}`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className={`w-10 h-10 flex items-center justify-center rounded-xl ${typeColor}`}>
@@ -321,7 +321,7 @@ export default function DocumentsPage() {
                       )}
                     </div>
                   </div>
-                  <h3 className="text-[13px] font-semibold text-gray-900 leading-tight mb-1 line-clamp-2 group-hover:text-[#0D7377] transition-colors">
+                  <h3 className="text-[13px] font-semibold text-gray-900 leading-tight mb-1 line-clamp-2 group-hover:text-[#253C7D] transition-colors">
                     {doc.title}
                   </h3>
                   <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed mb-3">{doc.description}</p>
@@ -410,7 +410,7 @@ export default function DocumentsPage() {
             <div className="space-y-2">
               <button
                 onClick={() => handleDownload(selectedDoc)}
-                className="w-full flex items-center justify-center gap-2 bg-[#0D7377] text-white py-2.5 rounded-xl text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 bg-[#253C7D] text-white py-2.5 rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] transition-colors cursor-pointer"
               >
                 <i className="ri-download-2-line" />
                 Download Document
@@ -449,14 +449,14 @@ export default function DocumentsPage() {
                   required
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]"
                   placeholder="e.g. Remote Work Policy 2026"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Category *</label>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white cursor-pointer">
+                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer">
                     <option value="policy">Policy</option>
                     <option value="contract">Contract</option>
                     <option value="template">Template</option>
@@ -468,7 +468,7 @@ export default function DocumentsPage() {
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">File Type</label>
-                  <select value={form.file_type} onChange={(e) => setForm({ ...form, file_type: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white cursor-pointer">
+                  <select value={form.file_type} onChange={(e) => setForm({ ...form, file_type: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer">
                     <option value="pdf">PDF</option>
                     <option value="docx">Word (DOCX)</option>
                     <option value="xlsx">Excel (XLSX)</option>
@@ -479,22 +479,22 @@ export default function DocumentsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Subcategory</label>
-                  <input type="text" value={form.subcategory} onChange={(e) => setForm({ ...form, subcategory: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="e.g. HR Policy" />
+                  <input type="text" value={form.subcategory} onChange={(e) => setForm({ ...form, subcategory: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="e.g. HR Policy" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Version</label>
-                  <input type="text" value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="1.0" />
+                  <input type="text" value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="1.0" />
                 </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Description</label>
-                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} maxLength={500} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] resize-none" placeholder="Brief description of the document..." />
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} maxLength={500} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] resize-none" placeholder="Brief description of the document..." />
                 <p className="text-[11px] text-gray-400 mt-0.5">{form.description.length}/500</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Visibility</label>
-                  <select value={form.visibility} onChange={(e) => setForm({ ...form, visibility: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white cursor-pointer">
+                  <select value={form.visibility} onChange={(e) => setForm({ ...form, visibility: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer">
                     <option value="all">All Staff</option>
                     <option value="managers">Managers Only</option>
                     <option value="hr_only">HR Only</option>
@@ -502,18 +502,18 @@ export default function DocumentsPage() {
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Author</label>
-                  <input type="text" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input type="text" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Tags (comma-separated)</label>
-                <input type="text" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="policy, hr, 2026" />
+                <input type="text" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="policy, hr, 2026" />
               </div>
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, is_template: !form.is_template })}
-                  className={`w-10 h-5 rounded-full transition-colors cursor-pointer ${form.is_template ? "bg-[#0D7377]" : "bg-gray-200"}`}
+                  className={`w-10 h-5 rounded-full transition-colors cursor-pointer ${form.is_template ? "bg-[#253C7D]" : "bg-gray-200"}`}
                 >
                   <span className={`block w-4 h-4 bg-white rounded-full transition-transform mx-0.5 ${form.is_template ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
@@ -523,7 +523,7 @@ export default function DocumentsPage() {
               </div>
               <div className="pt-2 flex gap-3">
                 <button type="button" onClick={() => setShowUploadModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">Cancel</button>
-                <button type="submit" disabled={submitting} className="flex-1 px-4 py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] disabled:opacity-50 cursor-pointer">
+                <button type="submit" disabled={submitting} className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-50 cursor-pointer">
                   {submitting ? "Uploading..." : "Upload Document"}
                 </button>
               </div>

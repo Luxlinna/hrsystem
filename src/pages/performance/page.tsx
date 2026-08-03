@@ -47,21 +47,21 @@ interface Employee {
 
 const scoreColor = (s: number) => {
   if (s >= 4.5) return "text-emerald-600";
-  if (s >= 3.5) return "text-[#0D7377]";
+  if (s >= 3.5) return "text-[#253C7D]";
   if (s >= 2.5) return "text-amber-600";
   return "text-red-500";
 };
 
 const scoreBg = (s: number) => {
   if (s >= 4.5) return "bg-emerald-50";
-  if (s >= 3.5) return "bg-[#0D7377]/10";
+  if (s >= 3.5) return "bg-[#253C7D]/10";
   if (s >= 2.5) return "bg-amber-50";
   return "bg-red-50";
 };
 
 const progressColor = (p: number) => {
   if (p >= 80) return "bg-emerald-500";
-  if (p >= 50) return "bg-[#0D7377]";
+  if (p >= 50) return "bg-[#253C7D]";
   if (p >= 25) return "bg-amber-500";
   return "bg-red-400";
 };
@@ -184,7 +184,7 @@ export default function PerformanceReviews() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -206,13 +206,13 @@ export default function PerformanceReviews() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowGoalModal(true)}
-                className="inline-flex items-center gap-2 border border-[#0D7377] text-[#0D7377] px-4 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0D7377]/5 transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-2 border border-[#253C7D] text-[#253C7D] px-4 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#253C7D]/5 transition-colors whitespace-nowrap cursor-pointer"
               >
                 <i className="ri-flag-line" /> Add Goal
               </button>
               <button
                 onClick={() => setActiveTab("submit")}
-                className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-4 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-4 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
               >
                 <i className="ri-add-line" /> Submit Review
               </button>
@@ -223,7 +223,7 @@ export default function PerformanceReviews() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           {[
-            { label: "Total Reviews", value: reviews.length, icon: "ri-file-list-3-line", color: "text-[#0D7377]" },
+            { label: "Total Reviews", value: reviews.length, icon: "ri-file-list-3-line", color: "text-[#253C7D]" },
             { label: "Submitted", value: submitted, icon: "ri-checkbox-circle-line", color: "text-emerald-600" },
             { label: "Drafts", value: drafts, icon: "ri-draft-line", color: "text-amber-600" },
             { label: "Avg Score", value: avgScore.toFixed(1) + " / 5", icon: "ri-star-line", color: "text-violet-600" },
@@ -257,17 +257,17 @@ export default function PerformanceReviews() {
             <div className={`flex-1 min-w-0 transition-all ${selectedReview ? "lg:max-w-[60%]" : ""}`}>
               {/* Filters */}
               <div className="flex flex-wrap gap-3 mb-4">
-                <select value={filterQ} onChange={(e) => setFilterQ(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                <select value={filterQ} onChange={(e) => setFilterQ(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer">
                   <option value="all">All Quarters</option>
                   <option value="Q1">Q1 2026</option>
                   <option value="Q2">Q2 2026</option>
                 </select>
-                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer">
                   <option value="all">All Status</option>
                   <option value="submitted">Submitted</option>
                   <option value="draft">Draft</option>
                 </select>
-                <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer">
                   <option value="all">All Departments</option>
                   {departments.map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
@@ -278,11 +278,11 @@ export default function PerformanceReviews() {
                   <div
                     key={r.id}
                     onClick={() => setSelectedReview(selectedReview?.id === r.id ? null : r)}
-                    className={`bg-white border rounded-xl p-5 cursor-pointer hover:border-[#0D7377]/30 transition-all ${selectedReview?.id === r.id ? "border-[#0D7377] ring-2 ring-[#0D7377]/10" : "border-gray-100"}`}
+                    className={`bg-white border rounded-xl p-5 cursor-pointer hover:border-[#253C7D]/30 transition-all ${selectedReview?.id === r.id ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-100"}`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] font-bold text-xs shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold text-xs shrink-0">
                           {r.employee?.first_name?.[0]}{r.employee?.last_name?.[0]}
                         </div>
                         <div>
@@ -340,7 +340,7 @@ export default function PerformanceReviews() {
             {selectedReview && (
               <div className="w-full lg:w-[380px] lg:shrink-0">
                 <div className="bg-white border border-gray-100 rounded-xl overflow-hidden sticky top-6">
-                  <div className="bg-gradient-to-br from-[#0D7377] to-[#14919B] p-5 text-white">
+                  <div className="bg-gradient-to-br from-[#253C7D] to-[#29ABE2] p-5 text-white">
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-[11px] text-white/60">{selectedReview.quarter} {selectedReview.year} Review</p>
@@ -415,7 +415,7 @@ export default function PerformanceReviews() {
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 ${
                         g.status === "completed" ? "bg-emerald-50 text-emerald-700" :
                         isOverdue ? "bg-red-50 text-red-600" :
-                        "bg-[#0D7377]/10 text-[#0D7377]"
+                        "bg-[#253C7D]/10 text-[#253C7D]"
                       }`}>
                         {isOverdue ? "Overdue" : g.status}
                       </span>
@@ -441,7 +441,7 @@ export default function PerformanceReviews() {
                         step={5}
                         value={g.progress}
                         onChange={(e) => updateGoalProgress(g.id, parseInt(e.target.value))}
-                        className="w-20 h-1 accent-[#0D7377] cursor-pointer"
+                        className="w-20 h-1 accent-[#253C7D] cursor-pointer"
                       />
                     </div>
                   </div>
@@ -471,7 +471,7 @@ export default function PerformanceReviews() {
                       required
                       value={reviewForm.employee_id}
                       onChange={(e) => setReviewForm((p) => ({ ...p, employee_id: e.target.value, reviewer_id: p.reviewer_id === e.target.value ? "" : p.reviewer_id }))}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer"
                     >
                       <option value="">Select employee</option>
                       {employees.map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
@@ -479,7 +479,7 @@ export default function PerformanceReviews() {
                   </div>
                   <div>
                     <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Reviewer *</label>
-                    <select required value={reviewForm.reviewer_id} onChange={(e) => setReviewForm({ ...reviewForm, reviewer_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                    <select required value={reviewForm.reviewer_id} onChange={(e) => setReviewForm({ ...reviewForm, reviewer_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer">
                       <option value="">Select reviewer</option>
                       {employees.filter((e) => e.id !== reviewForm.employee_id).map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
                     </select>
@@ -488,13 +488,13 @@ export default function PerformanceReviews() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Quarter</label>
-                    <select value={reviewForm.quarter} onChange={(e) => setReviewForm({ ...reviewForm, quarter: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                    <select value={reviewForm.quarter} onChange={(e) => setReviewForm({ ...reviewForm, quarter: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer">
                       <option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Year</label>
-                    <select value={reviewForm.year} onChange={(e) => setReviewForm({ ...reviewForm, year: parseInt(e.target.value) })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                    <select value={reviewForm.year} onChange={(e) => setReviewForm({ ...reviewForm, year: parseInt(e.target.value) })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer">
                       <option value={2026}>2026</option><option value={2025}>2025</option>
                     </select>
                   </div>
@@ -519,7 +519,7 @@ export default function PerformanceReviews() {
                             step={0.5}
                             value={(reviewForm as any)[m.key]}
                             onChange={(e) => setReviewForm({ ...reviewForm, [m.key]: parseFloat(e.target.value) })}
-                            className="flex-1 accent-[#0D7377]"
+                            className="flex-1 accent-[#253C7D]"
                           />
                           <span className={`text-[14px] font-bold w-8 text-right ${scoreColor((reviewForm as any)[m.key])}`}>
                             {(reviewForm as any)[m.key]}
@@ -528,7 +528,7 @@ export default function PerformanceReviews() {
                       </div>
                     ))}
                   </div>
-                  <div className="mt-3 bg-[#0D7377]/5 rounded-lg p-3 text-center">
+                  <div className="mt-3 bg-[#253C7D]/5 rounded-lg p-3 text-center">
                     <p className="text-[11px] text-gray-500">Overall Score</p>
                     <p className={`text-2xl font-black ${scoreColor((reviewForm.communication_score + reviewForm.teamwork_score + reviewForm.technical_score + reviewForm.leadership_score) / 4)}`}>
                       {((reviewForm.communication_score + reviewForm.teamwork_score + reviewForm.technical_score + reviewForm.leadership_score) / 4).toFixed(1)}
@@ -545,7 +545,7 @@ export default function PerformanceReviews() {
                     required
                     minLength={MIN_COMMENT_LENGTH}
                     placeholder="Overall performance summary..."
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] resize-none"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] resize-none"
                   />
                   <p className={`text-[11px] mt-1 ${reviewForm.comments.trim().length < MIN_COMMENT_LENGTH ? "text-gray-400" : "text-emerald-600"}`}>
                     {reviewForm.comments.trim().length}/{MIN_COMMENT_LENGTH} minimum characters
@@ -559,7 +559,7 @@ export default function PerformanceReviews() {
                       onChange={(e) => setReviewForm({ ...reviewForm, strengths: e.target.value })}
                       rows={2}
                       placeholder="Key strengths..."
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] resize-none"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] resize-none"
                     />
                   </div>
                   <div>
@@ -569,7 +569,7 @@ export default function PerformanceReviews() {
                       onChange={(e) => setReviewForm({ ...reviewForm, areas_for_improvement: e.target.value })}
                       rows={2}
                       placeholder="Growth areas..."
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] resize-none"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] resize-none"
                     />
                   </div>
                 </div>
@@ -582,7 +582,7 @@ export default function PerformanceReviews() {
                     reviewForm.employee_id === reviewForm.reviewer_id ||
                     reviewForm.comments.trim().length < MIN_COMMENT_LENGTH
                   }
-                  className="w-full py-3 bg-[#0D7377] text-white font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full py-3 bg-[#253C7D] text-white font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {submitting ? "Submitting..." : "Submit Review"}
                 </button>
@@ -605,32 +605,32 @@ export default function PerformanceReviews() {
             <form onSubmit={handleAddGoal} className="p-5 space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
-                <select required value={goalForm.employee_id} onChange={(e) => setGoalForm({ ...goalForm, employee_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                <select required value={goalForm.employee_id} onChange={(e) => setGoalForm({ ...goalForm, employee_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer">
                   <option value="">Select employee</option>
                   {employees.map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Goal Title *</label>
-                <input required type="text" value={goalForm.title} onChange={(e) => setGoalForm({ ...goalForm, title: e.target.value })} placeholder="e.g., Complete AWS Certification" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]" />
+                <input required type="text" value={goalForm.title} onChange={(e) => setGoalForm({ ...goalForm, title: e.target.value })} placeholder="e.g., Complete AWS Certification" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Description</label>
-                <textarea value={goalForm.description} onChange={(e) => setGoalForm({ ...goalForm, description: e.target.value })} rows={2} placeholder="Goal details..." className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] resize-none" />
+                <textarea value={goalForm.description} onChange={(e) => setGoalForm({ ...goalForm, description: e.target.value })} rows={2} placeholder="Goal details..." className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] resize-none" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Target Date</label>
-                  <input type="date" value={goalForm.target_date} onChange={(e) => setGoalForm({ ...goalForm, target_date: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]" />
+                  <input type="date" value={goalForm.target_date} onChange={(e) => setGoalForm({ ...goalForm, target_date: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Initial Progress ({goalForm.progress}%)</label>
-                  <input type="range" min={0} max={100} step={5} value={goalForm.progress} onChange={(e) => setGoalForm({ ...goalForm, progress: parseInt(e.target.value) })} className="w-full mt-2 accent-[#0D7377]" />
+                  <input type="range" min={0} max={100} step={5} value={goalForm.progress} onChange={(e) => setGoalForm({ ...goalForm, progress: parseInt(e.target.value) })} className="w-full mt-2 accent-[#253C7D]" />
                 </div>
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setShowGoalModal(false)} className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
-                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] disabled:opacity-60 cursor-pointer">
+                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer">
                   {submitting ? "Adding..." : "Add Goal"}
                 </button>
               </div>

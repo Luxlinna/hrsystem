@@ -110,7 +110,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold capitalize transition-colors whitespace-nowrap ${activeTab === t ? "bg-white text-[#0D7377]" : "text-gray-500 hover:text-gray-700"}`}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold capitalize transition-colors whitespace-nowrap ${activeTab === t ? "bg-white text-[#253C7D]" : "text-gray-500 hover:text-gray-700"}`}
             >
               {t}
             </button>
@@ -124,7 +124,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
                 <p className="text-[13px] font-semibold text-gray-900">{appAccesses.length} Users with Access</p>
                 <button
                   onClick={() => setGrantModal(true)}
-                  className="px-3 py-1.5 bg-[#0D7377] text-white text-[11px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors whitespace-nowrap"
+                  className="px-3 py-1.5 bg-[#253C7D] text-white text-[11px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors whitespace-nowrap"
                 >
                   <i className="ri-user-add-line mr-1" />
                   Grant Access
@@ -140,7 +140,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
                       {emp.avatar_url ? (
                         <img src={emp.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] font-bold text-sm flex-shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold text-sm flex-shrink-0">
                           {emp.first_name?.[0]}{emp.last_name?.[0]}
                         </div>
                       )}
@@ -149,7 +149,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
                         <p className="text-[11px] text-gray-500">{emp.role} · {emp.department}</p>
                       </div>
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${
-                        access.access_level === "admin" ? "bg-[#0D7377]/10 text-[#0D7377]" :
+                        access.access_level === "admin" ? "bg-[#253C7D]/10 text-[#253C7D]" :
                         access.access_level === "viewer" ? "bg-gray-100 text-gray-500" :
                         "bg-emerald-50 text-emerald-700"
                       }`}>
@@ -237,7 +237,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
                   href={app.integration_url}
                   target="_blank"
                   rel="nofollow noreferrer"
-                  className="flex items-center justify-center gap-2 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-xl hover:bg-[#0a5c60] transition-colors"
+                  className="flex items-center justify-center gap-2 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-xl hover:bg-[#1F336A] transition-colors"
                 >
                   <i className="ri-external-link-line" />
                   Open {app.name}
@@ -267,7 +267,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
                 <select
                   value={selectedEmpId}
                   onChange={(e) => setSelectedEmpId(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
                 >
                   <option value="">Select employee...</option>
                   {availableEmployees.map((e) => (
@@ -280,7 +280,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
                 <select
                   value={selectedLevel}
                   onChange={(e) => setSelectedLevel(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
                 >
                   <option value="viewer">Viewer — read-only access</option>
                   <option value="user">User — standard access</option>
@@ -295,7 +295,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
               <button
                 onClick={handleGrant}
                 disabled={!selectedEmpId || saving}
-                className="flex-1 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-xl hover:bg-[#0a5c60] transition-colors disabled:opacity-50 whitespace-nowrap"
+                className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-xl hover:bg-[#1F336A] transition-colors disabled:opacity-50 whitespace-nowrap"
               >
                 {saving ? "Granting..." : "Grant Access"}
               </button>

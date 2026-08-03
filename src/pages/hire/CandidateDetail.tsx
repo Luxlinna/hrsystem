@@ -48,7 +48,7 @@ const stageColors: Record<string, string> = {
   screening: "bg-amber-50 text-amber-700",
   interview: "bg-blue-50 text-blue-700",
   offer: "bg-emerald-50 text-emerald-700",
-  hired: "bg-[#0D7377] text-white",
+  hired: "bg-[#253C7D] text-white",
   rejected: "bg-red-50 text-red-600",
 };
 
@@ -147,7 +147,7 @@ export default function CandidateDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -157,7 +157,7 @@ export default function CandidateDetail() {
       <div className="p-10 text-center">
         <i className="ri-user-search-line text-4xl text-gray-300 mb-3 block" />
         <p className="text-gray-500">Candidate not found</p>
-        <Link to="/hire" className="text-[13px] text-[#0D7377] hover:underline mt-2 inline-block">
+        <Link to="/hire" className="text-[13px] text-[#253C7D] hover:underline mt-2 inline-block">
           Back to Hiring
         </Link>
       </div>
@@ -174,9 +174,9 @@ export default function CandidateDetail() {
     <div className="p-6 lg:p-10 min-h-screen bg-[#FAFAF8]">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-[12px] text-gray-500">
-        <Link to="/" className="hover:text-[#0D7377]">Dashboard</Link>
+        <Link to="/" className="hover:text-[#253C7D]">Dashboard</Link>
         <i className="ri-arrow-right-s-line" />
-        <Link to="/hire" className="hover:text-[#0D7377]">Hiring</Link>
+        <Link to="/hire" className="hover:text-[#253C7D]">Hiring</Link>
         <i className="ri-arrow-right-s-line" />
         <span className="text-gray-900 font-medium">{candidate.full_name}</span>
       </div>
@@ -184,7 +184,7 @@ export default function CandidateDetail() {
       {/* Header Card */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 md:p-8 mb-6">
         <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="w-20 h-20 rounded-2xl bg-[#0D7377] flex items-center justify-center text-white text-2xl font-bold shrink-0">
+          <div className="w-20 h-20 rounded-2xl bg-[#253C7D] flex items-center justify-center text-white text-2xl font-bold shrink-0">
             {initials}
           </div>
           <div className="flex-1 min-w-0">
@@ -206,7 +206,7 @@ export default function CandidateDetail() {
           <div className="flex gap-2 shrink-0 flex-wrap">
             <button
               onClick={() => setScheduleModal(true)}
-              className="px-4 py-2 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60]"
+              className="px-4 py-2 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A]"
             >
               <i className="ri-calendar-check-line mr-1" />
               Schedule Interview
@@ -214,7 +214,7 @@ export default function CandidateDetail() {
             <select
               value={candidate.stage}
               onChange={(e) => updateStage(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-[13px] bg-white cursor-pointer focus:outline-none focus:border-[#0D7377]"
+              className="px-3 py-2 border border-gray-200 rounded-lg text-[13px] bg-white cursor-pointer focus:outline-none focus:border-[#253C7D]"
             >
               {Object.entries(stageLabels).map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
@@ -271,7 +271,7 @@ export default function CandidateDetail() {
                       href={candidate.resume_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-[#0D7377] text-white text-[11px] font-semibold rounded-lg hover:bg-[#0a5c60]"
+                      className="px-3 py-1.5 bg-[#253C7D] text-white text-[11px] font-semibold rounded-lg hover:bg-[#1F336A]"
                     >
                       <i className="ri-download-line mr-1" /> Download
                     </a>
@@ -295,7 +295,7 @@ export default function CandidateDetail() {
                       <div className="flex items-center justify-center h-full flex-col gap-2">
                         <i className="ri-file-pdf-line text-4xl text-gray-300" />
                         <p className="text-[13px] text-gray-500">PDF preview not available</p>
-                        <a href={candidate.resume_url} target="_blank" rel="noopener noreferrer" className="text-[13px] text-[#0D7377] font-medium hover:underline">
+                        <a href={candidate.resume_url} target="_blank" rel="noopener noreferrer" className="text-[13px] text-[#253C7D] font-medium hover:underline">
                           Open in new tab
                         </a>
                       </div>
@@ -317,7 +317,7 @@ export default function CandidateDetail() {
                 <button
                   type="button"
                   onClick={triggerFileSelect}
-                  className="text-[13px] text-[#0D7377] font-medium hover:underline cursor-pointer inline-block mt-2 bg-transparent border-0 p-0"
+                  className="text-[13px] text-[#253C7D] font-medium hover:underline cursor-pointer inline-block mt-2 bg-transparent border-0 p-0"
                 >
                   Upload now
                 </button>
@@ -334,7 +334,7 @@ export default function CandidateDetail() {
                 <span className="text-gray-300">|</span>
                 <span>{completedInterviews.length} completed</span>
                 <span className="text-gray-300">|</span>
-                <span className="text-[#0D7377] font-semibold">Avg Score: {avgScore}</span>
+                <span className="text-[#253C7D] font-semibold">Avg Score: {avgScore}</span>
               </div>
             </div>
 
@@ -371,7 +371,7 @@ export default function CandidateDetail() {
                               setFeedbackModal(iv.id);
                               setFeedbackForm({ feedback: "", score: 3 });
                             }}
-                            className="px-3 py-1.5 bg-[#0D7377] text-white text-[11px] font-semibold rounded-lg hover:bg-[#0a5c60]"
+                            className="px-3 py-1.5 bg-[#253C7D] text-white text-[11px] font-semibold rounded-lg hover:bg-[#1F336A]"
                           >
                             Complete
                           </button>
@@ -399,7 +399,7 @@ export default function CandidateDetail() {
                 <p className="text-[13px] text-gray-500">No interviews scheduled yet</p>
                 <button
                   onClick={() => setScheduleModal(true)}
-                  className="text-[13px] text-[#0D7377] font-medium hover:underline mt-1"
+                  className="text-[13px] text-[#253C7D] font-medium hover:underline mt-1"
                 >
                   Schedule the first interview
                 </button>
@@ -451,7 +451,7 @@ export default function CandidateDetail() {
                 href={candidate.linkedin_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-[13px] text-[#0D7377] hover:underline mt-2"
+                className="flex items-center gap-2 text-[13px] text-[#253C7D] hover:underline mt-2"
               >
                 <i className="ri-linkedin-box-line" /> LinkedIn Profile
               </a>
@@ -472,12 +472,12 @@ export default function CandidateDetail() {
                 return (
                   <div key={key} className="relative flex items-center gap-3">
                     <div className={`absolute left-[-18px] w-3 h-3 rounded-full border-2 z-10 ${
-                      isCurrent ? "border-[#0D7377] bg-[#0D7377]" : isDone ? "border-[#0D7377] bg-[#0D7377]" : "border-gray-200 bg-white"
+                      isCurrent ? "border-[#253C7D] bg-[#253C7D]" : isDone ? "border-[#253C7D] bg-[#253C7D]" : "border-gray-200 bg-white"
                     }`} />
                     {idx < 5 && (
-                      <div className={`absolute left-[-16px] top-3 w-0.5 h-full ${isDone ? "bg-[#0D7377]" : "bg-gray-200"}`} />
+                      <div className={`absolute left-[-16px] top-3 w-0.5 h-full ${isDone ? "bg-[#253C7D]" : "bg-gray-200"}`} />
                     )}
-                    <span className={`text-[12px] font-medium ${isCurrent ? "text-[#0D7377] font-bold" : isDone ? "text-gray-700" : "text-gray-400"}`}>
+                    <span className={`text-[12px] font-medium ${isCurrent ? "text-[#253C7D] font-bold" : isDone ? "text-gray-700" : "text-gray-400"}`}>
                       {label}
                     </span>
                   </div>
@@ -490,11 +490,11 @@ export default function CandidateDetail() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-3">Contact</h3>
             <div className="space-y-2">
-              <a href={`mailto:${candidate.email}`} className="flex items-center gap-2 text-[13px] text-gray-700 hover:text-[#0D7377] transition-colors">
+              <a href={`mailto:${candidate.email}`} className="flex items-center gap-2 text-[13px] text-gray-700 hover:text-[#253C7D] transition-colors">
                 <i className="ri-mail-line text-gray-400" /> {candidate.email}
               </a>
               {candidate.phone && (
-                <a href={`tel:${candidate.phone}`} className="flex items-center gap-2 text-[13px] text-gray-700 hover:text-[#0D7377] transition-colors">
+                <a href={`tel:${candidate.phone}`} className="flex items-center gap-2 text-[13px] text-gray-700 hover:text-[#253C7D] transition-colors">
                   <i className="ri-phone-line text-gray-400" /> {candidate.phone}
                 </a>
               )}
@@ -566,12 +566,12 @@ export default function CandidateDetail() {
                   onChange={(e) => setFeedbackForm({ ...feedbackForm, feedback: e.target.value })}
                   rows={4}
                   placeholder="Enter interview feedback..."
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
               <button
                 onClick={() => submitFeedback(feedbackModal)}
-                className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60]"
+                className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]"
               >
                 Submit & Complete
               </button>
@@ -594,11 +594,11 @@ export default function CandidateDetail() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Date & Time</label>
-                  <input type="datetime-local" required value={newInterview.scheduled_at} onChange={(e) => setNewInterview({ ...newInterview, scheduled_at: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input type="datetime-local" required value={newInterview.scheduled_at} onChange={(e) => setNewInterview({ ...newInterview, scheduled_at: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Duration</label>
-                  <select value={newInterview.duration_minutes} onChange={(e) => setNewInterview({ ...newInterview, duration_minutes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]">
+                  <select value={newInterview.duration_minutes} onChange={(e) => setNewInterview({ ...newInterview, duration_minutes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]">
                     <option value="30">30 min</option>
                     <option value="45">45 min</option>
                     <option value="60">1 hour</option>
@@ -608,7 +608,7 @@ export default function CandidateDetail() {
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Type</label>
-                <select value={newInterview.type} onChange={(e) => setNewInterview({ ...newInterview, type: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]">
+                <select value={newInterview.type} onChange={(e) => setNewInterview({ ...newInterview, type: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]">
                   <option value="video">Video Call</option>
                   <option value="in-person">In Person</option>
                   <option value="phone">Phone</option>
@@ -616,9 +616,9 @@ export default function CandidateDetail() {
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Notes</label>
-                <textarea value={newInterview.notes} onChange={(e) => setNewInterview({ ...newInterview, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                <textarea value={newInterview.notes} onChange={(e) => setNewInterview({ ...newInterview, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60]">
+              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">
                 Schedule Interview
               </button>
             </form>

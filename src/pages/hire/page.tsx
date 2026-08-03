@@ -22,7 +22,7 @@ const stageColors: Record<string, string> = {
   screening: "bg-amber-50 text-amber-700",
   interview: "bg-blue-50 text-blue-700",
   offer: "bg-emerald-50 text-emerald-700",
-  hired: "bg-[#0D7377] text-white",
+  hired: "bg-[#253C7D] text-white",
   rejected: "bg-red-50 text-red-600",
 };
 
@@ -267,7 +267,7 @@ export default function Hire() {
   const pipelineData = pipelineStages.map((s) => ({
     stage: stageLabels[s],
     count: candidates.filter((c) => c.stage === s).length,
-    fill: ["#54BAB9", "#FBBF24", "#60A5FA", "#34D399", "#0D7377", "#F87171"][pipelineStages.indexOf(s)],
+    fill: ["#74C8EC", "#FBBF24", "#60A5FA", "#34D399", "#253C7D", "#F87171"][pipelineStages.indexOf(s)],
   }));
 
   const filteredJobs = filterStatus === "all" ? jobs : jobs.filter((j) => j.status === filterStatus);
@@ -276,7 +276,7 @@ export default function Hire() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -291,7 +291,7 @@ export default function Hire() {
         </div>
         <button
           onClick={() => setJobModal(true)}
-          className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap"
+          className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap"
         >
           <i className="ri-add-line" />
           Post New Job
@@ -301,7 +301,7 @@ export default function Hire() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Active Jobs", value: activeJobs, icon: "ri-briefcase-line", color: "text-[#0D7377]" },
+          { label: "Active Jobs", value: activeJobs, icon: "ri-briefcase-line", color: "text-[#253C7D]" },
           { label: "Total Candidates", value: totalCandidates, icon: "ri-user-line", color: "text-emerald-600" },
           { label: "In Interview", value: candidates.filter((c) => c.stage === "interview").length, icon: "ri-video-chat-line", color: "text-blue-600" },
           { label: "Offers Pending", value: candidates.filter((c) => c.stage === "offer").length, icon: "ri-mail-send-line", color: "text-amber-600" },
@@ -321,7 +321,7 @@ export default function Hire() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-full text-[12px] font-medium capitalize transition-colors whitespace-nowrap ${
-              tab === t ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              tab === t ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             {t === "pipeline" ? "Hiring Pipeline" : t}
@@ -339,7 +339,7 @@ export default function Hire() {
                 key={s}
                 onClick={() => setFilterStatus(s)}
                 className={`text-[11px] font-medium px-3 py-1 rounded-full transition-colors ${
-                  filterStatus === s ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  filterStatus === s ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -382,7 +382,7 @@ export default function Hire() {
                   ) : (
                     <button
                       onClick={() => reopenJob(j.id)}
-                      className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[#0D7377] text-white hover:bg-[#0a5c60]"
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[#253C7D] text-white hover:bg-[#1F336A]"
                     >
                       Reopen
                     </button>
@@ -407,7 +407,7 @@ export default function Hire() {
                 key={s}
                 onClick={() => setFilterStage(s)}
                 className={`text-[11px] font-medium px-3 py-1 rounded-full transition-colors ${
-                  filterStage === s ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  filterStage === s ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 {s === "all" ? "All" : stageLabels[s]}
@@ -415,7 +415,7 @@ export default function Hire() {
             ))}
             <button
               onClick={() => setCandidateModal(true)}
-              className="ml-auto text-[11px] font-medium px-3 py-1.5 rounded-lg bg-[#0D7377] text-white hover:bg-[#0a5c60]"
+              className="ml-auto text-[11px] font-medium px-3 py-1.5 rounded-lg bg-[#253C7D] text-white hover:bg-[#1F336A]"
             >
               + Add Candidate
             </button>
@@ -425,17 +425,17 @@ export default function Hire() {
               <Link
                 key={c.id}
                 to={`/hire/candidate/${c.id}`}
-                className="border border-gray-100 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[#0D7377]/30 hover:bg-[#0D7377]/[0.02] transition-colors cursor-pointer"
+                className="border border-gray-100 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[#253C7D]/30 hover:bg-[#253C7D]/[0.02] transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] font-bold">
+                  <div className="w-10 h-10 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold">
                     {c.full_name.split(" ").map((n) => n[0]).join("")}
                   </div>
                   <div>
                     <p className="text-[14px] font-semibold text-gray-900">{c.full_name}</p>
                     <p className="text-[12px] text-gray-500">{c.job_postings?.title || "-"} &middot; {c.source}</p>
                     {c.resume_url && (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-[#0D7377] mt-0.5">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[#253C7D] mt-0.5">
                         <i className="ri-file-pdf-line" />
                         {c.resume_name || "Resume"}
                       </span>
@@ -505,7 +505,7 @@ export default function Hire() {
                       setNewInterview({ ...newInterview, candidate_id: c.id });
                       setInterviewModal(true);
                     }}
-                    className="px-3 py-1.5 bg-[#0D7377] text-white text-[11px] font-semibold rounded-lg hover:bg-[#0a5c60]"
+                    className="px-3 py-1.5 bg-[#253C7D] text-white text-[11px] font-semibold rounded-lg hover:bg-[#1F336A]"
                   >
                     Schedule
                   </button>
@@ -526,7 +526,7 @@ export default function Hire() {
             <span className="text-[12px] text-gray-500 font-medium">{interviews.length} scheduled interviews</span>
             <button
               onClick={() => setInterviewModal(true)}
-              className="text-[11px] font-medium px-3 py-1.5 rounded-lg bg-[#0D7377] text-white hover:bg-[#0a5c60]"
+              className="text-[11px] font-medium px-3 py-1.5 rounded-lg bg-[#253C7D] text-white hover:bg-[#1F336A]"
             >
               + Schedule Interview
             </button>
@@ -568,7 +568,7 @@ export default function Hire() {
                         const score = Number(prompt("Score (1-5):")) || 0;
                         if (feedback) submitInterviewFeedback(iv.id, feedback, score);
                       }}
-                      className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[#0D7377] text-white hover:bg-[#0a5c60]"
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[#253C7D] text-white hover:bg-[#1F336A]"
                     >
                       Complete
                     </button>
@@ -612,14 +612,14 @@ export default function Hire() {
                 <div key={stage} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
                     <div className={`w-14 h-14 rounded-full flex items-center justify-center text-[14px] font-bold transition-colors ${
-                      isActive ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-400"
+                      isActive ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-400"
                     }`}>
                       {count}
                     </div>
                     <span className="text-[11px] text-gray-600 mt-2 font-medium">{stageLabels[stage]}</span>
                   </div>
                   {i < 4 && (
-                    <div className={`flex-1 h-0.5 mx-2 ${isActive ? "bg-[#0D7377]" : "bg-gray-200"}`} />
+                    <div className={`flex-1 h-0.5 mx-2 ${isActive ? "bg-[#253C7D]" : "bg-gray-200"}`} />
                   )}
                 </div>
               );
@@ -629,7 +629,7 @@ export default function Hire() {
             <h3 className="text-[14px] font-semibold text-gray-900 mb-3">Pipeline Summary</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <p className="text-2xl font-bold text-[#0D7377]">{totalCandidates}</p>
+                <p className="text-2xl font-bold text-[#253C7D]">{totalCandidates}</p>
                 <p className="text-[11px] text-gray-500">Total Applicants</p>
               </div>
               <div>
@@ -662,16 +662,16 @@ export default function Hire() {
             <form onSubmit={createJob} className="space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Job Title</label>
-                <input required value={newJob.title} onChange={(e) => setNewJob({ ...newJob, title: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                <input required value={newJob.title} onChange={(e) => setNewJob({ ...newJob, title: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Department</label>
-                  <input required value={newJob.department} onChange={(e) => setNewJob({ ...newJob, department: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input required value={newJob.department} onChange={(e) => setNewJob({ ...newJob, department: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Branch</label>
-                  <select required value={newJob.branch_id} onChange={(e) => setNewJob({ ...newJob, branch_id: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]">
+                  <select required value={newJob.branch_id} onChange={(e) => setNewJob({ ...newJob, branch_id: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]">
                     <option value="">Select branch</option>
                     {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
@@ -679,29 +679,29 @@ export default function Hire() {
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Description</label>
-                <textarea value={newJob.description} onChange={(e) => setNewJob({ ...newJob, description: e.target.value })} rows={3} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                <textarea value={newJob.description} onChange={(e) => setNewJob({ ...newJob, description: e.target.value })} rows={3} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Salary Min ($)</label>
-                  <input type="number" value={newJob.salary_min} onChange={(e) => setNewJob({ ...newJob, salary_min: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input type="number" value={newJob.salary_min} onChange={(e) => setNewJob({ ...newJob, salary_min: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Salary Max ($)</label>
-                  <input type="number" value={newJob.salary_max} onChange={(e) => setNewJob({ ...newJob, salary_max: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input type="number" value={newJob.salary_max} onChange={(e) => setNewJob({ ...newJob, salary_max: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Location</label>
-                  <input value={newJob.location} onChange={(e) => setNewJob({ ...newJob, location: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input value={newJob.location} onChange={(e) => setNewJob({ ...newJob, location: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Closing Date</label>
-                  <input type="date" value={newJob.closing_date} onChange={(e) => setNewJob({ ...newJob, closing_date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input type="date" value={newJob.closing_date} onChange={(e) => setNewJob({ ...newJob, closing_date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60]">
+              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">
                 Post Job
               </button>
             </form>
@@ -722,34 +722,34 @@ export default function Hire() {
             <form onSubmit={addCandidate} className="space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Full Name</label>
-                <input required value={newCandidate.full_name} onChange={(e) => setNewCandidate({ ...newCandidate, full_name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                <input required value={newCandidate.full_name} onChange={(e) => setNewCandidate({ ...newCandidate, full_name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Email</label>
-                  <input type="email" required value={newCandidate.email} onChange={(e) => setNewCandidate({ ...newCandidate, email: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input type="email" required value={newCandidate.email} onChange={(e) => setNewCandidate({ ...newCandidate, email: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Phone</label>
-                  <input value={newCandidate.phone} onChange={(e) => setNewCandidate({ ...newCandidate, phone: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input value={newCandidate.phone} onChange={(e) => setNewCandidate({ ...newCandidate, phone: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Job Position</label>
-                  <select required value={newCandidate.job_posting_id} onChange={(e) => setNewCandidate({ ...newCandidate, job_posting_id: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]">
+                  <select required value={newCandidate.job_posting_id} onChange={(e) => setNewCandidate({ ...newCandidate, job_posting_id: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]">
                     <option value="">Select position</option>
                     {jobs.filter((j) => j.status === "active").map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Source</label>
-                  <input value={newCandidate.source} onChange={(e) => setNewCandidate({ ...newCandidate, source: e.target.value })} placeholder="e.g. LinkedIn" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input value={newCandidate.source} onChange={(e) => setNewCandidate({ ...newCandidate, source: e.target.value })} placeholder="e.g. LinkedIn" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Notes</label>
-                <textarea value={newCandidate.notes} onChange={(e) => setNewCandidate({ ...newCandidate, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                <textarea value={newCandidate.notes} onChange={(e) => setNewCandidate({ ...newCandidate, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Resume</label>
@@ -781,7 +781,7 @@ export default function Hire() {
                   )}
                 </div>
               </div>
-              <button type="submit" disabled={uploadingResume} className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] disabled:opacity-60 disabled:cursor-not-allowed">
+              <button type="submit" disabled={uploadingResume} className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-60 disabled:cursor-not-allowed">
                 {uploadingResume ? "Uploading..." : "Add Candidate"}
               </button>
             </form>
@@ -802,7 +802,7 @@ export default function Hire() {
             <form onSubmit={scheduleInterview} className="space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Candidate</label>
-                <select required value={newInterview.candidate_id} onChange={(e) => setNewInterview({ ...newInterview, candidate_id: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]">
+                <select required value={newInterview.candidate_id} onChange={(e) => setNewInterview({ ...newInterview, candidate_id: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]">
                   <option value="">Select candidate</option>
                   {candidates.map((c) => <option key={c.id} value={c.id}>{c.full_name} - {c.job_postings?.title}</option>)}
                 </select>
@@ -810,11 +810,11 @@ export default function Hire() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Date & Time</label>
-                  <input type="datetime-local" required value={newInterview.scheduled_at} onChange={(e) => setNewInterview({ ...newInterview, scheduled_at: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input type="datetime-local" required value={newInterview.scheduled_at} onChange={(e) => setNewInterview({ ...newInterview, scheduled_at: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Duration (min)</label>
-                  <select value={newInterview.duration_minutes} onChange={(e) => setNewInterview({ ...newInterview, duration_minutes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]">
+                  <select value={newInterview.duration_minutes} onChange={(e) => setNewInterview({ ...newInterview, duration_minutes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]">
                     <option value="30">30 min</option>
                     <option value="45">45 min</option>
                     <option value="60">1 hour</option>
@@ -824,7 +824,7 @@ export default function Hire() {
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Interview Type</label>
-                <select value={newInterview.type} onChange={(e) => setNewInterview({ ...newInterview, type: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]">
+                <select value={newInterview.type} onChange={(e) => setNewInterview({ ...newInterview, type: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]">
                   <option value="video">Video Call</option>
                   <option value="in-person">In Person</option>
                   <option value="phone">Phone</option>
@@ -832,9 +832,9 @@ export default function Hire() {
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Notes / Agenda</label>
-                <textarea value={newInterview.notes} onChange={(e) => setNewInterview({ ...newInterview, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                <textarea value={newInterview.notes} onChange={(e) => setNewInterview({ ...newInterview, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60]">
+              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">
                 Schedule Interview
               </button>
             </form>

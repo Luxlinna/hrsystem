@@ -154,12 +154,12 @@ export default function ITManagement() {
         </div>
         <div className="flex gap-2">
           {tab === "assets" && (
-            <button onClick={() => setAssetModal(true)} className="px-4 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] whitespace-nowrap">
+            <button onClick={() => setAssetModal(true)} className="px-4 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] whitespace-nowrap">
               <i className="ri-add-line mr-1" /> Add Asset
             </button>
           )}
           {tab === "tickets" && (
-            <button onClick={() => setTicketModal(true)} className="px-4 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] whitespace-nowrap">
+            <button onClick={() => setTicketModal(true)} className="px-4 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] whitespace-nowrap">
               <i className="ri-add-line mr-1" /> New Ticket
             </button>
           )}
@@ -200,7 +200,7 @@ export default function ITManagement() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-full text-[12px] font-medium capitalize transition-colors whitespace-nowrap ${
-              tab === t ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              tab === t ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             {t}
@@ -210,7 +210,7 @@ export default function ITManagement() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <>
@@ -222,7 +222,7 @@ export default function ITManagement() {
                     key={f}
                     onClick={() => setAssetFilter(f)}
                     className={`px-3 py-1.5 rounded-full text-[11px] font-medium capitalize transition-colors whitespace-nowrap ${
-                      assetFilter === f ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      assetFilter === f ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
                     {f}
@@ -246,8 +246,8 @@ export default function ITManagement() {
                     filteredAssets.map((a) => (
                       <div key={a.id} className="grid grid-cols-7 px-5 py-4 border-t border-gray-50 items-center">
                         <span className="text-[13px] font-medium text-gray-900 flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0">
-                            <i className={`${assetTypeIcons[a.type] || "ri-box-3-line"} text-sm text-[#0D7377] w-4 h-4 flex items-center justify-center`} />
+                          <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center shrink-0">
+                            <i className={`${assetTypeIcons[a.type] || "ri-box-3-line"} text-sm text-[#253C7D] w-4 h-4 flex items-center justify-center`} />
                           </div>
                           {a.name}
                         </span>
@@ -255,7 +255,7 @@ export default function ITManagement() {
                         <span className="text-[13px] text-gray-600">{a.type}</span>
                         <span className="text-[13px] text-gray-700">
                           {a.employees ? (
-                            <Link to={`/employees/${a.employee_id}`} className="hover:text-[#0D7377] transition-colors">
+                            <Link to={`/employees/${a.employee_id}`} className="hover:text-[#253C7D] transition-colors">
                               {a.employees.first_name} {a.employees.last_name}
                             </Link>
                           ) : (
@@ -283,7 +283,7 @@ export default function ITManagement() {
                     key={f}
                     onClick={() => setTicketFilter(f)}
                     className={`px-3 py-1.5 rounded-full text-[11px] font-medium capitalize transition-colors whitespace-nowrap ${
-                      ticketFilter === f ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      ticketFilter === f ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
                     {f.replace("_", " ")}
@@ -306,7 +306,7 @@ export default function ITManagement() {
                     filteredTickets.map((t) => (
                       <div key={t.id} className="grid grid-cols-6 px-5 py-4 border-t border-gray-50 items-center">
                         <div>
-                          <span className="text-[13px] font-semibold text-[#0D7377]">#{t.id.slice(0, 8)}</span>
+                          <span className="text-[13px] font-semibold text-[#253C7D]">#{t.id.slice(0, 8)}</span>
                           <p className="text-[12px] text-gray-600 mt-0.5 truncate max-w-[200px]">{t.title}</p>
                         </div>
                         <span className="text-[13px] text-gray-600">{t.requester_name}</span>
@@ -319,7 +319,7 @@ export default function ITManagement() {
                         </span>
                         <div className="flex gap-1">
                           {t.status === "open" && (
-                            <button onClick={() => updateTicketStatus(t.id, "in_progress")} className="text-[11px] text-[#0D7377] font-medium hover:underline">Start</button>
+                            <button onClick={() => updateTicketStatus(t.id, "in_progress")} className="text-[11px] text-[#253C7D] font-medium hover:underline">Start</button>
                           )}
                           {(t.status === "open" || t.status === "in_progress") && (
                             <button onClick={() => updateTicketStatus(t.id, "resolved")} className="text-[11px] text-green-600 font-medium hover:underline ml-2">Resolve</button>
@@ -393,25 +393,25 @@ export default function ITManagement() {
             <form onSubmit={createAsset} className="space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Asset Name</label>
-                <input required value={newAsset.name} onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="e.g., MacBook Pro M3" />
+                <input required value={newAsset.name} onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="e.g., MacBook Pro M3" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Asset Tag</label>
-                  <input required value={newAsset.asset_tag} onChange={(e) => setNewAsset({ ...newAsset, asset_tag: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="e.g., NB-004" />
+                  <input required value={newAsset.asset_tag} onChange={(e) => setNewAsset({ ...newAsset, asset_tag: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="e.g., NB-004" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Type</label>
-                  <select value={newAsset.type} onChange={(e) => setNewAsset({ ...newAsset, type: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377] bg-white">
+                  <select value={newAsset.type} onChange={(e) => setNewAsset({ ...newAsset, type: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
                     {Object.keys(assetTypeIcons).map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Serial Number</label>
-                <input value={newAsset.serial_number} onChange={(e) => setNewAsset({ ...newAsset, serial_number: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="Optional" />
+                <input value={newAsset.serial_number} onChange={(e) => setNewAsset({ ...newAsset, serial_number: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="Optional" />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60]">Register Asset</button>
+              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">Register Asset</button>
             </form>
           </div>
         </div>
@@ -430,31 +430,31 @@ export default function ITManagement() {
             <form onSubmit={createTicket} className="space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Title</label>
-                <input required value={newTicket.title} onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="Describe the issue" />
+                <input required value={newTicket.title} onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="Describe the issue" />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Requester Name</label>
-                <input required value={newTicket.requester_name} onChange={(e) => setNewTicket({ ...newTicket, requester_name: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="Full name" />
+                <input required value={newTicket.requester_name} onChange={(e) => setNewTicket({ ...newTicket, requester_name: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="Full name" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Priority</label>
-                  <select value={newTicket.priority} onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377] bg-white">
+                  <select value={newTicket.priority} onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
                     {["low", "medium", "high", "critical"].map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Category</label>
-                  <select value={newTicket.category} onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377] bg-white">
+                  <select value={newTicket.category} onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
                     {["Hardware", "Software", "Network", "Access", "Account", "Other"].map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Description</label>
-                <textarea rows={3} value={newTicket.description} onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="Details about the issue..." />
+                <textarea rows={3} value={newTicket.description} onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="Details about the issue..." />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60]">Submit Ticket</button>
+              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">Submit Ticket</button>
             </form>
           </div>
         </div>

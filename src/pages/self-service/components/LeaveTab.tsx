@@ -116,7 +116,7 @@ export default function LeaveTab({ employeeId }: Props) {
   const totalApproved = requests.filter((r) => r.status === "approved").reduce((s, r) => s + r.days, 0);
   const totalPending = requests.filter((r) => r.status === "pending").length;
 
-  if (loading) return <div className="flex items-center justify-center h-40"><div className="w-7 h-7 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-40"><div className="w-7 h-7 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-5">
@@ -142,7 +142,7 @@ export default function LeaveTab({ employeeId }: Props) {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white rounded-xl text-sm hover:bg-[#0a5f63] transition-colors cursor-pointer whitespace-nowrap"
+          className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white rounded-xl text-sm hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
         >
           <i className={`${showForm ? "ri-close-line" : "ri-add-line"}`} />
           {showForm ? "Cancel" : "New Request"}
@@ -151,7 +151,7 @@ export default function LeaveTab({ employeeId }: Props) {
 
       {/* Submit Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-[#0D7377]/5 border border-[#0D7377]/20 rounded-xl p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-[#253C7D]/5 border border-[#253C7D]/20 rounded-xl p-5 space-y-4">
           <h3 className="text-sm font-bold text-gray-900">Submit Leave Request</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -159,7 +159,7 @@ export default function LeaveTab({ employeeId }: Props) {
               <select
                 value={form.leave_type}
                 onChange={(e) => setForm((p) => ({ ...p, leave_type: e.target.value }))}
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 cursor-pointer"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
               >
                 {LEAVE_TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
               </select>
@@ -172,14 +172,14 @@ export default function LeaveTab({ employeeId }: Props) {
                 required
                 value={form.start_date}
                 onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 cursor-pointer"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
               />
             </div>
             <div>
               <label className="text-xs text-gray-500 mb-1.5 block">
                 End Date
                 {form.start_date && form.end_date && (
-                  <span className="text-[#0D7377] ml-2">({calcDays(form.start_date, form.end_date)} days)</span>
+                  <span className="text-[#253C7D] ml-2">({calcDays(form.start_date, form.end_date)} days)</span>
                 )}
               </label>
               <input
@@ -188,7 +188,7 @@ export default function LeaveTab({ employeeId }: Props) {
                 min={form.start_date}
                 value={form.end_date}
                 onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 cursor-pointer"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
               />
             </div>
           </div>
@@ -200,12 +200,12 @@ export default function LeaveTab({ employeeId }: Props) {
               maxLength={500}
               rows={3}
               placeholder="Brief description of your leave request..."
-              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 resize-none"
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 resize-none"
             />
             <p className="text-xs text-gray-400 text-right mt-0.5">{form.reason.length}/500</p>
           </div>
           <div className="flex justify-end">
-            <button type="submit" disabled={submitting} className="flex items-center gap-2 px-5 py-2 bg-[#0D7377] text-white rounded-lg text-sm hover:bg-[#0a5f63] disabled:opacity-60 transition-colors cursor-pointer whitespace-nowrap">
+            <button type="submit" disabled={submitting} className="flex items-center gap-2 px-5 py-2 bg-[#253C7D] text-white rounded-lg text-sm hover:bg-[#1F336A] disabled:opacity-60 transition-colors cursor-pointer whitespace-nowrap">
               {submitting ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-send-plane-line" />}
               Submit Request
             </button>

@@ -39,7 +39,7 @@ export function useToasts() {
 }
 
 const typeStyles = {
-  info: "bg-[#0D7377] text-white",
+  info: "bg-[#253C7D] text-white",
   success: "bg-emerald-600 text-white",
   warning: "bg-amber-500 text-white",
   error: "bg-red-500 text-white",

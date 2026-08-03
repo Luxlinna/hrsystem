@@ -194,7 +194,7 @@ export default function AttendancePage() {
             setShowModal(true);
           }}
           disabled={!canViewAll && !myEmployee}
-          className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white text-sm font-medium rounded-lg hover:bg-[#0a5f62] transition-colors whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white text-sm font-medium rounded-lg hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <i className="ri-add-line" />
           Log Attendance
@@ -250,14 +250,14 @@ export default function AttendancePage() {
                 placeholder="Search employee..."
                 value={filterEmployee}
                 onChange={(e) => setFilterEmployee(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
               />
             </div>
             )}
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
             >
               <option value="">All Statuses</option>
               {Object.entries(STATUS_CONFIG).map(([k, v]) => (
@@ -268,7 +268,7 @@ export default function AttendancePage() {
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
             />
             {(filterEmployee || filterStatus || filterDate) && (
               <button
@@ -314,7 +314,7 @@ export default function AttendancePage() {
                               {emp?.avatar_url ? (
                                 <img src={emp.avatar_url} alt="" className="w-8 h-8 rounded-lg object-cover" />
                               ) : (
-                                <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 text-[#0D7377] flex items-center justify-center text-xs font-semibold">
+                                <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-xs font-semibold">
                                   {emp ? emp.first_name[0] + emp.last_name[0] : "?"}
                                 </div>
                               )}
@@ -360,7 +360,7 @@ export default function AttendancePage() {
                             {emp?.avatar_url ? (
                               <img src={emp.avatar_url} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
                             ) : (
-                              <div className="w-9 h-9 rounded-lg bg-[#0D7377]/10 text-[#0D7377] flex items-center justify-center text-xs font-semibold shrink-0">
+                              <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-xs font-semibold shrink-0">
                                 {emp ? emp.first_name[0] + emp.last_name[0] : "?"}
                               </div>
                             )}
@@ -440,7 +440,7 @@ export default function AttendancePage() {
                         {emp.avatar_url ? (
                           <img src={emp.avatar_url} alt="" className="w-8 h-8 rounded-lg object-cover" />
                         ) : (
-                          <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 text-[#0D7377] flex items-center justify-center text-xs font-semibold">
+                          <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-xs font-semibold">
                             {emp.first_name[0]}{emp.last_name[0]}
                           </div>
                         )}
@@ -488,7 +488,7 @@ export default function AttendancePage() {
                     {emp.avatar_url ? (
                       <img src={emp.avatar_url} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
                     ) : (
-                      <div className="w-9 h-9 rounded-lg bg-[#0D7377]/10 text-[#0D7377] flex items-center justify-center text-xs font-semibold shrink-0">
+                      <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-xs font-semibold shrink-0">
                         {emp.first_name[0]}{emp.last_name[0]}
                       </div>
                     )}
@@ -564,7 +564,7 @@ export default function AttendancePage() {
                   {selectedRecord.employees.avatar_url ? (
                     <img src={selectedRecord.employees.avatar_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
                   ) : (
-                    <div className="w-12 h-12 rounded-xl bg-[#0D7377]/10 text-[#0D7377] flex items-center justify-center font-bold text-sm">
+                    <div className="w-12 h-12 rounded-xl bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center font-bold text-sm">
                       {selectedRecord.employees.first_name[0]}{selectedRecord.employees.last_name[0]}
                     </div>
                   )}
@@ -629,7 +629,7 @@ export default function AttendancePage() {
                   <select
                     value={newRecord.employee_id}
                     onChange={(e) => setNewRecord({ ...newRecord, employee_id: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
                   >
                     <option value="">Select employee...</option>
                     {employees.map((e) => (
@@ -649,7 +649,7 @@ export default function AttendancePage() {
                     type="date"
                     value={newRecord.date}
                     onChange={(e) => setNewRecord({ ...newRecord, date: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                   />
                 </div>
                 <div>
@@ -657,7 +657,7 @@ export default function AttendancePage() {
                   <select
                     value={newRecord.status}
                     onChange={(e) => setNewRecord({ ...newRecord, status: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
                   >
                     {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                   </select>
@@ -671,7 +671,7 @@ export default function AttendancePage() {
                       type="time"
                       value={newRecord.clock_in}
                       onChange={(e) => setNewRecord({ ...newRecord, clock_in: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                     />
                   </div>
                   <div>
@@ -680,7 +680,7 @@ export default function AttendancePage() {
                       type="time"
                       value={newRecord.clock_out}
                       onChange={(e) => setNewRecord({ ...newRecord, clock_out: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                     />
                   </div>
                 </div>
@@ -693,7 +693,7 @@ export default function AttendancePage() {
                     min={1}
                     value={newRecord.late_minutes}
                     onChange={(e) => setNewRecord({ ...newRecord, late_minutes: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                   />
                 </div>
               )}
@@ -705,7 +705,7 @@ export default function AttendancePage() {
                   rows={3}
                   maxLength={500}
                   placeholder="Optional notes..."
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] resize-none"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] resize-none"
                 />
               </div>
             </div>
@@ -714,7 +714,7 @@ export default function AttendancePage() {
               <button
                 onClick={handleSave}
                 disabled={saving || !newRecord.employee_id || !newRecord.date}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#0D7377] rounded-lg hover:bg-[#0a5f62] disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#253C7D] rounded-lg hover:bg-[#1F336A] disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
                 {saving ? "Saving..." : "Save Record"}
               </button>

@@ -258,7 +258,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
-        <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

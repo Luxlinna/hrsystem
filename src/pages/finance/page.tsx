@@ -95,16 +95,16 @@ export default function Finance() {
         </div>
         <button
           onClick={() => setModal(true)}
-          className="px-4 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] whitespace-nowrap"
+          className="px-4 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] whitespace-nowrap"
         >
           <i className="ri-add-line mr-1" /> New Expense
         </button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-[#0D7377]/10 rounded-xl p-5">
-          <p className="text-xl font-bold text-[#0D7377]">${total.toLocaleString()}</p>
-          <p className="text-[12px] font-medium text-[#0D7377]/70 mt-1">Total Expenses (May)</p>
+        <div className="bg-[#253C7D]/10 rounded-xl p-5">
+          <p className="text-xl font-bold text-[#253C7D]">${total.toLocaleString()}</p>
+          <p className="text-[12px] font-medium text-[#253C7D]/70 mt-1">Total Expenses (May)</p>
         </div>
         <div className="bg-green-50 rounded-xl p-5">
           <p className="text-xl font-bold text-green-700">${paid.toLocaleString()}</p>
@@ -128,7 +128,7 @@ export default function Finance() {
             <div key={cat} className="flex items-center gap-4">
               <span className="text-[12px] text-gray-600 w-32 shrink-0 truncate">{cat}</span>
               <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-[#0D7377] rounded-full" style={{ width: `${(amt / maxCat) * 100}%` }} />
+                <div className="h-full bg-[#253C7D] rounded-full" style={{ width: `${(amt / maxCat) * 100}%` }} />
               </div>
               <span className="text-[12px] font-semibold text-gray-900 w-20 text-right shrink-0">${amt.toLocaleString()}</span>
             </div>
@@ -144,7 +144,7 @@ export default function Finance() {
               key={c}
               onClick={() => setFilter(c)}
               className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors whitespace-nowrap ${
-                filter === c ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                filter === c ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
               {c}
@@ -168,7 +168,7 @@ export default function Finance() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
@@ -227,29 +227,29 @@ export default function Finance() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Category</label>
-                  <select required value={newExpense.category} onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377] bg-white">
+                  <select required value={newExpense.category} onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
                     <option value="">Select</option>
                     {categories.slice(1).map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1">Amount ($)</label>
-                  <input type="number" required min="0" step="0.01" value={newExpense.amount} onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="0.00" />
+                  <input type="number" required min="0" step="0.01" value={newExpense.amount} onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="0.00" />
                 </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Date</label>
-                <input type="date" required value={newExpense.date} onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                <input type="date" required value={newExpense.date} onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Description</label>
-                <input value={newExpense.description} onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="Optional details" />
+                <input value={newExpense.description} onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="Optional details" />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Submitted By</label>
-                <input value={newExpense.submitted_by} onChange={(e) => setNewExpense({ ...newExpense, submitted_by: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="Your name" />
+                <input value={newExpense.submitted_by} onChange={(e) => setNewExpense({ ...newExpense, submitted_by: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="Your name" />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60]">Submit Expense</button>
+              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">Submit Expense</button>
             </form>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 function LoadingScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }

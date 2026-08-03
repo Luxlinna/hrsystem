@@ -22,7 +22,7 @@ const categoryConfig: Record<string, { color: string; icon: string; label: strin
   news: { color: "bg-emerald-50 text-emerald-700", icon: "ri-newspaper-line", label: "News" },
   benefits: { color: "bg-sky-50 text-sky-700", icon: "ri-heart-pulse-line", label: "Benefits" },
   compliance: { color: "bg-red-50 text-red-600", icon: "ri-shield-check-line", label: "Compliance" },
-  hr: { color: "bg-[#0D7377]/10 text-[#0D7377]", icon: "ri-user-settings-line", label: "HR" },
+  hr: { color: "bg-[#253C7D]/10 text-[#253C7D]", icon: "ri-user-settings-line", label: "HR" },
   general: { color: "bg-gray-100 text-gray-600", icon: "ri-information-line", label: "General" },
 };
 
@@ -99,7 +99,7 @@ export default function Announcements() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -119,7 +119,7 @@ export default function Announcements() {
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap cursor-pointer"
+            className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
           >
             <i className="ri-add-line" /> Post Announcement
           </button>
@@ -130,7 +130,7 @@ export default function Announcements() {
           {Object.entries(categoryConfig).slice(0, 4).map(([key, cfg]) => {
             const count = announcements.filter((a) => a.category === key).length;
             return (
-              <div key={key} className="bg-white border border-gray-100 rounded-xl p-4 cursor-pointer hover:border-[#0D7377]/30 transition-all" onClick={() => setFilterCat(filterCat === key ? "all" : key)}>
+              <div key={key} className="bg-white border border-gray-100 rounded-xl p-4 cursor-pointer hover:border-[#253C7D]/30 transition-all" onClick={() => setFilterCat(filterCat === key ? "all" : key)}>
                 <i className={`${cfg.icon} text-xl ${cfg.color.split(" ")[1]}`} />
                 <p className="text-xl font-bold text-gray-900 mt-2">{count}</p>
                 <p className="text-[11px] text-gray-500 mt-0.5">{cfg.label}</p>
@@ -148,14 +148,14 @@ export default function Announcements() {
               placeholder="Search announcements..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] bg-white"
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] bg-white"
             />
           </div>
-          <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] bg-white cursor-pointer">
+          <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer">
             <option value="all">All Categories</option>
             {Object.entries(categoryConfig).map(([key, cfg]) => <option key={key} value={key}>{cfg.label}</option>)}
           </select>
-          <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] bg-white cursor-pointer">
+          <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer">
             <option value="all">All Priority</option>
             <option value="urgent">Urgent</option>
             <option value="high">High</option>
@@ -169,7 +169,7 @@ export default function Announcements() {
             {/* Pinned */}
             {pinned.length > 0 && (
               <div className="mb-6">
-                <p className="text-[11px] font-semibold text-[#0D7377] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <p className="text-[11px] font-semibold text-[#253C7D] uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <i className="ri-pushpin-line" /> Pinned
                 </p>
                 <div className="space-y-3">
@@ -204,7 +204,7 @@ export default function Announcements() {
                     <div className="flex-1 pr-3">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {selectedItem.pinned && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#0D7377]/10 text-[#0D7377] flex items-center gap-1">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D] flex items-center gap-1">
                             <i className="ri-pushpin-line" /> Pinned
                           </span>
                         )}
@@ -222,7 +222,7 @@ export default function Announcements() {
                     </button>
                   </div>
                   <div className="flex items-center gap-3 mt-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-xs font-bold">
+                    <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-xs font-bold">
                       {selectedItem.author_name.split(" ").map((n) => n[0]).join("")}
                     </div>
                     <div>
@@ -261,18 +261,18 @@ export default function Announcements() {
             <form onSubmit={handleCreate} className="p-5 space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Title *</label>
-                <input required type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Announcement title..." className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]" />
+                <input required type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Announcement title..." className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Category</label>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer">
                     {Object.entries(categoryConfig).map(([key, cfg]) => <option key={key} value={key}>{cfg.label}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Priority</label>
-                  <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                  <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer">
                     <option value="normal">Normal</option>
                     <option value="high">High</option>
                     <option value="urgent">Urgent</option>
@@ -288,18 +288,18 @@ export default function Announcements() {
                   rows={5}
                   maxLength={500}
                   placeholder="Write the announcement content..."
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] resize-none"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] resize-none"
                 />
                 <p className="text-[11px] text-gray-400 mt-1 text-right">{form.content.length}/500</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Author Name</label>
-                  <input type="text" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]" />
+                  <input type="text" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Visible To</label>
-                  <select value={form.visible_to} onChange={(e) => setForm({ ...form, visible_to: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                  <select value={form.visible_to} onChange={(e) => setForm({ ...form, visible_to: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer">
                     <option value="all">All Employees</option>
                     <option value="hq">HQ Only</option>
                     <option value="management">Management</option>
@@ -307,12 +307,12 @@ export default function Announcements() {
                 </div>
               </div>
               <label className="flex items-center gap-2.5 cursor-pointer">
-                <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} className="w-4 h-4 rounded accent-[#0D7377]" />
+                <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} className="w-4 h-4 rounded accent-[#253C7D]" />
                 <span className="text-[13px] text-gray-700">Pin this announcement to the top</span>
               </label>
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
-                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] disabled:opacity-60 cursor-pointer">
+                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer">
                   {submitting ? "Posting..." : "Post Announcement"}
                 </button>
               </div>
@@ -339,7 +339,7 @@ function AnnouncementCard({
   return (
     <div
       onClick={onClick}
-      className={`bg-white border rounded-xl p-5 cursor-pointer hover:border-[#0D7377]/30 transition-all ${isSelected ? "border-[#0D7377] ring-2 ring-[#0D7377]/10" : "border-gray-100"}`}
+      className={`bg-white border rounded-xl p-5 cursor-pointer hover:border-[#253C7D]/30 transition-all ${isSelected ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-100"}`}
     >
       <div className="flex items-start gap-3">
         <div className={`w-9 h-9 flex items-center justify-center rounded-lg shrink-0 ${cfg.color}`}>
@@ -349,7 +349,7 @@ function AnnouncementCard({
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                {a.pinned && <i className="ri-pushpin-line text-[#0D7377] text-xs" />}
+                {a.pinned && <i className="ri-pushpin-line text-[#253C7D] text-xs" />}
                 <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${priorityConfig[a.priority] || ""}`}>
                   {a.priority}
                 </span>

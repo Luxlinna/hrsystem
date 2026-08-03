@@ -101,7 +101,7 @@ export default function AttendanceTab({ employeeId }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-40">
-        <div className="w-7 h-7 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-7 h-7 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -111,13 +111,13 @@ export default function AttendanceTab({ employeeId }: Props) {
       {/* Month filter */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <i className="ri-calendar-line text-[#0D7377]" />
+          <i className="ri-calendar-line text-[#253C7D]" />
           <span className="text-sm font-semibold text-gray-800">My Attendance History</span>
         </div>
         <select
           value={filterMonth}
           onChange={(e) => setFilterMonth(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 cursor-pointer"
+          className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
         >
           {monthOptions.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
@@ -131,7 +131,7 @@ export default function AttendanceTab({ employeeId }: Props) {
           { label: "Present", value: stats.present, icon: "ri-checkbox-circle-line", color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Late", value: stats.late, icon: "ri-time-line", color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Absent", value: stats.absent, icon: "ri-close-circle-line", color: "text-red-500", bg: "bg-red-50" },
-          { label: "Total Hours", value: totalHoursFormatted, icon: "ri-timer-line", color: "text-[#0D7377]", bg: "bg-[#0D7377]/10" },
+          { label: "Total Hours", value: totalHoursFormatted, icon: "ri-timer-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
         ].map((s) => (
           <div key={s.label} className={`${s.bg} rounded-xl p-4 flex items-center gap-3`}>
             <div className={`w-8 h-8 flex items-center justify-center shrink-0`}>
@@ -184,7 +184,7 @@ export default function AttendanceTab({ employeeId }: Props) {
                       <span className="text-sm font-medium text-gray-700">{formatTime(r.clock_out)}</span>
                       <span className="text-[11px] text-gray-400">out</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[#0D7377]">
+                    <div className="flex items-center gap-1 text-[#253C7D]">
                       <i className="ri-timer-line text-xs" />
                       <span className="text-xs font-semibold">{calcHours(r.clock_in, r.clock_out)}</span>
                     </div>

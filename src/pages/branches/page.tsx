@@ -28,7 +28,7 @@ const statusColors: Record<string, string> = {
 };
 
 const deptColors = [
-  "bg-[#0D7377]/10 text-[#0D7377]",
+  "bg-[#253C7D]/10 text-[#253C7D]",
   "bg-violet-50 text-violet-700",
   "bg-amber-50 text-amber-700",
   "bg-rose-50 text-rose-700",
@@ -117,7 +117,7 @@ export default function Branches() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -139,7 +139,7 @@ export default function Branches() {
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap cursor-pointer"
+              className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
             >
               <i className="ri-add-line" />
               Add Branch
@@ -149,7 +149,7 @@ export default function Branches() {
           {/* Stats Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
             {[
-              { label: "Total Branches", value: branches.length, icon: "ri-building-2-line", color: "text-[#0D7377]" },
+              { label: "Total Branches", value: branches.length, icon: "ri-building-2-line", color: "text-[#253C7D]" },
               { label: "Active", value: activeBranches, icon: "ri-checkbox-circle-line", color: "text-emerald-600" },
               { label: "Total Employees", value: totalEmployees.toLocaleString(), icon: "ri-user-3-line", color: "text-violet-600" },
               { label: "Avg per Branch", value: Math.round(totalEmployees / Math.max(branches.length, 1)), icon: "ri-group-line", color: "text-amber-600" },
@@ -171,13 +171,13 @@ export default function Branches() {
                 placeholder="Search branch, location, manager..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] bg-white"
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] bg-white"
               />
             </div>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] bg-white cursor-pointer"
+              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -190,15 +190,15 @@ export default function Branches() {
             {filtered.map((b) => (
               <div
                 key={b.id}
-                className={`bg-white border rounded-xl p-5 transition-all cursor-pointer hover:border-[#0D7377]/30 ${
-                  selectedBranch?.id === b.id ? "border-[#0D7377] ring-2 ring-[#0D7377]/10" : "border-gray-100"
+                className={`bg-white border rounded-xl p-5 transition-all cursor-pointer hover:border-[#253C7D]/30 ${
+                  selectedBranch?.id === b.id ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-100"
                 }`}
                 onClick={() => openDetail(b)}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#0D7377]/10 flex items-center justify-center">
-                      <i className="ri-building-2-line text-[#0D7377] text-lg" />
+                    <div className="w-10 h-10 rounded-lg bg-[#253C7D]/10 flex items-center justify-center">
+                      <i className="ri-building-2-line text-[#253C7D] text-lg" />
                     </div>
                     <div>
                       <p className="text-[14px] font-semibold text-gray-900 leading-tight">{b.name}</p>
@@ -224,7 +224,7 @@ export default function Branches() {
                     <span className="text-[12px] text-gray-500 flex items-center gap-1.5">
                       <i className="ri-team-line" /> Employees
                     </span>
-                    <span className="text-[13px] font-bold text-[#0D7377]">{b.employee_count}</span>
+                    <span className="text-[13px] font-bold text-[#253C7D]">{b.employee_count}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] text-gray-500 flex items-center gap-1.5">
@@ -238,7 +238,7 @@ export default function Branches() {
 
                 <button
                   onClick={(e) => { e.stopPropagation(); openDetail(b); }}
-                  className="mt-4 w-full py-2 border border-gray-200 text-gray-600 text-[12px] font-medium rounded-lg hover:bg-[#0D7377] hover:text-white hover:border-[#0D7377] transition-all cursor-pointer"
+                  className="mt-4 w-full py-2 border border-gray-200 text-gray-600 text-[12px] font-medium rounded-lg hover:bg-[#253C7D] hover:text-white hover:border-[#253C7D] transition-all cursor-pointer"
                 >
                   View Details <i className="ri-arrow-right-line ml-1" />
                 </button>
@@ -259,7 +259,7 @@ export default function Branches() {
       {selectedBranch && (
         <div className="fixed right-0 top-0 h-full w-full sm:w-[420px] bg-white border-l border-gray-100 overflow-y-auto z-40 flex flex-col">
           {/* Panel Header */}
-          <div className="bg-gradient-to-br from-[#0D7377] to-[#14919B] p-6 text-white">
+          <div className="bg-gradient-to-br from-[#253C7D] to-[#29ABE2] p-6 text-white">
             <div className="flex items-start justify-between">
               <div>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/20 capitalize`}>
@@ -299,8 +299,8 @@ export default function Branches() {
             <h3 className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Branch Info</h3>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#0D7377]/10">
-                  <i className="ri-user-star-line text-[#0D7377] text-sm" />
+                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#253C7D]/10">
+                  <i className="ri-user-star-line text-[#253C7D] text-sm" />
                 </div>
                 <div>
                   <p className="text-[11px] text-gray-400">Branch Manager</p>
@@ -345,7 +345,7 @@ export default function Branches() {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-[#0D7377] rounded-full"
+                          className="h-full bg-[#253C7D] rounded-full"
                           style={{ width: `${Math.min((emps.length / branchEmployees.length) * 100, 100)}%` }}
                         />
                       </div>
@@ -364,7 +364,7 @@ export default function Branches() {
             </h3>
             {empLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="w-6 h-6 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
               </div>
             ) : branchEmployees.length === 0 ? (
               <div className="text-center py-10">
@@ -375,7 +375,7 @@ export default function Branches() {
               <div className="space-y-2">
                 {branchEmployees.map((emp) => (
                   <div key={emp.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="w-9 h-9 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] font-bold text-xs shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold text-xs shrink-0">
                       {emp.first_name[0]}{emp.last_name[0]}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -420,7 +420,7 @@ export default function Branches() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g., West Branch - Los Angeles"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
               <div>
@@ -431,7 +431,7 @@ export default function Branches() {
                   value={form.location}
                   onChange={(e) => setForm({ ...form, location: e.target.value })}
                   placeholder="e.g., Los Angeles, CA"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
               <div>
@@ -442,7 +442,7 @@ export default function Branches() {
                   value={form.manager_name}
                   onChange={(e) => setForm({ ...form, manager_name: e.target.value })}
                   placeholder="e.g., John Smith"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
               <div>
@@ -450,7 +450,7 @@ export default function Branches() {
                 <select
                   value={form.status}
                   onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
@@ -468,7 +468,7 @@ export default function Branches() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-60 cursor-pointer"
+                  className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   {submitting ? "Creating..." : "Create Branch"}
                 </button>

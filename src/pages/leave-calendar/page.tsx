@@ -152,7 +152,7 @@ export default function LeaveCalendar() {
         {[
           { label: "On Leave Today", value: stats.onLeaveToday, icon: "ri-user-unfollow-line", color: "bg-red-50 text-red-700" },
           { label: "Approved This Month", value: stats.approvedThisMonth, icon: "ri-calendar-check-line", color: "bg-green-50 text-green-700" },
-          { label: "Total Days Approved", value: stats.totalDays, icon: "ri-time-line", color: "bg-[#0D7377]/10 text-[#0D7377]" },
+          { label: "Total Days Approved", value: stats.totalDays, icon: "ri-time-line", color: "bg-[#253C7D]/10 text-[#253C7D]" },
           { label: "Pending Approval", value: stats.pending, icon: "ri-time-line", color: "bg-amber-50 text-amber-700" },
         ].map((s) => (
           <div key={s.label} className={`rounded-xl p-3 md:p-4 flex items-center gap-3 ${s.color}`}>
@@ -169,16 +169,16 @@ export default function LeaveCalendar() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
-        <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:border-[#0D7377] text-gray-700">
+        <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:border-[#253C7D] text-gray-700">
           {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
         </select>
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:border-[#0D7377] text-gray-700">
+        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:border-[#253C7D] text-gray-700">
           <option value="all">All Types</option>
           {Object.entries(LEAVE_TYPE_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
         <div className="flex gap-1.5">
           {["approved","pending","all"].map((s) => (
-            <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-2 rounded-lg text-[12px] font-medium capitalize transition-colors cursor-pointer ${statusFilter === s ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{s}</button>
+            <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-2 rounded-lg text-[12px] font-medium capitalize transition-colors cursor-pointer ${statusFilter === s ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{s}</button>
           ))}
         </div>
         {/* Legend — hidden on mobile */}
@@ -242,8 +242,8 @@ export default function LeaveCalendar() {
                     {/* Date column */}
                     <div className={`w-12 shrink-0 flex flex-col items-center justify-start pt-2`}>
                       <span className="text-[10px] font-semibold text-gray-400 uppercase">{dayName}</span>
-                      <span className={`text-xl font-bold leading-tight ${isTd ? "text-[#0D7377]" : "text-gray-800"}`}>{dayNum}</span>
-                      {isTd && <span className="w-1 h-1 rounded-full bg-[#0D7377] mt-0.5" />}
+                      <span className={`text-xl font-bold leading-tight ${isTd ? "text-[#253C7D]" : "text-gray-800"}`}>{dayNum}</span>
+                      {isTd && <span className="w-1 h-1 rounded-full bg-[#253C7D] mt-0.5" />}
                     </div>
                     {/* Leave cards */}
                     <div className="flex-1 space-y-2">
@@ -306,11 +306,11 @@ export default function LeaveCalendar() {
                     <div
                       key={i}
                       onClick={() => d && setSelectedDay(d === selectedDay ? null : d)}
-                      className={`min-h-[80px] lg:min-h-[90px] p-1.5 lg:p-2 border-b border-gray-50 transition-colors relative ${d ? "cursor-pointer" : ""} ${isWeekend && d ? "bg-gray-50/30" : ""} ${isSelected ? "bg-[#0D7377]/5" : d ? "hover:bg-gray-50/50" : ""}`}
+                      className={`min-h-[80px] lg:min-h-[90px] p-1.5 lg:p-2 border-b border-gray-50 transition-colors relative ${d ? "cursor-pointer" : ""} ${isWeekend && d ? "bg-gray-50/30" : ""} ${isSelected ? "bg-[#253C7D]/5" : d ? "hover:bg-gray-50/50" : ""}`}
                     >
                       {d > 0 && (
                         <>
-                          <span className={`text-[12px] lg:text-[13px] font-semibold inline-flex items-center justify-center w-6 h-6 lg:w-7 lg:h-7 rounded-full transition-colors ${isTd ? "bg-[#0D7377] text-white" : isSelected ? "bg-[#0D7377]/10 text-[#0D7377]" : "text-gray-700 hover:bg-gray-100"}`}>
+                          <span className={`text-[12px] lg:text-[13px] font-semibold inline-flex items-center justify-center w-6 h-6 lg:w-7 lg:h-7 rounded-full transition-colors ${isTd ? "bg-[#253C7D] text-white" : isSelected ? "bg-[#253C7D]/10 text-[#253C7D]" : "text-gray-700 hover:bg-gray-100"}`}>
                             {d}
                           </span>
                           {dayLeaves.length > 0 && (
@@ -354,7 +354,7 @@ export default function LeaveCalendar() {
                       const meta = LEAVE_TYPE_META[l.leave_type] || { bg: "bg-gray-100", color: "text-gray-600", label: l.leave_type };
                       return (
                         <div key={l.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100">
-                          <div className="w-9 h-9 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-[12px] font-bold shrink-0">
+                          <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-[12px] font-bold shrink-0">
                             {getInitials(l)}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -420,7 +420,7 @@ export default function LeaveCalendar() {
                     const daysUntil = Math.ceil((new Date(l.start_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                     return (
                       <div key={l.id} className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-[11px] font-bold shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-[11px] font-bold shrink-0">
                           {getInitials(l)}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -454,10 +454,10 @@ export default function LeaveCalendar() {
                       <div key={dept}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-[12px] font-medium text-gray-700">{dept}</span>
-                          <span className="text-[11px] font-semibold text-[#0D7377]">{days}d</span>
+                          <span className="text-[11px] font-semibold text-[#253C7D]">{days}d</span>
                         </div>
                         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-[#0D7377] rounded-full transition-all" style={{ width: `${(days / maxDays) * 100}%` }} />
+                          <div className="h-full bg-[#253C7D] rounded-full transition-all" style={{ width: `${(days / maxDays) * 100}%` }} />
                         </div>
                       </div>
                     ))}

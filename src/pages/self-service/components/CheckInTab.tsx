@@ -273,20 +273,20 @@ export default function CheckInTab({ employeeId, employeeName, autoStart }: Prop
 
   if (loading) return (
     <div className="flex items-center justify-center h-40">
-      <div className="w-7 h-7 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+      <div className="w-7 h-7 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   return (
     <div className="space-y-6">
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl text-[13px] font-semibold text-white ${toast.type === "success" ? "bg-[#0D7377]" : "bg-red-500"}`}>
+        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl text-[13px] font-semibold text-white ${toast.type === "success" ? "bg-[#253C7D]" : "bg-red-500"}`}>
           {toast.message}
         </div>
       )}
 
       {/* Live Clock + Check In/Out Panel */}
-      <div className="bg-gradient-to-br from-[#0D7377] to-[#14919B] rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-br from-[#253C7D] to-[#29ABE2] rounded-2xl p-6 text-white">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div>
             <p className="text-white/70 text-[12px] font-medium uppercase tracking-wider mb-1">Live Clock</p>
@@ -311,7 +311,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart }: Prop
                 <button
                   onClick={handleRequestClockIn}
                   disabled={processing || branchLoading}
-                  className="w-full flex items-center justify-center gap-2 bg-white text-[#0D7377] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 bg-white text-[#253C7D] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   <i className="ri-map-pin-line text-lg" />
                   Clock In
@@ -349,7 +349,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart }: Prop
                 <button
                   onClick={handleConfirmClockIn}
                   disabled={processing}
-                  className="w-full flex items-center justify-center gap-2 bg-white text-[#0D7377] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 bg-white text-[#253C7D] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   <i className="ri-fingerprint-line text-lg" />
                   {processing ? "Verifying fingerprint..." : hasFingerprint ? "Confirm with Fingerprint" : "Register Fingerprint & Clock In"}
@@ -425,7 +425,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart }: Prop
           { label: "Days Present", value: presentCount, icon: "ri-user-follow-line", color: "text-emerald-600 bg-emerald-50" },
           { label: "Late Arrivals", value: lateCount, icon: "ri-time-line", color: "text-amber-600 bg-amber-50" },
           { label: "Absences", value: absentCount, icon: "ri-user-unfollow-line", color: "text-red-500 bg-red-50" },
-          { label: "Total Hours", value: `${totalHours.toFixed(0)}h`, icon: "ri-timer-line", color: "text-[#0D7377] bg-[#0D7377]/10" },
+          { label: "Total Hours", value: `${totalHours.toFixed(0)}h`, icon: "ri-timer-line", color: "text-[#253C7D] bg-[#253C7D]/10" },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl p-4">
             <div className={`w-8 h-8 flex items-center justify-center rounded-lg mb-2 ${s.color}`}>
@@ -450,7 +450,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart }: Prop
               <div
                 key={d}
                 className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 min-w-[52px] border ${
-                  isT ? "border-[#0D7377] bg-[#0D7377]/5" :
+                  isT ? "border-[#253C7D] bg-[#253C7D]/5" :
                   rec?.status === "present" ? "border-emerald-200 bg-emerald-50" :
                   rec?.status === "late" ? "border-amber-200 bg-amber-50" :
                   rec?.status === "absent" ? "border-red-200 bg-red-50" :
@@ -458,7 +458,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart }: Prop
                 }`}
               >
                 <span className="text-[10px] text-gray-400 font-medium">{dayName}</span>
-                <span className={`text-[14px] font-bold ${isT ? "text-[#0D7377]" : "text-gray-700"}`}>{dayNum}</span>
+                <span className={`text-[14px] font-bold ${isT ? "text-[#253C7D]" : "text-gray-700"}`}>{dayNum}</span>
                 {rec ? (
                   <i className={`text-[11px] ${
                     rec.status === "present" ? "ri-check-line text-emerald-500" :

@@ -93,7 +93,7 @@ export default function BenefitsTab({ employeeId }: Props) {
     fetchData();
   };
 
-  if (loading) return <div className="flex items-center justify-center h-40"><div className="w-7 h-7 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-40"><div className="w-7 h-7 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-5">
@@ -110,7 +110,7 @@ export default function BenefitsTab({ employeeId }: Props) {
         {availablePlans.length > 0 && (
           <button
             onClick={() => setShowEnrollModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white rounded-xl text-sm hover:bg-[#0a5f63] transition-colors cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white rounded-xl text-sm hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-add-line" />
             Enroll in Plan
@@ -189,7 +189,7 @@ export default function BenefitsTab({ employeeId }: Props) {
                 <button
                   key={p.id}
                   onClick={() => setSelectedPlan(p.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${selectedPlan === p.id ? "border-[#0D7377] bg-[#0D7377]/5" : "border-gray-100 hover:border-gray-200"}`}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${selectedPlan === p.id ? "border-[#253C7D] bg-[#253C7D]/5" : "border-gray-100 hover:border-gray-200"}`}
                 >
                   <div className={`w-9 h-9 flex items-center justify-center rounded-lg ${TYPE_COLOR[p.type] || "bg-gray-100 text-gray-500"}`}>
                     <i className={`${TYPE_ICON[p.type] || "ri-shield-check-line"} text-base`} />
@@ -198,7 +198,7 @@ export default function BenefitsTab({ employeeId }: Props) {
                     <p className="text-sm font-semibold text-gray-900">{p.name}</p>
                     <p className="text-xs text-gray-500">{p.provider}</p>
                   </div>
-                  {selectedPlan === p.id && <i className="ri-checkbox-circle-fill text-[#0D7377]" />}
+                  {selectedPlan === p.id && <i className="ri-checkbox-circle-fill text-[#253C7D]" />}
                 </button>
               ))}
             </div>
@@ -209,7 +209,7 @@ export default function BenefitsTab({ employeeId }: Props) {
               <button
                 onClick={handleEnroll}
                 disabled={!selectedPlan || enrolling}
-                className="flex-1 px-4 py-2 bg-[#0D7377] text-white rounded-xl text-sm hover:bg-[#0a5f63] disabled:opacity-50 cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-[#253C7D] text-white rounded-xl text-sm hover:bg-[#1F336A] disabled:opacity-50 cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
               >
                 {enrolling ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
                 Enroll Now

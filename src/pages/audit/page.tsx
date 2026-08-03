@@ -182,7 +182,7 @@ export default function AuditLogPage() {
           <button
             key={mod}
             onClick={() => setModuleFilter(moduleFilter === mod ? "all" : mod)}
-            className={`bg-white border rounded-xl p-3 text-left transition-all cursor-pointer ${moduleFilter === mod ? "border-[#0D7377] ring-1 ring-[#0D7377]/20" : "border-gray-100 hover:border-gray-200"}`}
+            className={`bg-white border rounded-xl p-3 text-left transition-all cursor-pointer ${moduleFilter === mod ? "border-[#253C7D] ring-1 ring-[#253C7D]/20" : "border-gray-100 hover:border-gray-200"}`}
           >
             <div className="flex items-center justify-between mb-1">
               <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${MODULE_COLORS[mod] || "bg-gray-100 text-gray-600"}`}>{mod}</span>
@@ -202,7 +202,7 @@ export default function AuditLogPage() {
             placeholder="Search logs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30"
+            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
           />
         </div>
         <select value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)} className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none cursor-pointer">
@@ -231,7 +231,7 @@ export default function AuditLogPage() {
 
         {loading ? (
           <div className="flex items-center justify-center h-48">
-            <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-gray-400">
@@ -276,7 +276,7 @@ export default function AuditLogPage() {
                       <div className="mt-2">
                         <button
                           onClick={() => toggleExpand(log.id)}
-                          className="text-xs text-[#0D7377] hover:underline cursor-pointer flex items-center gap-1"
+                          className="text-xs text-[#253C7D] hover:underline cursor-pointer flex items-center gap-1"
                         >
                           <i className={`${expanded.has(log.id) ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"}`} />
                           {expanded.has(log.id) ? "Hide" : "Show"} details

@@ -159,7 +159,7 @@ export default function Tools() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -183,8 +183,8 @@ export default function Tools() {
         ].map((s) => (
           <div key={s.label} className="border border-gray-100 rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-9 h-9 rounded-lg bg-[#0D7377]/10 flex items-center justify-center">
-                <i className={`${s.icon} text-[#0D7377] text-sm w-5 h-5 flex items-center justify-center`} />
+              <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center">
+                <i className={`${s.icon} text-[#253C7D] text-sm w-5 h-5 flex items-center justify-center`} />
               </div>
               <p className="text-[11px] font-medium text-gray-500">{s.label}</p>
             </div>
@@ -204,7 +204,7 @@ export default function Tools() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap ${
-              tab === t.key ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              tab === t.key ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             {t.label}
@@ -221,7 +221,7 @@ export default function Tools() {
                 key={c}
                 onClick={() => setFilter(c)}
                 className={`px-4 py-2 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap ${
-                  filter === c ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  filter === c ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 {c}
@@ -236,11 +236,11 @@ export default function Tools() {
               return (
                 <div
                   key={t.id}
-                  className="border border-gray-100 rounded-xl p-5 hover:border-[#0D7377]/20 transition-all group"
+                  className="border border-gray-100 rounded-xl p-5 hover:border-[#253C7D]/20 transition-all group"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-[#0D7377]/10 flex items-center justify-center mb-4 group-hover:bg-[#0D7377] transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-[#253C7D]/10 flex items-center justify-center mb-4 group-hover:bg-[#253C7D] transition-colors">
                     <i
-                      className={`${t.icon} text-lg text-[#0D7377] group-hover:text-white transition-colors w-6 h-6 flex items-center justify-center`}
+                      className={`${t.icon} text-lg text-[#253C7D] group-hover:text-white transition-colors w-6 h-6 flex items-center justify-center`}
                     />
                   </div>
                   <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -270,7 +270,7 @@ export default function Tools() {
                   <div className="mt-3 flex gap-2">
                     <button
                       onClick={() => openAssign(t)}
-                      className="flex-1 py-1.5 bg-[#0D7377] text-white text-[11px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors whitespace-nowrap"
+                      className="flex-1 py-1.5 bg-[#253C7D] text-white text-[11px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors whitespace-nowrap"
                     >
                       Grant Access
                     </button>
@@ -295,7 +295,7 @@ export default function Tools() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
             >
               <option value="">All Categories</option>
               {categories.filter((c) => c !== "All").map((c) => (
@@ -310,8 +310,8 @@ export default function Tools() {
             return (
               <div key={tool.id} className="border border-gray-100 rounded-xl overflow-hidden">
                 <div className="flex items-center gap-3 px-5 py-4 bg-gray-50/50">
-                  <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center">
-                    <i className={`${tool.icon} text-[#0D7377] text-sm w-5 h-5 flex items-center justify-center`} />
+                  <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center">
+                    <i className={`${tool.icon} text-[#253C7D] text-sm w-5 h-5 flex items-center justify-center`} />
                   </div>
                   <div className="flex-1">
                     <p className="text-[14px] font-semibold text-gray-900">{tool.name}</p>
@@ -319,7 +319,7 @@ export default function Tools() {
                   </div>
                   <button
                     onClick={() => openAssign(tool)}
-                    className="px-3 py-1.5 bg-[#0D7377] text-white text-[11px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors whitespace-nowrap"
+                    className="px-3 py-1.5 bg-[#253C7D] text-white text-[11px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors whitespace-nowrap"
                   >
                     + Grant Access
                   </button>
@@ -381,8 +381,8 @@ export default function Tools() {
                 key={u.id}
                 className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:bg-gray-50/50 transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-[#0D7377]/10 flex items-center justify-center shrink-0">
-                  <i className={`${tool?.icon || "ri-apps-line"} text-[#0D7377] w-5 h-5 flex items-center justify-center`} />
+                <div className="w-10 h-10 rounded-full bg-[#253C7D]/10 flex items-center justify-center shrink-0">
+                  <i className={`${tool?.icon || "ri-apps-line"} text-[#253C7D] w-5 h-5 flex items-center justify-center`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -434,7 +434,7 @@ export default function Tools() {
             <select
               value={assignEmployeeId}
               onChange={(e) => setAssignEmployeeId(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377] mb-6"
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D] mb-6"
             >
               <option value="">Select employee...</option>
               {employees.map((e) => (
@@ -454,7 +454,7 @@ export default function Tools() {
               <button
                 onClick={assignTool}
                 disabled={!assignEmployeeId}
-                className="flex-1 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
               >
                 Grant Access
               </button>

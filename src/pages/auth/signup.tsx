@@ -29,11 +29,9 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0]">
       <div className="w-full max-w-md bg-white rounded-2xl p-8 md:p-10 border border-gray-100">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-[#0D7377] flex items-center justify-center text-white mx-auto mb-4">
-            <i className="ri-user-add-line text-xl" />
-          </div>
+          <img src="/logo-mark.png" alt="HRM_OPS Logo" className="w-14 h-14 object-contain mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-[#1A1A1A]">Create Account</h1>
-          <p className="text-[13px] text-gray-500 mt-1">Join HR Nexus</p>
+          <p className="text-[13px] text-gray-500 mt-1">Join HRM_OPS</p>
         </div>
 
         {error && (
@@ -50,7 +48,7 @@ export default function SignupPage() {
               required
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] focus:ring-1 focus:ring-[#0D7377]/20 transition-all"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
               placeholder="Jane Doe"
             />
           </div>
@@ -61,7 +59,7 @@ export default function SignupPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] focus:ring-1 focus:ring-[#0D7377]/20 transition-all"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
               placeholder="jane@hrnexus.com"
             />
           </div>
@@ -73,14 +71,14 @@ export default function SignupPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] focus:ring-1 focus:ring-[#0D7377]/20 transition-all"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
               placeholder="At least 6 characters"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] active:scale-[0.98] transition-all disabled:opacity-60"
+            className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] active:scale-[0.98] transition-all disabled:opacity-60"
           >
             {loading ? "Creating account..." : "Create Account"}
           </button>
@@ -88,7 +86,7 @@ export default function SignupPage() {
 
         <p className="text-center text-[12px] text-gray-500 mt-6">
           Already have an account?{" "}
-          <Link to="/login" className="text-[#0D7377] font-semibold hover:underline">
+          <Link to="/login" className="text-[#253C7D] font-semibold hover:underline">
             Sign in
           </Link>
         </p>

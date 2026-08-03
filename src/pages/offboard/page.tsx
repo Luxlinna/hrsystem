@@ -143,7 +143,7 @@ export default function Offboard() {
         </div>
         <button
           onClick={() => setCreateModal(true)}
-          className="px-4 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] whitespace-nowrap"
+          className="px-4 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] whitespace-nowrap"
         >
           <i className="ri-user-unfollow-line mr-1" />
           Start Offboarding
@@ -171,7 +171,7 @@ export default function Offboard() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-full text-[12px] font-medium capitalize transition-colors whitespace-nowrap ${
-              tab === t ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              tab === t ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             {t === "active" ? "Active" : t === "completed" ? "Completed" : "All Tasks"}
@@ -182,7 +182,7 @@ export default function Offboard() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <>
@@ -207,7 +207,7 @@ export default function Offboard() {
                           </div>
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Link to={`/employees/${o.employee_id}`} className="text-[15px] font-semibold text-gray-900 hover:text-[#0D7377] transition-colors">
+                              <Link to={`/employees/${o.employee_id}`} className="text-[15px] font-semibold text-gray-900 hover:text-[#253C7D] transition-colors">
                                 {o.employees?.first_name} {o.employees?.last_name}
                               </Link>
                               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusColors[o.status]}`}>
@@ -223,7 +223,7 @@ export default function Offboard() {
                             <select
                               value={o.status}
                               onChange={(e) => updateOffboardingStatus(o.id, e.target.value)}
-                              className="px-3 py-1.5 border border-gray-200 rounded-lg text-[11px] bg-white cursor-pointer focus:outline-none focus:border-[#0D7377]"
+                              className="px-3 py-1.5 border border-gray-200 rounded-lg text-[11px] bg-white cursor-pointer focus:outline-none focus:border-[#253C7D]"
                             >
                               {Object.entries(statusLabels).map(([key, label]) => (
                                 <option key={key} value={key}>{label}</option>
@@ -238,7 +238,7 @@ export default function Offboard() {
                           <span className="text-[11px] font-semibold text-gray-700">{done}/{total}</span>
                         </div>
                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-[#0D7377] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          <div className="h-full bg-[#253C7D] rounded-full transition-all" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-4">
@@ -322,7 +322,7 @@ export default function Offboard() {
                   required
                   value={newForm.employee_id}
                   onChange={(e) => setNewForm({ ...newForm, employee_id: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
                 >
                   <option value="">Select employee</option>
                   {employees.map((emp) => (
@@ -337,7 +337,7 @@ export default function Offboard() {
                   required
                   value={newForm.last_day}
                   onChange={(e) => setNewForm({ ...newForm, last_day: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
               <div>
@@ -347,10 +347,10 @@ export default function Offboard() {
                   value={newForm.reason}
                   onChange={(e) => setNewForm({ ...newForm, reason: e.target.value })}
                   placeholder="e.g., Career change, Relocation..."
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60]">
+              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">
                 Start Offboarding Process
               </button>
             </form>

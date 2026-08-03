@@ -175,11 +175,11 @@ export default function Profile() {
               {avatarUrl ? (
                 <img src={avatarUrl} alt={displayName} className="w-20 h-20 rounded-2xl object-cover border border-gray-100" />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-xl font-bold">
+                <div className="w-20 h-20 rounded-2xl bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-xl font-bold">
                   {initials}
                 </div>
               )}
-              <label className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-[#0D7377] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#0a5c60] transition-colors">
+              <label className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-[#253C7D] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#1F336A] transition-colors">
                 <i className="ri-camera-line text-white text-xs" />
                 <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
               </label>
@@ -187,7 +187,7 @@ export default function Profile() {
             <div>
               <p className="text-sm font-semibold text-gray-900">{displayName || user?.email}</p>
               <p className="text-[12px] text-gray-500">{user?.email}</p>
-              {uploadingAvatar && <p className="text-[11px] text-[#0D7377] mt-1">Uploading photo...</p>}
+              {uploadingAvatar && <p className="text-[11px] text-[#253C7D] mt-1">Uploading photo...</p>}
             </div>
           </div>
 
@@ -199,12 +199,12 @@ export default function Profile() {
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               />
               <button
                 onClick={handleSaveName}
                 disabled={savingName}
-                className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
               >
                 {savingName ? "Saving..." : "Save"}
               </button>
@@ -230,12 +230,12 @@ export default function Profile() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+1 (555) 000-0000"
-                  className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                  className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
                 />
                 <button
                   onClick={handleSavePhone}
                   disabled={savingPhone}
-                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
                 >
                   {savingPhone ? "Saving..." : "Save"}
                 </button>
@@ -252,19 +252,19 @@ export default function Profile() {
                 placeholder="New password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               />
               <input
                 type="password"
                 placeholder="Confirm new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               />
               <button
                 onClick={handleChangePassword}
                 disabled={savingPassword || !newPassword}
-                className="px-5 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                className="px-5 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
               >
                 {savingPassword ? "Updating..." : "Update Password"}
               </button>
@@ -371,7 +371,7 @@ export default function Profile() {
                       {r.avatar_url ? (
                         <img src={r.avatar_url} alt={r.first_name} className="w-8 h-8 rounded-lg object-cover shrink-0" />
                       ) : (
-                        <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-[11px] font-bold shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-[11px] font-bold shrink-0">
                           {rInitials}
                         </div>
                       )}

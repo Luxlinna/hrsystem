@@ -253,7 +253,7 @@ export default function Leave() {
           const isApproved = approvalAction === "approved";
           new Notification(isApproved ? "Leave Approved ✓" : "Leave Rejected", {
             body: `${selectedRequest.employees?.first_name ?? "Employee"}'s ${selectedRequest.leave_type} leave has been ${approvalAction}.`,
-            icon: "/favicon.ico",
+            icon: "/favicon.png",
           });
         }
       } catch {
@@ -328,7 +328,7 @@ export default function Leave() {
       {/* Toast */}
       {toast && (
         <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-[13px] font-medium text-white ${
-          toast.type === "success" ? "bg-[#0D7377]" : "bg-red-500"
+          toast.type === "success" ? "bg-[#253C7D]" : "bg-red-500"
         }`}>
           {toast.message}
         </div>
@@ -348,7 +348,7 @@ export default function Leave() {
             setShowForm(true);
           }}
           disabled={!canViewAll && !myEmployee}
-          className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <i className="ri-calendar-event-line" />
           Submit Leave
@@ -362,8 +362,8 @@ export default function Leave() {
           { label: "Approved", count: stats.approved, color: "bg-green-50 text-green-700" },
           { label: "Rejected", count: stats.rejected, color: "bg-red-50 text-red-700" },
           canViewAll
-            ? { label: "Approved Days", count: stats.totalDays, color: "bg-[#0D7377]/10 text-[#0D7377]" }
-            : { label: "Days Remaining", count: stats.daysRemaining, color: "bg-[#0D7377]/10 text-[#0D7377]" },
+            ? { label: "Approved Days", count: stats.totalDays, color: "bg-[#253C7D]/10 text-[#253C7D]" }
+            : { label: "Days Remaining", count: stats.daysRemaining, color: "bg-[#253C7D]/10 text-[#253C7D]" },
         ].map((s) => (
           <div key={s.label} className={`rounded-xl p-4 ${s.color}`}>
             <p className="text-2xl font-bold">{s.count}</p>
@@ -409,7 +409,7 @@ export default function Leave() {
                     day.date === 0
                       ? ""
                       : day.requests.length > 0
-                      ? "bg-[#0D7377]/10 text-[#0D7377] font-semibold cursor-pointer hover:bg-[#0D7377]/20"
+                      ? "bg-[#253C7D]/10 text-[#253C7D] font-semibold cursor-pointer hover:bg-[#253C7D]/20"
                       : isToday(day.date)
                       ? "bg-[#1A1A1A] text-white font-semibold"
                       : "text-gray-700 hover:bg-gray-50 cursor-pointer"
@@ -427,7 +427,7 @@ export default function Leave() {
             </div>
             <div className="mt-4 flex items-center gap-4 text-[11px] text-gray-500">
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded bg-[#0D7377]/10 border border-[#0D7377]/20" />
+                <span className="w-3 h-3 rounded bg-[#253C7D]/10 border border-[#253C7D]/20" />
                 <span>On Leave</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -447,7 +447,7 @@ export default function Leave() {
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-4 py-2 rounded-full text-[12px] font-medium capitalize transition-colors ${
-                  filter === f ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  filter === f ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 {f}
@@ -540,7 +540,7 @@ export default function Leave() {
                   <select
                     value={formData.employee_id}
                     onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
                     required
                   >
                     <option value="">Select employee</option>
@@ -561,7 +561,7 @@ export default function Leave() {
                 <select
                   value={formData.leave_type}
                   onChange={(e) => setFormData({ ...formData, leave_type: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
                 >
                   {Object.entries(LEAVE_TYPE_LABELS).map(([type, label]) => {
                     const remaining = formData.employee_id ? getRemaining(formData.employee_id, type) : null;
@@ -584,7 +584,7 @@ export default function Leave() {
                       return (
                         <div
                           key={type}
-                          className={`flex items-center justify-between px-3 py-2 rounded-lg text-[11px] ${isSelected ? "bg-[#0D7377]/10 text-[#0D7377] font-semibold" : "bg-gray-50 text-gray-500"}`}
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg text-[11px] ${isSelected ? "bg-[#253C7D]/10 text-[#253C7D] font-semibold" : "bg-gray-50 text-gray-500"}`}
                         >
                           <span>{label}</span>
                           <span className="font-semibold">{remaining === null ? "∞" : remaining}</span>
@@ -601,7 +601,7 @@ export default function Leave() {
                     type="date"
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
                     required
                   />
                 </div>
@@ -611,7 +611,7 @@ export default function Leave() {
                     type="date"
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
                     required
                   />
                 </div>
@@ -623,7 +623,7 @@ export default function Leave() {
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                   rows={3}
                   maxLength={500}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] resize-none"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] resize-none"
                   placeholder="Brief reason for leave..."
                 />
                 <p className="text-[11px] text-gray-400 mt-1">{formData.reason.length}/500</p>
@@ -639,7 +639,7 @@ export default function Leave() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-4 py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors disabled:opacity-50"
                 >
                   {submitting ? "Submitting..." : "Submit Request"}
                 </button>
@@ -671,7 +671,7 @@ export default function Leave() {
                 onChange={(e) => setApprovalNote(e.target.value)}
                 rows={2}
                 maxLength={500}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] resize-none"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] resize-none"
                 placeholder={`Add a note for ${approvalAction === "approved" ? "approval" : "rejection"}...`}
               />
               <div className="flex gap-3 mt-5">
@@ -684,7 +684,7 @@ export default function Leave() {
                 <button
                   onClick={confirmApproval}
                   className={`flex-1 px-4 py-2.5 rounded-lg text-[13px] font-semibold text-white transition-colors ${
-                    approvalAction === "approved" ? "bg-[#0D7377] hover:bg-[#0a5c60]" : "bg-red-500 hover:bg-red-600"
+                    approvalAction === "approved" ? "bg-[#253C7D] hover:bg-[#1F336A]" : "bg-red-500 hover:bg-red-600"
                   }`}
                 >
                   {approvalAction === "approved" ? "Approve" : "Reject"}

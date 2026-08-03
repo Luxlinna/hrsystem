@@ -34,7 +34,7 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
   pending_approval: { label: "Pending", color: "bg-amber-50 text-amber-700", icon: "ri-time-line" },
   approved: { label: "Approved", color: "bg-green-50 text-green-700", icon: "ri-checkbox-circle-line" },
   rejected: { label: "Rejected", color: "bg-red-50 text-red-700", icon: "ri-close-circle-fill" },
-  processed: { label: "Processed", color: "bg-[#0D7377]/10 text-[#0D7377]", icon: "ri-bank-card-line" },
+  processed: { label: "Processed", color: "bg-[#253C7D]/10 text-[#253C7D]", icon: "ri-bank-card-line" },
 };
 
 export default function PayrollApproval() {
@@ -156,7 +156,7 @@ export default function PayrollApproval() {
   return (
     <div className="p-6 lg:p-10 min-h-screen bg-white">
       {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-[13px] font-medium text-white ${toast.type === "success" ? "bg-[#0D7377]" : "bg-red-500"}`}>
+        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-[13px] font-medium text-white ${toast.type === "success" ? "bg-[#253C7D]" : "bg-red-500"}`}>
           {toast.message}
         </div>
       )}
@@ -167,7 +167,7 @@ export default function PayrollApproval() {
           <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Payroll Approval</h1>
           <p className="text-[13px] text-gray-500 mt-1">Review, approve, and process payroll runs before disbursement</p>
         </div>
-        <button onClick={() => setTab("create")} className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap">
+        <button onClick={() => setTab("create")} className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap">
           <i className="ri-add-line" /> New Payroll Run
         </button>
       </div>
@@ -177,7 +177,7 @@ export default function PayrollApproval() {
         {[
           { label: "Pending Approval", value: pendingRuns.length, sub: fmt(totalPendingNet) + " total", color: "bg-amber-50 text-amber-700" },
           { label: "Approved Runs", value: runs.filter(r => r.status === "approved").length, sub: fmt(runs.filter(r => r.status === "approved").reduce((s, r) => s + Number(r.total_net), 0)), color: "bg-green-50 text-green-700" },
-          { label: "Processed", value: runs.filter(r => r.status === "processed").length, sub: fmt(totalProcessedNet) + " paid", color: "bg-[#0D7377]/10 text-[#0D7377]" },
+          { label: "Processed", value: runs.filter(r => r.status === "processed").length, sub: fmt(totalProcessedNet) + " paid", color: "bg-[#253C7D]/10 text-[#253C7D]" },
           { label: "Draft", value: runs.filter(r => r.status === "draft").length, sub: "Awaiting submission", color: "bg-gray-50 text-gray-700" },
         ].map((s) => (
           <div key={s.label} className={`rounded-xl p-5 ${s.color}`}>
@@ -191,9 +191,9 @@ export default function PayrollApproval() {
       {/* Tabs */}
       <div className="flex gap-1.5 mb-6 border-b border-gray-100 overflow-x-auto">
         {([["pending", "Pending Approval", pendingRuns.length], ["history", "History", historyRuns.length], ["create", "Create Run", null]] as const).map(([id, label, count]) => (
-          <button key={id} onClick={() => setTab(id)} className={`px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${tab === id ? "border-[#0D7377] text-[#0D7377]" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+          <button key={id} onClick={() => setTab(id)} className={`px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${tab === id ? "border-[#253C7D] text-[#253C7D]" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
             {label}
-            {count !== null && <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${tab === id ? "bg-[#0D7377]/10 text-[#0D7377]" : "bg-gray-100 text-gray-500"}`}>{count}</span>}
+            {count !== null && <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${tab === id ? "bg-[#253C7D]/10 text-[#253C7D]" : "bg-gray-100 text-gray-500"}`}>{count}</span>}
           </button>
         ))}
       </div>
@@ -251,7 +251,7 @@ export default function PayrollApproval() {
                         { label: "Base Salary", value: fmtFull(run.total_base), color: "text-gray-900" },
                         { label: "Bonus", value: `+${fmtFull(run.total_bonus)}`, color: "text-green-600" },
                         { label: "Deductions", value: `-${fmtFull(run.total_deductions)}`, color: "text-red-600" },
-                        { label: "Net Payout", value: fmtFull(run.total_net), color: "text-[#0D7377] font-bold" },
+                        { label: "Net Payout", value: fmtFull(run.total_net), color: "text-[#253C7D] font-bold" },
                       ].map((item) => (
                         <div key={item.label} className="bg-gray-50 rounded-lg p-3">
                           <p className="text-[11px] text-gray-500 mb-1">{item.label}</p>
@@ -298,7 +298,7 @@ export default function PayrollApproval() {
         <div>
           <div className="flex items-center gap-3 mb-5">
             <label className="text-[12px] font-medium text-gray-600">Period:</label>
-            <select value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:border-[#0D7377]">
+            <select value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-[12px] bg-white focus:outline-none focus:border-[#253C7D]">
               {periods.map((p) => <option key={p} value={p}>{p === "all" ? "All Periods" : p}</option>)}
             </select>
           </div>
@@ -332,7 +332,7 @@ export default function PayrollApproval() {
                     </span>
                     <div className="flex items-center gap-1.5">
                       {run.status === "approved" && (
-                        <button onClick={() => handleProcess(run)} className="px-3 py-1.5 bg-[#0D7377] text-white text-[11px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors whitespace-nowrap">Process</button>
+                        <button onClick={() => handleProcess(run)} className="px-3 py-1.5 bg-[#253C7D] text-white text-[11px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors whitespace-nowrap">Process</button>
                       )}
                       <button onClick={() => setExpandedRun(isExpanded ? null : run.id)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400">
                         <i className={`${isExpanded ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} text-base`} />
@@ -388,11 +388,11 @@ export default function PayrollApproval() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Period * (YYYY-MM)</label>
-                  <input type="text" required value={createForm.period} onChange={(e) => setCreateForm({ ...createForm, period: e.target.value })} placeholder="e.g. 2026-06" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                  <input type="text" required value={createForm.period} onChange={(e) => setCreateForm({ ...createForm, period: e.target.value })} placeholder="e.g. 2026-06" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Department *</label>
-                  <select value={createForm.department} onChange={(e) => setCreateForm({ ...createForm, department: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white">
+                  <select value={createForm.department} onChange={(e) => setCreateForm({ ...createForm, department: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
                     {["Engineering","Sales","Operations","Marketing","Finance","IT","Legal","Executive","All Departments"].map((d) => <option key={d}>{d}</option>)}
                   </select>
                 </div>
@@ -400,41 +400,41 @@ export default function PayrollApproval() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Total Base Salary *</label>
-                  <input type="number" required value={createForm.total_base} onChange={(e) => setCreateForm({ ...createForm, total_base: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="0" />
+                  <input type="number" required value={createForm.total_base} onChange={(e) => setCreateForm({ ...createForm, total_base: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="0" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Total Bonus</label>
-                  <input type="number" value={createForm.total_bonus} onChange={(e) => setCreateForm({ ...createForm, total_bonus: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="0" />
+                  <input type="number" value={createForm.total_bonus} onChange={(e) => setCreateForm({ ...createForm, total_bonus: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="0" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Total Deductions</label>
-                  <input type="number" value={createForm.total_deductions} onChange={(e) => setCreateForm({ ...createForm, total_deductions: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="0" />
+                  <input type="number" value={createForm.total_deductions} onChange={(e) => setCreateForm({ ...createForm, total_deductions: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="0" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee Count</label>
-                  <input type="number" value={createForm.employee_count} onChange={(e) => setCreateForm({ ...createForm, employee_count: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="0" />
+                  <input type="number" value={createForm.employee_count} onChange={(e) => setCreateForm({ ...createForm, employee_count: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="0" />
                 </div>
               </div>
               {createForm.total_base && (
-                <div className="bg-[#0D7377]/5 border border-[#0D7377]/10 rounded-xl p-4">
-                  <p className="text-[12px] font-semibold text-[#0D7377] mb-1">Calculated Net Payout</p>
-                  <p className="text-[20px] font-bold text-[#0D7377]">
+                <div className="bg-[#253C7D]/5 border border-[#253C7D]/10 rounded-xl p-4">
+                  <p className="text-[12px] font-semibold text-[#253C7D] mb-1">Calculated Net Payout</p>
+                  <p className="text-[20px] font-bold text-[#253C7D]">
                     {fmtFull(Number(createForm.total_base) + Number(createForm.total_bonus || 0) - Number(createForm.total_deductions || 0))}
                   </p>
                 </div>
               )}
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Notes</label>
-                <textarea value={createForm.notes} onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })} rows={3} maxLength={500} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] resize-none" placeholder="Add context or notes about this payroll run..." />
+                <textarea value={createForm.notes} onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })} rows={3} maxLength={500} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] resize-none" placeholder="Add context or notes about this payroll run..." />
               </div>
               <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-[12px] text-amber-700">
                 <i className="ri-information-line mr-1.5" />This run will be submitted for approval automatically. Two approvers will be assigned.
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setTab("pending")} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
-                <button type="submit" disabled={creating} className="flex-1 px-4 py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors disabled:opacity-50">{creating ? "Submitting..." : "Submit for Approval"}</button>
+                <button type="submit" disabled={creating} className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors disabled:opacity-50">{creating ? "Submitting..." : "Submit for Approval"}</button>
               </div>
             </form>
           </div>
@@ -452,9 +452,9 @@ export default function PayrollApproval() {
               {actionModal.action === "approve" ? "Approve Payroll Run" : "Reject Payroll Run"}
             </h3>
             <p className="text-[13px] text-gray-500 mb-1">{actionModal.run.department} · {actionModal.run.period}</p>
-            <p className="text-[14px] font-bold text-[#0D7377] mb-4">Net Payout: {fmtFull(actionModal.run.total_net)}</p>
+            <p className="text-[14px] font-bold text-[#253C7D] mb-4">Net Payout: {fmtFull(actionModal.run.total_net)}</p>
             <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Note (optional)</label>
-            <textarea value={actionNote} onChange={(e) => setActionNote(e.target.value)} rows={3} maxLength={500} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] resize-none" placeholder={`Add a note for ${actionModal.action === "approve" ? "approval" : "rejection"}...`} />
+            <textarea value={actionNote} onChange={(e) => setActionNote(e.target.value)} rows={3} maxLength={500} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] resize-none" placeholder={`Add a note for ${actionModal.action === "approve" ? "approval" : "rejection"}...`} />
             <div className="flex gap-3 mt-5">
               <button onClick={() => setActionModal(null)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
               <button

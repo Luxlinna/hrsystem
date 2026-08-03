@@ -43,7 +43,7 @@ function PermissionsSection() {
   if (loadingRoles) {
     return (
       <div className="flex items-center gap-2 text-gray-400">
-        <div className="w-4 h-4 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-4 h-4 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
         <span className="text-[13px]">Loading roles...</span>
       </div>
     );
@@ -53,7 +53,7 @@ function PermissionsSection() {
     return (
       <p className="text-[13px] text-gray-400">
         No roles defined yet. Create roles from the{" "}
-        <Link to="/admin" className="text-[#0D7377] font-semibold hover:underline">Admin Portal</Link>.
+        <Link to="/admin" className="text-[#253C7D] font-semibold hover:underline">Admin Portal</Link>.
       </p>
     );
   }
@@ -77,7 +77,7 @@ function PermissionsSection() {
         ))}
       </div>
       <div className="px-5 py-3 border-t border-gray-50 bg-gray-50/50">
-        <Link to="/admin" className="text-[12px] text-[#0D7377] font-semibold hover:underline">Manage roles in Admin Portal →</Link>
+        <Link to="/admin" className="text-[12px] text-[#253C7D] font-semibold hover:underline">Manage roles in Admin Portal →</Link>
       </div>
     </div>
   );
@@ -101,7 +101,7 @@ function BranchesSection() {
   if (loadingBranches) {
     return (
       <div className="flex items-center gap-2 text-gray-400">
-        <div className="w-4 h-4 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-4 h-4 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
         <span className="text-[13px]">Loading branches...</span>
       </div>
     );
@@ -120,7 +120,7 @@ function BranchesSection() {
         </div>
         <Link
           to="/branches"
-          className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors whitespace-nowrap"
+          className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors whitespace-nowrap"
         >
           Manage in Branch Module
         </Link>
@@ -129,11 +129,11 @@ function BranchesSection() {
         {branches.map((b) => (
           <div
             key={b.id}
-            className="border border-gray-100 rounded-xl p-5 flex items-start justify-between hover:border-[#0D7377]/20 transition-colors"
+            className="border border-gray-100 rounded-xl p-5 flex items-start justify-between hover:border-[#253C7D]/20 transition-colors"
           >
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0 mt-0.5">
-                <i className="ri-building-line text-[#0D7377] text-sm w-5 h-5 flex items-center justify-center" />
+              <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center shrink-0 mt-0.5">
+                <i className="ri-building-line text-[#253C7D] text-sm w-5 h-5 flex items-center justify-center" />
               </div>
               <div>
                 <p className="text-[14px] font-semibold text-gray-900">{b.name}</p>
@@ -309,7 +309,7 @@ export default function Settings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -338,7 +338,7 @@ export default function Settings() {
             onClick={() => setSection(s.key)}
             className={`px-4 py-2 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap ${
               section === s.key
-                ? "bg-[#0D7377] text-white"
+                ? "bg-[#253C7D] text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -359,13 +359,13 @@ export default function Settings() {
                 type="text"
                 value={getVal("company_name")}
                 onChange={(e) => updateValue("company_name", e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               />
               {edited["company_name"] !== undefined && (
                 <button
                   onClick={() => saveSetting("company_name")}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
                 >
                   Save
                 </button>
@@ -381,7 +381,7 @@ export default function Settings() {
               <select
                 value={getVal("default_currency")}
                 onChange={(e) => updateValue("default_currency", e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               >
                 {currencyOptions.map((c) => (
                   <option key={c} value={c}>
@@ -393,7 +393,7 @@ export default function Settings() {
                 <button
                   onClick={() => saveSetting("default_currency")}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
                 >
                   Save
                 </button>
@@ -409,7 +409,7 @@ export default function Settings() {
               <select
                 value={getVal("timezone")}
                 onChange={(e) => updateValue("timezone", e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               >
                 {timezoneOptions.map((tz) => (
                   <option key={tz} value={tz}>
@@ -421,7 +421,7 @@ export default function Settings() {
                 <button
                   onClick={() => saveSetting("timezone")}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
                 >
                   Save
                 </button>
@@ -438,13 +438,13 @@ export default function Settings() {
                 type="date"
                 value={getVal("fiscal_year_start")}
                 onChange={(e) => updateValue("fiscal_year_start", e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               />
               {edited["fiscal_year_start"] !== undefined && (
                 <button
                   onClick={() => saveSetting("fiscal_year_start")}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
                 >
                   Save
                 </button>
@@ -460,7 +460,7 @@ export default function Settings() {
               <select
                 value={getVal("week_start_day")}
                 onChange={(e) => updateValue("week_start_day", e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               >
                 <option>Monday</option>
                 <option>Sunday</option>
@@ -470,7 +470,7 @@ export default function Settings() {
                 <button
                   onClick={() => saveSetting("week_start_day")}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
                 >
                   Save
                 </button>
@@ -488,13 +488,13 @@ export default function Settings() {
                 type="time"
                 value={getVal("work_start_time")}
                 onChange={(e) => updateValue("work_start_time", e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               />
               {edited["work_start_time"] !== undefined && (
                 <button
                   onClick={() => saveSetting("work_start_time")}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
                 >
                   Save
                 </button>
@@ -511,13 +511,13 @@ export default function Settings() {
                 type="number"
                 value={getVal("default_work_hours")}
                 onChange={(e) => updateValue("default_work_hours", e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               />
               {edited["default_work_hours"] !== undefined && (
                 <button
                   onClick={() => saveSetting("default_work_hours")}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
                 >
                   Save
                 </button>
@@ -534,13 +534,13 @@ export default function Settings() {
                 type="number"
                 value={getVal("overtime_threshold")}
                 onChange={(e) => updateValue("overtime_threshold", e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+                className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
               />
               {edited["overtime_threshold"] !== undefined && (
                 <button
                   onClick={() => saveSetting("overtime_threshold")}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
                 >
                   Save
                 </button>
@@ -556,7 +556,7 @@ export default function Settings() {
               onChange={(e) =>
                 updateValue("leave_approval_required", String(e.target.checked))
               }
-              className="w-4 h-4 rounded border-gray-300 text-[#0D7377]"
+              className="w-4 h-4 rounded border-gray-300 text-[#253C7D]"
             />
             <label
               htmlFor="leave_approval"
@@ -568,7 +568,7 @@ export default function Settings() {
               <button
                 onClick={() => saveSetting("leave_approval_required")}
                 disabled={saving}
-                className="px-3 py-1 bg-[#0D7377] text-white text-[11px] font-semibold rounded-md hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                className="px-3 py-1 bg-[#253C7D] text-white text-[11px] font-semibold rounded-md hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
               >
                 Save
               </button>
@@ -583,7 +583,7 @@ export default function Settings() {
               onChange={(e) =>
                 updateValue("auto_payroll_reminder", String(e.target.checked))
               }
-              className="w-4 h-4 rounded border-gray-300 text-[#0D7377]"
+              className="w-4 h-4 rounded border-gray-300 text-[#253C7D]"
             />
             <label
               htmlFor="payroll_reminder"
@@ -595,7 +595,7 @@ export default function Settings() {
               <button
                 onClick={() => saveSetting("auto_payroll_reminder")}
                 disabled={saving}
-                className="px-3 py-1 bg-[#0D7377] text-white text-[11px] font-semibold rounded-md hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                className="px-3 py-1 bg-[#253C7D] text-white text-[11px] font-semibold rounded-md hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
               >
                 Save
               </button>
@@ -606,7 +606,7 @@ export default function Settings() {
             <button
               onClick={saveAllGeneral}
               disabled={saving}
-              className="px-6 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+              className="px-6 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
             >
               {saving ? "Saving..." : "Save All Changes"}
             </button>
@@ -625,7 +625,7 @@ export default function Settings() {
               <button
                 onClick={saveAllNotifications}
                 disabled={saving}
-                className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors disabled:opacity-40 whitespace-nowrap"
+                className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
               >
                 {saving ? "Saving..." : "Save All"}
               </button>
@@ -665,7 +665,7 @@ export default function Settings() {
                         onChange={(e) =>
                           updateValue(emailKey, String(e.target.checked))
                         }
-                        className="w-4 h-4 rounded border-gray-300 text-[#0D7377]"
+                        className="w-4 h-4 rounded border-gray-300 text-[#253C7D]"
                       />
                       Email
                     </label>
@@ -678,7 +678,7 @@ export default function Settings() {
                         onChange={(e) =>
                           updateValue(pushKey, String(e.target.checked))
                         }
-                        className="w-4 h-4 rounded border-gray-300 text-[#0D7377]"
+                        className="w-4 h-4 rounded border-gray-300 text-[#253C7D]"
                       />
                       Push
                     </label>
@@ -761,7 +761,7 @@ export default function Settings() {
                 className={`px-3 py-1.5 text-[11px] font-medium rounded-lg border transition-colors whitespace-nowrap ${
                   int.connected
                     ? "border-gray-200 text-gray-600 hover:bg-gray-50"
-                    : "border-[#0D7377] text-[#0D7377] hover:bg-[#0D7377]/5"
+                    : "border-[#253C7D] text-[#253C7D] hover:bg-[#253C7D]/5"
                 }`}
               >
                 {int.connected ? "Configure" : "Connect"}

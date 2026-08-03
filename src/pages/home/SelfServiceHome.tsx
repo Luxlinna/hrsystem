@@ -17,7 +17,7 @@ interface MyEmployee {
 const QUICK_ACTIONS = [
   { label: "Log Attendance", icon: "ri-fingerprint-line", note: "Clock in / out", color: "bg-emerald-500" },
   { label: "Submit Leave", icon: "ri-calendar-event-line", note: "Request time off", color: "bg-amber-500" },
-  { label: "View Payslip", icon: "ri-money-dollar-circle-line", note: "Your payslips", color: "bg-[#0D7377]" },
+  { label: "View Payslip", icon: "ri-money-dollar-circle-line", note: "Your payslips", color: "bg-[#253C7D]" },
 ];
 
 export default function SelfServiceHome() {
@@ -68,7 +68,7 @@ export default function SelfServiceHome() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -76,7 +76,7 @@ export default function SelfServiceHome() {
   return (
     <div className="min-h-screen bg-[#F8F8F7]">
       {/* Hero */}
-      <section className="relative bg-gradient-to-b from-[#0D7377] via-[#14919B] to-[#54BAB9] text-white">
+      <section className="relative bg-gradient-to-b from-[#253C7D] via-[#29ABE2] to-[#74C8EC] text-white">
         <div className="px-6 lg:px-10 pt-10 pb-16">
           <p className="text-white/70 text-sm">{greeting},</p>
           <h1 className="text-3xl md:text-5xl font-bold leading-tight tracking-tight mt-1">{displayName}</h1>
@@ -93,7 +93,7 @@ export default function SelfServiceHome() {
             <Link
               key={action.label}
               to="/self-service"
-              className="bg-white rounded-2xl p-5 border border-gray-100 hover:border-[#0D7377]/20 hover:shadow-sm transition-all flex items-center gap-4"
+              className="bg-white rounded-2xl p-5 border border-gray-100 hover:border-[#253C7D]/20 hover:shadow-sm transition-all flex items-center gap-4"
             >
               <div className={`w-11 h-11 rounded-xl ${action.color} flex items-center justify-center shrink-0`}>
                 <i className={`${action.icon} text-white text-lg`} />
@@ -112,7 +112,7 @@ export default function SelfServiceHome() {
         <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A] mb-6">My Overview</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl p-5 border border-gray-100">
-            <i className="ri-fingerprint-line text-[#0D7377] text-xl mb-3 block w-8 h-8 flex items-center justify-center" />
+            <i className="ri-fingerprint-line text-[#253C7D] text-xl mb-3 block w-8 h-8 flex items-center justify-center" />
             <p className="text-lg font-bold text-gray-900 capitalize">{todayAttendance?.status || "Not clocked in"}</p>
             <p className="text-[11px] text-gray-500 mt-1">Today's Attendance</p>
           </div>
@@ -139,7 +139,7 @@ export default function SelfServiceHome() {
         <section className="px-6 lg:px-10 pb-10 md:pb-14">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A]">My Recent Leave</h2>
-            <Link to="/self-service" className="text-[13px] text-[#0D7377] font-semibold hover:underline">View All</Link>
+            <Link to="/self-service" className="text-[13px] text-[#253C7D] font-semibold hover:underline">View All</Link>
           </div>
           <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
             {myLeave.map((l) => (
@@ -164,11 +164,11 @@ export default function SelfServiceHome() {
         <section className="px-6 lg:px-10 pb-10 md:pb-14">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A]">Company Announcements</h2>
-            <Link to="/announcements" className="text-[13px] text-[#0D7377] font-semibold hover:underline">View All</Link>
+            <Link to="/announcements" className="text-[13px] text-[#253C7D] font-semibold hover:underline">View All</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {announcements.map((a) => (
-              <Link to="/announcements" key={a.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:border-[#0D7377]/20 transition-all">
+              <Link to="/announcements" key={a.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:border-[#253C7D]/20 transition-all">
                 <p className="text-[13px] font-semibold text-gray-900 line-clamp-1">{a.title}</p>
                 <p className="text-[12px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">{a.content}</p>
               </Link>

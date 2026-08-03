@@ -14,12 +14,12 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title || "HR Nexus";
+  const title = payload.notification?.title || "HRM_OPS";
   const body = payload.notification?.body || "";
   self.registration.showNotification(title, {
     body,
-    icon: "/favicon.ico",
-    badge: "/favicon.ico",
+    icon: "/favicon.png",
+    badge: "/favicon.png",
     data: payload.data || {},
   });
 });

@@ -168,7 +168,7 @@ export default function EmployeeProfile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -178,7 +178,7 @@ export default function EmployeeProfile() {
       <div className="p-10 text-center">
         <i className="ri-user-search-line text-4xl text-gray-300 mb-3 block" />
         <p className="text-gray-500">Employee not found</p>
-        <Link to="/employees" className="text-[13px] text-[#0D7377] hover:underline mt-2 inline-block">
+        <Link to="/employees" className="text-[13px] text-[#253C7D] hover:underline mt-2 inline-block">
           Back to Directory
         </Link>
       </div>
@@ -189,9 +189,9 @@ export default function EmployeeProfile() {
     <div className="p-6 lg:p-10 min-h-screen bg-[#FAFAF8]">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-[12px] text-gray-500">
-        <Link to="/" className="hover:text-[#0D7377]">Dashboard</Link>
+        <Link to="/" className="hover:text-[#253C7D]">Dashboard</Link>
         <i className="ri-arrow-right-s-line" />
-        <Link to="/employees" className="hover:text-[#0D7377]">Directory</Link>
+        <Link to="/employees" className="hover:text-[#253C7D]">Directory</Link>
         <i className="ri-arrow-right-s-line" />
         <span className="text-gray-900 font-medium">{employee.first_name} {employee.last_name}</span>
       </div>
@@ -208,11 +208,11 @@ export default function EmployeeProfile() {
                 className="w-24 h-24 rounded-2xl object-cover border border-gray-100"
               />
             ) : (
-              <div className="w-24 h-24 rounded-2xl bg-[#0D7377] flex items-center justify-center text-white text-3xl font-bold">
+              <div className="w-24 h-24 rounded-2xl bg-[#253C7D] flex items-center justify-center text-white text-3xl font-bold">
                 {initials}
               </div>
             )}
-            <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-[#0D7377] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#0a5c60] transition-colors">
+            <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-[#253C7D] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#1F336A] transition-colors">
               <input
                 type="file"
                 accept="image/*"
@@ -259,7 +259,7 @@ export default function EmployeeProfile() {
           <div className="flex gap-2 shrink-0">
             <button
               onClick={() => setEditing(!editing)}
-              className="px-4 py-2 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors"
+              className="px-4 py-2 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors"
             >
               <i className={`ri-${editing ? "close" : "edit"}-line mr-1`} />
               {editing ? "Cancel" : "Edit Profile"}
@@ -287,7 +287,7 @@ export default function EmployeeProfile() {
                 <button
                   onClick={saveChanges}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] disabled:opacity-60"
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] disabled:opacity-60"
                 >
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
@@ -301,7 +301,7 @@ export default function EmployeeProfile() {
                   <input
                     value={form.first_name || ""}
                     onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                   />
                 ) : (
                   <p className="text-[14px] text-gray-900 font-medium">{employee.first_name}</p>
@@ -313,7 +313,7 @@ export default function EmployeeProfile() {
                   <input
                     value={form.last_name || ""}
                     onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                   />
                 ) : (
                   <p className="text-[14px] text-gray-900 font-medium">{employee.last_name}</p>
@@ -326,7 +326,7 @@ export default function EmployeeProfile() {
                     type="email"
                     value={form.email || ""}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                   />
                 ) : (
                   <p className="text-[14px] text-gray-900">{employee.email}</p>
@@ -338,7 +338,7 @@ export default function EmployeeProfile() {
                   <input
                     value={form.phone || ""}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                   />
                 ) : (
                   <p className="text-[14px] text-gray-900">{employee.phone || "—"}</p>
@@ -350,7 +350,7 @@ export default function EmployeeProfile() {
                   <input
                     value={form.role || ""}
                     onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                   />
                 ) : (
                   <p className="text-[14px] text-gray-900">{employee.role}</p>
@@ -362,7 +362,7 @@ export default function EmployeeProfile() {
                   <input
                     value={form.department || ""}
                     onChange={(e) => setForm({ ...form, department: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                   />
                 ) : (
                   <p className="text-[14px] text-gray-900">{employee.department}</p>
@@ -375,7 +375,7 @@ export default function EmployeeProfile() {
                     type="date"
                     value={form.join_date || ""}
                     onChange={(e) => setForm({ ...form, join_date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                   />
                 ) : (
                   <p className="text-[14px] text-gray-900">{employee.join_date || "—"}</p>
@@ -387,7 +387,7 @@ export default function EmployeeProfile() {
                   <select
                     value={form.status || ""}
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                   >
                     <option value="active">Active</option>
                     <option value="on_leave">On Leave</option>
@@ -404,7 +404,7 @@ export default function EmployeeProfile() {
                   <select
                     value={form.reports_to || ""}
                     onChange={(e) => setForm({ ...form, reports_to: e.target.value || null })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                   >
                     <option value="">No manager</option>
                     {allEmployees.map((e) => (
@@ -419,7 +419,7 @@ export default function EmployeeProfile() {
                       <>
                         <Link
                           to={`/employees/${manager.id}`}
-                          className="text-[14px] text-[#0D7377] font-medium hover:underline flex items-center gap-1"
+                          className="text-[14px] text-[#253C7D] font-medium hover:underline flex items-center gap-1"
                         >
                           <i className="ri-user-line" />
                           {manager.first_name} {manager.last_name}
@@ -482,7 +482,7 @@ export default function EmployeeProfile() {
                       <span className="text-gray-900 font-medium">{p.month}</span>
                       <span className="text-right text-gray-700">${Number(p.gross_pay || 0).toLocaleString()}</span>
                       <span className="text-right text-gray-700">${Number(p.deductions || 0).toLocaleString()}</span>
-                      <span className="text-right font-semibold text-[#0D7377]">${Number(p.net_pay || 0).toLocaleString()}</span>
+                      <span className="text-right font-semibold text-[#253C7D]">${Number(p.net_pay || 0).toLocaleString()}</span>
                       <span className={`capitalize text-[11px] font-semibold px-2 py-0.5 rounded-full w-fit ${
                         p.status === "processed" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
                       }`}>{p.status}</span>
@@ -510,7 +510,7 @@ export default function EmployeeProfile() {
                   {manager.first_name[0]}{manager.last_name[0]}
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-gray-900 group-hover:text-[#0D7377]">{manager.first_name} {manager.last_name}</p>
+                  <p className="text-[13px] font-semibold text-gray-900 group-hover:text-[#253C7D]">{manager.first_name} {manager.last_name}</p>
                   <p className="text-[11px] text-gray-500">{manager.role} — Manager</p>
                 </div>
                 <i className="ri-arrow-right-s-line text-gray-400 ml-auto" />
@@ -532,7 +532,7 @@ export default function EmployeeProfile() {
                   to={`/employees/${r.id}`}
                   className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] font-bold text-xs">
+                  <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold text-xs">
                     {r.first_name[0]}{r.last_name[0]}
                   </div>
                   <div>

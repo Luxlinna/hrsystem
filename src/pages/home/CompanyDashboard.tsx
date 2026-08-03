@@ -17,7 +17,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { usePermissions } from "@/hooks/usePermissions";
 
-const pieColors = ["#0D7377", "#14919B", "#54BAB9", "#A8D8D8", "#D4ECEB"];
+const pieColors = ["#253C7D", "#29ABE2", "#74C8EC", "#A8D8D8", "#D4ECEB"];
 
 interface LiveStats {
   branches: number;
@@ -36,7 +36,7 @@ interface LiveStats {
 const QUICK_ACTIONS = [
   { label: "Log Attendance", icon: "ri-fingerprint-line", path: "/self-service", module: "self-service", color: "bg-emerald-500", note: "Clock in / out" },
   { label: "Submit Leave", icon: "ri-calendar-event-line", path: "/self-service", module: "self-service", color: "bg-amber-500", note: "Request time off" },
-  { label: "View Payslip", icon: "ri-money-dollar-circle-line", path: "/self-service", module: "self-service", color: "bg-[#0D7377]", note: "Your payslips" },
+  { label: "View Payslip", icon: "ri-money-dollar-circle-line", path: "/self-service", module: "self-service", color: "bg-[#253C7D]", note: "Your payslips" },
   { label: "New Employee", icon: "ri-user-add-line", path: "/employees", module: "employees", color: "bg-violet-500", note: "Add to directory" },
   { label: "Notifications", icon: "ri-notification-3-line", path: "/notifications", module: "notifications", color: "bg-rose-500", note: "Check alerts" },
 ];
@@ -302,7 +302,7 @@ export default function CompanyDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -312,7 +312,7 @@ export default function CompanyDashboard() {
       {/* Pull-to-refresh indicator */}
       {isPulling && pullDistance > 10 && (
         <div
-          className="lg:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-[#0D7377] text-white transition-all"
+          className="lg:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-[#253C7D] text-white transition-all"
           style={{ height: `${Math.min(pullDistance, PULL_THRESHOLD)}px` }}
         >
           <i className={`ri-refresh-line text-lg ${pullDistance >= PULL_THRESHOLD ? "animate-spin" : ""}`} />
@@ -352,7 +352,7 @@ export default function CompanyDashboard() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-[#0D7377] via-[#14919B] to-[#54BAB9] text-white">
+      <section className="relative bg-gradient-to-b from-[#253C7D] via-[#29ABE2] to-[#74C8EC] text-white">
         <div className="px-6 lg:px-10 pt-6 pb-16">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mt-4">
             HR / Command / Center
@@ -380,7 +380,7 @@ export default function CompanyDashboard() {
         <h2 className="text-3xl md:text-4xl font-extrabold text-[#1A1A1A] mb-8 md:mb-10">Workforce / Analytics</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Total Employees", value: stats.employees.toLocaleString(), icon: "ri-user-3-line", color: "text-[#0D7377]", link: "/employees", module: "employees" },
+            { label: "Total Employees", value: stats.employees.toLocaleString(), icon: "ri-user-3-line", color: "text-[#253C7D]", link: "/employees", module: "employees" },
             { label: "Active Now", value: stats.activeEmployees.toLocaleString(), icon: "ri-user-follow-line", color: "text-emerald-600", link: "/employees", module: "employees" },
             { label: "Open Roles", value: stats.openJobs.toString(), icon: "ri-briefcase-line", color: "text-blue-600", link: "/hire", module: "hire" },
             { label: "Pending Leaves", value: stats.leavePending.toString(), icon: "ri-time-line", color: "text-amber-600", link: "/leave", module: "leave" },
@@ -392,10 +392,10 @@ export default function CompanyDashboard() {
             <Link
               key={s.label}
               to={s.link}
-              className="bg-white rounded-2xl p-5 md:p-6 border border-gray-100 hover:border-[#0D7377]/20 hover:shadow-sm transition-all group"
+              className="bg-white rounded-2xl p-5 md:p-6 border border-gray-100 hover:border-[#253C7D]/20 hover:shadow-sm transition-all group"
             >
               <i className={`${s.icon} ${s.color} text-xl w-8 h-8 flex items-center justify-center mb-3`} />
-              <p className="text-xl font-bold text-gray-900 group-hover:text-[#0D7377] transition-colors">{s.value}</p>
+              <p className="text-xl font-bold text-gray-900 group-hover:text-[#253C7D] transition-colors">{s.value}</p>
               <p className="text-[11px] text-gray-500 mt-1">{s.label}</p>
             </Link>
           ))}
@@ -414,7 +414,7 @@ export default function CompanyDashboard() {
               <Link
                 to="/onboarding"
                 key={o.id}
-                className="min-w-[220px] rounded-2xl p-5 bg-gradient-to-br from-[#0D7377] to-[#14919B] text-white relative overflow-hidden hover:shadow-md transition-shadow"
+                className="min-w-[220px] rounded-2xl p-5 bg-gradient-to-br from-[#253C7D] to-[#29ABE2] text-white relative overflow-hidden hover:shadow-md transition-shadow"
               >
                 <span className="absolute top-4 right-4 bg-white/20 backdrop-blur text-[11px] font-semibold px-2.5 py-1 rounded-full">
                   Day {o.day_count}
@@ -433,7 +433,7 @@ export default function CompanyDashboard() {
             )}
             <Link
               to="/onboarding"
-              className="min-w-[220px] rounded-2xl p-5 bg-gray-100 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 hover:border-[#0D7377] hover:text-[#0D7377] transition-colors"
+              className="min-w-[220px] rounded-2xl p-5 bg-gray-100 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 hover:border-[#253C7D] hover:text-[#253C7D] transition-colors"
             >
               <i className="ri-add-line text-3xl mb-2" />
               <span className="text-[13px] font-medium">View All</span>
@@ -534,7 +534,7 @@ export default function CompanyDashboard() {
                           contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
                           formatter={(value: any) => [`$${value}k`, "Net Pay"]}
                         />
-                        <Bar dataKey="net" fill="#0D7377" radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="net" fill="#253C7D" radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -553,7 +553,7 @@ export default function CompanyDashboard() {
               <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">Recruitment</p>
               <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Hiring Overview</h2>
             </div>
-            <Link to="/hire" className="text-[13px] text-[#0D7377] font-semibold hover:underline">
+            <Link to="/hire" className="text-[13px] text-[#253C7D] font-semibold hover:underline">
               View All <i className="ri-arrow-right-line" />
             </Link>
           </div>
@@ -567,7 +567,7 @@ export default function CompanyDashboard() {
                       <p className="text-[13px] font-semibold text-gray-900">{j.title}</p>
                       <p className="text-[11px] text-gray-500">{j.department} &middot; {j.location}</p>
                     </div>
-                    <span className="text-[11px] text-[#0D7377] font-medium">${j.salary_min?.toLocaleString()}k+</span>
+                    <span className="text-[11px] text-[#253C7D] font-medium">${j.salary_min?.toLocaleString()}k+</span>
                   </Link>
                 ))}
                 {jobs.filter((j) => j.status === "active").length === 0 && (
@@ -580,7 +580,7 @@ export default function CompanyDashboard() {
               <div className="space-y-3">
                 {candidates.slice(0, 5).map((c) => (
                   <Link to={`/hire/candidate/${c.id}`} key={c.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                    <div className="w-9 h-9 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] font-bold text-xs">
+                    <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold text-xs">
                       {c.full_name?.split(" ").map((n: string) => n[0]).join("")}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -602,7 +602,7 @@ export default function CompanyDashboard() {
                   { stage: "Screening", count: candidates.filter((c) => c.stage === "screening").length, color: "bg-amber-200" },
                   { stage: "Interview", count: candidates.filter((c) => c.stage === "interview").length, color: "bg-blue-200" },
                   { stage: "Offer", count: candidates.filter((c) => c.stage === "offer").length, color: "bg-emerald-200" },
-                  { stage: "Hired", count: candidates.filter((c) => c.stage === "hired").length, color: "bg-[#0D7377]" },
+                  { stage: "Hired", count: candidates.filter((c) => c.stage === "hired").length, color: "bg-[#253C7D]" },
                 ].map((f) => (
                   <div key={f.stage} className="flex items-center gap-3">
                     <span className="text-[12px] text-gray-500 w-20">{f.stage}</span>
@@ -629,26 +629,26 @@ export default function CompanyDashboard() {
               <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">Company</p>
               <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Latest Announcements</h2>
             </div>
-            <Link to="/announcements" className="text-[13px] text-[#0D7377] font-semibold hover:underline">
+            <Link to="/announcements" className="text-[13px] text-[#253C7D] font-semibold hover:underline">
               View All <i className="ri-arrow-right-line" />
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {announcements.slice(0, 4).map((a) => {
-              const catColors: Record<string, string> = { event: "text-violet-600 bg-violet-50", policy: "text-amber-600 bg-amber-50", news: "text-emerald-600 bg-emerald-50", benefits: "text-sky-600 bg-sky-50", compliance: "text-red-600 bg-red-50", hr: "text-[#0D7377] bg-[#0D7377]/10", general: "text-gray-600 bg-gray-100" };
+              const catColors: Record<string, string> = { event: "text-violet-600 bg-violet-50", policy: "text-amber-600 bg-amber-50", news: "text-emerald-600 bg-emerald-50", benefits: "text-sky-600 bg-sky-50", compliance: "text-red-600 bg-red-50", hr: "text-[#253C7D] bg-[#253C7D]/10", general: "text-gray-600 bg-gray-100" };
               const catIcons: Record<string, string> = { event: "ri-calendar-event-line", policy: "ri-file-text-line", news: "ri-newspaper-line", benefits: "ri-heart-pulse-line", compliance: "ri-shield-check-line", hr: "ri-user-settings-line", general: "ri-information-line" };
               const colClass = catColors[a.category] || catColors.general;
               const iconClass = catIcons[a.category] || catIcons.general;
               const daysAgo = Math.floor((Date.now() - new Date(a.published_at).getTime()) / 86400000);
               return (
-                <Link to="/announcements" key={a.id} className="flex gap-3 p-4 border border-gray-100 rounded-xl hover:border-[#0D7377]/20 transition-all">
+                <Link to="/announcements" key={a.id} className="flex gap-3 p-4 border border-gray-100 rounded-xl hover:border-[#253C7D]/20 transition-all">
                   <div className={`w-9 h-9 shrink-0 flex items-center justify-center rounded-lg ${colClass}`}>
                     <i className={`${iconClass} text-sm`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-[13px] font-semibold text-gray-900 leading-tight line-clamp-1">{a.title}</p>
-                      {a.pinned && <i className="ri-pushpin-line text-[#0D7377] text-xs shrink-0 mt-0.5" />}
+                      {a.pinned && <i className="ri-pushpin-line text-[#253C7D] text-xs shrink-0 mt-0.5" />}
                     </div>
                     <p className="text-[12px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">{a.content}</p>
                     <p className="text-[11px] text-gray-400 mt-2">{daysAgo === 0 ? "Today" : `${daysAgo}d ago`} &middot; {a.author_name}</p>
@@ -675,8 +675,8 @@ export default function CompanyDashboard() {
             </div>
             <div className="flex items-center gap-2 text-[12px] text-gray-500">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0D7377] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0D7377]" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#253C7D] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#253C7D]" />
               </span>
               Last 7 days
             </div>
@@ -686,13 +686,13 @@ export default function CompanyDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             {[
               { label: "Attendance Rate", value: `${hrKpis.attendanceRate}%`, icon: "ri-user-follow-line", color: "text-emerald-600", bg: "bg-emerald-50", link: "/attendance", module: "attendance", note: "Last 7 days" },
-              { label: "Avg Hours/Day", value: `${hrKpis.avgHoursWorked}h`, icon: "ri-timer-2-line", color: "text-[#0D7377]", bg: "bg-[#0D7377]/10", link: "/attendance", module: "attendance", note: "Per employee" },
+              { label: "Avg Hours/Day", value: `${hrKpis.avgHoursWorked}h`, icon: "ri-timer-2-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", link: "/attendance", module: "attendance", note: "Per employee" },
               { label: "Late Arrival Rate", value: `${hrKpis.lateRate}%`, icon: "ri-time-line", color: hrKpis.lateRate > 15 ? "text-red-600" : "text-amber-600", bg: hrKpis.lateRate > 15 ? "bg-red-50" : "bg-amber-50", link: "/attendance", module: "attendance", note: "Of check-ins" },
               { label: "Training Completion", value: `${hrKpis.trainingCompletionRate}%`, icon: "ri-graduation-cap-line", color: "text-violet-600", bg: "bg-violet-50", link: "/training", module: "training", note: "All enrollments" },
               { label: "Active Trainings", value: hrKpis.inProgressTrainings.toString(), icon: "ri-book-open-line", color: "text-sky-600", bg: "bg-sky-50", link: "/training", module: "training", note: "In progress" },
               { label: "Open Cases", value: hrKpis.openDisciplinaryCases.toString(), icon: "ri-alert-line", color: hrKpis.openDisciplinaryCases > 3 ? "text-red-600" : "text-orange-600", bg: hrKpis.openDisciplinaryCases > 3 ? "bg-red-50" : "bg-orange-50", link: "/disciplinary", module: "disciplinary", note: "Disciplinary" },
             ].filter((kpi) => can(kpi.module)).map((kpi) => (
-              <Link key={kpi.label} to={kpi.link} className="bg-white rounded-2xl p-4 border border-gray-100 hover:border-[#0D7377]/20 transition-all group">
+              <Link key={kpi.label} to={kpi.link} className="bg-white rounded-2xl p-4 border border-gray-100 hover:border-[#253C7D]/20 transition-all group">
                 <div className={`w-8 h-8 flex items-center justify-center rounded-lg mb-2.5 ${kpi.bg}`}>
                   <i className={`${kpi.icon} ${kpi.color} text-sm`} />
                 </div>
@@ -708,7 +708,7 @@ export default function CompanyDashboard() {
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[14px] font-semibold text-gray-900">7-Day Attendance Trend</h3>
-                <Link to="/attendance" className="text-[12px] text-[#0D7377] font-semibold hover:underline">Full Report <i className="ri-arrow-right-line" /></Link>
+                <Link to="/attendance" className="text-[12px] text-[#253C7D] font-semibold hover:underline">Full Report <i className="ri-arrow-right-line" /></Link>
               </div>
               <div className="flex items-end gap-2 h-20">
                 {hrKpis.attendanceTrend.map((d, i) => (
@@ -764,8 +764,8 @@ export default function CompanyDashboard() {
                   <AreaChart data={attendanceData}>
                     <defs>
                       <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#0D7377" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#0D7377" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#253C7D" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#253C7D" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="colorAbsent" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#E11D48" stopOpacity={0.3} />
@@ -776,7 +776,7 @@ export default function CompanyDashboard() {
                     <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-                    <Area type="monotone" dataKey="present" stroke="#0D7377" fill="url(#colorPresent)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="present" stroke="#253C7D" fill="url(#colorPresent)" strokeWidth={2} />
                     <Area type="monotone" dataKey="absent" stroke="#E11D48" fill="url(#colorAbsent)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -826,7 +826,7 @@ export default function CompanyDashboard() {
                     <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-                    <Bar dataKey="hires" fill="#0D7377" radius={[4, 4, 0, 0]} name="Hires" />
+                    <Bar dataKey="hires" fill="#253C7D" radius={[4, 4, 0, 0]} name="Hires" />
                     <Bar dataKey="terminations" fill="#E11D48" radius={[4, 4, 0, 0]} name="Terminations" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -858,10 +858,10 @@ export default function CompanyDashboard() {
             <Link
               key={item.label}
               to={item.path}
-              className="flex flex-col items-center gap-2 bg-gray-50 hover:bg-[#0D7377]/5 border border-gray-100 hover:border-[#0D7377]/20 rounded-xl px-5 py-4 w-[100px] transition-colors group"
+              className="flex flex-col items-center gap-2 bg-gray-50 hover:bg-[#253C7D]/5 border border-gray-100 hover:border-[#253C7D]/20 rounded-xl px-5 py-4 w-[100px] transition-colors group"
             >
-              <i className={`${item.icon} text-lg text-gray-600 group-hover:text-[#0D7377] w-6 h-6 flex items-center justify-center transition-colors`} />
-              <span className="text-[11px] font-medium text-gray-600 group-hover:text-[#0D7377] transition-colors whitespace-nowrap">
+              <i className={`${item.icon} text-lg text-gray-600 group-hover:text-[#253C7D] w-6 h-6 flex items-center justify-center transition-colors`} />
+              <span className="text-[11px] font-medium text-gray-600 group-hover:text-[#253C7D] transition-colors whitespace-nowrap">
                 {item.label}
               </span>
             </Link>
@@ -897,7 +897,7 @@ export default function CompanyDashboard() {
         <button
           onClick={() => setFabOpen((v) => !v)}
           className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all duration-200 active:scale-95 ${
-            fabOpen ? "bg-gray-800 rotate-45" : "bg-[#0D7377]"
+            fabOpen ? "bg-gray-800 rotate-45" : "bg-[#253C7D]"
           }`}
           style={{ boxShadow: "0 6px 24px rgba(13,115,119,0.4)" }}
           aria-label="Quick actions"
@@ -921,7 +921,7 @@ export default function CompanyDashboard() {
               <input
                 type="email"
                 placeholder="support@hrnexus.com"
-                className="mt-1 w-full max-w-xs bg-transparent border-b border-gray-300 py-2 text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0D7377]"
+                className="mt-1 w-full max-w-xs bg-transparent border-b border-gray-300 py-2 text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#253C7D]"
               />
             </div>
             <button className="mt-6 inline-flex items-center gap-2 border border-gray-300 rounded-lg px-5 py-2.5 text-[13px] font-medium text-gray-700 hover:border-gray-400 transition-colors">
@@ -959,7 +959,7 @@ export default function CompanyDashboard() {
           </div>
         </div>
         <div className="mt-10 pt-6 border-t border-gray-200/50 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[11px] text-gray-400">2026 HR Nexus. All rights reserved.</p>
+          <p className="text-[11px] text-gray-400">2026 HRM_OPS. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link to="/settings" className="text-[11px] text-gray-500 hover:text-gray-700">Privacy</Link>
             <Link to="/settings" className="text-[11px] text-gray-500 hover:text-gray-700">Terms</Link>

@@ -63,7 +63,7 @@ export default function GeofenceCheckInAlert() {
             if (Notification.permission === "granted") {
               const n = new Notification(`You're near ${branch.name}`, {
                 body: "Tap to check in.",
-                icon: "/favicon.ico",
+                icon: "/favicon.png",
               });
               n.onclick = () => { window.focus(); navigate("/self-service?tab=checkin&quickCheckIn=1"); };
             }
@@ -92,7 +92,7 @@ export default function GeofenceCheckInAlert() {
 
   return (
     <div className="fixed bottom-20 lg:bottom-5 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-sm">
-      <div className="bg-[#0D7377] text-white rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3">
+      <div className="bg-[#253C7D] text-white rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3">
         <i className="ri-map-pin-user-line text-xl shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-semibold">You're near {nearby.branchName}</p>
@@ -100,7 +100,7 @@ export default function GeofenceCheckInAlert() {
         </div>
         <button
           onClick={() => navigate("/self-service?tab=checkin&quickCheckIn=1")}
-          className="bg-white text-[#0D7377] text-[12px] font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer"
+          className="bg-white text-[#253C7D] text-[12px] font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer"
         >
           Check In
         </button>

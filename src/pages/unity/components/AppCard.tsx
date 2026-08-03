@@ -42,7 +42,7 @@ export default function AppCard({ app, accessCount, usageCount, todayMinutes, on
         </span>
       </div>
 
-      <p className="text-[14px] font-bold text-gray-900 group-hover:text-[#0D7377] transition-colors">{app.name}</p>
+      <p className="text-[14px] font-bold text-gray-900 group-hover:text-[#253C7D] transition-colors">{app.name}</p>
       <p className="text-[12px] text-gray-500 mt-1 leading-relaxed line-clamp-2">{app.description}</p>
 
       <span className={`inline-block mt-3 text-[10px] font-semibold px-2 py-1 rounded-md ${categoryColors[app.category] || "bg-gray-50 text-gray-500"}`}>
@@ -69,7 +69,7 @@ export default function AppCard({ app, accessCount, usageCount, todayMinutes, on
           href={app.integration_url}
           target="_blank"
           rel="nofollow noreferrer"
-          className="flex-1 py-2 text-center text-[11px] font-semibold text-[#0D7377] border border-[#0D7377]/20 rounded-lg hover:bg-[#0D7377]/5 transition-colors whitespace-nowrap"
+          className="flex-1 py-2 text-center text-[11px] font-semibold text-[#253C7D] border border-[#253C7D]/20 rounded-lg hover:bg-[#253C7D]/5 transition-colors whitespace-nowrap"
           onClick={(e) => e.stopPropagation()}
         >
           <i className="ri-external-link-line mr-1" />

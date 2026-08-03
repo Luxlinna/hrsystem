@@ -31,11 +31,11 @@ export function useFCM() {
       }
 
       unsub = onMessage(msg, (payload) => {
-        const title = payload.notification?.title || "HR Nexus";
+        const title = payload.notification?.title || "HRM_OPS";
         const body = payload.notification?.body || "";
         const link = payload.data?.link;
         if (Notification.permission === "granted") {
-          const n = new Notification(title, { body, icon: "/favicon.ico" });
+          const n = new Notification(title, { body, icon: "/favicon.png" });
           if (link) n.onclick = () => { window.focus(); window.location.href = link; };
         }
       });
