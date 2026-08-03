@@ -235,7 +235,7 @@ function MobileDrawer({
                       onClick={onClose}
                       className={`flex items-center gap-3 mx-3 px-3 py-2.5 rounded-lg text-[13px] transition-colors ${
                         isActive
-                          ? "bg-[#253C7D]/20 text-[#253C7D]"
+                          ? "bg-[#29ABE2]/20 text-[#29ABE2]"
                           : "text-gray-400 hover:bg-white/5 hover:text-white"
                       }`}
                     >

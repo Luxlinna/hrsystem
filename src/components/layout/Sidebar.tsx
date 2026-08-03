@@ -166,7 +166,7 @@ export default function Sidebar() {
                       isExpanded ? "gap-3 px-3 py-2.5 mx-3" : "justify-center py-3 mx-2"
                     } ${
                       isActive
-                        ? "bg-[#253C7D]/20 text-[#253C7D]"
+                        ? "bg-[#29ABE2]/20 text-[#29ABE2]"
                         : "text-gray-400 hover:bg-white/5 hover:text-white"
                     }`}
                   >
@@ -195,7 +195,7 @@ export default function Sidebar() {
                 isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
               } ${
                 location.pathname === "/notifications"
-                  ? "bg-[#253C7D]/20 text-[#253C7D]"
+                  ? "bg-[#29ABE2]/20 text-[#29ABE2]"
                   : "text-gray-400 hover:bg-white/5 hover:text-white"
               }`}
             >
@@ -226,7 +226,7 @@ export default function Sidebar() {
                 isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
               } ${
                 location.pathname === "/admin"
-                  ? "bg-[#253C7D]/20 text-[#253C7D]"
+                  ? "bg-[#29ABE2]/20 text-[#29ABE2]"
                   : "text-gray-400 hover:bg-white/5 hover:text-white"
               }`}
             >
