@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import {
   BarChart,
   Bar,
@@ -463,7 +463,7 @@ export default function CompanyDashboard() {
                     <span>Status</span>
                   </div>
                   {leaveRequests.map((l) => (
-                    <>
+                    <Fragment key={l.id}>
                       {/* Desktop row */}
                       <div key={`desk-${l.id}`} className="hidden sm:grid grid-cols-4 px-4 py-3 border-t border-gray-50 text-[13px]">
                         <span className="text-gray-900 font-medium">
@@ -494,7 +494,7 @@ export default function CompanyDashboard() {
                           {l.status}
                         </span>
                       </div>
-                    </>
+                    </Fragment>
                   ))}
                 </div>
                 <div className="flex items-center gap-3 mt-4">
