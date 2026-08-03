@@ -1,7 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { NOTIFICATION_SOURCE_ROUTES } from "@/lib/notificationRoutes";
@@ -282,7 +281,6 @@ function MobileDrawer({
 export default function TopBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { collapsed, toggle } = useSidebar();
   const { user, logout } = useAuth();
   const { can, isAdmin } = usePermissions();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -491,15 +489,6 @@ export default function TopBar() {
     <header className={`sticky top-0 z-40 ${bgClass} transition-all duration-300`}>
       <div className="flex items-center justify-between px-4 lg:px-8 py-3">
         <div className="flex items-center gap-4">
-          {/* Sidebar toggle */}
-          <button
-            onClick={toggle}
-            className="hidden lg:flex items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:bg-black/5 hover:text-gray-900 active:scale-95 transition-all"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <i className={`${collapsed ? "ri-menu-unfold-line" : "ri-menu-fold-line"} text-lg`} />
-          </button>
-
           {/* Mobile hamburger */}
           <button
             className="lg:hidden p-2 rounded-md hover:bg-black/5 cursor-pointer"
