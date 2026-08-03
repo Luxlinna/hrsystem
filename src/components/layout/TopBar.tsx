@@ -279,7 +279,7 @@ function MobileDrawer({
   );
 }
 
-export default function TopBar({ transparent }: { transparent: boolean }) {
+export default function TopBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { collapsed, toggle } = useSidebar();
@@ -468,10 +468,9 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
     setProfileOpen(false);
   };
 
-  const isHome = location.pathname === "/";
-  const textColor = isHome && transparent ? "text-white/70 hover:text-white" : "text-gray-600 hover:text-gray-900";
-  const iconColor = isHome && transparent ? "text-white/80" : "text-gray-700";
-  const bgClass = transparent ? "bg-transparent" : "bg-white/80 backdrop-blur-md border-b border-gray-100";
+  const textColor = "text-gray-600 hover:text-gray-900";
+  const iconColor = "text-gray-700";
+  const bgClass = "bg-white/80 backdrop-blur-md border-b border-gray-100";
 
   const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "HR Admin";
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
@@ -492,10 +491,10 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
     <header className={`sticky top-0 z-40 ${bgClass} transition-all duration-300`}>
       <div className="flex items-center justify-between px-4 lg:px-8 py-3">
         <div className="flex items-center gap-4">
-          {/* Prominent sidebar toggle */}
+          {/* Sidebar toggle */}
           <button
             onClick={toggle}
-            className="hidden lg:flex items-center justify-center w-10 h-10 rounded-lg bg-[#253C7D] text-white shadow-md hover:bg-[#1F336A] active:scale-95 transition-all"
+            className="hidden lg:flex items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:bg-black/5 hover:text-gray-900 active:scale-95 transition-all"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <i className={`${collapsed ? "ri-menu-unfold-line" : "ri-menu-fold-line"} text-lg`} />
@@ -541,11 +540,7 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { setSearchFocused(true); if (searchResults.length > 0) setSearchOpen(true); }}
-              className={`w-full pl-9 pr-9 py-2 rounded-lg text-[12px] transition-all outline-none ${
-                isHome && transparent
-                  ? "bg-white/15 text-white placeholder:text-white/60 border border-white/20 focus:bg-white/25 focus:border-white/40"
-                  : "bg-gray-100 text-gray-700 placeholder:text-gray-400 border border-transparent focus:bg-white focus:border-[#253C7D]/30"
-              }`}
+              className="w-full pl-9 pr-9 py-2 rounded-lg text-[12px] transition-all outline-none bg-gray-100 text-gray-700 placeholder:text-gray-400 border border-transparent focus:bg-white focus:border-[#253C7D]/30"
             />
             {searchQuery && (
               <button
@@ -655,7 +650,7 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
                   {displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
               )}
-              <span className={`hidden md:block text-[13px] font-medium ${isHome && transparent ? "text-white/80" : "text-gray-700"}`}>
+              <span className="hidden md:block text-[13px] font-medium text-gray-700">
                 {displayName}
               </span>
               <i className={`ri-arrow-down-s-line text-sm ${iconColor}`} />

@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
@@ -8,17 +8,8 @@ import { useFCM } from "@/hooks/useFCM";
 import GeofenceCheckInAlert from "@/components/GeofenceCheckInAlert";
 
 function LayoutContent() {
-  const [scrolled, setScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  const location = useLocation();
-  const isHome = location.pathname === "/";
   const { collapsed } = useSidebar();
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -35,7 +26,7 @@ function LayoutContent() {
         className="flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ease-in-out"
         style={{ marginLeft: isMobile ? 0 : (collapsed ? 64 : 260) }}
       >
-        <TopBar transparent={isHome && !scrolled} />
+        <TopBar />
         <main className="flex-1 min-w-0 pb-16 lg:pb-0">
           <Outlet />
         </main>
