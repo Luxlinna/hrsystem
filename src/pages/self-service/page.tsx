@@ -41,6 +41,7 @@ export default function SelfServicePage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "payslips");
   const quickCheckIn = searchParams.get("quickCheckIn") === "1";
+  const quickCheckOut = searchParams.get("quickCheckOut") === "1";
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [noOwnRecord, setNoOwnRecord] = useState(false);
@@ -237,6 +238,7 @@ export default function SelfServicePage() {
                 employeeId={selectedEmployee.id}
                 employeeName={`${selectedEmployee.first_name} ${selectedEmployee.last_name}`}
                 autoStart={quickCheckIn}
+                autoCheckOut={quickCheckOut}
               />
             )}
             {activeTab === "benefits" && (

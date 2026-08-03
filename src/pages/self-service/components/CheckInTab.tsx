@@ -28,11 +28,12 @@ interface Props {
   employeeId: string;
   employeeName: string;
   autoStart?: boolean;
+  autoCheckOut?: boolean;
 }
 
 type CheckInStep = "idle" | "locating" | "confirm" | "denied" | "error";
 
-export default function CheckInTab({ employeeId, employeeName, autoStart }: Props) {
+export default function CheckInTab({ employeeId, employeeName, autoStart, autoCheckOut }: Props) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [todayRecord, setTodayRecord] = useState<AttendanceRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -249,6 +250,14 @@ export default function CheckInTab({ employeeId, employeeName, autoStart }: Prop
 
   const isCheckedIn = !!todayRecord?.clock_in;
   const isCheckedOut = !!(todayRecord?.clock_in && todayRecord?.clock_out);
+
+  const autoCheckedOutRef = useRef(false);
+  useEffect(() => {
+    if (!autoCheckOut || loading || autoCheckedOutRef.current) return;
+    if (!isCheckedIn || isCheckedOut) return;
+    autoCheckedOutRef.current = true;
+    handleClockOut();
+  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut]);
 
   const getStatusColor = (status: string) => {
     const map: Record<string, string> = {
