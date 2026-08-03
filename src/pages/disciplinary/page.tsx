@@ -79,6 +79,8 @@ export default function DisciplinaryPage() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const canViewAll = isAdmin || !!role?.disciplinary_view_all_employees;
+  const canViewOwnBranch = !canViewAll && !!role?.disciplinary_view_own_branch;
+  const canManage = canViewAll || canViewOwnBranch;
 
   const [records, setRecords] = useState<DisciplinaryRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -101,7 +103,7 @@ export default function DisciplinaryPage() {
   useEffect(() => {
     if (permsLoading) return;
     fetchData();
-  }, [permsLoading, canViewAll, user?.email]);
+  }, [permsLoading, canViewAll, canViewOwnBranch, user?.email]);
 
   async function fetchData() {
     setLoading(true);
@@ -123,22 +125,45 @@ export default function DisciplinaryPage() {
     if (!user?.email) { setLoading(false); return; }
     const { data: me } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, department, role, avatar_url")
+      .select("id, first_name, last_name, department, role, avatar_url, branch_id")
       .eq("email", user.email)
       .maybeSingle();
 
-    if (me) {
-      setEmployees([me]);
-      const { data: rData } = await supabase
-        .from("disciplinary_records")
-        .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
-        .eq("employee_id", me.id)
-        .order("created_at", { ascending: false });
-      setRecords((rData as DisciplinaryRecord[]) || []);
-    } else {
+    if (!me) {
       setEmployees([]);
       setRecords([]);
+      setLoading(false);
+      return;
     }
+
+    if (canViewOwnBranch && me.branch_id) {
+      const { data: team } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, department, role, avatar_url")
+        .eq("status", "active")
+        .eq("branch_id", me.branch_id)
+        .order("first_name");
+      setEmployees(team || []);
+      const ids = (team || []).map((e) => e.id);
+      const { data: rData } = ids.length
+        ? await supabase
+            .from("disciplinary_records")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+            .in("employee_id", ids)
+            .order("created_at", { ascending: false })
+        : { data: [] };
+      setRecords((rData as DisciplinaryRecord[]) || []);
+      setLoading(false);
+      return;
+    }
+
+    setEmployees([me]);
+    const { data: rData } = await supabase
+      .from("disciplinary_records")
+      .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+      .eq("employee_id", me.id)
+      .order("created_at", { ascending: false });
+    setRecords((rData as DisciplinaryRecord[]) || []);
     setLoading(false);
   }
 
@@ -206,10 +231,10 @@ export default function DisciplinaryPage() {
             Disciplinary &amp; Incidents
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {canViewAll ? "Log warnings, incidents, and performance improvement plans with follow-up tracking" : "Your warnings, incidents, and performance improvement plans"}
+            {canManage ? "Log warnings, incidents, and performance improvement plans with follow-up tracking" : "Your warnings, incidents, and performance improvement plans"}
           </p>
         </div>
-        {canViewAll && (
+        {canManage && (
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white text-sm font-medium rounded-lg hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
@@ -258,7 +283,7 @@ export default function DisciplinaryPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4">
-        {canViewAll && (
+        {canManage && (
           <div className="relative flex-1 max-w-xs">
             <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
             <input
@@ -469,7 +494,7 @@ export default function DisciplinaryPage() {
                 </div>
               )}
               {/* Status update actions */}
-              {canViewAll && selectedRecord.status !== "resolved" && selectedRecord.status !== "closed" && (
+              {canManage && selectedRecord.status !== "resolved" && selectedRecord.status !== "closed" && (
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Update Status</p>
                   <div className="flex gap-2 flex-wrap">

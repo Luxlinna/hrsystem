@@ -47,6 +47,8 @@ export default function AttendancePage() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const canViewAll = isAdmin || !!role?.attendance_view_all_employees;
+  const canViewOwnBranch = !canViewAll && !!role?.attendance_view_own_branch;
+  const canManage = canViewAll || canViewOwnBranch;
 
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -73,7 +75,7 @@ export default function AttendancePage() {
   useEffect(() => {
     if (permsLoading) return;
     fetchData();
-  }, [permsLoading, canViewAll, user?.email]);
+  }, [permsLoading, canViewAll, canViewOwnBranch, user?.email]);
 
   async function fetchData() {
     setLoading(true);
@@ -96,24 +98,49 @@ export default function AttendancePage() {
     if (!user?.email) { setLoading(false); return; }
     const { data: me } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, department, role, avatar_url")
+      .select("id, first_name, last_name, department, role, avatar_url, branch_id")
       .eq("email", user.email)
       .maybeSingle();
     setMyEmployee(me || null);
 
-    if (me) {
-      setEmployees([me]);
-      const { data: recData } = await supabase
-        .from("attendance_records")
-        .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
-        .eq("employee_id", me.id)
-        .order("date", { ascending: false })
-        .limit(200);
-      setRecords((recData as AttendanceRecord[]) || []);
-    } else {
+    if (!me) {
       setEmployees([]);
       setRecords([]);
+      setLoading(false);
+      return;
     }
+
+    if (canViewOwnBranch && me.branch_id) {
+      const { data: team } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, department, role, avatar_url")
+        .eq("status", "active")
+        .eq("branch_id", me.branch_id)
+        .order("first_name");
+      setEmployees(team || []);
+
+      const ids = (team || []).map((e) => e.id);
+      const { data: recData } = ids.length
+        ? await supabase
+            .from("attendance_records")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+            .in("employee_id", ids)
+            .order("date", { ascending: false })
+            .limit(200)
+        : { data: [] };
+      setRecords((recData as AttendanceRecord[]) || []);
+      setLoading(false);
+      return;
+    }
+
+    setEmployees([me]);
+    const { data: recData } = await supabase
+      .from("attendance_records")
+      .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+      .eq("employee_id", me.id)
+      .order("date", { ascending: false })
+      .limit(200);
+    setRecords((recData as AttendanceRecord[]) || []);
     setLoading(false);
   }
 
@@ -185,7 +212,7 @@ export default function AttendancePage() {
             Time &amp; Attendance
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {canViewAll ? "Track daily clock-in/out records, late arrivals, and absences" : "Track your own clock-in/out records, late arrivals, and absences"}
+            {canManage ? "Track daily clock-in/out records, late arrivals, and absences" : "Track your own clock-in/out records, late arrivals, and absences"}
           </p>
         </div>
         <button
@@ -224,7 +251,7 @@ export default function AttendancePage() {
       </div>
 
       {/* Tabs */}
-      {canViewAll && (
+      {canManage && (
         <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit max-w-full overflow-x-auto">
           {(["records", "summary"] as const).map((t) => (
             <button
@@ -242,7 +269,7 @@ export default function AttendancePage() {
         <>
           {/* Filters */}
           <div className="flex flex-wrap gap-3 mb-4">
-            {canViewAll && (
+            {canManage && (
             <div className="relative flex-1 min-w-[180px] max-w-xs">
               <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
               <input
@@ -625,7 +652,7 @@ export default function AttendancePage() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Employee *</label>
-                {canViewAll ? (
+                {canManage ? (
                   <select
                     value={newRecord.employee_id}
                     onChange={(e) => setNewRecord({ ...newRecord, employee_id: e.target.value })}

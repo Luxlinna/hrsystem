@@ -49,6 +49,8 @@ export default function Leave() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const canViewAll = isAdmin || !!role?.leave_view_all_employees;
+  const canViewOwnBranch = !canViewAll && !!role?.leave_view_own_branch;
+  const canManage = canViewAll || canViewOwnBranch;
 
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   // Calendar always shows company-wide approved leave (a lightweight "who's
@@ -98,27 +100,45 @@ export default function Leave() {
       return;
     }
 
-    // Restricted role: only my own employee record + my own requests.
     if (!user?.email) return;
     const { data: me } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, role, department, annual_leave_days")
+      .select("id, first_name, last_name, role, department, annual_leave_days, branch_id")
       .eq("email", user.email)
       .maybeSingle();
     setMyEmployee(me);
+    if (!me) { setEmployees([]); setRequests([]); return; }
 
-    if (me) {
-      setEmployees([me]);
-      const { data: lr } = await supabase
-        .from("leave_requests")
-        .select("*, employees(first_name, last_name, role, department)")
-        .eq("employee_id", me.id)
-        .order("created_at", { ascending: false });
+    // Branch manager: same as "view all" but scoped to employees who share
+    // this person's branch instead of the whole company.
+    if (canViewOwnBranch && me.branch_id) {
+      const { data: team } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, role, department, annual_leave_days")
+        .eq("status", "active")
+        .eq("branch_id", me.branch_id);
+      setEmployees(team || []);
+
+      const ids = (team || []).map((e) => e.id);
+      const { data: lr } = ids.length
+        ? await supabase
+            .from("leave_requests")
+            .select("*, employees(first_name, last_name, role, department)")
+            .in("employee_id", ids)
+            .order("created_at", { ascending: false })
+        : { data: [] };
       setRequests(lr || []);
-    } else {
-      setEmployees([]);
-      setRequests([]);
+      return;
     }
+
+    // Restricted role: only my own employee record + my own requests.
+    setEmployees([me]);
+    const { data: lr } = await supabase
+      .from("leave_requests")
+      .select("*, employees(first_name, last_name, role, department)")
+      .eq("employee_id", me.id)
+      .order("created_at", { ascending: false });
+    setRequests(lr || []);
   };
 
   useEffect(() => {
@@ -137,7 +157,7 @@ export default function Leave() {
       .on("postgres_changes", { event: "*", schema: "public", table: "leave_requests" }, () => loadData())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [permsLoading, canViewAll, user?.email]);
+  }, [permsLoading, canViewAll, canViewOwnBranch, user?.email]);
 
   useEffect(() => {
     if (toast) {
@@ -339,7 +359,7 @@ export default function Leave() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Leave Requests</h1>
           <p className="text-[13px] text-gray-500 mt-1">
-            {canViewAll ? "Submit, track, and approve employee leave applications" : "Submit and track your own leave requests"}
+            {canManage ? "Submit, track, and approve employee leave applications" : "Submit and track your own leave requests"}
           </p>
         </div>
         <button
@@ -361,7 +381,7 @@ export default function Leave() {
           { label: "Pending", count: stats.pending, color: "bg-amber-50 text-amber-700" },
           { label: "Approved", count: stats.approved, color: "bg-green-50 text-green-700" },
           { label: "Rejected", count: stats.rejected, color: "bg-red-50 text-red-700" },
-          canViewAll
+          canManage
             ? { label: "Approved Days", count: stats.totalDays, color: "bg-[#253C7D]/10 text-[#253C7D]" }
             : { label: "Days Remaining", count: stats.daysRemaining, color: "bg-[#253C7D]/10 text-[#253C7D]" },
         ].map((s) => (
@@ -482,7 +502,7 @@ export default function Leave() {
                 <span className="text-[13px] text-gray-500 mt-1 md:mt-0">{r.end_date}</span>
                 <span className="text-[13px] font-semibold text-gray-900 mt-1 md:mt-0">{r.days}d</span>
                 <div className="flex gap-2 mt-2 md:mt-0">
-                  {canViewAll && r.status === "pending" && (
+                  {canManage && r.status === "pending" && (
                     <>
                       <button
                         onClick={() => openApproval(r, "approved")}
@@ -498,7 +518,7 @@ export default function Leave() {
                       </button>
                     </>
                   )}
-                  {(!canViewAll || r.status !== "pending") && (
+                  {(!canManage || r.status !== "pending") && (
                     <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full capitalize whitespace-nowrap ${
                       r.status === "approved" ? "bg-green-50 text-green-700" : r.status === "pending" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
                     }`}>
@@ -536,7 +556,7 @@ export default function Leave() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
-                {canViewAll ? (
+                {canManage ? (
                   <select
                     value={formData.employee_id}
                     onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}

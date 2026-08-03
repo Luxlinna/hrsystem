@@ -15,6 +15,10 @@ interface AppRole {
   attendance_view_all_employees: boolean;
   performance_view_all_employees: boolean;
   disciplinary_view_all_employees: boolean;
+  leave_view_own_branch: boolean;
+  attendance_view_own_branch: boolean;
+  performance_view_own_branch: boolean;
+  disciplinary_view_own_branch: boolean;
   created_at: string;
 }
 
@@ -77,6 +81,10 @@ const SCOPE_OVERRIDES = [
   { key: "attendance_view_all_employees", label: "Can view all employees' attendance records", hint: "Off by default — this role only sees their own attendance history." },
   { key: "performance_view_all_employees", label: "Can view/manage all employees' performance reviews", hint: "Off by default — this role only sees their own reviews and goals." },
   { key: "disciplinary_view_all_employees", label: "Can view all employees' disciplinary records", hint: "Off by default — this role only sees their own records, if any." },
+  { key: "leave_view_own_branch", label: "Can view/approve their own branch's leave requests", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" leave is already on. Scopes to employees who share this person's branch." },
+  { key: "attendance_view_own_branch", label: "Can view their own branch's attendance records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" attendance is already on." },
+  { key: "performance_view_own_branch", label: "Can view/manage their own branch's performance reviews", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" performance is already on." },
+  { key: "disciplinary_view_own_branch", label: "Can view their own branch's disciplinary records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" disciplinary is already on." },
 ] as const;
 
 const BLANK_ROLE = {

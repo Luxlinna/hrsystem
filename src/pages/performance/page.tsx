@@ -70,6 +70,8 @@ export default function PerformanceReviews() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const canViewAll = isAdmin || !!role?.performance_view_all_employees;
+  const canViewOwnBranch = !canViewAll && !!role?.performance_view_own_branch;
+  const canManage = canViewAll || canViewOwnBranch;
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -104,12 +106,29 @@ export default function PerformanceReviews() {
     }
 
     if (!user?.email) { setLoading(false); return; }
-    const { data: me } = await supabase.from("employees").select("id, first_name, last_name, role, department").eq("email", user.email).maybeSingle();
+    const { data: me } = await supabase.from("employees").select("id, first_name, last_name, role, department, branch_id").eq("email", user.email).maybeSingle();
     if (!me) {
       setReviews([]); setGoals([]); setEmployees([]);
       setLoading(false);
       return;
     }
+
+    if (canViewOwnBranch && me.branch_id) {
+      const { data: team } = await supabase.from("employees").select("id, first_name, last_name, role, department").eq("status", "active").eq("branch_id", me.branch_id).order("first_name");
+      setEmployees(team || []);
+      const ids = (team || []).map((e) => e.id);
+      const [{ data: r }, { data: g }] = ids.length
+        ? await Promise.all([
+            supabase.from("performance_reviews").select(`*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`).in("employee_id", ids).order("created_at", { ascending: false }),
+            supabase.from("performance_goals").select("*").in("employee_id", ids).order("target_date"),
+          ])
+        : [{ data: [] }, { data: [] }];
+      setReviews(r || []);
+      setGoals(g || []);
+      setLoading(false);
+      return;
+    }
+
     setEmployees([me]);
     const [{ data: r }, { data: g }] = await Promise.all([
       supabase.from("performance_reviews").select(`*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`).eq("employee_id", me.id).order("created_at", { ascending: false }),
@@ -123,7 +142,7 @@ export default function PerformanceReviews() {
   useEffect(() => {
     if (permsLoading) return;
     loadData();
-  }, [permsLoading, canViewAll, user?.email]);
+  }, [permsLoading, canViewAll, canViewOwnBranch, user?.email]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,10 +218,10 @@ export default function PerformanceReviews() {
               Performance Reviews
             </h1>
             <p className="text-[13px] text-gray-500 mt-1">
-              {canViewAll ? "Quarterly ratings, comments, and goals tracking" : "Your quarterly ratings, comments, and goals"}
+              {canManage ? "Quarterly ratings, comments, and goals tracking" : "Your quarterly ratings, comments, and goals"}
             </p>
           </div>
-          {canViewAll && (
+          {canManage && (
             <div className="flex gap-3">
               <button
                 onClick={() => setShowGoalModal(true)}
@@ -238,7 +257,7 @@ export default function PerformanceReviews() {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
-          {(canViewAll ? (["reviews", "goals", "submit"] as const) : (["reviews", "goals"] as const)).map((t) => (
+          {(canManage ? (["reviews", "goals", "submit"] as const) : (["reviews", "goals"] as const)).map((t) => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
@@ -246,7 +265,7 @@ export default function PerformanceReviews() {
                 activeTab === t ? "bg-white text-gray-900" : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {t === "submit" ? "Submit Review" : t === "goals" ? "Goals Tracker" : canViewAll ? "All Reviews" : "My Reviews"}
+              {t === "submit" ? "Submit Review" : t === "goals" ? "Goals Tracker" : canManage ? "All Reviews" : "My Reviews"}
             </button>
           ))}
         </div>

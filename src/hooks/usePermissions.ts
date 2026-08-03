@@ -15,6 +15,10 @@ export interface UserRole {
   attendance_view_all_employees: boolean;
   performance_view_all_employees: boolean;
   disciplinary_view_all_employees: boolean;
+  leave_view_own_branch: boolean;
+  attendance_view_own_branch: boolean;
+  performance_view_own_branch: boolean;
+  disciplinary_view_own_branch: boolean;
 }
 
 interface UsePermissionsReturn {
@@ -77,6 +81,10 @@ export function usePermissions(): UsePermissionsReturn {
           attendance_view_all_employees: !!r.attendance_view_all_employees,
           performance_view_all_employees: !!r.performance_view_all_employees,
           disciplinary_view_all_employees: !!r.disciplinary_view_all_employees,
+          leave_view_own_branch: !!r.leave_view_own_branch,
+          attendance_view_own_branch: !!r.attendance_view_own_branch,
+          performance_view_own_branch: !!r.performance_view_own_branch,
+          disciplinary_view_own_branch: !!r.disciplinary_view_own_branch,
         };
         cachedRole = userRole;
         cachedUid = user.id;
