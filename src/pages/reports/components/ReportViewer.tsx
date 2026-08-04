@@ -6,12 +6,16 @@ interface ReportConfig {
   module: string;
   dateFrom: string;
   dateTo: string;
+  employeeSearch?: string;
+  departmentFilter?: string;
+  branchFilter?: string;
 }
 
 interface LeaveRow {
   id: string;
   employee: string;
   department: string;
+  branch: string;
   leave_type: string;
   start_date: string;
   end_date: string;
@@ -23,6 +27,7 @@ interface PayrollRow {
   id: string;
   employee: string;
   department: string;
+  branch: string;
   month: string;
   base_salary: number;
   bonus: number;
@@ -58,7 +63,28 @@ interface HireRow {
   applied_date: string;
 }
 
-type ReportRow = LeaveRow | PayrollRow | HeadcountRow | ExpenseRow | HireRow;
+interface DailyLogRow {
+  id: string;
+  employee: string;
+  department: string;
+  branch: string;
+  date: string;
+  time: string;
+  activity: string;
+  notes: string;
+}
+
+type ReportRow = LeaveRow | PayrollRow | HeadcountRow | ExpenseRow | HireRow | DailyLogRow;
+
+const matchesEmployeeFilters = (
+  row: { employee?: string; department?: string; branch?: string },
+  config: ReportConfig
+) => {
+  if (config.employeeSearch && !row.employee?.toLowerCase().includes(config.employeeSearch.toLowerCase())) return false;
+  if (config.departmentFilter && row.department !== config.departmentFilter) return false;
+  if (config.branchFilter && row.branch !== config.branchFilter) return false;
+  return true;
+};
 
 interface Props {
   config: ReportConfig;
@@ -87,21 +113,24 @@ export default function ReportViewer({ config, onDataReady }: Props) {
   const fetchLeave = useCallback(async () => {
     let q = supabase
       .from("leave_requests")
-      .select("id, leave_type, start_date, end_date, days, status, employees(first_name, last_name, department)")
+      .select("id, leave_type, start_date, end_date, days, status, employees(first_name, last_name, department, branches(name))")
       .order("created_at", { ascending: false });
     if (config.dateFrom) q = q.gte("start_date", config.dateFrom);
     if (config.dateTo) q = q.lte("end_date", config.dateTo);
     const { data } = await q;
-    const mapped: LeaveRow[] = (data || []).map((r: any) => ({
-      id: r.id,
-      employee: `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim(),
-      department: r.employees?.department || "—",
-      leave_type: r.leave_type,
-      start_date: r.start_date,
-      end_date: r.end_date,
-      days: r.days,
-      status: r.status,
-    }));
+    const mapped: LeaveRow[] = (data || [])
+      .map((r: any) => ({
+        id: r.id,
+        employee: `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim(),
+        department: r.employees?.department || "—",
+        branch: r.employees?.branches?.name || "—",
+        leave_type: r.leave_type,
+        start_date: r.start_date,
+        end_date: r.end_date,
+        days: r.days,
+        status: r.status,
+      }))
+      .filter((r) => matchesEmployeeFilters(r, config));
     const cols = ["Employee", "Department", "Type", "Start Date", "End Date", "Days", "Status"];
     setRows(mapped);
     setColumns(cols);
@@ -114,22 +143,25 @@ export default function ReportViewer({ config, onDataReady }: Props) {
   const fetchPayroll = useCallback(async () => {
     let q = supabase
       .from("payroll_records")
-      .select("id, month, base_salary, bonus, deductions, net_pay, status, employees(first_name, last_name, department)")
+      .select("id, month, base_salary, bonus, deductions, net_pay, status, employees(first_name, last_name, department, branches(name))")
       .order("month", { ascending: false });
     if (config.dateFrom) q = q.gte("month", config.dateFrom.substring(0, 7));
     if (config.dateTo) q = q.lte("month", config.dateTo.substring(0, 7));
     const { data } = await q;
-    const mapped: PayrollRow[] = (data || []).map((r: any) => ({
-      id: r.id,
-      employee: `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim(),
-      department: r.employees?.department || "—",
-      month: r.month,
-      base_salary: r.base_salary,
-      bonus: r.bonus,
-      deductions: r.deductions,
-      net_pay: r.net_pay,
-      status: r.status,
-    }));
+    const mapped: PayrollRow[] = (data || [])
+      .map((r: any) => ({
+        id: r.id,
+        employee: `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim(),
+        department: r.employees?.department || "—",
+        branch: r.employees?.branches?.name || "—",
+        month: r.month,
+        base_salary: r.base_salary,
+        bonus: r.bonus,
+        deductions: r.deductions,
+        net_pay: r.net_pay,
+        status: r.status,
+      }))
+      .filter((r) => matchesEmployeeFilters(r, config));
     const cols = ["Employee", "Department", "Month", "Base Salary", "Bonus", "Deductions", "Net Pay", "Status"];
     setRows(mapped);
     setColumns(cols);
@@ -151,7 +183,9 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       if (e.status === "active") map[key].active++;
       if (e.status === "onboarding") map[key].onboarding++;
     });
-    const mapped = Object.values(map).sort((a, b) => b.employee_count - a.employee_count);
+    const mapped = Object.values(map)
+      .filter((r) => (!config.departmentFilter || r.department === config.departmentFilter) && (!config.branchFilter || r.branch === config.branchFilter))
+      .sort((a, b) => b.employee_count - a.employee_count);
     const cols = ["Branch", "Department", "Total Headcount", "Active", "Onboarding"];
     setRows(mapped);
     setColumns(cols);
@@ -209,6 +243,38 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     onDataReady(mapped, cols);
   }, [config, onDataReady]);
 
+  const fetchDailyLogs = useCallback(async () => {
+    let q = supabase
+      .from("work_logs")
+      .select("id, log_date, start_time, end_time, activity, notes, employees(first_name, last_name, department, branches(name))")
+      .order("log_date", { ascending: false });
+    if (config.dateFrom) q = q.gte("log_date", config.dateFrom);
+    if (config.dateTo) q = q.lte("log_date", config.dateTo);
+    const { data } = await q;
+    const fmt = (t: string | null) => (t ? new Date(`2000-01-01T${t}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "");
+    const mapped: DailyLogRow[] = (data || [])
+      .map((r: any) => ({
+        id: r.id,
+        employee: `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim(),
+        department: r.employees?.department || "—",
+        branch: r.employees?.branches?.name || "—",
+        date: r.log_date,
+        time: r.start_time || r.end_time ? `${fmt(r.start_time)} – ${fmt(r.end_time)}` : "—",
+        activity: r.activity,
+        notes: r.notes || "",
+      }))
+      .filter((r) => matchesEmployeeFilters(r, config));
+    const cols = ["Employee", "Department", "Branch", "Date", "Time", "Activity", "Notes"];
+    setRows(mapped);
+    setColumns(cols);
+    setSummary({
+      "Total Entries": mapped.length,
+      "Employees Logged": new Set(mapped.map((r) => r.employee)).size,
+      "Date Range": mapped.length ? `${mapped[mapped.length - 1].date} → ${mapped[0].date}` : "—",
+    });
+    onDataReady(mapped, cols);
+  }, [config, onDataReady]);
+
   useEffect(() => {
     setLoading(true);
     const run = async () => {
@@ -217,10 +283,11 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       else if (config.module === "headcount") await fetchHeadcount();
       else if (config.module === "expenses") await fetchExpenses();
       else if (config.module === "hire") await fetchHire();
+      else if (config.module === "daily-logs") await fetchDailyLogs();
       setLoading(false);
     };
     run();
-  }, [config, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire]);
+  }, [config, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs]);
 
   const renderCell = (col: string, row: ReportRow) => {
     const lc = col.toLowerCase().replace(/ /g, "_");

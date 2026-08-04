@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import ReportViewer from "./components/ReportViewer";
 
 const MODULES = [
@@ -7,16 +8,42 @@ const MODULES = [
   { id: "headcount", label: "Headcount Report", icon: "ri-team-line", color: "bg-sky-50 text-sky-700 border-sky-200", desc: "Employee distribution by branch and department" },
   { id: "expenses", label: "Expense Report", icon: "ri-bank-line", color: "bg-teal-50 text-teal-700 border-teal-200", desc: "All expense records with approval status" },
   { id: "hire", label: "Hire Pipeline", icon: "ri-briefcase-line", color: "bg-violet-50 text-violet-700 border-violet-200", desc: "Candidate pipeline and hiring funnel stages" },
+  { id: "daily-logs", label: "Daily Work Logs", icon: "ri-file-list-2-line", color: "bg-indigo-50 text-indigo-700 border-indigo-200", desc: "Every employee's daily work entries — what they worked on, when" },
 ];
+
+// Modules whose rows are tied to one employee, so the name/department/
+// branch filters below actually apply to them.
+const EMPLOYEE_SCOPED_MODULES = new Set(["leave", "payroll", "headcount", "daily-logs"]);
 
 export default function ReportsPage() {
   const [activeModule, setActiveModule] = useState("leave");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [employeeSearch, setEmployeeSearch] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [branchFilter, setBranchFilter] = useState("");
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [branches, setBranches] = useState<string[]>([]);
   const [reportData, setReportData] = useState<any[]>([]);
   const [reportColumns, setReportColumns] = useState<string[]>([]);
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    supabase.from("employees").select("department").eq("status", "active").then(({ data }) => {
+      setDepartments([...new Set((data || []).map((r) => r.department).filter(Boolean))].sort());
+    });
+    supabase.from("branches").select("name").order("name").then(({ data }) => {
+      setBranches((data || []).map((r) => r.name));
+    });
+  }, []);
+
+  const isEmployeeScoped = EMPLOYEE_SCOPED_MODULES.has(activeModule);
+
+  const reportConfig = useMemo(
+    () => ({ module: activeModule, dateFrom, dateTo, employeeSearch, departmentFilter, branchFilter }),
+    [activeModule, dateFrom, dateTo, employeeSearch, departmentFilter, branchFilter]
+  );
 
   const handleDataReady = useCallback((rows: any[], cols: string[]) => {
     setReportData(rows);
@@ -33,7 +60,7 @@ export default function ReportsPage() {
       "Base Salary": "base_salary", "Bonus": "bonus", "Deductions": "deductions", "Net Pay": "net_pay",
       "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
       "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
-      "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
+      "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date", "Time": "time", "Activity": "activity", "Notes": "notes",
     };
     const rows = reportData.map((row) =>
       reportColumns.map((col) => {
@@ -64,7 +91,7 @@ export default function ReportsPage() {
       "Base Salary": "base_salary", "Bonus": "bonus", "Deductions": "deductions", "Net Pay": "net_pay",
       "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
       "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
-      "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
+      "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date", "Time": "time", "Activity": "activity", "Notes": "notes",
     };
     const tableRows = reportData.map((row) =>
       `<tr>${reportColumns.map((col) => {
@@ -162,6 +189,55 @@ export default function ReportsPage() {
             </div>
           </div>
 
+          {/* Employee / Department / Branch */}
+          <div className={`bg-white border border-gray-100 rounded-xl p-4 ${!isEmployeeScoped ? "opacity-40 pointer-events-none" : ""}`}>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              Employee Filters {!isEmployeeScoped && <span className="normal-case font-normal">(not used by this report)</span>}
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Name</label>
+                <input
+                  type="text"
+                  value={employeeSearch}
+                  onChange={(e) => setEmployeeSearch(e.target.value)}
+                  placeholder="Search employee name..."
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Department</label>
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
+                >
+                  <option value="">All Departments</option>
+                  {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Branch / Team</label>
+                <select
+                  value={branchFilter}
+                  onChange={(e) => setBranchFilter(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
+                >
+                  <option value="">All Branches</option>
+                  {branches.map((b) => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              {(employeeSearch || departmentFilter || branchFilter) && (
+                <button
+                  onClick={() => { setEmployeeSearch(""); setDepartmentFilter(""); setBranchFilter(""); }}
+                  className="text-xs text-[#253C7D] hover:underline cursor-pointer w-full text-center"
+                >
+                  Clear employee filters
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Date Range */}
           <div className="bg-white border border-gray-100 rounded-xl p-4">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Date Range Filter</p>
@@ -235,7 +311,7 @@ export default function ReportsPage() {
 
             <div ref={printRef}>
               <ReportViewer
-                config={{ module: activeModule, dateFrom, dateTo }}
+                config={reportConfig}
                 onDataReady={handleDataReady}
               />
             </div>
