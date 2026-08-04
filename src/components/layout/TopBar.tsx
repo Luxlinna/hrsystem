@@ -49,6 +49,8 @@ const moduleResults: SearchResult[] = [
   { id: "m-unity", label: "Unity Apps", sublabel: "Integrations hub", icon: "ri-apps-line", path: "/unity-apps", category: "Module" },
   { id: "m-settings", label: "Settings", sublabel: "System configuration", icon: "ri-settings-3-line", path: "/settings", category: "Module" },
   { id: "m-notifications", label: "Notifications", sublabel: "Alerts & updates", icon: "ri-notification-3-line", path: "/notifications", category: "Module" },
+  { id: "m-meeting-rooms", label: "Meeting Rooms", sublabel: "Book a room", icon: "ri-door-open-line", path: "/meeting-rooms", category: "Module" },
+  { id: "m-tasks", label: "Tasks", sublabel: "Track and assign work", icon: "ri-checkbox-multiple-line", path: "/tasks", category: "Module" },
 ];
 
 // module keys mirror ALL_MODULES in src/pages/admin/page.tsx; paths that
@@ -134,6 +136,8 @@ function MobileDrawer({
         { path: "/attendance", label: "Attendance", icon: "ri-fingerprint-line", module: "attendance" },
         { path: "/training", label: "Training", icon: "ri-graduation-cap-line", module: "training" },
         { path: "/disciplinary", label: "Disciplinary", icon: "ri-alert-line", module: "disciplinary" },
+        { path: "/meeting-rooms", label: "Meeting Rooms", icon: "ri-door-open-line", module: "meeting-rooms" },
+        { path: "/tasks", label: "Tasks", icon: "ri-checkbox-multiple-line", module: "tasks" },
       ],
     },
     {

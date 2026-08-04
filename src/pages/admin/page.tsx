@@ -19,6 +19,8 @@ interface AppRole {
   attendance_view_own_branch: boolean;
   performance_view_own_branch: boolean;
   disciplinary_view_own_branch: boolean;
+  task_view_all_employees: boolean;
+  task_view_own_branch: boolean;
   created_at: string;
 }
 
@@ -50,6 +52,7 @@ const ALL_MODULES = [
   { key: "disciplinary", label: "Disciplinary", icon: "ri-alert-line", group: "Workforce" },
   { key: "shifts", label: "Shifts", icon: "ri-calendar-schedule-line", group: "Workforce" },
   { key: "meeting-rooms", label: "Meeting Rooms", icon: "ri-door-open-line", group: "Workforce" },
+  { key: "tasks", label: "Tasks", icon: "ri-checkbox-multiple-line", group: "Workforce" },
   { key: "payroll", label: "Payroll", icon: "ri-money-dollar-circle-line", group: "Operations" },
   { key: "payroll-approval", label: "Payroll Approval", icon: "ri-file-check-line", group: "Operations" },
   { key: "finance", label: "Finance", icon: "ri-bank-line", group: "Operations" },
@@ -85,6 +88,8 @@ const SCOPE_OVERRIDES = [
   { key: "attendance_view_own_branch", label: "Can view their own branch's attendance records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" attendance is already on." },
   { key: "performance_view_own_branch", label: "Can view/manage their own branch's performance reviews", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" performance is already on." },
   { key: "disciplinary_view_own_branch", label: "Can view their own branch's disciplinary records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" disciplinary is already on." },
+  { key: "task_view_all_employees", label: "Can view/assign tasks for all employees", hint: "Off by default — this role only sees and manages their own tasks." },
+  { key: "task_view_own_branch", label: "Can view/assign their own branch's tasks", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" tasks is already on." },
 ] as const;
 
 const BLANK_ROLE = {
