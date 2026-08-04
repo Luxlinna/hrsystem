@@ -89,7 +89,7 @@ export default function UnityApps() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -105,7 +105,7 @@ export default function UnityApps() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Active Apps", value: activeApps, icon: "ri-apps-line", color: "text-[#0D7377] bg-[#0D7377]/10" },
+          { label: "Active Apps", value: activeApps, icon: "ri-apps-line", color: "text-[#253C7D] bg-[#253C7D]/10" },
           { label: "Total Users", value: totalUsers, icon: "ri-user-line", color: "text-emerald-700 bg-emerald-50" },
           { label: "Today Events", value: todayEvents, icon: "ri-pulse-line", color: "text-amber-700 bg-amber-50" },
           { label: "Monthly Cost", value: `$${(totalMonthlyCost / 1000).toFixed(1)}k`, icon: "ri-money-dollar-circle-line", color: "text-rose-700 bg-rose-50" },
@@ -131,7 +131,7 @@ export default function UnityApps() {
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key as typeof activeTab)}
-            className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap ${activeTab === t.key ? "bg-white text-[#0D7377]" : "text-gray-500 hover:text-gray-700"}`}
+            className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap ${activeTab === t.key ? "bg-white text-[#253C7D]" : "text-gray-500 hover:text-gray-700"}`}
           >
             {t.label}
           </button>
@@ -148,7 +148,7 @@ export default function UnityApps() {
                 placeholder="Search apps..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0D7377] text-sm"
+                className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#253C7D] text-sm"
               />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -156,7 +156,7 @@ export default function UnityApps() {
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`px-3 py-2 rounded-xl text-[12px] font-semibold capitalize transition-colors whitespace-nowrap ${statusFilter === s ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                  className={`px-3 py-2 rounded-xl text-[12px] font-semibold capitalize transition-colors whitespace-nowrap ${statusFilter === s ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
                 >
                   {s === "all" ? "All Status" : s}
                 </button>
@@ -171,7 +171,7 @@ export default function UnityApps() {
                 onClick={() => setCategoryFilter(cat)}
                 className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors whitespace-nowrap ${
                   categoryFilter === cat
-                    ? "bg-[#0D7377] text-white"
+                    ? "bg-[#253C7D] text-white"
                     : `${categoryColors[cat] || "bg-gray-50 text-gray-600"} hover:opacity-80`
                 }`}
               >
@@ -222,7 +222,7 @@ export default function UnityApps() {
                     <p className="text-[12px] text-gray-900">
                       <span className="font-semibold">{emp?.first_name} {emp?.last_name}</span>
                       {" "}{actionLabels[log.action] || log.action}{" "}
-                      <span className="font-medium text-[#0D7377]">in {app?.name}</span>
+                      <span className="font-medium text-[#253C7D]">in {app?.name}</span>
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[10px] text-gray-400">{timeAgo(log.logged_at)}</span>
@@ -246,7 +246,7 @@ export default function UnityApps() {
           <div className="border border-gray-100 rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-[14px] font-semibold text-gray-900">Monthly Software Costs</h3>
-              <span className="text-[13px] font-bold text-[#0D7377]">Total: ${totalMonthlyCost.toLocaleString()}/mo</span>
+              <span className="text-[13px] font-bold text-[#253C7D]">Total: ${totalMonthlyCost.toLocaleString()}/mo</span>
             </div>
             <div>
               {[...apps].sort((a, b) => Number(b.monthly_cost) - Number(a.monthly_cost)).map((app) => {
@@ -265,7 +265,7 @@ export default function UnityApps() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-[#0D7377]" style={{ width: `${pct}%` }} />
+                        <div className="h-full rounded-full bg-[#253C7D]" style={{ width: `${pct}%` }} />
                       </div>
                       <span className="text-[10px] text-gray-400 w-10 text-right">{pct.toFixed(1)}%</span>
                     </div>

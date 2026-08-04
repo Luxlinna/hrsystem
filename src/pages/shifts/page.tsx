@@ -41,9 +41,9 @@ interface ShiftAssignment {
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const deptColors: Record<string, string> = {
-  Operations: "#0D7377",
-  Sales: "#14919B",
-  IT: "#54BAB9",
+  Operations: "#253C7D",
+  Sales: "#29ABE2",
+  IT: "#74C8EC",
   Finance: "#8B5CF6",
   Marketing: "#EC4899",
   "Customer Service": "#E07B39",
@@ -83,7 +83,7 @@ export default function Shifts() {
   const [submitting, setSubmitting] = useState(false);
   const [shiftForm, setShiftForm] = useState({
     name: "", branch_id: "", department: "", start_time: "09:00",
-    end_time: "17:00", shift_date: "", capacity: 5, color: "#0D7377", notes: "",
+    end_time: "17:00", shift_date: "", capacity: 5, color: "#253C7D", notes: "",
   });
   const [assignEmployeeId, setAssignEmployeeId] = useState("");
 
@@ -115,7 +115,7 @@ export default function Shifts() {
     e.preventDefault();
     setSubmitting(true);
     await supabase.from("shifts").insert(shiftForm);
-    setShiftForm({ name: "", branch_id: "", department: "", start_time: "09:00", end_time: "17:00", shift_date: "", capacity: 5, color: "#0D7377", notes: "" });
+    setShiftForm({ name: "", branch_id: "", department: "", start_time: "09:00", end_time: "17:00", shift_date: "", capacity: 5, color: "#253C7D", notes: "" });
     setShowCreateModal(false);
     setSubmitting(false);
     loadData();
@@ -156,7 +156,7 @@ export default function Shifts() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -177,7 +177,7 @@ export default function Shifts() {
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap cursor-pointer"
+              className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
             >
               <i className="ri-add-line" /> Create Shift
             </button>
@@ -186,7 +186,7 @@ export default function Shifts() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
             {[
-              { label: "Total Shifts", value: shifts.length, icon: "ri-time-line", color: "text-[#0D7377]" },
+              { label: "Total Shifts", value: shifts.length, icon: "ri-time-line", color: "text-[#253C7D]" },
               { label: "This Week", value: totalShiftsThisWeek, icon: "ri-calendar-2-line", color: "text-violet-600" },
               { label: "Assigned Staff", value: totalAssigned, icon: "ri-user-follow-line", color: "text-emerald-600" },
               { label: "Branches", value: branches.length, icon: "ri-building-2-line", color: "text-amber-600" },
@@ -211,14 +211,14 @@ export default function Shifts() {
               <button onClick={() => { const d = new Date(currentWeek); d.setDate(d.getDate() + 7); setCurrentWeek(d); }} className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer">
                 <i className="ri-arrow-right-s-line text-gray-600" />
               </button>
-              <button onClick={() => setCurrentWeek(new Date())} className="text-[12px] text-[#0D7377] font-medium hover:underline cursor-pointer">Today</button>
+              <button onClick={() => setCurrentWeek(new Date())} className="text-[12px] text-[#253C7D] font-medium hover:underline cursor-pointer">Today</button>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)} className="flex-1 sm:flex-none min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
+              <select value={filterBranch} onChange={(e) => setFilterBranch(e.target.value)} className="flex-1 sm:flex-none min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer">
                 <option value="all">All Branches</option>
                 {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
-              <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="flex-1 sm:flex-none min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#0D7377] cursor-pointer">
+              <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="flex-1 sm:flex-none min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer">
                 <option value="all">All Departments</option>
                 {departments.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
@@ -234,11 +234,11 @@ export default function Shifts() {
                   const isToday = formatDate(date) === formatDate(new Date());
                   const dayShifts = getShiftsForDay(date);
                   return (
-                    <div key={i} className={`p-3 border-r border-gray-100 last:border-r-0 text-center ${isToday ? "bg-[#0D7377]/5" : ""}`}>
-                      <p className={`text-[11px] font-semibold uppercase tracking-wider ${isToday ? "text-[#0D7377]" : "text-gray-500"}`}>{DAYS[i]}</p>
-                      <p className={`text-[18px] font-bold mt-0.5 ${isToday ? "text-[#0D7377]" : "text-gray-800"}`}>{date.getDate()}</p>
+                    <div key={i} className={`p-3 border-r border-gray-100 last:border-r-0 text-center ${isToday ? "bg-[#253C7D]/5" : ""}`}>
+                      <p className={`text-[11px] font-semibold uppercase tracking-wider ${isToday ? "text-[#253C7D]" : "text-gray-500"}`}>{DAYS[i]}</p>
+                      <p className={`text-[18px] font-bold mt-0.5 ${isToday ? "text-[#253C7D]" : "text-gray-800"}`}>{date.getDate()}</p>
                       {dayShifts.length > 0 && (
-                        <span className="text-[10px] bg-[#0D7377]/10 text-[#0D7377] px-1.5 py-0.5 rounded-full font-medium">{dayShifts.length}</span>
+                        <span className="text-[10px] bg-[#253C7D]/10 text-[#253C7D] px-1.5 py-0.5 rounded-full font-medium">{dayShifts.length}</span>
                       )}
                     </div>
                   );
@@ -251,7 +251,7 @@ export default function Shifts() {
                   const dayShifts = getShiftsForDay(date);
                   const isToday = formatDate(date) === formatDate(new Date());
                   return (
-                    <div key={i} className={`border-r border-gray-100 last:border-r-0 p-2 space-y-1.5 ${isToday ? "bg-[#0D7377]/3" : ""}`}>
+                    <div key={i} className={`border-r border-gray-100 last:border-r-0 p-2 space-y-1.5 ${isToday ? "bg-[#253C7D]/3" : ""}`}>
                       {dayShifts.map((sh) => {
                         const aCount = assignments.filter((a) => a.shift_id === sh.id).length;
                         const isFull = aCount >= sh.capacity;
@@ -352,7 +352,7 @@ export default function Shifts() {
               <button
                 onClick={() => setShowAssignModal(true)}
                 disabled={selectedShiftAssignments.length >= selectedShift.capacity}
-                className="text-[12px] text-[#0D7377] font-semibold hover:underline disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="text-[12px] text-[#253C7D] font-semibold hover:underline disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 + Assign
               </button>
@@ -362,7 +362,7 @@ export default function Shifts() {
               <div className="text-center py-10">
                 <i className="ri-user-add-line text-3xl text-gray-200" />
                 <p className="text-[13px] text-gray-400 mt-2">No employees assigned yet</p>
-                <button onClick={() => setShowAssignModal(true)} className="mt-3 text-[12px] text-[#0D7377] font-medium hover:underline cursor-pointer">
+                <button onClick={() => setShowAssignModal(true)} className="mt-3 text-[12px] text-[#253C7D] font-medium hover:underline cursor-pointer">
                   Assign first employee
                 </button>
               </div>
@@ -370,7 +370,7 @@ export default function Shifts() {
               <div className="space-y-2">
                 {selectedShiftAssignments.map((a) => (
                   <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                    <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-xs font-bold shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-xs font-bold shrink-0">
                       {a.employee?.first_name?.[0]}{a.employee?.last_name?.[0]}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -402,39 +402,39 @@ export default function Shifts() {
             <form onSubmit={handleCreateShift} className="p-5 space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Shift Name *</label>
-                <input required type="text" value={shiftForm.name} onChange={(e) => setShiftForm({ ...shiftForm, name: e.target.value })} placeholder="e.g., Morning Shift A" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]" />
+                <input required type="text" value={shiftForm.name} onChange={(e) => setShiftForm({ ...shiftForm, name: e.target.value })} placeholder="e.g., Morning Shift A" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch</label>
-                  <select value={shiftForm.branch_id} onChange={(e) => setShiftForm({ ...shiftForm, branch_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer">
+                  <select value={shiftForm.branch_id} onChange={(e) => setShiftForm({ ...shiftForm, branch_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer">
                     <option value="">No branch</option>
                     {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Department</label>
-                  <input type="text" value={shiftForm.department} onChange={(e) => setShiftForm({ ...shiftForm, department: e.target.value })} placeholder="e.g., Operations" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]" />
+                  <input type="text" value={shiftForm.department} onChange={(e) => setShiftForm({ ...shiftForm, department: e.target.value })} placeholder="e.g., Operations" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
                 </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Date *</label>
-                <input required type="date" value={shiftForm.shift_date} onChange={(e) => setShiftForm({ ...shiftForm, shift_date: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]" />
+                <input required type="date" value={shiftForm.shift_date} onChange={(e) => setShiftForm({ ...shiftForm, shift_date: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Start Time *</label>
-                  <input required type="time" value={shiftForm.start_time} onChange={(e) => setShiftForm({ ...shiftForm, start_time: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]" />
+                  <input required type="time" value={shiftForm.start_time} onChange={(e) => setShiftForm({ ...shiftForm, start_time: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">End Time *</label>
-                  <input required type="time" value={shiftForm.end_time} onChange={(e) => setShiftForm({ ...shiftForm, end_time: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]" />
+                  <input required type="time" value={shiftForm.end_time} onChange={(e) => setShiftForm({ ...shiftForm, end_time: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Capacity</label>
-                  <input type="number" min={1} max={100} value={shiftForm.capacity} onChange={(e) => setShiftForm({ ...shiftForm, capacity: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377]" />
+                  <input type="number" min={1} max={100} value={shiftForm.capacity} onChange={(e) => setShiftForm({ ...shiftForm, capacity: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Color</label>
@@ -443,11 +443,11 @@ export default function Shifts() {
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Notes</label>
-                <textarea value={shiftForm.notes} onChange={(e) => setShiftForm({ ...shiftForm, notes: e.target.value })} rows={2} placeholder="Optional shift notes..." className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] resize-none" />
+                <textarea value={shiftForm.notes} onChange={(e) => setShiftForm({ ...shiftForm, notes: e.target.value })} rows={2} placeholder="Optional shift notes..." className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] resize-none" />
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
-                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] disabled:opacity-60 cursor-pointer">
+                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer">
                   {submitting ? "Creating..." : "Create Shift"}
                 </button>
               </div>
@@ -474,7 +474,7 @@ export default function Shifts() {
                   required
                   value={assignEmployeeId}
                   onChange={(e) => setAssignEmployeeId(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
                   <option value="">Choose employee...</option>
                   {employees
@@ -486,7 +486,7 @@ export default function Shifts() {
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setShowAssignModal(false)} className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
-                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] disabled:opacity-60 cursor-pointer">
+                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer">
                   {submitting ? "Assigning..." : "Assign"}
                 </button>
               </div>

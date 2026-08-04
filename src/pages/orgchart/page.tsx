@@ -22,7 +22,7 @@ interface TreeNode extends Employee {
 }
 
 const deptColors: Record<string, string> = {
-  Executive: "bg-[#0D7377]",
+  Executive: "bg-[#253C7D]",
   Operations: "bg-emerald-600",
   Engineering: "bg-sky-600",
   Finance: "bg-amber-600",
@@ -62,7 +62,7 @@ function OrgNode({ node, onToggle, searchTerm, onSelectEmployee }: {
       {node.depth > 0 && <div className="w-px h-6 bg-gray-200" />}
       <div
         className={`relative flex flex-col items-center p-4 rounded-xl border-2 transition-all cursor-pointer min-w-[180px] max-w-[220px] ${
-          isMatch && searchTerm ? "border-[#0D7377] bg-[#0D7377]/5 scale-105" : "border-gray-200 bg-white hover:border-gray-300"
+          isMatch && searchTerm ? "border-[#253C7D] bg-[#253C7D]/5 scale-105" : "border-gray-200 bg-white hover:border-gray-300"
         }`}
         onClick={() => { onSelectEmployee(node); if (hasChildren) onToggle(node.id); }}
       >
@@ -75,7 +75,7 @@ function OrgNode({ node, onToggle, searchTerm, onSelectEmployee }: {
               {node.first_name?.[0]}{node.last_name?.[0]}
             </div>
           )}
-          <p className="text-[13px] font-bold text-gray-900 text-center leading-tight hover:text-[#0D7377] transition-colors">
+          <p className="text-[13px] font-bold text-gray-900 text-center leading-tight hover:text-[#253C7D] transition-colors">
             {node.first_name} {node.last_name}
           </p>
         </Link>
@@ -199,7 +199,7 @@ export default function OrgChart() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -215,20 +215,20 @@ export default function OrgChart() {
           <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
             <button
               onClick={() => setViewMode("tree")}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap ${viewMode === "tree" ? "bg-white text-[#0D7377]" : "text-gray-500"}`}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap ${viewMode === "tree" ? "bg-white text-[#253C7D]" : "text-gray-500"}`}
             >
               <i className="ri-node-tree mr-1" />Tree
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap ${viewMode === "list" ? "bg-white text-[#0D7377]" : "text-gray-500"}`}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap ${viewMode === "list" ? "bg-white text-[#253C7D]" : "text-gray-500"}`}
             >
               <i className="ri-list-check mr-1" />List
             </button>
           </div>
           {viewMode === "tree" && (
             <>
-              <button onClick={expandAll} className="px-3 py-2 text-[12px] font-semibold text-[#0D7377] border border-[#0D7377]/20 rounded-lg hover:bg-[#0D7377]/5 transition-colors whitespace-nowrap">Expand All</button>
+              <button onClick={expandAll} className="px-3 py-2 text-[12px] font-semibold text-[#253C7D] border border-[#253C7D]/20 rounded-lg hover:bg-[#253C7D]/5 transition-colors whitespace-nowrap">Expand All</button>
               <button onClick={collapseAll} className="px-3 py-2 text-[12px] font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap">Collapse</button>
             </>
           )}
@@ -243,13 +243,13 @@ export default function OrgChart() {
             placeholder="Search by name, role, or department..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0D7377]"
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#253C7D]"
           />
         </div>
         <select
           value={deptFilter}
           onChange={(e) => setDeptFilter(e.target.value)}
-          className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+          className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
         >
           <option value="">All Departments</option>
           {departments.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -313,7 +313,7 @@ export default function OrgChart() {
                           </div>
                         )}
                         <div>
-                          <Link to={`/employees/${emp.id}`} className="text-[13px] font-semibold text-gray-900 hover:text-[#0D7377] transition-colors">
+                          <Link to={`/employees/${emp.id}`} className="text-[13px] font-semibold text-gray-900 hover:text-[#253C7D] transition-colors">
                             {emp.first_name} {emp.last_name}
                           </Link>
                           <p className="text-[11px] text-gray-500">{emp.role}</p>
@@ -325,14 +325,14 @@ export default function OrgChart() {
                     </td>
                     <td className="px-5 py-3 text-[13px] text-gray-600">
                       {manager ? (
-                        <Link to={`/employees/${manager.id}`} className="hover:text-[#0D7377] transition-colors">
+                        <Link to={`/employees/${manager.id}`} className="hover:text-[#253C7D] transition-colors">
                           {manager.first_name} {manager.last_name}
                         </Link>
                       ) : <span className="text-gray-400">— Top level</span>}
                     </td>
                     <td className="px-5 py-3 text-[13px] text-gray-600">
                       {reports.length > 0 ? (
-                        <span className="text-[#0D7377] font-semibold">{reports.length} person{reports.length > 1 ? "s" : ""}</span>
+                        <span className="text-[#253C7D] font-semibold">{reports.length} person{reports.length > 1 ? "s" : ""}</span>
                       ) : <span className="text-gray-400">None</span>}
                     </td>
                     <td className="px-5 py-3">
@@ -344,7 +344,7 @@ export default function OrgChart() {
                     <td className="px-5 py-3">
                       <button
                         onClick={() => { setSelectedEmployee(emp); setNewManagerId(emp.reports_to || "none"); setEditManagerModal(true); }}
-                        className="px-2.5 py-1.5 text-[11px] font-semibold text-[#0D7377] border border-[#0D7377]/20 rounded-lg hover:bg-[#0D7377]/5 transition-colors whitespace-nowrap cursor-pointer"
+                        className="px-2.5 py-1.5 text-[11px] font-semibold text-[#253C7D] border border-[#253C7D]/20 rounded-lg hover:bg-[#253C7D]/5 transition-colors whitespace-nowrap cursor-pointer"
                       >
                         Edit Manager
                       </button>
@@ -384,7 +384,7 @@ export default function OrgChart() {
             </div>
             <div className="flex justify-between">
               <span className="text-[11px] text-gray-400">Direct Reports</span>
-              <span className="text-[11px] font-semibold text-[#0D7377]">{getDirectReports(selectedEmployee.id).length}</span>
+              <span className="text-[11px] font-semibold text-[#253C7D]">{getDirectReports(selectedEmployee.id).length}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[11px] text-gray-400">Reports To</span>
@@ -394,7 +394,7 @@ export default function OrgChart() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Link to={`/employees/${selectedEmployee.id}`} className="flex-1 py-2 text-center text-[11px] font-semibold text-[#0D7377] border border-[#0D7377]/20 rounded-lg hover:bg-[#0D7377]/5 transition-colors whitespace-nowrap">
+            <Link to={`/employees/${selectedEmployee.id}`} className="flex-1 py-2 text-center text-[11px] font-semibold text-[#253C7D] border border-[#253C7D]/20 rounded-lg hover:bg-[#253C7D]/5 transition-colors whitespace-nowrap">
               View Profile
             </Link>
             <button
@@ -419,7 +419,7 @@ export default function OrgChart() {
               <select
                 value={newManagerId}
                 onChange={(e) => setNewManagerId(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377]"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
               >
                 <option value="none">— No manager (Top level)</option>
                 {employees.filter((e) => e.id !== selectedEmployee.id).map((e) => (
@@ -434,7 +434,7 @@ export default function OrgChart() {
               <button
                 onClick={handleUpdateManager}
                 disabled={saving}
-                className="flex-1 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-xl hover:bg-[#0a5c60] transition-colors disabled:opacity-50 whitespace-nowrap"
+                className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-xl hover:bg-[#1F336A] transition-colors disabled:opacity-50 whitespace-nowrap"
               >
                 {saving ? "Saving..." : "Save Changes"}
               </button>

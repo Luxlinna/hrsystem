@@ -15,6 +15,10 @@ interface AppRole {
   attendance_view_all_employees: boolean;
   performance_view_all_employees: boolean;
   disciplinary_view_all_employees: boolean;
+  leave_view_own_branch: boolean;
+  attendance_view_own_branch: boolean;
+  performance_view_own_branch: boolean;
+  disciplinary_view_own_branch: boolean;
   created_at: string;
 }
 
@@ -65,7 +69,7 @@ const ALL_MODULES = [
 const MODULE_GROUPS = ["Core", "Workforce", "Operations", "Insights", "System"];
 
 const COLORS = [
-  "#0D7377","#7C3AED","#059669","#D97706","#DC2626","#2563EB","#DB2777","#EA580C","#64748B","#0369A1",
+  "#253C7D","#7C3AED","#059669","#D97706","#DC2626","#2563EB","#DB2777","#EA580C","#64748B","#0369A1",
 ];
 
 // "Own record only" pages — each has a per-role override so admins decide
@@ -77,10 +81,14 @@ const SCOPE_OVERRIDES = [
   { key: "attendance_view_all_employees", label: "Can view all employees' attendance records", hint: "Off by default — this role only sees their own attendance history." },
   { key: "performance_view_all_employees", label: "Can view/manage all employees' performance reviews", hint: "Off by default — this role only sees their own reviews and goals." },
   { key: "disciplinary_view_all_employees", label: "Can view all employees' disciplinary records", hint: "Off by default — this role only sees their own records, if any." },
+  { key: "leave_view_own_branch", label: "Can view/approve their own branch's leave requests", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" leave is already on. Scopes to employees who share this person's branch." },
+  { key: "attendance_view_own_branch", label: "Can view their own branch's attendance records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" attendance is already on." },
+  { key: "performance_view_own_branch", label: "Can view/manage their own branch's performance reviews", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" performance is already on." },
+  { key: "disciplinary_view_own_branch", label: "Can view their own branch's disciplinary records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" disciplinary is already on." },
 ] as const;
 
 const BLANK_ROLE = {
-  name: "", description: "", color: "#0D7377", is_admin: false, allowed_modules: [] as string[],
+  name: "", description: "", color: "#253C7D", is_admin: false, allowed_modules: [] as string[],
   ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, false])) as Record<typeof SCOPE_OVERRIDES[number]["key"], boolean>,
 };
 
@@ -250,7 +258,7 @@ export default function AdminPortal() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-10 h-10 bg-[#0D7377] rounded-xl flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 bg-[#253C7D] rounded-xl flex items-center justify-center shrink-0">
             <i className="ri-admin-line text-white text-lg" />
           </div>
           <div>
@@ -283,7 +291,7 @@ export default function AdminPortal() {
 
       {loading ? (
         <div className="flex items-center justify-center h-60">
-          <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <>
@@ -294,7 +302,7 @@ export default function AdminPortal() {
                 <p className="text-sm text-gray-500">{roles.length} roles defined</p>
                 <button
                   onClick={openNewRole}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white rounded-xl text-sm hover:bg-[#0a5f63] transition-colors cursor-pointer whitespace-nowrap"
+                  className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white rounded-xl text-sm hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
                 >
                   <i className="ri-add-line" />
                   New Role
@@ -312,7 +320,7 @@ export default function AdminPortal() {
                         <div>
                           <p className="text-sm font-bold text-gray-900">{role.name}</p>
                           {role.is_admin ? (
-                            <span className="text-[10px] font-semibold text-[#0D7377] bg-[#0D7377]/10 px-2 py-0.5 rounded-full">Full Access</span>
+                            <span className="text-[10px] font-semibold text-[#253C7D] bg-[#253C7D]/10 px-2 py-0.5 rounded-full">Full Access</span>
                           ) : (
                             <span className="text-[11px] text-gray-400">{role.allowed_modules.length} modules</span>
                           )}
@@ -383,7 +391,7 @@ export default function AdminPortal() {
                               value={roleForm.name}
                               onChange={(e) => setRoleForm((p) => ({ ...p, name: e.target.value }))}
                               placeholder="e.g. HR Analyst"
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
                             />
                           </div>
                           <div>
@@ -406,16 +414,16 @@ export default function AdminPortal() {
                             value={roleForm.description}
                             onChange={(e) => setRoleForm((p) => ({ ...p, description: e.target.value }))}
                             placeholder="Brief description of this role..."
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
                           />
                         </div>
-                        <div className="flex items-center gap-3 p-3 bg-[#0D7377]/5 rounded-xl">
+                        <div className="flex items-center gap-3 p-3 bg-[#253C7D]/5 rounded-xl">
                           <input
                             type="checkbox"
                             id="is_admin"
                             checked={roleForm.is_admin}
                             onChange={(e) => setRoleForm((p) => ({ ...p, is_admin: e.target.checked }))}
-                            className="w-4 h-4 rounded cursor-pointer accent-[#0D7377]"
+                            className="w-4 h-4 rounded cursor-pointer accent-[#253C7D]"
                           />
                           <label htmlFor="is_admin" className="text-sm font-medium text-gray-800 cursor-pointer">
                             Super Admin — grant full access to ALL modules
@@ -433,7 +441,7 @@ export default function AdminPortal() {
                                     id={o.key}
                                     checked={roleForm[o.key]}
                                     onChange={(e) => setRoleForm((p) => ({ ...p, [o.key]: e.target.checked }))}
-                                    className="w-4 h-4 rounded cursor-pointer accent-[#0D7377] shrink-0"
+                                    className="w-4 h-4 rounded cursor-pointer accent-[#253C7D] shrink-0"
                                   />
                                   <label htmlFor={o.key} className="text-sm font-medium text-gray-800 cursor-pointer">
                                     {o.label}
@@ -452,7 +460,7 @@ export default function AdminPortal() {
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => setRoleForm((p) => ({ ...p, allowed_modules: ALL_MODULES.map((m) => m.key) }))}
-                                  className="text-[11px] text-[#0D7377] font-medium cursor-pointer hover:underline"
+                                  className="text-[11px] text-[#253C7D] font-medium cursor-pointer hover:underline"
                                 >Select All</button>
                                 <span className="text-gray-300">|</span>
                                 <button
@@ -470,7 +478,7 @@ export default function AdminPortal() {
                                     <div className="flex items-center gap-2 mb-2">
                                       <button
                                         onClick={() => toggleAllInGroup(group)}
-                                        className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${allSelected ? "bg-[#0D7377] border-[#0D7377]" : "border-gray-300"}`}
+                                        className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${allSelected ? "bg-[#253C7D] border-[#253C7D]" : "border-gray-300"}`}
                                       >
                                         {allSelected && <i className="ri-check-line text-white text-[10px]" />}
                                       </button>
@@ -484,7 +492,7 @@ export default function AdminPortal() {
                                             key={mod.key}
                                             onClick={() => toggleModule(mod.key)}
                                             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium transition-all cursor-pointer text-left ${
-                                              selected ? "bg-[#0D7377]/10 text-[#0D7377]" : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                                              selected ? "bg-[#253C7D]/10 text-[#253C7D]" : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                                             }`}
                                           >
                                             <i className={`${mod.icon} text-sm shrink-0`} />
@@ -508,7 +516,7 @@ export default function AdminPortal() {
                           <button
                             onClick={saveRole}
                             disabled={savingRole}
-                            className="flex items-center gap-2 px-5 py-2 bg-[#0D7377] text-white rounded-lg text-sm hover:bg-[#0a5f63] disabled:opacity-60 cursor-pointer whitespace-nowrap"
+                            className="flex items-center gap-2 px-5 py-2 bg-[#253C7D] text-white rounded-lg text-sm hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer whitespace-nowrap"
                           >
                             {savingRole ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-save-line" />}
                             {editingRole ? "Update Role" : "Create Role"}
@@ -537,7 +545,7 @@ export default function AdminPortal() {
                   </button>
                   <button
                     onClick={() => setShowAddUser(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white rounded-xl text-sm hover:bg-[#0a5f63] transition-colors cursor-pointer whitespace-nowrap"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white rounded-xl text-sm hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-add-line" />
                     Add User
@@ -547,7 +555,7 @@ export default function AdminPortal() {
 
               {/* Add user form */}
               {showAddUser && (
-                <div className="bg-[#0D7377]/5 border border-[#0D7377]/20 rounded-xl p-5">
+                <div className="bg-[#253C7D]/5 border border-[#253C7D]/20 rounded-xl p-5">
                   <h4 className="text-sm font-bold text-gray-900 mb-4">Add User</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                     <div>
@@ -556,7 +564,7 @@ export default function AdminPortal() {
                         value={newUser.email}
                         onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))}
                         placeholder="user@company.com"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
                       />
                     </div>
                     <div>
@@ -565,7 +573,7 @@ export default function AdminPortal() {
                         value={newUser.display_name}
                         onChange={(e) => setNewUser((p) => ({ ...p, display_name: e.target.value }))}
                         placeholder="Full name"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
                       />
                     </div>
                     <div>
@@ -573,7 +581,7 @@ export default function AdminPortal() {
                       <select
                         value={newUser.role_id}
                         onChange={(e) => setNewUser((p) => ({ ...p, role_id: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 cursor-pointer"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
                       >
                         <option value="">No role (no access until assigned)</option>
                         {roles.map((r) => (
@@ -587,7 +595,7 @@ export default function AdminPortal() {
                     <button
                       onClick={saveNewUser}
                       disabled={savingUser}
-                      className="flex items-center gap-2 px-5 py-2 bg-[#0D7377] text-white rounded-lg text-sm hover:bg-[#0a5f63] disabled:opacity-60 cursor-pointer whitespace-nowrap"
+                      className="flex items-center gap-2 px-5 py-2 bg-[#253C7D] text-white rounded-lg text-sm hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer whitespace-nowrap"
                     >
                       {savingUser ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-user-add-line" />}
                       Add User
@@ -607,7 +615,7 @@ export default function AdminPortal() {
                   <div className="divide-y divide-gray-50">
                     {users.map((user) => (
                       <div key={user.id} className="flex flex-wrap items-center gap-4 px-5 py-4">
-                        <div className="w-10 h-10 rounded-xl bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-[12px] font-bold shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-[12px] font-bold shrink-0">
                           {(user.display_name || user.email).slice(0, 2).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -618,7 +626,7 @@ export default function AdminPortal() {
                           <select
                             value={user.role_id || ""}
                             onChange={(e) => updateUserRole(user.id, e.target.value ? parseInt(e.target.value) : null)}
-                            className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 cursor-pointer"
+                            className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
                           >
                             <option value="">No role (no access until assigned)</option>
                             {roles.map((r) => (

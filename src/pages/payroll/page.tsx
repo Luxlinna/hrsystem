@@ -53,7 +53,7 @@ export default function Payroll() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Total Base Salary", value: `$${(totalBase / 1000).toFixed(1)}k`, color: "bg-[#0D7377]/10 text-[#0D7377]" },
+          { label: "Total Base Salary", value: `$${(totalBase / 1000).toFixed(1)}k`, color: "bg-[#253C7D]/10 text-[#253C7D]" },
           { label: "Total Bonuses", value: `$${(totalBonus / 1000).toFixed(1)}k`, color: "bg-green-50 text-green-700" },
           { label: "Total Deductions", value: `$${(totalDeductions / 1000).toFixed(1)}k`, color: "bg-red-50 text-red-700" },
           { label: "Net Payout", value: `$${(totalNet / 1000).toFixed(1)}k`, color: "bg-blue-50 text-blue-700" },
@@ -74,8 +74,8 @@ export default function Payroll() {
               <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}k`} />
               <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-              <Bar dataKey="base" fill="#0D7377" radius={[4, 4, 0, 0]} name="Base" />
-              <Bar dataKey="bonus" fill="#54BAB9" radius={[4, 4, 0, 0]} name="Bonus" />
+              <Bar dataKey="base" fill="#253C7D" radius={[4, 4, 0, 0]} name="Base" />
+              <Bar dataKey="bonus" fill="#74C8EC" radius={[4, 4, 0, 0]} name="Bonus" />
               <Bar dataKey="deductions" fill="#E11D48" radius={[4, 4, 0, 0]} name="Deductions" />
             </BarChart>
           </ResponsiveContainer>

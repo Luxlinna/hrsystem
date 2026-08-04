@@ -193,7 +193,7 @@ export default function OnboardingChecklist() {
     <div className="flex h-screen overflow-hidden bg-white">
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-[13px] font-medium text-white ${toast.type === "success" ? "bg-[#0D7377]" : "bg-red-500"}`}>
+        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-[13px] font-medium text-white ${toast.type === "success" ? "bg-[#253C7D]" : "bg-red-500"}`}>
           {toast.message}
         </div>
       )}
@@ -214,10 +214,10 @@ export default function OnboardingChecklist() {
               <button
                 key={hire.id}
                 onClick={() => setSelectedHire(hire)}
-                className={`w-full text-left p-3.5 rounded-xl transition-all ${isSelected ? "bg-[#0D7377]/5 border border-[#0D7377]/20" : "hover:bg-gray-50 border border-transparent"}`}
+                className={`w-full text-left p-3.5 rounded-xl transition-all ${isSelected ? "bg-[#253C7D]/5 border border-[#253C7D]/20" : "hover:bg-gray-50 border border-transparent"}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-9 h-9 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-[12px] font-bold shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-[12px] font-bold shrink-0">
                     {hire.employees ? `${hire.employees.first_name[0]}${hire.employees.last_name[0]}` : "NH"}
                   </div>
                   <div className="min-w-0">
@@ -229,10 +229,10 @@ export default function OnboardingChecklist() {
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${hire.status === "approved" ? "bg-blue-50 text-blue-700" : hire.status === "completed" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
                     {hire.stage}
                   </span>
-                  <span className="text-[11px] font-semibold text-[#0D7377]">{prog}%</span>
+                  <span className="text-[11px] font-semibold text-[#253C7D]">{prog}%</span>
                 </div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all ${prog === 100 ? "bg-green-500" : "bg-[#0D7377]"}`} style={{ width: `${prog}%` }} />
+                  <div className={`h-full rounded-full transition-all ${prog === 100 ? "bg-green-500" : "bg-[#253C7D]"}`} style={{ width: `${prog}%` }} />
                 </div>
                 <p className="text-[10px] text-gray-400 mt-1.5">{doneCount}/{taskCount} tasks · Day {hire.day_count}</p>
               </button>
@@ -254,7 +254,7 @@ export default function OnboardingChecklist() {
                 >
                   <i className="ri-arrow-left-line text-lg" />
                 </button>
-                <div className="w-12 h-12 rounded-xl bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-[15px] font-bold shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-[15px] font-bold shrink-0">
                   {selectedHire.employees ? `${selectedHire.employees.first_name[0]}${selectedHire.employees.last_name[0]}` : "NH"}
                 </div>
                 <div>
@@ -267,7 +267,7 @@ export default function OnboardingChecklist() {
               </div>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-4 py-2 rounded-lg text-[12px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-4 py-2 rounded-lg text-[12px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap"
               >
                 <i className="ri-add-line" /> Add Task
               </button>
@@ -292,7 +292,7 @@ export default function OnboardingChecklist() {
                   <button
                     key={f}
                     onClick={() => setFilterStatus(f)}
-                    className={`px-3 py-1.5 rounded-full text-[11px] font-medium capitalize transition-colors ${filterStatus === f ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-medium capitalize transition-colors ${filterStatus === f ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
                   >
                     {f}
                   </button>
@@ -307,7 +307,7 @@ export default function OnboardingChecklist() {
                   <i className="ri-checkbox-circle-line text-5xl mb-3 block" />
                   <p className="text-[14px]">No tasks yet</p>
                   <p className="text-[12px] mt-1">Add tasks to track onboarding progress</p>
-                  <button onClick={() => setShowAddModal(true)} className="mt-4 px-4 py-2 bg-[#0D7377] text-white rounded-lg text-[12px] font-semibold">Add First Task</button>
+                  <button onClick={() => setShowAddModal(true)} className="mt-4 px-4 py-2 bg-[#253C7D] text-white rounded-lg text-[12px] font-semibold">Add First Task</button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -339,7 +339,7 @@ export default function OnboardingChecklist() {
                                 <button
                                   onClick={() => toggleTask(task)}
                                   disabled={toggling === task.id}
-                                  className={`mt-0.5 w-5 h-5 shrink-0 rounded border-2 flex items-center justify-center transition-all ${task.completed ? "bg-[#0D7377] border-[#0D7377]" : overdue ? "border-red-400 hover:border-red-500" : "border-gray-300 hover:border-[#0D7377]"} ${toggling === task.id ? "opacity-50" : ""}`}
+                                  className={`mt-0.5 w-5 h-5 shrink-0 rounded border-2 flex items-center justify-center transition-all ${task.completed ? "bg-[#253C7D] border-[#253C7D]" : overdue ? "border-red-400 hover:border-red-500" : "border-gray-300 hover:border-[#253C7D]"} ${toggling === task.id ? "opacity-50" : ""}`}
                                 >
                                   {task.completed && <i className="ri-check-line text-white text-[10px]" />}
                                 </button>
@@ -360,7 +360,7 @@ export default function OnboardingChecklist() {
                                     {task.assigned_to && (
                                       <button
                                         onClick={() => { setSelectedTask({ ...task }); setShowAssignModal(true); }}
-                                        className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-[#0D7377] transition-colors"
+                                        className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-[#253C7D] transition-colors"
                                       >
                                         <i className="ri-user-line text-[11px]" />
                                         {task.assigned_to}
@@ -369,7 +369,7 @@ export default function OnboardingChecklist() {
                                     {!task.assigned_to && (
                                       <button
                                         onClick={() => { setSelectedTask({ ...task }); setShowAssignModal(true); }}
-                                        className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-[#0D7377] transition-colors"
+                                        className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-[#253C7D] transition-colors"
                                       >
                                         <i className="ri-user-add-line text-[11px]" /> Assign
                                       </button>
@@ -422,16 +422,16 @@ export default function OnboardingChecklist() {
             <form onSubmit={handleAddTask} className="p-6 space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Task Name *</label>
-                <input type="text" required value={newTask.task_name} onChange={(e) => setNewTask({ ...newTask, task_name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" placeholder="e.g. Sign NDA Agreement" />
+                <input type="text" required value={newTask.task_name} onChange={(e) => setNewTask({ ...newTask, task_name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="e.g. Sign NDA Agreement" />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Description</label>
-                <textarea value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} rows={2} maxLength={500} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] resize-none" placeholder="Brief description..." />
+                <textarea value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} rows={2} maxLength={500} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] resize-none" placeholder="Brief description..." />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Category</label>
-                  <select value={newTask.category} onChange={(e) => setNewTask({ ...newTask, category: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white">
+                  <select value={newTask.category} onChange={(e) => setNewTask({ ...newTask, category: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
                     <option value="documents">Documents</option>
                     <option value="it_setup">IT Setup</option>
                     <option value="training">Training</option>
@@ -440,7 +440,7 @@ export default function OnboardingChecklist() {
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Priority</label>
-                  <select value={newTask.priority} onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white">
+                  <select value={newTask.priority} onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
                     <option value="low">Low</option>
@@ -453,7 +453,7 @@ export default function OnboardingChecklist() {
                   <select
                     value={newTask.assigned_to}
                     onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value, assigned_to_role: departmentForStaffName(e.target.value) || newTask.assigned_to_role })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
                   >
                     <option value="">Unassigned</option>
                     {staff.map((s) => (
@@ -466,7 +466,7 @@ export default function OnboardingChecklist() {
                   <select
                     value={newTask.assigned_to_role}
                     onChange={(e) => setNewTask({ ...newTask, assigned_to_role: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
                   >
                     <option value="">No department</option>
                     {staffDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -475,11 +475,11 @@ export default function OnboardingChecklist() {
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Due Date</label>
-                <input type="date" value={newTask.due_date} onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]" />
+                <input type="date" value={newTask.due_date} onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
-                <button type="submit" disabled={submitting} className="flex-1 px-4 py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors disabled:opacity-50">{submitting ? "Adding..." : "Add Task"}</button>
+                <button type="submit" disabled={submitting} className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors disabled:opacity-50">{submitting ? "Adding..." : "Add Task"}</button>
               </div>
             </form>
           </div>
@@ -501,7 +501,7 @@ export default function OnboardingChecklist() {
                 <select
                   value={selectedTask.assigned_to || ""}
                   onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to: e.target.value, assigned_to_role: departmentForStaffName(e.target.value) || selectedTask.assigned_to_role })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
                 >
                   <option value="">Unassigned</option>
                   {staff.map((s) => (
@@ -514,7 +514,7 @@ export default function OnboardingChecklist() {
                 <select
                   value={selectedTask.assigned_to_role || ""}
                   onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to_role: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
                 >
                   <option value="">No department</option>
                   {staffDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -523,7 +523,7 @@ export default function OnboardingChecklist() {
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowAssignModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={handleAssign} className="flex-1 px-4 py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60]">Save</button>
+              <button onClick={handleAssign} className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">Save</button>
             </div>
           </div>
         </div>

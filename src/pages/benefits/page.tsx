@@ -85,7 +85,7 @@ export default function Benefits() {
         </div>
         <button
           onClick={() => setEnrollModal(true)}
-          className="px-4 py-2.5 bg-[#0D7377] text-white text-[13px] font-semibold rounded-lg hover:bg-[#0a5c60] whitespace-nowrap"
+          className="px-4 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] whitespace-nowrap"
         >
           <i className="ri-user-add-line mr-1" />
           Enroll Employee
@@ -93,9 +93,9 @@ export default function Benefits() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-[#0D7377]/10 rounded-xl p-5">
-          <p className="text-2xl font-bold text-[#0D7377]">{activePlans}</p>
-          <p className="text-[12px] font-medium text-[#0D7377]/70 mt-1">Active Benefit Plans</p>
+        <div className="bg-[#253C7D]/10 rounded-xl p-5">
+          <p className="text-2xl font-bold text-[#253C7D]">{activePlans}</p>
+          <p className="text-[12px] font-medium text-[#253C7D]/70 mt-1">Active Benefit Plans</p>
         </div>
         <div className="bg-green-50 rounded-xl p-5">
           <p className="text-2xl font-bold text-green-700">{totalEnrolled}</p>
@@ -113,7 +113,7 @@ export default function Benefits() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-full text-[12px] font-medium capitalize transition-colors whitespace-nowrap ${
-              tab === t ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              tab === t ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             {t}
@@ -123,7 +123,7 @@ export default function Benefits() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <>
@@ -151,7 +151,7 @@ export default function Benefits() {
                         <span className="text-[13px] text-gray-600">{b.provider || "—"}</span>
                         <span className="text-[13px] text-gray-600">{b.type}</span>
                         <span className="text-[13px] text-gray-500">{b.eligible_count.toLocaleString()}</span>
-                        <span className="text-[13px] font-bold text-[#0D7377]">{enrolledCount}</span>
+                        <span className="text-[13px] font-bold text-[#253C7D]">{enrolledCount}</span>
                         <span className="text-[13px] font-semibold text-gray-900">{rate}%</span>
                         <span className={`inline-flex text-[11px] font-semibold px-2 py-1 rounded-full w-fit capitalize ${
                           b.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-50 text-gray-600"
@@ -188,13 +188,13 @@ export default function Benefits() {
                         <span className="text-[11px] font-semibold text-gray-700">{enrolledCount} / {b.eligible_count}</span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
-                        <div className="h-full bg-[#0D7377] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                        <div className="h-full bg-[#253C7D] rounded-full transition-all" style={{ width: `${pct}%` }} />
                       </div>
                       {planEnrollments.length > 0 && (
                         <div className="space-y-2 mt-3 pt-3 border-t border-gray-50">
                           {planEnrollments.slice(0, 4).map((e) => (
                             <div key={e.id} className="flex items-center justify-between text-[12px]">
-                              <Link to={`/employees/${e.employee_id}`} className="text-gray-700 hover:text-[#0D7377] transition-colors">
+                              <Link to={`/employees/${e.employee_id}`} className="text-gray-700 hover:text-[#253C7D] transition-colors">
                                 {e.employees?.first_name} {e.employees?.last_name}
                               </Link>
                               <button
@@ -230,9 +230,9 @@ export default function Benefits() {
                 Array.from(new Set(plans.map((p) => p.provider).filter(Boolean))).map((provider) => {
                   const providerPlans = plans.filter((p) => p.provider === provider);
                   return (
-                    <div key={provider} className="bg-white border border-gray-100 rounded-xl p-5 flex items-center gap-3 hover:border-[#0D7377]/20 transition-colors">
-                      <div className="w-12 h-12 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0">
-                        <i className="ri-building-line text-xl text-[#0D7377] w-6 h-6 flex items-center justify-center" />
+                    <div key={provider} className="bg-white border border-gray-100 rounded-xl p-5 flex items-center gap-3 hover:border-[#253C7D]/20 transition-colors">
+                      <div className="w-12 h-12 rounded-lg bg-[#253C7D]/10 flex items-center justify-center shrink-0">
+                        <i className="ri-building-line text-xl text-[#253C7D] w-6 h-6 flex items-center justify-center" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[14px] font-semibold text-gray-900">{provider}</p>
@@ -264,7 +264,7 @@ export default function Benefits() {
                   required
                   value={enrollForm.employee_id}
                   onChange={(e) => setEnrollForm({ ...enrollForm, employee_id: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
                 >
                   <option value="">Select employee</option>
                   {employees.map((emp) => (
@@ -278,7 +278,7 @@ export default function Benefits() {
                   required
                   value={enrollForm.plan_id}
                   onChange={(e) => setEnrollForm({ ...enrollForm, plan_id: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#0D7377] bg-white"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
                 >
                   <option value="">Select plan</option>
                   {plans.filter((p) => p.status === "active").map((plan) => (
@@ -286,7 +286,7 @@ export default function Benefits() {
                   ))}
                 </select>
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60]">
+              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">
                 Enroll
               </button>
             </form>

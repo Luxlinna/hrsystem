@@ -57,12 +57,12 @@ export default function BottomNav() {
               key={item.path}
               to={item.path}
               className={`flex-1 flex flex-col items-center justify-center gap-1 relative transition-colors ${
-                isActive ? "text-[#0D7377]" : "text-gray-400"
+                isActive ? "text-[#253C7D]" : "text-gray-400"
               }`}
             >
               {/* Active indicator */}
               {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#0D7377] rounded-full" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#253C7D] rounded-full" />
               )}
               {/* Icon wrapper */}
               <div className="relative w-6 h-6 flex items-center justify-center">
@@ -79,7 +79,7 @@ export default function BottomNav() {
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] font-medium leading-none ${isActive ? "text-[#0D7377]" : "text-gray-400"}`}>
+              <span className={`text-[10px] font-medium leading-none ${isActive ? "text-[#253C7D]" : "text-gray-400"}`}>
                 {item.label}
               </span>
             </Link>

@@ -6,7 +6,7 @@ import {
 } from "recharts";
 import { supabase } from "@/lib/supabase";
 
-const COLORS = ["#0D7377", "#14919B", "#54BAB9", "#A8D8D8", "#1A4B4C", "#2B7A7A", "#3d9970", "#27ae60"];
+const COLORS = ["#253C7D", "#29ABE2", "#74C8EC", "#B8C5E8", "#6C63FF", "#94A3B8", "#3d9970", "#27ae60"];
 
 interface Employee { id: string; first_name: string; last_name: string; department: string; role: string; status: string; join_date: string; }
 interface LeaveRequest { id: string; employee_id: string; leave_type: string; start_date: string; end_date: string; days: number; status: string; }
@@ -248,7 +248,7 @@ export default function Analytics() {
           <select
             value={department}
             onChange={(e) => setDepartment(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] bg-white"
+            className="px-3 py-2 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
           >
             <option value="all">All Departments</option>
             {departments.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -256,7 +256,7 @@ export default function Analytics() {
           <button
             onClick={exportCSV}
             disabled={exporting}
-            className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-4 py-2 rounded-xl text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors disabled:opacity-50 whitespace-nowrap"
+            className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-4 py-2 rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] transition-colors disabled:opacity-50 whitespace-nowrap"
           >
             <i className="ri-download-line" />
             {exporting ? "Exporting..." : "Export CSV"}
@@ -266,7 +266,7 @@ export default function Analytics() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-8">
         {[
-          { label: "Employees", value: totalEmployees, sub: `${activeEmployees} active`, color: "bg-[#0D7377]/10 text-[#0D7377]" },
+          { label: "Employees", value: totalEmployees, sub: `${activeEmployees} active`, color: "bg-[#253C7D]/10 text-[#253C7D]" },
           { label: "Avg Tenure", value: `${avgTenure}yr`, sub: "", color: "bg-emerald-50 text-emerald-700" },
           { label: "Open Roles", value: jobs.filter((j) => j.status === "active").length, sub: `${candidates.length} candidates`, color: "bg-amber-50 text-amber-700" },
           { label: "Pending Leave", value: leaveRequests.filter((l) => l.status === "pending").length, sub: "", color: "bg-sky-50 text-sky-700" },
@@ -288,7 +288,7 @@ export default function Analytics() {
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`px-3 py-2 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap ${activeTab === t.key ? "bg-white text-[#0D7377]" : "text-gray-500 hover:text-gray-700"}`}
+            className={`px-3 py-2 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap ${activeTab === t.key ? "bg-white text-[#253C7D]" : "text-gray-500 hover:text-gray-700"}`}
           >
             {t.label}
           </button>
@@ -320,7 +320,7 @@ export default function Analytics() {
                   <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={80} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} />
-                  <Bar dataKey="value" fill="#0D7377" radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="value" fill="#253C7D" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -373,7 +373,7 @@ export default function Analytics() {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} />
-                <Bar dataKey="days" fill="#0D7377" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="days" fill="#253C7D" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer></div>
           </div>
@@ -435,8 +435,8 @@ export default function Analytics() {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} />
-                <Bar dataKey="total" fill="#0D7377" radius={[6, 6, 0, 0]} name="Total" />
-                <Bar dataKey="avg" fill="#54BAB9" radius={[6, 6, 0, 0]} name="Avg" />
+                <Bar dataKey="total" fill="#253C7D" radius={[6, 6, 0, 0]} name="Total" />
+                <Bar dataKey="avg" fill="#74C8EC" radius={[6, 6, 0, 0]} name="Avg" />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
               </BarChart>
             </ResponsiveContainer></div>
@@ -447,15 +447,15 @@ export default function Analytics() {
               <AreaChart data={salaryByDept}>
                 <defs>
                   <linearGradient id="salGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0D7377" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#0D7377" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#253C7D" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#253C7D" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} />
-                <Area type="monotone" dataKey="total" stroke="#0D7377" fill="url(#salGrad)" strokeWidth={2} />
+                <Area type="monotone" dataKey="total" stroke="#253C7D" fill="url(#salGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer></div>
           </div>
@@ -507,8 +507,8 @@ export default function Analytics() {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} />
-                <Bar dataKey="open" fill="#0D7377" radius={[4, 4, 0, 0]} name="Open Roles" />
-                <Bar dataKey="candidates" fill="#54BAB9" radius={[4, 4, 0, 0]} name="Candidates" />
+                <Bar dataKey="open" fill="#253C7D" radius={[4, 4, 0, 0]} name="Open Roles" />
+                <Bar dataKey="candidates" fill="#74C8EC" radius={[4, 4, 0, 0]} name="Candidates" />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
               </BarChart>
             </ResponsiveContainer></div>
@@ -524,14 +524,14 @@ export default function Analytics() {
                 { stage: "Hired", count: candidates.filter((c) => c.stage === "hired").length },
               ]}>
                 <defs><linearGradient id="pipeGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0D7377" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#0D7377" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#253C7D" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#253C7D" stopOpacity={0} />
                 </linearGradient></defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="stage" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} />
-                <Area type="monotone" dataKey="count" stroke="#0D7377" fill="url(#pipeGrad)" strokeWidth={2} />
+                <Area type="monotone" dataKey="count" stroke="#253C7D" fill="url(#pipeGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer></div>
           </div>
@@ -573,7 +573,7 @@ export default function Analytics() {
                 <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={100} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} />
-                <Bar dataKey="value" fill="#0D7377" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="value" fill="#253C7D" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer></div>
           </div>
@@ -614,7 +614,7 @@ export default function Analytics() {
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} />
-                <Bar dataKey="value" fill="#0D7377" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="value" fill="#253C7D" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer></div>
           </div>
@@ -638,7 +638,7 @@ export default function Analytics() {
                 <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={80} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} />
-                <Bar dataKey="value" fill="#54BAB9" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="value" fill="#74C8EC" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer></div>
           </div>
@@ -667,7 +667,7 @@ export default function Analytics() {
                 <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={110} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} formatter={(v: number) => [`$${v.toLocaleString()}`, "Amount"]} />
-                <Bar dataKey="value" fill="#0D7377" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="value" fill="#253C7D" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer></div>
           </div>
@@ -690,7 +690,7 @@ export default function Analytics() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:col-span-2">
             {[
-              { label: "Active Plans", value: benefitPlans.length, color: "bg-[#0D7377]/10 text-[#0D7377]" },
+              { label: "Active Plans", value: benefitPlans.length, color: "bg-[#253C7D]/10 text-[#253C7D]" },
               { label: "Total Enrolled", value: benefitEnrollments.filter((e) => e.status === "active").length, color: "bg-emerald-50 text-emerald-700" },
               { label: "Enrollment Rate", value: employees.length > 0 ? `${Math.round((new Set(benefitEnrollments.map((e) => e.employee_id)).size / employees.length) * 100)}%` : "0%", color: "bg-sky-50 text-sky-700" },
             ].map((s) => (
@@ -708,7 +708,7 @@ export default function Analytics() {
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none" }} />
-                <Bar dataKey="enrolled" fill="#0D7377" radius={[6, 6, 0, 0]} name="Enrolled" />
+                <Bar dataKey="enrolled" fill="#253C7D" radius={[6, 6, 0, 0]} name="Enrolled" />
               </BarChart>
             </ResponsiveContainer></div>
           </div>
@@ -731,11 +731,11 @@ export default function Analytics() {
                       <tr key={plan.id} className="border-t border-gray-50 hover:bg-gray-50">
                         <td className="px-5 py-3 text-[13px] font-medium text-gray-900">{plan.name}</td>
                         <td className="px-5 py-3 text-[13px] text-gray-600 capitalize">{plan.type}</td>
-                        <td className="px-5 py-3 text-[13px] text-[#0D7377] font-semibold">{enrolled}</td>
+                        <td className="px-5 py-3 text-[13px] text-[#253C7D] font-semibold">{enrolled}</td>
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2">
                             <div className="flex-1 max-w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-[#0D7377] rounded-full" style={{ width: `${rate}%` }} />
+                              <div className="h-full bg-[#253C7D] rounded-full" style={{ width: `${rate}%` }} />
                             </div>
                             <span className="text-[12px] text-gray-600">{rate}%</span>
                           </div>

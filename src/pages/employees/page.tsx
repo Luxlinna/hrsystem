@@ -27,7 +27,7 @@ export default function Employees() {
           <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Employee Directory</h1>
           <p className="text-[13px] text-gray-500 mt-1">Manage and search all employees across {branchCount} branch{branchCount === 1 ? "" : "es"}</p>
         </div>
-        <Link to="/hire" className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap">
+        <Link to="/hire" className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap">
           <i className="ri-user-add-line" />
           Add Employee
         </Link>
@@ -41,13 +41,13 @@ export default function Employees() {
             placeholder="Search by name, email, role..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#0D7377] focus:ring-1 focus:ring-[#0D7377]/20"
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20"
           />
         </div>
         <select
           value={filterDept}
           onChange={(e) => setFilterDept(e.target.value)}
-          className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+          className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
         >
           <option value="">All Departments</option>
           {depts.map((d) => (
@@ -69,10 +69,10 @@ export default function Employees() {
           <Link
             key={e.id}
             to={`/employees/${e.id}`}
-            className="grid grid-cols-1 md:grid-cols-6 px-5 py-4 border-t border-gray-50 items-center hover:bg-[#0D7377]/5 transition-colors cursor-pointer"
+            className="grid grid-cols-1 md:grid-cols-6 px-5 py-4 border-t border-gray-50 items-center hover:bg-[#253C7D]/5 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] text-sm font-bold">
+              <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-sm font-bold">
                 {e.first_name?.[0]}{e.last_name?.[0]}
               </div>
               <div>

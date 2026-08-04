@@ -204,7 +204,7 @@ export default function Onboarding() {
       {/* Toast */}
       {toast && (
         <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-[13px] font-medium text-white ${
-          toast.type === "success" ? "bg-[#0D7377]" : "bg-red-500"
+          toast.type === "success" ? "bg-[#253C7D]" : "bg-red-500"
         }`}>
           {toast.message}
         </div>
@@ -218,7 +218,7 @@ export default function Onboarding() {
         </div>
         <button
           onClick={() => setShowStartModal(true)}
-          className="inline-flex items-center gap-2 bg-[#0D7377] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors whitespace-nowrap"
+          className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap"
         >
           <i className="ri-user-add-line" />
           Start Onboarding
@@ -230,7 +230,7 @@ export default function Onboarding() {
         {[
           { label: "Pending", count: stats.pending, color: "bg-amber-50 text-amber-700" },
           { label: "Approved", count: stats.approved, color: "bg-blue-50 text-blue-700" },
-          { label: "In Progress", count: stats.inProgress, color: "bg-[#0D7377]/10 text-[#0D7377]" },
+          { label: "In Progress", count: stats.inProgress, color: "bg-[#253C7D]/10 text-[#253C7D]" },
           { label: "Completed", count: stats.completed, color: "bg-green-50 text-green-700" },
           { label: "Total", count: stats.total, color: "bg-gray-50 text-gray-700" },
         ].map((s) => (
@@ -248,7 +248,7 @@ export default function Onboarding() {
             key={f}
             onClick={() => setFilter(f)}
             className={`px-4 py-2 rounded-full text-[12px] font-medium capitalize transition-colors ${
-              filter === f ? "bg-[#0D7377] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              filter === f ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             {f}
@@ -273,7 +273,7 @@ export default function Onboarding() {
               {/* Header Row */}
               <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#0D7377]/10 flex items-center justify-center text-[#0D7377] font-bold text-sm">
+                  <div className="w-10 h-10 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold text-sm">
                     {req.employees?.first_name?.[0]}{req.employees?.last_name?.[0]}
                   </div>
                   <div>
@@ -307,10 +307,10 @@ export default function Onboarding() {
               <div className="px-5 pb-3">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[11px] text-gray-500">Overall Progress</span>
-                  <span className="text-[11px] font-semibold text-[#0D7377]">{overallProgress}%</span>
+                  <span className="text-[11px] font-semibold text-[#253C7D]">{overallProgress}%</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#0D7377] rounded-full transition-all duration-500" style={{ width: `${overallProgress}%` }} />
+                  <div className="h-full bg-[#253C7D] rounded-full transition-all duration-500" style={{ width: `${overallProgress}%` }} />
                 </div>
               </div>
 
@@ -326,11 +326,11 @@ export default function Onboarding() {
                       <div key={stage.key} className="flex items-center flex-1">
                         <div
                           className={`flex-1 h-2 rounded-full transition-colors ${
-                            isDone || isCurrent ? "bg-[#0D7377]" : "bg-gray-100"
+                            isDone || isCurrent ? "bg-[#253C7D]" : "bg-gray-100"
                           }`}
                         />
                         {i < STAGES.length - 1 && (
-                          <div className={`w-3 h-0.5 ${isDone ? "bg-[#0D7377]" : "bg-gray-100"}`} />
+                          <div className={`w-3 h-0.5 ${isDone ? "bg-[#253C7D]" : "bg-gray-100"}`} />
                         )}
                       </div>
                     );
@@ -357,26 +357,26 @@ export default function Onboarding() {
                         <div
                           key={stage.key}
                           className={`bg-white rounded-xl border p-4 ${
-                            isCurrent ? "border-[#0D7377] ring-1 ring-[#0D7377]/10" : "border-gray-100"
+                            isCurrent ? "border-[#253C7D] ring-1 ring-[#253C7D]/10" : "border-gray-100"
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                                isDone ? "bg-[#0D7377] text-white" :
-                                isCurrent ? "bg-[#0D7377]/10 text-[#0D7377]" :
+                                isDone ? "bg-[#253C7D] text-white" :
+                                isCurrent ? "bg-[#253C7D]/10 text-[#253C7D]" :
                                 "bg-gray-100 text-gray-400"
                               }`}>
                                 {isDone ? <i className="ri-check-line" /> : STAGES.findIndex((s) => s.key === stage.key) + 1}
                               </span>
-                              <span className={`text-[12px] font-semibold ${isCurrent ? "text-[#0D7377]" : "text-gray-700"}`}>
+                              <span className={`text-[12px] font-semibold ${isCurrent ? "text-[#253C7D]" : "text-gray-700"}`}>
                                 {stage.label}
                               </span>
                             </div>
                             {isCurrent && req.status === "approved" && (
                               <button
                                 onClick={() => openDocModal(req, stage.key)}
-                                className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 hover:text-[#0D7377]"
+                                className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 hover:text-[#253C7D]"
                               >
                                 <i className="ri-add-line" />
                               </button>
@@ -387,10 +387,10 @@ export default function Onboarding() {
                           {/* Progress */}
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-[11px] text-gray-500">{stageDocs.filter((d) => d.status === "complete").length}/{stageDocs.length || "0"} complete</span>
-                            <span className="text-[11px] font-semibold text-[#0D7377]">{progress}%</span>
+                            <span className="text-[11px] font-semibold text-[#253C7D]">{progress}%</span>
                           </div>
                           <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
-                            <div className="h-full bg-[#0D7377] rounded-full transition-all" style={{ width: `${progress}%` }} />
+                            <div className="h-full bg-[#253C7D] rounded-full transition-all" style={{ width: `${progress}%` }} />
                           </div>
 
                           {/* Documents list */}
@@ -401,8 +401,8 @@ export default function Onboarding() {
                                   onClick={() => toggleDocStatus(doc)}
                                   className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
                                     doc.status === "complete"
-                                      ? "bg-[#0D7377] border-[#0D7377] text-white"
-                                      : "border-gray-300 hover:border-[#0D7377]"
+                                      ? "bg-[#253C7D] border-[#253C7D] text-white"
+                                      : "border-gray-300 hover:border-[#253C7D]"
                                   }`}
                                 >
                                   {doc.status === "complete" && <i className="ri-check-line text-[10px]" />}
@@ -415,7 +415,7 @@ export default function Onboarding() {
                                     href={doc.file_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[10px] text-[#0D7377] hover:underline"
+                                    className="text-[10px] text-[#253C7D] hover:underline"
                                   >
                                     <i className="ri-download-line" />
                                   </a>
@@ -441,7 +441,7 @@ export default function Onboarding() {
                                       setDocForm({ document_name: name, notes: "" });
                                       setShowDocModal(true);
                                     }}
-                                    className="px-2 py-1 bg-gray-50 hover:bg-[#0D7377]/5 border border-gray-100 hover:border-[#0D7377]/20 rounded text-[10px] text-gray-600 hover:text-[#0D7377] transition-colors"
+                                    className="px-2 py-1 bg-gray-50 hover:bg-[#253C7D]/5 border border-gray-100 hover:border-[#253C7D]/20 rounded text-[10px] text-gray-600 hover:text-[#253C7D] transition-colors"
                                   >
                                     {name}
                                   </button>
@@ -454,7 +454,7 @@ export default function Onboarding() {
                           {isCurrent && isStageComplete(req.id, stage.key) && req.status === "approved" && stage.key !== "complete" && (
                             <button
                               onClick={() => advanceStage(req)}
-                              className="mt-3 w-full py-2 bg-[#0D7377] text-white rounded-lg text-[11px] font-semibold hover:bg-[#0a5c60] transition-colors"
+                              className="mt-3 w-full py-2 bg-[#253C7D] text-white rounded-lg text-[11px] font-semibold hover:bg-[#1F336A] transition-colors"
                             >
                               Complete & Advance <i className="ri-arrow-right-line ml-1" />
                             </button>
@@ -470,7 +470,7 @@ export default function Onboarding() {
                       {req.stage !== "complete" && (
                         <button
                           onClick={() => advanceStage(req)}
-                          className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors"
+                          className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors"
                         >
                           Next Stage
                         </button>
@@ -496,7 +496,7 @@ export default function Onboarding() {
                             setToast({ type: "success", message: "Onboarding approved" });
                           }
                         }}
-                        className="px-4 py-2 bg-[#0D7377] text-white text-[12px] font-semibold rounded-lg hover:bg-[#0a5c60] transition-colors"
+                        className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors"
                       >
                         Approve Onboarding
                       </button>
@@ -530,7 +530,7 @@ export default function Onboarding() {
             </p>
             <button
               onClick={() => setShowStartModal(false)}
-              className="w-full px-4 py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors"
+              className="w-full px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors"
             >
               Got it
             </button>
@@ -556,7 +556,7 @@ export default function Onboarding() {
                 <select
                   value={docForm.document_name}
                   onChange={(e) => setDocForm({ ...docForm, document_name: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
                   required
                 >
                   <option value="">Select document type</option>
@@ -570,7 +570,7 @@ export default function Onboarding() {
                     type="text"
                     placeholder="Enter document name"
                     onChange={(e) => setDocForm({ ...docForm, document_name: e.target.value })}
-                    className="mt-2 w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377]"
+                    className="mt-2 w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
                     required
                   />
                 )}
@@ -579,13 +579,13 @@ export default function Onboarding() {
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Upload File (optional)</label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full px-4 py-6 border-2 border-dashed border-gray-200 rounded-xl text-center cursor-pointer hover:border-[#0D7377]/30 hover:bg-[#0D7377]/5 transition-colors"
+                  className="w-full px-4 py-6 border-2 border-dashed border-gray-200 rounded-xl text-center cursor-pointer hover:border-[#253C7D]/30 hover:bg-[#253C7D]/5 transition-colors"
                 >
                   <i className="ri-upload-cloud-line text-2xl text-gray-400 mb-2 block" />
                   <p className="text-[13px] text-gray-600">Click or drag file to upload</p>
                   <p className="text-[11px] text-gray-400 mt-1">PDF, DOC, DOCX, JPG, PNG up to 10MB</p>
                   {fileInputRef.current?.files?.[0] && (
-                    <p className="text-[12px] text-[#0D7377] font-medium mt-2">{fileInputRef.current.files[0].name}</p>
+                    <p className="text-[12px] text-[#253C7D] font-medium mt-2">{fileInputRef.current.files[0].name}</p>
                   )}
                 </div>
                 <input
@@ -602,7 +602,7 @@ export default function Onboarding() {
                   onChange={(e) => setDocForm({ ...docForm, notes: e.target.value })}
                   rows={2}
                   maxLength={500}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#0D7377] resize-none"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] resize-none"
                   placeholder="Add notes about this document..."
                 />
               </div>
@@ -617,7 +617,7 @@ export default function Onboarding() {
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="flex-1 px-4 py-2.5 bg-[#0D7377] text-white rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors disabled:opacity-50"
                 >
                   {uploading ? "Saving..." : "Add Document"}
                 </button>

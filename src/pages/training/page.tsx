@@ -168,14 +168,14 @@ export default function TrainingPage() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setShowEnrollModal(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#0D7377] border border-[#0D7377] rounded-lg hover:bg-[#0D7377]/5 transition-colors cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#253C7D] border border-[#253C7D] rounded-lg hover:bg-[#253C7D]/5 transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-user-add-line" />
             Enroll Employee
           </button>
           <button
             onClick={() => setShowCourseModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white text-sm font-medium rounded-lg hover:bg-[#0a5f62] transition-colors cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white text-sm font-medium rounded-lg hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-add-line" />
             Add Course
@@ -186,7 +186,7 @@ export default function TrainingPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Courses", value: courses.filter((c) => c.status === "active").length, icon: "ri-book-open-line", color: "text-[#0D7377]", bg: "bg-[#0D7377]/10" },
+          { label: "Total Courses", value: courses.filter((c) => c.status === "active").length, icon: "ri-book-open-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
           { label: "Active Enrollments", value: totalEnrolled, icon: "ri-user-star-line", color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Completions", value: totalCompleted, icon: "ri-award-line", color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Certificates Issued", value: totalCerts, icon: "ri-medal-line", color: "text-violet-600", bg: "bg-violet-50" },
@@ -227,14 +227,14 @@ export default function TrainingPage() {
             placeholder={activeTab === "courses" ? "Search courses..." : "Search employee or course..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
           />
         </div>
         {activeTab === "courses" && (
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
           >
             <option value="">All Categories</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -244,7 +244,7 @@ export default function TrainingPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
           >
             <option value="">All Statuses</option>
             {Object.entries(ENROLL_STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -265,7 +265,7 @@ export default function TrainingPage() {
               <div
                 key={course.id}
                 onClick={() => setSelectedCourse(course)}
-                className="bg-white rounded-xl border border-gray-100 p-5 cursor-pointer hover:border-[#0D7377]/30 transition-colors"
+                className="bg-white rounded-xl border border-gray-100 p-5 cursor-pointer hover:border-[#253C7D]/30 transition-colors"
               >
                 <div className="flex items-start justify-between mb-3">
                   <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{course.category}</span>
@@ -287,7 +287,7 @@ export default function TrainingPage() {
                   </div>
                   <div className="bg-gray-100 rounded-full h-1.5">
                     <div
-                      className="bg-[#0D7377] h-1.5 rounded-full"
+                      className="bg-[#253C7D] h-1.5 rounded-full"
                       style={{ width: `${courseEnrollments.length > 0 ? Math.round((completed / courseEnrollments.length) * 100) : 0}%` }}
                     />
                   </div>
@@ -326,7 +326,7 @@ export default function TrainingPage() {
                         {emp?.avatar_url ? (
                           <img src={emp.avatar_url} alt="" className="w-8 h-8 rounded-lg object-cover" />
                         ) : (
-                          <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 text-[#0D7377] flex items-center justify-center text-xs font-semibold">
+                          <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-xs font-semibold">
                             {emp ? emp.first_name[0] + emp.last_name[0] : "?"}
                           </div>
                         )}
@@ -346,7 +346,7 @@ export default function TrainingPage() {
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2 w-28">
                         <div className="flex-1 bg-gray-100 rounded-full h-1.5">
-                          <div className={`h-1.5 rounded-full ${e.progress === 100 ? "bg-emerald-500" : "bg-[#0D7377]"}`} style={{ width: `${e.progress}%` }} />
+                          <div className={`h-1.5 rounded-full ${e.progress === 100 ? "bg-emerald-500" : "bg-[#253C7D]"}`} style={{ width: `${e.progress}%` }} />
                         </div>
                         <span className="text-xs text-gray-500 shrink-0">{e.progress}%</span>
                       </div>
@@ -370,7 +370,7 @@ export default function TrainingPage() {
                       ) : e.status === "completed" ? (
                         <button
                           onClick={() => issueCertificate(e.id)}
-                          className="text-xs text-[#0D7377] hover:underline cursor-pointer whitespace-nowrap"
+                          className="text-xs text-[#253C7D] hover:underline cursor-pointer whitespace-nowrap"
                         >
                           Issue Certificate
                         </button>
@@ -474,7 +474,7 @@ export default function TrainingPage() {
                           {emp?.avatar_url ? (
                             <img src={emp.avatar_url} alt="" className="w-7 h-7 rounded-lg object-cover" />
                           ) : (
-                            <div className="w-7 h-7 rounded-lg bg-[#0D7377]/10 text-[#0D7377] flex items-center justify-center text-xs font-semibold">
+                            <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-xs font-semibold">
                               {emp ? emp.first_name[0] + emp.last_name[0] : "?"}
                             </div>
                           )}
@@ -494,7 +494,7 @@ export default function TrainingPage() {
               </div>
               <button
                 onClick={() => { setEnrollCourseId(selectedCourse.id); setShowEnrollModal(true); setSelectedCourse(null); }}
-                className="w-full py-2 text-sm font-medium text-[#0D7377] border border-[#0D7377] rounded-lg hover:bg-[#0D7377]/5 cursor-pointer whitespace-nowrap"
+                className="w-full py-2 text-sm font-medium text-[#253C7D] border border-[#253C7D] rounded-lg hover:bg-[#253C7D]/5 cursor-pointer whitespace-nowrap"
               >
                 Enroll an Employee
               </button>
@@ -518,7 +518,7 @@ export default function TrainingPage() {
                   type="text"
                   value={newCourse.title}
                   onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                   placeholder="e.g. Advanced Leadership Program"
                 />
               </div>
@@ -529,7 +529,7 @@ export default function TrainingPage() {
                   onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
                   rows={3}
                   maxLength={500}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] resize-none"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] resize-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -539,7 +539,7 @@ export default function TrainingPage() {
                     type="text"
                     value={newCourse.category}
                     onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                     placeholder="e.g. Leadership"
                   />
                 </div>
@@ -550,7 +550,7 @@ export default function TrainingPage() {
                     step="0.5"
                     value={newCourse.duration_hours}
                     onChange={(e) => setNewCourse({ ...newCourse, duration_hours: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                   />
                 </div>
               </div>
@@ -561,7 +561,7 @@ export default function TrainingPage() {
                     type="text"
                     value={newCourse.instructor}
                     onChange={(e) => setNewCourse({ ...newCourse, instructor: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                   />
                 </div>
                 <div>
@@ -569,7 +569,7 @@ export default function TrainingPage() {
                   <select
                     value={newCourse.format}
                     onChange={(e) => setNewCourse({ ...newCourse, format: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
                   >
                     {Object.entries(FORMAT_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                   </select>
@@ -581,7 +581,7 @@ export default function TrainingPage() {
               <button
                 onClick={saveCourse}
                 disabled={saving || !newCourse.title.trim()}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#0D7377] rounded-lg hover:bg-[#0a5f62] disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#253C7D] rounded-lg hover:bg-[#1F336A] disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
                 {saving ? "Saving..." : "Create Course"}
               </button>
@@ -604,7 +604,7 @@ export default function TrainingPage() {
                 <select
                   value={enrollCourseId || ""}
                   onChange={(e) => setEnrollCourseId(parseInt(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
                   <option value="">Select course...</option>
                   {courses.filter((c) => c.status === "active").map((c) => (
@@ -617,7 +617,7 @@ export default function TrainingPage() {
                 <select
                   value={enrollEmployeeId}
                   onChange={(e) => setEnrollEmployeeId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
                   <option value="">Select employee...</option>
                   {employees.map((e) => (
@@ -631,7 +631,7 @@ export default function TrainingPage() {
                   type="date"
                   value={enrollDueDate}
                   onChange={(e) => setEnrollDueDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
             </div>
@@ -640,7 +640,7 @@ export default function TrainingPage() {
               <button
                 onClick={saveEnrollment}
                 disabled={saving || !enrollCourseId || !enrollEmployeeId}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#0D7377] rounded-lg hover:bg-[#0a5f62] disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#253C7D] rounded-lg hover:bg-[#1F336A] disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
                 {saving ? "Enrolling..." : "Enroll"}
               </button>

@@ -168,7 +168,7 @@ export default function MeetingRoomsPage() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] p-6 lg:p-10">
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl text-[13px] font-semibold text-white shadow-lg ${toast.type === "success" ? "bg-[#0D7377]" : "bg-red-500"}`}>
+        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl text-[13px] font-semibold text-white shadow-lg ${toast.type === "success" ? "bg-[#253C7D]" : "bg-red-500"}`}>
           {toast.message}
         </div>
       )}
@@ -182,7 +182,7 @@ export default function MeetingRoomsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div className="bg-white border border-gray-100 rounded-xl p-4">
-          <i className="ri-calendar-check-line text-lg text-[#0D7377]" />
+          <i className="ri-calendar-check-line text-lg text-[#253C7D]" />
           <p className="text-xl font-bold text-gray-900 mt-2">{totalToday}</p>
           <p className="text-[11px] text-gray-500">Bookings this day</p>
         </div>
@@ -207,7 +207,7 @@ export default function MeetingRoomsPage() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="border border-gray-200 rounded-lg text-sm px-3 py-1.5 focus:outline-none focus:border-[#0D7377]"
+            className="border border-gray-200 rounded-lg text-sm px-3 py-1.5 focus:outline-none focus:border-[#253C7D]"
           />
         ) : (
           <p className="text-sm font-semibold text-gray-800 min-w-[140px]">
@@ -221,7 +221,7 @@ export default function MeetingRoomsPage() {
           <i className="ri-arrow-right-s-line" />
         </button>
         {!isToday && (
-          <button onClick={() => setSelectedDate(toYMD(new Date()))} className="text-[#0D7377] text-sm font-medium hover:underline cursor-pointer">
+          <button onClick={() => setSelectedDate(toYMD(new Date()))} className="text-[#253C7D] text-sm font-medium hover:underline cursor-pointer">
             Today
           </button>
         )}
@@ -245,7 +245,7 @@ export default function MeetingRoomsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-40">
-          <div className="w-7 h-7 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+          <div className="w-7 h-7 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : viewMode === "month" ? (
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
@@ -268,9 +268,9 @@ export default function MeetingRoomsPage() {
                     setSelectedDate(dateStr);
                     setViewMode("day");
                   }}
-                  className={`border-r border-b border-gray-100 min-h-[100px] p-1.5 text-left align-top hover:bg-gray-50 cursor-pointer ${isCellToday ? "bg-[#0D7377]/5" : ""}`}
+                  className={`border-r border-b border-gray-100 min-h-[100px] p-1.5 text-left align-top hover:bg-gray-50 cursor-pointer ${isCellToday ? "bg-[#253C7D]/5" : ""}`}
                 >
-                  <p className={`text-[12px] font-semibold mb-1 ${isCellToday ? "text-[#0D7377]" : "text-gray-700"}`}>
+                  <p className={`text-[12px] font-semibold mb-1 ${isCellToday ? "text-[#253C7D]" : "text-gray-700"}`}>
                     {Number(dateStr.slice(-2))}
                   </p>
                   <div className="space-y-0.5">
@@ -280,7 +280,7 @@ export default function MeetingRoomsPage() {
                         <div
                           key={b.id}
                           className="text-[10px] px-1 py-0.5 rounded truncate border-l-2"
-                          style={{ backgroundColor: (room?.color || "#0D7377") + "18", borderColor: room?.color || "#0D7377" }}
+                          style={{ backgroundColor: (room?.color || "#253C7D") + "18", borderColor: room?.color || "#253C7D" }}
                           title={`${room?.name}: ${b.title} (${fmtTime(b.start_time)}–${fmtTime(b.end_time)})`}
                         >
                           {fmtTime(b.start_time)} {b.title}
@@ -309,7 +309,7 @@ export default function MeetingRoomsPage() {
                   </div>
                   <button
                     onClick={() => openModal(room)}
-                    className="bg-[#0D7377] text-white px-3.5 py-2 rounded-lg text-[12px] font-semibold hover:bg-[#0a5c60] cursor-pointer"
+                    className="bg-[#253C7D] text-white px-3.5 py-2 rounded-lg text-[12px] font-semibold hover:bg-[#1F336A] cursor-pointer"
                   >
                     <i className="ri-add-line mr-1" />
                     Book
@@ -382,7 +382,7 @@ export default function MeetingRoomsPage() {
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="e.g. Weekly sync"
-              className="w-full mt-1 mb-3 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]"
+              className="w-full mt-1 mb-3 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]"
             />
 
             <div className="grid grid-cols-2 gap-3 mb-4">
@@ -392,7 +392,7 @@ export default function MeetingRoomsPage() {
                   type="time"
                   value={form.start_time}
                   onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]"
+                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
               <div>
@@ -401,7 +401,7 @@ export default function MeetingRoomsPage() {
                   type="time"
                   value={form.end_time}
                   onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#0D7377]"
+                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
             </div>
@@ -424,7 +424,7 @@ export default function MeetingRoomsPage() {
               <button
                 onClick={handleBook}
                 disabled={saving}
-                className="flex-1 bg-[#0D7377] text-white py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#0a5c60] cursor-pointer disabled:opacity-60"
+                className="flex-1 bg-[#253C7D] text-white py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] cursor-pointer disabled:opacity-60"
               >
                 {saving ? "Booking..." : "Book Room"}
               </button>

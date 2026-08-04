@@ -134,13 +134,13 @@ export default function Sidebar() {
       <div className={`flex items-center shrink-0 transition-all duration-300 ${isExpanded ? "justify-start px-5 pt-6 pb-4" : "justify-center pt-5 pb-3"}`}>
         <Link to="/" className="flex items-center gap-2">
           <img
-            src="https://public.readdy.ai/ai/img_res/40fc7162-7c19-4969-b0c2-8981511d8064.png"
-            alt="HRMS Logo"
+            src="/logo-mark.png"
+            alt="HRM_OPS Logo"
             className="w-8 h-8 object-contain shrink-0"
           />
           {isExpanded && (
             <span className="text-[13px] font-serif font-semibold text-white tracking-wide whitespace-nowrap">
-              HR Nexus
+              HRM_OPS
             </span>
           )}
         </Link>
@@ -166,7 +166,7 @@ export default function Sidebar() {
                       isExpanded ? "gap-3 px-3 py-2.5 mx-3" : "justify-center py-3 mx-2"
                     } ${
                       isActive
-                        ? "bg-[#0D7377]/20 text-[#0D7377]"
+                        ? "bg-[#29ABE2]/20 text-[#29ABE2]"
                         : "text-gray-400 hover:bg-white/5 hover:text-white"
                     }`}
                   >
@@ -195,7 +195,7 @@ export default function Sidebar() {
                 isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
               } ${
                 location.pathname === "/notifications"
-                  ? "bg-[#0D7377]/20 text-[#0D7377]"
+                  ? "bg-[#29ABE2]/20 text-[#29ABE2]"
                   : "text-gray-400 hover:bg-white/5 hover:text-white"
               }`}
             >
@@ -226,7 +226,7 @@ export default function Sidebar() {
                 isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
               } ${
                 location.pathname === "/admin"
-                  ? "bg-[#0D7377]/20 text-[#0D7377]"
+                  ? "bg-[#29ABE2]/20 text-[#29ABE2]"
                   : "text-gray-400 hover:bg-white/5 hover:text-white"
               }`}
             >

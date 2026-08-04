@@ -189,7 +189,7 @@ export default function Notifications() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -221,7 +221,7 @@ export default function Notifications() {
           <button
             onClick={markAllRead}
             disabled={unreadCount === 0}
-            className="px-4 py-2 text-[12px] font-semibold text-[#0D7377] border border-[#0D7377]/20 rounded-lg hover:bg-[#0D7377]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+            className="px-4 py-2 text-[12px] font-semibold text-[#253C7D] border border-[#253C7D]/20 rounded-lg hover:bg-[#253C7D]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
           >
             Mark All Read
           </button>
@@ -253,7 +253,7 @@ export default function Notifications() {
               onClick={() => setFilter(f.key)}
               className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors whitespace-nowrap ${
                 filter === f.key
-                  ? "bg-[#0D7377] text-white"
+                  ? "bg-[#253C7D] text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
@@ -264,7 +264,7 @@ export default function Notifications() {
         <select
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value)}
-          className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] text-gray-700 focus:outline-none focus:border-[#0D7377]"
+          className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] text-gray-700 focus:outline-none focus:border-[#253C7D]"
         >
           <option value="">All Sources</option>
           {sources.map((s) => (
@@ -285,7 +285,7 @@ export default function Notifications() {
               onClick={() => openNotification(n)}
               className={`flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
                 !n.is_read
-                  ? "bg-[#0D7377]/[0.03] border-[#0D7377]/10"
+                  ? "bg-[#253C7D]/[0.03] border-[#253C7D]/10"
                   : "bg-white border-gray-100 hover:bg-gray-50/50"
               }`}
             >
@@ -307,7 +307,7 @@ export default function Notifications() {
                     {n.title}
                   </p>
                   {!n.is_read && (
-                    <span className="w-2 h-2 rounded-full bg-[#0D7377]" />
+                    <span className="w-2 h-2 rounded-full bg-[#253C7D]" />
                   )}
                   <span
                     className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${cfg.border} ${cfg.text} ${cfg.bg}`}
@@ -333,7 +333,7 @@ export default function Notifications() {
                       e.stopPropagation();
                       markRead(n.id);
                     }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#0D7377] transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#253C7D] transition-colors"
                     title="Mark as read"
                   >
                     <i className="ri-mail-open-line text-sm w-4 h-4 flex items-center justify-center" />

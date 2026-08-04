@@ -1,7 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { NOTIFICATION_SOURCE_ROUTES } from "@/lib/notificationRoutes";
@@ -198,11 +197,11 @@ function MobileDrawer({
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-2">
             <img
-              src="https://public.readdy.ai/ai/img_res/40fc7162-7c19-4969-b0c2-8981511d8064.png"
-              alt="HR Nexus"
+              src="/logo-mark.png"
+              alt="HRM_OPS"
               className="w-7 h-7 object-contain"
             />
-            <span className="text-[13px] font-semibold text-white tracking-wide">HR Nexus</span>
+            <span className="text-[13px] font-semibold text-white tracking-wide">HRM_OPS</span>
           </div>
           <button
             onClick={onClose}
@@ -235,7 +234,7 @@ function MobileDrawer({
                       onClick={onClose}
                       className={`flex items-center gap-3 mx-3 px-3 py-2.5 rounded-lg text-[13px] transition-colors ${
                         isActive
-                          ? "bg-[#0D7377]/20 text-[#0D7377]"
+                          ? "bg-[#29ABE2]/20 text-[#29ABE2]"
                           : "text-gray-400 hover:bg-white/5 hover:text-white"
                       }`}
                     >
@@ -256,7 +255,7 @@ function MobileDrawer({
               {user?.user_metadata?.avatar_url ? (
                 <img src={user.user_metadata.avatar_url} alt={displayName} className="w-9 h-9 rounded-lg object-cover shrink-0" />
               ) : (
-                <div className="w-9 h-9 rounded-lg bg-[#0D7377] flex items-center justify-center text-white text-[12px] font-bold shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-[#253C7D] flex items-center justify-center text-white text-[12px] font-bold shrink-0">
                   {displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -279,10 +278,9 @@ function MobileDrawer({
   );
 }
 
-export default function TopBar({ transparent }: { transparent: boolean }) {
+export default function TopBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { collapsed, toggle } = useSidebar();
   const { user, logout } = useAuth();
   const { can, isAdmin } = usePermissions();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -468,10 +466,9 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
     setProfileOpen(false);
   };
 
-  const isHome = location.pathname === "/";
-  const textColor = isHome && transparent ? "text-white/70 hover:text-white" : "text-gray-600 hover:text-gray-900";
-  const iconColor = isHome && transparent ? "text-white/80" : "text-gray-700";
-  const bgClass = transparent ? "bg-transparent" : "bg-white/80 backdrop-blur-md border-b border-gray-100";
+  const textColor = "text-gray-600 hover:text-gray-900";
+  const iconColor = "text-gray-700";
+  const bgClass = "bg-white/80 backdrop-blur-md border-b border-gray-100";
 
   const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "HR Admin";
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
@@ -492,15 +489,6 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
     <header className={`sticky top-0 z-40 ${bgClass} transition-all duration-300`}>
       <div className="flex items-center justify-between px-4 lg:px-8 py-3">
         <div className="flex items-center gap-4">
-          {/* Prominent sidebar toggle */}
-          <button
-            onClick={toggle}
-            className="hidden lg:flex items-center justify-center w-10 h-10 rounded-lg bg-[#0D7377] text-white shadow-md hover:bg-[#0a5e61] active:scale-95 transition-all"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <i className={`${collapsed ? "ri-menu-unfold-line" : "ri-menu-fold-line"} text-lg`} />
-          </button>
-
           {/* Mobile hamburger */}
           <button
             className="lg:hidden p-2 rounded-md hover:bg-black/5 cursor-pointer"
@@ -532,7 +520,7 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
         <div className="flex-1 max-w-xs lg:max-w-md mx-4" ref={searchRef}>
           <div className="relative">
             <i className={`ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-sm ${
-              searchFocused ? "text-[#0D7377]" : "text-gray-400"
+              searchFocused ? "text-[#253C7D]" : "text-gray-400"
             } pointer-events-none`} />
             <input
               ref={searchInputRef}
@@ -541,11 +529,7 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => { setSearchFocused(true); if (searchResults.length > 0) setSearchOpen(true); }}
-              className={`w-full pl-9 pr-9 py-2 rounded-lg text-[12px] transition-all outline-none ${
-                isHome && transparent
-                  ? "bg-white/15 text-white placeholder:text-white/60 border border-white/20 focus:bg-white/25 focus:border-white/40"
-                  : "bg-gray-100 text-gray-700 placeholder:text-gray-400 border border-transparent focus:bg-white focus:border-[#0D7377]/30"
-              }`}
+              className="w-full pl-9 pr-9 py-2 rounded-lg text-[12px] transition-all outline-none bg-gray-100 text-gray-700 placeholder:text-gray-400 border border-transparent focus:bg-white focus:border-[#253C7D]/30"
             />
             {searchQuery && (
               <button
@@ -571,10 +555,10 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
                         <button
                           key={result.id}
                           onClick={() => handleSelectResult(result)}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#0D7377]/5 transition-colors text-left cursor-pointer"
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#253C7D]/5 transition-colors text-left cursor-pointer"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0">
-                            <i className={`${result.icon} text-[#0D7377] text-sm w-4 h-4 flex items-center justify-center`} />
+                          <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center shrink-0">
+                            <i className={`${result.icon} text-[#253C7D] text-sm w-4 h-4 flex items-center justify-center`} />
                           </div>
                           <div className="min-w-0">
                             <p className="text-[13px] font-semibold text-gray-900 truncate">{result.label}</p>
@@ -617,7 +601,7 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
               <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
                 <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                   <span className="text-[13px] font-semibold text-gray-900">Notifications</span>
-                  <Link to="/notifications" className="text-[11px] text-[#0D7377] font-medium" onClick={() => setNotifOpen(false)}>
+                  <Link to="/notifications" className="text-[11px] text-[#253C7D] font-medium" onClick={() => setNotifOpen(false)}>
                     View All
                   </Link>
                 </div>
@@ -627,7 +611,7 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
                       key={n.id}
                       onClick={() => openNotification(n)}
                       className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer ${
-                        !n.is_read ? "bg-[#0D7377]/5" : ""
+                        !n.is_read ? "bg-[#253C7D]/5" : ""
                       }`}
                     >
                       <p className="text-[12px] font-semibold text-gray-900">{n.title}</p>
@@ -651,11 +635,11 @@ export default function TopBar({ transparent }: { transparent: boolean }) {
               {avatarUrl ? (
                 <img src={avatarUrl} alt={displayName} className="w-8 h-8 rounded-lg object-cover" />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-[#0D7377] flex items-center justify-center text-white text-[12px] font-bold">
+                <div className="w-8 h-8 rounded-lg bg-[#253C7D] flex items-center justify-center text-white text-[12px] font-bold">
                   {displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
               )}
-              <span className={`hidden md:block text-[13px] font-medium ${isHome && transparent ? "text-white/80" : "text-gray-700"}`}>
+              <span className="hidden md:block text-[13px] font-medium text-gray-700">
                 {displayName}
               </span>
               <i className={`ri-arrow-down-s-line text-sm ${iconColor}`} />

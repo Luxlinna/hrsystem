@@ -41,6 +41,7 @@ export default function SelfServicePage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "payslips");
   const quickCheckIn = searchParams.get("quickCheckIn") === "1";
+  const quickCheckOut = searchParams.get("quickCheckOut") === "1";
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [noOwnRecord, setNoOwnRecord] = useState(false);
@@ -103,7 +104,7 @@ export default function SelfServicePage() {
   if (loading || permsLoading) {
     return (
       <div className="min-h-screen bg-[#F8F8F7] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -179,7 +180,7 @@ export default function SelfServicePage() {
                     <button
                       key={emp.id}
                       onClick={() => handleSelect(emp)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer text-left ${selectedId === emp.id ? "bg-[#0D7377]/5" : ""}`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer text-left ${selectedId === emp.id ? "bg-[#253C7D]/5" : ""}`}
                     >
                       <img
                         src={emp.avatar_url || `https://readdy.ai/api/search-image?query=professional%20headshot%20portrait%20person%20in%20business%20attire%20against%20neutral%20background&width=40&height=40&seq=picker-${emp.id}&orientation=squarish`}
@@ -190,7 +191,7 @@ export default function SelfServicePage() {
                         <p className="text-sm font-medium text-gray-900 truncate">{emp.first_name} {emp.last_name}</p>
                         <p className="text-xs text-gray-400 truncate">{emp.role}</p>
                       </div>
-                      {selectedId === emp.id && <i className="ri-checkbox-circle-fill text-[#0D7377] shrink-0" />}
+                      {selectedId === emp.id && <i className="ri-checkbox-circle-fill text-[#253C7D] shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -237,6 +238,7 @@ export default function SelfServicePage() {
                 employeeId={selectedEmployee.id}
                 employeeName={`${selectedEmployee.first_name} ${selectedEmployee.last_name}`}
                 autoStart={quickCheckIn}
+                autoCheckOut={quickCheckOut}
               />
             )}
             {activeTab === "benefits" && (

@@ -87,11 +87,11 @@ export default function ReportsPage() {
       .footer{margin-top:20px;font-size:10px;color:#999;text-align:right}
       @media print{body{padding:0}}
     </style></head><body>
-      <h1>HR Nexus — ${module?.label}</h1>
+      <h1>HRM_OPS — ${module?.label}</h1>
       <p>Generated: ${new Date().toLocaleString("en-US")}${dateRange} · ${reportData.length} records</p>
       <table><thead><tr>${reportColumns.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
       <tbody>${tableRows}</tbody></table>
-      <div class="footer">HR Nexus HRMS · Confidential</div>
+      <div class="footer">HRM_OPS HRMS · Confidential</div>
     </body></html>`;
 
     const win = window.open("", "_blank");
@@ -172,7 +172,7 @@ export default function ReportsPage() {
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 cursor-pointer"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
                 />
               </div>
               <div>
@@ -181,11 +181,11 @@ export default function ReportsPage() {
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#0D7377]/30 cursor-pointer"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
                 />
               </div>
               {(dateFrom || dateTo) && (
-                <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-xs text-[#0D7377] hover:underline cursor-pointer w-full text-center">
+                <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-xs text-[#253C7D] hover:underline cursor-pointer w-full text-center">
                   Clear dates
                 </button>
               )}

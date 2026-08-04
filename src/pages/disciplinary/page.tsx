@@ -79,6 +79,8 @@ export default function DisciplinaryPage() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const canViewAll = isAdmin || !!role?.disciplinary_view_all_employees;
+  const canViewOwnBranch = !canViewAll && !!role?.disciplinary_view_own_branch;
+  const canManage = canViewAll || canViewOwnBranch;
 
   const [records, setRecords] = useState<DisciplinaryRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -101,7 +103,7 @@ export default function DisciplinaryPage() {
   useEffect(() => {
     if (permsLoading) return;
     fetchData();
-  }, [permsLoading, canViewAll, user?.email]);
+  }, [permsLoading, canViewAll, canViewOwnBranch, user?.email]);
 
   async function fetchData() {
     setLoading(true);
@@ -123,22 +125,45 @@ export default function DisciplinaryPage() {
     if (!user?.email) { setLoading(false); return; }
     const { data: me } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, department, role, avatar_url")
+      .select("id, first_name, last_name, department, role, avatar_url, branch_id")
       .eq("email", user.email)
       .maybeSingle();
 
-    if (me) {
-      setEmployees([me]);
-      const { data: rData } = await supabase
-        .from("disciplinary_records")
-        .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
-        .eq("employee_id", me.id)
-        .order("created_at", { ascending: false });
-      setRecords((rData as DisciplinaryRecord[]) || []);
-    } else {
+    if (!me) {
       setEmployees([]);
       setRecords([]);
+      setLoading(false);
+      return;
     }
+
+    if (canViewOwnBranch && me.branch_id) {
+      const { data: team } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, department, role, avatar_url")
+        .eq("status", "active")
+        .eq("branch_id", me.branch_id)
+        .order("first_name");
+      setEmployees(team || []);
+      const ids = (team || []).map((e) => e.id);
+      const { data: rData } = ids.length
+        ? await supabase
+            .from("disciplinary_records")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+            .in("employee_id", ids)
+            .order("created_at", { ascending: false })
+        : { data: [] };
+      setRecords((rData as DisciplinaryRecord[]) || []);
+      setLoading(false);
+      return;
+    }
+
+    setEmployees([me]);
+    const { data: rData } = await supabase
+      .from("disciplinary_records")
+      .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+      .eq("employee_id", me.id)
+      .order("created_at", { ascending: false });
+    setRecords((rData as DisciplinaryRecord[]) || []);
     setLoading(false);
   }
 
@@ -206,13 +231,13 @@ export default function DisciplinaryPage() {
             Disciplinary &amp; Incidents
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {canViewAll ? "Log warnings, incidents, and performance improvement plans with follow-up tracking" : "Your warnings, incidents, and performance improvement plans"}
+            {canManage ? "Log warnings, incidents, and performance improvement plans with follow-up tracking" : "Your warnings, incidents, and performance improvement plans"}
           </p>
         </div>
-        {canViewAll && (
+        {canManage && (
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0D7377] text-white text-sm font-medium rounded-lg hover:bg-[#0a5f62] transition-colors cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white text-sm font-medium rounded-lg hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-add-line" />
             Log Incident
@@ -258,7 +283,7 @@ export default function DisciplinaryPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4">
-        {canViewAll && (
+        {canManage && (
           <div className="relative flex-1 max-w-xs">
             <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
             <input
@@ -266,14 +291,14 @@ export default function DisciplinaryPage() {
               placeholder="Search employee or title..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
             />
           </div>
         )}
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
         >
           <option value="">All Types</option>
           {Object.entries(TYPE_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -281,7 +306,7 @@ export default function DisciplinaryPage() {
         <select
           value={filterSeverity}
           onChange={(e) => setFilterSeverity(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
         >
           <option value="">All Severities</option>
           {Object.entries(SEVERITY_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -289,7 +314,7 @@ export default function DisciplinaryPage() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
         >
           <option value="">All Statuses</option>
           {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -319,7 +344,7 @@ export default function DisciplinaryPage() {
                   {emp?.avatar_url ? (
                     <img src={emp.avatar_url} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0 mt-0.5" />
                   ) : (
-                    <div className="w-10 h-10 rounded-xl bg-[#0D7377]/10 text-[#0D7377] flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">
+                    <div className="w-10 h-10 rounded-xl bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">
                       {emp ? emp.first_name[0] + emp.last_name[0] : "?"}
                     </div>
                   )}
@@ -388,7 +413,7 @@ export default function DisciplinaryPage() {
                   {selectedRecord.employees.avatar_url ? (
                     <img src={selectedRecord.employees.avatar_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
                   ) : (
-                    <div className="w-12 h-12 rounded-xl bg-[#0D7377]/10 text-[#0D7377] flex items-center justify-center font-bold text-sm">
+                    <div className="w-12 h-12 rounded-xl bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center font-bold text-sm">
                       {selectedRecord.employees.first_name[0]}{selectedRecord.employees.last_name[0]}
                     </div>
                   )}
@@ -469,7 +494,7 @@ export default function DisciplinaryPage() {
                 </div>
               )}
               {/* Status update actions */}
-              {canViewAll && selectedRecord.status !== "resolved" && selectedRecord.status !== "closed" && (
+              {canManage && selectedRecord.status !== "resolved" && selectedRecord.status !== "closed" && (
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Update Status</p>
                   <div className="flex gap-2 flex-wrap">
@@ -532,7 +557,7 @@ export default function DisciplinaryPage() {
                 <select
                   value={newRecord.employee_id}
                   onChange={(e) => setNewRecord({ ...newRecord, employee_id: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
                   <option value="">Select employee...</option>
                   {employees.map((e) => (
@@ -546,7 +571,7 @@ export default function DisciplinaryPage() {
                   <select
                     value={newRecord.type}
                     onChange={(e) => setNewRecord({ ...newRecord, type: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
                   >
                     {Object.entries(TYPE_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                   </select>
@@ -556,7 +581,7 @@ export default function DisciplinaryPage() {
                   <select
                     value={newRecord.severity}
                     onChange={(e) => setNewRecord({ ...newRecord, severity: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] cursor-pointer"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
                   >
                     {Object.entries(SEVERITY_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                   </select>
@@ -568,7 +593,7 @@ export default function DisciplinaryPage() {
                   type="text"
                   value={newRecord.title}
                   onChange={(e) => setNewRecord({ ...newRecord, title: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                   placeholder="Brief title of the incident or warning"
                 />
               </div>
@@ -579,7 +604,7 @@ export default function DisciplinaryPage() {
                   onChange={(e) => setNewRecord({ ...newRecord, description: e.target.value })}
                   rows={4}
                   maxLength={500}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] resize-none"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] resize-none"
                   placeholder="Detailed description of what occurred..."
                 />
               </div>
@@ -590,7 +615,7 @@ export default function DisciplinaryPage() {
                     type="date"
                     value={newRecord.incident_date}
                     onChange={(e) => setNewRecord({ ...newRecord, incident_date: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                   />
                 </div>
                 <div>
@@ -599,7 +624,7 @@ export default function DisciplinaryPage() {
                     type="date"
                     value={newRecord.follow_up_date}
                     onChange={(e) => setNewRecord({ ...newRecord, follow_up_date: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                   />
                 </div>
               </div>
@@ -610,7 +635,7 @@ export default function DisciplinaryPage() {
                   onChange={(e) => setNewRecord({ ...newRecord, action_taken: e.target.value })}
                   rows={2}
                   maxLength={500}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377] resize-none"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] resize-none"
                   placeholder="What steps have been taken or are planned..."
                 />
               </div>
@@ -620,7 +645,7 @@ export default function DisciplinaryPage() {
                   type="text"
                   value={newRecord.witnesses}
                   onChange={(e) => setNewRecord({ ...newRecord, witnesses: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#0D7377]"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
                   placeholder="Comma-separated names"
                 />
               </div>
@@ -666,7 +691,7 @@ export default function DisciplinaryPage() {
               <button
                 onClick={handleSave}
                 disabled={saving || !newRecord.employee_id || !newRecord.title.trim()}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#0D7377] rounded-lg hover:bg-[#0a5f62] disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#253C7D] rounded-lg hover:bg-[#1F336A] disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
                 {saving ? "Saving..." : "Log Record"}
               </button>
