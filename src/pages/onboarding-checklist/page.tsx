@@ -154,12 +154,30 @@ export default function OnboardingChecklist() {
     setNewTask({ task_name: "", description: "", category: "general", assigned_to: "", assigned_to_role: "", due_date: "", priority: "medium" });
   };
 
-  const handleAssign = async () => {
-    if (!selectedTask) return;
-    const { error } = await supabase.from("onboarding_checklist_tasks").update({ assigned_to: selectedTask.assigned_to, assigned_to_role: selectedTask.assigned_to_role }).eq("id", selectedTask.id);
-    if (error) { setToast({ type: "error", message: "Failed to assign task" }); return; }
-    setTasks((prev) => prev.map((t) => t.id === selectedTask.id ? { ...t, assigned_to: selectedTask.assigned_to, assigned_to_role: selectedTask.assigned_to_role } : t));
-    setToast({ type: "success", message: "Task assigned" });
+  const handleSaveTask = async () => {
+    if (!selectedTask || !selectedTask.task_name.trim()) return;
+    const { error } = await supabase.from("onboarding_checklist_tasks").update({
+      task_name: selectedTask.task_name.trim(),
+      description: selectedTask.description || null,
+      category: selectedTask.category,
+      priority: selectedTask.priority,
+      due_date: selectedTask.due_date || null,
+      assigned_to: selectedTask.assigned_to || null,
+      assigned_to_role: selectedTask.assigned_to_role || null,
+    }).eq("id", selectedTask.id);
+    if (error) { setToast({ type: "error", message: "Failed to save task" }); return; }
+    setTasks((prev) => prev.map((t) => t.id === selectedTask.id ? { ...t, ...selectedTask } : t));
+    setToast({ type: "success", message: "Task updated" });
+    setShowAssignModal(false);
+    setSelectedTask(null);
+  };
+
+  const handleDeleteTask = async (task: ChecklistTask) => {
+    if (!confirm(`Delete task "${task.task_name}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from("onboarding_checklist_tasks").delete().eq("id", task.id);
+    if (error) { setToast({ type: "error", message: "Failed to delete task" }); return; }
+    setTasks((prev) => prev.filter((t) => t.id !== task.id));
+    setToast({ type: "success", message: "Task deleted" });
     setShowAssignModal(false);
     setSelectedTask(null);
   };
@@ -388,6 +406,22 @@ export default function OnboardingChecklist() {
                                     )}
                                   </div>
                                 </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => { setSelectedTask({ ...task }); setShowAssignModal(true); }}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#253C7D] transition-colors"
+                                    title="Edit task"
+                                  >
+                                    <i className="ri-edit-line text-[13px]" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteTask(task)}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+                                    title="Delete task"
+                                  >
+                                    <i className="ri-delete-bin-line text-[13px]" />
+                                  </button>
+                                </div>
                               </div>
                             );
                           })}
@@ -486,44 +520,79 @@ export default function OnboardingChecklist() {
         </div>
       )}
 
-      {/* Assign Modal */}
+      {/* Edit Task Modal */}
       {showAssignModal && selectedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[15px] font-bold text-gray-900">Reassign Task</h3>
-              <button onClick={() => setShowAssignModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"><i className="ri-close-line text-lg" /></button>
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-[15px] font-bold text-gray-900">Edit Task</h3>
+              <button onClick={() => { setShowAssignModal(false); setSelectedTask(null); }} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"><i className="ri-close-line text-lg" /></button>
             </div>
-            <p className="text-[12px] text-gray-500 mb-4 truncate">{selectedTask.task_name}</p>
-            <div className="space-y-3">
+            <div className="p-6 space-y-4">
               <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Assign To</label>
-                <select
-                  value={selectedTask.assigned_to || ""}
-                  onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to: e.target.value, assigned_to_role: departmentForStaffName(e.target.value) || selectedTask.assigned_to_role })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
-                >
-                  <option value="">Unassigned</option>
-                  {staff.map((s) => (
-                    <option key={s.id} value={staffFullName(s)}>{staffFullName(s)} — {s.department}</option>
-                  ))}
-                </select>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Task Name *</label>
+                <input type="text" required value={selectedTask.task_name} onChange={(e) => setSelectedTask({ ...selectedTask, task_name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
               <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Role</label>
-                <select
-                  value={selectedTask.assigned_to_role || ""}
-                  onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to_role: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
-                >
-                  <option value="">No department</option>
-                  {staffDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Description</label>
+                <textarea value={selectedTask.description || ""} onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })} rows={2} maxLength={500} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] resize-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Category</label>
+                  <select value={selectedTask.category} onChange={(e) => setSelectedTask({ ...selectedTask, category: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
+                    <option value="documents">Documents</option>
+                    <option value="it_setup">IT Setup</option>
+                    <option value="training">Training</option>
+                    <option value="general">General</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Priority</label>
+                  <select value={selectedTask.priority} onChange={(e) => setSelectedTask({ ...selectedTask, priority: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Assign To</label>
+                  <select
+                    value={selectedTask.assigned_to || ""}
+                    onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to: e.target.value, assigned_to_role: departmentForStaffName(e.target.value) || selectedTask.assigned_to_role })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
+                  >
+                    <option value="">Unassigned</option>
+                    {staff.map((s) => (
+                      <option key={s.id} value={staffFullName(s)}>{staffFullName(s)} — {s.department}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Role</label>
+                  <select
+                    value={selectedTask.assigned_to_role || ""}
+                    onChange={(e) => setSelectedTask({ ...selectedTask, assigned_to_role: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
+                  >
+                    <option value="">No department</option>
+                    {staffDepartments.map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Due Date</label>
+                <input type="date" value={selectedTask.due_date || ""} onChange={(e) => setSelectedTask({ ...selectedTask, due_date: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
             </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => setShowAssignModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={handleAssign} className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">Save</button>
+            <div className="flex gap-3 px-6 pb-6">
+              <button onClick={() => handleDeleteTask(selectedTask)} className="px-4 py-2.5 border border-red-200 text-red-600 rounded-lg text-[13px] font-semibold hover:bg-red-50">
+                <i className="ri-delete-bin-line mr-1" /> Delete
+              </button>
+              <button onClick={() => { setShowAssignModal(false); setSelectedTask(null); }} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button onClick={handleSaveTask} className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">Save</button>
             </div>
           </div>
         </div>
