@@ -9,6 +9,7 @@ interface AppRole {
   color: string;
   is_admin: boolean;
   allowed_modules: string[];
+  employees_manage: boolean;
   self_service_all_employees: boolean;
   leave_view_all_employees: boolean;
   payroll_view_all_employees: boolean;
@@ -78,6 +79,7 @@ const COLORS = [
 // "Own record only" pages — each has a per-role override so admins decide
 // who's allowed to see every employee's data instead of just their own.
 const SCOPE_OVERRIDES = [
+  { key: "employees_manage", label: "Can edit employee records (role, department, status, manager)", hint: "Off by default — this role can view the Employee Directory but profiles open read-only." },
   { key: "self_service_all_employees", label: "Can view/switch other employees in Self-Service", hint: "Off by default — this role only sees the employee record matching their own account email." },
   { key: "leave_view_all_employees", label: "Can view/approve all employees' leave requests", hint: "Off by default — this role only sees and submits their own leave requests (the team calendar stays visible either way)." },
   { key: "payroll_view_all_employees", label: "Can view all employees' payroll", hint: "Off by default — this role only sees their own payslip data." },

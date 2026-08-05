@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import app from "@/lib/firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Employee {
   id: string;
@@ -30,6 +31,8 @@ interface ReportEntry {
 
 export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
+  const { role, isAdmin } = usePermissions();
+  const canEdit = isAdmin || !!role?.employees_manage;
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -118,7 +121,7 @@ export default function EmployeeProfile() {
   };
 
   const saveChanges = async () => {
-    if (!id || !employee) return;
+    if (!id || !employee || !canEdit) return;
     setSaving(true);
     const { error } = await supabase
       .from("employees")
@@ -147,7 +150,7 @@ export default function EmployeeProfile() {
   };
 
   const uploadAvatar = async (file: File) => {
-    if (!id) return;
+    if (!id || !canEdit) return;
     setUploadingAvatar(true);
     try {
       const firebaseStorage = getStorage(app);
@@ -212,18 +215,20 @@ export default function EmployeeProfile() {
                 {initials}
               </div>
             )}
-            <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-[#253C7D] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#1F336A] transition-colors">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) uploadAvatar(file);
-                }}
-              />
-              <i className="ri-camera-line text-white text-sm" />
-            </label>
+            {canEdit && (
+              <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-[#253C7D] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#1F336A] transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadAvatar(file);
+                  }}
+                />
+                <i className="ri-camera-line text-white text-sm" />
+              </label>
+            )}
             {uploadingAvatar && (
               <div className="absolute inset-0 bg-black/30 rounded-2xl flex items-center justify-center">
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -257,13 +262,15 @@ export default function EmployeeProfile() {
 
           {/* Actions */}
           <div className="flex gap-2 shrink-0">
-            <button
-              onClick={() => setEditing(!editing)}
-              className="px-4 py-2 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors"
-            >
-              <i className={`ri-${editing ? "close" : "edit"}-line mr-1`} />
-              {editing ? "Cancel" : "Edit Profile"}
-            </button>
+            {canEdit && (
+              <button
+                onClick={() => setEditing(!editing)}
+                className="px-4 py-2 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors"
+              >
+                <i className={`ri-${editing ? "close" : "edit"}-line mr-1`} />
+                {editing ? "Cancel" : "Edit Profile"}
+              </button>
+            )}
             <Link
               to="/org-chart"
               className="px-4 py-2 border border-gray-200 text-gray-700 text-[13px] font-semibold rounded-lg hover:bg-gray-50 transition-colors"

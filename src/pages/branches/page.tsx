@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Branch {
   id: string;
@@ -37,12 +38,17 @@ const deptColors = [
 ];
 
 export default function Branches() {
+  const { role, isAdmin } = usePermissions();
+  // Every role with the "branches" module manages it, except Chairman —
+  // an explicitly read-only, board-level oversight role.
+  const canManage = isAdmin || role?.name !== "Chairman";
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [branchEmployees, setBranchEmployees] = useState<Employee[]>([]);
   const [empLoading, setEmpLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [submitting, setSubmitting] = useState(false);
@@ -81,18 +87,46 @@ export default function Branches() {
 
   const handleAddBranch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.location || !form.manager_name) return;
+    if (!form.name || !form.location || !form.manager_name || !canManage) return;
     setSubmitting(true);
-    await supabase.from("branches").insert({
-      name: form.name,
-      location: form.location,
-      manager_name: form.manager_name,
-      status: form.status,
-      employee_count: 0,
-    });
+    if (editingBranchId) {
+      await supabase.from("branches").update({
+        name: form.name,
+        location: form.location,
+        manager_name: form.manager_name,
+        status: form.status,
+      }).eq("id", editingBranchId);
+      if (selectedBranch?.id === editingBranchId) {
+        setSelectedBranch({ ...selectedBranch, ...form });
+      }
+    } else {
+      await supabase.from("branches").insert({
+        name: form.name,
+        location: form.location,
+        manager_name: form.manager_name,
+        status: form.status,
+        employee_count: 0,
+      });
+    }
     setForm({ name: "", location: "", manager_name: "", status: "active" });
+    setEditingBranchId(null);
     setShowAddModal(false);
     setSubmitting(false);
+    loadBranches();
+  };
+
+  const openEditModal = (branch: Branch) => {
+    if (!canManage) return;
+    setForm({ name: branch.name, location: branch.location, manager_name: branch.manager_name, status: branch.status });
+    setEditingBranchId(branch.id);
+    setShowAddModal(true);
+  };
+
+  const toggleBranchStatus = async (branch: Branch) => {
+    if (!canManage) return;
+    const newStatus = branch.status === "active" ? "inactive" : "active";
+    await supabase.from("branches").update({ status: newStatus }).eq("id", branch.id);
+    setSelectedBranch((prev) => (prev && prev.id === branch.id ? { ...prev, status: newStatus } : prev));
     loadBranches();
   };
 
@@ -137,13 +171,15 @@ export default function Branches() {
                 {activeBranches} active branches &middot; {totalEmployees.toLocaleString()} total employees
               </p>
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
-            >
-              <i className="ri-add-line" />
-              Add Branch
-            </button>
+            {canManage && (
+              <button
+                onClick={() => { setForm({ name: "", location: "", manager_name: "", status: "active" }); setEditingBranchId(null); setShowAddModal(true); }}
+                className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <i className="ri-add-line" />
+                Add Branch
+              </button>
+            )}
           </div>
 
           {/* Stats Row */}
@@ -271,12 +307,23 @@ export default function Branches() {
                   {selectedBranch.location}
                 </p>
               </div>
-              <button
-                onClick={() => { setSelectedBranch(null); setBranchEmployees([]); }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
-              >
-                <i className="ri-close-line text-white" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {canManage && (
+                  <button
+                    onClick={() => openEditModal(selectedBranch)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
+                    title="Edit branch"
+                  >
+                    <i className="ri-edit-line text-white text-sm" />
+                  </button>
+                )}
+                <button
+                  onClick={() => { setSelectedBranch(null); setBranchEmployees([]); }}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
+                >
+                  <i className="ri-close-line text-white" />
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-3 mt-5">
               <div className="bg-white/10 rounded-lg p-3 text-center">
@@ -328,6 +375,19 @@ export default function Branches() {
                 </div>
               </div>
             </div>
+            {canManage && (
+              <button
+                onClick={() => toggleBranchStatus(selectedBranch)}
+                className={`w-full mt-4 py-2 rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${
+                  selectedBranch.status === "active"
+                    ? "bg-red-50 text-red-600 hover:bg-red-100"
+                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                }`}
+              >
+                <i className={selectedBranch.status === "active" ? "ri-close-circle-line mr-1" : "ri-checkbox-circle-line mr-1"} />
+                {selectedBranch.status === "active" ? "Deactivate Branch" : "Reactivate Branch"}
+              </button>
+            )}
           </div>
 
           {/* Department Breakdown */}
@@ -401,11 +461,11 @@ export default function Branches() {
           <div className="bg-white rounded-2xl w-full max-w-md">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <div>
-                <h2 className="text-[16px] font-bold text-gray-900">Add New Branch</h2>
-                <p className="text-[12px] text-gray-500 mt-0.5">Create a new office or branch location</p>
+                <h2 className="text-[16px] font-bold text-gray-900">{editingBranchId ? "Edit Branch" : "Add New Branch"}</h2>
+                <p className="text-[12px] text-gray-500 mt-0.5">{editingBranchId ? "Update this branch's details" : "Create a new office or branch location"}</p>
               </div>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => { setShowAddModal(false); setEditingBranchId(null); }}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <i className="ri-close-line text-gray-500" />
@@ -460,7 +520,7 @@ export default function Branches() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => { setShowAddModal(false); setEditingBranchId(null); }}
                   className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   Cancel
@@ -470,7 +530,7 @@ export default function Branches() {
                   disabled={submitting}
                   className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-60 cursor-pointer"
                 >
-                  {submitting ? "Creating..." : "Create Branch"}
+                  {submitting ? "Saving..." : editingBranchId ? "Save Changes" : "Create Branch"}
                 </button>
               </div>
             </form>

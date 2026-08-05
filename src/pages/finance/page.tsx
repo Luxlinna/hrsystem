@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Expense {
   id: string;
@@ -24,12 +25,18 @@ const statusColors: Record<string, string> = {
 const categories = ["All", "Office Rent", "IT Equipment", "Travel", "Training", "Marketing", "Utilities", "Software", "Catering", "Office Supplies", "Legal", "Other"];
 
 export default function Finance() {
+  const { role, isAdmin } = usePermissions();
+  // Chairman holds the finance module for read-only oversight — no
+  // day-to-day approvals or record management per the role's charter.
+  const canManage = isAdmin || role?.name !== "Chairman";
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("all");
   const [modal, setModal] = useState(false);
   const [newExpense, setNewExpense] = useState({ category: "", amount: "", date: "", description: "", submitted_by: "" });
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editForm, setEditForm] = useState({ category: "", amount: "", date: "", description: "", submitted_by: "" });
 
   useEffect(() => {
     loadData();
@@ -47,7 +54,7 @@ export default function Finance() {
 
   const createExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newExpense.category || !newExpense.amount || !newExpense.date) return;
+    if (!newExpense.category || !newExpense.amount || !newExpense.date || !canManage) return;
     await supabase.from("expense_records").insert([{
       category: newExpense.category,
       amount: Number(newExpense.amount),
@@ -63,8 +70,38 @@ export default function Finance() {
   };
 
   const updateStatus = async (id: string, status: string) => {
+    if (!canManage) return;
     await supabase.from("expense_records").update({ status }).eq("id", id);
     toast("Status updated", `Expense marked as ${status}`, "success");
+    loadData();
+  };
+
+  const openEditModal = (expense: Expense) => {
+    if (!canManage) return;
+    setEditForm({ category: expense.category, amount: String(expense.amount), date: expense.date, description: expense.description || "", submitted_by: expense.submitted_by || "" });
+    setEditingExpense(expense);
+  };
+
+  const saveExpenseEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingExpense || !canManage) return;
+    await supabase.from("expense_records").update({
+      category: editForm.category,
+      amount: Number(editForm.amount),
+      date: editForm.date,
+      description: editForm.description || null,
+      submitted_by: editForm.submitted_by || null,
+    }).eq("id", editingExpense.id);
+    setEditingExpense(null);
+    toast("Expense updated", "Expense record saved", "success");
+    loadData();
+  };
+
+  const deleteExpense = async (expense: Expense) => {
+    if (!canManage) return;
+    if (!confirm(`Delete this ${expense.category} expense ($${Number(expense.amount).toLocaleString()})? This cannot be undone.`)) return;
+    await supabase.from("expense_records").delete().eq("id", expense.id);
+    toast("Expense deleted", "Expense record removed", "success");
     loadData();
   };
 
@@ -93,18 +130,20 @@ export default function Finance() {
           <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Finance Management</h1>
           <p className="text-[13px] text-gray-500 mt-1">Track expenses, budgets, and financial operations across branches</p>
         </div>
-        <button
-          onClick={() => setModal(true)}
-          className="px-4 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] whitespace-nowrap"
-        >
-          <i className="ri-add-line mr-1" /> New Expense
-        </button>
+        {canManage && (
+          <button
+            onClick={() => setModal(true)}
+            className="px-4 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] whitespace-nowrap"
+          >
+            <i className="ri-add-line mr-1" /> New Expense
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-[#253C7D]/10 rounded-xl p-5">
           <p className="text-xl font-bold text-[#253C7D]">${total.toLocaleString()}</p>
-          <p className="text-[12px] font-medium text-[#253C7D]/70 mt-1">Total Expenses (May)</p>
+          <p className="text-[12px] font-medium text-[#253C7D]/70 mt-1">Total Expenses</p>
         </div>
         <div className="bg-green-50 rounded-xl p-5">
           <p className="text-xl font-bold text-green-700">${paid.toLocaleString()}</p>
@@ -195,15 +234,21 @@ export default function Finance() {
                     {d.status}
                   </span>
                   <span className="text-[13px] text-gray-500">{d.submitted_by || "—"}</span>
-                  <div className="flex gap-1">
-                    {d.status === "pending" && (
+                  <div className="flex gap-1 items-center flex-wrap">
+                    {canManage && d.status === "pending" && (
                       <>
                         <button onClick={() => updateStatus(d.id, "approved")} className="text-[11px] text-blue-600 font-medium hover:underline">Approve</button>
                         <button onClick={() => updateStatus(d.id, "rejected")} className="text-[11px] text-red-500 font-medium hover:underline ml-2">Reject</button>
                       </>
                     )}
-                    {d.status === "approved" && (
+                    {canManage && d.status === "approved" && (
                       <button onClick={() => updateStatus(d.id, "paid")} className="text-[11px] text-green-600 font-medium hover:underline">Mark Paid</button>
+                    )}
+                    {canManage && (d.status === "pending" || d.status === "rejected") && (
+                      <>
+                        <button onClick={() => openEditModal(d)} className="text-[11px] text-gray-500 font-medium hover:underline ml-2">Edit</button>
+                        <button onClick={() => deleteExpense(d)} className="text-[11px] text-red-500 font-medium hover:underline ml-2">Delete</button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -250,6 +295,47 @@ export default function Finance() {
                 <input value={newExpense.submitted_by} onChange={(e) => setNewExpense({ ...newExpense, submitted_by: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="Your name" />
               </div>
               <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">Submit Expense</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Expense Modal */}
+      {editingExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-gray-900">Edit Expense</h3>
+              <button onClick={() => setEditingExpense(null)} className="p-1 rounded-lg hover:bg-gray-100">
+                <i className="ri-close-line text-xl text-gray-500" />
+              </button>
+            </div>
+            <form onSubmit={saveExpenseEdit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1">Category</label>
+                  <select required value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
+                    {categories.slice(1).map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1">Amount ($)</label>
+                  <input type="number" required min="0" step="0.01" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1">Date</label>
+                <input type="date" required value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1">Description</label>
+                <input value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="Optional details" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1">Submitted By</label>
+                <input value={editForm.submitted_by} onChange={(e) => setEditForm({ ...editForm, submitted_by: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
+              </div>
+              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">Save Changes</button>
             </form>
           </div>
         </div>

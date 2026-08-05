@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Course {
   id: number;
@@ -53,13 +54,16 @@ const ENROLL_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 export default function TrainingPage() {
+  const { role, isAdmin } = usePermissions();
+  // Managing the course catalog and enrollments is a management action —
+  // individual-contributor roles (Employee, Staff) only consume training.
+  const canManage = isAdmin || !["Employee", "Staff"].includes(role?.name || "");
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"courses" | "enrollments" | "certificates">("courses");
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [enrollCourseId, setEnrollCourseId] = useState<number | null>(null);
@@ -73,6 +77,7 @@ export default function TrainingPage() {
   const [newCourse, setNewCourse] = useState({
     title: "", description: "", category: "General", duration_hours: "", instructor: "", format: "online", status: "active",
   });
+  const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -116,9 +121,9 @@ export default function TrainingPage() {
   const avgProgress = enrollments.length > 0 ? Math.round(enrollments.reduce((a, e) => a + e.progress, 0) / enrollments.length) : 0;
 
   async function saveCourse() {
-    if (!newCourse.title.trim()) return;
+    if (!newCourse.title.trim() || !canManage) return;
     setSaving(true);
-    await supabase.from("training_courses").insert({
+    const payload = {
       title: newCourse.title.trim(),
       description: newCourse.description || null,
       category: newCourse.category,
@@ -126,10 +131,48 @@ export default function TrainingPage() {
       instructor: newCourse.instructor || null,
       format: newCourse.format,
       status: newCourse.status,
-    });
+    };
+    if (editingCourseId) {
+      await supabase.from("training_courses").update(payload).eq("id", editingCourseId);
+    } else {
+      await supabase.from("training_courses").insert(payload);
+    }
     setSaving(false);
     setShowCourseModal(false);
+    setEditingCourseId(null);
     setNewCourse({ title: "", description: "", category: "General", duration_hours: "", instructor: "", format: "online", status: "active" });
+    fetchData();
+  }
+
+  function openEditCourse(course: Course) {
+    if (!canManage) return;
+    setNewCourse({
+      title: course.title,
+      description: course.description || "",
+      category: course.category,
+      duration_hours: course.duration_hours != null ? String(course.duration_hours) : "",
+      instructor: course.instructor || "",
+      format: course.format,
+      status: course.status,
+    });
+    setEditingCourseId(course.id);
+    setSelectedCourse(null);
+    setShowCourseModal(true);
+  }
+
+  async function deleteCourse(course: Course) {
+    if (!canManage) return;
+    if (!confirm(`Delete "${course.title}"? This also removes all enrollments in this course. This cannot be undone.`)) return;
+    await supabase.from("training_courses").delete().eq("id", course.id);
+    setSelectedCourse(null);
+    fetchData();
+  }
+
+  async function deleteEnrollment(enrollment: Enrollment) {
+    if (!canManage) return;
+    if (!confirm("Remove this enrollment record? This cannot be undone.")) return;
+    await supabase.from("training_enrollments").delete().eq("id", enrollment.id);
+    setSelectedEnrollment(null);
     fetchData();
   }
 
@@ -165,22 +208,24 @@ export default function TrainingPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">Assign courses, track progress, and issue completion certificates</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setShowEnrollModal(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#253C7D] border border-[#253C7D] rounded-lg hover:bg-[#253C7D]/5 transition-colors cursor-pointer whitespace-nowrap"
-          >
-            <i className="ri-user-add-line" />
-            Enroll Employee
-          </button>
-          <button
-            onClick={() => setShowCourseModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white text-sm font-medium rounded-lg hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
-          >
-            <i className="ri-add-line" />
-            Add Course
-          </button>
-        </div>
+        {canManage && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setShowEnrollModal(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#253C7D] border border-[#253C7D] rounded-lg hover:bg-[#253C7D]/5 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <i className="ri-user-add-line" />
+              Enroll Employee
+            </button>
+            <button
+              onClick={() => { setNewCourse({ title: "", description: "", category: "General", duration_hours: "", instructor: "", format: "online", status: "active" }); setEditingCourseId(null); setShowCourseModal(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white text-sm font-medium rounded-lg hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <i className="ri-add-line" />
+              Add Course
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Stats */}
@@ -379,12 +424,14 @@ export default function TrainingPage() {
                       )}
                     </td>
                     <td className="px-5 py-3">
-                      <button
-                        onClick={() => setSelectedEnrollment(e)}
-                        className="text-xs text-gray-400 hover:text-gray-700 cursor-pointer whitespace-nowrap"
-                      >
-                        Details
-                      </button>
+                      {canManage && (
+                        <button
+                          onClick={() => deleteEnrollment(e)}
+                          className="text-xs text-red-500 hover:underline cursor-pointer whitespace-nowrap"
+                        >
+                          Remove
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -443,9 +490,21 @@ export default function TrainingPage() {
                 <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{selectedCourse.category}</span>
                 <h3 className="text-base font-semibold text-gray-900 mt-2">{selectedCourse.title}</h3>
               </div>
-              <button onClick={() => setSelectedCourse(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer">
-                <i className="ri-close-line text-gray-500" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                {canManage && (
+                  <>
+                    <button onClick={() => openEditCourse(selectedCourse)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer" title="Edit course">
+                      <i className="ri-edit-line text-gray-500" />
+                    </button>
+                    <button onClick={() => deleteCourse(selectedCourse)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 cursor-pointer" title="Delete course">
+                      <i className="ri-delete-bin-line text-gray-500 hover:text-red-600" />
+                    </button>
+                  </>
+                )}
+                <button onClick={() => setSelectedCourse(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer">
+                  <i className="ri-close-line text-gray-500" />
+                </button>
+              </div>
             </div>
             <div className="p-6 space-y-5">
               <p className="text-sm text-gray-600">{selectedCourse.description}</p>
@@ -506,10 +565,10 @@ export default function TrainingPage() {
       {/* Add Course Modal */}
       {showCourseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowCourseModal(false)} />
+          <div className="absolute inset-0 bg-black/30" onClick={() => { setShowCourseModal(false); setEditingCourseId(null); }} />
           <div className="relative bg-white rounded-2xl w-full max-w-[540px] max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
-              <h3 className="text-base font-semibold text-gray-900">Add Training Course</h3>
+              <h3 className="text-base font-semibold text-gray-900">{editingCourseId ? "Edit Training Course" : "Add Training Course"}</h3>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -575,15 +634,29 @@ export default function TrainingPage() {
                   </select>
                 </div>
               </div>
+              {editingCourseId && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 block mb-1">Status</label>
+                  <select
+                    value={newCourse.status}
+                    onChange={(e) => setNewCourse({ ...newCourse, status: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  >
+                    <option value="active">Active</option>
+                    <option value="draft">Draft</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                </div>
+              )}
             </div>
             <div className="px-6 pb-6 flex gap-3">
-              <button onClick={() => setShowCourseModal(false)} className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap">Cancel</button>
+              <button onClick={() => { setShowCourseModal(false); setEditingCourseId(null); }} className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap">Cancel</button>
               <button
                 onClick={saveCourse}
                 disabled={saving || !newCourse.title.trim()}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#253C7D] rounded-lg hover:bg-[#1F336A] disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
-                {saving ? "Saving..." : "Create Course"}
+                {saving ? "Saving..." : editingCourseId ? "Save Changes" : "Create Course"}
               </button>
             </div>
           </div>
