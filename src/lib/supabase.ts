@@ -8,6 +8,7 @@ const supabaseKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY || '';
 // proactively refreshing. Retry once with a freshly refreshed session
 // before giving up and signing the user out.
 let refreshPromise: ReturnType<typeof supabase.auth.refreshSession> | null = null;
+let signOutPromise: ReturnType<typeof supabase.auth.signOut> | null = null;
 
 const fetchWithAuthRetry: typeof fetch = async (input, init) => {
   const response = await fetch(input, init);
@@ -21,7 +22,15 @@ const fetchWithAuthRetry: typeof fetch = async (input, init) => {
   const { data, error } = await refreshPromise;
 
   if (error || !data.session) {
-    await supabase.auth.signOut();
+    // Several requests can all 401 around the same moment and land here
+    // once the shared refresh above fails — dedupe so we fire one logout
+    // call instead of one per failed request.
+    if (!signOutPromise) {
+      signOutPromise = supabase.auth.signOut().finally(() => {
+        signOutPromise = null;
+      });
+    }
+    await signOutPromise;
     return response;
   }
 
