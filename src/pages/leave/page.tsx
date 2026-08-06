@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 
 interface LeaveRequest {
   id: string;
@@ -255,6 +256,18 @@ export default function Leave() {
     } else {
       setToast({ type: "success", message: `Leave ${approvalAction} successfully` });
       setRequests((prev) => prev.map((r) => (r.id === selectedRequest.id ? { ...r, status: approvalAction } : r)));
+
+      const empName = `${selectedRequest.employees?.first_name ?? ""} ${selectedRequest.employees?.last_name ?? ""}`.trim() || "an employee";
+      logActivity({
+        module: "leave",
+        action: approvalAction,
+        entityType: "leave_request",
+        entityId: selectedRequest.id,
+        actorName: (user?.user_metadata?.display_name as string) || user?.email || "Unknown",
+        actorRole: role?.name || "Unknown",
+        description: `${selectedRequest.leave_type} leave request for ${empName} was ${approvalAction}`,
+        metadata: { employee: empName, leave_type: selectedRequest.leave_type, start_date: selectedRequest.start_date, end_date: selectedRequest.end_date },
+      });
 
       // Send push notification via edge function
       try {

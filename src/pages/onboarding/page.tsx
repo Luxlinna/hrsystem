@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import app from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 
 interface OnboardingRequest {
   id: string;
@@ -49,6 +52,9 @@ const DOCUMENT_TEMPLATES: Record<string, string[]> = {
 };
 
 export default function Onboarding() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
   const [expandedRequest, setExpandedRequest] = useState<string | null>(null);
@@ -186,6 +192,16 @@ export default function Onboarding() {
     } else {
       setRequests((prev) => prev.map((r) => (r.id === req.id ? { ...r, status: "completed", stage: "complete" } : r)));
       setToast({ type: "success", message: "Onboarding completed" });
+      const empName = req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "a new hire";
+      logActivity({
+        module: "onboarding",
+        action: "processed",
+        entityType: "onboarding_request",
+        entityId: req.id,
+        actorName,
+        actorRole: role?.name || "Unknown",
+        description: `Onboarding completed for ${empName}`,
+      });
     }
   };
 
@@ -494,6 +510,16 @@ export default function Onboarding() {
                           else {
                             setRequests((prev) => prev.map((r) => (r.id === req.id ? { ...r, status: "approved" } : r)));
                             setToast({ type: "success", message: "Onboarding approved" });
+                            const empName = req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "a new hire";
+                            logActivity({
+                              module: "onboarding",
+                              action: "approved",
+                              entityType: "onboarding_request",
+                              entityId: req.id,
+                              actorName,
+                              actorRole: role?.name || "Unknown",
+                              description: `Onboarding approved for ${empName}`,
+                            });
                           }
                         }}
                         className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors"

@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 import app from "@/lib/firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -53,6 +56,9 @@ const stageColors: Record<string, string> = {
 };
 
 export default function CandidateDetail() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { id } = useParams<{ id: string }>();
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [interviews, setInterviews] = useState<Interview[]>([]);
@@ -142,6 +148,15 @@ export default function CandidateDetail() {
     await supabase.from("candidates").update({ stage }).eq("id", id);
     setCandidate((prev) => prev ? { ...prev, stage } : prev);
     toast("Stage updated", `Moved to ${stageLabels[stage]}`, "success");
+    logActivity({
+      module: "hire",
+      action: stage === "hired" ? "processed" : stage === "rejected" ? "rejected" : "updated",
+      entityType: "candidate",
+      entityId: id,
+      actorName,
+      actorRole: role?.name || "Unknown",
+      description: `${candidate?.full_name || "Candidate"} moved to ${stageLabels[stage]}`,
+    });
   };
 
   if (loading) {
@@ -511,6 +526,7 @@ export default function CandidateDetail() {
                   await supabase.from("candidates").update({ stage: "rejected" }).eq("id", id);
                   setCandidate((prev) => prev ? { ...prev, stage: "rejected" } : prev);
                   toast("Candidate rejected", "Moved to rejected stage", "warning");
+                  logActivity({ module: "hire", action: "rejected", entityType: "candidate", entityId: id, actorName, actorRole: role?.name || "Unknown", description: `${candidate?.full_name || "Candidate"} was rejected` });
                 }}
                 className="w-full text-left flex items-center gap-2 p-2.5 rounded-lg hover:bg-red-50 text-[13px] text-red-600 transition-colors"
               >
@@ -522,6 +538,7 @@ export default function CandidateDetail() {
                   await supabase.from("candidates").update({ stage: "hired" }).eq("id", id);
                   setCandidate((prev) => prev ? { ...prev, stage: "hired" } : prev);
                   toast("Candidate hired", "Congratulations!", "success");
+                  logActivity({ module: "hire", action: "processed", entityType: "candidate", entityId: id, actorName, actorRole: role?.name || "Unknown", description: `${candidate?.full_name || "Candidate"} was hired` });
                 }}
                 className="w-full text-left flex items-center gap-2 p-2.5 rounded-lg hover:bg-green-50 text-[13px] text-green-600 transition-colors"
               >

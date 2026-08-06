@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
@@ -74,6 +77,9 @@ interface Interview {
 }
 
 export default function Hire() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [tab, setTab] = useState("jobs");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -166,6 +172,7 @@ export default function Hire() {
     setJobModal(false);
     setNewJob({ title: "", department: "", branch_id: "", description: "", location: "", salary_min: "", salary_max: "", type: "full-time", closing_date: "" });
     toast("Job posted", "New job posting is now live.", "success");
+    logActivity({ module: "hire", action: "created", entityType: "job_posting", actorName, actorRole: role?.name || "Unknown", description: `New job posting created for ${newJob.title}` });
     loadData();
   };
 

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 
 interface Tool {
   id: number;
@@ -62,6 +65,9 @@ const actionLabels: Record<string, string> = {
 };
 
 export default function Tools() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [tab, setTab] = useState("tools");
   const [tools, setTools] = useState<Tool[]>([]);
   const [assignments, setAssignments] = useState<ToolAssignment[]>([]);
@@ -133,7 +139,9 @@ export default function Tools() {
       toast("Error", error.message, "error");
       return;
     }
+    const emp = employees.find((e) => e.id === assignEmployeeId);
     toast("Assigned", `Tool access granted successfully.`, "success");
+    logActivity({ module: "tools", action: "created", entityType: "tool_assignment", actorName, actorRole: role?.name || "Unknown", description: `${emp ? `${emp.first_name} ${emp.last_name}` : "An employee"} was granted access to ${selectedTool.name}` });
     setAssignModalOpen(false);
     loadData();
   };
@@ -148,6 +156,9 @@ export default function Tools() {
       return;
     }
     toast("Revoked", "Tool access has been revoked.", "success");
+    const assignment = assignments.find((a) => a.id === assignId);
+    const tool = tools.find((t) => t.id === assignment?.tool_id);
+    logActivity({ module: "tools", action: "updated", entityType: "tool_assignment", actorName, actorRole: role?.name || "Unknown", description: `${assignment?.employee ? `${assignment.employee.first_name} ${assignment.employee.last_name}` : "An employee"}'s access to ${tool?.name ?? "a tool"} was revoked` });
     loadData();
   };
 

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 
 interface PayrollRun {
   id: string;
@@ -39,6 +41,7 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
 
 export default function PayrollApproval() {
   const { user } = useAuth();
+  const { role } = usePermissions();
   const submitterName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [approvals, setApprovals] = useState<PayrollApproval[]>([]);
@@ -97,12 +100,32 @@ export default function PayrollApproval() {
     setActionModal(null);
     setActionNote("");
     setToast({ type: "success", message: `Payroll run ${action === "approve" ? "approved" : "rejected"} successfully` });
+    logActivity({
+      module: "payroll",
+      action: newStatus as "approved" | "rejected",
+      entityType: "payroll_run",
+      entityId: run.id,
+      actorName: submitterName,
+      actorRole: role?.name || "Unknown",
+      description: `Payroll run for ${run.period} (${run.department}) was ${newStatus}`,
+      metadata: { period: run.period, department: run.department, total_net: run.total_net },
+    });
     await loadData();
   };
 
   const handleProcess = async (run: PayrollRun) => {
     await supabase.from("payroll_runs").update({ status: "processed" }).eq("id", run.id);
     setToast({ type: "success", message: "Payroll run marked as processed" });
+    logActivity({
+      module: "payroll",
+      action: "processed",
+      entityType: "payroll_run",
+      entityId: run.id,
+      actorName: submitterName,
+      actorRole: role?.name || "Unknown",
+      description: `Payroll run for ${run.period} (${run.department}) was processed`,
+      metadata: { period: run.period, department: run.department, total_net: run.total_net },
+    });
     await loadData();
   };
 

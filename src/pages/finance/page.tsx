@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/context/AuthContext";
+import { logActivity } from "@/lib/audit";
 
 interface Expense {
   id: string;
@@ -25,6 +27,8 @@ const statusColors: Record<string, string> = {
 const categories = ["All", "Office Rent", "IT Equipment", "Travel", "Training", "Marketing", "Utilities", "Software", "Catering", "Office Supplies", "Legal", "Other"];
 
 export default function Finance() {
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
   // Chairman holds the finance module for read-only oversight — no
   // day-to-day approvals or record management per the role's charter.
@@ -66,6 +70,7 @@ export default function Finance() {
     setModal(false);
     setNewExpense({ category: "", amount: "", date: "", description: "", submitted_by: "" });
     toast("Expense submitted", "New expense record added", "success");
+    logActivity({ module: "finance", action: "created", entityType: "expense_record", actorName, actorRole: role?.name || "Unknown", description: `New ${newExpense.category} expense submitted ($${Number(newExpense.amount).toLocaleString()})` });
     loadData();
   };
 
@@ -73,6 +78,17 @@ export default function Finance() {
     if (!canManage) return;
     await supabase.from("expense_records").update({ status }).eq("id", id);
     toast("Status updated", `Expense marked as ${status}`, "success");
+    const exp = expenses.find((e) => e.id === id);
+    const logAction = status === "approved" ? "approved" : status === "rejected" ? "rejected" : "processed";
+    logActivity({
+      module: "finance",
+      action: logAction,
+      entityType: "expense_record",
+      entityId: id,
+      actorName,
+      actorRole: role?.name || "Unknown",
+      description: `${exp?.category || "Expense"} expense ($${exp ? Number(exp.amount).toLocaleString() : "?"}) marked ${status}`,
+    });
     loadData();
   };
 
@@ -94,6 +110,7 @@ export default function Finance() {
     }).eq("id", editingExpense.id);
     setEditingExpense(null);
     toast("Expense updated", "Expense record saved", "success");
+    logActivity({ module: "finance", action: "updated", entityType: "expense_record", entityId: editingExpense.id, actorName, actorRole: role?.name || "Unknown", description: `${editForm.category} expense record updated` });
     loadData();
   };
 
@@ -102,6 +119,7 @@ export default function Finance() {
     if (!confirm(`Delete this ${expense.category} expense ($${Number(expense.amount).toLocaleString()})? This cannot be undone.`)) return;
     await supabase.from("expense_records").delete().eq("id", expense.id);
     toast("Expense deleted", "Expense record removed", "success");
+    logActivity({ module: "finance", action: "deleted", entityType: "expense_record", entityId: expense.id, actorName, actorRole: role?.name || "Unknown", description: `${expense.category} expense ($${Number(expense.amount).toLocaleString()}) deleted` });
     loadData();
   };
 

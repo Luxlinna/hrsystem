@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 
 interface BenefitPlan {
   id: string;
@@ -23,6 +26,9 @@ interface Enrollment {
 }
 
 export default function Benefits() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [tab, setTab] = useState<"plans" | "enrollment" | "providers">("plans");
   const [plans, setPlans] = useState<BenefitPlan[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -55,6 +61,7 @@ export default function Benefits() {
     const nextStatus = enrollment.status === "enrolled" ? "opted_out" : "enrolled";
     await supabase.from("benefit_enrollments").update({ status: nextStatus }).eq("id", enrollment.id);
     toast(nextStatus === "enrolled" ? "Re-enrolled" : "Opted out", `${enrollment.employees?.first_name ?? "Employee"} is now ${nextStatus.replace("_", " ")}.`, "success");
+    logActivity({ module: "benefits", action: "updated", entityType: "benefit_enrollment", entityId: enrollment.id, actorName, actorRole: role?.name || "Unknown", description: `${enrollment.employees?.first_name ?? "Employee"} ${enrollment.employees?.last_name ?? ""} is now ${nextStatus.replace("_", " ")} in ${enrollment.benefit_plans?.name ?? "a benefit plan"}` });
     loadData();
   };
 
@@ -67,8 +74,11 @@ export default function Benefits() {
       status: "enrolled",
     }]);
     setEnrollModal(false);
+    const emp = employees.find((e) => e.id === enrollForm.employee_id);
+    const plan = plans.find((p) => p.id === enrollForm.plan_id);
     setEnrollForm({ employee_id: "", plan_id: "" });
     toast("Enrollment saved", "Employee enrolled in benefit plan", "success");
+    logActivity({ module: "benefits", action: "created", entityType: "benefit_enrollment", actorName, actorRole: role?.name || "Unknown", description: `${emp ? `${emp.first_name} ${emp.last_name}` : "An employee"} enrolled in ${plan?.name ?? "a benefit plan"}` });
     loadData();
   };
 

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/context/AuthContext";
+import { logActivity } from "@/lib/audit";
 
 interface Branch {
   id: string;
@@ -38,6 +40,8 @@ const deptColors = [
 ];
 
 export default function Branches() {
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
   // Every role with the "branches" module manages it, except Chairman —
   // an explicitly read-only, board-level oversight role.
@@ -108,6 +112,15 @@ export default function Branches() {
         employee_count: 0,
       });
     }
+    logActivity({
+      module: "branches",
+      action: editingBranchId ? "updated" : "created",
+      entityType: "branch",
+      entityId: editingBranchId,
+      actorName,
+      actorRole: role?.name || "Unknown",
+      description: editingBranchId ? `Branch "${form.name}" details updated` : `New branch "${form.name}" created`,
+    });
     setForm({ name: "", location: "", manager_name: "", status: "active" });
     setEditingBranchId(null);
     setShowAddModal(false);
@@ -127,6 +140,7 @@ export default function Branches() {
     const newStatus = branch.status === "active" ? "inactive" : "active";
     await supabase.from("branches").update({ status: newStatus }).eq("id", branch.id);
     setSelectedBranch((prev) => (prev && prev.id === branch.id ? { ...prev, status: newStatus } : prev));
+    logActivity({ module: "branches", action: "updated", entityType: "branch", entityId: branch.id, actorName, actorRole: role?.name || "Unknown", description: `Branch "${branch.name}" ${newStatus === "active" ? "reactivated" : "deactivated"}` });
     loadBranches();
   };
 

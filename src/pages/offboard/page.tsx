@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 
 interface Offboarding {
   id: string;
@@ -45,6 +48,9 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Offboard() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [tab, setTab] = useState<"active" | "completed" | "tasks">("active");
   const [offboardings, setOffboardings] = useState<Offboarding[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
@@ -102,6 +108,17 @@ export default function Offboard() {
   const updateOffboardingStatus = async (id: string, status: string) => {
     await supabase.from("offboarding_requests").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
     toast("Status updated", statusLabels[status], "success");
+    const record = offboardings.find((o) => o.id === id);
+    const empName = record?.employees ? `${record.employees.first_name} ${record.employees.last_name}` : "an employee";
+    logActivity({
+      module: "offboard",
+      action: status === "completed" ? "processed" : "updated",
+      entityType: "offboarding_request",
+      entityId: id,
+      actorName,
+      actorRole: role?.name || "Unknown",
+      description: `Offboarding for ${empName} moved to ${statusLabels[status] || status}`,
+    });
     loadData();
   };
 
@@ -127,6 +144,16 @@ export default function Offboard() {
     setCreateModal(false);
     setNewForm({ employee_id: "", last_day: "", reason: "" });
     toast("Offboarding created", "Employee exit process started", "success");
+    const emp = employees.find((e) => e.id === newForm.employee_id);
+    logActivity({
+      module: "offboard",
+      action: "created",
+      entityType: "offboarding_request",
+      entityId: data?.id,
+      actorName,
+      actorRole: role?.name || "Unknown",
+      description: `Offboarding started for ${emp ? `${emp.first_name} ${emp.last_name}` : "an employee"}`,
+    });
     loadData();
   };
 

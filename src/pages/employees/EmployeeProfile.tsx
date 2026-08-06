@@ -5,6 +5,8 @@ import { toast } from "@/components/Toast";
 import app from "@/lib/firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/context/AuthContext";
+import { logActivity } from "@/lib/audit";
 
 interface Employee {
   id: string;
@@ -32,6 +34,7 @@ interface ReportEntry {
 export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
   const { role, isAdmin } = usePermissions();
+  const { user } = useAuth();
   const canEdit = isAdmin || !!role?.employees_manage;
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,6 +147,15 @@ export default function EmployeeProfile() {
     } else {
       toast("Saved", "Employee profile updated successfully", "success");
       setEditing(false);
+      logActivity({
+        module: "employees",
+        action: "updated",
+        entityType: "employee",
+        entityId: id,
+        actorName: (user?.user_metadata?.display_name as string) || user?.email || "Unknown",
+        actorRole: role?.name || "Unknown",
+        description: `Profile updated for ${form.first_name} ${form.last_name}`,
+      });
       loadEmployee(id);
     }
     setSaving(false);

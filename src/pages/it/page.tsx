@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 
 interface ITAsset {
   id: string;
@@ -62,6 +65,9 @@ const priorityColors: Record<string, string> = {
 };
 
 export default function ITManagement() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [tab, setTab] = useState<"assets" | "tickets" | "security">("assets");
   const [assets, setAssets] = useState<ITAsset[]>([]);
   const [tickets, setTickets] = useState<ITTicket[]>([]);
@@ -107,6 +113,7 @@ export default function ITManagement() {
     setAssetModal(false);
     setNewAsset({ name: "", asset_tag: "", type: "Laptop", serial_number: "" });
     toast("Asset added", "New IT asset registered", "success");
+    logActivity({ module: "it", action: "created", entityType: "it_asset", actorName, actorRole: role?.name || "Unknown", description: `Registered new IT asset "${newAsset.name}" (${newAsset.asset_tag})` });
     loadData();
   };
 
@@ -124,6 +131,7 @@ export default function ITManagement() {
     setTicketModal(false);
     setNewTicket({ title: "", requester_name: "", priority: "medium", category: "Hardware", description: "" });
     toast("Ticket created", "IT ticket submitted", "success");
+    logActivity({ module: "it", action: "created", entityType: "it_ticket", actorName, actorRole: role?.name || "Unknown", description: `New IT ticket "${newTicket.title}" from ${newTicket.requester_name}` });
     loadData();
   };
 
@@ -144,6 +152,7 @@ export default function ITManagement() {
     }).eq("id", editingAsset.id);
     setEditingAsset(null);
     toast("Asset updated", "IT asset details saved", "success");
+    logActivity({ module: "it", action: "updated", entityType: "it_asset", entityId: editingAsset.id, actorName, actorRole: role?.name || "Unknown", description: `Updated IT asset "${editAssetForm.name}" (${editAssetForm.asset_tag})` });
     loadData();
   };
 
@@ -151,6 +160,7 @@ export default function ITManagement() {
     if (!confirm(`Remove "${asset.name}" (${asset.asset_tag}) from the asset register? This cannot be undone.`)) return;
     await supabase.from("it_assets").delete().eq("id", asset.id);
     toast("Asset removed", "IT asset deleted from register", "success");
+    logActivity({ module: "it", action: "deleted", entityType: "it_asset", entityId: asset.id, actorName, actorRole: role?.name || "Unknown", description: `Removed IT asset "${asset.name}" (${asset.asset_tag}) from the register` });
     loadData();
   };
 
@@ -158,6 +168,7 @@ export default function ITManagement() {
     if (!confirm(`Delete ticket "${ticket.title}"? This cannot be undone.`)) return;
     await supabase.from("it_tickets").delete().eq("id", ticket.id);
     toast("Ticket deleted", "IT ticket removed", "success");
+    logActivity({ module: "it", action: "deleted", entityType: "it_ticket", entityId: ticket.id, actorName, actorRole: role?.name || "Unknown", description: `Deleted IT ticket "${ticket.title}"` });
     loadData();
   };
 
@@ -168,6 +179,16 @@ export default function ITManagement() {
     }
     await supabase.from("it_tickets").update(update).eq("id", id);
     toast("Ticket updated", `Status changed to ${status.replace("_", " ")}`, "success");
+    const t = tickets.find((tk) => tk.id === id);
+    logActivity({
+      module: "it",
+      action: status === "resolved" ? "approved" : "updated",
+      entityType: "it_ticket",
+      entityId: id,
+      actorName,
+      actorRole: role?.name || "Unknown",
+      description: `IT ticket "${t?.title || id}" marked ${status.replace("_", " ")}`,
+    });
     loadData();
   };
 

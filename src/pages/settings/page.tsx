@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 
 interface Branch {
   id: string;
@@ -219,6 +222,9 @@ const timezoneOptions = [
 const currencyOptions = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CNY", "CHF"];
 
 export default function Settings() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [section, setSection] = useState("general");
   const [settings, setSettings] = useState<Record<string, Setting>>();
   const [loading, setLoading] = useState(true);
@@ -268,6 +274,7 @@ export default function Settings() {
       return next;
     });
     toast("Saved", `${keyLabels[key] || key} updated successfully.`, "success");
+    logActivity({ module: "settings", action: "updated", entityType: "system_setting", entityId: null, actorName, actorRole: role?.name || "Unknown", description: `${keyLabels[key] || key} setting updated` });
   };
 
   const saveAllGeneral = async () => {
