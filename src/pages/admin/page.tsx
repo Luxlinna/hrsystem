@@ -9,6 +9,7 @@ interface AppRole {
   color: string;
   is_admin: boolean;
   allowed_modules: string[];
+  employees_manage: boolean;
   self_service_all_employees: boolean;
   leave_view_all_employees: boolean;
   payroll_view_all_employees: boolean;
@@ -19,6 +20,8 @@ interface AppRole {
   attendance_view_own_branch: boolean;
   performance_view_own_branch: boolean;
   disciplinary_view_own_branch: boolean;
+  task_view_all_employees: boolean;
+  task_view_own_branch: boolean;
   created_at: string;
 }
 
@@ -50,6 +53,7 @@ const ALL_MODULES = [
   { key: "disciplinary", label: "Disciplinary", icon: "ri-alert-line", group: "Workforce" },
   { key: "shifts", label: "Shifts", icon: "ri-calendar-schedule-line", group: "Workforce" },
   { key: "meeting-rooms", label: "Meeting Rooms", icon: "ri-door-open-line", group: "Workforce" },
+  { key: "tasks", label: "Tasks", icon: "ri-checkbox-multiple-line", group: "Workforce" },
   { key: "payroll", label: "Payroll", icon: "ri-money-dollar-circle-line", group: "Operations" },
   { key: "payroll-approval", label: "Payroll Approval", icon: "ri-file-check-line", group: "Operations" },
   { key: "finance", label: "Finance", icon: "ri-bank-line", group: "Operations" },
@@ -75,6 +79,7 @@ const COLORS = [
 // "Own record only" pages — each has a per-role override so admins decide
 // who's allowed to see every employee's data instead of just their own.
 const SCOPE_OVERRIDES = [
+  { key: "employees_manage", label: "Can edit employee records (role, department, status, manager)", hint: "Off by default — this role can view the Employee Directory but profiles open read-only." },
   { key: "self_service_all_employees", label: "Can view/switch other employees in Self-Service", hint: "Off by default — this role only sees the employee record matching their own account email." },
   { key: "leave_view_all_employees", label: "Can view/approve all employees' leave requests", hint: "Off by default — this role only sees and submits their own leave requests (the team calendar stays visible either way)." },
   { key: "payroll_view_all_employees", label: "Can view all employees' payroll", hint: "Off by default — this role only sees their own payslip data." },
@@ -85,6 +90,8 @@ const SCOPE_OVERRIDES = [
   { key: "attendance_view_own_branch", label: "Can view their own branch's attendance records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" attendance is already on." },
   { key: "performance_view_own_branch", label: "Can view/manage their own branch's performance reviews", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" performance is already on." },
   { key: "disciplinary_view_own_branch", label: "Can view their own branch's disciplinary records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" disciplinary is already on." },
+  { key: "task_view_all_employees", label: "Can view/assign tasks for all employees", hint: "Off by default — this role only sees and manages their own tasks." },
+  { key: "task_view_own_branch", label: "Can view/assign their own branch's tasks", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" tasks is already on." },
 ] as const;
 
 const BLANK_ROLE = {

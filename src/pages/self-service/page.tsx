@@ -8,6 +8,7 @@ import LeaveTab from "./components/LeaveTab";
 import BenefitsTab from "./components/BenefitsTab";
 import CheckInTab from "./components/CheckInTab";
 import AttendanceTab from "./components/AttendanceTab";
+import DailyReportTab from "./components/DailyReportTab";
 
 interface Employee {
   id: string;
@@ -27,6 +28,7 @@ const TABS = [
   { id: "leave", label: "My Leave", icon: "ri-calendar-event-line" },
   { id: "attendance", label: "My Attendance", icon: "ri-time-line" },
   { id: "checkin", label: "Clock In/Out", icon: "ri-fingerprint-line" },
+  { id: "daily-report", label: "Daily Report", icon: "ri-file-list-2-line" },
   { id: "benefits", label: "My Benefits", icon: "ri-heart-pulse-line" },
 ];
 
@@ -240,6 +242,9 @@ export default function SelfServicePage() {
                 autoStart={quickCheckIn}
                 autoCheckOut={quickCheckOut}
               />
+            )}
+            {activeTab === "daily-report" && (
+              <DailyReportTab employeeId={selectedEmployee.id} />
             )}
             {activeTab === "benefits" && (
               <BenefitsTab employeeId={selectedEmployee.id} />

@@ -72,6 +72,8 @@ export default function ITManagement() {
   const [ticketModal, setTicketModal] = useState(false);
   const [newAsset, setNewAsset] = useState({ name: "", asset_tag: "", type: "Laptop", serial_number: "" });
   const [newTicket, setNewTicket] = useState({ title: "", requester_name: "", priority: "medium", category: "Hardware", description: "" });
+  const [editingAsset, setEditingAsset] = useState<ITAsset | null>(null);
+  const [editAssetForm, setEditAssetForm] = useState({ name: "", asset_tag: "", type: "Laptop", serial_number: "", status: "active" });
 
   useEffect(() => {
     loadData();
@@ -122,6 +124,40 @@ export default function ITManagement() {
     setTicketModal(false);
     setNewTicket({ title: "", requester_name: "", priority: "medium", category: "Hardware", description: "" });
     toast("Ticket created", "IT ticket submitted", "success");
+    loadData();
+  };
+
+  const openEditAsset = (asset: ITAsset) => {
+    setEditingAsset(asset);
+    setEditAssetForm({ name: asset.name, asset_tag: asset.asset_tag, type: asset.type, serial_number: asset.serial_number || "", status: asset.status });
+  };
+
+  const saveAssetEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAsset) return;
+    await supabase.from("it_assets").update({
+      name: editAssetForm.name,
+      asset_tag: editAssetForm.asset_tag,
+      type: editAssetForm.type,
+      serial_number: editAssetForm.serial_number || null,
+      status: editAssetForm.status,
+    }).eq("id", editingAsset.id);
+    setEditingAsset(null);
+    toast("Asset updated", "IT asset details saved", "success");
+    loadData();
+  };
+
+  const deleteAsset = async (asset: ITAsset) => {
+    if (!confirm(`Remove "${asset.name}" (${asset.asset_tag}) from the asset register? This cannot be undone.`)) return;
+    await supabase.from("it_assets").delete().eq("id", asset.id);
+    toast("Asset removed", "IT asset deleted from register", "success");
+    loadData();
+  };
+
+  const deleteTicket = async (ticket: ITTicket) => {
+    if (!confirm(`Delete ticket "${ticket.title}"? This cannot be undone.`)) return;
+    await supabase.from("it_tickets").delete().eq("id", ticket.id);
+    toast("Ticket deleted", "IT ticket removed", "success");
     loadData();
   };
 
@@ -231,7 +267,7 @@ export default function ITManagement() {
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
                 <div className="min-w-[820px]">
-                  <div className="grid grid-cols-7 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider items-center">
+                  <div className="grid grid-cols-8 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider items-center">
                     <span>Asset</span>
                     <span>Tag</span>
                     <span>Type</span>
@@ -239,12 +275,13 @@ export default function ITManagement() {
                     <span>Branch</span>
                     <span>Status</span>
                     <span>Serial</span>
+                    <span>Actions</span>
                   </div>
                   {filteredAssets.length === 0 ? (
                     <div className="text-center py-12 text-gray-500 text-[13px]">No assets found</div>
                   ) : (
                     filteredAssets.map((a) => (
-                      <div key={a.id} className="grid grid-cols-7 px-5 py-4 border-t border-gray-50 items-center">
+                      <div key={a.id} className="grid grid-cols-8 px-5 py-4 border-t border-gray-50 items-center">
                         <span className="text-[13px] font-medium text-gray-900 flex items-center gap-2">
                           <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center shrink-0">
                             <i className={`${assetTypeIcons[a.type] || "ri-box-3-line"} text-sm text-[#253C7D] w-4 h-4 flex items-center justify-center`} />
@@ -267,6 +304,14 @@ export default function ITManagement() {
                           {a.status}
                         </span>
                         <span className="text-[13px] text-gray-500">{a.serial_number || "—"}</span>
+                        <span className="flex items-center gap-2">
+                          <button onClick={() => openEditAsset(a)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 cursor-pointer" title="Edit asset">
+                            <i className="ri-edit-line text-sm" />
+                          </button>
+                          <button onClick={() => deleteAsset(a)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600 cursor-pointer" title="Delete asset">
+                            <i className="ri-delete-bin-line text-sm" />
+                          </button>
+                        </span>
                       </div>
                     ))
                   )}
@@ -327,6 +372,7 @@ export default function ITManagement() {
                           {t.status === "resolved" && (
                             <button onClick={() => updateTicketStatus(t.id, "closed")} className="text-[11px] text-gray-500 font-medium hover:underline">Close</button>
                           )}
+                          <button onClick={() => deleteTicket(t)} className="text-[11px] text-red-500 font-medium hover:underline ml-2">Delete</button>
                         </div>
                       </div>
                     ))
@@ -455,6 +501,54 @@ export default function ITManagement() {
                 <textarea rows={3} value={newTicket.description} onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="Details about the issue..." />
               </div>
               <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">Submit Ticket</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Asset Modal */}
+      {editingAsset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-gray-900">Edit IT Asset</h3>
+              <button onClick={() => setEditingAsset(null)} className="p-1 rounded-lg hover:bg-gray-100">
+                <i className="ri-close-line text-xl text-gray-500" />
+              </button>
+            </div>
+            <form onSubmit={saveAssetEdit} className="space-y-4">
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1">Asset Name</label>
+                <input required value={editAssetForm.name} onChange={(e) => setEditAssetForm({ ...editAssetForm, name: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1">Asset Tag</label>
+                  <input required value={editAssetForm.asset_tag} onChange={(e) => setEditAssetForm({ ...editAssetForm, asset_tag: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1">Type</label>
+                  <select value={editAssetForm.type} onChange={(e) => setEditAssetForm({ ...editAssetForm, type: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
+                    {Object.keys(assetTypeIcons).map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1">Status</label>
+                  <select value={editAssetForm.status} onChange={(e) => setEditAssetForm({ ...editAssetForm, status: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white">
+                    <option value="active">Active</option>
+                    <option value="inventory">In Inventory</option>
+                    <option value="maintenance">In Maintenance</option>
+                    <option value="retired">Retired</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1">Serial Number</label>
+                  <input value={editAssetForm.serial_number} onChange={(e) => setEditAssetForm({ ...editAssetForm, serial_number: e.target.value })} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="Optional" />
+                </div>
+              </div>
+              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">Save Changes</button>
             </form>
           </div>
         </div>

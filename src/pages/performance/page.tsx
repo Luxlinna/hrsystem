@@ -90,6 +90,23 @@ export default function PerformanceReviews() {
     comments: "", strengths: "", areas_for_improvement: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [taskStats, setTaskStats] = useState<{ total: number; done: number; overdue: number } | null>(null);
+
+  useEffect(() => {
+    if (!reviewForm.employee_id) { setTaskStats(null); return; }
+    let cancelled = false;
+    supabase.from("tasks").select("status, due_date").eq("assigned_to", reviewForm.employee_id).then(({ data }) => {
+      if (cancelled) return;
+      const rows = data || [];
+      const today = new Date().toISOString().split("T")[0];
+      setTaskStats({
+        total: rows.length,
+        done: rows.filter((r) => r.status === "done").length,
+        overdue: rows.filter((r) => r.due_date && r.due_date < today && r.status !== "done").length,
+      });
+    });
+    return () => { cancelled = true; };
+  }, [reviewForm.employee_id]);
 
   const loadData = async () => {
     if (canViewAll) {
@@ -504,6 +521,18 @@ export default function PerformanceReviews() {
                     </select>
                   </div>
                 </div>
+
+                {taskStats && (
+                  <div className="bg-gray-50 border border-gray-100 rounded-lg px-4 py-3 flex items-center gap-5 text-[12px]">
+                    <span className="text-gray-500 font-medium flex items-center gap-1.5">
+                      <i className="ri-checkbox-multiple-line" /> Task record:
+                    </span>
+                    <span className="text-gray-700">{taskStats.total} total</span>
+                    <span className="text-emerald-600 font-semibold">{taskStats.done} completed</span>
+                    <span className={taskStats.overdue > 0 ? "text-red-500 font-semibold" : "text-gray-400"}>{taskStats.overdue} overdue</span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Quarter</label>

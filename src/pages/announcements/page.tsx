@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Announcement {
   id: string;
@@ -33,17 +35,24 @@ const priorityConfig: Record<string, string> = {
 };
 
 export default function Announcements() {
+  const { user } = useAuth();
+  const { role, isAdmin } = usePermissions();
+  // Posting/editing company-wide announcements is a management action —
+  // individual-contributor roles (Employee, Staff) can only read them.
+  const canManage = isAdmin || !["Employee", "Staff"].includes(role?.name || "");
+  const authorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<Announcement | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCat, setFilterCat] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: "", content: "", category: "news", priority: "normal",
-    author_name: "Sarah Mitchell", author_role: "HR Administrator",
+    author_name: authorName, author_role: role?.name || "",
     pinned: false, visible_to: "all",
   });
 
@@ -68,11 +77,36 @@ export default function Announcements() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManage) return;
     setSubmitting(true);
-    await supabase.from("announcements").insert({ ...form, published_at: new Date().toISOString(), view_count: 0 });
-    setForm({ title: "", content: "", category: "news", priority: "normal", author_name: "Sarah Mitchell", author_role: "HR Administrator", pinned: false, visible_to: "all" });
+    if (editingId) {
+      await supabase.from("announcements").update({
+        title: form.title, content: form.content, category: form.category,
+        priority: form.priority, pinned: form.pinned, visible_to: form.visible_to,
+      }).eq("id", editingId);
+      if (selectedItem?.id === editingId) setSelectedItem({ ...selectedItem, ...form });
+    } else {
+      await supabase.from("announcements").insert({ ...form, published_at: new Date().toISOString(), view_count: 0 });
+    }
+    setForm({ title: "", content: "", category: "news", priority: "normal", author_name: authorName, author_role: role?.name || "", pinned: false, visible_to: "all" });
+    setEditingId(null);
     setShowCreateModal(false);
     setSubmitting(false);
+    loadAnnouncements();
+  };
+
+  const openEditModal = (a: Announcement) => {
+    if (!canManage) return;
+    setForm({ title: a.title, content: a.content, category: a.category, priority: a.priority, author_name: a.author_name, author_role: a.author_role, pinned: a.pinned, visible_to: a.visible_to });
+    setEditingId(a.id);
+    setShowCreateModal(true);
+  };
+
+  const deleteAnnouncement = async (a: Announcement) => {
+    if (!canManage) return;
+    if (!confirm(`Delete announcement "${a.title}"? This cannot be undone.`)) return;
+    await supabase.from("announcements").delete().eq("id", a.id);
+    setSelectedItem((prev) => (prev?.id === a.id ? null : prev));
     loadAnnouncements();
   };
 
@@ -117,12 +151,14 @@ export default function Announcements() {
               {announcements.length} announcements &middot; {announcements.filter((a) => a.pinned).length} pinned
             </p>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
-          >
-            <i className="ri-add-line" /> Post Announcement
-          </button>
+          {canManage && (
+            <button
+              onClick={() => { setForm({ title: "", content: "", category: "news", priority: "normal", author_name: authorName, author_role: role?.name || "", pinned: false, visible_to: "all" }); setEditingId(null); setShowCreateModal(true); }}
+              className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
+            >
+              <i className="ri-add-line" /> Post Announcement
+            </button>
+          )}
         </div>
 
         {/* Stats */}
@@ -217,9 +253,21 @@ export default function Announcements() {
                       </div>
                       <h3 className="text-[15px] font-bold text-gray-900 leading-tight">{selectedItem.title}</h3>
                     </div>
-                    <button onClick={() => setSelectedItem(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer shrink-0">
-                      <i className="ri-close-line text-gray-500 text-sm" />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {canManage && (
+                        <>
+                          <button onClick={() => openEditModal(selectedItem)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer" title="Edit">
+                            <i className="ri-edit-line text-gray-500 text-sm" />
+                          </button>
+                          <button onClick={() => deleteAnnouncement(selectedItem)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 cursor-pointer" title="Delete">
+                            <i className="ri-delete-bin-line text-gray-500 hover:text-red-600 text-sm" />
+                          </button>
+                        </>
+                      )}
+                      <button onClick={() => setSelectedItem(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer">
+                        <i className="ri-close-line text-gray-500 text-sm" />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 mt-3">
                     <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-xs font-bold">
@@ -253,8 +301,8 @@ export default function Announcements() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white z-10">
-              <h2 className="text-[15px] font-bold text-gray-900">Post New Announcement</h2>
-              <button onClick={() => setShowCreateModal(false)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer">
+              <h2 className="text-[15px] font-bold text-gray-900">{editingId ? "Edit Announcement" : "Post New Announcement"}</h2>
+              <button onClick={() => { setShowCreateModal(false); setEditingId(null); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer">
                 <i className="ri-close-line text-gray-500 text-sm" />
               </button>
             </div>
@@ -294,8 +342,8 @@ export default function Announcements() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Author Name</label>
-                  <input type="text" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]" />
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Posting As</label>
+                  <p className="w-full px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-600">{form.author_name}</p>
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Visible To</label>
@@ -311,9 +359,9 @@ export default function Announcements() {
                 <span className="text-[13px] text-gray-700">Pin this announcement to the top</span>
               </label>
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+                <button type="button" onClick={() => { setShowCreateModal(false); setEditingId(null); }} className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
                 <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer">
-                  {submitting ? "Posting..." : "Post Announcement"}
+                  {submitting ? "Saving..." : editingId ? "Save Changes" : "Post Announcement"}
                 </button>
               </div>
             </form>

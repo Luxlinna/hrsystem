@@ -87,7 +87,7 @@ export default function SelfServiceHome() {
       </section>
 
       {/* Quick Actions */}
-      <section className="px-6 lg:px-10 -mt-8">
+      <section className="px-6 lg:px-10 pt-8">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {QUICK_ACTIONS.map((action) => (
             <Link

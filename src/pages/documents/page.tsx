@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Document {
   id: string;
@@ -58,6 +59,11 @@ const VISIBILITY_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function DocumentsPage() {
+  const { role, isAdmin } = usePermissions();
+  // "Staff" is the only documents-module role without management authority —
+  // policy/compliance publishing and HR-only/managers-only visibility stay
+  // restricted to everyone else.
+  const canManageDocs = isAdmin || role?.name !== "Staff";
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
@@ -112,7 +118,7 @@ export default function DocumentsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title) return;
+    if (!form.title || !canManageDocs) return;
     setSubmitting(true);
     const tagsArr = form.tags
       ? form.tags.split(",").map((t) => t.trim()).filter(Boolean)
@@ -143,6 +149,7 @@ export default function DocumentsPage() {
   };
 
   const handleArchive = async (doc: Document) => {
+    if (!canManageDocs) return;
     const newStatus = doc.status === "active" ? "archived" : "active";
     const { error } = await supabase.from("documents").update({ status: newStatus }).eq("id", doc.id);
     if (!error) {
@@ -153,6 +160,7 @@ export default function DocumentsPage() {
   };
 
   const filtered = documents.filter((d) => {
+    if (!canManageDocs && (d.visibility === "hr_only" || d.visibility === "managers")) return false;
     if (activeCategory !== "all" && d.category !== activeCategory) return false;
     if (filterTemplate === true && !d.is_template) return false;
     if (filterTemplate === false && d.is_template) return false;
@@ -196,13 +204,15 @@ export default function DocumentsPage() {
               {documents.filter((d) => d.status === "active").length} active documents across {documents.filter((d) => d.is_template).length} templates
             </p>
           </div>
-          <button
-            onClick={() => setShowUploadModal(true)}
-            className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap"
-          >
-            <i className="ri-upload-2-line" />
-            Upload Document
-          </button>
+          {canManageDocs && (
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap"
+            >
+              <i className="ri-upload-2-line" />
+              Upload Document
+            </button>
+          )}
         </div>
       </div>
 
@@ -415,17 +425,19 @@ export default function DocumentsPage() {
                 <i className="ri-download-2-line" />
                 Download Document
               </button>
-              <button
-                onClick={() => handleArchive(selectedDoc)}
-                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-semibold transition-colors cursor-pointer ${
-                  selectedDoc.status === "active"
-                    ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
-                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                }`}
-              >
-                <i className={selectedDoc.status === "active" ? "ri-archive-line" : "ri-inbox-unarchive-line"} />
-                {selectedDoc.status === "active" ? "Archive Document" : "Restore Document"}
-              </button>
+              {canManageDocs && (
+                <button
+                  onClick={() => handleArchive(selectedDoc)}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-semibold transition-colors cursor-pointer ${
+                    selectedDoc.status === "active"
+                      ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                      : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  }`}
+                >
+                  <i className={selectedDoc.status === "active" ? "ri-archive-line" : "ri-inbox-unarchive-line"} />
+                  {selectedDoc.status === "active" ? "Archive Document" : "Restore Document"}
+                </button>
+              )}
             </div>
           </aside>
         )}
