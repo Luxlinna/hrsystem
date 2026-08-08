@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import app from "@/lib/firebase";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { uploadFile } from "@/lib/storage";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import { logActivity } from "@/lib/audit";
@@ -31,6 +30,45 @@ interface ReportEntry {
   id: string;
 }
 
+// Mirrors the employees.status check constraint (active/on_leave/inactive/
+// suspended/onboarding). Each gets its own color so the directory/profile
+// badge doesn't render every non-active status as the same generic amber.
+const STATUS_META: Record<string, { label: string; description: string; badge: string; dot: string }> = {
+  active: {
+    label: "Active",
+    description: "Currently employed and working normally.",
+    badge: "bg-green-50 text-green-700",
+    dot: "bg-green-500",
+  },
+  on_leave: {
+    label: "On Leave",
+    description: "Employed, temporarily away on approved leave.",
+    badge: "bg-sky-50 text-sky-700",
+    dot: "bg-sky-500",
+  },
+  onboarding: {
+    label: "Onboarding",
+    description: "New hire — still going through the onboarding checklist.",
+    badge: "bg-amber-50 text-amber-700",
+    dot: "bg-amber-500",
+  },
+  suspended: {
+    label: "Suspended",
+    description: "Employment temporarily suspended, pending review.",
+    badge: "bg-red-50 text-red-700",
+    dot: "bg-red-500",
+  },
+  inactive: {
+    label: "Inactive",
+    description: "Not currently active in the system.",
+    badge: "bg-gray-100 text-gray-600",
+    dot: "bg-gray-400",
+  },
+};
+
+const getStatusMeta = (status: string) =>
+  STATUS_META[status] || { label: status, description: "Unrecognized status.", badge: "bg-gray-100 text-gray-600", dot: "bg-gray-400" };
+
 export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
   const { role, isAdmin } = usePermissions();
@@ -48,6 +86,7 @@ export default function EmployeeProfile() {
   const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
   const [form, setForm] = useState<Partial<Employee>>();
   const [allEmployees, setAllEmployees] = useState<ReportEntry[]>([]);
+  const loadRequestId = useRef(0);
 
   useEffect(() => {
     if (!id) return;
@@ -56,11 +95,17 @@ export default function EmployeeProfile() {
 
   const loadEmployee = async (empId: string) => {
     setLoading(true);
+    const requestId = ++loadRequestId.current;
     const { data: emp } = await supabase
       .from("employees")
       .select("*, branches(name)")
       .eq("id", empId)
       .maybeSingle();
+
+    // Bail if the user has since navigated to a different profile (e.g. via
+    // the Manager link or Direct Reports list) — an out-of-order response
+    // for a stale id should never overwrite the newer profile being loaded.
+    if (requestId !== loadRequestId.current) return;
 
     if (!emp) {
       toast("Not found", "Employee not found", "error");
@@ -165,15 +210,12 @@ export default function EmployeeProfile() {
     if (!id || !canEdit) return;
     setUploadingAvatar(true);
     try {
-      const firebaseStorage = getStorage(app);
-      const storageRef = ref(firebaseStorage, `avatars/${id}_${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const url = await uploadFile("avatars", `employees/${id}/${Date.now()}_${file.name}`, file);
       await supabase.from("employees").update({ avatar_url: url }).eq("id", id);
       setEmployee((prev) => (prev ? { ...prev, avatar_url: url } : prev));
       toast("Avatar updated", "Profile picture saved", "success");
-    } catch {
-      toast("Upload failed", "Could not upload avatar", "error");
+    } catch (err) {
+      toast("Upload failed", err instanceof Error ? err.message : "Could not upload avatar", "error");
     }
     setUploadingAvatar(false);
   };
@@ -254,16 +296,16 @@ export default function EmployeeProfile() {
               <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">
                 {employee.first_name} {employee.last_name}
               </h1>
-              <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-full w-fit ${
-                employee.status === "active"
-                  ? "bg-green-50 text-green-700"
-                  : "bg-amber-50 text-amber-700"
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${employee.status === "active" ? "bg-green-500" : "bg-amber-500"}`} />
-                {employee.status}
+              <span
+                title={getStatusMeta(employee.status).description}
+                className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-full w-fit cursor-default ${getStatusMeta(employee.status).badge}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${getStatusMeta(employee.status).dot}`} />
+                {getStatusMeta(employee.status).label}
               </span>
             </div>
             <p className="text-[14px] text-gray-600 mt-1">{employee.role}</p>
+            <p className="text-[12px] text-gray-400 mt-0.5">{getStatusMeta(employee.status).description}</p>
             <div className="flex flex-wrap gap-3 mt-3 text-[12px] text-gray-500">
               <span className="flex items-center gap-1"><i className="ri-building-line" />{employee.department}</span>
               <span className="flex items-center gap-1"><i className="ri-map-pin-line" />{employee.branches?.name || "Headquarters"}</span>

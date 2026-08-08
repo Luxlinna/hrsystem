@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "@/components/Toast";
 
 interface Shift {
   id: string;
@@ -64,8 +65,10 @@ function getWeekDates(date: Date): Date[] {
   });
 }
 
+// Local (not UTC) YYYY-MM-DD — toISOString() shifts to UTC, which can
+// misalign shift cards under the wrong weekday for timezones ahead of UTC.
 function formatDate(d: Date): string {
-  return d.toISOString().split("T")[0];
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export default function Shifts() {
@@ -114,10 +117,11 @@ export default function Shifts() {
   const handleCreateShift = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    await supabase.from("shifts").insert(shiftForm);
+    const { error } = await supabase.from("shifts").insert(shiftForm);
+    setSubmitting(false);
+    if (error) { toast("Error", "Failed to create shift", "error"); return; }
     setShiftForm({ name: "", branch_id: "", department: "", start_time: "09:00", end_time: "17:00", shift_date: "", capacity: 5, color: "#253C7D", notes: "" });
     setShowCreateModal(false);
-    setSubmitting(false);
     loadData();
   };
 
@@ -125,15 +129,30 @@ export default function Shifts() {
     e.preventDefault();
     if (!selectedShift || !assignEmployeeId) return;
     setSubmitting(true);
-    await supabase.from("shift_assignments").insert({ shift_id: selectedShift.id, employee_id: assignEmployeeId, status: "scheduled" });
+    // Re-check capacity against the DB (not just client state) right before
+    // inserting — client `assignments` can be stale across concurrent
+    // sessions/tabs, which would otherwise let a shift go over capacity.
+    const { count } = await supabase
+      .from("shift_assignments")
+      .select("id", { count: "exact", head: true })
+      .eq("shift_id", selectedShift.id);
+    if ((count ?? 0) >= selectedShift.capacity) {
+      setSubmitting(false);
+      toast("Error", "This shift is already at capacity", "error");
+      loadData();
+      return;
+    }
+    const { error } = await supabase.from("shift_assignments").insert({ shift_id: selectedShift.id, employee_id: assignEmployeeId, status: "scheduled" });
+    setSubmitting(false);
+    if (error) { toast("Error", "Failed to assign employee", "error"); return; }
     setAssignEmployeeId("");
     setShowAssignModal(false);
-    setSubmitting(false);
     loadData();
   };
 
   const removeAssignment = async (assignId: string) => {
-    await supabase.from("shift_assignments").delete().eq("id", assignId);
+    const { error } = await supabase.from("shift_assignments").delete().eq("id", assignId);
+    if (error) { toast("Error", "Failed to remove assignment", "error"); return; }
     loadData();
   };
 
@@ -263,8 +282,8 @@ export default function Shifts() {
                             style={{
                               backgroundColor: sh.color + "18",
                               borderColor: sh.color + "40",
-                              ringColor: sh.color,
-                            }}
+                              "--tw-ring-color": sh.color,
+                            } as CSSProperties}
                           >
                             <p className="text-[11px] font-bold truncate" style={{ color: sh.color }}>{sh.name}</p>
                             <p className="text-[10px] text-gray-500 mt-0.5">{sh.start_time} – {sh.end_time}</p>

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
+import { notify } from "@/lib/notify";
 
 interface Offboarding {
   id: string;
@@ -57,10 +58,30 @@ export default function Offboard() {
   const [loading, setLoading] = useState(true);
   const [createModal, setCreateModal] = useState(false);
   const [newForm, setNewForm] = useState({ employee_id: "", last_day: "", reason: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Arriving here from a notification (?highlight=<offboarding id>) should
+  // switch to whichever tab that record actually lives in and scroll to it.
+  useEffect(() => {
+    if (!highlightId || offboardings.length === 0) return;
+    const match = offboardings.find((o) => o.id === highlightId);
+    if (!match) return;
+    setTab(match.status === "completed" ? "completed" : "active");
+    // setTab above hasn't repainted the DOM yet in this same tick — the
+    // target tab's content doesn't exist to scroll to until React commits.
+    const t = setTimeout(() => {
+      const el = document.getElementById(`offboarding-${highlightId}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
+    }, 0);
+    return () => clearTimeout(t);
+  }, [highlightId, offboardings]);
 
   const loadData = async () => {
     setLoading(true);
@@ -100,13 +121,15 @@ export default function Offboard() {
 
   const toggleTask = async (taskId: string, currentStatus: string) => {
     const next = currentStatus === "completed" ? "pending" : "completed";
-    await supabase.from("offboarding_tasks").update({ status: next }).eq("id", taskId);
+    const { error } = await supabase.from("offboarding_tasks").update({ status: next }).eq("id", taskId);
+    if (error) { toast("Error", "Failed to update task", "error"); return; }
     toast(next === "completed" ? "Task completed" : "Task reopened", "", "success");
     loadData();
   };
 
   const updateOffboardingStatus = async (id: string, status: string) => {
-    await supabase.from("offboarding_requests").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await supabase.from("offboarding_requests").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
+    if (error) { toast("Error", "Failed to update status", "error"); return; }
     toast("Status updated", statusLabels[status], "success");
     const record = offboardings.find((o) => o.id === id);
     const empName = record?.employees ? `${record.employees.first_name} ${record.employees.last_name}` : "an employee";
@@ -119,47 +142,57 @@ export default function Offboard() {
       actorRole: role?.name || "Unknown",
       description: `Offboarding for ${empName} moved to ${statusLabels[status] || status}`,
     });
+    if (status === "completed") {
+      notify({ source: "offboard", type: "info", title: "Offboarding completed", message: `${empName}'s exit process is complete.`, entityId: id });
+    }
     loadData();
   };
 
   const createOffboarding = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newForm.employee_id || !newForm.last_day) return;
+    if (!newForm.employee_id || !newForm.last_day || submitting) return;
+    setSubmitting(true);
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("offboarding_requests")
       .insert([{ employee_id: newForm.employee_id, last_day: newForm.last_day, reason: newForm.reason, status: "notice_period" }])
       .select("id")
       .single();
 
-    if (data) {
-      await supabase.from("offboarding_tasks").insert([
-        { offboarding_id: data.id, title: "Return company laptop", type: "IT", assignee: "IT Team", status: "pending", due_date: newForm.last_day },
-        { offboarding_id: data.id, title: "Exit interview", type: "HR", assignee: "HR Team", status: "pending", due_date: newForm.last_day },
-        { offboarding_id: data.id, title: "Final paycheck", type: "Finance", assignee: "Payroll", status: "pending", due_date: newForm.last_day },
-        { offboarding_id: data.id, title: "Revoke system access", type: "IT", assignee: "IT Team", status: "pending", due_date: newForm.last_day },
-      ]);
+    if (error || !data) {
+      setSubmitting(false);
+      toast("Error", "Failed to start offboarding", "error");
+      return;
     }
 
+    await supabase.from("offboarding_tasks").insert([
+      { offboarding_id: data.id, title: "Return company laptop", type: "IT", assignee: "IT Team", status: "pending", due_date: newForm.last_day },
+      { offboarding_id: data.id, title: "Exit interview", type: "HR", assignee: "HR Team", status: "pending", due_date: newForm.last_day },
+      { offboarding_id: data.id, title: "Final paycheck", type: "Finance", assignee: "Payroll", status: "pending", due_date: newForm.last_day },
+      { offboarding_id: data.id, title: "Revoke system access", type: "IT", assignee: "IT Team", status: "pending", due_date: newForm.last_day },
+    ]);
+
+    setSubmitting(false);
     setCreateModal(false);
+    const emp = employees.find((e) => e.id === newForm.employee_id);
     setNewForm({ employee_id: "", last_day: "", reason: "" });
     toast("Offboarding created", "Employee exit process started", "success");
-    const emp = employees.find((e) => e.id === newForm.employee_id);
     logActivity({
       module: "offboard",
       action: "created",
       entityType: "offboarding_request",
-      entityId: data?.id,
+      entityId: data.id,
       actorName,
       actorRole: role?.name || "Unknown",
       description: `Offboarding started for ${emp ? `${emp.first_name} ${emp.last_name}` : "an employee"}`,
     });
+    notify({ source: "offboard", type: "warning", title: "Offboarding started", message: `Exit process started for ${emp ? `${emp.first_name} ${emp.last_name}` : "an employee"}, last day ${newForm.last_day}.`, entityId: data.id });
     loadData();
   };
 
   const totalActive = activeOffboardings.length;
   const totalCompleted = completedOffboardings.length;
-  const overdueTasks = allTasks.filter((t) => t.status === "pending" && t.due_date && new Date(t.due_date) < new Date()).length;
+  const overdueTasks = allTasks.filter((t) => t.status === "pending" && t.due_date && new Date(t.due_date + "T00:00:00") < new Date()).length;
 
   return (
     <div className="p-6 lg:p-10 min-h-screen bg-[#FAFAF8]">
@@ -226,7 +259,14 @@ export default function Offboard() {
                   const total = o.tasks?.length || 0;
                   const pct = total > 0 ? (done / total) * 100 : 0;
                   return (
-                    <div key={o.id} className="bg-white rounded-2xl border border-gray-100 p-5 md:p-6">
+                    <div
+                      key={o.id}
+                      id={`offboarding-${o.id}`}
+                      tabIndex={-1}
+                      className={`bg-white rounded-2xl border p-5 md:p-6 outline-none ${
+                        o.id === highlightId ? "border-[#253C7D] ring-2 ring-[#253C7D]/30" : "border-gray-100"
+                      }`}
+                    >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-sm shrink-0">

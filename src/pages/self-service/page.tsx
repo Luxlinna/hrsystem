@@ -48,6 +48,15 @@ export default function SelfServicePage() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [noOwnRecord, setNoOwnRecord] = useState(false);
 
+  // The router keeps this page mounted across search-param-only navigations
+  // (e.g. a Quick Action link or the geofence alert sending the user back to
+  // /self-service?tab=checkin while already on this route), so activeTab's
+  // useState initializer alone won't pick up a later tab= change.
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t) setActiveTab(t);
+  }, [searchParams]);
+
   useEffect(() => {
     if (permsLoading) return;
 

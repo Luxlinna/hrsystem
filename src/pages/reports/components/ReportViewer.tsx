@@ -115,8 +115,10 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       .from("leave_requests")
       .select("id, leave_type, start_date, end_date, days, status, employees(first_name, last_name, department, branches(name))")
       .order("created_at", { ascending: false });
-    if (config.dateFrom) q = q.gte("start_date", config.dateFrom);
-    if (config.dateTo) q = q.lte("end_date", config.dateTo);
+    // Overlap, not containment: a leave request that starts before the
+    // window and ends inside it (or vice versa) still belongs in the report.
+    if (config.dateFrom) q = q.gte("end_date", config.dateFrom);
+    if (config.dateTo) q = q.lte("start_date", config.dateTo);
     const { data } = await q;
     const mapped: LeaveRow[] = (data || [])
       .map((r: any) => ({
@@ -173,8 +175,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
   const fetchHeadcount = useCallback(async () => {
     const { data: emps } = await supabase
       .from("employees")
-      .select("id, department, status, branches(name)")
-      .eq("status", "active");
+      .select("id, department, status, branches(name)");
     const map: Record<string, HeadcountRow> = {};
     (emps || []).forEach((e: any) => {
       const key = `${e.branches?.name || "Unassigned"}||${e.department || "General"}`;
@@ -289,9 +290,18 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     run();
   }, [config, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs]);
 
+  const REPORT_COLUMN_KEY_MAP: Record<string, string> = {
+    "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
+    "End Date": "end_date", "Days": "days", "Status": "status", "Month": "month",
+    "Base Salary": "base_salary", "Bonus": "bonus", "Deductions": "deductions", "Net Pay": "net_pay",
+    "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
+    "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
+    "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
+  };
+
   const renderCell = (col: string, row: ReportRow) => {
-    const lc = col.toLowerCase().replace(/ /g, "_");
-    const val = (row as any)[Object.keys(row).find((k) => k.toLowerCase().replace(/ /g, "_") === lc || col.toLowerCase().includes(k.toLowerCase())) || ""] ?? "—";
+    const key = REPORT_COLUMN_KEY_MAP[col] || col.toLowerCase();
+    const val = (row as any)[key] ?? "—";
     if (col === "Status" || col === "status") {
       return (
         <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium capitalize ${STATUS_COLOR[String(val).toLowerCase()] || "bg-gray-100 text-gray-600"}`}>
@@ -300,26 +310,9 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       );
     }
     if (col.includes("Salary") || col.includes("Pay") || col.includes("Bonus") || col.includes("Deduct") || col === "Amount") {
-      return `$${Number(val).toLocaleString()}`;
+      return `$${Number(val || 0).toLocaleString()}`;
     }
     return String(val ?? "—");
-  };
-
-  const getRowValue = (col: string, row: ReportRow): string => {
-    const keyMap: Record<string, string> = {
-      "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
-      "End Date": "end_date", "Days": "days", "Status": "status", "Month": "month",
-      "Base Salary": "base_salary", "Bonus": "bonus", "Deductions": "deductions", "Net Pay": "net_pay",
-      "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
-      "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
-      "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
-    };
-    const key = keyMap[col] || col.toLowerCase();
-    const v = (row as any)[key];
-    if (col.includes("Salary") || col.includes("Pay") || col.includes("Bonus") || col.includes("Deduct") || col === "Amount") {
-      return `$${Number(v || 0).toLocaleString()}`;
-    }
-    return String(v ?? "—");
   };
 
   if (loading) {

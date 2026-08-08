@@ -178,14 +178,15 @@ export default function PerformanceReviews() {
 
     setSubmitting(true);
     const overall = ((reviewForm.communication_score + reviewForm.teamwork_score + reviewForm.technical_score + reviewForm.leadership_score) / 4);
-    await supabase.from("performance_reviews").insert({
+    const { error } = await supabase.from("performance_reviews").insert({
       ...reviewForm,
       overall_score: parseFloat(overall.toFixed(1)),
       status: "submitted",
       submitted_at: new Date().toISOString(),
     });
-    setReviewForm({ employee_id: "", reviewer_id: "", quarter: "Q2", year: 2026, communication_score: 3, teamwork_score: 3, technical_score: 3, leadership_score: 3, comments: "", strengths: "", areas_for_improvement: "" });
     setSubmitting(false);
+    if (error) { toast("Error", "Failed to submit review", "error"); return; }
+    setReviewForm({ employee_id: "", reviewer_id: "", quarter: "Q2", year: 2026, communication_score: 3, teamwork_score: 3, technical_score: 3, leadership_score: 3, comments: "", strengths: "", areas_for_improvement: "" });
     loadData();
     setActiveTab("reviews");
   };
@@ -193,15 +194,17 @@ export default function PerformanceReviews() {
   const handleAddGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    await supabase.from("performance_goals").insert(goalForm);
+    const { error } = await supabase.from("performance_goals").insert(goalForm);
+    setSubmitting(false);
+    if (error) { toast("Error", "Failed to add goal", "error"); return; }
     setGoalForm({ employee_id: "", title: "", description: "", target_date: "", progress: 0, status: "active" });
     setShowGoalModal(false);
-    setSubmitting(false);
     loadData();
   };
 
   const updateGoalProgress = async (goalId: string, progress: number) => {
-    await supabase.from("performance_goals").update({ progress, status: progress >= 100 ? "completed" : "active" }).eq("id", goalId);
+    const { error } = await supabase.from("performance_goals").update({ progress, status: progress >= 100 ? "completed" : "active" }).eq("id", goalId);
+    if (error) { toast("Error", "Failed to update goal progress", "error"); return; }
     setGoals((prev) => prev.map((g) => g.id === goalId ? { ...g, progress, status: progress >= 100 ? "completed" : "active" } : g));
   };
 

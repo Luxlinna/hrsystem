@@ -283,10 +283,15 @@ export default function Settings() {
     if (changed.length === 0) return;
     setSaving(true);
     for (const key of changed) {
-      await supabase
+      const { error } = await supabase
         .from("system_settings")
         .update({ value: edited[key], updated_at: new Date().toISOString() })
         .eq("key", key);
+      if (error) {
+        setSaving(false);
+        toast("Error", `Failed to save ${keyLabels[key] || key}: ${error.message}`, "error");
+        return;
+      }
     }
     setSaving(false);
     loadSettings();
@@ -298,10 +303,15 @@ export default function Settings() {
     if (changed.length === 0) return;
     setSaving(true);
     for (const n of changed) {
-      await supabase
+      const { error } = await supabase
         .from("system_settings")
         .update({ value: edited[n.key], updated_at: new Date().toISOString() })
         .eq("key", n.key);
+      if (error) {
+        setSaving(false);
+        toast("Error", `Failed to save ${n.key}: ${error.message}`, "error");
+        return;
+      }
     }
     setSaving(false);
     loadSettings();

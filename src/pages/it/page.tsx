@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
+import { notify } from "@/lib/notify";
 
 interface ITAsset {
   id: string;
@@ -85,6 +86,26 @@ export default function ITManagement() {
     loadData();
   }, []);
 
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+
+  // Arriving here from a notification (?highlight=<ticket id>) should land
+  // on the Tickets tab with that ticket scrolled into view, not Assets.
+  useEffect(() => {
+    if (!highlightId || tickets.length === 0) return;
+    if (!tickets.some((t) => t.id === highlightId)) return;
+    setTab("tickets");
+    setTicketFilter("all");
+    // The tab/filter changes above haven't repainted the DOM yet in this
+    // same tick — the ticket doesn't exist to scroll to until React commits.
+    const t = setTimeout(() => {
+      const el = document.getElementById(`it-ticket-${highlightId}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
+    }, 0);
+    return () => clearTimeout(t);
+  }, [highlightId, tickets]);
+
   const loadData = async () => {
     setLoading(true);
     const { data: a } = await supabase
@@ -120,18 +141,20 @@ export default function ITManagement() {
   const createTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTicket.title || !newTicket.requester_name) return;
-    await supabase.from("it_tickets").insert([{
+    const { data, error } = await supabase.from("it_tickets").insert([{
       title: newTicket.title,
       requester_name: newTicket.requester_name,
       priority: newTicket.priority,
       category: newTicket.category,
       description: newTicket.description || null,
       status: "open",
-    }]);
+    }]).select().single();
+    if (error) { toast("Error", "Failed to create ticket", "error"); return; }
     setTicketModal(false);
     setNewTicket({ title: "", requester_name: "", priority: "medium", category: "Hardware", description: "" });
     toast("Ticket created", "IT ticket submitted", "success");
-    logActivity({ module: "it", action: "created", entityType: "it_ticket", actorName, actorRole: role?.name || "Unknown", description: `New IT ticket "${newTicket.title}" from ${newTicket.requester_name}` });
+    logActivity({ module: "it", action: "created", entityType: "it_ticket", entityId: data.id, actorName, actorRole: role?.name || "Unknown", description: `New IT ticket "${newTicket.title}" from ${newTicket.requester_name}` });
+    notify({ source: "it_management", type: newTicket.priority === "critical" || newTicket.priority === "high" ? "warning" : "info", title: "New IT ticket", message: `"${newTicket.title}" submitted by ${newTicket.requester_name} (${newTicket.priority} priority)`, entityId: data.id });
     loadData();
   };
 
@@ -370,7 +393,14 @@ export default function ITManagement() {
                     <div className="text-center py-12 text-gray-500 text-[13px]">No tickets found</div>
                   ) : (
                     filteredTickets.map((t) => (
-                      <div key={t.id} className="grid grid-cols-6 px-5 py-4 border-t border-gray-50 items-center">
+                      <div
+                        key={t.id}
+                        id={`it-ticket-${t.id}`}
+                        tabIndex={-1}
+                        className={`grid grid-cols-6 px-5 py-4 border-t items-center outline-none ${
+                          t.id === highlightId ? "border-[#253C7D] ring-2 ring-inset ring-[#253C7D]/30" : "border-gray-50"
+                        }`}
+                      >
                         <div>
                           <span className="text-[13px] font-semibold text-[#253C7D]">#{t.id.slice(0, 8)}</span>
                           <p className="text-[12px] text-gray-600 mt-0.5 truncate max-w-[200px]">{t.title}</p>

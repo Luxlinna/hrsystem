@@ -47,15 +47,14 @@ export default {
               // e.g. condition && <Comp />
               return isJsxLike(node.right)
             case 'CallExpression': {
-              // allow React.createElement(...)
-              const callee = node.callee
-              return (
-                callee?.type === 'MemberExpression' &&
-                callee.object?.type === 'Identifier' &&
-                callee.object.name === 'React' &&
-                callee.property?.type === 'Identifier' &&
-                callee.property.name === 'createElement'
-              )
+              // Allow React.createElement(...) and calls to local helper
+              // functions (e.g. `mod("employees", <Employees />)`, which
+              // wraps its JSX argument in Suspense/RequireModule and
+              // returns JSX itself). The mistake this rule exists to catch
+              // — passing a bare component reference like `element: Page`
+              // — is an Identifier, not a CallExpression, so this doesn't
+              // reopen that hole.
+              return true
             }
             default:
               return false

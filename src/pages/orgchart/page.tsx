@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { Link } from "react-router-dom";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Employee {
   id: string;
@@ -33,29 +34,38 @@ const deptColors: Record<string, string> = {
   Legal: "bg-orange-500",
 };
 
-function buildTree(employees: Employee[], parentId: string | null = null, depth = 0): TreeNode[] {
+function buildTree(employees: Employee[], parentId: string | null = null, depth = 0, visited: Set<string> = new Set()): TreeNode[] {
   return employees
-    .filter((e) => e.reports_to === parentId)
-    .map((e) => ({ ...e, children: buildTree(employees, e.id, depth + 1), depth, expanded: depth < 1 }));
+    .filter((e) => e.reports_to === parentId && !visited.has(e.id))
+    .map((e) => ({ ...e, children: buildTree(employees, e.id, depth + 1, new Set(visited).add(e.id)), depth, expanded: depth < 1 }));
 }
 
-function OrgNode({ node, onToggle, searchTerm, onSelectEmployee }: {
+// A node "matches" the active filters when it satisfies both the department
+// filter (if any) and the search term (if any). Ancestors that don't match
+// themselves still render (as connectors) whenever a descendant matches, so
+// filtering never orphans part of the hierarchy.
+function nodeMatchesFilters(n: TreeNode, searchTerm: string, deptFilter: string): boolean {
+  const deptOk = !deptFilter || n.department === deptFilter;
+  const searchOk = !searchTerm || `${n.first_name} ${n.last_name} ${n.role} ${n.department}`.toLowerCase().includes(searchTerm.toLowerCase());
+  return deptOk && searchOk;
+}
+
+function subtreeMatchesFilters(n: TreeNode, searchTerm: string, deptFilter: string): boolean {
+  return nodeMatchesFilters(n, searchTerm, deptFilter) || n.children.some((c) => subtreeMatchesFilters(c, searchTerm, deptFilter));
+}
+
+function OrgNode({ node, onToggle, searchTerm, deptFilter, onSelectEmployee }: {
   node: TreeNode;
   onToggle: (id: string) => void;
   searchTerm: string;
+  deptFilter: string;
   onSelectEmployee: (emp: Employee) => void;
 }) {
   const hasChildren = node.children.length > 0;
-  const isMatch = searchTerm
-    ? `${node.first_name} ${node.last_name} ${node.role} ${node.department}`.toLowerCase().includes(searchTerm.toLowerCase())
-    : true;
+  const isMatch = nodeMatchesFilters(node, searchTerm, deptFilter);
   const deptColor = deptColors[node.department] || "bg-gray-500";
 
-  const childMatches = (n: TreeNode): boolean =>
-    `${n.first_name} ${n.last_name} ${n.role} ${n.department}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    n.children.some(childMatches);
-
-  if (searchTerm && !isMatch && !node.children.some(childMatches)) return null;
+  if ((searchTerm || deptFilter) && !subtreeMatchesFilters(node, searchTerm, deptFilter)) return null;
 
   return (
     <div className="flex flex-col items-center">
@@ -105,12 +115,12 @@ function OrgNode({ node, onToggle, searchTerm, onSelectEmployee }: {
                 style={{ width: `${(node.children.length - 1) * 100}%`, transform: "translateX(-50%)" }}
               />
               {node.children.map((child) => (
-                <OrgNode key={child.id} node={child} onToggle={onToggle} searchTerm={searchTerm} onSelectEmployee={onSelectEmployee} />
+                <OrgNode key={child.id} node={child} onToggle={onToggle} searchTerm={searchTerm} deptFilter={deptFilter} onSelectEmployee={onSelectEmployee} />
               ))}
             </div>
           )}
           {node.children.length === 1 && (
-            <OrgNode node={node.children[0]} onToggle={onToggle} searchTerm={searchTerm} onSelectEmployee={onSelectEmployee} />
+            <OrgNode node={node.children[0]} onToggle={onToggle} searchTerm={searchTerm} deptFilter={deptFilter} onSelectEmployee={onSelectEmployee} />
           )}
         </div>
       )}
@@ -119,6 +129,11 @@ function OrgNode({ node, onToggle, searchTerm, onSelectEmployee }: {
 }
 
 export default function OrgChart() {
+  const { role, isAdmin } = usePermissions();
+  // Same authority boundary as the Employee Profile "Reports To" field —
+  // reassigning a manager is an HR-records action, not something every
+  // org-chart viewer (e.g. Chairman, Branch Manager) should be able to do.
+  const canEditManager = isAdmin || !!role?.employees_manage;
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,12 +149,22 @@ export default function OrgChart() {
   useEffect(() => { loadEmployees(); }, []);
 
   useEffect(() => {
-    const filtered = deptFilter ? employees.filter((e) => e.department === deptFilter) : employees;
-    const t = buildTree(filtered);
+    // Build from the full employee set (not the department-filtered subset)
+    // so an employee whose manager is in another department still has a
+    // parent to attach to — OrgNode itself hides non-matching branches while
+    // keeping matching descendants' ancestor chain visible as connectors.
+    const t = buildTree(employees);
     const applyExpanded = (nodes: TreeNode[]): TreeNode[] =>
-      nodes.map((n) => ({ ...n, expanded: expandedIds.has(n.id) || (n.depth < 1 && !expandedIds.has(`collapsed_${n.id}`)), children: applyExpanded(n.children) }));
+      nodes.map((n) => {
+        const forceExpand = (!!searchTerm || !!deptFilter) && n.children.some((c) => subtreeMatchesFilters(c, searchTerm, deptFilter));
+        return {
+          ...n,
+          expanded: expandedIds.has(n.id) || (n.depth < 1 && !expandedIds.has(`collapsed_${n.id}`)) || forceExpand,
+          children: applyExpanded(n.children),
+        };
+      });
     setTree(applyExpanded(t));
-  }, [employees, expandedIds, deptFilter]);
+  }, [employees, expandedIds, deptFilter, searchTerm]);
 
   const loadEmployees = async () => {
     setLoading(true);
@@ -148,7 +173,7 @@ export default function OrgChart() {
       .select("id, first_name, last_name, role, department, avatar_url, reports_to, status, branches(name)")
       .order("department")
       .order("first_name");
-    const list = (data || []) as Employee[];
+    const list = (data || []) as unknown as Employee[];
     setEmployees(list);
     const topLevel = list.filter((e) => !e.reports_to);
     setExpandedIds(new Set(topLevel.map((e) => e.id)));
@@ -171,7 +196,7 @@ export default function OrgChart() {
   };
 
   const handleUpdateManager = async () => {
-    if (!selectedEmployee) return;
+    if (!selectedEmployee || !canEditManager) return;
     setSaving(true);
     const managerId = newManagerId === "none" ? null : newManagerId || null;
     const { error } = await supabase.from("employees").update({ reports_to: managerId }).eq("id", selectedEmployee.id);
@@ -187,6 +212,18 @@ export default function OrgChart() {
   const departments = Array.from(new Set(employees.map((e) => e.department))).sort();
   const getDirectReports = (id: string) => employees.filter((e) => e.reports_to === id);
   const getManager = (managerId: string | null) => employees.find((e) => e.id === managerId);
+  // An employee's own subtree can't become their manager — that would form a
+  // reports_to cycle that buildTree's recursion (and the DB) can't represent.
+  const getDescendantIds = (id: string): Set<string> => {
+    const ids = new Set<string>();
+    const walk = (managerId: string) => {
+      for (const e of getDirectReports(managerId)) {
+        if (!ids.has(e.id)) { ids.add(e.id); walk(e.id); }
+      }
+    };
+    walk(id);
+    return ids;
+  };
 
   const listEmployees = deptFilter
     ? employees.filter((e) => e.department === deptFilter)
@@ -270,7 +307,7 @@ export default function OrgChart() {
             <div className="min-w-max mx-auto flex justify-center">
               <div className="flex gap-10">
                 {tree.map((node) => (
-                  <OrgNode key={node.id} node={node} onToggle={toggleNode} searchTerm={searchTerm} onSelectEmployee={setSelectedEmployee} />
+                  <OrgNode key={node.id} node={node} onToggle={toggleNode} searchTerm={searchTerm} deptFilter={deptFilter} onSelectEmployee={setSelectedEmployee} />
                 ))}
               </div>
             </div>
@@ -342,12 +379,16 @@ export default function OrgChart() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <button
-                        onClick={() => { setSelectedEmployee(emp); setNewManagerId(emp.reports_to || "none"); setEditManagerModal(true); }}
-                        className="px-2.5 py-1.5 text-[11px] font-semibold text-[#253C7D] border border-[#253C7D]/20 rounded-lg hover:bg-[#253C7D]/5 transition-colors whitespace-nowrap cursor-pointer"
-                      >
-                        Edit Manager
-                      </button>
+                      {canEditManager ? (
+                        <button
+                          onClick={() => { setSelectedEmployee(emp); setNewManagerId(emp.reports_to || "none"); setEditManagerModal(true); }}
+                          className="px-2.5 py-1.5 text-[11px] font-semibold text-[#253C7D] border border-[#253C7D]/20 rounded-lg hover:bg-[#253C7D]/5 transition-colors whitespace-nowrap cursor-pointer"
+                        >
+                          Edit Manager
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-gray-300">—</span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -397,12 +438,14 @@ export default function OrgChart() {
             <Link to={`/employees/${selectedEmployee.id}`} className="flex-1 py-2 text-center text-[11px] font-semibold text-[#253C7D] border border-[#253C7D]/20 rounded-lg hover:bg-[#253C7D]/5 transition-colors whitespace-nowrap">
               View Profile
             </Link>
-            <button
-              onClick={() => { setNewManagerId(selectedEmployee.reports_to || "none"); setEditManagerModal(true); }}
-              className="flex-1 py-2 text-[11px] font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer"
-            >
-              Edit Manager
-            </button>
+            {canEditManager && (
+              <button
+                onClick={() => { setNewManagerId(selectedEmployee.reports_to || "none"); setEditManagerModal(true); }}
+                className="flex-1 py-2 text-[11px] font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer"
+              >
+                Edit Manager
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -422,9 +465,11 @@ export default function OrgChart() {
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
               >
                 <option value="none">— No manager (Top level)</option>
-                {employees.filter((e) => e.id !== selectedEmployee.id).map((e) => (
-                  <option key={e.id} value={e.id}>{e.first_name} {e.last_name} — {e.role}</option>
-                ))}
+                {employees
+                  .filter((e) => e.id !== selectedEmployee.id && !getDescendantIds(selectedEmployee.id).has(e.id))
+                  .map((e) => (
+                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name} — {e.role}</option>
+                  ))}
               </select>
             </div>
             <div className="flex gap-2">

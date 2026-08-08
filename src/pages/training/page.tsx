@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { usePermissions } from "@/hooks/usePermissions";
+import { toast } from "@/components/Toast";
 
 interface Course {
   id: number;
@@ -57,7 +58,7 @@ export default function TrainingPage() {
   const { role, isAdmin } = usePermissions();
   // Managing the course catalog and enrollments is a management action —
   // individual-contributor roles (Employee, Staff) only consume training.
-  const canManage = isAdmin || !["Employee", "Staff"].includes(role?.name || "");
+  const canManage = isAdmin || (!!role && !["Employee", "Staff"].includes(role.name));
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -132,12 +133,11 @@ export default function TrainingPage() {
       format: newCourse.format,
       status: newCourse.status,
     };
-    if (editingCourseId) {
-      await supabase.from("training_courses").update(payload).eq("id", editingCourseId);
-    } else {
-      await supabase.from("training_courses").insert(payload);
-    }
+    const { error } = editingCourseId
+      ? await supabase.from("training_courses").update(payload).eq("id", editingCourseId)
+      : await supabase.from("training_courses").insert(payload);
     setSaving(false);
+    if (error) { toast("Error", "Failed to save course", "error"); return; }
     setShowCourseModal(false);
     setEditingCourseId(null);
     setNewCourse({ title: "", description: "", category: "General", duration_hours: "", instructor: "", format: "online", status: "active" });
@@ -163,7 +163,8 @@ export default function TrainingPage() {
   async function deleteCourse(course: Course) {
     if (!canManage) return;
     if (!confirm(`Delete "${course.title}"? This also removes all enrollments in this course. This cannot be undone.`)) return;
-    await supabase.from("training_courses").delete().eq("id", course.id);
+    const { error } = await supabase.from("training_courses").delete().eq("id", course.id);
+    if (error) { toast("Error", "Failed to delete course", "error"); return; }
     setSelectedCourse(null);
     fetchData();
   }
@@ -171,15 +172,15 @@ export default function TrainingPage() {
   async function deleteEnrollment(enrollment: Enrollment) {
     if (!canManage) return;
     if (!confirm("Remove this enrollment record? This cannot be undone.")) return;
-    await supabase.from("training_enrollments").delete().eq("id", enrollment.id);
-    setSelectedEnrollment(null);
+    const { error } = await supabase.from("training_enrollments").delete().eq("id", enrollment.id);
+    if (error) { toast("Error", "Failed to remove enrollment", "error"); return; }
     fetchData();
   }
 
   async function saveEnrollment() {
     if (!enrollCourseId || !enrollEmployeeId) return;
     setSaving(true);
-    await supabase.from("training_enrollments").insert({
+    const { error } = await supabase.from("training_enrollments").insert({
       course_id: enrollCourseId,
       employee_id: enrollEmployeeId,
       due_date: enrollDueDate || null,
@@ -187,6 +188,7 @@ export default function TrainingPage() {
       progress: 0,
     });
     setSaving(false);
+    if (error) { toast("Error", "Failed to enroll employee", "error"); return; }
     setShowEnrollModal(false);
     setEnrollCourseId(null);
     setEnrollEmployeeId("");
@@ -195,7 +197,9 @@ export default function TrainingPage() {
   }
 
   async function issueCertificate(enrollmentId: number) {
-    await supabase.from("training_enrollments").update({ certificate_issued: true }).eq("id", enrollmentId);
+    if (!canManage) return;
+    const { error } = await supabase.from("training_enrollments").update({ certificate_issued: true }).eq("id", enrollmentId);
+    if (error) { toast("Error", "Failed to issue certificate", "error"); return; }
     fetchData();
   }
 
@@ -412,7 +416,7 @@ export default function TrainingPage() {
                         <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
                           <i className="ri-medal-line" /> Issued
                         </span>
-                      ) : e.status === "completed" ? (
+                      ) : e.status === "completed" && canManage ? (
                         <button
                           onClick={() => issueCertificate(e.id)}
                           className="text-xs text-[#253C7D] hover:underline cursor-pointer whitespace-nowrap"

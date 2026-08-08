@@ -38,7 +38,12 @@ const PRIORITY_STYLE: Record<Task["priority"], string> = {
   urgent: "bg-red-50 text-red-700",
 };
 
-const today = () => new Date().toISOString().split("T")[0];
+// Local (not UTC) YYYY-MM-DD — toISOString() shifts to UTC, which mislabels
+// "today" during early-morning hours in timezones ahead of UTC (e.g. ICT).
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 const isOverdue = (t: Task) => !!t.due_date && t.due_date < today() && t.status !== "done";
 
 const emptyForm = { title: "", description: "", assigned_to: "", priority: "medium" as Task["priority"], due_date: "" };

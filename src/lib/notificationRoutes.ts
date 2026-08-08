@@ -1,17 +1,43 @@
-// Maps a notification's `source` column to the module it's about, so
-// clicking a notification can jump straight to the relevant page instead of
-// just marking it read. `system` has no single destination and is omitted
-// on purpose — those notifications only get marked read on click.
-export const NOTIFICATION_SOURCE_ROUTES: Record<string, { path: string; module: string }> = {
-  hire: { path: "/hire", module: "hire" },
-  leave: { path: "/leave", module: "leave" },
-  payroll: { path: "/payroll-module", module: "payroll" },
-  branches: { path: "/branches", module: "branches" },
-  employees: { path: "/employees", module: "employees" },
-  onboarding: { path: "/onboarding", module: "onboarding" },
-  offboard: { path: "/offboard", module: "offboard" },
-  finance: { path: "/finance", module: "finance" },
-  it_management: { path: "/it-management", module: "it-management" },
-  benefits: { path: "/benefits", module: "benefits" },
-  tools: { path: "/tools", module: "tools" },
-};
+// Maps a notification's `source` (+ optional `entity_id`) to where clicking
+// it should go. `system` has no single destination and is omitted on
+// purpose — those notifications only get marked read on click.
+//
+// Where a dedicated detail route exists (hire candidates, employees), we
+// link straight to it. Everywhere else is a list page with inline
+// expand/collapse per row, so we pass `?highlight=<id>` instead and the
+// page itself is responsible for expanding and scrolling to that row.
+export function getNotificationTarget(
+  source: string,
+  entityId?: string | null
+): { path: string; module: string } | null {
+  const highlight = entityId ? `?highlight=${entityId}` : "";
+  switch (source) {
+    case "hire":
+      return { path: entityId ? `/hire/candidate/${entityId}` : "/hire", module: "hire" };
+    case "leave":
+      return { path: `/leave${highlight}`, module: "leave" };
+    // All current "payroll" notifications come from the Payroll Approval
+    // workflow (run submitted/approved/rejected/processed) — route there,
+    // not to the separate per-employee payroll records page.
+    case "payroll":
+      return { path: `/payroll-approval${highlight}`, module: "payroll-approval" };
+    case "branches":
+      return { path: "/branches", module: "branches" };
+    case "employees":
+      return { path: entityId ? `/employees/${entityId}` : "/employees", module: "employees" };
+    case "onboarding":
+      return { path: `/onboarding${highlight}`, module: "onboarding" };
+    case "offboard":
+      return { path: `/offboard${highlight}`, module: "offboard" };
+    case "finance":
+      return { path: "/finance", module: "finance" };
+    case "it_management":
+      return { path: `/it-management${highlight}`, module: "it-management" };
+    case "benefits":
+      return { path: "/benefits", module: "benefits" };
+    case "tools":
+      return { path: "/tools", module: "tools" };
+    default:
+      return null;
+  }
+}

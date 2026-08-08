@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import { NOTIFICATION_SOURCE_ROUTES } from "@/lib/notificationRoutes";
+import { getNotificationTarget } from "@/lib/notificationRoutes";
 import { toast } from "@/components/Toast";
 
 interface NotificationRow {
@@ -12,6 +12,7 @@ interface NotificationRow {
   message: string;
   type: "info" | "success" | "warning" | "error";
   source: string;
+  entity_id: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -461,7 +462,7 @@ export default function TopBar() {
   const openNotification = (n: NotificationRow) => {
     if (!n.is_read) markRead(n.id);
     setNotifOpen(false);
-    const target = NOTIFICATION_SOURCE_ROUTES[n.source];
+    const target = getNotificationTarget(n.source, n.entity_id);
     if (target && can(target.module)) navigate(target.path);
   };
 

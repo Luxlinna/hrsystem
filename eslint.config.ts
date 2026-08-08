@@ -59,6 +59,7 @@ export default [
         NodeJS: 'readonly',
         JSX: 'readonly',
         IdleRequestCallback: 'readonly',
+        PositionOptions: 'readonly',
         __BASE_PATH__: 'readonly',
         __IS_PREVIEW__: 'readonly',
         __READDY_PROJECT_ID__: 'readonly',

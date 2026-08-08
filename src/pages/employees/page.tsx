@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { toast } from "@/components/Toast";
 
 export default function Employees() {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -8,7 +9,10 @@ export default function Employees() {
   const [filterDept, setFilterDept] = useState("");
 
   useEffect(() => {
-    supabase.from("employees").select("*, branches(name)").then(({ data }) => setEmployees(data || []));
+    supabase.from("employees").select("*, branches(name)").then(({ data, error }) => {
+      if (error) { toast("Error", "Failed to load employee directory", "error"); return; }
+      setEmployees(data || []);
+    });
   }, []);
 
   const depts = Array.from(new Set(employees.map((e) => e.department)));

@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
+import { notify } from "@/lib/notify";
 
 interface PayrollRun {
   id: string;
@@ -41,7 +43,10 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
 
 export default function PayrollApproval() {
   const { user } = useAuth();
-  const { role } = usePermissions();
+  const { role, isAdmin } = usePermissions();
+  // Chairman holds this module for read-only board oversight — no
+  // approving, rejecting, or processing actual payroll runs.
+  const canManage = isAdmin || (!!role && role.name !== "Chairman");
   const submitterName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [approvals, setApprovals] = useState<PayrollApproval[]>([]);
@@ -78,43 +83,109 @@ export default function PayrollApproval() {
     if (toast) { const t = setTimeout(() => setToast(null), 3500); return () => clearTimeout(t); }
   }, [toast]);
 
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+
+  // Arriving here from a notification (?highlight=<payroll run id>) should
+  // land on whichever tab the run actually lives in, expanded and scrolled
+  // into view, instead of just the generic Pending tab.
+  useEffect(() => {
+    if (!highlightId || runs.length === 0) return;
+    const match = runs.find((r) => r.id === highlightId);
+    if (!match) return;
+    setTab(match.status === "pending_approval" ? "pending" : "history");
+    setPeriodFilter("all");
+    setExpandedRun(highlightId);
+    // The tab/filter changes above haven't repainted the DOM yet in this
+    // same tick — the run doesn't exist to scroll to until React commits.
+    const t = setTimeout(() => {
+      const el = document.getElementById(`payroll-run-${highlightId}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
+    }, 0);
+    return () => clearTimeout(t);
+  }, [highlightId, runs]);
+
   const fmt = (n: number) => `$${(n / 1000).toFixed(1)}k`;
   const fmtFull = (n: number) => `$${Number(n).toLocaleString()}`;
 
   const getRunApprovals = (runId: string) => approvals.filter((a) => a.run_id === runId);
 
   const handleAction = async () => {
-    if (!actionModal) return;
+    if (!actionModal || !canManage) return;
     setActing(true);
     const { run, action } = actionModal;
-    const newStatus = action === "approve" ? "approved" : "rejected";
 
-    const approvalsForRun = getRunApprovals(run.id).filter((a) => a.status === "pending");
-    if (approvalsForRun.length > 0) {
-      await supabase.from("payroll_approvals").update({ status: action === "approve" ? "approved" : "rejected", notes: actionNote || null, acted_at: new Date().toISOString() }).eq("id", approvalsForRun[0].id);
+    const pendingForRun = getRunApprovals(run.id).filter((a) => a.status === "pending");
+    const targetApproval = pendingForRun[0];
+
+    if (targetApproval) {
+      const { error: approvalError } = await supabase
+        .from("payroll_approvals")
+        .update({ status: action === "approve" ? "approved" : "rejected", notes: actionNote || null, acted_at: new Date().toISOString() })
+        .eq("id", targetApproval.id);
+      if (approvalError) {
+        setActing(false);
+        setToast({ type: "error", message: "Failed to record approval" });
+        return;
+      }
     }
 
-    await supabase.from("payroll_runs").update({ status: newStatus }).eq("id", run.id);
+    // A rejection stops the run immediately. An approval only finalizes the
+    // run once every approver in the two-person chain has signed off —
+    // otherwise the run stays pending_approval for the remaining approver.
+    const remainingPending = pendingForRun.length - (targetApproval ? 1 : 0);
+    const finalStatus = action === "reject" ? "rejected" : remainingPending > 0 ? null : "approved";
+
+    if (finalStatus) {
+      const { error: runError } = await supabase.from("payroll_runs").update({ status: finalStatus }).eq("id", run.id);
+      if (runError) {
+        setActing(false);
+        setToast({ type: "error", message: "Failed to update payroll run status" });
+        return;
+      }
+    }
 
     setActing(false);
     setActionModal(null);
     setActionNote("");
-    setToast({ type: "success", message: `Payroll run ${action === "approve" ? "approved" : "rejected"} successfully` });
-    logActivity({
-      module: "payroll",
-      action: newStatus as "approved" | "rejected",
-      entityType: "payroll_run",
-      entityId: run.id,
-      actorName: submitterName,
-      actorRole: role?.name || "Unknown",
-      description: `Payroll run for ${run.period} (${run.department}) was ${newStatus}`,
-      metadata: { period: run.period, department: run.department, total_net: run.total_net },
+    setToast({
+      type: "success",
+      message: finalStatus
+        ? `Payroll run ${finalStatus} successfully`
+        : "Approval recorded — waiting on the remaining approver",
     });
+
+    if (finalStatus) {
+      logActivity({
+        module: "payroll",
+        action: finalStatus as "approved" | "rejected",
+        entityType: "payroll_run",
+        entityId: run.id,
+        actorName: submitterName,
+        actorRole: role?.name || "Unknown",
+        description: `Payroll run for ${run.period} (${run.department}) was ${finalStatus}`,
+        metadata: { period: run.period, department: run.department, total_net: run.total_net },
+      });
+      notify({
+        source: "payroll",
+        type: finalStatus === "approved" ? "success" : "warning",
+        title: `Payroll run ${finalStatus}`,
+        message: `The ${run.period} payroll run for ${run.department} was ${finalStatus}.`,
+        entityId: run.id,
+      });
+    }
     await loadData();
   };
 
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
   const handleProcess = async (run: PayrollRun) => {
-    await supabase.from("payroll_runs").update({ status: "processed" }).eq("id", run.id);
+    if (!canManage || processingId) return;
+    setProcessingId(run.id);
+    const { error } = await supabase.from("payroll_runs").update({ status: "processed" }).eq("id", run.id);
+    setProcessingId(null);
+    if (error) { setToast({ type: "error", message: "Failed to mark run as processed" }); return; }
     setToast({ type: "success", message: "Payroll run marked as processed" });
     logActivity({
       module: "payroll",
@@ -126,12 +197,13 @@ export default function PayrollApproval() {
       description: `Payroll run for ${run.period} (${run.department}) was processed`,
       metadata: { period: run.period, department: run.department, total_net: run.total_net },
     });
+    notify({ source: "payroll", type: "success", title: "Payroll processed", message: `The ${run.period} payroll run for ${run.department} has been processed and paid out.`, entityId: run.id });
     await loadData();
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createForm.period || !createForm.total_base) return;
+    if (!createForm.period || !createForm.total_base || !canManage) return;
     setCreating(true);
     const base = Number(createForm.total_base);
     const bonus = Number(createForm.total_bonus || 0);
@@ -190,9 +262,11 @@ export default function PayrollApproval() {
           <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Payroll Approval</h1>
           <p className="text-[13px] text-gray-500 mt-1">Review, approve, and process payroll runs before disbursement</p>
         </div>
-        <button onClick={() => setTab("create")} className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap">
-          <i className="ri-add-line" /> New Payroll Run
-        </button>
+        {canManage && (
+          <button onClick={() => setTab("create")} className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap">
+            <i className="ri-add-line" /> New Payroll Run
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -213,7 +287,7 @@ export default function PayrollApproval() {
 
       {/* Tabs */}
       <div className="flex gap-1.5 mb-6 border-b border-gray-100 overflow-x-auto">
-        {([["pending", "Pending Approval", pendingRuns.length], ["history", "History", historyRuns.length], ["create", "Create Run", null]] as const).map(([id, label, count]) => (
+        {([["pending", "Pending Approval", pendingRuns.length], ["history", "History", historyRuns.length], ...(canManage ? [["create", "Create Run", null] as const] : [])] as const).map(([id, label, count]) => (
           <button key={id} onClick={() => setTab(id)} className={`px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${tab === id ? "border-[#253C7D] text-[#253C7D]" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
             {label}
             {count !== null && <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${tab === id ? "bg-[#253C7D]/10 text-[#253C7D]" : "bg-gray-100 text-gray-500"}`}>{count}</span>}
@@ -234,7 +308,14 @@ export default function PayrollApproval() {
             const runApprovals = getRunApprovals(run.id);
             const isExpanded = expandedRun === run.id;
             return (
-              <div key={run.id} className="border border-amber-100 rounded-xl overflow-hidden bg-amber-50/20">
+              <div
+                key={run.id}
+                id={`payroll-run-${run.id}`}
+                tabIndex={-1}
+                className={`border rounded-xl overflow-hidden bg-amber-50/20 outline-none ${
+                  run.id === highlightId ? "border-[#253C7D] ring-2 ring-[#253C7D]/30" : "border-amber-100"
+                }`}
+              >
                 <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700">
@@ -254,12 +335,16 @@ export default function PayrollApproval() {
                       <p className="text-[11px] text-gray-500">Net payout</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => { setActionModal({ run, action: "approve" }); setActionNote(""); }} className="px-4 py-2 bg-green-500 text-white text-[12px] font-semibold rounded-lg hover:bg-green-600 transition-colors whitespace-nowrap">
-                        <i className="ri-check-line mr-1" />Approve
-                      </button>
-                      <button onClick={() => { setActionModal({ run, action: "reject" }); setActionNote(""); }} className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 text-[12px] font-semibold rounded-lg hover:bg-red-100 transition-colors whitespace-nowrap">
-                        <i className="ri-close-line mr-1" />Reject
-                      </button>
+                      {canManage && (
+                        <>
+                          <button onClick={() => { setActionModal({ run, action: "approve" }); setActionNote(""); }} className="px-4 py-2 bg-green-500 text-white text-[12px] font-semibold rounded-lg hover:bg-green-600 transition-colors whitespace-nowrap">
+                            <i className="ri-check-line mr-1" />Approve
+                          </button>
+                          <button onClick={() => { setActionModal({ run, action: "reject" }); setActionNote(""); }} className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 text-[12px] font-semibold rounded-lg hover:bg-red-100 transition-colors whitespace-nowrap">
+                            <i className="ri-close-line mr-1" />Reject
+                          </button>
+                        </>
+                      )}
                       <button onClick={() => setExpandedRun(isExpanded ? null : run.id)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500">
                         <i className={`${isExpanded ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} text-lg`} />
                       </button>
@@ -341,7 +426,12 @@ export default function PayrollApproval() {
               const runApprovals = getRunApprovals(run.id);
               const isExpanded = expandedRun === run.id;
               return (
-                <div key={run.id} className="border-t border-gray-50">
+                <div
+                  key={run.id}
+                  id={`payroll-run-${run.id}`}
+                  tabIndex={-1}
+                  className={`border-t outline-none ${run.id === highlightId ? "border-[#253C7D] ring-2 ring-inset ring-[#253C7D]/30" : "border-gray-50"}`}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-7 px-5 py-4 items-center gap-2">
                     <div className="md:col-span-2">
                       <p className="text-[13px] font-semibold text-gray-900">{run.department}</p>
@@ -354,7 +444,7 @@ export default function PayrollApproval() {
                       <i className={`${meta.icon} text-[11px]`} />{meta.label}
                     </span>
                     <div className="flex items-center gap-1.5">
-                      {run.status === "approved" && (
+                      {run.status === "approved" && canManage && (
                         <button onClick={() => handleProcess(run)} className="px-3 py-1.5 bg-[#253C7D] text-white text-[11px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors whitespace-nowrap">Process</button>
                       )}
                       <button onClick={() => setExpandedRun(isExpanded ? null : run.id)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400">

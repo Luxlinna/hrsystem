@@ -4,6 +4,7 @@ import { toast } from "@/components/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import { logActivity } from "@/lib/audit";
+import { notify } from "@/lib/notify";
 
 interface Expense {
   id: string;
@@ -32,7 +33,7 @@ export default function Finance() {
   const { role, isAdmin } = usePermissions();
   // Chairman holds the finance module for read-only oversight — no
   // day-to-day approvals or record management per the role's charter.
-  const canManage = isAdmin || role?.name !== "Chairman";
+  const canManage = isAdmin || (!!role && role.name !== "Chairman");
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
