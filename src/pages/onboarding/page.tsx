@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import app from "@/lib/firebase";
+import { uploadFile } from "@/lib/storage";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
+import { notify } from "@/lib/notify";
 
 interface OnboardingRequest {
   id: string;
@@ -49,6 +53,9 @@ const DOCUMENT_TEMPLATES: Record<string, string[]> = {
 };
 
 export default function Onboarding() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
   const [expandedRequest, setExpandedRequest] = useState<string | null>(null);
@@ -57,12 +64,13 @@ export default function Onboarding() {
   const [selectedRequest, setSelectedRequest] = useState<OnboardingRequest | null>(null);
   const [selectedStage, setSelectedStage] = useState("");
   const [docForm, setDocForm] = useState({ document_name: "", notes: "" });
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
   const [filter, setFilter] = useState("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const storage = getStorage(app);
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
 
   const loadData = async () => {
     const [{ data: ob }, { data: docs }] = await Promise.all([
@@ -90,6 +98,24 @@ export default function Onboarding() {
     }
   }, [toast]);
 
+  // Arriving here from a notification (?highlight=<request id>) should jump
+  // straight to that request, not just land on the generic list.
+  useEffect(() => {
+    if (!highlightId || requests.length === 0) return;
+    if (!requests.some((r) => r.id === highlightId)) return;
+    setFilter("all");
+    setExpandedRequest(highlightId);
+    // setFilter above hasn't repainted the DOM yet in this same tick — if the
+    // record wasn't already visible under the previous filter, it doesn't
+    // exist to scroll to until after React commits the re-render.
+    const t = setTimeout(() => {
+      const el = document.getElementById(`onboarding-request-${highlightId}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
+    }, 0);
+    return () => clearTimeout(t);
+  }, [highlightId, requests]);
+
   const getDocsForRequestAndStage = (reqId: string, stage: string) =>
     documents.filter((d) => d.onboarding_request_id === reqId && d.stage === stage);
 
@@ -108,6 +134,7 @@ export default function Onboarding() {
     setSelectedRequest(req);
     setSelectedStage(stage);
     setDocForm({ document_name: "", notes: "" });
+    setSelectedFileName(null);
     setShowDocModal(true);
   };
 
@@ -122,12 +149,10 @@ export default function Onboarding() {
 
     if (file) {
       try {
-        const storageRef = ref(storage, `onboarding/${selectedRequest.id}/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        fileUrl = await getDownloadURL(storageRef);
+        fileUrl = await uploadFile("onboarding-documents", `${selectedRequest.id}/${Date.now()}_${file.name}`, file);
         fileName = file.name;
-      } catch {
-        setToast({ type: "error", message: "File upload failed" });
+      } catch (err) {
+        setToast({ type: "error", message: err instanceof Error ? err.message : "File upload failed" });
         setUploading(false);
         return;
       }
@@ -152,6 +177,7 @@ export default function Onboarding() {
     } else {
       setToast({ type: "success", message: "Document added successfully" });
       setDocForm({ document_name: "", notes: "" });
+      setSelectedFileName(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -186,6 +212,17 @@ export default function Onboarding() {
     } else {
       setRequests((prev) => prev.map((r) => (r.id === req.id ? { ...r, status: "completed", stage: "complete" } : r)));
       setToast({ type: "success", message: "Onboarding completed" });
+      const empName = req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "a new hire";
+      logActivity({
+        module: "onboarding",
+        action: "processed",
+        entityType: "onboarding_request",
+        entityId: req.id,
+        actorName,
+        actorRole: role?.name || "Unknown",
+        description: `Onboarding completed for ${empName}`,
+      });
+      notify({ source: "onboarding", type: "success", title: "Onboarding completed", message: `${empName} has finished the onboarding process.`, entityId: req.id });
     }
   };
 
@@ -269,7 +306,14 @@ export default function Onboarding() {
           const overallProgress = Math.round(((currentStageIndex) / (STAGES.length - 1)) * 100);
 
           return (
-            <div key={req.id} className="border border-gray-100 rounded-xl overflow-hidden hover:shadow-sm transition-shadow">
+            <div
+              key={req.id}
+              id={`onboarding-request-${req.id}`}
+              tabIndex={-1}
+              className={`border rounded-xl overflow-hidden hover:shadow-sm transition-shadow outline-none ${
+                req.id === highlightId ? "border-[#253C7D] ring-2 ring-[#253C7D]/30" : "border-gray-100"
+              }`}
+            >
               {/* Header Row */}
               <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -494,6 +538,17 @@ export default function Onboarding() {
                           else {
                             setRequests((prev) => prev.map((r) => (r.id === req.id ? { ...r, status: "approved" } : r)));
                             setToast({ type: "success", message: "Onboarding approved" });
+                            const empName = req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "a new hire";
+                            logActivity({
+                              module: "onboarding",
+                              action: "approved",
+                              entityType: "onboarding_request",
+                              entityId: req.id,
+                              actorName,
+                              actorRole: role?.name || "Unknown",
+                              description: `Onboarding approved for ${empName}`,
+                            });
+                            notify({ source: "onboarding", type: "success", title: "Onboarding approved", message: `${empName}'s onboarding request was approved.`, entityId: req.id });
                           }
                         }}
                         className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors"
@@ -584,8 +639,8 @@ export default function Onboarding() {
                   <i className="ri-upload-cloud-line text-2xl text-gray-400 mb-2 block" />
                   <p className="text-[13px] text-gray-600">Click or drag file to upload</p>
                   <p className="text-[11px] text-gray-400 mt-1">PDF, DOC, DOCX, JPG, PNG up to 10MB</p>
-                  {fileInputRef.current?.files?.[0] && (
-                    <p className="text-[12px] text-[#253C7D] font-medium mt-2">{fileInputRef.current.files[0].name}</p>
+                  {selectedFileName && (
+                    <p className="text-[12px] text-[#253C7D] font-medium mt-2">{selectedFileName}</p>
                   )}
                 </div>
                 <input
@@ -593,6 +648,7 @@ export default function Onboarding() {
                   type="file"
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   className="hidden"
+                  onChange={(e) => setSelectedFileName(e.target.files?.[0]?.name || null)}
                 />
               </div>
               <div>

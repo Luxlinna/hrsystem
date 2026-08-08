@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
-import { NOTIFICATION_SOURCE_ROUTES } from "@/lib/notificationRoutes";
+import { getNotificationTarget } from "@/lib/notificationRoutes";
 
 interface Notification {
   id: string;
@@ -11,6 +11,7 @@ interface Notification {
   message: string;
   type: "info" | "warning" | "success" | "error";
   source: string;
+  entity_id: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -180,7 +181,7 @@ export default function Notifications() {
 
   const openNotification = (n: Notification) => {
     if (!n.is_read) markRead(n.id);
-    const target = NOTIFICATION_SOURCE_ROUTES[n.source];
+    const target = getNotificationTarget(n.source, n.entity_id);
     if (target && can(target.module)) navigate(target.path);
   };
 

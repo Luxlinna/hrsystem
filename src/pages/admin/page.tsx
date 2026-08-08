@@ -200,12 +200,11 @@ export default function AdminPortal() {
   };
 
   const deleteRole = async (id: number) => {
-    const { error } = await supabase.from("app_roles").update({ updated_at: new Date().toISOString() }).eq("id", id);
-    if (!error) {
-      await supabase.from("app_roles").delete().eq("id", id);
-      showToast("Role deleted");
-      loadData();
-    }
+    const { error } = await supabase.from("app_roles").delete().eq("id", id);
+    if (error) { showToast("Failed to delete role", "err"); return; }
+    showToast("Role deleted");
+    invalidatePermissionsCache();
+    loadData();
   };
 
   // ── User management ──
@@ -214,12 +213,13 @@ export default function AdminPortal() {
     if (!user) return;
     const existing = users.find((u) => u.user_id === user.id);
     if (existing) { showToast("You are already in the list", "err"); return; }
-    await supabase.from("user_role_assignments").insert({
+    const { error } = await supabase.from("user_role_assignments").insert({
       user_id: user.id,
       email: user.email || "",
       display_name: (user.user_metadata?.display_name as string) || "",
       role_id: null,
     });
+    if (error) { showToast("Failed to add current user", "err"); return; }
     showToast("Added current user");
     loadData();
   };
@@ -241,14 +241,16 @@ export default function AdminPortal() {
   };
 
   const updateUserRole = async (userId: number, roleId: number | null) => {
-    await supabase.from("user_role_assignments").update({ role_id: roleId, updated_at: new Date().toISOString() }).eq("id", userId);
+    const { error } = await supabase.from("user_role_assignments").update({ role_id: roleId, updated_at: new Date().toISOString() }).eq("id", userId);
+    if (error) { showToast("Failed to update role", "err"); return; }
     invalidatePermissionsCache();
     loadData();
     showToast("Role updated!");
   };
 
   const removeUser = async (userId: number) => {
-    await supabase.from("user_role_assignments").delete().eq("id", userId);
+    const { error } = await supabase.from("user_role_assignments").delete().eq("id", userId);
+    if (error) { showToast("Failed to remove user", "err"); return; }
     showToast("User removed");
     loadData();
   };

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 import { UnityApp, AppAccess, AppUsageLog, Employee } from "../types";
 
 interface AppDetailPanelProps {
@@ -55,6 +57,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
   const [selectedLevel, setSelectedLevel] = useState("user");
   const [saving, setSaving] = useState(false);
   const { user } = useAuth();
+  const { role } = usePermissions();
   const granterName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
 
   const appLogs = usageLogs.filter((l) => l.app_id === app.id);
@@ -76,6 +79,8 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
     setSaving(false);
     if (error) { toast("Error", "Failed to grant access", "error"); return; }
     toast("Success", "Access granted successfully", "success");
+    const grantedEmp = employees.find((e) => e.id === selectedEmpId);
+    logActivity({ module: "unity", action: "created", entityType: "app_access", actorName: granterName, actorRole: role?.name || "Unknown", description: `${grantedEmp ? `${grantedEmp.first_name} ${grantedEmp.last_name}` : "An employee"} was granted ${selectedLevel} access to ${app.name}` });
     setGrantModal(false);
     setSelectedEmpId("");
     onRefresh();
@@ -85,6 +90,7 @@ export default function AppDetailPanel({ app, accesses, usageLogs, employees, on
     const { error } = await supabase.from("app_access").update({ is_active: false }).eq("id", accessId);
     if (error) { toast("Error", "Failed to revoke access", "error"); return; }
     toast("Success", `Access revoked for ${empName}`, "success");
+    logActivity({ module: "unity", action: "updated", entityType: "app_access", actorName: granterName, actorRole: role?.name || "Unknown", description: `${empName}'s access to ${app.name} was revoked` });
     onRefresh();
   };
 

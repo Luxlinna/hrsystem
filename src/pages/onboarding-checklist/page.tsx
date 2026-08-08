@@ -113,7 +113,7 @@ export default function OnboardingChecklist() {
     return { completed, total: ct.length, pct: Math.round((completed / ct.length) * 100) };
   };
 
-  const isOverdue = (task: ChecklistTask) => !task.completed && task.due_date && new Date(task.due_date) < new Date();
+  const isOverdue = (task: ChecklistTask) => !task.completed && task.due_date && new Date(task.due_date + "T00:00:00") < new Date();
 
   const toggleTask = async (task: ChecklistTask) => {
     setToggling(task.id);

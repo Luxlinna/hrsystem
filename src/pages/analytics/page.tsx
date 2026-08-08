@@ -97,15 +97,15 @@ export default function Analytics() {
 
   const deptDistribution = useMemo(() => {
     const c: Record<string, number> = {};
-    employees.forEach((e) => { c[e.department] = (c[e.department] || 0) + 1; });
+    filteredEmps.forEach((e) => { c[e.department] = (c[e.department] || 0) + 1; });
     return Object.entries(c).map(([name, value]) => ({ name, value }));
-  }, [employees]);
+  }, [filteredEmps]);
 
   const statusBreakdown = useMemo(() => {
     const c: Record<string, number> = {};
-    employees.forEach((e) => { c[e.status] = (c[e.status] || 0) + 1; });
+    filteredEmps.forEach((e) => { c[e.status] = (c[e.status] || 0) + 1; });
     return Object.entries(c).map(([name, value]) => ({ name: name.replace("_", " "), value }));
-  }, [employees]);
+  }, [filteredEmps]);
 
   const leaveByType = useMemo(() => {
     const c: Record<string, number> = {};

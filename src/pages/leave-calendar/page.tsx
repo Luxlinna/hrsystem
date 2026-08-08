@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
+// Local (not UTC) YYYY-MM-DD — toISOString() shifts to UTC, which can land
+// on the wrong calendar day for timezones ahead of UTC (e.g. ICT).
+function toYMD(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 interface LeaveRequest {
   id: string;
   employee_id: string;
@@ -107,7 +113,7 @@ export default function LeaveCalendar() {
   // Stats
   const stats = {
     onLeaveToday: filteredLeaves.filter((l) => {
-      const td = new Date().toISOString().split("T")[0];
+      const td = toYMD(new Date());
       return td >= l.start_date && td <= l.end_date;
     }).length,
     approvedThisMonth: filteredLeaves.filter((l) => {
@@ -214,7 +220,7 @@ export default function LeaveCalendar() {
             const end = new Date(l.end_date + "T00:00:00");
             for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
               if (d.getFullYear() === year && d.getMonth() === month) {
-                const key = d.toISOString().split("T")[0];
+                const key = toYMD(d);
                 if (!dateMap[key]) dateMap[key] = [];
                 if (!dateMap[key].find((x) => x.id === l.id)) dateMap[key].push(l);
               }
@@ -236,7 +242,7 @@ export default function LeaveCalendar() {
                 const d = new Date(dateStr + "T00:00:00");
                 const dayNum = d.getDate();
                 const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
-                const isTd = dateStr === new Date().toISOString().split("T")[0];
+                const isTd = dateStr === toYMD(new Date());
                 return (
                   <div key={dateStr} className="flex gap-3">
                     {/* Date column */}
@@ -377,7 +383,7 @@ export default function LeaveCalendar() {
             <div className="border border-gray-100 rounded-xl p-5">
               <h3 className="text-[14px] font-bold text-gray-900 mb-4">Today&apos;s Availability</h3>
               {(() => {
-                const td = new Date().toISOString().split("T")[0];
+                const td = toYMD(new Date());
                 const onLeaveToday = filteredLeaves.filter((l) => td >= l.start_date && td <= l.end_date);
                 const depts = [...new Set(onLeaveToday.map((l) => l.employees?.department || "Unknown"))];
                 if (onLeaveToday.length === 0) {

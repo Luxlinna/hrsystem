@@ -1,7 +1,6 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
 import { getMessaging, isSupported } from "firebase/messaging";
 
 const firebaseConfig = {
@@ -26,8 +25,11 @@ function safeInit<T>(fn: () => T): T | null {
 }
 
 export const db = safeInit(() => getFirestore(app));
-export const storage = safeInit(() => getStorage(app));
 export const analytics = safeInit(() => getAnalytics(app));
+
+// File uploads (resumes, avatars, onboarding docs) live in Supabase Storage
+// now — see src/lib/storage.ts — since this app authenticates with Supabase,
+// not Firebase. Firebase is only used here for FCM push notifications.
 
 export async function getFirebaseMessaging() {
   try {

@@ -63,7 +63,7 @@ export default function DocumentsPage() {
   // "Staff" is the only documents-module role without management authority —
   // policy/compliance publishing and HR-only/managers-only visibility stay
   // restricted to everyone else.
-  const canManageDocs = isAdmin || role?.name !== "Staff";
+  const canManageDocs = isAdmin || (!!role && role.name !== "Staff");
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
@@ -93,17 +93,20 @@ export default function DocumentsPage() {
   };
 
   const loadDocuments = async () => {
-    const { data } = await supabase
-      .from("documents")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let query = supabase.from("documents").select("*").order("created_at", { ascending: false });
+    // Restricted-visibility documents shouldn't even be fetched for a
+    // non-manager — the `filtered` list below already hides them from the
+    // UI, but without this the row (title, description, tags) still landed
+    // in the client for every role that can reach this page.
+    if (!canManageDocs) query = query.eq("visibility", "all");
+    const { data } = await query;
     setDocuments(data || []);
     setLoading(false);
   };
 
   useEffect(() => {
     loadDocuments();
-  }, []);
+  }, [canManageDocs]);
 
   const handleDownload = async (doc: Document) => {
     await supabase

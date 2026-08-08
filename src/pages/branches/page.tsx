@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/context/AuthContext";
+import { logActivity } from "@/lib/audit";
+import { toast } from "@/components/Toast";
 
 interface Branch {
   id: string;
@@ -38,10 +41,12 @@ const deptColors = [
 ];
 
 export default function Branches() {
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
   // Every role with the "branches" module manages it, except Chairman —
   // an explicitly read-only, board-level oversight role.
-  const canManage = isAdmin || role?.name !== "Chairman";
+  const canManage = isAdmin || (!!role && role.name !== "Chairman");
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
@@ -73,14 +78,21 @@ export default function Branches() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  const detailRequestId = useRef(0);
+
   const openDetail = async (branch: Branch) => {
     setSelectedBranch(branch);
     setEmpLoading(true);
+    const requestId = ++detailRequestId.current;
     const { data } = await supabase
       .from("employees")
       .select("id, first_name, last_name, role, department, status, email")
       .eq("branch_id", branch.id)
       .order("department");
+    // Discard this response if the user has since clicked into another
+    // branch — an out-of-order network response would otherwise show the
+    // wrong branch's employee list under the currently-open panel.
+    if (requestId !== detailRequestId.current) return;
     setBranchEmployees(data || []);
     setEmpLoading(false);
   };
@@ -89,25 +101,38 @@ export default function Branches() {
     e.preventDefault();
     if (!form.name || !form.location || !form.manager_name || !canManage) return;
     setSubmitting(true);
+    let entityId: string | null = editingBranchId;
     if (editingBranchId) {
-      await supabase.from("branches").update({
+      const { error } = await supabase.from("branches").update({
         name: form.name,
         location: form.location,
         manager_name: form.manager_name,
         status: form.status,
       }).eq("id", editingBranchId);
+      if (error) { setSubmitting(false); toast("Error", "Failed to save branch", "error"); return; }
       if (selectedBranch?.id === editingBranchId) {
         setSelectedBranch({ ...selectedBranch, ...form });
       }
     } else {
-      await supabase.from("branches").insert({
+      const { data, error } = await supabase.from("branches").insert({
         name: form.name,
         location: form.location,
         manager_name: form.manager_name,
         status: form.status,
         employee_count: 0,
-      });
+      }).select().single();
+      if (error) { setSubmitting(false); toast("Error", "Failed to create branch", "error"); return; }
+      entityId = data?.id ?? null;
     }
+    logActivity({
+      module: "branches",
+      action: editingBranchId ? "updated" : "created",
+      entityType: "branch",
+      entityId,
+      actorName,
+      actorRole: role?.name || "Unknown",
+      description: editingBranchId ? `Branch "${form.name}" details updated` : `New branch "${form.name}" created`,
+    });
     setForm({ name: "", location: "", manager_name: "", status: "active" });
     setEditingBranchId(null);
     setShowAddModal(false);
@@ -125,8 +150,10 @@ export default function Branches() {
   const toggleBranchStatus = async (branch: Branch) => {
     if (!canManage) return;
     const newStatus = branch.status === "active" ? "inactive" : "active";
-    await supabase.from("branches").update({ status: newStatus }).eq("id", branch.id);
+    const { error } = await supabase.from("branches").update({ status: newStatus }).eq("id", branch.id);
+    if (error) { toast("Error", "Failed to update branch status", "error"); return; }
     setSelectedBranch((prev) => (prev && prev.id === branch.id ? { ...prev, status: newStatus } : prev));
+    logActivity({ module: "branches", action: "updated", entityType: "branch", entityId: branch.id, actorName, actorRole: role?.name || "Unknown", description: `Branch "${branch.name}" ${newStatus === "active" ? "reactivated" : "deactivated"}` });
     loadBranches();
   };
 

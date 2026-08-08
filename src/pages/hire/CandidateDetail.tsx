@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import app from "@/lib/firebase";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
+import { uploadFile } from "@/lib/storage";
 
 interface Candidate {
   id: string;
@@ -53,6 +55,9 @@ const stageColors: Record<string, string> = {
 };
 
 export default function CandidateDetail() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { id } = useParams<{ id: string }>();
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [interviews, setInterviews] = useState<Interview[]>([]);
@@ -60,9 +65,12 @@ export default function CandidateDetail() {
   const [uploadingResume, setUploadingResume] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState<string | null>(null);
   const [feedbackForm, setFeedbackForm] = useState({ feedback: "", score: 3 });
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [scheduleModal, setScheduleModal] = useState(false);
+  const [schedulingInterview, setSchedulingInterview] = useState(false);
   const [newInterview, setNewInterview] = useState({ scheduled_at: "", duration_minutes: "60", type: "video", notes: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const loadRequestId = useRef(0);
 
   const triggerFileSelect = () => {
     fileInputRef.current?.click();
@@ -75,18 +83,24 @@ export default function CandidateDetail() {
 
   const loadCandidate = async (cid: string) => {
     setLoading(true);
+    const requestId = ++loadRequestId.current;
     const { data: c } = await supabase
       .from("candidates")
       .select("*, job_postings(title, department, branches(name))")
       .eq("id", cid)
       .maybeSingle();
-    setCandidate(c as Candidate | null);
 
     const { data: ivs } = await supabase
       .from("interviews")
       .select("*, employees(first_name, last_name)")
       .eq("candidate_id", cid)
       .order("scheduled_at", { ascending: false });
+
+    // Discard a stale response if the user has since navigated to a
+    // different candidate — otherwise a slower earlier request can resolve
+    // after a newer one and overwrite the page with the wrong candidate.
+    if (requestId !== loadRequestId.current) return;
+    setCandidate(c as Candidate | null);
     setInterviews(ivs || []);
     setLoading(false);
   };
@@ -95,25 +109,26 @@ export default function CandidateDetail() {
     if (!id) return;
     setUploadingResume(true);
     try {
-      const storage = getStorage(app);
-      const storageRef = ref(storage, `resumes/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const url = await uploadFile("resumes", `${Date.now()}_${file.name}`, file);
       await supabase.from("candidates").update({ resume_url: url, resume_name: file.name }).eq("id", id);
       setCandidate((prev) => prev ? { ...prev, resume_url: url, resume_name: file.name } : prev);
       toast("Resume uploaded", "Candidate resume saved", "success");
-    } catch {
-      toast("Upload failed", "Could not upload resume", "error");
+    } catch (err) {
+      toast("Upload failed", err instanceof Error ? err.message : "Could not upload resume", "error");
     }
     setUploadingResume(false);
   };
 
   const submitFeedback = async (interviewId: string) => {
-    await supabase.from("interviews").update({
+    if (submittingFeedback) return;
+    setSubmittingFeedback(true);
+    const { error } = await supabase.from("interviews").update({
       feedback: feedbackForm.feedback,
       score: feedbackForm.score,
       status: "completed",
     }).eq("id", interviewId);
+    setSubmittingFeedback(false);
+    if (error) { toast("Error", "Failed to save interview feedback", "error"); return; }
     setFeedbackModal(null);
     setFeedbackForm({ feedback: "", score: 3 });
     toast("Feedback saved", "Interview marked as completed", "success");
@@ -122,8 +137,9 @@ export default function CandidateDetail() {
 
   const scheduleInterview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id) return;
-    await supabase.from("interviews").insert([{
+    if (!id || schedulingInterview) return;
+    setSchedulingInterview(true);
+    const { error } = await supabase.from("interviews").insert([{
       candidate_id: id,
       scheduled_at: new Date(newInterview.scheduled_at).toISOString(),
       duration_minutes: Number(newInterview.duration_minutes),
@@ -131,6 +147,8 @@ export default function CandidateDetail() {
       notes: newInterview.notes,
       status: "scheduled",
     }]);
+    setSchedulingInterview(false);
+    if (error) { toast("Error", "Failed to schedule interview", "error"); return; }
     setScheduleModal(false);
     setNewInterview({ scheduled_at: "", duration_minutes: "60", type: "video", notes: "" });
     toast("Interview scheduled", "New interview added to calendar", "success");
@@ -139,9 +157,19 @@ export default function CandidateDetail() {
 
   const updateStage = async (stage: string) => {
     if (!id) return;
-    await supabase.from("candidates").update({ stage }).eq("id", id);
+    const { error } = await supabase.from("candidates").update({ stage }).eq("id", id);
+    if (error) { toast("Error", "Failed to update candidate stage", "error"); return; }
     setCandidate((prev) => prev ? { ...prev, stage } : prev);
     toast("Stage updated", `Moved to ${stageLabels[stage]}`, "success");
+    logActivity({
+      module: "hire",
+      action: stage === "hired" ? "processed" : stage === "rejected" ? "rejected" : "updated",
+      entityType: "candidate",
+      entityId: id,
+      actorName,
+      actorRole: role?.name || "Unknown",
+      description: `${candidate?.full_name || "Candidate"} moved to ${stageLabels[stage]}`,
+    });
   };
 
   if (loading) {
@@ -427,7 +455,8 @@ export default function CandidateDetail() {
                   key={star}
                   className={`w-8 h-8 flex items-center justify-center transition-colors ${star <= (candidate.rating || 0) ? "text-amber-400" : "text-gray-200"}`}
                   onClick={async () => {
-                    await supabase.from("candidates").update({ rating: star }).eq("id", id);
+                    const { error } = await supabase.from("candidates").update({ rating: star }).eq("id", id);
+                    if (error) { toast("Error", "Failed to save rating", "error"); return; }
                     setCandidate((prev) => prev ? { ...prev, rating: star } : prev);
                     toast("Rating saved", `${star}/5 stars`, "success");
                   }}
@@ -508,9 +537,11 @@ export default function CandidateDetail() {
               <button
                 onClick={async () => {
                   if (!id) return;
-                  await supabase.from("candidates").update({ stage: "rejected" }).eq("id", id);
+                  const { error } = await supabase.from("candidates").update({ stage: "rejected" }).eq("id", id);
+                  if (error) { toast("Error", "Failed to reject candidate", "error"); return; }
                   setCandidate((prev) => prev ? { ...prev, stage: "rejected" } : prev);
                   toast("Candidate rejected", "Moved to rejected stage", "warning");
+                  logActivity({ module: "hire", action: "rejected", entityType: "candidate", entityId: id, actorName, actorRole: role?.name || "Unknown", description: `${candidate?.full_name || "Candidate"} was rejected` });
                 }}
                 className="w-full text-left flex items-center gap-2 p-2.5 rounded-lg hover:bg-red-50 text-[13px] text-red-600 transition-colors"
               >
@@ -519,9 +550,11 @@ export default function CandidateDetail() {
               <button
                 onClick={async () => {
                   if (!id) return;
-                  await supabase.from("candidates").update({ stage: "hired" }).eq("id", id);
+                  const { error } = await supabase.from("candidates").update({ stage: "hired" }).eq("id", id);
+                  if (error) { toast("Error", "Failed to mark candidate as hired", "error"); return; }
                   setCandidate((prev) => prev ? { ...prev, stage: "hired" } : prev);
                   toast("Candidate hired", "Congratulations!", "success");
+                  logActivity({ module: "hire", action: "processed", entityType: "candidate", entityId: id, actorName, actorRole: role?.name || "Unknown", description: `${candidate?.full_name || "Candidate"} was hired` });
                 }}
                 className="w-full text-left flex items-center gap-2 p-2.5 rounded-lg hover:bg-green-50 text-[13px] text-green-600 transition-colors"
               >
@@ -571,9 +604,10 @@ export default function CandidateDetail() {
               </div>
               <button
                 onClick={() => submitFeedback(feedbackModal)}
-                className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]"
+                disabled={submittingFeedback}
+                className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Submit & Complete
+                {submittingFeedback ? "Saving..." : "Submit & Complete"}
               </button>
             </div>
           </div>
@@ -618,8 +652,8 @@ export default function CandidateDetail() {
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Notes</label>
                 <textarea value={newInterview.notes} onChange={(e) => setNewInterview({ ...newInterview, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">
-                Schedule Interview
+              <button type="submit" disabled={schedulingInterview} className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-60 disabled:cursor-not-allowed">
+                {schedulingInterview ? "Scheduling..." : "Schedule Interview"}
               </button>
             </form>
           </div>

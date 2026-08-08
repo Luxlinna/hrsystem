@@ -69,14 +69,14 @@ export default function BottomNav() {
                 <i className={`${isActive ? item.activeIcon : item.icon} text-xl leading-none`} />
                 {/* Badge for notifications */}
                 {isNotif && unreadCount > 0 && (
-                  <span className={`absolute -top-1 -right-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 ${pulsing ? "animate-ping" : ""}`}>
-                    {!pulsing ? (unreadCount > 9 ? "9+" : unreadCount) : ""}
-                  </span>
-                )}
-                {isNotif && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
+                  <>
+                    {pulsing && (
+                      <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 rounded-full bg-red-400 animate-ping" />
+                    )}
+                    <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  </>
                 )}
               </div>
               <span className={`text-[10px] font-medium leading-none ${isActive ? "text-[#253C7D]" : "text-gray-400"}`}>

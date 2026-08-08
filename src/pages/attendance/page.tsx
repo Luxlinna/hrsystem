@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { toast } from "@/components/Toast";
+
+// Local (not UTC) YYYY-MM-DD — toISOString() shifts to UTC, which mislabels
+// "today" during early-morning hours in timezones ahead of UTC (e.g. ICT).
+function toYMD(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 interface Employee {
   id: string;
@@ -64,7 +71,7 @@ export default function AttendancePage() {
 
   const [newRecord, setNewRecord] = useState<NewRecord>({
     employee_id: "",
-    date: new Date().toISOString().split("T")[0],
+    date: toYMD(new Date()),
     clock_in: "09:00",
     clock_out: "17:30",
     status: "present",
@@ -153,10 +160,11 @@ export default function AttendancePage() {
   });
 
   // Summary stats
-  const totalToday = records.filter((r) => r.date === new Date().toISOString().split("T")[0]).length;
-  const presentToday = records.filter((r) => r.date === new Date().toISOString().split("T")[0] && (r.status === "present" || r.status === "remote")).length;
-  const lateToday = records.filter((r) => r.date === new Date().toISOString().split("T")[0] && r.status === "late").length;
-  const absentToday = records.filter((r) => r.date === new Date().toISOString().split("T")[0] && r.status === "absent").length;
+  const todayYMD = toYMD(new Date());
+  const totalToday = records.filter((r) => r.date === todayYMD).length;
+  const presentToday = records.filter((r) => r.date === todayYMD && (r.status === "present" || r.status === "remote")).length;
+  const lateToday = records.filter((r) => r.date === todayYMD && r.status === "late").length;
+  const absentToday = records.filter((r) => r.date === todayYMD && r.status === "absent").length;
 
   // Per-employee summary
   const employeeSummary = employees.map((emp) => {
@@ -172,7 +180,7 @@ export default function AttendancePage() {
   async function handleSave() {
     if (!newRecord.employee_id || !newRecord.date) return;
     setSaving(true);
-    await supabase.from("attendance_records").insert({
+    const { error } = await supabase.from("attendance_records").insert({
       employee_id: newRecord.employee_id,
       date: newRecord.date,
       clock_in: newRecord.clock_in || null,
@@ -182,8 +190,9 @@ export default function AttendancePage() {
       notes: newRecord.notes || null,
     });
     setSaving(false);
+    if (error) { toast("Error", "Failed to save attendance record", "error"); return; }
     setShowModal(false);
-    setNewRecord({ employee_id: "", date: new Date().toISOString().split("T")[0], clock_in: "09:00", clock_out: "17:30", status: "present", late_minutes: 0, notes: "" });
+    setNewRecord({ employee_id: "", date: toYMD(new Date()), clock_in: "09:00", clock_out: "17:30", status: "present", late_minutes: 0, notes: "" });
     fetchData();
   }
 
@@ -191,15 +200,17 @@ export default function AttendancePage() {
     if (!t) return "—";
     const [h, m] = t.split(":");
     const hour = parseInt(h);
-    return `${hour > 12 ? hour - 12 : hour}:${m} ${hour >= 12 ? "PM" : "AM"}`;
+    const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${hour12}:${m} ${hour >= 12 ? "PM" : "AM"}`;
   }
 
   function calcHours(clockIn: string | null, clockOut: string | null): string {
     if (!clockIn || !clockOut) return "—";
     const [ih, im] = clockIn.split(":").map(Number);
     const [oh, om] = clockOut.split(":").map(Number);
-    const mins = (oh * 60 + om) - (ih * 60 + im);
-    if (mins <= 0) return "—";
+    let mins = (oh * 60 + om) - (ih * 60 + im);
+    if (mins < 0) mins += 24 * 60; // overnight shift (clock-out past midnight)
+    if (mins === 0) return "—";
     return `${Math.floor(mins / 60)}h ${mins % 60}m`;
   }
 

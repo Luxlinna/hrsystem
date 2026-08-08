@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
-import app from "@/lib/firebase";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { uploadFile } from "@/lib/storage";
 import { Link } from "react-router-dom";
 
 const stageLabels: Record<string, string> = {
@@ -74,6 +76,9 @@ interface Interview {
 }
 
 export default function Hire() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [tab, setTab] = useState("jobs");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -106,31 +111,36 @@ export default function Hire() {
   };
 
   const closeJob = async (id: string) => {
-    await supabase.from("job_postings").update({ status: "closed" }).eq("id", id);
+    const { error } = await supabase.from("job_postings").update({ status: "closed" }).eq("id", id);
+    if (error) { toast("Error", "Failed to close job posting", "error"); return; }
     toast("Job closed", "The job posting has been closed successfully.", "success");
     loadData();
   };
 
   const reopenJob = async (id: string) => {
-    await supabase.from("job_postings").update({ status: "active" }).eq("id", id);
+    const { error } = await supabase.from("job_postings").update({ status: "active" }).eq("id", id);
+    if (error) { toast("Error", "Failed to reopen job posting", "error"); return; }
     toast("Job reopened", "The job posting is now active.", "success");
     loadData();
   };
 
   const updateCandidateStage = async (id: string, stage: string) => {
-    await supabase.from("candidates").update({ stage }).eq("id", id);
+    const { error } = await supabase.from("candidates").update({ stage }).eq("id", id);
+    if (error) { toast("Error", "Failed to update candidate stage", "error"); return; }
     toast("Stage updated", `Candidate moved to ${stageLabels[stage]}.`, "success");
     loadData();
   };
 
   const rateCandidate = async (id: string, rating: number) => {
-    await supabase.from("candidates").update({ rating }).eq("id", id);
+    const { error } = await supabase.from("candidates").update({ rating }).eq("id", id);
+    if (error) { toast("Error", "Failed to save rating", "error"); return; }
     toast("Rating saved", `Candidate rated ${rating}/5.`, "success");
     loadData();
   };
 
   const submitInterviewFeedback = async (id: string, feedback: string, score: number) => {
-    await supabase.from("interviews").update({ feedback, score, status: "completed" }).eq("id", id);
+    const { error } = await supabase.from("interviews").update({ feedback, score, status: "completed" }).eq("id", id);
+    if (error) { toast("Error", "Failed to save interview feedback", "error"); return; }
     toast("Feedback saved", "Interview feedback recorded.", "success");
     loadData();
   };
@@ -148,9 +158,13 @@ export default function Hire() {
     closing_date: "",
   });
 
+  const [postingJob, setPostingJob] = useState(false);
+
   const createJob = async (e: React.FormEvent) => {
     e.preventDefault();
-    await supabase.from("job_postings").insert([{
+    if (postingJob) return;
+    setPostingJob(true);
+    const { error } = await supabase.from("job_postings").insert([{
       title: newJob.title,
       department: newJob.department,
       branch_id: newJob.branch_id,
@@ -163,9 +177,12 @@ export default function Hire() {
       requirements: [],
       status: "active",
     }]);
+    setPostingJob(false);
+    if (error) { toast("Error", "Failed to create job posting", "error"); return; }
     setJobModal(false);
     setNewJob({ title: "", department: "", branch_id: "", description: "", location: "", salary_min: "", salary_max: "", type: "full-time", closing_date: "" });
     toast("Job posted", "New job posting is now live.", "success");
+    logActivity({ module: "hire", action: "created", entityType: "job_posting", actorName, actorRole: role?.name || "Unknown", description: `New job posting created for ${newJob.title}` });
     loadData();
   };
 
@@ -188,18 +205,15 @@ export default function Hire() {
     let resume_name = null;
     if (resumeFile) {
       try {
-        const storage = getStorage(app);
-        const storageRef = ref(storage, `resumes/${Date.now()}_${resumeFile.name}`);
-        await uploadBytes(storageRef, resumeFile);
-        resume_url = await getDownloadURL(storageRef);
+        resume_url = await uploadFile("resumes", `${Date.now()}_${resumeFile.name}`, resumeFile);
         resume_name = resumeFile.name;
-      } catch {
-        toast("Upload failed", "Could not upload resume to Firebase", "error");
+      } catch (err) {
+        toast("Upload failed", err instanceof Error ? err.message : "Could not upload resume", "error");
         setUploadingResume(false);
         return;
       }
     }
-    await supabase.from("candidates").insert([{
+    const { error } = await supabase.from("candidates").insert([{
       full_name: newCandidate.full_name,
       email: newCandidate.email,
       phone: newCandidate.phone,
@@ -211,6 +225,7 @@ export default function Hire() {
       resume_name,
     }]);
     setUploadingResume(false);
+    if (error) { toast("Error", "Failed to add candidate", "error"); return; }
     setCandidateModal(false);
     setNewCandidate({ full_name: "", email: "", phone: "", job_posting_id: "", source: "", notes: "" });
     setResumeFile(null);
@@ -221,17 +236,14 @@ export default function Hire() {
   const uploadCandidateResume = async (candidateId: string, file: File) => {
     setUploadingResume(true);
     try {
-      const storage = getStorage(app);
-      const storageRef = ref(storage, `resumes/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const resume_url = await getDownloadURL(storageRef);
+      const resume_url = await uploadFile("resumes", `${Date.now()}_${file.name}`, file);
       await supabase.from("candidates").update({ resume_url, resume_name: file.name }).eq("id", candidateId);
       setUploadingResume(false);
       toast("Resume uploaded", "Candidate resume saved to Firebase Storage.", "success");
       loadData();
-    } catch {
+    } catch (err) {
       setUploadingResume(false);
-      toast("Upload failed", "Could not upload resume", "error");
+      toast("Upload failed", err instanceof Error ? err.message : "Could not upload resume", "error");
     }
   };
 
@@ -244,9 +256,13 @@ export default function Hire() {
     notes: "",
   });
 
+  const [schedulingInterview, setSchedulingInterview] = useState(false);
+
   const scheduleInterview = async (e: React.FormEvent) => {
     e.preventDefault();
-    await supabase.from("interviews").insert([{
+    if (schedulingInterview) return;
+    setSchedulingInterview(true);
+    const { error } = await supabase.from("interviews").insert([{
       candidate_id: newInterview.candidate_id,
       scheduled_at: new Date(newInterview.scheduled_at).toISOString(),
       duration_minutes: Number(newInterview.duration_minutes),
@@ -254,6 +270,8 @@ export default function Hire() {
       notes: newInterview.notes,
       status: "scheduled",
     }]);
+    setSchedulingInterview(false);
+    if (error) { toast("Error", "Failed to schedule interview", "error"); return; }
     setInterviewModal(false);
     setNewInterview({ candidate_id: "", scheduled_at: "", duration_minutes: "60", type: "video", notes: "" });
     toast("Interview scheduled", "Interview added to the calendar.", "success");
@@ -701,8 +719,8 @@ export default function Hire() {
                   <input type="date" value={newJob.closing_date} onChange={(e) => setNewJob({ ...newJob, closing_date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
                 </div>
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">
-                Post Job
+              <button type="submit" disabled={postingJob} className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-60 disabled:cursor-not-allowed">
+                {postingJob ? "Posting..." : "Post Job"}
               </button>
             </form>
           </div>
@@ -834,8 +852,8 @@ export default function Hire() {
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Notes / Agenda</label>
                 <textarea value={newInterview.notes} onChange={(e) => setNewInterview({ ...newInterview, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">
-                Schedule Interview
+              <button type="submit" disabled={schedulingInterview} className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-60 disabled:cursor-not-allowed">
+                {schedulingInterview ? "Scheduling..." : "Schedule Interview"}
               </button>
             </form>
           </div>

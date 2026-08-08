@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { toast } from "@/components/Toast";
 
 interface Employee {
   id: string;
@@ -42,7 +43,6 @@ interface NewRecord {
   status: string;
   incident_date: string;
   follow_up_date: string;
-  created_by: string;
   witnesses: string;
   action_taken: string;
   pip_start_date: string;
@@ -77,6 +77,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 export default function DisciplinaryPage() {
   const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const canViewAll = isAdmin || !!role?.disciplinary_view_all_employees;
   const canViewOwnBranch = !canViewAll && !!role?.disciplinary_view_own_branch;
@@ -97,7 +98,7 @@ export default function DisciplinaryPage() {
   const [newRecord, setNewRecord] = useState<NewRecord>({
     employee_id: "", type: "verbal_warning", title: "", description: "", severity: "medium",
     status: "open", incident_date: new Date().toISOString().split("T")[0], follow_up_date: "",
-    created_by: "Sarah Mitchell", witnesses: "", action_taken: "", pip_start_date: "", pip_end_date: "", pip_goals: "",
+    witnesses: "", action_taken: "", pip_start_date: "", pip_end_date: "", pip_goals: "",
   });
 
   useEffect(() => {
@@ -193,7 +194,7 @@ export default function DisciplinaryPage() {
   async function handleSave() {
     if (!newRecord.employee_id || !newRecord.title.trim()) return;
     setSaving(true);
-    await supabase.from("disciplinary_records").insert({
+    const { error } = await supabase.from("disciplinary_records").insert({
       employee_id: newRecord.employee_id,
       type: newRecord.type,
       title: newRecord.title.trim(),
@@ -202,7 +203,7 @@ export default function DisciplinaryPage() {
       status: newRecord.status,
       incident_date: newRecord.incident_date || null,
       follow_up_date: newRecord.follow_up_date || null,
-      created_by: newRecord.created_by,
+      created_by: actorName,
       witnesses: newRecord.witnesses || null,
       action_taken: newRecord.action_taken || null,
       pip_start_date: newRecord.type === "pip" && newRecord.pip_start_date ? newRecord.pip_start_date : null,
@@ -210,13 +211,15 @@ export default function DisciplinaryPage() {
       pip_goals: newRecord.type === "pip" && newRecord.pip_goals ? newRecord.pip_goals : null,
     });
     setSaving(false);
+    if (error) { toast("Error", "Failed to save disciplinary record", "error"); return; }
     setShowModal(false);
-    setNewRecord({ employee_id: "", type: "verbal_warning", title: "", description: "", severity: "medium", status: "open", incident_date: new Date().toISOString().split("T")[0], follow_up_date: "", created_by: "Sarah Mitchell", witnesses: "", action_taken: "", pip_start_date: "", pip_end_date: "", pip_goals: "" });
+    setNewRecord({ employee_id: "", type: "verbal_warning", title: "", description: "", severity: "medium", status: "open", incident_date: new Date().toISOString().split("T")[0], follow_up_date: "", witnesses: "", action_taken: "", pip_start_date: "", pip_end_date: "", pip_goals: "" });
     fetchData();
   }
 
   async function updateStatus(id: number, status: string) {
-    await supabase.from("disciplinary_records").update({ status, resolved_at: status === "resolved" ? new Date().toISOString() : null }).eq("id", id);
+    const { error } = await supabase.from("disciplinary_records").update({ status, resolved_at: status === "resolved" ? new Date().toISOString() : null }).eq("id", id);
+    if (error) { toast("Error", "Failed to update status", "error"); return; }
     if (selectedRecord && selectedRecord.id === id) {
       setSelectedRecord({ ...selectedRecord, status: status as DisciplinaryRecord["status"] });
     }
@@ -332,7 +335,7 @@ export default function DisciplinaryPage() {
           const sevCfg = SEVERITY_CONFIG[r.severity];
           const statusCfg = STATUS_CONFIG[r.status];
           const emp = r.employees;
-          const overdue = r.follow_up_date && r.status !== "resolved" && r.status !== "closed" && new Date(r.follow_up_date) < new Date();
+          const overdue = r.follow_up_date && r.status !== "resolved" && r.status !== "closed" && new Date(r.follow_up_date + "T00:00:00") < new Date();
           return (
             <div
               key={r.id}

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactElement } from "react";
 import type { RouteObject } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -48,7 +48,7 @@ const fallback = <div className="p-10 text-center text-gray-400">Loading...</div
 
 // Wraps a lazy page in its Suspense boundary plus a module-permission guard.
 // `module` must match a key in ALL_MODULES / app_roles.allowed_modules.
-function mod(module: string, element: JSX.Element) {
+function mod(module: string, element: ReactElement) {
   return (
     <Suspense fallback={fallback}>
       <RequireModule module={module}>{element}</RequireModule>

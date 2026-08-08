@@ -5,6 +5,7 @@ interface Enrollment {
   id: string;
   status: string;
   created_at: string;
+  plan_id: string;
   benefit_plans: {
     name: string;
     type: string;
@@ -65,7 +66,7 @@ export default function BenefitsTab({ employeeId }: Props) {
   // Only a currently-enrolled row blocks re-enrolling; a cancelled ("opted
   // out") plan goes back into the available pool.
   const activeEnrollments = enrollments.filter((e) => e.status === "enrolled");
-  const enrolledPlanIds = new Set(activeEnrollments.map((e) => e.benefit_plans ? allPlans.find((p) => p.name === e.benefit_plans!.name)?.id : null).filter(Boolean));
+  const enrolledPlanIds = new Set(activeEnrollments.map((e) => e.plan_id));
   const availablePlans = allPlans.filter((p) => !enrolledPlanIds.has(p.id));
 
   const handleEnroll = async () => {

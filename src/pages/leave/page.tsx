@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
+import { notify } from "@/lib/notify";
 
 interface LeaveRequest {
   id: string;
@@ -75,6 +78,7 @@ export default function Leave() {
   const [approvalNote, setApprovalNote] = useState("");
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalAction, setApprovalAction] = useState<"approved" | "rejected">("approved");
+  const [processingApproval, setProcessingApproval] = useState(false);
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const calendarRef = useRef<HTMLDivElement>(null);
@@ -166,6 +170,25 @@ export default function Leave() {
     }
   }, [toast]);
 
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+
+  // Arriving here from a notification (?highlight=<leave request id>) should
+  // jump straight to that request, not just land on the generic list.
+  useEffect(() => {
+    if (!highlightId || requests.length === 0) return;
+    if (!requests.some((r) => r.id === highlightId)) return;
+    setFilter("all");
+    // setFilter above hasn't repainted the DOM yet in this same tick — the
+    // row doesn't exist to scroll to until after React commits the re-render.
+    const t = setTimeout(() => {
+      const el = document.getElementById(`leave-request-${highlightId}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
+    }, 0);
+    return () => clearTimeout(t);
+  }, [highlightId, requests]);
+
   const daysBetween = (start: string, end: string) => {
     const s = new Date(start);
     const e = new Date(end);
@@ -233,7 +256,8 @@ export default function Leave() {
   };
 
   const confirmApproval = async () => {
-    if (!selectedRequest) return;
+    if (!selectedRequest || processingApproval) return;
+    setProcessingApproval(true);
 
     if (approvalAction === "approved") {
       const dupe = findOverlappingRequest(selectedRequest.employee_id, selectedRequest.start_date, selectedRequest.end_date, ["approved"], selectedRequest.id);
@@ -241,20 +265,54 @@ export default function Leave() {
         setToast({ type: "error", message: `Can't approve — this employee already has an approved ${dupe.leave_type} request covering these dates (${dupe.start_date} to ${dupe.end_date}).` });
         setShowApprovalModal(false);
         setSelectedRequest(null);
+        setProcessingApproval(false);
         return;
       }
     }
 
-    const { error } = await supabase
+    // Only update if the request is still pending — guards against a
+    // double-click double-submit, or someone else having already
+    // approved/rejected it while this modal was open.
+    const { data, error } = await supabase
       .from("leave_requests")
       .update({ status: approvalAction })
-      .eq("id", selectedRequest.id);
+      .eq("id", selectedRequest.id)
+      .eq("status", "pending")
+      .select("id");
+
+    if (!error && (!data || data.length === 0)) {
+      setToast({ type: "error", message: "This request was already processed." });
+      setShowApprovalModal(false);
+      setSelectedRequest(null);
+      setProcessingApproval(false);
+      loadData();
+      return;
+    }
 
     if (error) {
       setToast({ type: "error", message: "Failed to update status" });
     } else {
       setToast({ type: "success", message: `Leave ${approvalAction} successfully` });
       setRequests((prev) => prev.map((r) => (r.id === selectedRequest.id ? { ...r, status: approvalAction } : r)));
+
+      const empName = `${selectedRequest.employees?.first_name ?? ""} ${selectedRequest.employees?.last_name ?? ""}`.trim() || "an employee";
+      logActivity({
+        module: "leave",
+        action: approvalAction,
+        entityType: "leave_request",
+        entityId: selectedRequest.id,
+        actorName: (user?.user_metadata?.display_name as string) || user?.email || "Unknown",
+        actorRole: role?.name || "Unknown",
+        description: `${selectedRequest.leave_type} leave request for ${empName} was ${approvalAction}`,
+        metadata: { employee: empName, leave_type: selectedRequest.leave_type, start_date: selectedRequest.start_date, end_date: selectedRequest.end_date },
+      });
+      notify({
+        source: "leave",
+        type: approvalAction === "approved" ? "success" : "warning",
+        title: `Leave ${approvalAction}`,
+        message: `${empName}'s ${selectedRequest.leave_type} leave (${selectedRequest.start_date} to ${selectedRequest.end_date}) was ${approvalAction}.`,
+        entityId: selectedRequest.id,
+      });
 
       // Send push notification via edge function
       try {
@@ -280,6 +338,7 @@ export default function Leave() {
         // Notification failed silently — main approval still succeeded
       }
     }
+    setProcessingApproval(false);
     setShowApprovalModal(false);
     setSelectedRequest(null);
   };
@@ -490,7 +549,14 @@ export default function Leave() {
               <span>Actions</span>
             </div>
             {filtered.map((r) => (
-              <div key={r.id} className="grid grid-cols-1 md:grid-cols-7 px-5 py-4 border-t border-gray-50 items-center">
+              <div
+                key={r.id}
+                id={`leave-request-${r.id}`}
+                tabIndex={-1}
+                className={`grid grid-cols-1 md:grid-cols-7 px-5 py-4 border-t items-center outline-none ${
+                  r.id === highlightId ? "border-[#253C7D] ring-2 ring-inset ring-[#253C7D]/30" : "border-gray-50"
+                }`}
+              >
                 <div className="md:col-span-2">
                   <p className="text-[13px] font-semibold text-gray-900">
                     {r.employees?.first_name} {r.employees?.last_name}
@@ -697,17 +763,19 @@ export default function Leave() {
               <div className="flex gap-3 mt-5">
                 <button
                   onClick={() => setShowApprovalModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  disabled={processingApproval}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmApproval}
-                  className={`flex-1 px-4 py-2.5 rounded-lg text-[13px] font-semibold text-white transition-colors ${
+                  disabled={processingApproval}
+                  className={`flex-1 px-4 py-2.5 rounded-lg text-[13px] font-semibold text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                     approvalAction === "approved" ? "bg-[#253C7D] hover:bg-[#1F336A]" : "bg-red-500 hover:bg-red-600"
                   }`}
                 >
-                  {approvalAction === "approved" ? "Approve" : "Reject"}
+                  {processingApproval ? "Processing..." : approvalAction === "approved" ? "Approve" : "Reject"}
                 </button>
               </div>
             </div>

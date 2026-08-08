@@ -15,9 +15,9 @@ interface MyEmployee {
 }
 
 const QUICK_ACTIONS = [
-  { label: "Log Attendance", icon: "ri-fingerprint-line", note: "Clock in / out", color: "bg-emerald-500" },
-  { label: "Submit Leave", icon: "ri-calendar-event-line", note: "Request time off", color: "bg-amber-500" },
-  { label: "View Payslip", icon: "ri-money-dollar-circle-line", note: "Your payslips", color: "bg-[#253C7D]" },
+  { label: "Log Attendance", icon: "ri-fingerprint-line", note: "Clock in / out", color: "bg-emerald-500", path: "/self-service?tab=checkin" },
+  { label: "Submit Leave", icon: "ri-calendar-event-line", note: "Request time off", color: "bg-amber-500", path: "/self-service?tab=leave" },
+  { label: "View Payslip", icon: "ri-money-dollar-circle-line", note: "Your payslips", color: "bg-[#253C7D]", path: "/self-service?tab=payslips" },
 ];
 
 export default function SelfServiceHome() {
@@ -92,7 +92,7 @@ export default function SelfServiceHome() {
           {QUICK_ACTIONS.map((action) => (
             <Link
               key={action.label}
-              to="/self-service"
+              to={action.path}
               className="bg-white rounded-2xl p-5 border border-gray-100 hover:border-[#253C7D]/20 hover:shadow-sm transition-all flex items-center gap-4"
             >
               <div className={`w-11 h-11 rounded-xl ${action.color} flex items-center justify-center shrink-0`}>

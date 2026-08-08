@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logActivity } from "@/lib/audit";
+import { notify } from "@/lib/notify";
 
 interface ITAsset {
   id: string;
@@ -62,6 +66,9 @@ const priorityColors: Record<string, string> = {
 };
 
 export default function ITManagement() {
+  const { user } = useAuth();
+  const { role } = usePermissions();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [tab, setTab] = useState<"assets" | "tickets" | "security">("assets");
   const [assets, setAssets] = useState<ITAsset[]>([]);
   const [tickets, setTickets] = useState<ITTicket[]>([]);
@@ -78,6 +85,26 @@ export default function ITManagement() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+
+  // Arriving here from a notification (?highlight=<ticket id>) should land
+  // on the Tickets tab with that ticket scrolled into view, not Assets.
+  useEffect(() => {
+    if (!highlightId || tickets.length === 0) return;
+    if (!tickets.some((t) => t.id === highlightId)) return;
+    setTab("tickets");
+    setTicketFilter("all");
+    // The tab/filter changes above haven't repainted the DOM yet in this
+    // same tick — the ticket doesn't exist to scroll to until React commits.
+    const t = setTimeout(() => {
+      const el = document.getElementById(`it-ticket-${highlightId}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
+    }, 0);
+    return () => clearTimeout(t);
+  }, [highlightId, tickets]);
 
   const loadData = async () => {
     setLoading(true);
@@ -107,23 +134,27 @@ export default function ITManagement() {
     setAssetModal(false);
     setNewAsset({ name: "", asset_tag: "", type: "Laptop", serial_number: "" });
     toast("Asset added", "New IT asset registered", "success");
+    logActivity({ module: "it", action: "created", entityType: "it_asset", actorName, actorRole: role?.name || "Unknown", description: `Registered new IT asset "${newAsset.name}" (${newAsset.asset_tag})` });
     loadData();
   };
 
   const createTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTicket.title || !newTicket.requester_name) return;
-    await supabase.from("it_tickets").insert([{
+    const { data, error } = await supabase.from("it_tickets").insert([{
       title: newTicket.title,
       requester_name: newTicket.requester_name,
       priority: newTicket.priority,
       category: newTicket.category,
       description: newTicket.description || null,
       status: "open",
-    }]);
+    }]).select().single();
+    if (error) { toast("Error", "Failed to create ticket", "error"); return; }
     setTicketModal(false);
     setNewTicket({ title: "", requester_name: "", priority: "medium", category: "Hardware", description: "" });
     toast("Ticket created", "IT ticket submitted", "success");
+    logActivity({ module: "it", action: "created", entityType: "it_ticket", entityId: data.id, actorName, actorRole: role?.name || "Unknown", description: `New IT ticket "${newTicket.title}" from ${newTicket.requester_name}` });
+    notify({ source: "it_management", type: newTicket.priority === "critical" || newTicket.priority === "high" ? "warning" : "info", title: "New IT ticket", message: `"${newTicket.title}" submitted by ${newTicket.requester_name} (${newTicket.priority} priority)`, entityId: data.id });
     loadData();
   };
 
@@ -144,6 +175,7 @@ export default function ITManagement() {
     }).eq("id", editingAsset.id);
     setEditingAsset(null);
     toast("Asset updated", "IT asset details saved", "success");
+    logActivity({ module: "it", action: "updated", entityType: "it_asset", entityId: editingAsset.id, actorName, actorRole: role?.name || "Unknown", description: `Updated IT asset "${editAssetForm.name}" (${editAssetForm.asset_tag})` });
     loadData();
   };
 
@@ -151,6 +183,7 @@ export default function ITManagement() {
     if (!confirm(`Remove "${asset.name}" (${asset.asset_tag}) from the asset register? This cannot be undone.`)) return;
     await supabase.from("it_assets").delete().eq("id", asset.id);
     toast("Asset removed", "IT asset deleted from register", "success");
+    logActivity({ module: "it", action: "deleted", entityType: "it_asset", entityId: asset.id, actorName, actorRole: role?.name || "Unknown", description: `Removed IT asset "${asset.name}" (${asset.asset_tag}) from the register` });
     loadData();
   };
 
@@ -158,6 +191,7 @@ export default function ITManagement() {
     if (!confirm(`Delete ticket "${ticket.title}"? This cannot be undone.`)) return;
     await supabase.from("it_tickets").delete().eq("id", ticket.id);
     toast("Ticket deleted", "IT ticket removed", "success");
+    logActivity({ module: "it", action: "deleted", entityType: "it_ticket", entityId: ticket.id, actorName, actorRole: role?.name || "Unknown", description: `Deleted IT ticket "${ticket.title}"` });
     loadData();
   };
 
@@ -168,6 +202,16 @@ export default function ITManagement() {
     }
     await supabase.from("it_tickets").update(update).eq("id", id);
     toast("Ticket updated", `Status changed to ${status.replace("_", " ")}`, "success");
+    const t = tickets.find((tk) => tk.id === id);
+    logActivity({
+      module: "it",
+      action: status === "resolved" ? "approved" : "updated",
+      entityType: "it_ticket",
+      entityId: id,
+      actorName,
+      actorRole: role?.name || "Unknown",
+      description: `IT ticket "${t?.title || id}" marked ${status.replace("_", " ")}`,
+    });
     loadData();
   };
 
@@ -349,7 +393,14 @@ export default function ITManagement() {
                     <div className="text-center py-12 text-gray-500 text-[13px]">No tickets found</div>
                   ) : (
                     filteredTickets.map((t) => (
-                      <div key={t.id} className="grid grid-cols-6 px-5 py-4 border-t border-gray-50 items-center">
+                      <div
+                        key={t.id}
+                        id={`it-ticket-${t.id}`}
+                        tabIndex={-1}
+                        className={`grid grid-cols-6 px-5 py-4 border-t items-center outline-none ${
+                          t.id === highlightId ? "border-[#253C7D] ring-2 ring-inset ring-[#253C7D]/30" : "border-gray-50"
+                        }`}
+                      >
                         <div>
                           <span className="text-[13px] font-semibold text-[#253C7D]">#{t.id.slice(0, 8)}</span>
                           <p className="text-[12px] text-gray-600 mt-0.5 truncate max-w-[200px]">{t.title}</p>
