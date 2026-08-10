@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { distanceMeters } from "@/lib/geo";
+import { todayYMD } from "@/lib/date";
 import { useAuth } from "@/context/AuthContext";
 
 interface BranchGeofence {
@@ -42,7 +43,7 @@ export default function GeofenceCheckInAlert() {
     if (!user?.email) return;
     let cancelled = false;
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayYMD();
     const dedupeKey = (mode: Mode) => `geofence_alerted_${mode}_${user.id}_${today}`;
 
     (async () => {

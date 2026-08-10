@@ -190,7 +190,13 @@ export default function AttendancePage() {
       notes: newRecord.notes || null,
     });
     setSaving(false);
-    if (error) { toast("Error", "Failed to save attendance record", "error"); return; }
+    if (error) {
+      const msg = error.code === "23505"
+        ? "This employee already has an attendance record for that date — edit the existing one instead."
+        : "Failed to save attendance record";
+      toast("Error", msg, "error");
+      return;
+    }
     setShowModal(false);
     setNewRecord({ employee_id: "", date: toYMD(new Date()), clock_in: "09:00", clock_out: "17:30", status: "present", late_minutes: 0, notes: "" });
     fetchData();
