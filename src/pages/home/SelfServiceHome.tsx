@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { todayYMD } from "@/lib/date";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -43,7 +44,7 @@ export default function SelfServiceHome() {
       const myEmp = emp as unknown as MyEmployee | null;
       setMe(myEmp);
 
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayYMD();
       const [leaveRes, attRes, payRes, annRes, notifRes] = await Promise.all([
         myEmp ? supabase.from("leave_requests").select("*").eq("employee_id", myEmp.id).order("created_at", { ascending: false }).limit(5) : Promise.resolve({ data: [] }),
         myEmp ? supabase.from("attendance_records").select("*").eq("employee_id", myEmp.id).eq("date", today).maybeSingle() : Promise.resolve({ data: null }),

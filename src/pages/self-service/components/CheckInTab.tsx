@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { distanceMeters, getCurrentPosition } from "@/lib/geo";
+import { toYMD, todayYMD } from "@/lib/date";
 import { hasRegisteredFingerprint, registerDeviceFingerprint, verifyDeviceFingerprint } from "@/lib/webauthn";
 import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
 
@@ -51,7 +52,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const [hasFingerprint, setHasFingerprint] = useState(false);
   const [biometricError, setBiometricError] = useState("");
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayYMD();
 
   const showToast = (type: string, message: string) => {
     setToast({ type, message });
@@ -80,7 +81,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const fromDate = thirtyDaysAgo.toISOString().split("T")[0];
+    const fromDate = toYMD(thirtyDaysAgo);
 
     const { data } = await supabase
       .from("attendance_records")
@@ -205,14 +206,17 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     const lateMinutes = Math.max(0, (now.getHours() * 60 + now.getMinutes()) - (startH * 60 + startM));
     const status = lateMinutes > 15 ? "late" : "present";
 
-    const { error } = await supabase.from("attendance_records").insert({
+    // Upsert (not insert) on the employee/date unique constraint: a
+    // double-tap, or the geofence auto-prompt racing a manual tap, then
+    // safely collapses onto the same row instead of creating a duplicate.
+    const { error } = await supabase.from("attendance_records").upsert({
       employee_id: employeeId,
       date: today,
       clock_in: timeStr,
       status,
       late_minutes: lateMinutes,
       notes: notes || null,
-    });
+    }, { onConflict: "employee_id,date" });
 
     setProcessing(false);
     resetCheckInFlow();
@@ -272,7 +276,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    return d.toISOString().split("T")[0];
+    return toYMD(d);
   });
 
   const presentCount = records.filter((r) => r.status === "present" || r.status === "late").length;
