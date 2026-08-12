@@ -429,8 +429,8 @@ export default function Leave() {
           disabled={!canViewAll && !myEmployee}
           className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <i className="ri-calendar-event-line" />
-          Submit Leave
+          <i className="ri-add-line" />
+          Request Leave
         </button>
       </div>
 
@@ -614,7 +614,7 @@ export default function Leave() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="text-[15px] font-bold text-gray-900">Submit Leave Request</h3>
+              <h3 className="text-[15px] font-bold text-gray-900">Request Leave</h3>
               <button onClick={() => setShowForm(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500">
                 <i className="ri-close-line text-lg" />
               </button>
