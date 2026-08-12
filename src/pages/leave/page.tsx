@@ -51,6 +51,20 @@ const LEAVE_TYPE_LABELS: Record<string, string> = {
 
 const nameInitials = (first: string, last: string) => `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase();
 
+// Builds a compact page-number list with ellipses for many pages,
+// e.g. [1, "...", 4, 5, 6, "...", 12].
+const pageWindow = (current: number, total: number): (number | "...")[] => {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) pages.push("...");
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
+};
+
 export default function Leave() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
@@ -91,6 +105,10 @@ export default function Leave() {
   const [employeeOpen, setEmployeeOpen] = useState(false);
   const [employeeHighlight, setEmployeeHighlight] = useState(0);
   const employeeRef = useRef<HTMLDivElement>(null);
+
+  // Pagination for the leave requests table.
+  const [pageSize, setPageSize] = useState(5);
+  const [page, setPage] = useState(1);
 
   // Load leave requests with employee details
   const loadData = async () => {
@@ -203,17 +221,21 @@ export default function Leave() {
   // jump straight to that request, not just land on the generic list.
   useEffect(() => {
     if (!highlightId || requests.length === 0) return;
-    if (!requests.some((r) => r.id === highlightId)) return;
+    const idx = requests.findIndex((r) => r.id === highlightId);
+    if (idx === -1) return;
     setFilter("all");
-    // setFilter above hasn't repainted the DOM yet in this same tick — the
-    // row doesn't exist to scroll to until after React commits the re-render.
+    // Show the paginated page that contains this request.
+    setPage(Math.floor(idx / pageSize) + 1);
+    // The filter/page changes above haven't repainted the DOM yet in this
+    // same tick — the row doesn't exist to scroll to until React commits
+    // the re-render, so wait briefly before scrolling.
     const t = setTimeout(() => {
       const el = document.getElementById(`leave-request-${highlightId}`);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
       el?.focus({ preventScroll: true });
-    }, 0);
+    }, 50);
     return () => clearTimeout(t);
-  }, [highlightId, requests]);
+  }, [highlightId, requests, pageSize]);
 
   const daysBetween = (start: string, end: string) => {
     const s = new Date(start);
@@ -377,6 +399,18 @@ export default function Leave() {
   });
 
   const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
+
+  // Pagination values for the requests table.
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const pageEnd = Math.min(safePage * pageSize, filtered.length);
+  const pagedRows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  // Keep the current page valid when the dataset shrinks (e.g. realtime updates).
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const currentYear = new Date().getFullYear();
   const usedAnnualDaysThisYear = requests
@@ -557,7 +591,7 @@ export default function Leave() {
             {["all", "pending", "approved", "rejected"].map((f) => (
               <button
                 key={f}
-                onClick={() => setFilter(f)}
+                onClick={() => { setFilter(f); setPage(1); }}
                 className={`px-4 py-2 rounded-full text-[12px] font-medium capitalize transition-colors ${
                   filter === f ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
@@ -581,7 +615,7 @@ export default function Leave() {
               <span>Days</span>
               <span>Actions</span>
             </div>
-            {filtered.map((r) => (
+            {pagedRows.map((r) => (
               <div
                 key={r.id}
                 id={`leave-request-${r.id}`}
@@ -636,6 +670,58 @@ export default function Leave() {
               <div className="text-center py-16 text-gray-400">
                 <i className="ri-calendar-line text-4xl mb-3 block" />
                 <p className="text-[13px]">No {filter !== "all" ? filter : ""} leave requests</p>
+              </div>
+            )}
+
+            {/* Pagination footer */}
+            {filtered.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <p className="text-[11px] text-gray-500">
+                    Showing <span className="font-semibold text-gray-700">{pageStart}</span>–<span className="font-semibold text-gray-700">{pageEnd}</span> of <span className="font-semibold text-gray-700">{filtered.length}</span> requests
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-gray-400">Rows per page</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                      className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                    >
+                      {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                    aria-label="Previous page"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <i className="ri-arrow-left-s-line" />
+                  </button>
+                  {pageWindow(safePage, totalPages).map((p, i) =>
+                    p === "..." ? (
+                      <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === safePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                    aria-label="Next page"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <i className="ri-arrow-right-s-line" />
+                  </button>
+                </div>
               </div>
             )}
           </div>
