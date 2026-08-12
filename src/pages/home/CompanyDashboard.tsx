@@ -435,7 +435,7 @@ export default function CompanyDashboard() {
               to="/onboarding"
               className="min-w-[220px] rounded-2xl p-5 bg-gray-100 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 hover:border-[#253C7D] hover:text-[#253C7D] transition-colors"
             >
-              <i className="ri-add-line text-3xl mb-2" />
+              <i className="ri-arrow-right-circle-line text-3xl mb-2" />
               <span className="text-[13px] font-medium">View All</span>
             </Link>
           </div>

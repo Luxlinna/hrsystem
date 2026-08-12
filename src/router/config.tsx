@@ -7,7 +7,8 @@ import { RequireAdmin, RequireModule } from "@/components/RequirePermission";
 const Home = lazy(() => import("../pages/home/page"));
 const NotFound = lazy(() => import("../pages/NotFound"));
 const Login = lazy(() => import("../pages/auth/login"));
-const Signup = lazy(() => import("../pages/auth/signup"));
+const ForgotPassword = lazy(() => import("../pages/auth/forgot-password"));
+const ResetPassword = lazy(() => import("../pages/auth/reset-password"));
 const Employees = lazy(() => import("../pages/employees/page"));
 const EmployeeProfile = lazy(() => import("../pages/employees/EmployeeProfile"));
 const Onboarding = lazy(() => import("../pages/onboarding/page"));
@@ -58,7 +59,8 @@ function mod(module: string, element: ReactElement) {
 
 const routes: RouteObject[] = [
   { path: "/login", element: <Suspense fallback={fallback}><Login /></Suspense> },
-  { path: "/signup", element: <Suspense fallback={fallback}><Signup /></Suspense> },
+  { path: "/forgot-password", element: <Suspense fallback={fallback}><ForgotPassword /></Suspense> },
+  { path: "/reset-password", element: <Suspense fallback={fallback}><ResetPassword /></Suspense> },
   {
     path: "/",
     element: <ProtectedRoute><AppLayout /></ProtectedRoute>,

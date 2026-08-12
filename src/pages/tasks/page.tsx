@@ -24,6 +24,18 @@ interface Task {
   employees?: { first_name: string; last_name: string; department: string } | null;
 }
 
+interface TaskActivity {
+  id: string;
+  task_id: string;
+  actor_id: string | null;
+  action: "created" | "status_changed" | "assigned" | "updated";
+  field: string;
+  old_value: string | null;
+  new_value: string | null;
+  created_at: string;
+  employees?: { first_name: string; last_name: string; avatar_url: string | null } | null;
+}
+
 const STATUS_COLUMNS: { key: Task["status"]; label: string }[] = [
   { key: "todo", label: "To Do" },
   { key: "in_progress", label: "In Progress" },
@@ -46,6 +58,76 @@ const today = () => {
 };
 const isOverdue = (t: Task) => !!t.due_date && t.due_date < today() && t.status !== "done";
 
+const prettyValue = (v: string | null) => (v ? v.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "");
+
+const formatRelative = (ts: string) => {
+  const diff = Date.now() - new Date(ts).getTime();
+  if (diff < 60000) return "just now";
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+const formatExact = (ts: string) =>
+  new Date(ts).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+const initials = (name: string) =>
+  name.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]).join("").toUpperCase();
+
+const formatDueDate = (v: string | null) => {
+  if (!v) return "";
+  const d = new Date(`${v}T00:00:00`);
+  return isNaN(d.getTime())
+    ? v
+    : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+const ACTIVITY_ICON: Record<TaskActivity["action"], string> = {
+  created: "ri-add-circle-line",
+  status_changed: "ri-arrow-left-right-line",
+  assigned: "ri-user-swap-line",
+  updated: "ri-edit-line",
+};
+
+const ACTIVITY_COLOR: Record<TaskActivity["action"], string> = {
+  created: "text-emerald-500",
+  status_changed: "text-sky-500",
+  assigned: "text-violet-500",
+  updated: "text-gray-400",
+};
+
+const activityText = (a: TaskActivity) => {
+  switch (a.action) {
+    case "created":
+      return "created this task";
+    case "status_changed":
+      return a.old_value
+        ? `changed status from ${prettyValue(a.old_value)} to ${prettyValue(a.new_value)}`
+        : `moved task to ${prettyValue(a.new_value)}`;
+    case "assigned":
+      return a.old_value
+        ? `reassigned the task from ${a.old_value} to ${a.new_value || "an employee"}`
+        : `assigned the task to ${a.new_value || "an employee"}`;
+    default:
+      switch (a.field) {
+        case "title":
+          return "updated the title";
+        case "description":
+          return "updated the description";
+        case "priority":
+          return a.old_value
+            ? `changed priority from ${prettyValue(a.old_value)} to ${prettyValue(a.new_value)}`
+            : `set priority to ${prettyValue(a.new_value)}`;
+        case "due_date":
+          return a.new_value
+            ? `changed due date to ${formatDueDate(a.new_value)}`
+            : "removed the due date";
+        default:
+          return `updated ${a.field.replace(/_/g, " ")}`;
+      }
+  }
+};
+
 const emptyForm = { title: "", description: "", assigned_to: "", priority: "medium" as Task["priority"], due_date: "" };
 
 export default function TasksPage() {
@@ -66,6 +148,8 @@ export default function TasksPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [activities, setActivities] = useState<TaskActivity[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   const showToast = (type: string, message: string) => {
     setToast({ type, message });
@@ -126,6 +210,32 @@ export default function TasksPage() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [permsLoading, loadData]);
+
+  const loadActivities = useCallback(async (taskId: string) => {
+    setActivityLoading(true);
+    const { data } = await supabase
+      .from("task_activities")
+      .select("*, employees(first_name, last_name, avatar_url)")
+      .eq("task_id", taskId)
+      .order("created_at", { ascending: false });
+    setActivities((data as TaskActivity[]) || []);
+    setActivityLoading(false);
+  }, []);
+
+  // Keep the modal's activity feed live while it's open.
+  useEffect(() => {
+    if (!showModal || !editingTask) { setActivities([]); return; }
+    loadActivities(editingTask.id);
+    const ch = supabase
+      .channel("task-activities-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "task_activities", filter: `task_id=eq.${editingTask.id}` },
+        () => loadActivities(editingTask.id)
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [showModal, editingTask, loadActivities]);
 
   const openCreate = () => {
     setEditingTask(null);
@@ -368,7 +478,7 @@ export default function TasksPage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !saving && setShowModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-bold text-gray-900 mb-4">{editingTask ? "Edit Task" : "New Task"}</h3>
 
             <label className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Title</label>
@@ -458,6 +568,83 @@ export default function TasksPage() {
                 {saving ? "Saving..." : editingTask ? "Save Changes" : "Create Task"}
               </button>
             </div>
+
+            {editingTask && (
+              <div className="mt-5 pt-5 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                    <i className="ri-history-line text-[#253C7D]" />
+                    Activity
+                  </h4>
+                  {!activityLoading && activities.length > 0 && (
+                    <span className="text-[10px] text-gray-400">{activities.length} event{activities.length === 1 ? "" : "s"}</span>
+                  )}
+                </div>
+
+                {activityLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : activities.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                    <i className="ri-file-list-3-line text-2xl mb-2" />
+                    <p className="text-[12px]">No activity yet — changes will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="max-h-64 overflow-y-auto pr-1 -mr-1">
+                    {activities.map((a, i) => {
+                      const name = a.employees ? `${a.employees.first_name} ${a.employees.last_name}` : "System";
+                      const avatar = a.employees?.avatar_url;
+                      const isLast = i === activities.length - 1;
+                      const showValueChip = a.action === "status_changed" || (a.action === "updated" && a.field === "priority");
+                      return (
+                        <div key={a.id} className="relative pb-4 last:pb-0">
+                          <div className="flex gap-3">
+                            <div className="relative shrink-0">
+                              {avatar ? (
+                                <img src={avatar} alt={name} className="w-8 h-8 rounded-full object-cover border border-gray-100" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-[11px] font-bold">
+                                  {initials(name)}
+                                </div>
+                              )}
+                              {!isLast && <span className="absolute left-1/2 top-9 bottom-[-16px] w-px bg-gray-100 -translate-x-1/2" />}
+                            </div>
+                            <div className="flex-1 min-w-0 pt-0.5">
+                              <p className="text-[13px] leading-snug text-gray-800">
+                                <span className="font-semibold text-gray-900">{name}</span>{" "}
+                                {activityText(a)}
+                                {showValueChip && a.new_value && (
+                                  <span className={`ml-1.5 align-middle text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${
+                                    a.action === "status_changed"
+                                      ? a.new_value === "done"
+                                        ? "bg-emerald-50 text-emerald-700"
+                                        : a.new_value === "blocked"
+                                          ? "bg-red-50 text-red-600"
+                                          : a.new_value === "in_progress"
+                                            ? "bg-sky-50 text-sky-700"
+                                            : "bg-gray-100 text-gray-600"
+                                      : PRIORITY_STYLE[a.new_value as Task["priority"]]
+                                  }`}>
+                                    {prettyValue(a.new_value)}
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1.5">
+                                <i className={`${ACTIVITY_ICON[a.action]} ${ACTIVITY_COLOR[a.action]} text-xs`} />
+                                <span>{formatRelative(a.created_at)}</span>
+                                <span>·</span>
+                                <span>{formatExact(a.created_at)}</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
