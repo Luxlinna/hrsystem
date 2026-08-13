@@ -66,12 +66,17 @@ export default function SelfServicePage() {
       supabase
         .from("employees")
         .select(SELECT)
-        .eq("status", "active")
         .order("first_name")
         .then(({ data }) => {
-          setEmployees((data as unknown as Employee[]) || []);
-          if (data && data.length > 0) {
-            const emp = data[0] as unknown as Employee;
+          const all = (data as unknown as Employee[]) || [];
+          const own = all.find((e) => e.email === user?.email) || null;
+          // Show active employees (the normal switcher list) but always keep the
+          // signed-in user's own record available even if they're mid-onboarding/offboarding.
+          const list = all.filter((e) => e.status === "active" || e.id === own?.id);
+          setEmployees(list);
+          // Default to the signed-in user's own record, not just the first name alphabetically.
+          const emp = own || list[0] || null;
+          if (emp) {
             setSelectedId(emp.id);
             setSelectedEmployee(emp);
           }
