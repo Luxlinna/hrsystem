@@ -4,6 +4,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import { logActivity } from "@/lib/audit";
 import { toast } from "@/components/Toast";
+import { getCurrentPosition } from "@/lib/geo";
+import { geocodeAddress } from "@/lib/geocode";
 
 interface Branch {
   id: string;
@@ -13,6 +15,9 @@ interface Branch {
   employee_count: number;
   status: string;
   created_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  geofence_radius_m: number | null;
 }
 
 interface Employee {
@@ -57,12 +62,19 @@ export default function Branches() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
+  const [locating, setLocating] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+  const [addressLookup, setAddressLookup] = useState("");
+  const emptyForm = {
     name: "",
     location: "",
     manager_name: "",
     status: "active",
-  });
+    latitude: "",
+    longitude: "",
+    geofence_radius_m: "100",
+  };
+  const [form, setForm] = useState(emptyForm);
 
   const loadBranches = async () => {
     const { data } = await supabase.from("branches").select("*").order("employee_count", { ascending: false });
@@ -101,6 +113,9 @@ export default function Branches() {
     e.preventDefault();
     if (!form.name || !form.location || !form.manager_name || !canManage) return;
     setSubmitting(true);
+    const latitude = form.latitude.trim() ? Number(form.latitude) : null;
+    const longitude = form.longitude.trim() ? Number(form.longitude) : null;
+    const geofence_radius_m = form.geofence_radius_m.trim() ? Number(form.geofence_radius_m) : 100;
     let entityId: string | null = editingBranchId;
     if (editingBranchId) {
       const { error } = await supabase.from("branches").update({
@@ -108,10 +123,13 @@ export default function Branches() {
         location: form.location,
         manager_name: form.manager_name,
         status: form.status,
+        latitude,
+        longitude,
+        geofence_radius_m,
       }).eq("id", editingBranchId);
       if (error) { setSubmitting(false); toast("Error", "Failed to save branch", "error"); return; }
       if (selectedBranch?.id === editingBranchId) {
-        setSelectedBranch({ ...selectedBranch, ...form });
+        setSelectedBranch({ ...selectedBranch, name: form.name, location: form.location, manager_name: form.manager_name, status: form.status, latitude, longitude, geofence_radius_m });
       }
     } else {
       const { data, error } = await supabase.from("branches").insert({
@@ -120,6 +138,9 @@ export default function Branches() {
         manager_name: form.manager_name,
         status: form.status,
         employee_count: 0,
+        latitude,
+        longitude,
+        geofence_radius_m,
       }).select().single();
       if (error) { setSubmitting(false); toast("Error", "Failed to create branch", "error"); return; }
       entityId = data?.id ?? null;
@@ -133,7 +154,8 @@ export default function Branches() {
       actorRole: role?.name || "Unknown",
       description: editingBranchId ? `Branch "${form.name}" details updated` : `New branch "${form.name}" created`,
     });
-    setForm({ name: "", location: "", manager_name: "", status: "active" });
+    setForm(emptyForm);
+    setAddressLookup("");
     setEditingBranchId(null);
     setShowAddModal(false);
     setSubmitting(false);
@@ -142,9 +164,63 @@ export default function Branches() {
 
   const openEditModal = (branch: Branch) => {
     if (!canManage) return;
-    setForm({ name: branch.name, location: branch.location, manager_name: branch.manager_name, status: branch.status });
+    setForm({
+      name: branch.name,
+      location: branch.location,
+      manager_name: branch.manager_name,
+      status: branch.status,
+      latitude: branch.latitude != null ? String(branch.latitude) : "",
+      longitude: branch.longitude != null ? String(branch.longitude) : "",
+      geofence_radius_m: branch.geofence_radius_m != null ? String(branch.geofence_radius_m) : "100",
+    });
     setEditingBranchId(branch.id);
     setShowAddModal(true);
+  };
+
+  // Lets an admin capture accurate geofence coordinates by physically
+  // standing at the branch, instead of guessing/typing decimal degrees by
+  // hand — which is exactly how a branch pin can end up hundreds of
+  // meters off and cause valid check-ins to be rejected as "too far".
+  const useCurrentLocation = async () => {
+    setLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      setForm((f) => ({
+        ...f,
+        latitude: pos.coords.latitude.toFixed(6),
+        longitude: pos.coords.longitude.toFixed(6),
+      }));
+      toast("Location captured", `Accurate to about ±${Math.round(pos.coords.accuracy)}m`, "success");
+    } catch (err: any) {
+      toast(
+        "Error",
+        err?.code === 1
+          ? "Location access was denied for this site — check your browser's site permissions."
+          : "Couldn't get your location. On a laptop/desktop this is usually the OS-level Location Services toggle, not the browser — check your system settings and try again.",
+        "error"
+      );
+    }
+    setLocating(false);
+  };
+
+  // Alternative to standing at the branch: type its address and look up
+  // coordinates via Google's geocoder — useful when setting up a branch
+  // remotely, before anyone's physically there to tap "use my location".
+  const handleGeocodeAddress = async () => {
+    if (!addressLookup.trim()) return;
+    setGeocoding(true);
+    try {
+      const result = await geocodeAddress(addressLookup.trim());
+      setForm((f) => ({ ...f, latitude: result.lat.toFixed(6), longitude: result.lng.toFixed(6) }));
+      toast(
+        result.precise ? "Exact match found" : "Approximate match — please verify",
+        result.formattedAddress,
+        result.precise ? "success" : "warning"
+      );
+    } catch (err: any) {
+      toast("Error", err?.message || "Couldn't look up that address.", "error");
+    }
+    setGeocoding(false);
   };
 
   const toggleBranchStatus = async (branch: Branch) => {
@@ -200,7 +276,7 @@ export default function Branches() {
             </div>
             {canManage && (
               <button
-                onClick={() => { setForm({ name: "", location: "", manager_name: "", status: "active" }); setEditingBranchId(null); setShowAddModal(true); }}
+                onClick={() => { setForm(emptyForm); setAddressLookup(""); setEditingBranchId(null); setShowAddModal(true); }}
                 className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
               >
                 <i className="ri-add-line" />
@@ -401,6 +477,24 @@ export default function Branches() {
                   </span>
                 </div>
               </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-sky-50">
+                  <i className="ri-fingerprint-line text-sky-600 text-sm" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-gray-400">Check-In Geofence</p>
+                  {selectedBranch.latitude != null && selectedBranch.longitude != null ? (
+                    <p className="text-[13px] font-semibold text-gray-800">
+                      {selectedBranch.geofence_radius_m || 100}m radius
+                      <span className="text-[11px] font-normal text-gray-400 ml-1">
+                        ({selectedBranch.latitude.toFixed(5)}, {selectedBranch.longitude.toFixed(5)})
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-[13px] font-semibold text-gray-400">Not set — check-in allowed from anywhere</p>
+                  )}
+                </div>
+              </div>
             </div>
             {canManage && (
               <button
@@ -543,6 +637,74 @@ export default function Branches() {
                   <option value="inactive">Inactive</option>
                   <option value="pending">Pending</option>
                 </select>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[12px] font-semibold text-gray-700">Check-In Geofence (optional)</label>
+                  <button
+                    type="button"
+                    onClick={useCurrentLocation}
+                    disabled={locating}
+                    className="text-[11px] font-semibold text-[#253C7D] hover:underline disabled:opacity-60 cursor-pointer"
+                  >
+                    <i className="ri-map-pin-user-line mr-1" />
+                    {locating ? "Locating..." : "Use my current location"}
+                  </button>
+                </div>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={addressLookup}
+                    onChange={(e) => setAddressLookup(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleGeocodeAddress(); } }}
+                    placeholder="Or type an address to look up..."
+                    className="flex-1 min-w-0 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGeocodeAddress}
+                    disabled={geocoding || !addressLookup.trim()}
+                    className="px-3 py-2.5 border border-gray-200 rounded-lg text-[12px] font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60 cursor-pointer whitespace-nowrap"
+                  >
+                    {geocoding ? "Looking up..." : "Look up"}
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-400 mb-2">
+                  <i className="ri-information-line mr-1" />
+                  Usually building-accurate, but always double-check the result — if it comes back "approximate," prefer "current location" while standing at the branch instead.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="number"
+                    step="any"
+                    value={form.latitude}
+                    onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+                    placeholder="Latitude"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+                  />
+                  <input
+                    type="number"
+                    step="any"
+                    value={form.longitude}
+                    onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+                    placeholder="Longitude"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+                  />
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="10"
+                    value={form.geofence_radius_m}
+                    onChange={(e) => setForm({ ...form, geofence_radius_m: e.target.value })}
+                    placeholder="100"
+                    className="w-28 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+                  />
+                  <span className="text-[12px] text-gray-500">meter radius employees must check in within</span>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1.5">
+                  Leave latitude/longitude blank to skip location checks for this branch — employees can check in from anywhere.
+                </p>
               </div>
               <div className="flex gap-3 pt-2">
                 <button

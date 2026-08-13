@@ -10,17 +10,27 @@ export function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: n
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export function getCurrentPosition(options?: PositionOptions): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Geolocation is not supported by this browser."));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
-      ...options,
+export async function getCurrentPosition(options?: PositionOptions): Promise<GeolocationPosition> {
+  if (!navigator.geolocation) {
+    throw new Error("Geolocation is not supported by this browser.");
+  }
+
+  const request = (opts: PositionOptions) =>
+    new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, opts);
     });
-  });
+
+  try {
+    return await request({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0, ...options });
+  } catch (err) {
+    const code = (err as GeolocationPositionError)?.code;
+    // Desktops/laptops without GPS hardware commonly fail (or hang until
+    // timeout) on a high-accuracy request — retry once against coarser
+    // WiFi/IP-based positioning, which those devices actually support,
+    // instead of surfacing a failure the user has no way to act on.
+    if (code === 2 /* POSITION_UNAVAILABLE */ || code === 3 /* TIMEOUT */) {
+      return await request({ enableHighAccuracy: false, timeout: 10000, maximumAge: 0, ...options });
+    }
+    throw err;
+  }
 }
