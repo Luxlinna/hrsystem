@@ -343,7 +343,7 @@ export default function PerformanceReviews() {
                     </div>
 
                     {r.overall_score && (
-                      <div className="mt-4 grid grid-cols-4 gap-2">
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {[
                           { label: "Communication", score: r.communication_score },
                           { label: "Teamwork", score: r.teamwork_score },
@@ -645,7 +645,7 @@ export default function PerformanceReviews() {
 
       {/* Add Goal Modal */}
       {showGoalModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4">
           <div className="bg-white rounded-2xl w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h2 className="text-[15px] font-bold text-gray-900">Add Performance Goal</h2>

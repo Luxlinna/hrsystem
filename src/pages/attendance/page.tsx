@@ -553,7 +553,7 @@ export default function AttendancePage() {
                     />
                   </div>
                   {/* Stats chips */}
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <div className="bg-gray-50 rounded-lg px-2 py-2 text-center">
                       <p className="text-[10px] text-gray-400 mb-0.5">Logged</p>
                       <p className="text-sm font-bold text-gray-800">{emp.total}</p>
@@ -659,7 +659,7 @@ export default function AttendancePage() {
 
       {/* Log Attendance Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowModal(false)} />
           <div className="relative bg-white rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
