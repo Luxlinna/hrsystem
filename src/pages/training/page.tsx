@@ -78,6 +78,18 @@ export default function TrainingPage() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
 
   const [newCourse, setNewCourse] = useState({
     title: "", description: "", category: "General", duration_hours: "", instructor: "", format: "online", status: "active",
@@ -134,6 +146,16 @@ export default function TrainingPage() {
     }
     return true;
   });
+
+  const enrollTotalPages = Math.max(1, Math.ceil(filteredEnrollments.length / pageSize));
+  const enrollSafePage = Math.min(page, enrollTotalPages);
+  const enrollPageStart = filteredEnrollments.length === 0 ? 0 : (enrollSafePage - 1) * pageSize + 1;
+  const enrollPageEnd = Math.min(enrollSafePage * pageSize, filteredEnrollments.length);
+  const pagedEnrollments = filteredEnrollments.slice((enrollSafePage - 1) * pageSize, enrollSafePage * pageSize);
+
+  useEffect(() => {
+    if (page > enrollTotalPages) setPage(enrollTotalPages);
+  }, [page, enrollTotalPages]);
 
   const certificates = enrollments.filter((e) => e.certificate_issued && e.status === "completed");
 
@@ -388,7 +410,7 @@ export default function TrainingPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredEnrollments.map((e) => {
+              {pagedEnrollments.map((e) => {
                 const cfg = ENROLL_STATUS_CONFIG[e.status];
                 const emp = e.employees;
                 const overdue = e.due_date && !e.completed_at && new Date(e.due_date) < new Date();
@@ -468,6 +490,54 @@ export default function TrainingPage() {
           </table>
           {filteredEnrollments.length === 0 && (
             <div className="p-12 text-center text-gray-400 text-sm">No enrollments match your filters.</div>
+          )}
+          {filteredEnrollments.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[11px] text-gray-500">
+                  Showing <span className="font-semibold text-gray-700">{enrollPageStart}</span>–<span className="font-semibold text-gray-700">{enrollPageEnd}</span> of <span className="font-semibold text-gray-700">{filteredEnrollments.length}</span> enrollments
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-gray-400">Rows per page</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                    className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  >
+                    {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={enrollSafePage === 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-left-s-line" />
+                </button>
+                {pageWindow(enrollSafePage, enrollTotalPages).map((p, i) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === enrollSafePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => setPage((p) => Math.min(enrollTotalPages, p + 1))}
+                  disabled={enrollSafePage === enrollTotalPages}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-right-s-line" />
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}

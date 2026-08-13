@@ -102,6 +102,18 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
+  const [pageSize, setPageSize] = useState(9);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
   const [filterTemplate, setFilterTemplate] = useState<boolean | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -293,6 +305,16 @@ export default function DocumentsPage() {
     return true;
   });
 
+  const docTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const docSafePage = Math.min(page, docTotalPages);
+  const docPageStart = filtered.length === 0 ? 0 : (docSafePage - 1) * pageSize + 1;
+  const docPageEnd = Math.min(docSafePage * pageSize, filtered.length);
+  const pagedDocs = filtered.slice((docSafePage - 1) * pageSize, docSafePage * pageSize);
+
+  useEffect(() => {
+    if (page > docTotalPages) setPage(docTotalPages);
+  }, [page, docTotalPages]);
+
   const categoryCounts = CATEGORIES.reduce<Record<string, number>>((acc, cat) => {
     acc[cat.id] = cat.id === "all" ? documents.length : documents.filter((d) => d.category === cat.id).length;
     return acc;
@@ -431,7 +453,7 @@ export default function DocumentsPage() {
 
           {/* Document Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filtered.map((doc) => {
+            {pagedDocs.map((doc) => {
               const typeIcon = FILE_TYPE_ICON[doc.file_type] || "ri-file-line";
               const typeColor = FILE_TYPE_COLOR[doc.file_type] || "bg-gray-100 text-gray-600";
               const vis = VISIBILITY_LABELS[doc.visibility] || VISIBILITY_LABELS.all;
@@ -487,6 +509,55 @@ export default function DocumentsPage() {
               <i className="ri-folder-open-line text-4xl mb-3" />
               <p className="text-[14px] font-medium">No documents found</p>
               <p className="text-[12px] mt-1">Try adjusting your filters or search term</p>
+            </div>
+          )}
+
+          {filtered.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 mt-4 bg-white border border-gray-100 rounded-xl">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[11px] text-gray-500">
+                  Showing <span className="font-semibold text-gray-700">{docPageStart}</span>–<span className="font-semibold text-gray-700">{docPageEnd}</span> of <span className="font-semibold text-gray-700">{filtered.length}</span> documents
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-gray-400">Per page</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                    className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  >
+                    {[6, 9, 18, 36].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={docSafePage === 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-left-s-line" />
+                </button>
+                {pageWindow(docSafePage, docTotalPages).map((p, i) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === docSafePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => setPage((p) => Math.min(docTotalPages, p + 1))}
+                  disabled={docSafePage === docTotalPages}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-right-s-line" />
+                </button>
+              </div>
             </div>
           )}
         </main>

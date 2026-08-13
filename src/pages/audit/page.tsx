@@ -63,6 +63,18 @@ export default function AuditLogPage() {
   const [exporting, setExporting] = useState<"csv" | "xlsx" | "pdf" | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
+  const [pageSize, setPageSize] = useState(15);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
   const [isLive, setIsLive] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -115,6 +127,16 @@ export default function AuditLogPage() {
     const q = search.toLowerCase();
     return l.description.toLowerCase().includes(q) || l.actor_name.toLowerCase().includes(q) || l.module.toLowerCase().includes(q) || l.action.toLowerCase().includes(q);
   });
+
+  const auditTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const auditSafePage = Math.min(page, auditTotalPages);
+  const auditPageStart = filtered.length === 0 ? 0 : (auditSafePage - 1) * pageSize + 1;
+  const auditPageEnd = Math.min(auditSafePage * pageSize, filtered.length);
+  const pagedLogs = filtered.slice((auditSafePage - 1) * pageSize, auditSafePage * pageSize);
+
+  useEffect(() => {
+    if (page > auditTotalPages) setPage(auditTotalPages);
+  }, [page, auditTotalPages]);
 
   const toggleExpand = (id: string) => {
     setExpanded((prev) => {
@@ -331,8 +353,9 @@ export default function AuditLogPage() {
             <p className="text-sm">No audit events found</p>
           </div>
         ) : (
+          <>
           <div className="divide-y divide-gray-50">
-            {filtered.map((log) => (
+            {pagedLogs.map((log) => (
               <div key={log.id} className="px-5 py-4 hover:bg-gray-50/50 transition-colors">
                 <div className="flex items-start gap-4">
                   {/* Icon */}
@@ -390,6 +413,55 @@ export default function AuditLogPage() {
               </div>
             ))}
           </div>
+          {filtered.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[11px] text-gray-500">
+                  Showing <span className="font-semibold text-gray-700">{auditPageStart}</span>–<span className="font-semibold text-gray-700">{auditPageEnd}</span> of <span className="font-semibold text-gray-700">{filtered.length}</span> events
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-gray-400">Per page</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                    className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  >
+                    {[10, 15, 30, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={auditSafePage === 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-left-s-line" />
+                </button>
+                {pageWindow(auditSafePage, auditTotalPages).map((p, i) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === auditSafePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => setPage((p) => Math.min(auditTotalPages, p + 1))}
+                  disabled={auditSafePage === auditTotalPages}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-right-s-line" />
+                </button>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>

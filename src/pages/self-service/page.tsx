@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
 import PayslipTab from "./components/PayslipTab";
 import LeaveTab from "./components/LeaveTab";
 import BenefitsTab from "./components/BenefitsTab";
@@ -34,18 +33,13 @@ const TABS = [
 
 export default function SelfServicePage() {
   const { user } = useAuth();
-  const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const canViewAll = isAdmin || !!role?.self_service_all_employees;
 
   const [searchParams] = useSearchParams();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [selectedId, setSelectedId] = useState<string>("");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "payslips");
   const quickCheckIn = searchParams.get("quickCheckIn") === "1";
   const quickCheckOut = searchParams.get("quickCheckOut") === "1";
   const [loading, setLoading] = useState(true);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [noOwnRecord, setNoOwnRecord] = useState(false);
 
   // The router keeps this page mounted across search-param-only navigations
@@ -57,62 +51,31 @@ export default function SelfServicePage() {
     if (t) setActiveTab(t);
   }, [searchParams]);
 
+  // Self-Service always shows the employee record matching this account's own
+  // email — no cross-employee "Switch Employee" picker, for any role.
   useEffect(() => {
-    if (permsLoading) return;
-
-    const SELECT = "id, first_name, last_name, role, department, status, join_date, email, avatar_url, branches(name)";
-
-    if (canViewAll) {
-      supabase
-        .from("employees")
-        .select(SELECT)
-        .eq("status", "active")
-        .order("first_name")
-        .then(({ data }) => {
-          setEmployees((data as unknown as Employee[]) || []);
-          if (data && data.length > 0) {
-            const emp = data[0] as unknown as Employee;
-            setSelectedId(emp.id);
-            setSelectedEmployee(emp);
-          }
-          setLoading(false);
-        });
-      return;
-    }
-
-    // Locked to the employee record matching this account's own email —
-    // no cross-employee switcher for roles without explicit override.
     if (!user?.email) { setLoading(false); return; }
     supabase
       .from("employees")
-      .select(SELECT)
+      .select("id, first_name, last_name, role, department, status, join_date, email, avatar_url, branches(name)")
       .eq("email", user.email)
       .maybeSingle()
       .then(({ data }) => {
         const emp = data as unknown as Employee | null;
         if (emp) {
-          setEmployees([emp]);
-          setSelectedId(emp.id);
           setSelectedEmployee(emp);
         } else {
           setNoOwnRecord(true);
         }
         setLoading(false);
       });
-  }, [canViewAll, permsLoading, user?.email]);
-
-  const handleSelect = (emp: Employee) => {
-    setSelectedId(emp.id);
-    setSelectedEmployee(emp);
-    setDropdownOpen(false);
-    setActiveTab("payslips");
-  };
+  }, [user?.email]);
 
   const yearsAtCompany = selectedEmployee?.join_date
     ? Math.floor((new Date().getTime() - new Date(selectedEmployee.join_date).getTime()) / (365.25 * 86400000))
     : 0;
 
-  if (loading || permsLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#F8F8F7] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
@@ -174,46 +137,8 @@ export default function SelfServicePage() {
             )}
           </div>
 
-          {/* Employee Picker — only for roles allowed to view other employees' Self-Service data */}
-          {canViewAll && (
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-exchange-line" />
-                Switch Employee
-                {dropdownOpen ? <i className="ri-arrow-up-s-line text-gray-400" /> : <i className="ri-arrow-down-s-line text-gray-400" />}
-              </button>
-              {dropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-100 rounded-xl overflow-hidden z-30 max-h-72 overflow-y-auto">
-                  {employees.map((emp) => (
-                    <button
-                      key={emp.id}
-                      onClick={() => handleSelect(emp)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer text-left ${selectedId === emp.id ? "bg-[#253C7D]/5" : ""}`}
-                    >
-                      <img
-                        src={emp.avatar_url || `https://readdy.ai/api/search-image?query=professional%20headshot%20portrait%20person%20in%20business%20attire%20against%20neutral%20background&width=40&height=40&seq=picker-${emp.id}&orientation=squarish`}
-                        alt={emp.first_name}
-                        className="w-8 h-8 rounded-lg object-cover shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{emp.first_name} {emp.last_name}</p>
-                        <p className="text-xs text-gray-400 truncate">{emp.role}</p>
-                      </div>
-                      {selectedId === emp.id && <i className="ri-checkbox-circle-fill text-[#253C7D] shrink-0" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Click outside to close dropdown */}
-      {dropdownOpen && <div className="fixed inset-0 z-20" onClick={() => setDropdownOpen(false)} />}
 
       {/* Tabs */}
       <div className="flex items-center gap-1 bg-white border border-gray-100 rounded-xl p-1 mb-5 overflow-x-auto">

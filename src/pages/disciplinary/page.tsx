@@ -94,6 +94,18 @@ export default function DisciplinaryPage() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
   const [activeTab, setActiveTab] = useState<"all" | "pip" | "open">("all");
 
   const [newRecord, setNewRecord] = useState<NewRecord>({
@@ -186,6 +198,16 @@ export default function DisciplinaryPage() {
     }
     return true;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const pageEnd = Math.min(safePage * pageSize, filtered.length);
+  const pagedRecords = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const openCount = records.filter((r) => r.status === "open" || r.status === "in_progress").length;
   const pipCount = records.filter((r) => r.type === "pip").length;
@@ -331,7 +353,7 @@ export default function DisciplinaryPage() {
           <div className="text-center py-12 text-gray-400 text-sm">Loading records...</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">No records found.</div>
-        ) : filtered.map((r) => {
+        ) : pagedRecords.map((r) => {
           const typeCfg = TYPE_CONFIG[r.type];
           const sevCfg = SEVERITY_CONFIG[r.severity];
           const statusCfg = STATUS_CONFIG[r.status];
@@ -392,6 +414,54 @@ export default function DisciplinaryPage() {
             </div>
           );
         })}
+        {filtered.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/50 rounded-xl">
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-[11px] text-gray-500">
+                Showing <span className="font-semibold text-gray-700">{pageStart}</span>–<span className="font-semibold text-gray-700">{pageEnd}</span> of <span className="font-semibold text-gray-700">{filtered.length}</span> records
+              </p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-gray-400">Rows per page</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                  className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                >
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                <i className="ri-arrow-left-s-line" />
+              </button>
+              {pageWindow(safePage, totalPages).map((p, i) =>
+                p === "..." ? (
+                  <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === safePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                <i className="ri-arrow-right-s-line" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Detail Side Panel */}

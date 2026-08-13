@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
+import AvatarCropModal from "@/components/AvatarCropModal";
 
 interface MyEmployee {
   id: string;
@@ -32,7 +33,11 @@ export default function Profile() {
 
   const [displayName, setDisplayName] = useState((user?.user_metadata?.display_name as string) || "");
   const [savingName, setSavingName] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+  const [savingCrop, setSavingCrop] = useState(false);
+  const [removingAvatar, setRemovingAvatar] = useState(false);
+  const [editMenuOpen, setEditMenuOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -104,16 +109,28 @@ export default function Profile() {
     toast("Saved", "Your phone number has been updated.", "success");
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Picking a file opens the crop modal instead of uploading right away.
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    setUploadingAvatar(true);
+    if (!file.type.startsWith("image/")) {
+      toast("Invalid file", "Please choose an image file.", "error");
+      e.target.value = "";
+      return;
+    }
+    setAvatarSrc(URL.createObjectURL(file));
+    e.target.value = "";
+  };
+
+  // Uploads the cropped image from the modal to storage.
+  const handleCropConfirm = async (blob: Blob) => {
+    if (!user) return;
+    setSavingCrop(true);
     try {
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/avatar.${ext}`;
+      const path = `${user.id}/avatar.jpg`;
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: true, cacheControl: "3600" });
+        .upload(path, blob, { upsert: true, cacheControl: "3600" });
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
@@ -122,8 +139,51 @@ export default function Profile() {
     } catch (err: any) {
       toast("Upload failed", err.message || "Could not upload photo.", "error");
     } finally {
-      setUploadingAvatar(false);
-      e.target.value = "";
+      setSavingCrop(false);
+      if (avatarSrc) URL.revokeObjectURL(avatarSrc);
+      setAvatarSrc(null);
+    }
+  };
+
+  // Loads the current avatar into the crop modal so it can be re-cropped.
+  const handleEditAvatar = async () => {
+    if (!user || !avatarUrl) return;
+    try {
+      const res = await fetch(avatarUrl);
+      if (!res.ok) throw new Error("Could not load your photo for editing.");
+      const blob = await res.blob();
+      if (!blob.type.startsWith("image/")) throw new Error("The current photo is not a valid image.");
+      setAvatarSrc(URL.createObjectURL(blob));
+    } catch (err: any) {
+      toast("Failed", err.message || "Could not load your photo for editing.", "error");
+    }
+  };
+
+  const closeCropModal = () => {
+    if (avatarSrc) URL.revokeObjectURL(avatarSrc);
+    setAvatarSrc(null);
+  };
+
+  // Deletes the avatar file(s) from storage and clears the photo from the account.
+  const handleRemoveAvatar = async () => {
+    if (!user) return;
+    setRemovingAvatar(true);
+    try {
+      const { data: files, error: listError } = await supabase.storage.from("avatars").list(user.id);
+      if (listError) throw listError;
+      const paths = (files || [])
+        .filter((f) => !f.name.startsWith("."))
+        .map((f) => `${user.id}/${f.name}`);
+      if (paths.length > 0) {
+        const { error: removeError } = await supabase.storage.from("avatars").remove(paths);
+        if (removeError) throw removeError;
+      }
+      await updateProfile({ avatar_url: "" });
+      toast("Photo removed", "Your profile photo has been removed.", "success");
+    } catch (err: any) {
+      toast("Failed", err.message || "Could not remove photo.", "error");
+    } finally {
+      setRemovingAvatar(false);
     }
   };
 
@@ -171,23 +231,77 @@ export default function Profile() {
         <div className="lg:col-span-2 space-y-10">
           {/* Avatar + name */}
           <div className="flex items-center gap-5">
-            <div className="relative">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={displayName} className="w-20 h-20 rounded-2xl object-cover border border-gray-100" />
-              ) : (
-                <div className="w-20 h-20 rounded-2xl bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-xl font-bold">
-                  {initials}
-                </div>
-              )}
-              <label className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-[#253C7D] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#1F336A] transition-colors">
-                <i className="ri-camera-line text-white text-xs" />
-                <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
-              </label>
+            <div className="flex flex-col items-center gap-2">
+              <div className="relative">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={displayName} className="w-20 h-20 rounded-2xl object-cover border border-gray-100" />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-xl font-bold">
+                    {initials}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
+                <button
+                  onClick={() => setEditMenuOpen((v) => !v)}
+                  disabled={savingCrop || removingAvatar}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[11px] font-semibold text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-colors disabled:opacity-40 cursor-pointer"
+                >
+                  <i className="ri-edit-2-line text-[12px]" />
+                  Edit photo
+                  <i className={`ri-arrow-down-s-line text-[12px] text-gray-400 transition-transform ${editMenuOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {editMenuOpen && (
+                  <>
+                    {/* Click-outside backdrop */}
+                    <div className="fixed inset-0 z-40" onClick={() => setEditMenuOpen(false)} />
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50 overflow-hidden">
+                      <button
+                        onClick={() => { setEditMenuOpen(false); fileInputRef.current?.click(); }}
+                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[12px] font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <i className="ri-upload-2-line text-sm text-gray-400" />
+                        Upload new photo
+                      </button>
+                      {avatarUrl && (
+                        <button
+                          onClick={() => { setEditMenuOpen(false); handleEditAvatar(); }}
+                          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[12px] font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          <i className="ri-crop-line text-sm text-gray-400" />
+                          Re-crop current photo
+                        </button>
+                      )}
+                      {avatarUrl && (
+                        <button
+                          onClick={() => { setEditMenuOpen(false); handleRemoveAvatar(); }}
+                          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[12px] font-medium text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                        >
+                          <i className="ri-delete-bin-line text-sm" />
+                          Remove photo
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Hidden input — opened via "Upload new photo" in the menu */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="hidden"
+                onChange={handleAvatarSelect}
+              />
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-900">{displayName || user?.email}</p>
               <p className="text-[12px] text-gray-500">{user?.email}</p>
-              {uploadingAvatar && <p className="text-[11px] text-[#253C7D] mt-1">Uploading photo...</p>}
+              {savingCrop && <p className="text-[11px] text-[#253C7D] mt-1">Uploading photo...</p>}
+              {removingAvatar && <p className="text-[11px] text-[#253C7D] mt-1">Removing photo...</p>}
             </div>
           </div>
 
@@ -392,6 +506,15 @@ export default function Profile() {
           )}
         </div>
       </div>
+
+      {/* Crop modal for new photos */}
+      <AvatarCropModal
+        imageSrc={avatarSrc}
+        saving={savingCrop}
+        onCancel={closeCropModal}
+        onConfirm={handleCropConfirm}
+        onError={(msg) => toast("Crop failed", msg, "error")}
+      />
     </div>
   );
 }

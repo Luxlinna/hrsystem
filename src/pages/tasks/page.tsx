@@ -152,6 +152,18 @@ export default function TasksPage() {
   const [taskSearch, setTaskSearch] = useState("");
   const [taskOpen, setTaskOpen] = useState(false);
   const taskRef = useRef<HTMLDivElement>(null);
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
   const [saving, setSaving] = useState(false);
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
