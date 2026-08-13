@@ -611,67 +611,75 @@ export default function Branches() {
 
       {/* Add Branch Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+          <form
+            onSubmit={handleAddBranch}
+            className="bg-white rounded-2xl w-full max-w-2xl my-8 sm:my-0 max-h-[calc(100vh-4rem)] flex flex-col"
+          >
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
               <div>
                 <h2 className="text-[16px] font-bold text-gray-900">{editingBranchId ? "Edit Branch" : "Add New Branch"}</h2>
                 <p className="text-[12px] text-gray-500 mt-0.5">{editingBranchId ? "Update this branch's details" : "Create a new office or branch location"}</p>
               </div>
               <button
+                type="button"
                 onClick={() => { setShowAddModal(false); setEditingBranchId(null); }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
               >
                 <i className="ri-close-line text-gray-500" />
               </button>
             </div>
-            <form onSubmit={handleAddBranch} className="p-6 space-y-4">
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g., West Branch - Los Angeles"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                />
+
+            <div className="p-6 space-y-5 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="e.g., West Branch - Los Angeles"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Location / City *</label>
+                  <input
+                    type="text"
+                    required
+                    value={form.location}
+                    onChange={(e) => setForm({ ...form, location: e.target.value })}
+                    placeholder="e.g., Los Angeles, CA"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch Manager *</label>
+                  <input
+                    type="text"
+                    required
+                    value={form.manager_name}
+                    onChange={(e) => setForm({ ...form, manager_name: e.target.value })}
+                    placeholder="e.g., John Smith"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Status</label>
+                  <select
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Location / City *</label>
-                <input
-                  type="text"
-                  required
-                  value={form.location}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  placeholder="e.g., Los Angeles, CA"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                />
-              </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch Manager *</label>
-                <input
-                  type="text"
-                  required
-                  value={form.manager_name}
-                  onChange={(e) => setForm({ ...form, manager_name: e.target.value })}
-                  placeholder="e.g., John Smith"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                />
-              </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Status</label>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="pending">Pending</option>
-                </select>
-              </div>
-              <div>
+
+              <div className="border-t border-gray-100 pt-5">
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-[12px] font-semibold text-gray-700">Check-In Geofence (optional)</label>
                   <button
@@ -706,7 +714,7 @@ export default function Branches() {
                   <i className="ri-information-line mr-1" />
                   Usually building-accurate, but always double-check the result — if it comes back "approximate," prefer "current location" while standing at the branch instead.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <input
                     type="number"
                     step="any"
@@ -723,25 +731,26 @@ export default function Branches() {
                     placeholder="Longitude"
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
                   />
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="10"
-                    value={form.geofence_radius_m}
-                    onChange={(e) => setForm({ ...form, geofence_radius_m: e.target.value })}
-                    placeholder="100"
-                    className="w-28 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <span className="text-[12px] text-gray-500">meter radius employees must check in within</span>
+                  <div className="col-span-2 sm:col-span-1 flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="10"
+                      value={form.geofence_radius_m}
+                      onChange={(e) => setForm({ ...form, geofence_radius_m: e.target.value })}
+                      placeholder="100"
+                      className="w-20 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+                    />
+                    <span className="text-[11px] text-gray-500">meters radius</span>
+                  </div>
                 </div>
                 <p className="text-[11px] text-gray-400 mt-1.5">
                   Leave latitude/longitude blank to skip location checks for this branch — employees can check in from anywhere.
                 </p>
               </div>
-              <div>
+
+              <div className="border-t border-gray-100 pt-5">
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Work Schedule (optional)</label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <input
                       type="time"
@@ -765,24 +774,25 @@ export default function Branches() {
                   Leave start time blank to use the company default (Settings). Leave end time blank to skip early clock-out detection for this branch.
                 </p>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setShowAddModal(false); setEditingBranchId(null); }}
-                  className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-60 cursor-pointer"
-                >
-                  {submitting ? "Saving..." : editingBranchId ? "Save Changes" : "Create Branch"}
-                </button>
-              </div>
-            </form>
-          </div>
+            </div>
+
+            <div className="flex gap-3 p-6 border-t border-gray-100 shrink-0">
+              <button
+                type="button"
+                onClick={() => { setShowAddModal(false); setEditingBranchId(null); }}
+                className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-60 cursor-pointer"
+              >
+                {submitting ? "Saving..." : editingBranchId ? "Save Changes" : "Create Branch"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>
