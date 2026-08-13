@@ -13,6 +13,7 @@ interface AttendanceRecord {
   clock_out: string | null;
   status: string;
   late_minutes: number;
+  early_leave_minutes: number;
   hours_worked: number | null;
   notes: string | null;
   created_at: string;
@@ -23,7 +24,12 @@ interface BranchGeofence {
   latitude: number | null;
   longitude: number | null;
   geofence_radius_m: number;
+  work_start_time: string | null;
+  work_end_time: string | null;
 }
+
+const LATE_GRACE_MINUTES = 15;
+const EARLY_LEAVE_GRACE_MINUTES = 15;
 
 interface Props {
   employeeId: string;
@@ -48,7 +54,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const [checkInMessage, setCheckInMessage] = useState("");
   const [checkInDistance, setCheckInDistance] = useState<number | null>(null);
   const [checkInAccuracy, setCheckInAccuracy] = useState<number | null>(null);
-  const [workStartTime, setWorkStartTime] = useState("09:00");
+  const [globalWorkStartTime, setGlobalWorkStartTime] = useState("09:00");
   const [hasFingerprint, setHasFingerprint] = useState(false);
   const [biometricError, setBiometricError] = useState("");
 
@@ -66,9 +72,15 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
   useEffect(() => {
     supabase.from("system_settings").select("value").eq("key", "work_start_time").maybeSingle().then(({ data }) => {
-      if (data?.value) setWorkStartTime(data.value);
+      if (data?.value) setGlobalWorkStartTime(data.value);
     });
   }, []);
+
+  // A branch's own schedule (set in Branch Management) wins over the
+  // company-wide default; there's no company-wide default for end time, so
+  // early-leave detection simply doesn't apply unless the branch sets one.
+  const workStartTime = branch?.work_start_time || globalWorkStartTime;
+  const workEndTime = branch?.work_end_time || null;
 
   useEffect(() => {
     if (!employeeId) return;
@@ -107,7 +119,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     (async () => {
       const { data } = await supabase
         .from("employees")
-        .select("branches(name, latitude, longitude, geofence_radius_m)")
+        .select("branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time)")
         .eq("id", employeeId)
         .maybeSingle();
       const b = (data as any)?.branches as BranchGeofence | undefined;
@@ -208,7 +220,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     const timeStr = now.toTimeString().split(" ")[0];
     const [startH, startM] = workStartTime.split(":").map(Number);
     const lateMinutes = Math.max(0, (now.getHours() * 60 + now.getMinutes()) - (startH * 60 + startM));
-    const status = lateMinutes > 15 ? "late" : "present";
+    const status = lateMinutes > LATE_GRACE_MINUTES ? "late" : "present";
 
     // Upsert (not insert) on the employee/date unique constraint: a
     // double-tap, or the geofence auto-prompt racing a manual tap, then
@@ -227,7 +239,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     if (error) {
       showToast("error", "Failed to clock in. Please try again.");
     } else {
-      showToast("success", `Clocked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > 15 ? ` — ${lateMinutes} min late` : " — On time!"}`);
+      showToast("success", `Clocked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > LATE_GRACE_MINUTES ? ` — ${lateMinutes} min late` : " — On time!"}`);
       setNotes("");
       loadRecords();
     }
@@ -242,8 +254,14 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     const clockInTime = todayRecord.clock_in ? new Date(`${today}T${todayRecord.clock_in}`) : null;
     const hoursWorked = clockInTime ? parseFloat(((now.getTime() - clockInTime.getTime()) / 3600000).toFixed(2)) : null;
 
+    let earlyLeaveMinutes = 0;
+    if (workEndTime) {
+      const [endH, endM] = workEndTime.split(":").map(Number);
+      earlyLeaveMinutes = Math.max(0, (endH * 60 + endM) - (now.getHours() * 60 + now.getMinutes()));
+    }
+
     const { error } = await supabase.from("attendance_records")
-      .update({ clock_out: timeStr, hours_worked: hoursWorked })
+      .update({ clock_out: timeStr, hours_worked: hoursWorked, early_leave_minutes: earlyLeaveMinutes })
       .eq("id", todayRecord.id);
 
     setProcessing(false);
@@ -251,7 +269,8 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       showToast("error", "Failed to clock out. Please try again.");
     } else {
       const hrs = hoursWorked ? `${Math.floor(hoursWorked)}h ${Math.round((hoursWorked % 1) * 60)}m worked` : "";
-      showToast("success", `Clocked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}`);
+      const earlyNote = earlyLeaveMinutes > EARLY_LEAVE_GRACE_MINUTES ? ` — ${earlyLeaveMinutes} min early` : "";
+      showToast("success", `Clocked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
       loadRecords();
     }
   };
@@ -285,6 +304,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
   const presentCount = records.filter((r) => r.status === "present" || r.status === "late").length;
   const lateCount = records.filter((r) => r.status === "late").length;
+  const earlyLeaveCount = records.filter((r) => (r.early_leave_minutes || 0) > EARLY_LEAVE_GRACE_MINUTES).length;
   const absentCount = records.filter((r) => r.status === "absent").length;
   const totalHours = records.reduce((s, r) => s + (r.hours_worked || 0), 0);
 
@@ -339,7 +359,9 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                   </p>
                 )}
                 <p className="text-white/60 text-[11px] text-center">
-                  Work starts at {new Date(`2000-01-01T${workStartTime}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} — arrivals after that are marked late
+                  Work starts at {new Date(`2000-01-01T${workStartTime}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  {workEndTime && ` and ends at ${new Date(`2000-01-01T${workEndTime}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
+                  {" — "}arrivals after start{workEndTime ? " or exits before end" : ""} are flagged
                 </p>
               </div>
             )}
@@ -437,10 +459,11 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: "Days Present", value: presentCount, icon: "ri-user-follow-line", color: "text-emerald-600 bg-emerald-50" },
           { label: "Late Arrivals", value: lateCount, icon: "ri-time-line", color: "text-amber-600 bg-amber-50" },
+          { label: "Early Leaves", value: earlyLeaveCount, icon: "ri-logout-circle-line", color: "text-orange-600 bg-orange-50" },
           { label: "Absences", value: absentCount, icon: "ri-user-unfollow-line", color: "text-red-500 bg-red-50" },
           { label: "Total Hours", value: `${totalHours.toFixed(0)}h`, icon: "ri-timer-line", color: "text-[#253C7D] bg-[#253C7D]/10" },
         ].map((s) => (
@@ -509,7 +532,12 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                   {new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </span>
                 <span className="text-gray-600">{r.clock_in?.slice(0, 5) || "—"}</span>
-                <span className="text-gray-600">{r.clock_out?.slice(0, 5) || "—"}</span>
+                <span className="text-gray-600">
+                  {r.clock_out?.slice(0, 5) || "—"}
+                  {r.clock_out && r.early_leave_minutes > EARLY_LEAVE_GRACE_MINUTES && (
+                    <span className="text-orange-500 text-[10px] font-semibold ml-1">({r.early_leave_minutes}m early)</span>
+                  )}
+                </span>
                 <span className="text-gray-600 font-medium">{r.hours_worked ? `${r.hours_worked}h` : "—"}</span>
                 <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize w-fit ${getStatusColor(r.status)}`}>
                   {r.status}

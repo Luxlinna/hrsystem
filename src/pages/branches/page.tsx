@@ -18,6 +18,8 @@ interface Branch {
   latitude: number | null;
   longitude: number | null;
   geofence_radius_m: number | null;
+  work_start_time: string | null;
+  work_end_time: string | null;
 }
 
 interface Employee {
@@ -73,6 +75,8 @@ export default function Branches() {
     latitude: "",
     longitude: "",
     geofence_radius_m: "100",
+    work_start_time: "",
+    work_end_time: "",
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -116,6 +120,8 @@ export default function Branches() {
     const latitude = form.latitude.trim() ? Number(form.latitude) : null;
     const longitude = form.longitude.trim() ? Number(form.longitude) : null;
     const geofence_radius_m = form.geofence_radius_m.trim() ? Number(form.geofence_radius_m) : 100;
+    const work_start_time = form.work_start_time.trim() || null;
+    const work_end_time = form.work_end_time.trim() || null;
     let entityId: string | null = editingBranchId;
     if (editingBranchId) {
       const { error } = await supabase.from("branches").update({
@@ -126,10 +132,12 @@ export default function Branches() {
         latitude,
         longitude,
         geofence_radius_m,
+        work_start_time,
+        work_end_time,
       }).eq("id", editingBranchId);
       if (error) { setSubmitting(false); toast("Error", "Failed to save branch", "error"); return; }
       if (selectedBranch?.id === editingBranchId) {
-        setSelectedBranch({ ...selectedBranch, name: form.name, location: form.location, manager_name: form.manager_name, status: form.status, latitude, longitude, geofence_radius_m });
+        setSelectedBranch({ ...selectedBranch, name: form.name, location: form.location, manager_name: form.manager_name, status: form.status, latitude, longitude, geofence_radius_m, work_start_time, work_end_time });
       }
     } else {
       const { data, error } = await supabase.from("branches").insert({
@@ -141,6 +149,8 @@ export default function Branches() {
         latitude,
         longitude,
         geofence_radius_m,
+        work_start_time,
+        work_end_time,
       }).select().single();
       if (error) { setSubmitting(false); toast("Error", "Failed to create branch", "error"); return; }
       entityId = data?.id ?? null;
@@ -172,6 +182,8 @@ export default function Branches() {
       latitude: branch.latitude != null ? String(branch.latitude) : "",
       longitude: branch.longitude != null ? String(branch.longitude) : "",
       geofence_radius_m: branch.geofence_radius_m != null ? String(branch.geofence_radius_m) : "100",
+      work_start_time: branch.work_start_time ? branch.work_start_time.slice(0, 5) : "",
+      work_end_time: branch.work_end_time ? branch.work_end_time.slice(0, 5) : "",
     });
     setEditingBranchId(branch.id);
     setShowAddModal(true);
@@ -495,6 +507,27 @@ export default function Branches() {
                   )}
                 </div>
               </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50">
+                  <i className="ri-time-line text-emerald-600 text-sm" />
+                </div>
+                <div>
+                  <p className="text-[11px] text-gray-400">Work Schedule</p>
+                  {selectedBranch.work_start_time || selectedBranch.work_end_time ? (
+                    <p className="text-[13px] font-semibold text-gray-800">
+                      {selectedBranch.work_start_time
+                        ? new Date(`2000-01-01T${selectedBranch.work_start_time}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+                        : "Company default"}
+                      {" – "}
+                      {selectedBranch.work_end_time
+                        ? new Date(`2000-01-01T${selectedBranch.work_end_time}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+                        : "no end time set"}
+                    </p>
+                  ) : (
+                    <p className="text-[13px] font-semibold text-gray-400">Using company default start time, no early-leave check</p>
+                  )}
+                </div>
+              </div>
             </div>
             {canManage && (
               <button
@@ -704,6 +737,32 @@ export default function Branches() {
                 </div>
                 <p className="text-[11px] text-gray-400 mt-1.5">
                   Leave latitude/longitude blank to skip location checks for this branch — employees can check in from anywhere.
+                </p>
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Work Schedule (optional)</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <input
+                      type="time"
+                      value={form.work_start_time}
+                      onChange={(e) => setForm({ ...form, work_start_time: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1">Start time — check-ins after this count as late</p>
+                  </div>
+                  <div>
+                    <input
+                      type="time"
+                      value={form.work_end_time}
+                      onChange={(e) => setForm({ ...form, work_end_time: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1">End time — check-outs before this count as early</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1.5">
+                  Leave start time blank to use the company default (Settings). Leave end time blank to skip early clock-out detection for this branch.
                 </p>
               </div>
               <div className="flex gap-3 pt-2">
