@@ -353,7 +353,7 @@ export default function MeetingRoomsPage() {
       )}
 
       {modalRoom && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !saving && setModalRoom(null)}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4" onClick={() => !saving && setModalRoom(null)}>
           <div className="bg-white rounded-2xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-bold text-gray-900 mb-1">Book {modalRoom.name}</h3>
             <p className="text-[12px] text-gray-500 mb-3">{new Date(`${selectedDate}T00:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
