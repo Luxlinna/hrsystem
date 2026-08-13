@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { toYMD, todayYMD } from "@/lib/date";
 import ReportViewer from "./components/ReportViewer";
 
 const MODULES = [
@@ -39,6 +40,12 @@ export default function ReportsPage() {
   }, []);
 
   const isEmployeeScoped = EMPLOYEE_SCOPED_MODULES.has(activeModule);
+  // Headcount is a live snapshot grouped by branch/department, not tied to
+  // one employee or a time range — the Name search and Date Range filters
+  // are silently ignored by that report, so grey them out instead of
+  // leaving them clickable with no visible effect.
+  const isNameScoped = isEmployeeScoped && activeModule !== "headcount";
+  const isDateScoped = activeModule !== "headcount";
 
   const reportConfig = useMemo(
     () => ({ module: activeModule, dateFrom, dateTo, employeeSearch, departmentFilter, branchFilter }),
@@ -84,7 +91,7 @@ export default function ReportsPage() {
   const exportPDF = () => {
     setExporting("pdf");
     const module = MODULES.find((m) => m.id === activeModule);
-    const dateRange = dateFrom || dateTo ? ` | ${dateFrom || "—"} to ${dateTo || "—"}` : "";
+    const dateRange = isDateScoped && (dateFrom || dateTo) ? ` | ${dateFrom || "—"} to ${dateTo || "—"}` : "";
     const keyMap: Record<string, string> = {
       "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
       "End Date": "end_date", "Days": "days", "Status": "status", "Month": "month",
@@ -195,8 +202,10 @@ export default function ReportsPage() {
               Employee Filters {!isEmployeeScoped && <span className="normal-case font-normal">(not used by this report)</span>}
             </p>
             <div className="space-y-3">
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Name</label>
+              <div className={!isNameScoped ? "opacity-40 pointer-events-none" : ""}>
+                <label className="text-xs text-gray-500 mb-1 block">
+                  Name {!isNameScoped && isEmployeeScoped && <span className="normal-case font-normal">(not used by this report)</span>}
+                </label>
                 <input
                   type="text"
                   value={employeeSearch}
@@ -239,8 +248,10 @@ export default function ReportsPage() {
           </div>
 
           {/* Date Range */}
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Date Range Filter</p>
+          <div className={`bg-white border border-gray-100 rounded-xl p-4 ${!isDateScoped ? "opacity-40 pointer-events-none" : ""}`}>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              Date Range Filter {!isDateScoped && <span className="normal-case font-normal">(not used by this report)</span>}
+            </p>
             <div className="space-y-3">
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">From</label>
@@ -271,11 +282,11 @@ export default function ReportsPage() {
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-2">Quick Presets</p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "This Month", fn: () => { const n = new Date(); setDateFrom(n.toISOString().substring(0, 7) + "-01"); setDateTo(new Date(n.getFullYear(), n.getMonth() + 1, 0).toISOString().substring(0, 10)); } },
-                { label: "Last Month", fn: () => { const n = new Date(); n.setMonth(n.getMonth() - 1); setDateFrom(n.toISOString().substring(0, 7) + "-01"); setDateTo(new Date(n.getFullYear(), n.getMonth() + 1, 0).toISOString().substring(0, 10)); } },
+                { label: "This Month", fn: () => { const n = new Date(); setDateFrom(toYMD(new Date(n.getFullYear(), n.getMonth(), 1))); setDateTo(toYMD(new Date(n.getFullYear(), n.getMonth() + 1, 0))); } },
+                { label: "Last Month", fn: () => { const n = new Date(); setDateFrom(toYMD(new Date(n.getFullYear(), n.getMonth() - 1, 1))); setDateTo(toYMD(new Date(n.getFullYear(), n.getMonth(), 0))); } },
                 { label: "Q1 2026", fn: () => { setDateFrom("2026-01-01"); setDateTo("2026-03-31"); } },
                 { label: "Q2 2026", fn: () => { setDateFrom("2026-04-01"); setDateTo("2026-06-30"); } },
-                { label: "YTD 2026", fn: () => { setDateFrom("2026-01-01"); setDateTo(new Date().toISOString().substring(0, 10)); } },
+                { label: "YTD 2026", fn: () => { setDateFrom("2026-01-01"); setDateTo(todayYMD()); } },
                 { label: "All Time", fn: () => { setDateFrom(""); setDateTo(""); } },
               ].map((p) => (
                 <button key={p.label} onClick={p.fn} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs text-gray-600 transition-colors cursor-pointer text-center whitespace-nowrap">
@@ -298,7 +309,7 @@ export default function ReportsPage() {
                 <div>
                   <h2 className="text-base font-bold text-gray-900">{activeModuleInfo.label}</h2>
                   <p className="text-xs text-gray-500">
-                    {dateFrom || dateTo ? `${dateFrom || "Start"} → ${dateTo || "Today"}` : "All time"}
+                    {isDateScoped ? (dateFrom || dateTo ? `${dateFrom || "Start"} → ${dateTo || "Today"}` : "All time") : "Live snapshot"}
                     {reportData.length > 0 && ` · ${reportData.length} records`}
                   </p>
                 </div>

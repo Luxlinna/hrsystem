@@ -58,13 +58,17 @@ export default function Onboarding() {
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
+  const [employees, setEmployees] = useState<{ id: string; first_name: string; last_name: string; role: string; department: string }[]>([]);
   const [expandedRequest, setExpandedRequest] = useState<string | null>(null);
   const [showStartModal, setShowStartModal] = useState(false);
+  const [startEmployeeId, setStartEmployeeId] = useState("");
+  const [starting, setStarting] = useState(false);
   const [showDocModal, setShowDocModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<OnboardingRequest | null>(null);
   const [selectedStage, setSelectedStage] = useState("");
   const [docForm, setDocForm] = useState({ document_name: "", notes: "" });
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
   const [filter, setFilter] = useState("all");
@@ -73,12 +77,57 @@ export default function Onboarding() {
   const highlightId = searchParams.get("highlight");
 
   const loadData = async () => {
-    const [{ data: ob }, { data: docs }] = await Promise.all([
+    const [{ data: ob }, { data: docs }, { data: emps }] = await Promise.all([
       supabase.from("onboarding_requests").select("*, employees(first_name, last_name, role, department, branch_id, branches(name))").order("created_at", { ascending: false }),
       supabase.from("onboarding_documents").select("*").order("created_at", { ascending: true }),
+      supabase.from("employees").select("id, first_name, last_name, role, department").order("first_name"),
     ]);
     setRequests(ob || []);
     setDocuments(docs || []);
+    setEmployees(emps || []);
+  };
+
+  // Employees who don't already have an unfinished onboarding request —
+  // starting a second one for the same person would just create a
+  // confusing duplicate track.
+  const employeesInProgress = new Set(requests.filter((r) => r.status !== "completed").map((r) => r.employee_id));
+  const eligibleEmployees = employees.filter((e) => !employeesInProgress.has(e.id));
+
+  const handleStartOnboarding = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!startEmployeeId) return;
+    setStarting(true);
+    const { data, error } = await supabase.from("onboarding_requests").insert({
+      employee_id: startEmployeeId,
+      stage: "document",
+      status: "pending",
+      day_count: 0,
+      requested_by: actorName,
+    }).select().single();
+    if (!error) {
+      await supabase.from("employees").update({ status: "onboarding" }).eq("id", startEmployeeId);
+    }
+    setStarting(false);
+    if (error) {
+      setToast({ type: "error", message: "Failed to start onboarding" });
+      return;
+    }
+    const emp = employees.find((x) => x.id === startEmployeeId);
+    const empName = emp ? `${emp.first_name} ${emp.last_name}` : "the employee";
+    setToast({ type: "success", message: `Onboarding started for ${empName}` });
+    logActivity({
+      module: "onboarding",
+      action: "created",
+      entityType: "onboarding_request",
+      entityId: data.id,
+      actorName,
+      actorRole: role?.name || "Unknown",
+      description: `Onboarding started for ${empName}`,
+    });
+    notify({ source: "onboarding", type: "info", title: "Onboarding started", message: `${empName}'s onboarding journey has begun.`, entityId: data.id });
+    setStartEmployeeId("");
+    setShowStartModal(false);
+    loadData();
   };
 
   useEffect(() => {
@@ -135,6 +184,16 @@ export default function Onboarding() {
     setSelectedStage(stage);
     setDocForm({ document_name: "", notes: "" });
     setSelectedFileName(null);
+    setEditingDocId(null);
+    setShowDocModal(true);
+  };
+
+  const openEditDocModal = (req: OnboardingRequest, doc: OnboardingDoc) => {
+    setSelectedRequest(req);
+    setSelectedStage(doc.stage);
+    setDocForm({ document_name: doc.document_name, notes: doc.notes || "" });
+    setSelectedFileName(doc.file_name);
+    setEditingDocId(doc.id);
     setShowDocModal(true);
   };
 
@@ -144,8 +203,8 @@ export default function Onboarding() {
 
     setUploading(true);
     const file = fileInputRef.current?.files?.[0];
-    let fileUrl = null;
-    let fileName = null;
+    let fileUrl: string | null = null;
+    let fileName: string | null = null;
 
     if (file) {
       try {
@@ -158,27 +217,46 @@ export default function Onboarding() {
       }
     }
 
-    const { error } = await supabase.from("onboarding_documents").insert({
-      onboarding_request_id: selectedRequest.id,
-      employee_id: selectedRequest.employee_id,
-      document_name: docForm.document_name,
-      stage: selectedStage,
-      status: fileUrl ? "complete" : "pending",
-      file_url: fileUrl,
-      file_name: fileName,
-      notes: docForm.notes || null,
-    });
+    const { error } = editingDocId
+      ? await supabase.from("onboarding_documents").update({
+          document_name: docForm.document_name,
+          notes: docForm.notes || null,
+          // Only overwrite the file/status if a new one was actually chosen —
+          // editing the name/notes shouldn't silently clear an existing upload.
+          ...(file ? { file_url: fileUrl, file_name: fileName, status: "complete" } : {}),
+        }).eq("id", editingDocId)
+      : await supabase.from("onboarding_documents").insert({
+          onboarding_request_id: selectedRequest.id,
+          employee_id: selectedRequest.employee_id,
+          document_name: docForm.document_name,
+          stage: selectedStage,
+          status: fileUrl ? "complete" : "pending",
+          file_url: fileUrl,
+          file_name: fileName,
+          notes: docForm.notes || null,
+        });
 
     setUploading(false);
     setShowDocModal(false);
 
     if (error) {
-      setToast({ type: "error", message: "Failed to add document" });
+      setToast({ type: "error", message: editingDocId ? "Failed to save changes" : "Failed to add document" });
     } else {
-      setToast({ type: "success", message: "Document added successfully" });
+      setToast({ type: "success", message: editingDocId ? "Document updated" : "Document added successfully" });
       setDocForm({ document_name: "", notes: "" });
       setSelectedFileName(null);
+      setEditingDocId(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const deleteDocument = async (doc: OnboardingDoc) => {
+    if (!confirm(`Remove "${doc.document_name}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from("onboarding_documents").delete().eq("id", doc.id);
+    if (error) {
+      setToast({ type: "error", message: "Failed to remove document" });
+    } else {
+      setToast({ type: "success", message: "Document removed" });
     }
   };
 
@@ -254,7 +332,7 @@ export default function Onboarding() {
           <p className="text-[13px] text-gray-500 mt-1">Track and manage new hire onboarding across all branches with stage-based checklist</p>
         </div>
         <button
-          onClick={() => setShowStartModal(true)}
+          onClick={() => { setStartEmployeeId(""); setShowStartModal(true); }}
           className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap"
         >
           <i className="ri-user-add-line" />
@@ -417,9 +495,10 @@ export default function Onboarding() {
                                 {stage.label}
                               </span>
                             </div>
-                            {isCurrent && req.status === "approved" && (
+                            {req.status === "approved" && (
                               <button
                                 onClick={() => openDocModal(req, stage.key)}
+                                title="Add document"
                                 className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 hover:text-[#253C7D]"
                               >
                                 <i className="ri-add-line" />
@@ -440,10 +519,10 @@ export default function Onboarding() {
                           {/* Documents list */}
                           <div className="space-y-1.5">
                             {stageDocs.map((doc) => (
-                              <div key={doc.id} className="flex items-center gap-2 group">
+                              <div key={doc.id} className="flex items-center gap-1.5 group">
                                 <button
                                   onClick={() => toggleDocStatus(doc)}
-                                  className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                                  className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors ${
                                     doc.status === "complete"
                                       ? "bg-[#253C7D] border-[#253C7D] text-white"
                                       : "border-gray-300 hover:border-[#253C7D]"
@@ -459,10 +538,29 @@ export default function Onboarding() {
                                     href={doc.file_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[10px] text-[#253C7D] hover:underline"
+                                    title="Download"
+                                    className="text-[10px] text-[#253C7D] hover:underline shrink-0"
                                   >
                                     <i className="ri-download-line" />
                                   </a>
+                                )}
+                                {req.status === "approved" && (
+                                  <>
+                                    <button
+                                      onClick={() => openEditDocModal(req, doc)}
+                                      title="Edit"
+                                      className="text-[10px] text-gray-300 hover:text-[#253C7D] shrink-0"
+                                    >
+                                      <i className="ri-pencil-line" />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteDocument(doc)}
+                                      title="Remove"
+                                      className="text-[10px] text-gray-300 hover:text-red-500 shrink-0"
+                                    >
+                                      <i className="ri-delete-bin-line" />
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             ))}
@@ -472,24 +570,27 @@ export default function Onboarding() {
                           </div>
 
                           {/* Quick-add template docs */}
-                          {isCurrent && req.status === "approved" && stageDocs.length === 0 && (
+                          {req.status === "approved" && DOCUMENT_TEMPLATES[stage.key].some((name) => !stageDocs.some((d) => d.document_name === name)) && (
                             <div className="mt-3 pt-3 border-t border-gray-100">
                               <p className="text-[10px] text-gray-400 mb-1.5">Quick add:</p>
                               <div className="flex flex-wrap gap-1">
-                                {DOCUMENT_TEMPLATES[stage.key].slice(0, 3).map((name) => (
-                                  <button
-                                    key={name}
-                                    onClick={() => {
-                                      setSelectedRequest(req);
-                                      setSelectedStage(stage.key);
-                                      setDocForm({ document_name: name, notes: "" });
-                                      setShowDocModal(true);
-                                    }}
-                                    className="px-2 py-1 bg-gray-50 hover:bg-[#253C7D]/5 border border-gray-100 hover:border-[#253C7D]/20 rounded text-[10px] text-gray-600 hover:text-[#253C7D] transition-colors"
-                                  >
-                                    {name}
-                                  </button>
-                                ))}
+                                {DOCUMENT_TEMPLATES[stage.key]
+                                  .filter((name) => !stageDocs.some((d) => d.document_name === name))
+                                  .map((name) => (
+                                    <button
+                                      key={name}
+                                      onClick={() => {
+                                        setSelectedRequest(req);
+                                        setSelectedStage(stage.key);
+                                        setDocForm({ document_name: name, notes: "" });
+                                        setEditingDocId(null);
+                                        setShowDocModal(true);
+                                      }}
+                                      className="px-2 py-1 bg-gray-50 hover:bg-[#253C7D]/5 border border-gray-100 hover:border-[#253C7D]/20 rounded text-[10px] text-gray-600 hover:text-[#253C7D] transition-colors"
+                                    >
+                                      {name}
+                                    </button>
+                                  ))}
                               </div>
                             </div>
                           )}
@@ -572,7 +673,7 @@ export default function Onboarding() {
 
       {/* Start Onboarding Modal */}
       {showStartModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[15px] font-bold text-gray-900">Start Onboarding</h3>
@@ -580,26 +681,57 @@ export default function Onboarding() {
                 <i className="ri-close-line text-lg" />
               </button>
             </div>
-            <p className="text-[13px] text-gray-500 mb-4">
-              To start onboarding, create a new employee first in the <strong>Employees</strong> module, then return here to begin their onboarding journey.
-            </p>
-            <button
-              onClick={() => setShowStartModal(false)}
-              className="w-full px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors"
-            >
-              Got it
-            </button>
+            {eligibleEmployees.length === 0 ? (
+              <>
+                <p className="text-[13px] text-gray-500 mb-4">
+                  Every employee in the directory already has an onboarding journey in progress. Add a new employee first in the <strong>Employees</strong> module, then return here to start theirs.
+                </p>
+                <button
+                  onClick={() => setShowStartModal(false)}
+                  className="w-full px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors"
+                >
+                  Got it
+                </button>
+              </>
+            ) : (
+              <form onSubmit={handleStartOnboarding} className="space-y-4">
+                <div>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
+                  <select
+                    required
+                    value={startEmployeeId}
+                    onChange={(e) => setStartEmployeeId(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
+                  >
+                    <option value="">Select employee</option>
+                    {eligibleEmployees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name} — {emp.role || emp.department}</option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-gray-400 mt-1.5">
+                    Don't see them? Add them in the <strong>Employees</strong> module first.
+                  </p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={starting || !startEmployeeId}
+                  className="w-full px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors disabled:opacity-60"
+                >
+                  {starting ? "Starting..." : "Start Onboarding"}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}
 
       {/* Add Document Modal */}
       {showDocModal && selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h3 className="text-[15px] font-bold text-gray-900">
-                Add Document — {STAGES.find((s) => s.key === selectedStage)?.label}
+                {editingDocId ? "Edit Document" : "Add Document"} — {STAGES.find((s) => s.key === selectedStage)?.label}
               </h3>
               <button onClick={() => setShowDocModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500">
                 <i className="ri-close-line text-lg" />
@@ -608,30 +740,44 @@ export default function Onboarding() {
             <form onSubmit={handleDocUpload} className="p-6 space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Document Name *</label>
-                <select
-                  value={docForm.document_name}
-                  onChange={(e) => setDocForm({ ...docForm, document_name: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
-                  required
-                >
-                  <option value="">Select document type</option>
-                  {DOCUMENT_TEMPLATES[selectedStage]?.map((name) => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                  <option value="custom">Custom...</option>
-                </select>
-                {docForm.document_name === "custom" && (
+                {editingDocId ? (
                   <input
                     type="text"
-                    placeholder="Enter document name"
-                    onChange={(e) => setDocForm({ ...docForm, document_name: e.target.value })}
-                    className="mt-2 w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
                     required
+                    value={docForm.document_name}
+                    onChange={(e) => setDocForm({ ...docForm, document_name: e.target.value })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
                   />
+                ) : (
+                  <>
+                    <select
+                      value={docForm.document_name}
+                      onChange={(e) => setDocForm({ ...docForm, document_name: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
+                      required
+                    >
+                      <option value="">Select document type</option>
+                      {DOCUMENT_TEMPLATES[selectedStage]?.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                      <option value="custom">Custom...</option>
+                    </select>
+                    {docForm.document_name === "custom" && (
+                      <input
+                        type="text"
+                        placeholder="Enter document name"
+                        onChange={(e) => setDocForm({ ...docForm, document_name: e.target.value })}
+                        className="mt-2 w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                        required
+                      />
+                    )}
+                  </>
                 )}
               </div>
               <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Upload File (optional)</label>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
+                  {editingDocId ? "Replace File (optional)" : "Upload File (optional)"}
+                </label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   className="w-full px-4 py-6 border-2 border-dashed border-gray-200 rounded-xl text-center cursor-pointer hover:border-[#253C7D]/30 hover:bg-[#253C7D]/5 transition-colors"
@@ -675,7 +821,7 @@ export default function Onboarding() {
                   disabled={uploading}
                   className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors disabled:opacity-50"
                 >
-                  {uploading ? "Saving..." : "Add Document"}
+                  {uploading ? "Saving..." : editingDocId ? "Save Changes" : "Add Document"}
                 </button>
               </div>
             </form>
