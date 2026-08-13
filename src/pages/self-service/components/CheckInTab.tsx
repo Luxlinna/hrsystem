@@ -148,10 +148,14 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
         setCheckInStep("denied");
       }
     } catch (err: any) {
+      // Surface the raw browser error code/message directly — temporary,
+      // to pin down exactly which failure mode this is without needing the
+      // user to dig through OS/browser settings menus blind.
+      const codeNote = err?.code != null ? ` (code ${err.code}${err?.message ? `: ${err.message}` : ""})` : err?.message ? ` (${err.message})` : "";
       setCheckInMessage(
         err?.code === 1
-          ? "Location access was denied. Please enable location permissions for this site and try again."
-          : "Couldn't get your location. Check your device's location settings and try again."
+          ? `Location access was denied. Please enable location permissions for this site and try again.${codeNote}`
+          : `Couldn't get your location. On a laptop/desktop, this is usually the OS-level Location Services setting, not just the browser — check Settings > Privacy > Location (Windows) or System Settings > Privacy & Security > Location Services (Mac), then try again.${codeNote}`
       );
       setCheckInStep("error");
     }
