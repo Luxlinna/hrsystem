@@ -65,6 +65,12 @@ export default function Profile() {
       setEmployee(myEmp);
       setPhone(myEmp?.phone || "");
 
+      // Sync display name from employees table (HR database is source of truth)
+      if (myEmp?.first_name || myEmp?.last_name) {
+        const hrName = [myEmp.first_name, myEmp.last_name].filter(Boolean).join(" ");
+        setDisplayName(hrName);
+      }
+
       if (myEmp?.reports_to) {
         const { data: mgr } = await supabase
           .from("employees")
@@ -191,7 +197,14 @@ export default function Profile() {
     if (!displayName.trim()) { toast("Name required", "Display name can't be empty.", "error"); return; }
     setSavingName(true);
     try {
+      // Update both auth profile AND employees table for consistency
       await updateProfile({ display_name: displayName.trim() });
+      if (employee?.id) {
+        const nameParts = displayName.trim().split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+        await supabase.from("employees").update({ first_name: firstName, last_name: lastName }).eq("id", employee.id);
+      }
       toast("Saved", "Your name has been updated.", "success");
     } catch (err: any) {
       toast("Failed", err.message || "Could not update name.", "error");

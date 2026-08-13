@@ -324,12 +324,12 @@ export default function Analytics() {
               <i className={`ri-arrow-down-s-line text-base transition-transform ${exportOpen ? "rotate-180" : ""}`} />
             </button>
             {exportOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 z-50">
+              <div className="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 z-50">
                 <p className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Export as</p>
                 {[
-                  { fmt: "pdf" as const, label: "PDF Document", hint: ".pdf", icon: "ri-file-pdf-line", color: "text-red-500" },
-                  { fmt: "csv" as const, label: "CSV Spreadsheet", hint: ".csv", icon: "ri-file-text-line", color: "text-emerald-600" },
-                  { fmt: "xlsx" as const, label: "Excel Workbook", hint: ".xlsx", icon: "ri-file-excel-line", color: "text-green-600" },
+                  { fmt: "pdf" as const, label: "PDF Document", hint: ".pdf", icon: "ri-file-pdf-line", desc: "Print-ready report", color: "text-red-500" },
+                  { fmt: "csv" as const, label: "CSV Spreadsheet", hint: ".csv", icon: "ri-file-text-line", desc: "Comma-separated values", color: "text-emerald-600" },
+                  { fmt: "xlsx" as const, label: "Excel Workbook", hint: ".xlsx", icon: "ri-file-excel-2-line", desc: "Microsoft Excel format", color: "text-green-600" },
                 ].map((opt) => (
                   <button
                     key={opt.fmt}
@@ -339,13 +339,16 @@ export default function Analytics() {
                       else if (opt.fmt === "csv") exportCSV();
                       else exportExcel();
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left cursor-pointer group"
                   >
-                    <i className={`${opt.icon} text-lg ${opt.color}`} />
-                    <div>
-                      <p className="text-[13px] font-medium text-gray-800">{opt.label}</p>
-                      <p className="text-[11px] text-gray-400">{opt.hint}</p>
-                    </div>
+                    <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 group-hover:bg-white transition-colors shrink-0">
+                      <i className={`${opt.icon} text-base ${opt.color}`} />
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-medium text-gray-800">{opt.label}</span>
+                      <span className="block text-[11px] text-gray-400">{opt.desc}</span>
+                    </span>
+                    <span className="text-[11px] text-gray-400 font-mono shrink-0">{opt.hint}</span>
                   </button>
                 ))}
               </div>
