@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
@@ -48,8 +49,6 @@ const LEAVE_TYPE_LABELS: Record<string, string> = {
   bereavement: "Bereavement",
   study: "Study Leave",
 };
-
-const nameInitials = (first: string, last: string) => `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase();
 
 // Builds a compact page-number list with ellipses for many pages,
 // e.g. [1, "...", 4, 5, 6, "...", 12].
@@ -99,12 +98,6 @@ export default function Leave() {
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const calendarRef = useRef<HTMLDivElement>(null);
-
-  // Searchable employee combobox state (leave request modal).
-  const [employeeQuery, setEmployeeQuery] = useState("");
-  const [employeeOpen, setEmployeeOpen] = useState(false);
-  const [employeeHighlight, setEmployeeHighlight] = useState(0);
-  const employeeRef = useRef<HTMLDivElement>(null);
 
   // Pagination for the leave requests table.
   const [pageSize, setPageSize] = useState(5);
@@ -195,24 +188,6 @@ export default function Leave() {
       return () => clearTimeout(t);
     }
   }, [toast]);
-
-  // Close the employee dropdown when clicking anywhere outside of it.
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (employeeRef.current && !employeeRef.current.contains(e.target as Node)) setEmployeeOpen(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
-
-  // Reset the search state whenever the modal opens or closes.
-  useEffect(() => {
-    if (!showForm) {
-      setEmployeeOpen(false);
-      setEmployeeQuery("");
-      setEmployeeHighlight(0);
-    }
-  }, [showForm]);
 
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("highlight");
@@ -390,13 +365,6 @@ export default function Leave() {
     setShowApprovalModal(false);
     setSelectedRequest(null);
   };
-
-  const selectedEmployee = employees.find((e) => e.id === formData.employee_id) || null;
-  const employeeFiltered = employees.filter((e) => {
-    const q = employeeQuery.trim().toLowerCase();
-    if (!q) return true;
-    return `${e.first_name} ${e.last_name} ${e.department} ${e.role}`.toLowerCase().includes(q);
-  });
 
   const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
 
@@ -742,88 +710,11 @@ export default function Leave() {
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
                 {canManage ? (
-                  <div className="relative" ref={employeeRef}>
-                    <div className="relative">
-                      <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
-                      <input
-                        type="text"
-                        role="combobox"
-                        aria-expanded={employeeOpen}
-                        value={employeeOpen ? employeeQuery : selectedEmployee ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}` : employeeQuery}
-                        onChange={(e) => {
-                          setEmployeeQuery(e.target.value);
-                          setEmployeeOpen(true);
-                          setEmployeeHighlight(0);
-                          if (!e.target.value) setFormData((p) => ({ ...p, employee_id: "" }));
-                        }}
-                        onFocus={() => setEmployeeOpen(true)}
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowDown") {
-                            e.preventDefault();
-                            setEmployeeOpen(true);
-                            setEmployeeHighlight((h) => (employeeFiltered.length ? Math.min(h + 1, employeeFiltered.length - 1) : 0));
-                          } else if (e.key === "ArrowUp") {
-                            e.preventDefault();
-                            setEmployeeHighlight((h) => Math.max(h - 1, 0));
-                          } else if (e.key === "Enter") {
-                            const emp = employeeFiltered[employeeHighlight];
-                            if (emp) {
-                              e.preventDefault();
-                              setFormData({ ...formData, employee_id: emp.id });
-                              setEmployeeQuery(`${emp.first_name} ${emp.last_name}`);
-                              setEmployeeOpen(false);
-                            }
-                          } else if (e.key === "Escape") {
-                            setEmployeeOpen(false);
-                          }
-                        }}
-                        placeholder="Search by name, department, or role..."
-                        className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
-                      />
-                      <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    </div>
-                    {employeeOpen && (
-                      <div className="absolute z-20 mt-1.5 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto py-1">
-                        <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                          {employeeFiltered.length} employee{employeeFiltered.length === 1 ? "" : "s"}{employeeQuery.trim() ? ` matching "${employeeQuery.trim()}"` : ""}
-                        </p>
-                        {employeeFiltered.length === 0 ? (
-                          <p className="px-3 py-4 text-[12px] text-gray-400">No employees match your search.</p>
-                        ) : (
-                          employeeFiltered.map((emp, i) => {
-                            const isSelected = emp.id === formData.employee_id;
-                            return (
-                              <button
-                                key={emp.id}
-                                type="button"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => {
-                                  setFormData({ ...formData, employee_id: emp.id });
-                                  setEmployeeQuery(`${emp.first_name} ${emp.last_name}`);
-                                  setEmployeeOpen(false);
-                                }}
-                                onMouseEnter={() => setEmployeeHighlight(i)}
-                                className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer ${i === employeeHighlight ? "bg-gray-50" : ""}`}
-                              >
-                                <span className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-[10px] font-bold shrink-0 overflow-hidden">
-                                  {emp.avatar_url ? (
-                                    <img src={emp.avatar_url} alt="" className="w-7 h-7 object-cover" />
-                                  ) : (
-                                    nameInitials(emp.first_name, emp.last_name)
-                                  )}
-                                </span>
-                                <span className="flex-1 min-w-0">
-                                  <span className="block text-[13px] font-medium text-gray-900">{emp.first_name} {emp.last_name}</span>
-                                  <span className="block text-[11px] text-gray-400 truncate">{emp.department}{emp.role ? ` · ${emp.role}` : ""}</span>
-                                </span>
-                                {isSelected && <i className="ri-check-line text-[#253C7D] text-sm shrink-0" />}
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <EmployeeSearchSelect
+                    employees={employees}
+                    value={formData.employee_id}
+                    onChange={(id) => setFormData((p) => ({ ...p, employee_id: id }))}
+                  />
                 ) : (
                   <div className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700">
                     {myEmployee ? `${myEmployee.first_name} ${myEmployee.last_name} — ${myEmployee.department}` : "—"}

@@ -1,6 +1,7 @@
-import { useState, useEffect, type CSSProperties } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 
 interface Shift {
   id: string;
@@ -29,6 +30,7 @@ interface Employee {
   last_name: string;
   department: string;
   role: string;
+  avatar_url?: string | null;
 }
 
 interface ShiftAssignment {
@@ -88,7 +90,10 @@ export default function Shifts() {
     name: "", branch_id: "", department: "", start_time: "09:00",
     end_time: "17:00", shift_date: "", capacity: 5, color: "#253C7D", notes: "",
   });
-  const [assignEmployeeId, setAssignEmployeeId] = useState("");
+  const [assignEmployeeIds, setAssignEmployeeIds] = useState<string[]>([]);
+  const [assignSearch, setAssignSearch] = useState("");
+  const [assignOpen, setAssignOpen] = useState(false);
+  const assignRef = useRef<HTMLDivElement>(null);
 
   const weekDates = getWeekDates(currentWeek);
 
@@ -97,7 +102,7 @@ export default function Shifts() {
       supabase.from("shifts").select("*, branches(name, location)").order("shift_date").order("start_time"),
       supabase.from("shift_assignments").select("*, employee:employees(first_name, last_name, role, department)"),
       supabase.from("branches").select("id, name, location").order("name"),
-      supabase.from("employees").select("id, first_name, last_name, department, role").order("first_name"),
+      supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url").order("first_name"),
     ]);
     const shiftList = (s || []).map((sh) => ({
       ...sh,
@@ -125,9 +130,26 @@ export default function Shifts() {
     loadData();
   };
 
+  // Close the assign dropdown when clicking outside.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (assignRef.current && !assignRef.current.contains(e.target as Node)) setAssignOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  // Reset dropdown state when the modal closes.
+  useEffect(() => {
+    if (!showAssignModal) {
+      setAssignOpen(false);
+      setAssignSearch("");
+    }
+  }, [showAssignModal]);
+
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedShift || !assignEmployeeId) return;
+    if (!selectedShift || assignEmployeeIds.length === 0) return;
     setSubmitting(true);
     // Re-check capacity against the DB (not just client state) right before
     // inserting — client `assignments` can be stale across concurrent
@@ -142,10 +164,12 @@ export default function Shifts() {
       loadData();
       return;
     }
-    const { error } = await supabase.from("shift_assignments").insert({ shift_id: selectedShift.id, employee_id: assignEmployeeId, status: "scheduled" });
+    const payload = assignEmployeeIds.map((empId) => ({ shift_id: selectedShift.id, employee_id: empId, status: "scheduled" }));
+    const { error } = await supabase.from("shift_assignments").insert(payload);
     setSubmitting(false);
-    if (error) { toast("Error", "Failed to assign employee", "error"); return; }
-    setAssignEmployeeId("");
+    if (error) { toast("Error", "Failed to assign employees", "error"); return; }
+    toast("Success", `${assignEmployeeIds.length} employee${assignEmployeeIds.length === 1 ? '' : 's'} assigned.`, "success");
+    setAssignEmployeeIds([]);
     setShowAssignModal(false);
     loadData();
   };
@@ -381,9 +405,6 @@ export default function Shifts() {
               <div className="text-center py-10">
                 <i className="ri-user-add-line text-3xl text-gray-200" />
                 <p className="text-[13px] text-gray-400 mt-2">No employees assigned yet</p>
-                <button onClick={() => setShowAssignModal(true)} className="mt-3 text-[12px] text-[#253C7D] font-medium hover:underline cursor-pointer">
-                  Assign first employee
-                </button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -488,25 +509,104 @@ export default function Shifts() {
             <form onSubmit={handleAssign} className="p-5 space-y-4">
               <p className="text-[12px] text-gray-500">Assigning to: <span className="font-semibold text-gray-800">{selectedShift.name}</span></p>
               <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Select Employee *</label>
-                <select
-                  required
-                  value={assignEmployeeId}
-                  onChange={(e) => setAssignEmployeeId(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer"
-                >
-                  <option value="">Choose employee...</option>
-                  {employees
-                    .filter((e) => !selectedShiftAssignments.some((a) => a.employee_id === e.id))
-                    .map((e) => (
-                      <option key={e.id} value={e.id}>{e.first_name} {e.last_name} – {e.department}</option>
-                    ))}
-                </select>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Select Employee(s) *</label>
+                <div className="relative" ref={assignRef}>
+                  <div className="relative">
+                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+                    <input
+                      type="text"
+                      role="combobox"
+                      aria-expanded={assignOpen}
+                      value={assignOpen ? assignSearch : assignEmployeeIds.length > 0 ? `${assignEmployeeIds.length} employee${assignEmployeeIds.length === 1 ? '' : 's'} selected` : assignSearch}
+                      onChange={(e) => { setAssignSearch(e.target.value); setAssignOpen(true); }}
+                      onFocus={() => setAssignOpen(true)}
+                      placeholder="Search by name, department, or role..."
+                      className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
+                    />
+                    <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                  {assignOpen && (() => {
+                    const excludeIds = selectedShiftAssignments.map((a) => a.employee_id);
+                    const available = employees.filter((emp) => !excludeIds.includes(emp.id));
+                    const filtered = available.filter((emp) => {
+                      const q = assignSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return `${emp.first_name} ${emp.last_name} ${emp.department} ${emp.role}`.toLowerCase().includes(q);
+                    });
+                    return (
+                      <div className="absolute z-20 mt-1.5 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto py-1">
+                        <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                          {filtered.length} employee{filtered.length === 1 ? '' : 's'}{assignSearch.trim() ? ` matching "${assignSearch.trim()}"` : ''}
+                        </p>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            const allIds = filtered.map((e) => e.id);
+                            const allSelected = allIds.length > 0 && allIds.every((id) => assignEmployeeIds.includes(id));
+                            setAssignEmployeeIds(allSelected ? [] : allIds);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                            filtered.length > 0 && filtered.every((e) => assignEmployeeIds.includes(e.id))
+                              ? "bg-[#253C7D] border-[#253C7D]"
+                              : filtered.some((e) => assignEmployeeIds.includes(e.id))
+                                ? "bg-[#253C7D]/20 border-[#253C7D]"
+                                : "border-gray-300 bg-white"
+                          }`}>
+                            {filtered.length > 0 && filtered.every((e) => assignEmployeeIds.includes(e.id)) && <i className="ri-check-line text-white text-xs" />}
+                            {filtered.some((e) => assignEmployeeIds.includes(e.id)) && !(filtered.length > 0 && filtered.every((e) => assignEmployeeIds.includes(e.id))) && <span className="w-2 h-0.5 bg-[#253C7D] rounded" />}
+                          </span>
+                          Select all ({filtered.length})
+                        </button>
+                        {filtered.length === 0 ? (
+                          <p className="px-3 py-4 text-[12px] text-gray-400">No employees available.</p>
+                        ) : (
+                          filtered.map((emp) => {
+                            const checked = assignEmployeeIds.includes(emp.id);
+                            return (
+                              <label
+                                key={emp.id}
+                                onMouseDown={(e) => e.preventDefault()}
+                                className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer ${checked ? "bg-[#253C7D]/5" : "hover:bg-gray-50"}`}
+                              >
+                                <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                  checked ? "bg-[#253C7D] border-[#253C7D]" : "border-gray-300 bg-white"
+                                }`}>
+                                  {checked && <i className="ri-check-line text-white text-xs" />}
+                                </span>
+                                <input type="checkbox" className="sr-only" checked={checked} onChange={() => {
+                                  setAssignEmployeeIds((prev) => prev.includes(emp.id) ? prev.filter((id) => id !== emp.id) : [...prev, emp.id]);
+                                }} />
+                                <span className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-[10px] font-bold shrink-0 overflow-hidden">
+                                  {emp.avatar_url ? (
+                                    <img src={emp.avatar_url} alt="" className="w-7 h-7 object-cover" />
+                                  ) : (
+                                    `${emp.first_name[0] || ''}${emp.last_name[0] || ''}`.toUpperCase()
+                                  )}
+                                </span>
+                                <span className="flex-1 min-w-0">
+                                  <span className="block text-[13px] font-medium text-gray-900">{emp.first_name} {emp.last_name}</span>
+                                  <span className="block text-[11px] text-gray-400 truncate">{emp.department}{emp.role ? ` · ${emp.role}` : ''}</span>
+                                </span>
+                                {checked && <i className="ri-check-line text-[#253C7D] text-sm shrink-0" />}
+                              </label>
+                            );
+                          })
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+                {assignEmployeeIds.length > 0 && (
+                  <p className="mt-1.5 text-[11px] text-gray-400">{assignEmployeeIds.length} employee{assignEmployeeIds.length === 1 ? '' : 's'} selected</p>
+                )}
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setShowAssignModal(false)} className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
-                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer">
-                  {submitting ? "Assigning..." : "Assign"}
+                <button type="submit" disabled={submitting || assignEmployeeIds.length === 0} className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer">
+                  {submitting ? "Assigning..." : `Assign${assignEmployeeIds.length > 1 ? ` (${assignEmployeeIds.length})` : ''}`}
                 </button>
               </div>
             </form>

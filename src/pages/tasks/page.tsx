@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -147,6 +148,10 @@ export default function TasksPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [assignedToIds, setAssignedToIds] = useState<string[]>([]);
+  const [taskSearch, setTaskSearch] = useState("");
+  const [taskOpen, setTaskOpen] = useState(false);
+  const taskRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
@@ -170,7 +175,7 @@ export default function TasksPage() {
 
     if (canViewAll) {
       const [{ data: emp }, { data: t }] = await Promise.all([
-        supabase.from("employees").select("id, first_name, last_name, department").eq("status", "active").order("first_name"),
+        supabase.from("employees").select("id, first_name, last_name, department, avatar_url").eq("status", "active").order("first_name"),
         supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department)").order("created_at", { ascending: false }),
       ]);
       setEmployees(emp || []);
@@ -180,7 +185,7 @@ export default function TasksPage() {
     }
 
     if (canViewOwnBranch && me.branch_id) {
-      const { data: team } = await supabase.from("employees").select("id, first_name, last_name, department").eq("status", "active").eq("branch_id", me.branch_id).order("first_name");
+      const { data: team } = await supabase.from("employees").select("id, first_name, last_name, department, avatar_url").eq("status", "active").eq("branch_id", me.branch_id).order("first_name");
       setEmployees(team || []);
       const ids = (team || []).map((e) => e.id);
       const { data: t } = ids.length
@@ -237,9 +242,27 @@ export default function TasksPage() {
     return () => { supabase.removeChannel(ch); };
   }, [showModal, editingTask, loadActivities]);
 
+  // Close the task dropdown when clicking outside.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (taskRef.current && !taskRef.current.contains(e.target as Node)) setTaskOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  // Reset dropdown state when the modal closes.
+  useEffect(() => {
+    if (!showModal) {
+      setTaskOpen(false);
+      setTaskSearch("");
+    }
+  }, [showModal]);
+
   const openCreate = () => {
     setEditingTask(null);
     setForm({ ...emptyForm, assigned_to: myEmployee?.id || "" });
+    setAssignedToIds(myEmployee ? [myEmployee.id] : []);
     setShowModal(true);
   };
 
@@ -256,10 +279,9 @@ export default function TasksPage() {
   };
 
   const handleSave = async () => {
-    if (!form.title.trim() || !form.assigned_to || !myEmployee) return;
-    setSaving(true);
-
     if (editingTask) {
+      if (!form.title.trim() || !form.assigned_to || !myEmployee) return;
+      setSaving(true);
       const { error } = await supabase.from("tasks").update({
         title: form.title.trim(),
         description: form.description || null,
@@ -272,17 +294,20 @@ export default function TasksPage() {
       if (error) { showToast("error", "Couldn't update task."); return; }
       showToast("success", "Task updated.");
     } else {
-      const { error } = await supabase.from("tasks").insert({
+      if (!form.title.trim() || assignedToIds.length === 0 || !myEmployee) return;
+      setSaving(true);
+      const payload = assignedToIds.map((empId) => ({
         title: form.title.trim(),
         description: form.description || null,
-        assigned_to: form.assigned_to,
+        assigned_to: empId,
         assigned_by: myEmployee.id,
         priority: form.priority,
         due_date: form.due_date || null,
-      });
+      }));
+      const { error } = await supabase.from("tasks").insert(payload);
       setSaving(false);
       if (error) { showToast("error", "Couldn't create task."); return; }
-      showToast("success", "Task created.");
+      showToast("success", `${assignedToIds.length} task${assignedToIds.length === 1 ? '' : 's'} created.`);
     }
     setShowModal(false);
     loadData();
@@ -501,17 +526,107 @@ export default function TasksPage() {
 
             {canManage ? (
               <>
-                <label className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Assigned To</label>
-                <select
-                  value={form.assigned_to}
-                  onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
-                  className="w-full mt-1 mb-3 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
-                >
-                  <option value="">Select employee</option>
-                  {employees.map((e) => (
-                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name}{e.id === myEmployee?.id ? " (Me)" : ""} — {e.department}</option>
-                  ))}
-                </select>
+                <label className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">{editingTask ? "Assigned To" : "Assigned To (select multiple)"}</label>
+                {editingTask ? (
+                  <EmployeeSearchSelect
+                    employees={employees}
+                    value={form.assigned_to}
+                    onChange={(id) => setForm({ ...form, assigned_to: id })}
+                  />
+                ) : (
+                  <>
+                    <div className="relative" ref={taskRef}>
+                      <div className="relative">
+                        <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+                        <input
+                          type="text"
+                          role="combobox"
+                          aria-expanded={taskOpen}
+                          value={taskOpen ? taskSearch : assignedToIds.length > 0 ? `${assignedToIds.length} employee${assignedToIds.length === 1 ? '' : 's'} selected` : taskSearch}
+                          onChange={(e) => { setTaskSearch(e.target.value); setTaskOpen(true); }}
+                          onFocus={() => setTaskOpen(true)}
+                          placeholder="Search by name, department..."
+                          className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
+                        />
+                        <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      </div>
+                      {taskOpen && (() => {
+                        const filtered = employees.filter((emp) => {
+                          const q = taskSearch.trim().toLowerCase();
+                          if (!q) return true;
+                          return `${emp.first_name} ${emp.last_name} ${emp.department}`.toLowerCase().includes(q);
+                        });
+                        return (
+                          <div className="absolute z-20 mt-1.5 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto py-1">
+                            <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                              {filtered.length} employee{filtered.length === 1 ? '' : 's'}{taskSearch.trim() ? ` matching "${taskSearch.trim()}"` : ''}
+                            </p>
+                            <button
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                const allIds = filtered.map((e) => e.id);
+                                const allSelected = allIds.length > 0 && allIds.every((id) => assignedToIds.includes(id));
+                                setAssignedToIds(allSelected ? [] : allIds);
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                            >
+                              <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                filtered.length > 0 && filtered.every((e) => assignedToIds.includes(e.id))
+                                  ? "bg-[#253C7D] border-[#253C7D]"
+                                  : filtered.some((e) => assignedToIds.includes(e.id))
+                                    ? "bg-[#253C7D]/20 border-[#253C7D]"
+                                    : "border-gray-300 bg-white"
+                              }`}>
+                                {filtered.length > 0 && filtered.every((e) => assignedToIds.includes(e.id)) && <i className="ri-check-line text-white text-xs" />}
+                                {filtered.some((e) => assignedToIds.includes(e.id)) && !(filtered.length > 0 && filtered.every((e) => assignedToIds.includes(e.id))) && <span className="w-2 h-0.5 bg-[#253C7D] rounded" />}
+                              </span>
+                              Select all ({filtered.length})
+                            </button>
+                            {filtered.length === 0 ? (
+                              <p className="px-3 py-4 text-[12px] text-gray-400">No employees found.</p>
+                            ) : (
+                              filtered.map((emp) => {
+                                const checked = assignedToIds.includes(emp.id);
+                                return (
+                                  <label
+                                    key={emp.id}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer ${checked ? "bg-[#253C7D]/5" : "hover:bg-gray-50"}`}
+                                  >
+                                    <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                      checked ? "bg-[#253C7D] border-[#253C7D]" : "border-gray-300 bg-white"
+                                    }`}>
+                                      {checked && <i className="ri-check-line text-white text-xs" />}
+                                    </span>
+                                    <input type="checkbox" className="sr-only" checked={checked} onChange={() => {
+                                      setAssignedToIds((prev) => prev.includes(emp.id) ? prev.filter((id) => id !== emp.id) : [...prev, emp.id]);
+                                    }} />
+                                    <span className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-[10px] font-bold shrink-0 overflow-hidden">
+                                      {emp.avatar_url ? (
+                                        <img src={emp.avatar_url} alt="" className="w-7 h-7 object-cover" />
+                                      ) : (
+                                        `${emp.first_name[0] || ''}${emp.last_name[0] || ''}`.toUpperCase()
+                                      )}
+                                    </span>
+                                    <span className="flex-1 min-w-0">
+                                      <span className="block text-[13px] font-medium text-gray-900">{emp.first_name} {emp.last_name}</span>
+                                      <span className="block text-[11px] text-gray-400 truncate">{emp.department}</span>
+                                    </span>
+                                    {checked && <i className="ri-check-line text-[#253C7D] text-sm shrink-0" />}
+                                  </label>
+                                );
+                              })
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    {assignedToIds.length > 0 && (
+                      <p className="mt-1.5 text-[11px] text-gray-400">{assignedToIds.length} employee{assignedToIds.length === 1 ? '' : 's'} selected</p>
+                    )}
+                  </>
+                )}
               </>
             ) : (
               <div className="mb-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700">
@@ -565,7 +680,7 @@ export default function TasksPage() {
                 disabled={saving}
                 className="flex-1 bg-[#253C7D] text-white py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] cursor-pointer disabled:opacity-60"
               >
-                {saving ? "Saving..." : editingTask ? "Save Changes" : "Create Task"}
+                {saving ? "Saving..." : editingTask ? "Save Changes" : assignedToIds.length > 1 ? `Create ${assignedToIds.length} Tasks` : "Create Task"}
               </button>
             </div>
 

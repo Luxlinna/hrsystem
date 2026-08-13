@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 
 // Local (not UTC) YYYY-MM-DD — toISOString() shifts to UTC, which mislabels
 // "today" during early-morning hours in timezones ahead of UTC (e.g. ICT).
@@ -670,16 +671,11 @@ export default function AttendancePage() {
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Employee *</label>
                 {canManage ? (
-                  <select
+                  <EmployeeSearchSelect
+                    employees={employees}
                     value={newRecord.employee_id}
-                    onChange={(e) => setNewRecord({ ...newRecord, employee_id: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
-                  >
-                    <option value="">Select employee...</option>
-                    {employees.map((e) => (
-                      <option key={e.id} value={e.id}>{e.first_name} {e.last_name} — {e.department}</option>
-                    ))}
-                  </select>
+                    onChange={(id) => setNewRecord({ ...newRecord, employee_id: id })}
+                  />
                 ) : (
                   <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
                     {myEmployee ? `${myEmployee.first_name} ${myEmployee.last_name} — ${myEmployee.department}` : "—"}

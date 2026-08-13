@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 
 interface Employee {
   id: string;
@@ -557,16 +558,11 @@ export default function DisciplinaryPage() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Employee *</label>
-                <select
+                <EmployeeSearchSelect
+                  employees={employees}
                   value={newRecord.employee_id}
-                  onChange={(e) => setNewRecord({ ...newRecord, employee_id: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
-                >
-                  <option value="">Select employee...</option>
-                  {employees.map((e) => (
-                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name} — {e.department}</option>
-                  ))}
-                </select>
+                  onChange={(id) => setNewRecord({ ...newRecord, employee_id: id })}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

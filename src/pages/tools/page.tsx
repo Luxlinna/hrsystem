@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 
 interface Tool {
   id: number;
@@ -77,7 +78,10 @@ export default function Tools() {
   const [filter, setFilter] = useState("All");
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [assignEmployeeId, setAssignEmployeeId] = useState("");
+  const [assignEmployeeIds, setAssignEmployeeIds] = useState<string[]>([]);
+  const [assignSearch, setAssignSearch] = useState("");
+  const [assignOpen, setAssignOpen] = useState(false);
+  const assignRef = useRef<HTMLDivElement>(null);
   const [categoryFilter, setCategoryFilter] = useState("");
 
   useEffect(() => {
@@ -122,27 +126,44 @@ export default function Tools() {
     setAssignModalOpen(true);
   };
 
+  // Close the assign dropdown when clicking outside.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (assignRef.current && !assignRef.current.contains(e.target as Node)) setAssignOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  // Reset dropdown state when modal closes.
+  useEffect(() => {
+    if (!assignModalOpen) {
+      setAssignOpen(false);
+      setAssignSearch("");
+    }
+  }, [assignModalOpen]);
+
   const assignTool = async () => {
-    if (!selectedTool || !assignEmployeeId) return;
-    const already = assignments.find(
-      (a) => a.tool_id === selectedTool.id && a.employee_id === assignEmployeeId
+    if (!selectedTool || assignEmployeeIds.length === 0) return;
+    // Filter out already-assigned employees
+    const alreadyAssigned = new Set(
+      assignments.filter((a) => a.tool_id === selectedTool.id).map((a) => a.employee_id)
     );
-    if (already) {
-      toast("Already assigned", "This employee already has access to this tool.", "warning");
+    const newIds = assignEmployeeIds.filter((id) => !alreadyAssigned.has(id));
+    if (newIds.length === 0) {
+      toast("Already assigned", "All selected employees already have access.", "warning");
       return;
     }
-    const { error } = await supabase.from("tool_assignments").insert({
-      tool_id: selectedTool.id,
-      employee_id: assignEmployeeId,
-    });
+    const payload = newIds.map((empId) => ({ tool_id: selectedTool.id, employee_id: empId }));
+    const { error } = await supabase.from("tool_assignments").insert(payload);
     if (error) {
       toast("Error", error.message, "error");
       return;
     }
-    const emp = employees.find((e) => e.id === assignEmployeeId);
-    toast("Assigned", `Tool access granted successfully.`, "success");
-    logActivity({ module: "tools", action: "created", entityType: "tool_assignment", actorName, actorRole: role?.name || "Unknown", description: `${emp ? `${emp.first_name} ${emp.last_name}` : "An employee"} was granted access to ${selectedTool.name}` });
+    toast("Assigned", `${newIds.length} employee${newIds.length === 1 ? '' : 's'} granted access to ${selectedTool.name}.`, "success");
+    logActivity({ module: "tools", action: "created", entityType: "tool_assignment", actorName, actorRole: role?.name || "Unknown", description: `${newIds.length} employee${newIds.length === 1 ? '' : 's'} granted access to ${selectedTool.name}` });
     setAssignModalOpen(false);
+    setAssignEmployeeIds([]);
     loadData();
   };
 
@@ -440,20 +461,94 @@ export default function Tools() {
             </p>
 
             <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider block mb-2">
-              Employee
+              Employee(s)
             </label>
-            <select
-              value={assignEmployeeId}
-              onChange={(e) => setAssignEmployeeId(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:border-[#253C7D] mb-6"
-            >
-              <option value="">Select employee...</option>
-              {employees.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.first_name} {e.last_name}
-                </option>
-              ))}
-            </select>
+            <div className="relative mb-4" ref={assignRef}>
+              <div className="relative">
+                <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+                <input
+                  type="text"
+                  role="combobox"
+                  aria-expanded={assignOpen}
+                  value={assignOpen ? assignSearch : assignEmployeeIds.length > 0 ? `${assignEmployeeIds.length} employee${assignEmployeeIds.length === 1 ? '' : 's'} selected` : assignSearch}
+                  onChange={(e) => { setAssignSearch(e.target.value); setAssignOpen(true); }}
+                  onFocus={() => setAssignOpen(true)}
+                  placeholder="Search by name..."
+                  className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
+                />
+                <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+              {assignOpen && (() => {
+                const filtered = employees.filter((emp) => {
+                  const q = assignSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return `${emp.first_name} ${emp.last_name} ${emp.department}`.toLowerCase().includes(q);
+                });
+                return (
+                  <div className="absolute z-20 mt-1.5 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto py-1">
+                    <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                      {filtered.length} employee{filtered.length === 1 ? '' : 's'}{assignSearch.trim() ? ` matching "${assignSearch.trim()}"` : ''}
+                    </p>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        const allIds = filtered.map((e) => e.id);
+                        const allSelected = allIds.length > 0 && allIds.every((id) => assignEmployeeIds.includes(id));
+                        setAssignEmployeeIds(allSelected ? [] : allIds);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
+                      <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                        filtered.length > 0 && filtered.every((e) => assignEmployeeIds.includes(e.id))
+                          ? "bg-[#253C7D] border-[#253C7D]"
+                          : filtered.some((e) => assignEmployeeIds.includes(e.id))
+                            ? "bg-[#253C7D]/20 border-[#253C7D]"
+                            : "border-gray-300 bg-white"
+                      }`}>
+                        {filtered.length > 0 && filtered.every((e) => assignEmployeeIds.includes(e.id)) && <i className="ri-check-line text-white text-xs" />}
+                        {filtered.some((e) => assignEmployeeIds.includes(e.id)) && !(filtered.length > 0 && filtered.every((e) => assignEmployeeIds.includes(e.id))) && <span className="w-2 h-0.5 bg-[#253C7D] rounded" />}
+                      </span>
+                      Select all ({filtered.length})
+                    </button>
+                    {filtered.length === 0 ? (
+                      <p className="px-3 py-4 text-[12px] text-gray-400">No employees found.</p>
+                    ) : (
+                      filtered.map((emp) => {
+                        const checked = assignEmployeeIds.includes(emp.id);
+                        return (
+                          <label
+                            key={emp.id}
+                            onMouseDown={(e) => e.preventDefault()}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer ${checked ? "bg-[#253C7D]/5" : "hover:bg-gray-50"}`}
+                          >
+                            <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                              checked ? "bg-[#253C7D] border-[#253C7D]" : "border-gray-300 bg-white"
+                            }`}>
+                              {checked && <i className="ri-check-line text-white text-xs" />}
+                            </span>
+                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => {
+                              setAssignEmployeeIds((prev) => prev.includes(emp.id) ? prev.filter((id) => id !== emp.id) : [...prev, emp.id]);
+                            }} />
+                            <span className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-[10px] font-bold shrink-0">
+                              {`${emp.first_name[0] || ''}${emp.last_name[0] || ''}`.toUpperCase()}
+                            </span>
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-[13px] font-medium text-gray-900">{emp.first_name} {emp.last_name}</span>
+                              <span className="block text-[11px] text-gray-400 truncate">{emp.department}</span>
+                            </span>
+                            {checked && <i className="ri-check-line text-[#253C7D] text-sm shrink-0" />}
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+            {assignEmployeeIds.length > 0 && (
+              <p className="text-[11px] text-gray-400 mb-3">{assignEmployeeIds.length} employee{assignEmployeeIds.length === 1 ? '' : 's'} selected</p>
+            )}
 
             <div className="flex gap-3">
               <button
@@ -464,10 +559,10 @@ export default function Tools() {
               </button>
               <button
                 onClick={assignTool}
-                disabled={!assignEmployeeId}
+                disabled={assignEmployeeIds.length === 0}
                 className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
               >
-                Grant Access
+                {assignEmployeeIds.length > 1 ? `Grant Access (${assignEmployeeIds.length})` : "Grant Access"}
               </button>
             </div>
           </div>
