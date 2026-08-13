@@ -34,18 +34,14 @@ const TABS = [
 
 export default function SelfServicePage() {
   const { user } = useAuth();
-  const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const canViewAll = isAdmin || !!role?.self_service_all_employees;
+  const { loading: permsLoading } = usePermissions();
 
   const [searchParams] = useSearchParams();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [selectedId, setSelectedId] = useState<string>("");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "payslips");
   const quickCheckIn = searchParams.get("quickCheckIn") === "1";
   const quickCheckOut = searchParams.get("quickCheckOut") === "1";
   const [loading, setLoading] = useState(true);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [noOwnRecord, setNoOwnRecord] = useState(false);
 
   // The router keeps this page mounted across search-param-only navigations
@@ -57,37 +53,14 @@ export default function SelfServicePage() {
     if (t) setActiveTab(t);
   }, [searchParams]);
 
+  // Self-service is strictly "your own account, your own actions" — actions like
+  // Clock In/Out post as whichever employee is loaded here, so this must always
+  // resolve to the signed-in user's own record and never anyone else's.
   useEffect(() => {
     if (permsLoading) return;
+    if (!user?.email) { setLoading(false); return; }
 
     const SELECT = "id, first_name, last_name, role, department, status, join_date, email, avatar_url, branches(name)";
-
-    if (canViewAll) {
-      supabase
-        .from("employees")
-        .select(SELECT)
-        .order("first_name")
-        .then(({ data }) => {
-          const all = (data as unknown as Employee[]) || [];
-          const own = all.find((e) => e.email === user?.email) || null;
-          // Show active employees (the normal switcher list) but always keep the
-          // signed-in user's own record available even if they're mid-onboarding/offboarding.
-          const list = all.filter((e) => e.status === "active" || e.id === own?.id);
-          setEmployees(list);
-          // Default to the signed-in user's own record, not just the first name alphabetically.
-          const emp = own || list[0] || null;
-          if (emp) {
-            setSelectedId(emp.id);
-            setSelectedEmployee(emp);
-          }
-          setLoading(false);
-        });
-      return;
-    }
-
-    // Locked to the employee record matching this account's own email —
-    // no cross-employee switcher for roles without explicit override.
-    if (!user?.email) { setLoading(false); return; }
     supabase
       .from("employees")
       .select(SELECT)
@@ -96,22 +69,13 @@ export default function SelfServicePage() {
       .then(({ data }) => {
         const emp = data as unknown as Employee | null;
         if (emp) {
-          setEmployees([emp]);
-          setSelectedId(emp.id);
           setSelectedEmployee(emp);
         } else {
           setNoOwnRecord(true);
         }
         setLoading(false);
       });
-  }, [canViewAll, permsLoading, user?.email]);
-
-  const handleSelect = (emp: Employee) => {
-    setSelectedId(emp.id);
-    setSelectedEmployee(emp);
-    setDropdownOpen(false);
-    setActiveTab("payslips");
-  };
+  }, [permsLoading, user?.email]);
 
   const yearsAtCompany = selectedEmployee?.join_date
     ? Math.floor((new Date().getTime() - new Date(selectedEmployee.join_date).getTime()) / (365.25 * 86400000))
@@ -178,47 +142,8 @@ export default function SelfServicePage() {
               </>
             )}
           </div>
-
-          {/* Employee Picker — only for roles allowed to view other employees' Self-Service data */}
-          {canViewAll && (
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-exchange-line" />
-                Switch Employee
-                {dropdownOpen ? <i className="ri-arrow-up-s-line text-gray-400" /> : <i className="ri-arrow-down-s-line text-gray-400" />}
-              </button>
-              {dropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-100 rounded-xl overflow-hidden z-30 max-h-72 overflow-y-auto">
-                  {employees.map((emp) => (
-                    <button
-                      key={emp.id}
-                      onClick={() => handleSelect(emp)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer text-left ${selectedId === emp.id ? "bg-[#253C7D]/5" : ""}`}
-                    >
-                      <img
-                        src={emp.avatar_url || `https://readdy.ai/api/search-image?query=professional%20headshot%20portrait%20person%20in%20business%20attire%20against%20neutral%20background&width=40&height=40&seq=picker-${emp.id}&orientation=squarish`}
-                        alt={emp.first_name}
-                        className="w-8 h-8 rounded-lg object-cover shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{emp.first_name} {emp.last_name}</p>
-                        <p className="text-xs text-gray-400 truncate">{emp.role}</p>
-                      </div>
-                      {selectedId === emp.id && <i className="ri-checkbox-circle-fill text-[#253C7D] shrink-0" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Click outside to close dropdown */}
-      {dropdownOpen && <div className="fixed inset-0 z-20" onClick={() => setDropdownOpen(false)} />}
 
       {/* Tabs */}
       <div className="flex items-center gap-1 bg-white border border-gray-100 rounded-xl p-1 mb-5 overflow-x-auto">
