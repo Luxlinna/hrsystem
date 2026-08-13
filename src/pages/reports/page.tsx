@@ -175,7 +175,7 @@ export default function ReportsPage() {
           <button
             onClick={() => setExportOpen((v) => !v)}
             disabled={reportData.length === 0}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white rounded-lg text-sm font-medium hover:bg-[#1F336A] transition-colors disabled:opacity-40 cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#253C7D] text-white rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] shadow-sm transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
           >
             {exporting ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-download-2-line" />}
             {exporting ? `Exporting ${EXPORT_FORMAT_LABEL[exporting]}...` : "Export"}

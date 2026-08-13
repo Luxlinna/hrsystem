@@ -459,9 +459,9 @@ export default function Onboarding() {
                                     href={doc.file_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[10px] text-[#253C7D] hover:underline"
+                                    className="inline-flex items-center justify-center w-7 h-7 bg-[#253C7D]/10 text-[#253C7D] rounded-lg hover:bg-[#253C7D]/20 transition-all"
                                   >
-                                    <i className="ri-download-line" />
+                                    <i className="ri-download-line text-sm" />
                                   </a>
                                 )}
                               </div>
