@@ -37,6 +37,9 @@ export function getNotificationTarget(
       return { path: "/benefits", module: "benefits" };
     case "tools":
       return { path: "/tools", module: "tools" };
+    case "meeting_rooms":
+    case "meeting-rooms":
+      return { path: `/meeting-rooms${highlight}`, module: "meeting-rooms" };
     default:
       return null;
   }
