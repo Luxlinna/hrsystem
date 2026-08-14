@@ -92,21 +92,38 @@ serve(async (req) => {
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData?.user) return json({ error: "Not authenticated" }, 401);
 
-    const { title, body, link, data } = await req.json();
+    const { title, body, link, data, broadcast, excludeUserId } = await req.json();
     if (!title || !body) return json({ error: "Missing title or body" }, 400);
 
     const admin = createClient(supabaseUrl, serviceKey);
-    const { data: tokenRows } = await admin
-      .from("fcm_tokens")
-      .select("token")
-      .eq("user_id", userData.user.id);
+    let tokenQuery = admin.from("fcm_tokens").select("token, user_id");
+
+    if (broadcast) {
+      const { data: assignment } = await admin
+        .from("user_role_assignments")
+        .select("app_roles(is_admin, allowed_modules, name)")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+      const role = assignment?.app_roles as { is_admin?: boolean; allowed_modules?: string[]; name?: string } | null;
+      const canBroadcast =
+        !!role &&
+        !["Employee", "Staff"].includes(role.name || "") &&
+        (role.is_admin || role.allowed_modules?.includes("*") || role.allowed_modules?.includes("announcements"));
+      if (!canBroadcast) return json({ error: "Not authorized to broadcast push notifications" }, 403);
+      if (excludeUserId) tokenQuery = tokenQuery.neq("user_id", String(excludeUserId));
+    } else {
+      tokenQuery = tokenQuery.eq("user_id", userData.user.id);
+    }
+
+    const { data: tokenRows } = await tokenQuery;
 
     if (!tokenRows || tokenRows.length === 0) {
-      return json({ sent: 0, message: "No registered devices for this user." });
+      return json({ sent: 0, message: broadcast ? "No registered devices." : "No registered devices for this user." });
     }
 
     const accessToken = await getGoogleAccessToken(serviceAccount);
     const projectId = serviceAccount.project_id;
+    const isUrgentAnnouncement = data?.source === "announcements" && data?.priority === "urgent";
 
     let sent = 0;
     const errors: string[] = [];
@@ -119,7 +136,16 @@ serve(async (req) => {
             token: row.token,
             notification: { title, body },
             webpush: {
-              notification: { icon: "/favicon.ico" },
+              notification: {
+                icon: "/favicon.ico",
+                requireInteraction: isUrgentAnnouncement,
+                actions: isUrgentAnnouncement
+                  ? [
+                      { action: "accept", title: "Accept" },
+                      { action: "close", title: "Close" },
+                    ]
+                  : undefined,
+              },
               fcm_options: link ? { link } : undefined,
             },
             data: data ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])) : undefined,

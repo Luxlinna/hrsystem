@@ -19,6 +19,11 @@ export function useFCM() {
       if (!msg) return;
 
       try {
+        if ("Notification" in window && Notification.permission === "default") {
+          await Notification.requestPermission();
+        }
+        if ("Notification" in window && Notification.permission !== "granted") return;
+
         const token = await getToken(msg, { vapidKey: VAPID_KEY });
         if (token) {
           await supabase.from("fcm_tokens").upsert(

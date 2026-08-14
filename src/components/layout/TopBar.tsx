@@ -14,6 +14,7 @@ interface NotificationRow {
   type: "info" | "success" | "warning" | "error";
   source: string;
   entity_id: string | null;
+  recipient_user_id: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -388,9 +389,11 @@ export default function TopBar() {
   };
 
   useEffect(() => {
+    if (!user?.id) return;
     supabase
       .from("notifications")
       .select("*")
+      .or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`)
       .order("created_at", { ascending: false })
       .limit(6)
       .then(({ data }) => setNotifs(data || []));
@@ -398,6 +401,7 @@ export default function TopBar() {
     supabase
       .from("notifications")
       .select("id", { count: "exact", head: true })
+      .or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`)
       .eq("is_read", false)
       .then(({ count }) => setUnreadCount(count || 0));
 
@@ -408,6 +412,7 @@ export default function TopBar() {
         { event: "INSERT", schema: "public", table: "notifications" },
         (payload) => {
           const row = payload.new as NotificationRow;
+          if (row.recipient_user_id && row.recipient_user_id !== user.id) return;
           setNotifs((prev) => [row, ...prev].slice(0, 6));
           setUnreadCount((c) => c + 1);
           toast(row.title, row.message, row.type);
@@ -419,6 +424,7 @@ export default function TopBar() {
         (payload) => {
           const row = payload.new as NotificationRow;
           const old = payload.old as NotificationRow;
+          if (row.recipient_user_id && row.recipient_user_id !== user.id) return;
           setNotifs((prev) => prev.map((n) => (n.id === row.id ? row : n)));
           if (!old.is_read && row.is_read) setUnreadCount((c) => Math.max(0, c - 1));
           else if (old.is_read && !row.is_read) setUnreadCount((c) => c + 1);
@@ -429,6 +435,7 @@ export default function TopBar() {
         { event: "DELETE", schema: "public", table: "notifications" },
         (payload) => {
           const old = payload.old as NotificationRow;
+          if (old.recipient_user_id && old.recipient_user_id !== user.id) return;
           setNotifs((prev) => prev.filter((n) => n.id !== old.id));
           if (!old.is_read) setUnreadCount((c) => Math.max(0, c - 1));
         }
@@ -438,7 +445,7 @@ export default function TopBar() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {

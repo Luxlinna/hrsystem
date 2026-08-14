@@ -82,9 +82,11 @@ export default function Sidebar() {
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   useEffect(() => {
+    if (!user?.id) return;
     supabase
       .from("notifications")
       .select("id", { count: "exact", head: true })
+      .or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`)
       .eq("is_read", false)
       .then(({ count }) => setUnreadCount(count || 0));
 
@@ -93,14 +95,19 @@ export default function Sidebar() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications" },
-        () => setUnreadCount((c) => c + 1)
+        (payload) => {
+          const row = payload.new as { recipient_user_id?: string | null };
+          if (row.recipient_user_id && row.recipient_user_id !== user.id) return;
+          setUnreadCount((c) => c + 1);
+        }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "notifications" },
         (payload) => {
           const old = payload.old as { is_read: boolean };
-          const row = payload.new as { is_read: boolean };
+          const row = payload.new as { is_read: boolean; recipient_user_id?: string | null };
+          if (row.recipient_user_id && row.recipient_user_id !== user.id) return;
           if (!old.is_read && row.is_read) setUnreadCount((c) => Math.max(0, c - 1));
           else if (old.is_read && !row.is_read) setUnreadCount((c) => c + 1);
         }
@@ -109,7 +116,8 @@ export default function Sidebar() {
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "notifications" },
         (payload) => {
-          const old = payload.old as { is_read: boolean };
+          const old = payload.old as { is_read: boolean; recipient_user_id?: string | null };
+          if (old.recipient_user_id && old.recipient_user_id !== user.id) return;
           if (!old.is_read) setUnreadCount((c) => Math.max(0, c - 1));
         }
       )
@@ -118,7 +126,7 @@ export default function Sidebar() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
 
   const handleMouseEnter = useCallback(() => setHovered(true), []);
   const handleMouseLeave = useCallback(() => setHovered(false), []);

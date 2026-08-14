@@ -41,6 +41,7 @@
   }
 
   html.dark .bg-white,
+  html.dark .bg-white\/60,
   html.dark .bg-white\/80,
   html.dark .bg-white\/90,
   html.dark .bg-\[\#FAFAFA\],
@@ -49,6 +50,7 @@
   html.dark .bg-\[\#F8F8F6\],
   html.dark .bg-\[\#F8F8F7\],
   html.dark .bg-gray-50,
+  html.dark .bg-gray-50\/30,
   html.dark .bg-gray-50\/50,
   html.dark .bg-gray-100 {
     background-color: #111827 !important;
@@ -112,6 +114,7 @@
   }
 
   html.dark .hover\:bg-gray-50:hover,
+  html.dark .hover\:bg-gray-50\/50:hover,
   html.dark .hover\:bg-gray-100:hover,
   html.dark .hover\:bg-gray-200:hover,
   html.dark .hover\:bg-black\/5:hover {

@@ -6,6 +6,7 @@ import BottomNav from "./BottomNav";
 import { SidebarProvider, useSidebar } from "./SidebarContext";
 import { useFCM } from "@/hooks/useFCM";
 import GeofenceCheckInAlert from "@/components/GeofenceCheckInAlert";
+import UrgentAnnouncementAlert from "@/components/UrgentAnnouncementAlert";
 
 function LayoutContent() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -33,6 +34,7 @@ function LayoutContent() {
         <BottomNav />
       </div>
       <GeofenceCheckInAlert />
+      <UrgentAnnouncementAlert />
     </div>
   );
 }

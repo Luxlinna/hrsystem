@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getNotificationTarget } from "@/lib/notificationRoutes";
+import { useAuth } from "@/context/AuthContext";
 
 interface Notification {
   id: string;
@@ -12,6 +13,7 @@ interface Notification {
   type: "info" | "warning" | "success" | "error";
   source: string;
   entity_id: string | null;
+  recipient_user_id: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -56,10 +58,12 @@ const sourceLabels: Record<string, string> = {
   it_management: "IT",
   benefits: "Benefits",
   tools: "Tools",
+  announcements: "Announcements",
 };
 
 export default function Notifications() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { can } = usePermissions();
   const [notifs, setNotifs] = useState<Notification[]>([]);
   const [filter, setFilter] = useState("all");
@@ -69,6 +73,7 @@ export default function Notifications() {
   const [realtimeEnabled, setRealtimeEnabled] = useState(true);
 
   useEffect(() => {
+    if (!user?.id) return;
     loadNotifications();
 
     const channel = supabase
@@ -78,6 +83,7 @@ export default function Notifications() {
         { event: "INSERT", schema: "public", table: "notifications" },
         (payload) => {
           const newNotif = payload.new as Notification;
+          if (newNotif.recipient_user_id && newNotif.recipient_user_id !== user.id) return;
           setNotifs((prev) => [newNotif, ...prev]);
           setUnreadCount((c) => c + 1);
         }
@@ -87,6 +93,7 @@ export default function Notifications() {
         { event: "UPDATE", schema: "public", table: "notifications" },
         (payload) => {
           const updated = payload.new as Notification;
+          if (updated.recipient_user_id && updated.recipient_user_id !== user.id) return;
           setNotifs((prev) =>
             prev.map((n) => (n.id === updated.id ? updated : n))
           );
@@ -103,6 +110,7 @@ export default function Notifications() {
         { event: "DELETE", schema: "public", table: "notifications" },
         (payload) => {
           const deleted = payload.old as Notification;
+          if (deleted.recipient_user_id && deleted.recipient_user_id !== user.id) return;
           setNotifs((prev) => prev.filter((n) => n.id !== deleted.id));
           if (!deleted.is_read) {
             setUnreadCount((c) => Math.max(0, c - 1));
@@ -116,13 +124,15 @@ export default function Notifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
 
   const loadNotifications = async () => {
+    if (!user?.id) return;
     setLoading(true);
     const { data } = await supabase
       .from("notifications")
       .select("*")
+      .or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`)
       .order("created_at", { ascending: false });
     const list = (data || []) as Notification[];
     setNotifs(list);

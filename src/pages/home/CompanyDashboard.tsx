@@ -16,6 +16,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/context/AuthContext";
 
 const pieColors = ["#253C7D", "#29ABE2", "#74C8EC", "#A8D8D8", "#D4ECEB"];
 
@@ -56,6 +57,7 @@ const ADMIN_ACTIONS = [
 
 export default function CompanyDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { can } = usePermissions();
   const [fabOpen, setFabOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -140,7 +142,9 @@ export default function CompanyDashboard() {
       supabase.from("onboarding_requests").select("*, employees(first_name, last_name, role, branch_id)").eq("status", "pending"),
       supabase.from("leave_requests").select("*, employees(first_name, last_name, role, department)").order("created_at", { ascending: false }).limit(5),
       supabase.from("payroll_records").select("*").eq("month", currentMonth),
-      supabase.from("notifications").select("*").eq("is_read", false).limit(3),
+      user?.id
+        ? supabase.from("notifications").select("*").or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).eq("is_read", false).limit(3)
+        : Promise.resolve({ data: [] }),
       supabase.from("job_postings").select("*"),
       supabase.from("candidates").select("*"),
     ]);
