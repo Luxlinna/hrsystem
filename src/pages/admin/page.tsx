@@ -22,6 +22,7 @@ interface AppRole {
   disciplinary_view_own_branch: boolean;
   task_view_all_employees: boolean;
   task_view_own_branch: boolean;
+  meeting_rooms_approve: boolean;
   created_at: string;
 }
 
@@ -92,6 +93,7 @@ const SCOPE_OVERRIDES = [
   { key: "disciplinary_view_own_branch", label: "Can view their own branch's disciplinary records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" disciplinary is already on." },
   { key: "task_view_all_employees", label: "Can view/assign tasks for all employees", hint: "Off by default — this role only sees and manages their own tasks." },
   { key: "task_view_own_branch", label: "Can view/assign their own branch's tasks", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" tasks is already on." },
+  { key: "meeting_rooms_approve", label: "Can approve / reject meeting room bookings", hint: "Allows this role to approve, reject, and adjust requirements & refreshments for meeting room reservations across all branches." },
 ] as const;
 
 const BLANK_ROLE = {
