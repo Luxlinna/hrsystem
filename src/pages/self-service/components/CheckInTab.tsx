@@ -48,6 +48,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const [currentTime, setCurrentTime] = useState(new Date());
   const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
   const [notes, setNotes] = useState("");
+  const [earlyCheckoutReason, setEarlyCheckoutReason] = useState("");
 
   const [branch, setBranch] = useState<BranchGeofence | null>(null);
   const [checkInStep, setCheckInStep] = useState<CheckInStep>("idle");
@@ -215,7 +216,6 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   };
 
   const handleClockIn = async () => {
-    setProcessing(true);
     const now = new Date();
     const timeStr = now.toTimeString().split(" ")[0];
     const [startH, startM] = workStartTime.split(":").map(Number);
@@ -241,13 +241,13 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     } else {
       showToast("success", `Clocked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > LATE_GRACE_MINUTES ? ` — ${lateMinutes} min late` : " — On time!"}`);
       setNotes("");
+      setEarlyCheckoutReason("");
       loadRecords();
     }
   };
 
   const handleClockOut = async () => {
     if (!todayRecord) return;
-    setProcessing(true);
     const now = new Date();
     const timeStr = now.toTimeString().split(" ")[0];
 
@@ -260,8 +260,42 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       earlyLeaveMinutes = Math.max(0, (endH * 60 + endM) - (now.getHours() * 60 + now.getMinutes()));
     }
 
+    const requiresReason = earlyLeaveMinutes > EARLY_LEAVE_GRACE_MINUTES;
+    if (requiresReason && !earlyCheckoutReason.trim()) {
+      showToast("error", "Please enter a reason before checking out early.");
+      return;
+    }
+
+    if (!browserSupportsWebAuthn()) {
+      setBiometricError("This browser/device doesn't support fingerprint verification. Try a modern phone or laptop browser (Chrome, Safari, Edge).");
+      return;
+    }
+
+    setBiometricError("");
+    setProcessing(true);
+    try {
+      if (hasFingerprint) {
+        await verifyDeviceFingerprint();
+      } else {
+        await registerDeviceFingerprint(navigator.platform || "This device");
+        setHasFingerprint(true);
+      }
+    } catch (err: any) {
+      setProcessing(false);
+      setBiometricError(
+        err?.name === "NotAllowedError"
+          ? "Fingerprint check was cancelled or didn't match. Try again."
+          : err?.message || "Fingerprint verification failed."
+      );
+      return;
+    }
+
+    const checkoutNotes = requiresReason
+      ? [todayRecord.notes, `Early checkout reason: ${earlyCheckoutReason.trim()}`].filter(Boolean).join("\n")
+      : todayRecord.notes;
+
     const { error } = await supabase.from("attendance_records")
-      .update({ clock_out: timeStr, hours_worked: hoursWorked, early_leave_minutes: earlyLeaveMinutes })
+      .update({ clock_out: timeStr, hours_worked: hoursWorked, early_leave_minutes: earlyLeaveMinutes, notes: checkoutNotes })
       .eq("id", todayRecord.id);
 
     setProcessing(false);
@@ -277,14 +311,20 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
   const isCheckedIn = !!todayRecord?.clock_in;
   const isCheckedOut = !!(todayRecord?.clock_in && todayRecord?.clock_out);
+  const earlyCheckoutMinutesNow = (() => {
+    if (!workEndTime || !isCheckedIn || isCheckedOut) return 0;
+    const [endH, endM] = workEndTime.split(":").map(Number);
+    return Math.max(0, (endH * 60 + endM) - (currentTime.getHours() * 60 + currentTime.getMinutes()));
+  })();
+  const isEarlyCheckoutNow = earlyCheckoutMinutesNow > EARLY_LEAVE_GRACE_MINUTES;
 
   const autoCheckedOutRef = useRef(false);
   useEffect(() => {
-    if (!autoCheckOut || loading || autoCheckedOutRef.current) return;
+    if (!autoCheckOut || loading || autoCheckedOutRef.current || isEarlyCheckoutNow) return;
     if (!isCheckedIn || isCheckedOut) return;
     autoCheckedOutRef.current = true;
     handleClockOut();
-  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut]);
+  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow]);
 
   const getStatusColor = (status: string) => {
     const map: Record<string, string> = {
@@ -433,13 +473,36 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                   </span>
                   <span className="text-[13px] font-semibold">Clocked in at {todayRecord?.clock_in?.slice(0, 5)}</span>
                 </div>
+                {isEarlyCheckoutNow && (
+                  <div className="space-y-1">
+                    <div className="bg-amber-400/20 border border-amber-200/40 rounded-xl px-4 py-3">
+                      <p className="text-[12px] font-semibold text-amber-100">
+                        Checking out {earlyCheckoutMinutesNow} minutes early. Reason is required.
+                      </p>
+                    </div>
+                    <textarea
+                      value={earlyCheckoutReason}
+                      onChange={(e) => setEarlyCheckoutReason(e.target.value)}
+                      rows={3}
+                      maxLength={300}
+                      placeholder="Reason for early checkout..."
+                      className="w-full px-3 py-2 bg-white/20 backdrop-blur border border-white/30 rounded-lg text-[12px] text-white placeholder:text-white/50 focus:outline-none focus:border-white/60 resize-none"
+                    />
+                  </div>
+                )}
+                {biometricError && (
+                  <div className="bg-red-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
+                    <i className="ri-fingerprint-line text-red-200 text-base shrink-0 mt-0.5" />
+                    <p className="text-[12px] leading-relaxed">{biometricError}</p>
+                  </div>
+                )}
                 <button
                   onClick={handleClockOut}
                   disabled={processing}
                   className="w-full flex items-center justify-center gap-2 bg-white/20 backdrop-blur border border-white/40 text-white font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/30 transition-colors disabled:opacity-60 cursor-pointer"
                 >
-                  <i className="ri-logout-circle-r-line text-lg" />
-                  {processing ? "Processing..." : "Clock Out"}
+                  <i className="ri-fingerprint-line text-lg" />
+                  {processing ? "Verifying fingerprint..." : "Confirm Fingerprint & Clock Out"}
                 </button>
               </div>
             )}
