@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getNotificationTarget } from "@/lib/notificationRoutes";
 import { toast } from "@/components/Toast";
+import { useTheme } from "@/context/ThemeContext";
 
 interface NotificationRow {
   id: string;
@@ -288,6 +289,7 @@ export default function TopBar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { can, isAdmin } = usePermissions();
+  const { isDark, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -590,6 +592,16 @@ export default function TopBar() {
         </div>
 
         <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className={`w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors cursor-pointer ${iconColor}`}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <i className={`${isDark ? "ri-sun-line" : "ri-moon-line"} text-lg`} />
+          </button>
+
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setNotifOpen(!notifOpen)}

@@ -8,13 +8,13 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string |
 
 let loadPromise: Promise<void> | null = null;
 
-function loadGoogleMaps(): Promise<void> {
-  if ((window as any).google?.maps?.Geocoder) return Promise.resolve();
+export function loadGoogleMaps(): Promise<void> {
+  if ((window as any).google?.maps?.Geocoder && (window as any).google?.maps?.places?.Autocomplete) return Promise.resolve();
   if (!GOOGLE_MAPS_API_KEY) return Promise.reject(new Error("Google Maps isn't configured (missing API key)."));
   if (!loadPromise) {
     loadPromise = new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
       script.onload = () => resolve();
       script.onerror = () => {
@@ -54,6 +54,28 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult> {
         reject(new Error("No location found for that address."));
       } else {
         reject(new Error(`Geocoding failed (${status}).`));
+      }
+    });
+  });
+}
+
+export async function reverseGeocode(lat: number, lng: number): Promise<GeocodeResult> {
+  await loadGoogleMaps();
+  const geocoder = new (window as any).google.maps.Geocoder();
+  return new Promise((resolve, reject) => {
+    geocoder.geocode({ location: { lat, lng } }, (results: any[], status: string) => {
+      if (status === "OK" && results?.[0]) {
+        const loc = results[0].geometry.location;
+        resolve({
+          lat: loc.lat(),
+          lng: loc.lng(),
+          formattedAddress: results[0].formatted_address,
+          precise: results[0].geometry.location_type === "ROOFTOP",
+        });
+      } else if (status === "ZERO_RESULTS") {
+        reject(new Error("No address found for your current location."));
+      } else {
+        reject(new Error(`Reverse geocoding failed (${status}).`));
       }
     });
   });
