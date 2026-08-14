@@ -127,6 +127,7 @@ export default function DisciplinaryPage() {
         supabase
           .from("disciplinary_records")
           .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+          .is("deleted_at", null)
           .order("created_at", { ascending: false }),
         supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url").eq("status", "active").order("first_name"),
       ]);
@@ -164,6 +165,7 @@ export default function DisciplinaryPage() {
             .from("disciplinary_records")
             .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
             .in("employee_id", ids)
+            .is("deleted_at", null)
             .order("created_at", { ascending: false })
         : { data: [] };
       setRecords((rData as DisciplinaryRecord[]) || []);
@@ -176,6 +178,7 @@ export default function DisciplinaryPage() {
       .from("disciplinary_records")
       .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
       .eq("employee_id", me.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     setRecords((rData as DisciplinaryRecord[]) || []);
     setLoading(false);
@@ -246,6 +249,19 @@ export default function DisciplinaryPage() {
     if (selectedRecord && selectedRecord.id === id) {
       setSelectedRecord({ ...selectedRecord, status: status as DisciplinaryRecord["status"] });
     }
+    fetchData();
+  }
+
+  async function deleteRecord(record: DisciplinaryRecord) {
+    if (!canManage) return;
+    if (!confirm(`Move "${record.title}" to the Recycle Bin? It can be restored later.`)) return;
+    const { error } = await supabase
+      .from("disciplinary_records")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", record.id);
+    if (error) { toast("Error", "Failed to delete record", "error"); return; }
+    setSelectedRecord(null);
+    toast("Moved to Recycle Bin", "The record can be restored from the Recycle Bin.", "success");
     fetchData();
   }
 
@@ -566,6 +582,16 @@ export default function DisciplinaryPage() {
                     </div>
                   )}
                 </div>
+              )}
+              {/* Delete (soft) */}
+              {canManage && (
+                <button
+                  onClick={() => deleteRecord(selectedRecord)}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-delete-bin-line text-sm" />
+                  Move to Recycle Bin
+                </button>
               )}
               {/* Status update actions */}
               {canManage && selectedRecord.status !== "resolved" && selectedRecord.status !== "closed" && (

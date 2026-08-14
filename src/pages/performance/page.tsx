@@ -96,7 +96,7 @@ export default function PerformanceReviews() {
   useEffect(() => {
     if (!reviewForm.employee_id) { setTaskStats(null); return; }
     let cancelled = false;
-    supabase.from("tasks").select("status, due_date").eq("assigned_to", reviewForm.employee_id).then(({ data }) => {
+    supabase.from("tasks").select("status, due_date").eq("assigned_to", reviewForm.employee_id).is("deleted_at", null).then(({ data }) => {
       if (cancelled) return;
       const rows = data || [];
       const today = new Date().toISOString().split("T")[0];

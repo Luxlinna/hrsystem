@@ -43,6 +43,7 @@ const Training = lazy(() => import("../pages/training/page"));
 const Disciplinary = lazy(() => import("../pages/disciplinary/page"));
 const Documents = lazy(() => import("../pages/documents/page"));
 const AdminPortal = lazy(() => import("../pages/admin/page"));
+const RecycleBin = lazy(() => import("../pages/recycle-bin/page"));
 const Profile = lazy(() => import("../pages/profile/page"));
 
 const fallback = <div className="p-10 text-center text-gray-400">Loading...</div>;
@@ -103,6 +104,10 @@ const routes: RouteObject[] = [
       {
         path: "admin",
         element: <Suspense fallback={fallback}><RequireAdmin><AdminPortal /></RequireAdmin></Suspense>,
+      },
+      {
+        path: "recycle-bin",
+        element: <Suspense fallback={fallback}><RequireAdmin><RecycleBin /></RequireAdmin></Suspense>,
       },
     ],
   },

@@ -133,6 +133,7 @@ const emptyForm = { title: "", description: "", assigned_to: "", priority: "medi
 
 export default function TasksPage() {
   const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const canViewAll = isAdmin || !!role?.task_view_all_employees;
   const canViewOwnBranch = !canViewAll && !!role?.task_view_own_branch;
@@ -188,7 +189,7 @@ export default function TasksPage() {
     if (canViewAll) {
       const [{ data: emp }, { data: t }] = await Promise.all([
         supabase.from("employees").select("id, first_name, last_name, department, avatar_url").eq("status", "active").order("first_name"),
-        supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department)").order("created_at", { ascending: false }),
+        supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department)").is("deleted_at", null).order("created_at", { ascending: false }),
       ]);
       setEmployees(emp || []);
       setTasks((t as any) || []);
@@ -201,7 +202,7 @@ export default function TasksPage() {
       setEmployees(team || []);
       const ids = (team || []).map((e) => e.id);
       const { data: t } = ids.length
-        ? await supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department)").in("assigned_to", ids).order("created_at", { ascending: false })
+        ? await supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department)").in("assigned_to", ids).is("deleted_at", null).order("created_at", { ascending: false })
         : { data: [] };
       setTasks((t as any) || []);
       setLoading(false);
@@ -213,6 +214,7 @@ export default function TasksPage() {
       .from("tasks")
       .select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department)")
       .eq("assigned_to", me.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     setTasks((t as any) || []);
     setLoading(false);
@@ -336,10 +338,13 @@ export default function TasksPage() {
   };
 
   const handleDelete = async (t: Task) => {
-    if (!confirm(`Delete "${t.title}"?`)) return;
-    const { error } = await supabase.from("tasks").delete().eq("id", t.id);
+    if (!confirm(`Delete "${t.title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("tasks")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", t.id);
     if (error) showToast("error", "Couldn't delete task.");
-    else { showToast("success", "Task deleted."); setShowModal(false); loadData(); }
+    else { showToast("success", "Task moved to Recycle Bin."); setShowModal(false); loadData(); }
   };
 
   const tasksFor = (status: Task["status"]) => tasks.filter((t) => t.status === status);

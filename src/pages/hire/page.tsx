@@ -98,9 +98,9 @@ export default function Hire() {
   const loadData = async () => {
     setLoading(true);
     const [{ data: j }, { data: c }, { data: i }, { data: b }] = await Promise.all([
-      supabase.from("job_postings").select("*, branches(name)").order("posted_at", { ascending: false }),
-      supabase.from("candidates").select("*, job_postings(title, department)").order("applied_at", { ascending: false }),
-      supabase.from("interviews").select("*, candidates(full_name, job_postings(title)), employees(first_name, last_name)").order("scheduled_at", { ascending: false }),
+      supabase.from("job_postings").select("*, branches(name)").is("deleted_at", null).order("posted_at", { ascending: false }),
+      supabase.from("candidates").select("*, job_postings(title, department)").is("deleted_at", null).order("applied_at", { ascending: false }),
+      supabase.from("interviews").select("*, candidates(full_name, job_postings(title)), employees(first_name, last_name)").is("deleted_at", null).order("scheduled_at", { ascending: false }),
       supabase.from("branches").select("id, name"),
     ]);
     setJobs(j || []);
@@ -145,28 +145,37 @@ export default function Hire() {
     loadData();
   };
 
-  // Delete functions
+  // Delete functions (soft delete — items go to the Recycle Bin)
   const deleteJob = async (id: string, title: string) => {
-    if (!confirm(`Delete job posting "${title}"? This cannot be undone.`)) return;
-    const { error } = await supabase.from("job_postings").delete().eq("id", id);
+    if (!confirm(`Delete job posting "${title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("job_postings")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", id);
     if (error) { toast("Error", "Failed to delete job posting", "error"); return; }
-    toast("Deleted", "Job posting deleted.", "success");
+    toast("Deleted", "Job posting moved to Recycle Bin.", "success");
     loadData();
   };
 
   const deleteCandidate = async (id: string, name: string) => {
-    if (!confirm(`Delete candidate "${name}"? This cannot be undone.`)) return;
-    const { error } = await supabase.from("candidates").delete().eq("id", id);
+    if (!confirm(`Delete candidate "${name}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("candidates")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", id);
     if (error) { toast("Error", "Failed to delete candidate", "error"); return; }
-    toast("Deleted", "Candidate removed.", "success");
+    toast("Deleted", "Candidate moved to Recycle Bin.", "success");
     loadData();
   };
 
   const deleteInterview = async (id: string) => {
-    if (!confirm("Delete this interview? This cannot be undone.")) return;
-    const { error } = await supabase.from("interviews").delete().eq("id", id);
+    if (!confirm("Delete this interview? It will be moved to the Recycle Bin and can be restored later.")) return;
+    const { error } = await supabase
+      .from("interviews")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", id);
     if (error) { toast("Error", "Failed to delete interview", "error"); return; }
-    toast("Deleted", "Interview removed.", "success");
+    toast("Deleted", "Interview moved to Recycle Bin.", "success");
     loadData();
   };
 

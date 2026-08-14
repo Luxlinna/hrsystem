@@ -141,10 +141,10 @@ export default function CompanyDashboard() {
       supabase.from("leave_requests").select("*, employees(first_name, last_name, role, department)").order("created_at", { ascending: false }).limit(5),
       supabase.from("payroll_records").select("*").eq("month", currentMonth),
       supabase.from("notifications").select("*").eq("is_read", false).limit(3),
-      supabase.from("job_postings").select("*"),
-      supabase.from("candidates").select("*"),
+      supabase.from("job_postings").select("*").is("deleted_at", null),
+      supabase.from("candidates").select("*").is("deleted_at", null),
     ]);
-    const { data: announcementsData } = await supabase.from("announcements").select("*").order("pinned", { ascending: false }).order("published_at", { ascending: false }).limit(4);
+    const { data: announcementsData } = await supabase.from("announcements").select("*").is("deleted_at", null).order("pinned", { ascending: false }).order("published_at", { ascending: false }).limit(4);
 
     // HR KPIs
     const sevenDaysAgo = new Date();
@@ -152,8 +152,8 @@ export default function CompanyDashboard() {
     const fromDate = sevenDaysAgo.toISOString().split("T")[0];
     const [{ data: attData }, { data: trainEnroll }, { data: discData }, { data: offData }] = await Promise.all([
       supabase.from("attendance_records").select("status, date, hours_worked").gte("date", fromDate),
-      supabase.from("training_enrollments").select("status"),
-      supabase.from("disciplinary_records").select("status"),
+      supabase.from("training_enrollments").select("status").is("deleted_at", null),
+      supabase.from("disciplinary_records").select("status").is("deleted_at", null),
       supabase.from("offboarding_requests").select("last_day, created_at"),
     ]);
     const attRecords = attData || [];

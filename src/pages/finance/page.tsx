@@ -64,6 +64,7 @@ export default function Finance() {
     const { data } = await supabase
       .from("expense_records")
       .select("*, branches(name)")
+      .is("deleted_at", null)
       .order("date", { ascending: false });
     setExpenses(data || []);
     setLoading(false);
@@ -129,10 +130,13 @@ export default function Finance() {
 
   const deleteExpense = async (expense: Expense) => {
     if (!canManage) return;
-    if (!confirm(`Delete this ${expense.category} expense ($${Number(expense.amount).toLocaleString()})? This cannot be undone.`)) return;
-    await supabase.from("expense_records").delete().eq("id", expense.id);
-    toast("Expense deleted", "Expense record removed", "success");
-    logActivity({ module: "finance", action: "deleted", entityType: "expense_record", entityId: expense.id, actorName, actorRole: role?.name || "Unknown", description: `${expense.category} expense ($${Number(expense.amount).toLocaleString()}) deleted` });
+    if (!confirm(`Delete this ${expense.category} expense ($${Number(expense.amount).toLocaleString()})? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    await supabase
+      .from("expense_records")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", expense.id);
+    toast("Expense deleted", "Expense record moved to Recycle Bin", "success");
+    logActivity({ module: "finance", action: "deleted", entityType: "expense_record", entityId: expense.id, actorName, actorRole: role?.name || "Unknown", description: `${expense.category} expense ($${Number(expense.amount).toLocaleString()}) moved to the Recycle Bin` });
     loadData();
   };
 

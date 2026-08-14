@@ -74,7 +74,7 @@ export default function OnboardingChecklist() {
   const loadData = async () => {
     const [{ data: hr }, { data: tk }, { data: st }] = await Promise.all([
       supabase.from("onboarding_requests").select("*, employees(first_name, last_name, role, department, avatar_url)").order("created_at", { ascending: false }),
-      supabase.from("onboarding_checklist_tasks").select("*").order("sort_order"),
+      supabase.from("onboarding_checklist_tasks").select("*").is("deleted_at", null).order("sort_order"),
       supabase.from("employees").select("id, first_name, last_name, department").eq("status", "active").order("first_name"),
     ]);
     const hiresData = (hr || []) as OnboardingHire[];
@@ -173,11 +173,14 @@ export default function OnboardingChecklist() {
   };
 
   const handleDeleteTask = async (task: ChecklistTask) => {
-    if (!confirm(`Delete task "${task.task_name}"? This cannot be undone.`)) return;
-    const { error } = await supabase.from("onboarding_checklist_tasks").delete().eq("id", task.id);
+    if (!confirm(`Delete task "${task.task_name}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("onboarding_checklist_tasks")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: completerName })
+      .eq("id", task.id);
     if (error) { setToast({ type: "error", message: "Failed to delete task" }); return; }
     setTasks((prev) => prev.filter((t) => t.id !== task.id));
-    setToast({ type: "success", message: "Task deleted" });
+    setToast({ type: "success", message: "Task moved to Recycle Bin" });
     setShowAssignModal(false);
     setSelectedTask(null);
   };

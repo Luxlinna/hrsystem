@@ -57,7 +57,7 @@ export default function Announcements() {
   });
 
   const loadAnnouncements = async () => {
-    const { data } = await supabase.from("announcements").select("*").order("pinned", { ascending: false }).order("published_at", { ascending: false });
+    const { data } = await supabase.from("announcements").select("*").is("deleted_at", null).order("pinned", { ascending: false }).order("published_at", { ascending: false });
     setAnnouncements(data || []);
     setLoading(false);
   };
@@ -104,8 +104,11 @@ export default function Announcements() {
 
   const deleteAnnouncement = async (a: Announcement) => {
     if (!canManage) return;
-    if (!confirm(`Delete announcement "${a.title}"? This cannot be undone.`)) return;
-    await supabase.from("announcements").delete().eq("id", a.id);
+    if (!confirm(`Delete announcement "${a.title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    await supabase
+      .from("announcements")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: authorName })
+      .eq("id", a.id);
     setSelectedItem((prev) => (prev?.id === a.id ? null : prev));
     loadAnnouncements();
   };

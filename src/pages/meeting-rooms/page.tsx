@@ -36,6 +36,7 @@ const toYMD = (d: Date) => {
 
 export default function MeetingRoomsPage() {
   const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { isAdmin } = usePermissions();
 
   const [rooms, setRooms] = useState<MeetingRoom[]>([]);
@@ -74,6 +75,7 @@ export default function MeetingRoomsPage() {
     const { data } = await supabase
       .from("room_bookings")
       .select("*, employees(first_name, last_name, department)")
+      .is("deleted_at", null)
       .gte("date", from)
       .lte("date", to)
       .order("start_time");
@@ -134,12 +136,15 @@ export default function MeetingRoomsPage() {
   };
 
   const handleCancel = async (booking: Booking) => {
-    if (!confirm(`Cancel "${booking.title}"?`)) return;
-    const { error } = await supabase.from("room_bookings").delete().eq("id", booking.id);
+    if (!confirm(`Cancel "${booking.title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("room_bookings")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", booking.id);
     if (error) {
       showToast("error", "Couldn't cancel that booking.");
     } else {
-      showToast("success", "Booking cancelled.");
+      showToast("success", "Booking moved to Recycle Bin.");
       loadBookings();
     }
   };

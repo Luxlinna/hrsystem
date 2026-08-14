@@ -144,6 +144,7 @@ export default function EmployeeProfile() {
       .from("interviews")
       .select("*, candidates(full_name, job_postings(title))")
       .eq("interviewer_id", empId)
+      .is("deleted_at", null)
       .order("scheduled_at", { ascending: false });
     setInterviews(ivs || []);
 

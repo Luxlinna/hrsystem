@@ -88,12 +88,14 @@ export default function CandidateDetail() {
       .from("candidates")
       .select("*, job_postings(title, department, branches(name))")
       .eq("id", cid)
+      .is("deleted_at", null)
       .maybeSingle();
 
     const { data: ivs } = await supabase
       .from("interviews")
       .select("*, employees(first_name, last_name)")
       .eq("candidate_id", cid)
+      .is("deleted_at", null)
       .order("scheduled_at", { ascending: false });
 
     // Discard a stale response if the user has since navigated to a

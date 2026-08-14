@@ -214,6 +214,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     let q = supabase
       .from("expense_records")
       .select("id, description, category, amount, submitted_by, status, created_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (config.dateFrom) q = q.gte("created_at", config.dateFrom);
     if (config.dateTo) q = q.lte("created_at", config.dateTo + "T23:59:59");
@@ -240,6 +241,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     let q = supabase
       .from("candidates")
       .select("id, full_name, stage, applied_at, job_postings(title)")
+      .is("deleted_at", null)
       .order("applied_at", { ascending: false });
     if (config.dateFrom) q = q.gte("applied_at", config.dateFrom);
     if (config.dateTo) q = q.lte("applied_at", config.dateTo + "T23:59:59");
@@ -263,6 +265,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     let q = supabase
       .from("work_logs")
       .select("id, log_date, start_time, end_time, activity, notes, employees(first_name, last_name, department, branches(name))")
+      .is("deleted_at", null)
       .order("log_date", { ascending: false });
     if (config.dateFrom) q = q.gte("log_date", config.dateFrom);
     if (config.dateTo) q = q.lte("log_date", config.dateTo);

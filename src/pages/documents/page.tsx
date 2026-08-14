@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Document {
@@ -93,6 +94,8 @@ const VISIBILITY_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function DocumentsPage() {
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
   // "Staff" is the only documents-module role without management authority —
   // policy/compliance publishing and HR-only/managers-only visibility stay
@@ -144,7 +147,7 @@ export default function DocumentsPage() {
   };
 
   const loadDocuments = async () => {
-    let query = supabase.from("documents").select("*").order("created_at", { ascending: false });
+    let query = supabase.from("documents").select("*").is("deleted_at", null).order("created_at", { ascending: false });
     // Restricted-visibility documents shouldn't even be fetched for a
     // non-manager — the `filtered` list below already hides them from the
     // UI, but without this the row (title, description, tags) still landed
@@ -256,20 +259,20 @@ export default function DocumentsPage() {
 
   const handleDelete = async (doc: Document) => {
     if (!canManageDocs) return;
-    if (!confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
-    const { error } = await supabase.from("documents").delete().eq("id", doc.id);
+    if (!confirm(`Delete "${doc.title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("documents")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", doc.id);
     if (error) {
       showToast("error", "Failed to delete document");
       return;
     }
-    // Also delete the file from storage if it exists
-    if (doc.file_url) {
-      const filePath = doc.file_url.split("/documents/")[1];
-      if (filePath) await supabase.storage.from("documents").remove([filePath]);
-    }
+    // The file stays in storage so the document can be restored from the
+    // Recycle Bin. It is only removed when permanently deleted there.
     setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
     setSelectedDoc(null);
-    showToast("success", "Document deleted");
+    showToast("success", "Document moved to Recycle Bin");
   };
 
   const openEdit = (doc: Document) => {

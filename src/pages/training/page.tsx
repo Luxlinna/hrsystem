@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
 
@@ -56,6 +57,8 @@ const ENROLL_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 export default function TrainingPage() {
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
   // Managing the course catalog and enrollments is a management action —
   // individual-contributor roles (Employee, Staff) only consume training.
@@ -118,8 +121,8 @@ export default function TrainingPage() {
   async function fetchData() {
     setLoading(true);
     const [cRes, eRes, empRes] = await Promise.all([
-      supabase.from("training_courses").select("*").order("created_at", { ascending: false }),
-      supabase.from("training_enrollments").select("*, employees(id, first_name, last_name, department, avatar_url), training_courses(*)").order("enrolled_at", { ascending: false }),
+      supabase.from("training_courses").select("*").is("deleted_at", null).order("created_at", { ascending: false }),
+      supabase.from("training_enrollments").select("*, employees(id, first_name, last_name, department, avatar_url), training_courses(*)").is("deleted_at", null).order("enrolled_at", { ascending: false }),
       supabase.from("employees").select("id, first_name, last_name, department, avatar_url").eq("status", "active").order("first_name"),
     ]);
     if (cRes.data) setCourses(cRes.data);
@@ -205,8 +208,11 @@ export default function TrainingPage() {
 
   async function deleteCourse(course: Course) {
     if (!canManage) return;
-    if (!confirm(`Delete "${course.title}"? This also removes all enrollments in this course. This cannot be undone.`)) return;
-    const { error } = await supabase.from("training_courses").delete().eq("id", course.id);
+    if (!confirm(`Delete "${course.title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("training_courses")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", course.id);
     if (error) { toast("Error", "Failed to delete course", "error"); return; }
     setSelectedCourse(null);
     fetchData();
@@ -214,8 +220,11 @@ export default function TrainingPage() {
 
   async function deleteEnrollment(enrollment: Enrollment) {
     if (!canManage) return;
-    if (!confirm("Remove this enrollment record? This cannot be undone.")) return;
-    const { error } = await supabase.from("training_enrollments").delete().eq("id", enrollment.id);
+    if (!confirm("Remove this enrollment record? It will be moved to the Recycle Bin and can be restored later.")) return;
+    const { error } = await supabase
+      .from("training_enrollments")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", enrollment.id);
     if (error) { toast("Error", "Failed to remove enrollment", "error"); return; }
     fetchData();
   }

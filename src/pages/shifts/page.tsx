@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/components/Toast";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 
@@ -74,6 +75,8 @@ function formatDate(d: Date): string {
 }
 
 export default function Shifts() {
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -100,7 +103,7 @@ export default function Shifts() {
   const loadData = async () => {
     const [{ data: s }, { data: a }, { data: b }, { data: e }] = await Promise.all([
       supabase.from("shifts").select("*, branches(name, location)").order("shift_date").order("start_time"),
-      supabase.from("shift_assignments").select("*, employee:employees(first_name, last_name, role, department)"),
+      supabase.from("shift_assignments").select("*, employee:employees(first_name, last_name, role, department)").is("deleted_at", null),
       supabase.from("branches").select("id, name, location").order("name"),
       supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url").order("first_name"),
     ]);
@@ -157,7 +160,8 @@ export default function Shifts() {
     const { count } = await supabase
       .from("shift_assignments")
       .select("id", { count: "exact", head: true })
-      .eq("shift_id", selectedShift.id);
+      .eq("shift_id", selectedShift.id)
+      .is("deleted_at", null);
     if ((count ?? 0) >= selectedShift.capacity) {
       setSubmitting(false);
       toast("Error", "This shift is already at capacity", "error");
@@ -175,8 +179,12 @@ export default function Shifts() {
   };
 
   const removeAssignment = async (assignId: string) => {
-    const { error } = await supabase.from("shift_assignments").delete().eq("id", assignId);
+    const { error } = await supabase
+      .from("shift_assignments")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", assignId);
     if (error) { toast("Error", "Failed to remove assignment", "error"); return; }
+    toast("Success", "Assignment moved to Recycle Bin", "success");
     loadData();
   };
 
