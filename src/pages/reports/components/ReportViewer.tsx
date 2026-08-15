@@ -123,6 +123,21 @@ export default function ReportViewer({ config, onDataReady }: Props) {
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Record<string, string | number>>({});
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
+
+  // Reset page when data changes
+  useEffect(() => { setPage(1); }, [rows]);
 
   const fetchLeave = useCallback(async () => {
     let q = supabase
@@ -213,6 +228,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     let q = supabase
       .from("expense_records")
       .select("id, description, category, amount, submitted_by, status, created_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (config.dateFrom) q = q.gte("created_at", config.dateFrom);
     if (config.dateTo) q = q.lte("created_at", config.dateTo + "T23:59:59");
@@ -239,6 +255,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     let q = supabase
       .from("candidates")
       .select("id, full_name, stage, applied_at, job_postings(title)")
+      .is("deleted_at", null)
       .order("applied_at", { ascending: false });
     if (config.dateFrom) q = q.gte("applied_at", config.dateFrom);
     if (config.dateTo) q = q.lte("applied_at", config.dateTo + "T23:59:59");
@@ -262,6 +279,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     let q = supabase
       .from("work_logs")
       .select("id, log_date, start_time, end_time, activity, notes, employees(first_name, last_name, department, branches(name))")
+      .is("deleted_at", null)
       .order("log_date", { ascending: false });
     if (config.dateFrom) q = q.gte("log_date", config.dateFrom);
     if (config.dateTo) q = q.lte("log_date", config.dateTo);
@@ -437,32 +455,90 @@ export default function ReportViewer({ config, onDataReady }: Props) {
           <i className="ri-file-search-line text-3xl mb-2" />
           <p className="text-sm">No data found for selected filters</p>
         </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-100">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                {columns.map((col) => (
-                  <th key={col} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, i) => (
-                <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                  {columns.map((col) => (
-                    <td key={col} className="px-4 py-3 text-gray-700 whitespace-nowrap">
-                      {renderCell(col, row)}
-                    </td>
+      ) : (() => {
+        const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+        const safePage = Math.min(page, totalPages);
+        const pageStart = rows.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+        const pageEnd = Math.min(safePage * pageSize, rows.length);
+        const pagedRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
+        return (
+          <>
+            <div className="overflow-x-auto rounded-xl border border-gray-100">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    {columns.map((col) => (
+                      <th key={col} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedRows.map((row, i) => (
+                    <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                      {columns.map((col) => (
+                        <td key={col} className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                          {renderCell(col, row)}
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                </tbody>
+              </table>
+            </div>
+            {rows.length > 10 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 mt-3 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <p className="text-[11px] text-gray-500">
+                    Showing <span className="font-semibold text-gray-700">{pageStart}</span>–<span className="font-semibold text-gray-700">{pageEnd}</span> of <span className="font-semibold text-gray-700">{rows.length}</span> records
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-gray-400">Per page</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                      className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                    >
+                      {[10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <i className="ri-arrow-left-s-line" />
+                  </button>
+                  {pageWindow(safePage, totalPages).map((p, i) =>
+                    p === "..." ? (
+                      <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === safePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <i className="ri-arrow-right-s-line" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()
+      }
       <p className="text-xs text-gray-400 mt-3 text-right">{rows.length} records</p>
     </div>
   );

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
@@ -36,6 +37,10 @@ export default function Benefits() {
   const [loading, setLoading] = useState(true);
   const [enrollModal, setEnrollModal] = useState(false);
   const [enrollForm, setEnrollForm] = useState({ employee_id: "", plan_id: "" });
+  const [enrollEmployeeIds, setEnrollEmployeeIds] = useState<string[]>([]);
+  const [enrollSearch, setEnrollSearch] = useState("");
+  const [enrollOpen, setEnrollOpen] = useState(false);
+  const enrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
@@ -52,7 +57,7 @@ export default function Benefits() {
       .order("created_at", { ascending: false });
     setEnrollments(e || []);
 
-    const { data: emps } = await supabase.from("employees").select("id, first_name, last_name, role").eq("status", "active").order("first_name");
+    const { data: emps } = await supabase.from("employees").select("id, first_name, last_name, role, avatar_url").eq("status", "active").order("first_name");
     setEmployees(emps || []);
     setLoading(false);
   };
@@ -65,20 +70,38 @@ export default function Benefits() {
     loadData();
   };
 
+  // Close the enroll dropdown when clicking outside.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (enrollRef.current && !enrollRef.current.contains(e.target as Node)) setEnrollOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  // Reset dropdown state when modal closes.
+  useEffect(() => {
+    if (!enrollModal) {
+      setEnrollOpen(false);
+      setEnrollSearch("");
+    }
+  }, [enrollModal]);
+
   const enrollEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!enrollForm.employee_id || !enrollForm.plan_id) return;
-    await supabase.from("benefit_enrollments").insert([{
-      employee_id: enrollForm.employee_id,
+    if (enrollEmployeeIds.length === 0 || !enrollForm.plan_id) return;
+    const plan = plans.find((p) => p.id === enrollForm.plan_id);
+    const payload = enrollEmployeeIds.map((empId) => ({
+      employee_id: empId,
       plan_id: enrollForm.plan_id,
       status: "enrolled",
-    }]);
+    }));
+    await supabase.from("benefit_enrollments").insert(payload);
     setEnrollModal(false);
-    const emp = employees.find((e) => e.id === enrollForm.employee_id);
-    const plan = plans.find((p) => p.id === enrollForm.plan_id);
     setEnrollForm({ employee_id: "", plan_id: "" });
-    toast("Enrollment saved", "Employee enrolled in benefit plan", "success");
-    logActivity({ module: "benefits", action: "created", entityType: "benefit_enrollment", actorName, actorRole: role?.name || "Unknown", description: `${emp ? `${emp.first_name} ${emp.last_name}` : "An employee"} enrolled in ${plan?.name ?? "a benefit plan"}` });
+    setEnrollEmployeeIds([]);
+    toast("Enrollment saved", `${enrollEmployeeIds.length} employee${enrollEmployeeIds.length === 1 ? '' : 's'} enrolled in ${plan?.name ?? 'benefit plan'}`, "success");
+    logActivity({ module: "benefits", action: "created", entityType: "benefit_enrollment", actorName, actorRole: role?.name || "Unknown", description: `${enrollEmployeeIds.length} employee${enrollEmployeeIds.length === 1 ? '' : 's'} enrolled in ${plan?.name ?? "a benefit plan"}` });
     loadData();
   };
 
@@ -269,18 +292,93 @@ export default function Benefits() {
             </div>
             <form onSubmit={enrollEmployee} className="space-y-4">
               <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1">Employee</label>
-                <select
-                  required
-                  value={enrollForm.employee_id}
-                  onChange={(e) => setEnrollForm({ ...enrollForm, employee_id: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
-                >
-                  <option value="">Select employee</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name} - {emp.role}</option>
-                  ))}
-                </select>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1">Employee(s)</label>
+                <div className="relative" ref={enrollRef}>
+                  <div className="relative">
+                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+                    <input
+                      type="text"
+                      role="combobox"
+                      aria-expanded={enrollOpen}
+                      value={enrollOpen ? enrollSearch : enrollEmployeeIds.length > 0 ? `${enrollEmployeeIds.length} employee${enrollEmployeeIds.length === 1 ? '' : 's'} selected` : enrollSearch}
+                      onChange={(e) => { setEnrollSearch(e.target.value); setEnrollOpen(true); }}
+                      onFocus={() => setEnrollOpen(true)}
+                      placeholder="Search by name..."
+                      className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
+                    />
+                    <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                  {enrollOpen && (() => {
+                    const filtered = employees.filter((emp) => {
+                      const q = enrollSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return `${emp.first_name} ${emp.last_name} ${emp.role}`.toLowerCase().includes(q);
+                    });
+                    return (
+                      <div className="absolute z-20 mt-1.5 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto py-1">
+                        <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                          {filtered.length} employee{filtered.length === 1 ? '' : 's'}{enrollSearch.trim() ? ` matching "${enrollSearch.trim()}"` : ''}
+                        </p>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            const allIds = filtered.map((e) => e.id);
+                            const allSelected = allIds.length > 0 && allIds.every((id) => enrollEmployeeIds.includes(id));
+                            setEnrollEmployeeIds(allSelected ? [] : allIds);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                            filtered.length > 0 && filtered.every((e) => enrollEmployeeIds.includes(e.id))
+                              ? "bg-[#253C7D] border-[#253C7D]"
+                              : filtered.some((e) => enrollEmployeeIds.includes(e.id))
+                                ? "bg-[#253C7D]/20 border-[#253C7D]"
+                                : "border-gray-300 bg-white"
+                          }`}>
+                            {filtered.length > 0 && filtered.every((e) => enrollEmployeeIds.includes(e.id)) && <i className="ri-check-line text-white text-xs" />}
+                            {filtered.some((e) => enrollEmployeeIds.includes(e.id)) && !(filtered.length > 0 && filtered.every((e) => enrollEmployeeIds.includes(e.id))) && <span className="w-2 h-0.5 bg-[#253C7D] rounded" />}
+                          </span>
+                          Select all ({filtered.length})
+                        </button>
+                        {filtered.length === 0 ? (
+                          <p className="px-3 py-4 text-[12px] text-gray-400">No employees found.</p>
+                        ) : (
+                          filtered.map((emp) => {
+                            const checked = enrollEmployeeIds.includes(emp.id);
+                            return (
+                              <label
+                                key={emp.id}
+                                onMouseDown={(e) => e.preventDefault()}
+                                className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer ${checked ? "bg-[#253C7D]/5" : "hover:bg-gray-50"}`}
+                              >
+                                <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                  checked ? "bg-[#253C7D] border-[#253C7D]" : "border-gray-300 bg-white"
+                                }`}>
+                                  {checked && <i className="ri-check-line text-white text-xs" />}
+                                </span>
+                                <input type="checkbox" className="sr-only" checked={checked} onChange={() => {
+                                  setEnrollEmployeeIds((prev) => prev.includes(emp.id) ? prev.filter((id) => id !== emp.id) : [...prev, emp.id]);
+                                }} />
+                                <span className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-[10px] font-bold shrink-0">
+                                  {`${emp.first_name[0] || ''}${emp.last_name[0] || ''}`.toUpperCase()}
+                                </span>
+                                <span className="flex-1 min-w-0">
+                                  <span className="block text-[13px] font-medium text-gray-900">{emp.first_name} {emp.last_name}</span>
+                                  <span className="block text-[11px] text-gray-400 truncate">{emp.role}</span>
+                                </span>
+                                {checked && <i className="ri-check-line text-[#253C7D] text-sm shrink-0" />}
+                              </label>
+                            );
+                          })
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+                {enrollEmployeeIds.length > 0 && (
+                  <p className="mt-1.5 text-[11px] text-gray-400">{enrollEmployeeIds.length} employee{enrollEmployeeIds.length === 1 ? '' : 's'} selected</p>
+                )}
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Benefit Plan</label>
@@ -296,8 +394,8 @@ export default function Benefits() {
                   ))}
                 </select>
               </div>
-              <button type="submit" className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A]">
-                Enroll
+              <button type="submit" disabled={enrollEmployeeIds.length === 0} className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-50">
+                {enrollEmployeeIds.length > 1 ? `Enroll ${enrollEmployeeIds.length} Employees` : "Enroll"}
               </button>
             </form>
           </div>

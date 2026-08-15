@@ -28,6 +28,18 @@ const statusColors: Record<string, string> = {
 const categories = ["All", "Office Rent", "IT Equipment", "Travel", "Training", "Marketing", "Utilities", "Software", "Catering", "Office Supplies", "Legal", "Other"];
 
 export default function Finance() {
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
   const { user } = useAuth();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
@@ -52,6 +64,7 @@ export default function Finance() {
     const { data } = await supabase
       .from("expense_records")
       .select("*, branches(name)")
+      .is("deleted_at", null)
       .order("date", { ascending: false });
     setExpenses(data || []);
     setLoading(false);
@@ -117,10 +130,13 @@ export default function Finance() {
 
   const deleteExpense = async (expense: Expense) => {
     if (!canManage) return;
-    if (!confirm(`Delete this ${expense.category} expense ($${Number(expense.amount).toLocaleString()})? This cannot be undone.`)) return;
-    await supabase.from("expense_records").delete().eq("id", expense.id);
-    toast("Expense deleted", "Expense record removed", "success");
-    logActivity({ module: "finance", action: "deleted", entityType: "expense_record", entityId: expense.id, actorName, actorRole: role?.name || "Unknown", description: `${expense.category} expense ($${Number(expense.amount).toLocaleString()}) deleted` });
+    if (!confirm(`Delete this ${expense.category} expense ($${Number(expense.amount).toLocaleString()})? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    await supabase
+      .from("expense_records")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", expense.id);
+    toast("Expense deleted", "Expense record moved to Recycle Bin", "success");
+    logActivity({ module: "finance", action: "deleted", entityType: "expense_record", entityId: expense.id, actorName, actorRole: role?.name || "Unknown", description: `${expense.category} expense ($${Number(expense.amount).toLocaleString()}) moved to the Recycle Bin` });
     loadData();
   };
 
@@ -129,6 +145,16 @@ export default function Finance() {
     const statusMatch = statusFilter === "all" || d.status === statusFilter;
     return catMatch && statusMatch;
   });
+
+  const finTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const finSafePage = Math.min(page, finTotalPages);
+  const finPageStart = filtered.length === 0 ? 0 : (finSafePage - 1) * pageSize + 1;
+  const finPageEnd = Math.min(finSafePage * pageSize, filtered.length);
+  const pagedExpenses = filtered.slice((finSafePage - 1) * pageSize, finSafePage * pageSize);
+
+  useEffect(() => {
+    if (page > finTotalPages) setPage(finTotalPages);
+  }, [page, finTotalPages]);
 
   const total = expenses.reduce((s, d) => s + Number(d.amount), 0);
   const paid = expenses.filter((d) => d.status === "paid").reduce((s, d) => s + Number(d.amount), 0);
@@ -241,9 +267,8 @@ export default function Finance() {
               <span>Action</span>
             </div>
             {filtered.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 text-[13px]">No expenses found</div>
-            ) : (
-              filtered.map((d) => (
+              <div className="text-center py-12 text-gray-500 text-[13px]">No expenses found</div>              ) : (
+                pagedExpenses.map((d) => (
                 <div key={d.id} className="grid grid-cols-7 px-5 py-4 border-t border-gray-50 items-center">
                   <span className="text-[13px] font-medium text-gray-900">{d.category}</span>
                   <span className="text-[13px] text-gray-600">{d.branches?.name || "—"}</span>
@@ -274,6 +299,54 @@ export default function Finance() {
               ))
             )}
           </div>
+          {filtered.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[11px] text-gray-500">
+                  Showing <span className="font-semibold text-gray-700">{finPageStart}</span>–<span className="font-semibold text-gray-700">{finPageEnd}</span> of <span className="font-semibold text-gray-700">{filtered.length}</span> expenses
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-gray-400">Per page</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                    className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  >
+                    {[10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={finSafePage === 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-left-s-line" />
+                </button>
+                {pageWindow(finSafePage, finTotalPages).map((p, i) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === finSafePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => setPage((p) => Math.min(finTotalPages, p + 1))}
+                  disabled={finSafePage === finTotalPages}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-right-s-line" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

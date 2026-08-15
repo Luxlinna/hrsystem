@@ -18,6 +18,25 @@ const MODULES = [
 // branch filters below actually apply to them.
 const EMPLOYEE_SCOPED_MODULES = new Set(["leave", "payroll", "headcount", "daily-logs", "meeting-rooms"]);
 
+// Maps displayed column labels to the report row object's property names,
+// shared by every export format so CSV/PDF/Excel stay consistent.
+const COLUMN_KEY_MAP: Record<string, string> = {
+  "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
+  "End Date": "end_date", "Days": "days", "Status": "status", "Month": "month",
+  "Base Salary": "base_salary", "Bonus": "bonus", "Deductions": "deductions", "Net Pay": "net_pay",
+  "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
+  "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
+  "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
+  "Time": "time", "Activity": "activity", "Notes": "notes",
+};
+
+const cellValue = (row: any, col: string) => row[COLUMN_KEY_MAP[col] || col.toLowerCase()];
+
+const reportFileName = (moduleLabel: string) =>
+  `${moduleLabel.toLowerCase().replace(/ /g, "-")}-${new Date().toISOString().substring(0, 10)}`;
+
+const EXPORT_FORMAT_LABEL: Record<string, string> = { pdf: "PDF", csv: "CSV", xlsx: "Excel" };
+
 export default function ReportsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const paramMod = searchParams.get("module");
@@ -46,7 +65,9 @@ export default function ReportsPage() {
   const [branches, setBranches] = useState<string[]>([]);
   const [reportData, setReportData] = useState<any[]>([]);
   const [reportColumns, setReportColumns] = useState<string[]>([]);
-  const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
+  const [exporting, setExporting] = useState<"pdf" | "csv" | "xlsx" | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,6 +77,15 @@ export default function ReportsPage() {
     supabase.from("branches").select("name").order("name").then(({ data }) => {
       setBranches((data || []).map((r) => r.name));
     });
+  }, []);
+
+  // Close the export dropdown when clicking anywhere outside of it.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) setExportOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
   const isEmployeeScoped = EMPLOYEE_SCOPED_MODULES.has(activeModule);
@@ -91,10 +121,8 @@ export default function ReportsPage() {
     };
     const rows = reportData.map((row) =>
       reportColumns.map((col) => {
-        const key = keyMap[col] || col.toLowerCase();
-        const v = row[key];
-        const str = String(v ?? "");
-        return str.includes(",") || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+        const v = String(cellValue(row, col) ?? "");
+        return v.includes(",") || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v;
       }).join(",")
     );
     const csv = [header, ...rows].join("\n");
@@ -102,9 +130,26 @@ export default function ReportsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${module?.label.toLowerCase().replace(/ /g, "-")}-${new Date().toISOString().substring(0, 10)}.csv`;
+    a.download = `${reportFileName(module?.label || "report")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    setTimeout(() => setExporting(null), 800);
+  };
+
+  const exportExcel = () => {
+    setExporting("xlsx");
+    const module = MODULES.find((m) => m.id === activeModule);
+    const aoa = [
+      reportColumns,
+      ...reportData.map((row) => reportColumns.map((col) => cellValue(row, col) ?? "")),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = reportColumns.map((col) => ({ wch: Math.max(col.length + 2, 10) }));
+    const wb = XLSX.utils.book_new();
+    // Excel forbids a few characters in sheet names; strip them before truncating.
+    const sheetName = (module?.label || "Report").replace(/[\[\]:*?/\\]/g, "").slice(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, `${reportFileName(module?.label || "report")}.xlsx`);
     setTimeout(() => setExporting(null), 800);
   };
 
@@ -123,8 +168,7 @@ export default function ReportsPage() {
     };
     const tableRows = reportData.map((row) =>
       `<tr>${reportColumns.map((col) => {
-        const key = keyMap[col] || col.toLowerCase();
-        const v = row[key];
+        const v = cellValue(row, col);
         let val = String(v ?? "—");
         if (col.includes("Salary") || col.includes("Pay") || col.includes("Bonus") || col.includes("Deduct") || col === "Amount") {
           val = `$${Number(v || 0).toLocaleString()}`;
@@ -176,23 +220,47 @@ export default function ReportsPage() {
           </div>
           <p className="text-sm text-gray-500 mt-0.5">Generate, preview, and export HR reports per module</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="relative" ref={exportRef}>
           <button
-            onClick={exportCSV}
+            onClick={() => setExportOpen((v) => !v)}
             disabled={reportData.length === 0}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-colors disabled:opacity-40 cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#253C7D] text-white rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] shadow-sm transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
           >
-            {exporting === "csv" ? <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <i className="ri-file-excel-line" />}
-            Export CSV
+            {exporting ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-download-2-line" />}
+            {exporting ? `Exporting ${EXPORT_FORMAT_LABEL[exporting]}...` : "Export"}
+            <i className={`ri-arrow-down-s-line text-base transition-transform ${exportOpen ? "rotate-180" : ""}`} />
           </button>
-          <button
-            onClick={exportPDF}
-            disabled={reportData.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800 transition-colors disabled:opacity-40 cursor-pointer whitespace-nowrap"
-          >
-            {exporting === "pdf" ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-file-pdf-line" />}
-            Export PDF
-          </button>
+
+          {exportOpen && reportData.length > 0 && (
+            <div className="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 z-50">
+              <p className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Export as</p>
+              {[
+                { fmt: "pdf" as const, label: "PDF Document", hint: ".pdf", icon: "ri-file-pdf-line", desc: "Print-ready report", color: "text-red-500" },
+                { fmt: "csv" as const, label: "CSV Spreadsheet", hint: ".csv", icon: "ri-file-text-line", desc: "Comma-separated values", color: "text-emerald-600" },
+                { fmt: "xlsx" as const, label: "Excel Workbook", hint: ".xlsx", icon: "ri-file-excel-2-line", desc: "Microsoft Excel format", color: "text-green-600" },
+              ].map((opt) => (
+                <button
+                  key={opt.fmt}
+                  onClick={() => {
+                    setExportOpen(false);
+                    if (opt.fmt === "pdf") exportPDF();
+                    else if (opt.fmt === "csv") exportCSV();
+                    else exportExcel();
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left cursor-pointer group"
+                >
+                  <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 group-hover:bg-white transition-colors shrink-0">
+                    <i className={`${opt.icon} text-base ${opt.color}`} />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-medium text-gray-800">{opt.label}</span>
+                    <span className="block text-[11px] text-gray-400">{opt.desc}</span>
+                  </span>
+                  <span className="text-[11px] text-gray-400 font-mono shrink-0">{opt.hint}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

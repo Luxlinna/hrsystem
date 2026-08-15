@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 
 const MIN_COMMENT_LENGTH = 15;
 
@@ -95,7 +96,7 @@ export default function PerformanceReviews() {
   useEffect(() => {
     if (!reviewForm.employee_id) { setTaskStats(null); return; }
     let cancelled = false;
-    supabase.from("tasks").select("status, due_date").eq("assigned_to", reviewForm.employee_id).then(({ data }) => {
+    supabase.from("tasks").select("status, due_date").eq("assigned_to", reviewForm.employee_id).is("deleted_at", null).then(({ data }) => {
       if (cancelled) return;
       const rows = data || [];
       const today = new Date().toISOString().split("T")[0];
@@ -113,7 +114,7 @@ export default function PerformanceReviews() {
       const [{ data: r }, { data: g }, { data: e }] = await Promise.all([
         supabase.from("performance_reviews").select(`*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`).order("created_at", { ascending: false }),
         supabase.from("performance_goals").select("*").order("target_date"),
-        supabase.from("employees").select("id, first_name, last_name, role, department").order("first_name"),
+        supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url").order("first_name"),
       ]);
       setReviews(r || []);
       setGoals(g || []);
@@ -131,7 +132,7 @@ export default function PerformanceReviews() {
     }
 
     if (canViewOwnBranch && me.branch_id) {
-      const { data: team } = await supabase.from("employees").select("id, first_name, last_name, role, department").eq("status", "active").eq("branch_id", me.branch_id).order("first_name");
+      const { data: team } = await supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url").eq("status", "active").eq("branch_id", me.branch_id).order("first_name");
       setEmployees(team || []);
       const ids = (team || []).map((e) => e.id);
       const [{ data: r }, { data: g }] = ids.length
@@ -193,6 +194,10 @@ export default function PerformanceReviews() {
 
   const handleAddGoal = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!goalForm.employee_id || !goalForm.title.trim()) {
+      toast("Missing info", "Select an employee and enter a goal title.", "error");
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.from("performance_goals").insert(goalForm);
     setSubmitting(false);
@@ -506,22 +511,21 @@ export default function PerformanceReviews() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
-                    <select
-                      required
+                    <EmployeeSearchSelect
+                      employees={employees}
                       value={reviewForm.employee_id}
-                      onChange={(e) => setReviewForm((p) => ({ ...p, employee_id: e.target.value, reviewer_id: p.reviewer_id === e.target.value ? "" : p.reviewer_id }))}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer"
-                    >
-                      <option value="">Select employee</option>
-                      {employees.map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
-                    </select>
+                      onChange={(id) => setReviewForm((p) => ({ ...p, employee_id: id, reviewer_id: p.reviewer_id === id ? "" : p.reviewer_id }))}
+                    />
                   </div>
                   <div>
                     <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Reviewer *</label>
-                    <select required value={reviewForm.reviewer_id} onChange={(e) => setReviewForm({ ...reviewForm, reviewer_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer">
-                      <option value="">Select reviewer</option>
-                      {employees.filter((e) => e.id !== reviewForm.employee_id).map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
-                    </select>
+                    <EmployeeSearchSelect
+                      employees={employees}
+                      value={reviewForm.reviewer_id}
+                      onChange={(id) => setReviewForm({ ...reviewForm, reviewer_id: id })}
+                      excludeIds={[reviewForm.employee_id]}
+                      placeholder="Search reviewer by name..."
+                    />
                   </div>
                 </div>
 
@@ -656,10 +660,11 @@ export default function PerformanceReviews() {
             <form onSubmit={handleAddGoal} className="p-5 space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
-                <select required value={goalForm.employee_id} onChange={(e) => setGoalForm({ ...goalForm, employee_id: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer">
-                  <option value="">Select employee</option>
-                  {employees.map((e) => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
-                </select>
+                <EmployeeSearchSelect
+                  employees={employees}
+                  value={goalForm.employee_id}
+                  onChange={(id) => setGoalForm({ ...goalForm, employee_id: id })}
+                />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Goal Title *</label>

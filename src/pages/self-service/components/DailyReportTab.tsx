@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 interface Props {
   employeeId: string;
@@ -40,6 +41,8 @@ const fmtDateLabel = (ymd: string) =>
 const emptyForm = { log_date: toYMD(new Date()), start_time: "08:00", end_time: "12:00", activity: "", notes: "" };
 
 export default function DailyReportTab({ employeeId }: Props) {
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [logs, setLogs] = useState<WorkLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"day" | "week" | "month" | "year">("day");
@@ -64,6 +67,7 @@ export default function DailyReportTab({ employeeId }: Props) {
       .from("work_logs")
       .select("*")
       .eq("employee_id", employeeId)
+      .is("deleted_at", null)
       .gte("log_date", `${year}-01-01`)
       .lte("log_date", `${year}-12-31`)
       .order("log_date", { ascending: true })
@@ -124,10 +128,13 @@ export default function DailyReportTab({ employeeId }: Props) {
 
   const handleDelete = async () => {
     if (!editingLog) return;
-    if (!confirm("Delete this entry?")) return;
-    const { error } = await supabase.from("work_logs").delete().eq("id", editingLog.id);
+    if (!confirm("Delete this entry? It will be moved to the Recycle Bin and can be restored later.")) return;
+    const { error } = await supabase
+      .from("work_logs")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", editingLog.id);
     if (error) { showToast("error", "Couldn't delete entry."); return; }
-    showToast("success", "Entry deleted.");
+    showToast("success", "Entry moved to Recycle Bin.");
     setShowModal(false);
     loadLogs();
   };
