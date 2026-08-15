@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase";
 import { toYMD, todayYMD } from "@/lib/date";
 import ReportViewer from "./components/ReportViewer";
