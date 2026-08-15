@@ -31,9 +31,21 @@ export default function Employees() {
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
 
   const loadEmployees = () => {
     supabase.from("employees").select("*, branches(name)").order("first_name").then(({ data, error }) => {
@@ -47,6 +59,10 @@ export default function Employees() {
     supabase.from("branches").select("id, name").order("name").then(({ data }) => setBranches(data || []));
   }, []);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterDept]);
+
   const depts = Array.from(new Set(employees.map((e) => e.department)));
   const branchCount = new Set(employees.map((e) => e.branch_id).filter(Boolean)).size;
 
@@ -55,6 +71,16 @@ export default function Employees() {
     const matchesDept = !filterDept || e.department === filterDept;
     return matchesSearch && matchesDept;
   });
+
+  const empTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const empSafePage = Math.min(page, empTotalPages);
+  const empPageStart = filtered.length === 0 ? 0 : (empSafePage - 1) * pageSize + 1;
+  const empPageEnd = Math.min(empSafePage * pageSize, filtered.length);
+  const pagedEmployees = filtered.slice((empSafePage - 1) * pageSize, empSafePage * pageSize);
+
+  useEffect(() => {
+    if (page > empTotalPages) setPage(empTotalPages);
+  }, [page, empTotalPages]);
 
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,7 +179,7 @@ export default function Employees() {
           <span>Status</span>
           <span>Join Date</span>
         </div>
-        {filtered.map((e) => (
+        {pagedEmployees.map((e) => (
           <Link
             key={e.id}
             to={`/employees/${e.id}`}
@@ -189,6 +215,55 @@ export default function Employees() {
           </div>
         )}
       </div>
+
+      {filtered.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 mt-4 bg-white border border-gray-100 rounded-xl">
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="text-[11px] text-gray-500">
+              Showing <span className="font-semibold text-gray-700">{empPageStart}</span>–<span className="font-semibold text-gray-700">{empPageEnd}</span> of <span className="font-semibold text-gray-700">{filtered.length}</span> employees
+            </p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-gray-400">Per page</span>
+              <select
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              >
+                {[10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={empSafePage === 1}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              <i className="ri-arrow-left-s-line" />
+            </button>
+            {pageWindow(empSafePage, empTotalPages).map((p, i) =>
+              p === "..." ? (
+                <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === empSafePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                >
+                  {p}
+                </button>
+              )
+            )}
+            <button
+              onClick={() => setPage((p) => Math.min(empTotalPages, p + 1))}
+              disabled={empSafePage === empTotalPages}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              <i className="ri-arrow-right-s-line" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add Employee Modal */}
       {showAddModal && (

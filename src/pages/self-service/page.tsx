@@ -63,7 +63,7 @@ export default function SelfServicePage() {
     const SELECT = "id, first_name, last_name, role, department, status, join_date, email, avatar_url, branches(name)";
     supabase
       .from("employees")
-      .select(SELECT)
+      .select("id, first_name, last_name, role, department, status, join_date, email, avatar_url, branches(name)")
       .eq("email", user.email)
       .maybeSingle()
       .then(({ data }) => {
@@ -81,7 +81,7 @@ export default function SelfServicePage() {
     ? Math.floor((new Date().getTime() - new Date(selectedEmployee.join_date).getTime()) / (365.25 * 86400000))
     : 0;
 
-  if (loading || permsLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#F8F8F7] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />

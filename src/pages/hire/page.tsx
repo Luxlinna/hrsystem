@@ -98,9 +98,9 @@ export default function Hire() {
   const loadData = async () => {
     setLoading(true);
     const [{ data: j }, { data: c }, { data: i }, { data: b }] = await Promise.all([
-      supabase.from("job_postings").select("*, branches(name)").order("posted_at", { ascending: false }),
-      supabase.from("candidates").select("*, job_postings(title, department)").order("applied_at", { ascending: false }),
-      supabase.from("interviews").select("*, candidates(full_name, job_postings(title)), employees(first_name, last_name)").order("scheduled_at", { ascending: false }),
+      supabase.from("job_postings").select("*, branches(name)").is("deleted_at", null).order("posted_at", { ascending: false }),
+      supabase.from("candidates").select("*, job_postings(title, department)").is("deleted_at", null).order("applied_at", { ascending: false }),
+      supabase.from("interviews").select("*, candidates(full_name, job_postings(title)), employees(first_name, last_name)").is("deleted_at", null).order("scheduled_at", { ascending: false }),
       supabase.from("branches").select("id, name"),
     ]);
     setJobs(j || []);
@@ -142,6 +142,145 @@ export default function Hire() {
     const { error } = await supabase.from("interviews").update({ feedback, score, status: "completed" }).eq("id", id);
     if (error) { toast("Error", "Failed to save interview feedback", "error"); return; }
     toast("Feedback saved", "Interview feedback recorded.", "success");
+    loadData();
+  };
+
+  // Delete functions (soft delete — items go to the Recycle Bin)
+  const deleteJob = async (id: string, title: string) => {
+    if (!confirm(`Delete job posting "${title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("job_postings")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", id);
+    if (error) { toast("Error", "Failed to delete job posting", "error"); return; }
+    toast("Deleted", "Job posting moved to Recycle Bin.", "success");
+    loadData();
+  };
+
+  const deleteCandidate = async (id: string, name: string) => {
+    if (!confirm(`Delete candidate "${name}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("candidates")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", id);
+    if (error) { toast("Error", "Failed to delete candidate", "error"); return; }
+    toast("Deleted", "Candidate moved to Recycle Bin.", "success");
+    loadData();
+  };
+
+  const deleteInterview = async (id: string) => {
+    if (!confirm("Delete this interview? It will be moved to the Recycle Bin and can be restored later.")) return;
+    const { error } = await supabase
+      .from("interviews")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", id);
+    if (error) { toast("Error", "Failed to delete interview", "error"); return; }
+    toast("Deleted", "Interview moved to Recycle Bin.", "success");
+    loadData();
+  };
+
+  // Edit state
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
+  const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
+
+  const openEditJob = (job: Job) => {
+    setEditingJob(job);
+    setNewJob({
+      title: job.title,
+      department: job.department,
+      branch_id: job.branch_id,
+      description: job.description,
+      location: job.location,
+      salary_min: String(job.salary_min || ""),
+      salary_max: String(job.salary_max || ""),
+      type: job.type,
+      closing_date: job.closing_date || "",
+    });
+    setJobModal(true);
+  };
+
+  const openEditCandidate = (candidate: Candidate) => {
+    setEditingCandidate(candidate);
+    setNewCandidate({
+      full_name: candidate.full_name,
+      email: candidate.email,
+      phone: candidate.phone,
+      job_posting_id: candidate.job_posting_id,
+      source: candidate.source,
+      notes: candidate.notes || "",
+    });
+    setCandidateModal(true);
+  };
+
+  const openEditInterview = (interview: Interview) => {
+    setEditingInterview(interview);
+    setNewInterview({
+      candidate_id: interview.candidate_id,
+      scheduled_at: interview.scheduled_at ? new Date(interview.scheduled_at).toISOString().slice(0, 16) : "",
+      duration_minutes: String(interview.duration_minutes || 60),
+      type: interview.type,
+      notes: interview.notes || "",
+    });
+    setInterviewModal(true);
+  };
+
+  const updateJob = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingJob) return;
+    const { error } = await supabase.from("job_postings").update({
+      title: newJob.title,
+      department: newJob.department,
+      branch_id: newJob.branch_id,
+      description: newJob.description,
+      location: newJob.location,
+      salary_min: Number(newJob.salary_min) || 0,
+      salary_max: Number(newJob.salary_max) || 0,
+      type: newJob.type,
+      closing_date: newJob.closing_date,
+    }).eq("id", editingJob.id);
+    if (error) { toast("Error", "Failed to update job posting", "error"); return; }
+    toast("Updated", "Job posting updated.", "success");
+    setJobModal(false);
+    setEditingJob(null);
+    setNewJob({ title: "", department: "", branch_id: "", description: "", location: "", salary_min: "", salary_max: "", type: "full-time", closing_date: "" });
+    loadData();
+  };
+
+  const updateCandidateInfo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCandidate) return;
+    const { error } = await supabase.from("candidates").update({
+      full_name: newCandidate.full_name,
+      email: newCandidate.email,
+      phone: newCandidate.phone,
+      job_posting_id: newCandidate.job_posting_id,
+      source: newCandidate.source,
+      notes: newCandidate.notes,
+    }).eq("id", editingCandidate.id);
+    if (error) { toast("Error", "Failed to update candidate", "error"); return; }
+    toast("Updated", "Candidate info updated.", "success");
+    setCandidateModal(false);
+    setEditingCandidate(null);
+    setNewCandidate({ full_name: "", email: "", phone: "", job_posting_id: "", source: "", notes: "" });
+    loadData();
+  };
+
+  const updateInterviewInfo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingInterview) return;
+    const { error } = await supabase.from("interviews").update({
+      candidate_id: newInterview.candidate_id,
+      scheduled_at: new Date(newInterview.scheduled_at).toISOString(),
+      duration_minutes: Number(newInterview.duration_minutes),
+      type: newInterview.type,
+      notes: newInterview.notes,
+    }).eq("id", editingInterview.id);
+    if (error) { toast("Error", "Failed to update interview", "error"); return; }
+    toast("Updated", "Interview updated.", "success");
+    setInterviewModal(false);
+    setEditingInterview(null);
+    setNewInterview({ candidate_id: "", scheduled_at: "", duration_minutes: "60", type: "video", notes: "" });
     loadData();
   };
 
@@ -390,6 +529,18 @@ export default function Hire() {
                   </span>
                 </span>
                 <div className="col-span-2 flex justify-end gap-1.5">
+                  <button
+                    onClick={() => openEditJob(j)}
+                    className="text-[11px] font-medium px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteJob(j.id, j.title)}
+                    className="text-[11px] font-medium px-2.5 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
                   {j.status !== "closed" ? (
                     <button
                       onClick={() => closeJob(j.id)}
@@ -450,7 +601,7 @@ export default function Hire() {
                     {c.full_name.split(" ").map((n) => n[0]).join("")}
                   </div>
                   <div>
-                    <p className="text-[14px] font-semibold text-gray-900">{c.full_name}</p>
+                  <p className="text-[14px] font-semibold text-gray-900">{c.full_name}</p>
                     <p className="text-[12px] text-gray-500">{c.job_postings?.title || "-"} &middot; {c.source}</p>
                     {c.resume_url && (
                       <span className="inline-flex items-center gap-1 text-[11px] text-[#253C7D] mt-0.5">
@@ -527,6 +678,26 @@ export default function Hire() {
                   >
                     Schedule
                   </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openEditCandidate(c);
+                    }}
+                    className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      deleteCandidate(c.id, c.full_name);
+                    }}
+                    className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
                 </div>
               </Link>
             ))}
@@ -579,6 +750,18 @@ export default function Hire() {
                   </span>
                 </span>
                 <div className="col-span-2 flex justify-end gap-1.5">
+                  <button
+                    onClick={() => openEditInterview(iv)}
+                    className="text-[11px] font-medium px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteInterview(iv.id)}
+                    className="text-[11px] font-medium px-2.5 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
                   {iv.status === "scheduled" && (
                     <button
                       onClick={() => {
@@ -672,12 +855,12 @@ export default function Hire() {
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-900">Post New Job</h2>
-              <button onClick={() => setJobModal(false)} className="p-1 rounded-lg hover:bg-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">{editingJob ? "Edit Job Posting" : "Post New Job"}</h2>
+              <button onClick={() => { setJobModal(false); setEditingJob(null); setNewJob({ title: "", department: "", branch_id: "", description: "", location: "", salary_min: "", salary_max: "", type: "full-time", closing_date: "" }); }} className="p-1 rounded-lg hover:bg-gray-100">
                 <i className="ri-close-line text-xl text-gray-500" />
               </button>
             </div>
-            <form onSubmit={createJob} className="space-y-4">
+            <form onSubmit={editingJob ? updateJob : createJob} className="space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Job Title</label>
                 <input required value={newJob.title} onChange={(e) => setNewJob({ ...newJob, title: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
@@ -720,7 +903,7 @@ export default function Hire() {
                 </div>
               </div>
               <button type="submit" disabled={postingJob} className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-60 disabled:cursor-not-allowed">
-                {postingJob ? "Posting..." : "Post Job"}
+                {postingJob ? "Saving..." : editingJob ? "Save Changes" : "Post Job"}
               </button>
             </form>
           </div>
@@ -732,12 +915,12 @@ export default function Hire() {
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-900">Add Candidate</h2>
-              <button onClick={() => setCandidateModal(false)} className="p-1 rounded-lg hover:bg-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">{editingCandidate ? "Edit Candidate" : "Add Candidate"}</h2>
+              <button onClick={() => { setCandidateModal(false); setEditingCandidate(null); setNewCandidate({ full_name: "", email: "", phone: "", job_posting_id: "", source: "", notes: "" }); setResumeFile(null); }} className="p-1 rounded-lg hover:bg-gray-100">
                 <i className="ri-close-line text-xl text-gray-500" />
               </button>
             </div>
-            <form onSubmit={addCandidate} className="space-y-4">
+            <form onSubmit={editingCandidate ? updateCandidateInfo : addCandidate} className="space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Full Name</label>
                 <input required value={newCandidate.full_name} onChange={(e) => setNewCandidate({ ...newCandidate, full_name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
@@ -800,7 +983,7 @@ export default function Hire() {
                 </div>
               </div>
               <button type="submit" disabled={uploadingResume} className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-60 disabled:cursor-not-allowed">
-                {uploadingResume ? "Uploading..." : "Add Candidate"}
+                {uploadingResume ? "Saving..." : editingCandidate ? "Save Changes" : "Add Candidate"}
               </button>
             </form>
           </div>
@@ -812,12 +995,12 @@ export default function Hire() {
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-900">Schedule Interview</h2>
-              <button onClick={() => setInterviewModal(false)} className="p-1 rounded-lg hover:bg-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">{editingInterview ? "Edit Interview" : "Schedule Interview"}</h2>
+              <button onClick={() => { setInterviewModal(false); setEditingInterview(null); setNewInterview({ candidate_id: "", scheduled_at: "", duration_minutes: "60", type: "video", notes: "" }); }} className="p-1 rounded-lg hover:bg-gray-100">
                 <i className="ri-close-line text-xl text-gray-500" />
               </button>
             </div>
-            <form onSubmit={scheduleInterview} className="space-y-4">
+            <form onSubmit={editingInterview ? updateInterviewInfo : scheduleInterview} className="space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Candidate</label>
                 <select required value={newInterview.candidate_id} onChange={(e) => setNewInterview({ ...newInterview, candidate_id: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]">
@@ -853,7 +1036,7 @@ export default function Hire() {
                 <textarea value={newInterview.notes} onChange={(e) => setNewInterview({ ...newInterview, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]" />
               </div>
               <button type="submit" disabled={schedulingInterview} className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-60 disabled:cursor-not-allowed">
-                {schedulingInterview ? "Scheduling..." : "Schedule Interview"}
+                {schedulingInterview ? "Saving..." : editingInterview ? "Save Changes" : "Schedule Interview"}
               </button>
             </form>
           </div>

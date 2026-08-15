@@ -541,7 +541,7 @@ export default function Onboarding() {
                                     title="Download"
                                     className="text-[10px] text-[#253C7D] hover:underline shrink-0"
                                   >
-                                    <i className="ri-download-line" />
+                                    <i className="ri-download-line text-sm" />
                                   </a>
                                 )}
                                 {req.status === "approved" && (

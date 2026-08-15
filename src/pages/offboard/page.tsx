@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
@@ -32,6 +33,7 @@ interface EmployeeOption {
   first_name: string;
   last_name: string;
   role: string;
+  avatar_url?: string | null;
 }
 
 const statusLabels: Record<string, string> = {
@@ -106,7 +108,7 @@ export default function Offboard() {
 
     const { data: emps } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, role")
+      .select("id, first_name, last_name, role, avatar_url")
       .eq("status", "active")
       .order("first_name");
     setEmployees(emps || []);
@@ -385,17 +387,11 @@ export default function Offboard() {
             <form onSubmit={createOffboarding} className="space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Employee</label>
-                <select
-                  required
+                <EmployeeSearchSelect
+                  employees={employees}
                   value={newForm.employee_id}
-                  onChange={(e) => setNewForm({ ...newForm, employee_id: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] bg-white"
-                >
-                  <option value="">Select employee</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name} - {emp.role}</option>
-                  ))}
-                </select>
+                  onChange={(id) => setNewForm({ ...newForm, employee_id: id })}
+                />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1">Last Day</label>

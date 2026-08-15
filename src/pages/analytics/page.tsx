@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import * as XLSX from "xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, Legend,
@@ -45,19 +46,30 @@ export default function Analytics() {
   const [itTickets, setItTickets] = useState<ITTicket[]>([]);
   const [benefitEnrollments, setBenefitEnrollments] = useState<BenefitEnrollment[]>([]);
   const [benefitPlans, setBenefitPlans] = useState<BenefitPlan[]>([]);
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"csv" | "xlsx" | "pdf" | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  // Close export dropdown when clicking outside.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) setExportOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
 
   const loadData = async () => {
     const results = await Promise.all([
       supabase.from("employees").select("*"),
       supabase.from("leave_requests").select("*"),
       supabase.from("payroll_records").select("*"),
-      supabase.from("job_postings").select("*"),
-      supabase.from("candidates").select("*"),
+      supabase.from("job_postings").select("*").is("deleted_at", null),
+      supabase.from("candidates").select("*").is("deleted_at", null),
       supabase.from("offboarding_requests").select("*"),
-      supabase.from("expense_records").select("*"),
-      supabase.from("it_assets").select("*"),
-      supabase.from("it_tickets").select("*"),
+      supabase.from("expense_records").select("*").is("deleted_at", null),
+      supabase.from("it_assets").select("*").is("deleted_at", null),
+      supabase.from("it_tickets").select("*").is("deleted_at", null),
       supabase.from("benefit_enrollments").select("*"),
       supabase.from("benefit_plans").select("*"),
     ]);
@@ -211,30 +223,78 @@ export default function Analytics() {
   const openTickets = itTickets.filter((t) => t.status === "open").length;
   const assignedAssets = itAssets.filter((a) => a.assigned_to).length;
 
-  const exportCSV = () => {
-    setExporting(true);
-    let data: Record<string, string | number>[] = [];
-    let filename = "analytics-export.csv";
+  const getExportData = (): { data: Record<string, string | number>[]; filename: string; title: string } => {
     if (activeTab === "overview") {
-      data = deptDistribution.map((d) => ({ Department: d.name, "Employee Count": d.value }));
-      filename = "workforce-overview.csv";
+      return { data: deptDistribution.map((d) => ({ Department: d.name, "Employee Count": d.value })), filename: "workforce-overview", title: "Workforce Overview" };
     } else if (activeTab === "finance") {
-      data = expenseByCategory.map((d) => ({ Category: d.name, "Total Amount": d.value }));
-      filename = "finance-by-category.csv";
+      return { data: expenseByCategory.map((d) => ({ Category: d.name, "Total Amount": d.value })), filename: "finance-by-category", title: "Finance by Category" };
     } else if (activeTab === "it") {
-      data = itAssetsByType.map((d) => ({ "Asset Type": d.name, Count: d.value }));
-      filename = "it-assets.csv";
+      return { data: itAssetsByType.map((d) => ({ "Asset Type": d.name, Count: d.value })), filename: "it-assets", title: "IT Assets" };
     }
+    return { data: [], filename: "analytics-export", title: "Analytics Export" };
+  };
+
+  const exportCSV = () => {
+    setExporting("csv");
+    const { data, filename } = getExportData();
     if (data.length > 0) {
       const headers = Object.keys(data[0]);
       const rows = [headers.join(","), ...data.map((r) => headers.map((h) => `"${r[h]}"`).join(","))];
       const blob = new Blob([rows.join("\n")], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = filename; a.click();
+      a.href = url; a.download = `${filename}.csv`; a.click();
       URL.revokeObjectURL(url);
     }
-    setExporting(false);
+    setTimeout(() => setExporting(null), 800);
+  };
+
+  const exportExcel = () => {
+    setExporting("xlsx");
+    const { data, filename, title } = getExportData();
+    if (data.length > 0) {
+      const headers = Object.keys(data[0]);
+      const aoa = [headers, ...data.map((r) => headers.map((h) => r[h]))];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = headers.map((col) => ({ wch: Math.max(col.length + 2, 10) }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, title.slice(0, 31));
+      XLSX.writeFile(wb, `${filename}.xlsx`);
+    }
+    setTimeout(() => setExporting(null), 800);
+  };
+
+  const exportPDF = () => {
+    setExporting("pdf");
+    const { data, title } = getExportData();
+    if (data.length > 0) {
+      const headers = Object.keys(data[0]);
+      const tableRows = data.map((row) =>
+        `<tr>${headers.map((h) => `<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px">${row[h]}</td>`).join("")}</tr>`
+      ).join("");
+      const html = `<!DOCTYPE html><html><head><title>${title}</title><style>
+        body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111}
+        h1{font-size:20px;margin-bottom:4px}p{font-size:12px;color:#666;margin-bottom:20px}
+        table{width:100%;border-collapse:collapse}
+        th{text-align:left;padding:8px 10px;background:#f5f5f5;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#666}
+        td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px}
+        .footer{margin-top:20px;font-size:10px;color:#999;text-align:right}
+        @media print{body{padding:0}}
+      </style></head><body>
+        <h1>HRM_OPS — ${title}</h1>
+        <p>Generated: ${new Date().toLocaleString("en-US")} · ${data.length} records</p>
+        <table><thead><tr>${headers.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
+        <tbody>${tableRows}</tbody></table>
+        <div class="footer">HRM_OPS HRMS · Confidential</div>
+      </body></html>`;
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.write(html);
+        win.document.close();
+        win.onload = () => { win.print(); };
+      }
+    }
+    setTimeout(() => setExporting(null), 800);
   };
 
   return (
@@ -253,14 +313,47 @@ export default function Analytics() {
             <option value="all">All Departments</option>
             {departments.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
-          <button
-            onClick={exportCSV}
-            disabled={exporting}
-            className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-4 py-2 rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] transition-colors disabled:opacity-50 whitespace-nowrap"
-          >
-            <i className="ri-download-line" />
-            {exporting ? "Exporting..." : "Export CSV"}
-          </button>
+          <div className="relative" ref={exportRef}>
+            <button
+              onClick={() => setExportOpen((v) => !v)}
+              disabled={exporting !== null}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#253C7D] text-white rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] shadow-sm transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
+            >
+              {exporting ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-download-2-line" />}
+              {exporting ? `Exporting ${exporting.toUpperCase()}...` : "Export"}
+              <i className={`ri-arrow-down-s-line text-base transition-transform ${exportOpen ? "rotate-180" : ""}`} />
+            </button>
+            {exportOpen && (
+              <div className="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 z-50">
+                <p className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Export as</p>
+                {[
+                  { fmt: "pdf" as const, label: "PDF Document", hint: ".pdf", icon: "ri-file-pdf-line", desc: "Print-ready report", color: "text-red-500" },
+                  { fmt: "csv" as const, label: "CSV Spreadsheet", hint: ".csv", icon: "ri-file-text-line", desc: "Comma-separated values", color: "text-emerald-600" },
+                  { fmt: "xlsx" as const, label: "Excel Workbook", hint: ".xlsx", icon: "ri-file-excel-2-line", desc: "Microsoft Excel format", color: "text-green-600" },
+                ].map((opt) => (
+                  <button
+                    key={opt.fmt}
+                    onClick={() => {
+                      setExportOpen(false);
+                      if (opt.fmt === "pdf") exportPDF();
+                      else if (opt.fmt === "csv") exportCSV();
+                      else exportExcel();
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left cursor-pointer group"
+                  >
+                    <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 group-hover:bg-white transition-colors shrink-0">
+                      <i className={`${opt.icon} text-base ${opt.color}`} />
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-medium text-gray-800">{opt.label}</span>
+                      <span className="block text-[11px] text-gray-400">{opt.desc}</span>
+                    </span>
+                    <span className="text-[11px] text-gray-400 font-mono shrink-0">{opt.hint}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

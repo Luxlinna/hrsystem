@@ -88,12 +88,14 @@ export default function CandidateDetail() {
       .from("candidates")
       .select("*, job_postings(title, department, branches(name))")
       .eq("id", cid)
+      .is("deleted_at", null)
       .maybeSingle();
 
     const { data: ivs } = await supabase
       .from("interviews")
       .select("*, employees(first_name, last_name)")
       .eq("candidate_id", cid)
+      .is("deleted_at", null)
       .order("scheduled_at", { ascending: false });
 
     // Discard a stale response if the user has since navigated to a
@@ -299,9 +301,9 @@ export default function CandidateDetail() {
                       href={candidate.resume_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-[#253C7D] text-white text-[11px] font-semibold rounded-lg hover:bg-[#1F336A]"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-xl hover:bg-[#1F336A] shadow-sm transition-all"
                     >
-                      <i className="ri-download-line mr-1" /> Download
+                      <i className="ri-download-line" /> Download
                     </a>
                     <label
                       htmlFor="detail-resume-upload"

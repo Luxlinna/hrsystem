@@ -111,12 +111,14 @@ export default function ITManagement() {
     const { data: a } = await supabase
       .from("it_assets")
       .select("*, employees(first_name, last_name), branches(name)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     setAssets(a || []);
 
     const { data: t } = await supabase
       .from("it_tickets")
       .select("*")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     setTickets(t || []);
     setLoading(false);
@@ -180,18 +182,24 @@ export default function ITManagement() {
   };
 
   const deleteAsset = async (asset: ITAsset) => {
-    if (!confirm(`Remove "${asset.name}" (${asset.asset_tag}) from the asset register? This cannot be undone.`)) return;
-    await supabase.from("it_assets").delete().eq("id", asset.id);
-    toast("Asset removed", "IT asset deleted from register", "success");
-    logActivity({ module: "it", action: "deleted", entityType: "it_asset", entityId: asset.id, actorName, actorRole: role?.name || "Unknown", description: `Removed IT asset "${asset.name}" (${asset.asset_tag}) from the register` });
+    if (!confirm(`Remove "${asset.name}" (${asset.asset_tag}) from the asset register? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    await supabase
+      .from("it_assets")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", asset.id);
+    toast("Asset removed", "IT asset moved to Recycle Bin", "success");
+    logActivity({ module: "it", action: "deleted", entityType: "it_asset", entityId: asset.id, actorName, actorRole: role?.name || "Unknown", description: `Moved IT asset "${asset.name}" (${asset.asset_tag}) to the Recycle Bin` });
     loadData();
   };
 
   const deleteTicket = async (ticket: ITTicket) => {
-    if (!confirm(`Delete ticket "${ticket.title}"? This cannot be undone.`)) return;
-    await supabase.from("it_tickets").delete().eq("id", ticket.id);
-    toast("Ticket deleted", "IT ticket removed", "success");
-    logActivity({ module: "it", action: "deleted", entityType: "it_ticket", entityId: ticket.id, actorName, actorRole: role?.name || "Unknown", description: `Deleted IT ticket "${ticket.title}"` });
+    if (!confirm(`Delete ticket "${ticket.title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    await supabase
+      .from("it_tickets")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", ticket.id);
+    toast("Ticket deleted", "IT ticket moved to Recycle Bin", "success");
+    logActivity({ module: "it", action: "deleted", entityType: "it_ticket", entityId: ticket.id, actorName, actorRole: role?.name || "Unknown", description: `Moved IT ticket "${ticket.title}" to the Recycle Bin` });
     loadData();
   };
 

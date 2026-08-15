@@ -179,7 +179,10 @@ function MobileDrawer({
   if (isAdmin) {
     visibleDrawerGroups.push({
       label: "Admin",
-      items: [{ path: "/admin", label: "Admin Portal", icon: "ri-admin-line", module: "admin" }],
+      items: [
+        { path: "/admin", label: "Admin Portal", icon: "ri-admin-line", module: "admin" },
+        { path: "/recycle-bin", label: "Recycle Bin", icon: "ri-delete-bin-6-line", module: "admin" },
+      ],
     });
   }
 
@@ -332,8 +335,9 @@ export default function TopBar() {
         .limit(5),
       supabase
         .from("candidates")
-        .select("id, full_name, position, stage")
-        .or(`full_name.ilike.%${query}%,position.ilike.%${query}%`)
+        .select("id, full_name, email, stage, job_postings(title)")
+        .is("deleted_at", null)
+        .or(`full_name.ilike.%${query}%,email.ilike.%${query}%`)
         .limit(4),
     ]);
 
@@ -354,7 +358,7 @@ export default function TopBar() {
       results.push({
         id: `cand-${c.id}`,
         label: c.full_name,
-        sublabel: `${c.position} · ${c.stage}`,
+        sublabel: `${c.job_postings?.title || "Candidate"} · ${c.stage}`,
         icon: "ri-briefcase-line",
         path: `/hire/candidate/${c.id}`,
         category: "Candidate",
@@ -675,14 +679,24 @@ export default function TopBar() {
                     </Link>
                   )}
                   {isAdmin && (
-                    <Link
-                      to="/admin"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <i className="ri-admin-line text-sm text-gray-400" />
-                      Admin Portal
-                    </Link>
+                    <>
+                      <Link
+                        to="/admin"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <i className="ri-admin-line text-sm text-gray-400" />
+                        Admin Portal
+                      </Link>
+                      <Link
+                        to="/recycle-bin"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <i className="ri-delete-bin-6-line text-sm text-gray-400" />
+                        Recycle Bin
+                      </Link>
+                    </>
                   )}
                   {can("analytics") && (
                     <Link

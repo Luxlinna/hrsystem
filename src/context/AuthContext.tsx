@@ -12,8 +12,8 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   updateProfile: (updates: { display_name?: string; avatar_url?: string }) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
 }
@@ -22,8 +22,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   login: async () => {},
-  signup: async () => {},
   logout: async () => {},
+  resetPassword: async () => {},
   updateProfile: async () => {},
   updatePassword: async () => {},
 });
@@ -62,17 +62,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
-  const signup = async (email: string, password: string, displayName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: displayName } },
-    });
-    if (error) throw error;
-  };
-
   const logout = async () => {
     await supabase.auth.signOut();
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
   };
 
   const updateProfile = async (updates: { display_name?: string; avatar_url?: string }) => {
@@ -87,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, updateProfile, updatePassword }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, resetPassword, updateProfile, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

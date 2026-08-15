@@ -241,6 +241,30 @@ export default function Sidebar() {
             </Link>
           </div>
         )}
+
+        {/* Recycle Bin — Super Admins only */}
+        {isAdmin && (
+          <div className={`${isExpanded ? "mx-3" : "mx-2"}`}>
+            <Link
+              to="/recycle-bin"
+              className={`flex items-center rounded-lg transition-all duration-200 group relative ${
+                isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
+              } ${
+                location.pathname === "/recycle-bin"
+                  ? "bg-[#29ABE2]/20 text-[#29ABE2]"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <i className="ri-delete-bin-6-line text-lg w-5 h-5 flex items-center justify-center shrink-0" />
+              {isExpanded && <span className="text-[13px] whitespace-nowrap">Recycle Bin</span>}
+              {!isExpanded && (
+                <span className="absolute left-full ml-3 px-2.5 py-1 bg-gray-800 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity shadow-lg border border-gray-700">
+                  Recycle Bin
+                </span>
+              )}
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* User */}
