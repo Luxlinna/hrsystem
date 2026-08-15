@@ -454,7 +454,7 @@ export default function PayrollApproval() {
                   </div>
                   {isExpanded && (
                     <div className="border-t border-gray-50 bg-gray-50/30 px-5 py-4">
-                      <div className="grid grid-cols-4 gap-3 mb-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                         {[
                           { label: "Base", v: fmtFull(run.total_base) },
                           { label: "Bonus", v: `+${fmtFull(run.total_bonus)}` },
@@ -556,7 +556,7 @@ export default function PayrollApproval() {
 
       {/* Action Modal */}
       {actionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${actionModal.action === "approve" ? "bg-green-50" : "bg-red-50"}`}>
               <i className={`${actionModal.action === "approve" ? "ri-check-line text-green-600" : "ri-close-line text-red-600"} text-xl`} />

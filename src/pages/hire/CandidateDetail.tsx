@@ -569,7 +569,7 @@ export default function CandidateDetail() {
 
       {/* Feedback Modal */}
       {feedbackModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-gray-900">Interview Feedback</h3>
@@ -618,7 +618,7 @@ export default function CandidateDetail() {
 
       {/* Schedule Interview Modal */}
       {scheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-gray-900">Schedule Interview</h3>

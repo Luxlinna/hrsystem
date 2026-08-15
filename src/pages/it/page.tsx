@@ -487,7 +487,7 @@ export default function ITManagement() {
 
       {/* Add Asset Modal */}
       {assetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-gray-900">Register IT Asset</h3>
@@ -524,7 +524,7 @@ export default function ITManagement() {
 
       {/* New Ticket Modal */}
       {ticketModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-gray-900">New IT Ticket</h3>
@@ -567,7 +567,7 @@ export default function ITManagement() {
 
       {/* Edit Asset Modal */}
       {editingAsset && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-gray-900">Edit IT Asset</h3>

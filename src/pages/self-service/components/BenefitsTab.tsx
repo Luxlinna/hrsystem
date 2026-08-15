@@ -177,7 +177,7 @@ export default function BenefitsTab({ employeeId }: Props) {
 
       {/* Enroll Modal */}
       {showEnrollModal && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-bold text-gray-900">Enroll in a Benefit Plan</h3>
@@ -222,7 +222,7 @@ export default function BenefitsTab({ employeeId }: Props) {
 
       {/* Cancel Confirmation */}
       {confirmCancel && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
             <h3 className="text-base font-bold text-gray-900 mb-1.5">Cancel Enrollment?</h3>
             <p className="text-sm text-gray-500 mb-5">

@@ -22,6 +22,7 @@ export interface UserRole {
   disciplinary_view_own_branch: boolean;
   task_view_all_employees: boolean;
   task_view_own_branch: boolean;
+  meeting_rooms_approve: boolean;
 }
 
 interface UsePermissionsReturn {
@@ -91,6 +92,7 @@ export function usePermissions(): UsePermissionsReturn {
           disciplinary_view_own_branch: !!r.disciplinary_view_own_branch,
           task_view_all_employees: !!r.task_view_all_employees,
           task_view_own_branch: !!r.task_view_own_branch,
+          meeting_rooms_approve: !!r.meeting_rooms_approve,
         };
         cachedRole = userRole;
         cachedUid = user.id;

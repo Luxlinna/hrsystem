@@ -453,7 +453,7 @@ export default function Tools() {
 
       {/* Assign Modal */}
       {assignModalOpen && selectedTool && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 flex items-start sm:items-center justify-center overflow-y-auto z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-md p-6">
             <h3 className="text-[16px] font-bold text-[#1A1A1A] mb-1">Grant Tool Access</h3>
             <p className="text-[12px] text-gray-500 mb-4">

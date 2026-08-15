@@ -33,6 +33,7 @@ const TABS = [
 
 export default function SelfServicePage() {
   const { user } = useAuth();
+  const { loading: permsLoading } = usePermissions();
 
   const [searchParams] = useSearchParams();
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -51,10 +52,14 @@ export default function SelfServicePage() {
     if (t) setActiveTab(t);
   }, [searchParams]);
 
-  // Self-Service always shows the employee record matching this account's own
-  // email — no cross-employee "Switch Employee" picker, for any role.
+  // Self-service is strictly "your own account, your own actions" — actions like
+  // Clock In/Out post as whichever employee is loaded here, so this must always
+  // resolve to the signed-in user's own record and never anyone else's.
   useEffect(() => {
+    if (permsLoading) return;
     if (!user?.email) { setLoading(false); return; }
+
+    const SELECT = "id, first_name, last_name, role, department, status, join_date, email, avatar_url, branches(name)";
     supabase
       .from("employees")
       .select("id, first_name, last_name, role, department, status, join_date, email, avatar_url, branches(name)")
@@ -69,7 +74,7 @@ export default function SelfServicePage() {
         }
         setLoading(false);
       });
-  }, [user?.email]);
+  }, [permsLoading, user?.email]);
 
   const yearsAtCompany = selectedEmployee?.join_date
     ? Math.floor((new Date().getTime() - new Date(selectedEmployee.join_date).getTime()) / (365.25 * 86400000))
@@ -136,7 +141,6 @@ export default function SelfServicePage() {
               </>
             )}
           </div>
-
         </div>
       </div>
 

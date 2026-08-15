@@ -671,7 +671,7 @@ export default function TrainingPage() {
 
       {/* Add Course Modal */}
       {showCourseModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => { setShowCourseModal(false); setEditingCourseId(null); }} />
           <div className="relative bg-white rounded-2xl w-full max-w-[540px] max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
@@ -772,7 +772,7 @@ export default function TrainingPage() {
 
       {/* Enroll Employee Modal */}
       {showEnrollModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowEnrollModal(false)} />
           <div className="relative bg-white rounded-2xl w-full max-w-[440px] max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">

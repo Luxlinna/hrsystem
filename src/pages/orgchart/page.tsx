@@ -451,7 +451,7 @@ export default function OrgChart() {
       )}
 
       {editManagerModal && selectedEmployee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20" onClick={() => setEditManagerModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4 bg-black/20" onClick={() => setEditManagerModal(false)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-[15px] font-bold text-gray-900 mb-1">Edit Reporting Relationship</h3>
             <p className="text-[12px] text-gray-500 mb-5">
