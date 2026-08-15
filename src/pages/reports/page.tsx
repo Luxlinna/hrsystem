@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toYMD, todayYMD } from "@/lib/date";
 import ReportViewer from "./components/ReportViewer";
@@ -10,14 +11,32 @@ const MODULES = [
   { id: "expenses", label: "Expense Report", icon: "ri-bank-line", color: "bg-teal-50 text-teal-700 border-teal-200", desc: "All expense records with approval status" },
   { id: "hire", label: "Hire Pipeline", icon: "ri-briefcase-line", color: "bg-violet-50 text-violet-700 border-violet-200", desc: "Candidate pipeline and hiring funnel stages" },
   { id: "daily-logs", label: "Daily Work Logs", icon: "ri-file-list-2-line", color: "bg-indigo-50 text-indigo-700 border-indigo-200", desc: "Every employee's daily work entries — what they worked on, when" },
+  { id: "meeting-rooms", label: "Meeting Room Bookings", icon: "ri-community-line", color: "bg-rose-50 text-rose-700 border-rose-200", desc: "All meeting room booking records, status, and host details" },
 ];
 
 // Modules whose rows are tied to one employee, so the name/department/
 // branch filters below actually apply to them.
-const EMPLOYEE_SCOPED_MODULES = new Set(["leave", "payroll", "headcount", "daily-logs"]);
+const EMPLOYEE_SCOPED_MODULES = new Set(["leave", "payroll", "headcount", "daily-logs", "meeting-rooms"]);
 
 export default function ReportsPage() {
-  const [activeModule, setActiveModule] = useState("leave");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const paramMod = searchParams.get("module");
+  const [activeModule, setActiveModuleState] = useState(
+    paramMod && MODULES.some((m) => m.id === paramMod) ? paramMod : "leave"
+  );
+
+  useEffect(() => {
+    const mod = searchParams.get("module");
+    if (mod && MODULES.some((m) => m.id === mod)) {
+      setActiveModuleState(mod);
+    }
+  }, [searchParams]);
+
+  const setActiveModule = (modId: string) => {
+    setActiveModuleState(modId);
+    setSearchParams({ module: modId }, { replace: true });
+  };
+
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [employeeSearch, setEmployeeSearch] = useState("");
@@ -68,6 +87,7 @@ export default function ReportsPage() {
       "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
       "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
       "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date", "Time": "time", "Activity": "activity", "Notes": "notes",
+      "Room": "room_name", "Title": "title", "Booked By": "employee", "Attendees": "attendees",
     };
     const rows = reportData.map((row) =>
       reportColumns.map((col) => {
@@ -99,6 +119,7 @@ export default function ReportsPage() {
       "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
       "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
       "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date", "Time": "time", "Activity": "activity", "Notes": "notes",
+      "Room": "room_name", "Title": "title", "Booked By": "employee", "Attendees": "attendees",
     };
     const tableRows = reportData.map((row) =>
       `<tr>${reportColumns.map((col) => {
@@ -144,9 +165,15 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Reports &amp; Export Center
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Reports &amp; Export Center
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Live DB
+            </span>
+          </div>
           <p className="text-sm text-gray-500 mt-0.5">Generate, preview, and export HR reports per module</p>
         </div>
         <div className="flex items-center gap-2">
@@ -278,21 +305,124 @@ export default function ReportsPage() {
               )}
             </div>
 
-            {/* Quick presets */}
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-2">Quick Presets</p>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: "This Month", fn: () => { const n = new Date(); setDateFrom(toYMD(new Date(n.getFullYear(), n.getMonth(), 1))); setDateTo(toYMD(new Date(n.getFullYear(), n.getMonth() + 1, 0))); } },
-                { label: "Last Month", fn: () => { const n = new Date(); setDateFrom(toYMD(new Date(n.getFullYear(), n.getMonth() - 1, 1))); setDateTo(toYMD(new Date(n.getFullYear(), n.getMonth(), 0))); } },
-                { label: "Q1 2026", fn: () => { setDateFrom("2026-01-01"); setDateTo("2026-03-31"); } },
-                { label: "Q2 2026", fn: () => { setDateFrom("2026-04-01"); setDateTo("2026-06-30"); } },
-                { label: "YTD 2026", fn: () => { setDateFrom("2026-01-01"); setDateTo(todayYMD()); } },
-                { label: "All Time", fn: () => { setDateFrom(""); setDateTo(""); } },
-              ].map((p) => (
-                <button key={p.label} onClick={p.fn} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs text-gray-600 transition-colors cursor-pointer text-center whitespace-nowrap">
-                  {p.label}
-                </button>
-              ))}
+            {/* Quick presets organized by Per Day, Per Week, Per Month */}
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-2">
+              Period Presets (Day / Week / Month)
+            </p>
+            <div className="space-y-2">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Per Day</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={() => {
+                      const t = todayYMD();
+                      setDateFrom(t);
+                      setDateTo(t);
+                    }}
+                    className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer text-center ${
+                      dateFrom === todayYMD() && dateTo === todayYMD()
+                        ? "bg-[#253C7D] text-white"
+                        : "bg-gray-50 hover:bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    Today
+                  </button>
+                  <button
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - 1);
+                      const y = toYMD(d);
+                      setDateFrom(y);
+                      setDateTo(y);
+                    }}
+                    className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-medium text-gray-700 transition-colors cursor-pointer text-center"
+                  >
+                    Yesterday
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Per Week</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={() => {
+                      const now = new Date();
+                      const day = now.getDay();
+                      const diffToMon = (day === 0 ? -6 : 1) - day;
+                      const mon = new Date(now);
+                      mon.setDate(now.getDate() + diffToMon);
+                      const sun = new Date(mon);
+                      sun.setDate(mon.getDate() + 6);
+                      setDateFrom(toYMD(mon));
+                      setDateTo(toYMD(sun));
+                    }}
+                    className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-medium text-gray-700 transition-colors cursor-pointer text-center"
+                  >
+                    This Week
+                  </button>
+                  <button
+                    onClick={() => {
+                      const now = new Date();
+                      const day = now.getDay();
+                      const diffToMon = (day === 0 ? -6 : 1) - day - 7;
+                      const mon = new Date(now);
+                      mon.setDate(now.getDate() + diffToMon);
+                      const sun = new Date(mon);
+                      sun.setDate(mon.getDate() + 6);
+                      setDateFrom(toYMD(mon));
+                      setDateTo(toYMD(sun));
+                    }}
+                    className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-medium text-gray-700 transition-colors cursor-pointer text-center"
+                  >
+                    Last Week
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Per Month &amp; Year</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={() => {
+                      const n = new Date();
+                      setDateFrom(toYMD(new Date(n.getFullYear(), n.getMonth(), 1)));
+                      setDateTo(toYMD(new Date(n.getFullYear(), n.getMonth() + 1, 0)));
+                    }}
+                    className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-medium text-gray-700 transition-colors cursor-pointer text-center"
+                  >
+                    This Month
+                  </button>
+                  <button
+                    onClick={() => {
+                      const n = new Date();
+                      setDateFrom(toYMD(new Date(n.getFullYear(), n.getMonth() - 1, 1)));
+                      setDateTo(toYMD(new Date(n.getFullYear(), n.getMonth(), 0)));
+                    }}
+                    className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-medium text-gray-700 transition-colors cursor-pointer text-center"
+                  >
+                    Last Month
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDateFrom("2026-01-01");
+                      setDateTo(todayYMD());
+                    }}
+                    className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-medium text-gray-700 transition-colors cursor-pointer text-center"
+                  >
+                    YTD 2026
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                    }}
+                    className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-medium text-gray-700 transition-colors cursor-pointer text-center"
+                  >
+                    All Time
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -301,23 +431,89 @@ export default function ReportsPage() {
         <div className="flex-1 min-w-0">
           <div className="bg-white border border-gray-100 rounded-xl p-5">
             {/* Report header */}
-            <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 flex items-center justify-center rounded-xl border ${activeModuleInfo.color}`}>
                   <i className={`${activeModuleInfo.icon} text-lg`} />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-gray-900">{activeModuleInfo.label}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-gray-900">{activeModuleInfo.label}</h2>
+                    {isDateScoped && (
+                      <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-[11px] font-semibold">
+                        {dateFrom === todayYMD() && dateTo === todayYMD()
+                          ? "Per Day (Today)"
+                          : dateFrom || dateTo
+                          ? `${dateFrom || "Start"} → ${dateTo || "Today"}`
+                          : "All Time"}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500">
                     {isDateScoped ? (dateFrom || dateTo ? `${dateFrom || "Start"} → ${dateTo || "Today"}` : "All time") : "Live snapshot"}
                     {reportData.length > 0 && ` · ${reportData.length} records`}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-400">Generated</p>
-                <p className="text-xs font-medium text-gray-600">{new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
-              </div>
+
+              {/* Quick Period Switcher Pills */}
+              {isDateScoped && (
+                <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl border border-gray-200">
+                  <button
+                    onClick={() => {
+                      const t = todayYMD();
+                      setDateFrom(t);
+                      setDateTo(t);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      dateFrom === todayYMD() && dateTo === todayYMD()
+                        ? "bg-[#253C7D] text-white shadow-sm"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                    }`}
+                  >
+                    Per Day
+                  </button>
+                  <button
+                    onClick={() => {
+                      const now = new Date();
+                      const day = now.getDay();
+                      const diffToMon = (day === 0 ? -6 : 1) - day;
+                      const mon = new Date(now);
+                      mon.setDate(now.getDate() + diffToMon);
+                      const sun = new Date(mon);
+                      sun.setDate(mon.getDate() + 6);
+                      setDateFrom(toYMD(mon));
+                      setDateTo(toYMD(sun));
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer text-gray-600 hover:text-gray-900 hover:bg-white`}
+                  >
+                    Per Week
+                  </button>
+                  <button
+                    onClick={() => {
+                      const n = new Date();
+                      setDateFrom(toYMD(new Date(n.getFullYear(), n.getMonth(), 1)));
+                      setDateTo(toYMD(new Date(n.getFullYear(), n.getMonth() + 1, 0)));
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer text-gray-600 hover:text-gray-900 hover:bg-white`}
+                  >
+                    Per Month
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      !dateFrom && !dateTo
+                        ? "bg-[#253C7D] text-white shadow-sm"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                    }`}
+                  >
+                    All Time
+                  </button>
+                </div>
+              )}
             </div>
 
             <div ref={printRef}>

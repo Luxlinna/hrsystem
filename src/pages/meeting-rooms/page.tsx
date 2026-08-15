@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -1155,6 +1156,14 @@ export default function MeetingRoomsPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <Link
+            to="/reports?module=meeting-rooms"
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 hover:text-[#253C7D] hover:bg-gray-50 transition shadow-sm text-sm font-semibold cursor-pointer"
+            title="View Booking Reports"
+          >
+            <i className="ri-file-chart-line text-lg text-rose-600" />
+            <span>Booking Reports</span>
+          </Link>
           <button
             onClick={() => loadBookings()}
             className="p-2.5 rounded-xl border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition shadow-sm cursor-pointer"
