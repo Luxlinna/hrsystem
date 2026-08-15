@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
@@ -31,6 +32,7 @@ interface Employee {
   role: string;
   department: string;
   annual_leave_days?: number;
+  avatar_url?: string | null;
 }
 
 interface LeaveTypePolicy {
@@ -46,6 +48,20 @@ const LEAVE_TYPE_LABELS: Record<string, string> = {
   unpaid: "Unpaid Leave",
   bereavement: "Bereavement",
   study: "Study Leave",
+};
+
+// Builds a compact page-number list with ellipses for many pages,
+// e.g. [1, "...", 4, 5, 6, "...", 12].
+const pageWindow = (current: number, total: number): (number | "...")[] => {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) pages.push("...");
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
 };
 
 export default function Leave() {
@@ -83,6 +99,10 @@ export default function Leave() {
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const calendarRef = useRef<HTMLDivElement>(null);
 
+  // Pagination for the leave requests table.
+  const [pageSize, setPageSize] = useState(5);
+  const [page, setPage] = useState(1);
+
   // Load leave requests with employee details
   const loadData = async () => {
     // Calendar dataset: always company-wide approved leave, regardless of role.
@@ -95,7 +115,7 @@ export default function Leave() {
     if (!user?.email) return;
     const { data: me } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, role, department, annual_leave_days, branch_id")
+      .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id")
       .eq("email", user.email)
       .maybeSingle();
     setMyEmployee(me);
@@ -107,7 +127,7 @@ export default function Leave() {
         .order("created_at", { ascending: false });
       setRequests(lr || []);
 
-      const { data: emp } = await supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days").eq("status", "active");
+      const { data: emp } = await supabase.from("employees").select("id, first_name, last_name, role, department, annual_leave_days, avatar_url").eq("status", "active");
       setEmployees(emp || []);
       return;
     }
@@ -119,7 +139,7 @@ export default function Leave() {
     if (canViewOwnBranch && me.branch_id) {
       const { data: team } = await supabase
         .from("employees")
-        .select("id, first_name, last_name, role, department, annual_leave_days")
+        .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url")
         .eq("status", "active")
         .eq("branch_id", me.branch_id);
       setEmployees(team || []);
@@ -178,17 +198,21 @@ export default function Leave() {
   // jump straight to that request, not just land on the generic list.
   useEffect(() => {
     if (!highlightId || requests.length === 0) return;
-    if (!requests.some((r) => r.id === highlightId)) return;
+    const idx = requests.findIndex((r) => r.id === highlightId);
+    if (idx === -1) return;
     setFilter("all");
-    // setFilter above hasn't repainted the DOM yet in this same tick — the
-    // row doesn't exist to scroll to until after React commits the re-render.
+    // Show the paginated page that contains this request.
+    setPage(Math.floor(idx / pageSize) + 1);
+    // The filter/page changes above haven't repainted the DOM yet in this
+    // same tick — the row doesn't exist to scroll to until React commits
+    // the re-render, so wait briefly before scrolling.
     const t = setTimeout(() => {
       const el = document.getElementById(`leave-request-${highlightId}`);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
       el?.focus({ preventScroll: true });
-    }, 0);
+    }, 50);
     return () => clearTimeout(t);
-  }, [highlightId, requests]);
+  }, [highlightId, requests, pageSize]);
 
   const daysBetween = (start: string, end: string) => {
     const s = new Date(start);
@@ -346,6 +370,18 @@ export default function Leave() {
 
   const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
 
+  // Pagination values for the requests table.
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const pageEnd = Math.min(safePage * pageSize, filtered.length);
+  const pagedRows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  // Keep the current page valid when the dataset shrinks (e.g. realtime updates).
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   const currentYear = new Date().getFullYear();
   const usedAnnualDaysThisYear = requests
     .filter((r) => r.status === "approved" && r.leave_type === "annual" && new Date(r.start_date).getFullYear() === currentYear)
@@ -430,8 +466,8 @@ export default function Leave() {
           disabled={!canViewAll && !myEmployee}
           className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <i className="ri-calendar-event-line" />
-          Submit Leave
+          <i className="ri-add-line" />
+          Request Leave
         </button>
       </div>
 
@@ -525,7 +561,7 @@ export default function Leave() {
             {["all", "pending", "approved", "rejected"].map((f) => (
               <button
                 key={f}
-                onClick={() => setFilter(f)}
+                onClick={() => { setFilter(f); setPage(1); }}
                 className={`px-4 py-2 rounded-full text-[12px] font-medium capitalize transition-colors ${
                   filter === f ? "bg-[#253C7D] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
@@ -549,7 +585,7 @@ export default function Leave() {
               <span>Days</span>
               <span>Actions</span>
             </div>
-            {filtered.map((r) => (
+            {pagedRows.map((r) => (
               <div
                 key={r.id}
                 id={`leave-request-${r.id}`}
@@ -606,6 +642,58 @@ export default function Leave() {
                 <p className="text-[13px]">No {filter !== "all" ? filter : ""} leave requests</p>
               </div>
             )}
+
+            {/* Pagination footer */}
+            {filtered.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <p className="text-[11px] text-gray-500">
+                    Showing <span className="font-semibold text-gray-700">{pageStart}</span>–<span className="font-semibold text-gray-700">{pageEnd}</span> of <span className="font-semibold text-gray-700">{filtered.length}</span> requests
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-gray-400">Rows per page</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                      className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                    >
+                      {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                    aria-label="Previous page"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <i className="ri-arrow-left-s-line" />
+                  </button>
+                  {pageWindow(safePage, totalPages).map((p, i) =>
+                    p === "..." ? (
+                      <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === safePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                    aria-label="Next page"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <i className="ri-arrow-right-s-line" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -615,7 +703,7 @@ export default function Leave() {
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="text-[15px] font-bold text-gray-900">Submit Leave Request</h3>
+              <h3 className="text-[15px] font-bold text-gray-900">Request Leave</h3>
               <button onClick={() => setShowForm(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500">
                 <i className="ri-close-line text-lg" />
               </button>
@@ -624,19 +712,11 @@ export default function Leave() {
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
                 {canManage ? (
-                  <select
+                  <EmployeeSearchSelect
+                    employees={employees}
                     value={formData.employee_id}
-                    onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
-                    required
-                  >
-                    <option value="">Select employee</option>
-                    {employees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.first_name} {emp.last_name} — {emp.department}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(id) => setFormData((p) => ({ ...p, employee_id: id }))}
+                  />
                 ) : (
                   <div className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700">
                     {myEmployee ? `${myEmployee.first_name} ${myEmployee.last_name} — ${myEmployee.department}` : "—"}

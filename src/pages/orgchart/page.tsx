@@ -112,7 +112,7 @@ function OrgNode({ node, onToggle, searchTerm, deptFilter, onSelectEmployee }: {
             <div className="relative flex gap-6">
               <div
                 className="absolute top-0 left-1/2 h-px bg-gray-200"
-                style={{ width: `${(node.children.length - 1) * 100}%`, transform: "translateX(-50%)" }}
+                style={{ width: `${(node.children.length - 1) * 224}px`, transform: "translateX(-50%)" }}
               />
               {node.children.map((child) => (
                 <OrgNode key={child.id} node={child} onToggle={onToggle} searchTerm={searchTerm} deptFilter={deptFilter} onSelectEmployee={onSelectEmployee} />

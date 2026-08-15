@@ -67,7 +67,7 @@ export default function Announcements() {
   const selectedItem = announcements.find((a) => a.id === selectedId) || null;
 
   const loadAnnouncements = async () => {
-    const { data } = await supabase.from("announcements").select("*").order("pinned", { ascending: false }).order("published_at", { ascending: false });
+    const { data } = await supabase.from("announcements").select("*").is("deleted_at", null).order("pinned", { ascending: false }).order("published_at", { ascending: false });
     setAnnouncements(data || []);
     setLoading(false);
   };

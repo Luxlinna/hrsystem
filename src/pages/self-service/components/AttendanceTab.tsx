@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { toYMD } from "@/lib/date";
 
 interface AttendanceRecord {
   id: string;
@@ -57,7 +58,10 @@ export default function AttendanceTab({ employeeId }: Props) {
     setLoading(true);
     const [year, month] = filterMonth.split("-");
     const startDate = `${year}-${month}-01`;
-    const endDate = new Date(parseInt(year), parseInt(month), 0).toISOString().split("T")[0];
+    // Local (not UTC) end-of-month — toISOString() shifts to UTC, which rolls
+    // the date back a day in timezones ahead of UTC (e.g. ICT) and silently
+    // drops the last day of the month from the query.
+    const endDate = toYMD(new Date(parseInt(year), parseInt(month), 0));
 
     supabase
       .from("attendance_records")

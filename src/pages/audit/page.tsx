@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase";
 
 interface AuditLog {
@@ -59,6 +60,21 @@ export default function AuditLogPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState<"csv" | "xlsx" | "pdf" | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+  const [pageSize, setPageSize] = useState(15);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
   const [isLive, setIsLive] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -74,6 +90,15 @@ export default function AuditLogPage() {
     setLogs(data || []);
     setLoading(false);
   };
+
+  // Close export dropdown when clicking outside.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) setExportOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
 
   useEffect(() => {
     fetchLogs();
@@ -103,6 +128,16 @@ export default function AuditLogPage() {
     return l.description.toLowerCase().includes(q) || l.actor_name.toLowerCase().includes(q) || l.module.toLowerCase().includes(q) || l.action.toLowerCase().includes(q);
   });
 
+  const auditTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const auditSafePage = Math.min(page, auditTotalPages);
+  const auditPageStart = filtered.length === 0 ? 0 : (auditSafePage - 1) * pageSize + 1;
+  const auditPageEnd = Math.min(auditSafePage * pageSize, filtered.length);
+  const pagedLogs = filtered.slice((auditSafePage - 1) * pageSize, auditSafePage * pageSize);
+
+  useEffect(() => {
+    if (page > auditTotalPages) setPage(auditTotalPages);
+  }, [page, auditTotalPages]);
+
   const toggleExpand = (id: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -122,21 +157,66 @@ export default function AuditLogPage() {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
+  const getExportCols = () => ["Timestamp", "Module", "Action", "Entity Type", "Actor", "Role", "Description"];
+  const getExportRows = () => filtered.map((l) => [
+    new Date(l.created_at).toLocaleString(),
+    l.module, l.action, l.entity_type, l.actor_name, l.actor_role, l.description,
+  ]);
+  const exportFilename = `audit-log-${new Date().toISOString().substring(0, 10)}`;
+
   const downloadCSV = () => {
-    const cols = ["Timestamp", "Module", "Action", "Entity Type", "Actor", "Role", "Description"];
-    const rows = filtered.map((l) => [
-      new Date(l.created_at).toLocaleString(),
-      l.module, l.action, l.entity_type, l.actor_name, l.actor_role,
-      `"${l.description.replace(/"/g, '""')}"`,
-    ]);
-    const csv = [cols.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    setExporting("csv");
+    const cols = getExportCols();
+    const rows = getExportRows().map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
+    const csv = [cols.join(","), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `audit-log-${new Date().toISOString().substring(0, 10)}.csv`;
-    a.click();
+    a.href = url; a.download = `${exportFilename}.csv`; a.click();
     URL.revokeObjectURL(url);
+    setTimeout(() => setExporting(null), 800);
+  };
+
+  const exportExcel = () => {
+    setExporting("xlsx");
+    const aoa = [getExportCols(), ...getExportRows()];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = getExportCols().map((col) => ({ wch: Math.max(col.length + 2, 12) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Audit Log");
+    XLSX.writeFile(wb, `${exportFilename}.xlsx`);
+    setTimeout(() => setExporting(null), 800);
+  };
+
+  const exportPDF = () => {
+    setExporting("pdf");
+    const cols = getExportCols();
+    const rows = getExportRows();
+    const tableRows = rows.map((r) =>
+      `<tr>${r.map((v) => `<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px">${v}</td>`).join("")}</tr>`
+    ).join("");
+    const html = `<!DOCTYPE html><html><head><title>Audit Log</title><style>
+      body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111}
+      h1{font-size:20px;margin-bottom:4px}p{font-size:12px;color:#666;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse}
+      th{text-align:left;padding:8px 10px;background:#f5f5f5;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#666}
+      td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px}
+      .footer{margin-top:20px;font-size:10px;color:#999;text-align:right}
+      @media print{body{padding:0}}
+    </style></head><body>
+      <h1>HRM_OPS — Activity Audit Log</h1>
+      <p>Generated: ${new Date().toLocaleString("en-US")} · ${rows.length} records</p>
+      <table><thead><tr>${cols.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
+      <tbody>${tableRows}</tbody></table>
+      <div class="footer">HRM_OPS HRMS · Confidential</div>
+    </body></html>`;
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.onload = () => { win.print(); };
+    }
+    setTimeout(() => setExporting(null), 800);
   };
 
   const statsByModule = MODULES.slice(1).reduce((acc, m) => {
@@ -169,10 +249,44 @@ export default function AuditLogPage() {
               +{newCount} new
             </span>
           )}
-          <button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800 transition-colors whitespace-nowrap cursor-pointer">
-            <i className="ri-download-line" />
-            Export CSV
-          </button>
+          <div className="relative" ref={exportRef}>
+            <button
+              onClick={() => setExportOpen((v) => !v)}
+              disabled={exporting !== null}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#253C7D] text-white rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] shadow-sm transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
+            >
+              {exporting ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-download-2-line" />}
+              {exporting ? `Exporting ${exporting.toUpperCase()}...` : "Export"}
+              <i className={`ri-arrow-down-s-line text-base transition-transform ${exportOpen ? "rotate-180" : ""}`} />
+            </button>
+            {exportOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 z-50">
+                <p className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Export as</p>
+                {[
+                  { fmt: "pdf" as const, label: "PDF Document", hint: ".pdf", icon: "ri-file-pdf-line", color: "text-red-500" },
+                  { fmt: "csv" as const, label: "CSV Spreadsheet", hint: ".csv", icon: "ri-file-text-line", color: "text-emerald-600" },
+                  { fmt: "xlsx" as const, label: "Excel Workbook", hint: ".xlsx", icon: "ri-file-excel-line", color: "text-green-600" },
+                ].map((opt) => (
+                  <button
+                    key={opt.fmt}
+                    onClick={() => {
+                      setExportOpen(false);
+                      if (opt.fmt === "pdf") exportPDF();
+                      else if (opt.fmt === "csv") downloadCSV();
+                      else exportExcel();
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left cursor-pointer"
+                  >
+                    <i className={`${opt.icon} text-lg ${opt.color}`} />
+                    <div>
+                      <p className="text-[13px] font-medium text-gray-800">{opt.label}</p>
+                      <p className="text-[11px] text-gray-400">{opt.hint}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -239,8 +353,9 @@ export default function AuditLogPage() {
             <p className="text-sm">No audit events found</p>
           </div>
         ) : (
+          <>
           <div className="divide-y divide-gray-50">
-            {filtered.map((log) => (
+            {pagedLogs.map((log) => (
               <div key={log.id} className="px-5 py-4 hover:bg-gray-50/50 transition-colors">
                 <div className="flex items-start gap-4">
                   {/* Icon */}
@@ -298,6 +413,55 @@ export default function AuditLogPage() {
               </div>
             ))}
           </div>
+          {filtered.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[11px] text-gray-500">
+                  Showing <span className="font-semibold text-gray-700">{auditPageStart}</span>–<span className="font-semibold text-gray-700">{auditPageEnd}</span> of <span className="font-semibold text-gray-700">{filtered.length}</span> events
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-gray-400">Per page</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                    className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  >
+                    {[10, 15, 30, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={auditSafePage === 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-left-s-line" />
+                </button>
+                {pageWindow(auditSafePage, auditTotalPages).map((p, i) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === auditSafePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => setPage((p) => Math.min(auditTotalPages, p + 1))}
+                  disabled={auditSafePage === auditTotalPages}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-right-s-line" />
+                </button>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>

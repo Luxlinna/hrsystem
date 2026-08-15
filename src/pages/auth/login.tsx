@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -42,25 +43,44 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
-              placeholder="admin@hrmops.com"
-            />
+            <div className="relative">
+              <i className="ri-mail-line absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-gray-400 pointer-events-none" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
+                placeholder="admin@hrmops.com"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
-              placeholder="Enter your password"
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-[12px] font-semibold text-gray-700">Password</label>
+              <Link to="/forgot-password" className="text-[12px] font-semibold text-[#253C7D] hover:underline">
+                Forgot password?
+              </Link>
+            </div>
+            <div className="relative">
+              <i className="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-gray-400 pointer-events-none" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <i className={showPassword ? "ri-eye-off-line text-base" : "ri-eye-line text-base"} />
+              </button>
+            </div>
           </div>
           <button
             type="submit"
@@ -71,12 +91,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-[12px] text-gray-500 mt-6">
-          Do not have an account?{" "}
-          <Link to="/signup" className="text-[#253C7D] font-semibold hover:underline">
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
+import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 
 interface Employee {
   id: string;
@@ -93,6 +94,18 @@ export default function DisciplinaryPage() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
   const [activeTab, setActiveTab] = useState<"all" | "pip" | "open">("all");
 
   const [newRecord, setNewRecord] = useState<NewRecord>({
@@ -114,6 +127,7 @@ export default function DisciplinaryPage() {
         supabase
           .from("disciplinary_records")
           .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+          .is("deleted_at", null)
           .order("created_at", { ascending: false }),
         supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url").eq("status", "active").order("first_name"),
       ]);
@@ -151,6 +165,7 @@ export default function DisciplinaryPage() {
             .from("disciplinary_records")
             .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
             .in("employee_id", ids)
+            .is("deleted_at", null)
             .order("created_at", { ascending: false })
         : { data: [] };
       setRecords((rData as DisciplinaryRecord[]) || []);
@@ -163,6 +178,7 @@ export default function DisciplinaryPage() {
       .from("disciplinary_records")
       .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
       .eq("employee_id", me.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     setRecords((rData as DisciplinaryRecord[]) || []);
     setLoading(false);
@@ -185,6 +201,16 @@ export default function DisciplinaryPage() {
     }
     return true;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const pageEnd = Math.min(safePage * pageSize, filtered.length);
+  const pagedRecords = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const openCount = records.filter((r) => r.status === "open" || r.status === "in_progress").length;
   const pipCount = records.filter((r) => r.type === "pip").length;
@@ -223,6 +249,19 @@ export default function DisciplinaryPage() {
     if (selectedRecord && selectedRecord.id === id) {
       setSelectedRecord({ ...selectedRecord, status: status as DisciplinaryRecord["status"] });
     }
+    fetchData();
+  }
+
+  async function deleteRecord(record: DisciplinaryRecord) {
+    if (!canManage) return;
+    if (!confirm(`Move "${record.title}" to the Recycle Bin? It can be restored later.`)) return;
+    const { error } = await supabase
+      .from("disciplinary_records")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", record.id);
+    if (error) { toast("Error", "Failed to delete record", "error"); return; }
+    setSelectedRecord(null);
+    toast("Moved to Recycle Bin", "The record can be restored from the Recycle Bin.", "success");
     fetchData();
   }
 
@@ -330,7 +369,7 @@ export default function DisciplinaryPage() {
           <div className="text-center py-12 text-gray-400 text-sm">Loading records...</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">No records found.</div>
-        ) : filtered.map((r) => {
+        ) : pagedRecords.map((r) => {
           const typeCfg = TYPE_CONFIG[r.type];
           const sevCfg = SEVERITY_CONFIG[r.severity];
           const statusCfg = STATUS_CONFIG[r.status];
@@ -391,6 +430,54 @@ export default function DisciplinaryPage() {
             </div>
           );
         })}
+        {filtered.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/50 rounded-xl">
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-[11px] text-gray-500">
+                Showing <span className="font-semibold text-gray-700">{pageStart}</span>–<span className="font-semibold text-gray-700">{pageEnd}</span> of <span className="font-semibold text-gray-700">{filtered.length}</span> records
+              </p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-gray-400">Rows per page</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                  className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                >
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                <i className="ri-arrow-left-s-line" />
+              </button>
+              {pageWindow(safePage, totalPages).map((p, i) =>
+                p === "..." ? (
+                  <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === safePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                <i className="ri-arrow-right-s-line" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Detail Side Panel */}
@@ -496,6 +583,16 @@ export default function DisciplinaryPage() {
                   )}
                 </div>
               )}
+              {/* Delete (soft) */}
+              {canManage && (
+                <button
+                  onClick={() => deleteRecord(selectedRecord)}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-delete-bin-line text-sm" />
+                  Move to Recycle Bin
+                </button>
+              )}
               {/* Status update actions */}
               {canManage && selectedRecord.status !== "resolved" && selectedRecord.status !== "closed" && (
                 <div>
@@ -557,16 +654,11 @@ export default function DisciplinaryPage() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Employee *</label>
-                <select
+                <EmployeeSearchSelect
+                  employees={employees}
                   value={newRecord.employee_id}
-                  onChange={(e) => setNewRecord({ ...newRecord, employee_id: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
-                >
-                  <option value="">Select employee...</option>
-                  {employees.map((e) => (
-                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name} — {e.department}</option>
-                  ))}
-                </select>
+                  onChange={(id) => setNewRecord({ ...newRecord, employee_id: id })}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

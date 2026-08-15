@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Document {
@@ -11,6 +12,7 @@ interface Document {
   file_name: string | null;
   file_size_kb: number | null;
   file_type: string;
+  file_url: string | null;
   version: string;
   status: string;
   visibility: string;
@@ -36,21 +38,54 @@ const CATEGORIES = [
 
 const FILE_TYPE_ICON: Record<string, string> = {
   pdf: "ri-file-pdf-line",
+  doc: "ri-file-word-line",
   docx: "ri-file-word-line",
+  xls: "ri-file-excel-line",
   xlsx: "ri-file-excel-line",
+  csv: "ri-file-excel-line",
+  ppt: "ri-file-ppt-line",
   pptx: "ri-file-ppt-line",
   jpg: "ri-image-line",
+  jpeg: "ri-image-line",
   png: "ri-image-line",
+  gif: "ri-image-line",
+  webp: "ri-image-line",
+  svg: "ri-image-line",
+  txt: "ri-file-text-line",
+  md: "ri-file-text-line",
+  json: "ri-file-code-line",
+  zip: "ri-file-zip-line",
+  rar: "ri-file-zip-line",
+  mp4: "ri-video-line",
+  mp3: "ri-music-line",
 };
 
 const FILE_TYPE_COLOR: Record<string, string> = {
   pdf: "bg-red-50 text-red-600",
+  doc: "bg-sky-50 text-sky-600",
   docx: "bg-sky-50 text-sky-600",
+  xls: "bg-green-50 text-green-700",
   xlsx: "bg-green-50 text-green-700",
+  csv: "bg-green-50 text-green-700",
+  ppt: "bg-orange-50 text-orange-600",
   pptx: "bg-orange-50 text-orange-600",
   jpg: "bg-violet-50 text-violet-600",
+  jpeg: "bg-violet-50 text-violet-600",
   png: "bg-violet-50 text-violet-600",
+  gif: "bg-violet-50 text-violet-600",
+  webp: "bg-violet-50 text-violet-600",
+  svg: "bg-violet-50 text-violet-600",
+  txt: "bg-gray-100 text-gray-600",
+  md: "bg-gray-100 text-gray-600",
+  json: "bg-amber-50 text-amber-600",
+  zip: "bg-yellow-50 text-yellow-600",
+  rar: "bg-yellow-50 text-yellow-600",
+  mp4: "bg-pink-50 text-pink-600",
+  mp3: "bg-pink-50 text-pink-600",
 };
+
+const MAX_FILE_SIZE_MB = 25;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const VISIBILITY_LABELS: Record<string, { label: string; color: string }> = {
   all: { label: "All Staff", color: "bg-emerald-50 text-emerald-700" },
@@ -59,6 +94,8 @@ const VISIBILITY_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function DocumentsPage() {
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
   // "Staff" is the only documents-module role without management authority —
   // policy/compliance publishing and HR-only/managers-only visibility stay
@@ -68,9 +105,22 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
+  const [pageSize, setPageSize] = useState(9);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
   const [filterTemplate, setFilterTemplate] = useState<boolean | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [editingDoc, setEditingDoc] = useState<Document | null>(null);
   const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
   const [form, setForm] = useState({
     title: "",
@@ -86,6 +136,10 @@ export default function DocumentsPage() {
     tags: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [fileUpload, setFileUpload] = useState<File | null>(null);
+  const [fileLink, setFileLink] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = (type: string, message: string) => {
     setToast({ type, message });
@@ -93,7 +147,7 @@ export default function DocumentsPage() {
   };
 
   const loadDocuments = async () => {
-    let query = supabase.from("documents").select("*").order("created_at", { ascending: false });
+    let query = supabase.from("documents").select("*").is("deleted_at", null).order("created_at", { ascending: false });
     // Restricted-visibility documents shouldn't even be fetched for a
     // non-manager — the `filtered` list below already hides them from the
     // UI, but without this the row (title, description, tags) still landed
@@ -109,6 +163,12 @@ export default function DocumentsPage() {
   }, [canManageDocs]);
 
   const handleDownload = async (doc: Document) => {
+    if (doc.file_url) {
+      window.open(doc.file_url, "_blank");
+    } else {
+      showToast("error", "No file attached to this document");
+      return;
+    }
     await supabase
       .from("documents")
       .update({ download_count: (doc.download_count || 0) + 1 })
@@ -116,7 +176,6 @@ export default function DocumentsPage() {
     setDocuments((prev) =>
       prev.map((d) => (d.id === doc.id ? { ...d, download_count: d.download_count + 1 } : d))
     );
-    showToast("success", `"${doc.title}" download initiated`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,27 +185,63 @@ export default function DocumentsPage() {
     const tagsArr = form.tags
       ? form.tags.split(",").map((t) => t.trim()).filter(Boolean)
       : [];
-    const { error } = await supabase.from("documents").insert({
+    // Upload file to Supabase Storage if one was selected
+    let fileUrl: string | null = null;
+    let fileName = form.file_name || `${form.title.toLowerCase().replace(/\s+/g, "-")}.pdf`;
+    let fileSizeKb: number | null = null;
+    if (fileUpload) {
+      const ext = fileUpload.name.split(".").pop() || "pdf";
+      fileName = fileUpload.name;
+      fileSizeKb = Math.round(fileUpload.size / 1024);
+      const filePath = `documents/${Date.now()}_${fileUpload.name}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("documents")
+        .upload(filePath, fileUpload);
+      if (uploadErr) {
+        setSubmitting(false);
+        showToast("error", "Failed to upload file: " + uploadErr.message);
+        return;
+      }
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(filePath);
+      fileUrl = urlData?.publicUrl || null;
+      // Derive file_type from the uploaded file extension
+      setForm((prev) => ({ ...prev, file_type: ext }));
+    } else if (fileLink.trim()) {
+      // Use the pasted link as file_url
+      fileUrl = fileLink.trim();
+    }
+    const payload = {
       title: form.title,
       category: form.category,
       subcategory: form.subcategory || null,
       description: form.description || null,
-      file_name: form.file_name || `${form.title.toLowerCase().replace(/\s+/g, "-")}.${form.file_type}`,
-      file_type: form.file_type,
+      file_name: fileName,
+      file_type: fileUpload ? (fileUpload.name.split(".").pop() || "pdf") : form.file_type,
+      file_url: fileUrl || (editingDoc ? editingDoc.file_url : null),
+      file_size_kb: fileSizeKb || (editingDoc ? editingDoc.file_size_kb : null),
       version: form.version,
       visibility: form.visibility,
       author_name: form.author_name,
       is_template: form.is_template,
       tags: tagsArr,
-      status: "active",
-    });
+    };
+    let error;
+    if (editingDoc) {
+      ({ error } = await supabase.from("documents").update(payload).eq("id", editingDoc.id));
+    } else {
+      ({ error } = await supabase.from("documents").insert({ ...payload, status: "active" }));
+    }
     setSubmitting(false);
     if (error) {
-      showToast("error", "Failed to upload document");
+      showToast("error", editingDoc ? "Failed to update document" : "Failed to save document record");
     } else {
-      showToast("success", "Document uploaded successfully");
+      showToast("success", editingDoc ? "Document updated successfully" : "Document uploaded successfully");
       setShowUploadModal(false);
+      setEditingDoc(null);
       setForm({ title: "", category: "policy", subcategory: "", description: "", file_name: "", file_type: "pdf", version: "1.0", visibility: "all", author_name: "HR Team", is_template: false, tags: "" });
+      setFileUpload(null);
+      setFileLink("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       loadDocuments();
     }
   };
@@ -162,6 +257,48 @@ export default function DocumentsPage() {
     }
   };
 
+  const handleDelete = async (doc: Document) => {
+    if (!canManageDocs) return;
+    if (!confirm(`Delete "${doc.title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("documents")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", doc.id);
+    if (error) {
+      showToast("error", "Failed to delete document");
+      return;
+    }
+    // The file stays in storage so the document can be restored from the
+    // Recycle Bin. It is only removed when permanently deleted there.
+    setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+    setSelectedDoc(null);
+    showToast("success", "Document moved to Recycle Bin");
+  };
+
+  const openEdit = (doc: Document) => {
+    setEditingDoc(doc);
+    setForm({
+      title: doc.title,
+      category: doc.category,
+      subcategory: doc.subcategory || "",
+      description: doc.description || "",
+      file_name: doc.file_name || "",
+      file_type: doc.file_type,
+      version: doc.version,
+      visibility: doc.visibility,
+      author_name: doc.author_name,
+      is_template: doc.is_template,
+      tags: doc.tags?.join(", ") || "",
+    });
+    // If the existing file_url is a link (not a storage URL), show it in the link field
+    if (doc.file_url && !doc.file_url.includes('/storage/v1/')) {
+      setFileLink(doc.file_url);
+    } else {
+      setFileLink("");
+    }
+    setShowUploadModal(true);
+  };
+
   const filtered = documents.filter((d) => {
     if (!canManageDocs && (d.visibility === "hr_only" || d.visibility === "managers")) return false;
     if (activeCategory !== "all" && d.category !== activeCategory) return false;
@@ -170,6 +307,16 @@ export default function DocumentsPage() {
     if (search && !d.title.toLowerCase().includes(search.toLowerCase()) && !d.description?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  const docTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const docSafePage = Math.min(page, docTotalPages);
+  const docPageStart = filtered.length === 0 ? 0 : (docSafePage - 1) * pageSize + 1;
+  const docPageEnd = Math.min(docSafePage * pageSize, filtered.length);
+  const pagedDocs = filtered.slice((docSafePage - 1) * pageSize, docSafePage * pageSize);
+
+  useEffect(() => {
+    if (page > docTotalPages) setPage(docTotalPages);
+  }, [page, docTotalPages]);
 
   const categoryCounts = CATEGORIES.reduce<Record<string, number>>((acc, cat) => {
     acc[cat.id] = cat.id === "all" ? documents.length : documents.filter((d) => d.category === cat.id).length;
@@ -209,7 +356,7 @@ export default function DocumentsPage() {
           </div>
           {canManageDocs && (
             <button
-              onClick={() => setShowUploadModal(true)}
+              onClick={() => { setEditingDoc(null); setForm({ title: "", category: "policy", subcategory: "", description: "", file_name: "", file_type: "pdf", version: "1.0", visibility: "all", author_name: "HR Team", is_template: false, tags: "" }); setFileUpload(null); setFileLink(""); if (fileInputRef.current) fileInputRef.current.value = ""; setShowUploadModal(true); }}
               className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap"
             >
               <i className="ri-upload-2-line" />
@@ -309,7 +456,7 @@ export default function DocumentsPage() {
 
           {/* Document Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filtered.map((doc) => {
+            {pagedDocs.map((doc) => {
               const typeIcon = FILE_TYPE_ICON[doc.file_type] || "ri-file-line";
               const typeColor = FILE_TYPE_COLOR[doc.file_type] || "bg-gray-100 text-gray-600";
               const vis = VISIBILITY_LABELS[doc.visibility] || VISIBILITY_LABELS.all;
@@ -365,6 +512,55 @@ export default function DocumentsPage() {
               <i className="ri-folder-open-line text-4xl mb-3" />
               <p className="text-[14px] font-medium">No documents found</p>
               <p className="text-[12px] mt-1">Try adjusting your filters or search term</p>
+            </div>
+          )}
+
+          {filtered.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 mt-4 bg-white border border-gray-100 rounded-xl">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[11px] text-gray-500">
+                  Showing <span className="font-semibold text-gray-700">{docPageStart}</span>–<span className="font-semibold text-gray-700">{docPageEnd}</span> of <span className="font-semibold text-gray-700">{filtered.length}</span> documents
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-gray-400">Per page</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                    className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  >
+                    {[6, 9, 18, 36].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={docSafePage === 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-left-s-line" />
+                </button>
+                {pageWindow(docSafePage, docTotalPages).map((p, i) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === docSafePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => setPage((p) => Math.min(docTotalPages, p + 1))}
+                  disabled={docSafePage === docTotalPages}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-right-s-line" />
+                </button>
+              </div>
             </div>
           )}
         </main>
@@ -423,22 +619,40 @@ export default function DocumentsPage() {
             <div className="space-y-2">
               <button
                 onClick={() => handleDownload(selectedDoc)}
-                className="w-full flex items-center justify-center gap-2 bg-[#253C7D] text-white py-2.5 rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 bg-[#253C7D] text-white py-3 rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] shadow-sm transition-all cursor-pointer"
               >
-                <i className="ri-download-2-line" />
+                <i className="ri-download-2-line text-base" />
                 Download Document
               </button>
               {canManageDocs && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => openEdit(selectedDoc)}
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-semibold bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100 transition-all cursor-pointer"
+                  >
+                    <i className="ri-edit-line text-sm" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleArchive(selectedDoc)}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-semibold border transition-all cursor-pointer ${
+                      selectedDoc.status === "active"
+                        ? "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100"
+                        : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100"
+                    }`}
+                  >
+                    <i className={`text-sm ${selectedDoc.status === "active" ? "ri-archive-line" : "ri-inbox-unarchive-line"}`} />
+                    {selectedDoc.status === "active" ? "Archive" : "Restore"}
+                  </button>
+                </div>
+              )}
+              {canManageDocs && (
                 <button
-                  onClick={() => handleArchive(selectedDoc)}
-                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-semibold transition-colors cursor-pointer ${
-                    selectedDoc.status === "active"
-                      ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
-                      : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                  }`}
+                  onClick={() => handleDelete(selectedDoc)}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-semibold text-red-500 hover:bg-red-50 border border-red-100 transition-all cursor-pointer"
                 >
-                  <i className={selectedDoc.status === "active" ? "ri-archive-line" : "ri-inbox-unarchive-line"} />
-                  {selectedDoc.status === "active" ? "Archive Document" : "Restore Document"}
+                  <i className="ri-delete-bin-line text-sm" />
+                  Delete Document
                 </button>
               )}
             </div>
@@ -451,12 +665,12 @@ export default function DocumentsPage() {
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="text-[15px] font-bold text-gray-900">Upload Document</h3>
-              <button onClick={() => setShowUploadModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 cursor-pointer">
+              <h3 className="text-[15px] font-bold text-gray-900">{editingDoc ? "Edit Document" : "Upload Document"}</h3>
+              <button onClick={() => { setShowUploadModal(false); setEditingDoc(null); setFileUpload(null); setFileLink(""); if (fileInputRef.current) fileInputRef.current.value = ""; }} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 cursor-pointer">
                 <i className="ri-close-line text-lg" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Document Title *</label>
                 <input
@@ -464,52 +678,130 @@ export default function DocumentsPage() {
                   required
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 transition-all"
                   placeholder="e.g. Remote Work Policy 2026"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Category *</label>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer">
-                    <option value="policy">Policy</option>
-                    <option value="contract">Contract</option>
-                    <option value="template">Template</option>
-                    <option value="compliance">Compliance</option>
-                    <option value="benefits">Benefits</option>
-                    <option value="training">Training</option>
-                    <option value="org">Org Docs</option>
-                  </select>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Attach File</label>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDragOver(false);
+                    const dropped = e.dataTransfer.files?.[0];
+                    if (dropped) {
+                      if (dropped.size > MAX_FILE_SIZE_BYTES) {
+                        showToast("error", `File too large. Maximum size is ${MAX_FILE_SIZE_MB} MB.`);
+                        return;
+                      }
+                      setFileUpload(dropped);
+                    }
+                  }}
+                  className={`w-full border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                    dragOver
+                      ? "border-[#253C7D] bg-[#253C7D]/10"
+                      : "border-gray-200 hover:border-[#253C7D]/40 hover:bg-[#253C7D]/5"
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file && file.size > MAX_FILE_SIZE_BYTES) {
+                        showToast("error", `File too large. Maximum size is ${MAX_FILE_SIZE_MB} MB.`);
+                        e.target.value = "";
+                        return;
+                      }
+                      setFileUpload(file || null);
+                    }}
+                  />
+                  {fileUpload ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <i className="ri-file-line text-[#253C7D] text-lg" />
+                      <span className="text-[13px] text-gray-700 font-medium">{fileUpload.name}</span>
+                      <span className="text-[11px] text-gray-400">({Math.round(fileUpload.size / 1024)} KB)</span>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setFileUpload(null); setFileLink(""); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                        className="text-gray-400 hover:text-red-500 ml-1"
+                      >
+                        <i className="ri-close-line" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <i className={`text-2xl transition-colors ${dragOver ? "ri-upload-cloud-line text-[#253C7D]" : "ri-upload-cloud-2-line text-gray-300"}`} />
+                      <p className="text-[12px] text-gray-400 mt-1">{dragOver ? "Drop your file here" : "Click to browse or drag a file here"}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 my-3">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-[11px] text-gray-400 font-medium">OR</span>
+                  <div className="flex-1 h-px bg-gray-200" />
                 </div>
                 <div>
-                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">File Type</label>
-                  <select value={form.file_type} onChange={(e) => setForm({ ...form, file_type: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer">
-                    <option value="pdf">PDF</option>
-                    <option value="docx">Word (DOCX)</option>
-                    <option value="xlsx">Excel (XLSX)</option>
-                    <option value="pptx">PowerPoint</option>
-                  </select>
+                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Paste Link</label>
+                  <div className="relative">
+                    <i className="ri-link absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    <input
+                      type="url"
+                      value={fileLink}
+                      onChange={(e) => setFileLink(e.target.value)}
+                      placeholder="https://docs.google.com/..."
+                      className="w-full pl-9 pr-3 py-3 border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 transition-all"
+                    />
+                    {fileLink && (
+                      <button
+                        type="button"
+                        onClick={() => setFileLink("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <i className="ri-close-line" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-1">Link to Google Docs, SharePoint, or any shared URL</p>
                 </div>
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Category *</label>
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 bg-white cursor-pointer transition-all">
+                  <option value="policy">Policy</option>
+                  <option value="contract">Contract</option>
+                  <option value="template">Template</option>
+                  <option value="compliance">Compliance</option>
+                  <option value="benefits">Benefits</option>
+                  <option value="training">Training</option>
+                  <option value="org">Org Docs</option>
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Subcategory</label>
-                  <input type="text" value={form.subcategory} onChange={(e) => setForm({ ...form, subcategory: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="e.g. HR Policy" />
+                  <input type="text" value={form.subcategory} onChange={(e) => setForm({ ...form, subcategory: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 transition-all" placeholder="e.g. HR Policy" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Version</label>
-                  <input type="text" value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="1.0" />
+                  <input type="text" value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 transition-all" placeholder="1.0" />
                 </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Description</label>
-                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} maxLength={500} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] resize-none" placeholder="Brief description of the document..." />
-                <p className="text-[11px] text-gray-400 mt-0.5">{form.description.length}/500</p>
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} maxLength={500} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 resize-none transition-all" placeholder="Brief description of the document..." />
+                <p className="text-[11px] text-gray-400 mt-1">{form.description.length}/500</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Visibility</label>
-                  <select value={form.visibility} onChange={(e) => setForm({ ...form, visibility: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer">
+                  <select value={form.visibility} onChange={(e) => setForm({ ...form, visibility: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 bg-white cursor-pointer transition-all">
                     <option value="all">All Staff</option>
                     <option value="managers">Managers Only</option>
                     <option value="hr_only">HR Only</option>
@@ -517,12 +809,12 @@ export default function DocumentsPage() {
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Author</label>
-                  <input type="text" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" />
+                  <input type="text" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 transition-all" />
                 </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Tags (comma-separated)</label>
-                <input type="text" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]" placeholder="policy, hr, 2026" />
+                <input type="text" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 transition-all" placeholder="policy, hr, 2026" />
               </div>
               <div className="flex items-center gap-2.5">
                 <button
@@ -536,10 +828,10 @@ export default function DocumentsPage() {
                   Mark as Template
                 </label>
               </div>
-              <div className="pt-2 flex gap-3">
-                <button type="button" onClick={() => setShowUploadModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">Cancel</button>
-                <button type="submit" disabled={submitting} className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] disabled:opacity-50 cursor-pointer">
-                  {submitting ? "Uploading..." : "Upload Document"}
+              <div className="pt-3 flex gap-3 border-t border-gray-100">
+                <button type="button" onClick={() => setShowUploadModal(false)} className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer">Cancel</button>
+                <button type="submit" disabled={submitting} className="flex-1 px-4 py-3 bg-[#253C7D] text-white rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] shadow-sm disabled:opacity-50 transition-all cursor-pointer">
+                  {submitting ? (editingDoc ? "Saving..." : "Uploading...") : (editingDoc ? "Save Changes" : "Upload Document")}
                 </button>
               </div>
             </form>

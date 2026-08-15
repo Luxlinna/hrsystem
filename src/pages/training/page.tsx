@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
+
 
 interface Course {
   id: number;
@@ -55,6 +57,8 @@ const ENROLL_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 export default function TrainingPage() {
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
   // Managing the course catalog and enrollments is a management action —
   // individual-contributor roles (Employee, Staff) only consume training.
@@ -68,25 +72,57 @@ export default function TrainingPage() {
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [enrollCourseId, setEnrollCourseId] = useState<number | null>(null);
-  const [enrollEmployeeId, setEnrollEmployeeId] = useState("");
+  const [enrollEmployeeIds, setEnrollEmployeeIds] = useState<string[]>([]);
   const [enrollDueDate, setEnrollDueDate] = useState("");
+  const [enrollSearch, setEnrollSearch] = useState("");
+  const [enrollOpen, setEnrollOpen] = useState(false);
+  const enrollRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
 
   const [newCourse, setNewCourse] = useState({
     title: "", description: "", category: "General", duration_hours: "", instructor: "", format: "online", status: "active",
   });
   const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
 
+  // Close the enroll dropdown when clicking outside.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (enrollRef.current && !enrollRef.current.contains(e.target as Node)) setEnrollOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  // Reset dropdown state when the modal closes.
+  useEffect(() => {
+    if (!showEnrollModal) {
+      setEnrollOpen(false);
+      setEnrollSearch("");
+    }
+  }, [showEnrollModal]);
+
   useEffect(() => { fetchData(); }, []);
 
   async function fetchData() {
     setLoading(true);
     const [cRes, eRes, empRes] = await Promise.all([
-      supabase.from("training_courses").select("*").order("created_at", { ascending: false }),
-      supabase.from("training_enrollments").select("*, employees(id, first_name, last_name, department, avatar_url), training_courses(*)").order("enrolled_at", { ascending: false }),
+      supabase.from("training_courses").select("*").is("deleted_at", null).order("created_at", { ascending: false }),
+      supabase.from("training_enrollments").select("*, employees(id, first_name, last_name, department, avatar_url), training_courses(*)").is("deleted_at", null).order("enrolled_at", { ascending: false }),
       supabase.from("employees").select("id, first_name, last_name, department, avatar_url").eq("status", "active").order("first_name"),
     ]);
     if (cRes.data) setCourses(cRes.data);
@@ -113,6 +149,16 @@ export default function TrainingPage() {
     }
     return true;
   });
+
+  const enrollTotalPages = Math.max(1, Math.ceil(filteredEnrollments.length / pageSize));
+  const enrollSafePage = Math.min(page, enrollTotalPages);
+  const enrollPageStart = filteredEnrollments.length === 0 ? 0 : (enrollSafePage - 1) * pageSize + 1;
+  const enrollPageEnd = Math.min(enrollSafePage * pageSize, filteredEnrollments.length);
+  const pagedEnrollments = filteredEnrollments.slice((enrollSafePage - 1) * pageSize, enrollSafePage * pageSize);
+
+  useEffect(() => {
+    if (page > enrollTotalPages) setPage(enrollTotalPages);
+  }, [page, enrollTotalPages]);
 
   const certificates = enrollments.filter((e) => e.certificate_issued && e.status === "completed");
 
@@ -162,8 +208,11 @@ export default function TrainingPage() {
 
   async function deleteCourse(course: Course) {
     if (!canManage) return;
-    if (!confirm(`Delete "${course.title}"? This also removes all enrollments in this course. This cannot be undone.`)) return;
-    const { error } = await supabase.from("training_courses").delete().eq("id", course.id);
+    if (!confirm(`Delete "${course.title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
+    const { error } = await supabase
+      .from("training_courses")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", course.id);
     if (error) { toast("Error", "Failed to delete course", "error"); return; }
     setSelectedCourse(null);
     fetchData();
@@ -171,28 +220,34 @@ export default function TrainingPage() {
 
   async function deleteEnrollment(enrollment: Enrollment) {
     if (!canManage) return;
-    if (!confirm("Remove this enrollment record? This cannot be undone.")) return;
-    const { error } = await supabase.from("training_enrollments").delete().eq("id", enrollment.id);
+    if (!confirm("Remove this enrollment record? It will be moved to the Recycle Bin and can be restored later.")) return;
+    const { error } = await supabase
+      .from("training_enrollments")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", enrollment.id);
     if (error) { toast("Error", "Failed to remove enrollment", "error"); return; }
     fetchData();
   }
 
   async function saveEnrollment() {
-    if (!enrollCourseId || !enrollEmployeeId) return;
+    if (!enrollCourseId || enrollEmployeeIds.length === 0) return;
     setSaving(true);
-    const { error } = await supabase.from("training_enrollments").insert({
+    const payload = enrollEmployeeIds.map((empId) => ({
       course_id: enrollCourseId,
-      employee_id: enrollEmployeeId,
+      employee_id: empId,
       due_date: enrollDueDate || null,
       status: "enrolled",
       progress: 0,
-    });
+    }));
+    const { error } = await supabase.from("training_enrollments").insert(payload);
     setSaving(false);
-    if (error) { toast("Error", "Failed to enroll employee", "error"); return; }
+    if (error) { toast("Error", "Failed to enroll employees", "error"); return; }
+    toast("Success", `${enrollEmployeeIds.length} employee${enrollEmployeeIds.length === 1 ? '' : 's'} enrolled.`, "success");
     setShowEnrollModal(false);
     setEnrollCourseId(null);
-    setEnrollEmployeeId("");
+    setEnrollEmployeeIds([]);
     setEnrollDueDate("");
+    setEnrollSearch("");
     fetchData();
   }
 
@@ -364,7 +419,7 @@ export default function TrainingPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredEnrollments.map((e) => {
+              {pagedEnrollments.map((e) => {
                 const cfg = ENROLL_STATUS_CONFIG[e.status];
                 const emp = e.employees;
                 const overdue = e.due_date && !e.completed_at && new Date(e.due_date) < new Date();
@@ -444,6 +499,54 @@ export default function TrainingPage() {
           </table>
           {filteredEnrollments.length === 0 && (
             <div className="p-12 text-center text-gray-400 text-sm">No enrollments match your filters.</div>
+          )}
+          {filteredEnrollments.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[11px] text-gray-500">
+                  Showing <span className="font-semibold text-gray-700">{enrollPageStart}</span>–<span className="font-semibold text-gray-700">{enrollPageEnd}</span> of <span className="font-semibold text-gray-700">{filteredEnrollments.length}</span> enrollments
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-gray-400">Rows per page</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                    className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  >
+                    {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={enrollSafePage === 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-left-s-line" />
+                </button>
+                {pageWindow(enrollSafePage, enrollTotalPages).map((p, i) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${p === enrollSafePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => setPage((p) => Math.min(enrollTotalPages, p + 1))}
+                  disabled={enrollSafePage === enrollTotalPages}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <i className="ri-arrow-right-s-line" />
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -690,17 +793,106 @@ export default function TrainingPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 block mb-1">Employee *</label>
-                <select
-                  value={enrollEmployeeId}
-                  onChange={(e) => setEnrollEmployeeId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
-                >
-                  <option value="">Select employee...</option>
-                  {employees.map((e) => (
-                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name} — {e.department}</option>
-                  ))}
-                </select>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Employee(s) *</label>
+                <div className="relative" ref={enrollRef}>
+                  <div className="relative">
+                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+                    <input
+                      type="text"
+                      role="combobox"
+                      aria-expanded={enrollOpen}
+                      value={enrollOpen ? enrollSearch : enrollEmployeeIds.length > 0 ? `${enrollEmployeeIds.length} employee${enrollEmployeeIds.length === 1 ? '' : 's'} selected` : enrollSearch}
+                      onChange={(e) => {
+                        setEnrollSearch(e.target.value);
+                        setEnrollOpen(true);
+                      }}
+                      onFocus={() => setEnrollOpen(true)}
+                      placeholder="Search by name, department..."
+                      className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
+                    />
+                    <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                  {enrollOpen && (
+                    <div className="absolute z-20 mt-1.5 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto py-1">
+                      {(() => {
+                        const filtered = employees.filter((emp) => {
+                          const q = enrollSearch.trim().toLowerCase();
+                          if (!q) return true;
+                          return `${emp.first_name} ${emp.last_name} ${emp.department}`.toLowerCase().includes(q);
+                        });
+                        return (
+                          <>
+                            <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                              {filtered.length} employee{filtered.length === 1 ? '' : 's'}{enrollSearch.trim() ? ` matching "${enrollSearch.trim()}"` : ''}
+                            </p>
+                            <button
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                const allIds = filtered.map((e) => e.id);
+                                const allSelected = allIds.length > 0 && allIds.every((id) => enrollEmployeeIds.includes(id));
+                                setEnrollEmployeeIds(allSelected ? [] : allIds);
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                            >
+                              <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                filtered.length > 0 && filtered.every((e) => enrollEmployeeIds.includes(e.id))
+                                  ? "bg-[#253C7D] border-[#253C7D]"
+                                  : filtered.some((e) => enrollEmployeeIds.includes(e.id))
+                                    ? "bg-[#253C7D]/20 border-[#253C7D]"
+                                    : "border-gray-300 bg-white"
+                              }`}>
+                                {filtered.length > 0 && filtered.every((e) => enrollEmployeeIds.includes(e.id)) && <i className="ri-check-line text-white text-xs" />}
+                                {filtered.some((e) => enrollEmployeeIds.includes(e.id)) && !(filtered.length > 0 && filtered.every((e) => enrollEmployeeIds.includes(e.id))) && <span className="w-2 h-0.5 bg-[#253C7D] rounded" />}
+                              </span>
+                              Select all ({filtered.length})
+                            </button>
+                            {filtered.length === 0 ? (
+                              <p className="px-3 py-4 text-[12px] text-gray-400">No employees match your search.</p>
+                            ) : (
+                              filtered.map((emp) => {
+                                const checked = enrollEmployeeIds.includes(emp.id);
+                                return (
+                                  <label
+                                    key={emp.id}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer ${checked ? "bg-[#253C7D]/5" : "hover:bg-gray-50"}`}
+                                  >
+                                    <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                      checked ? "bg-[#253C7D] border-[#253C7D]" : "border-gray-300 bg-white"
+                                    }`}>
+                                      {checked && <i className="ri-check-line text-white text-xs" />}
+                                    </span>
+                                    <input type="checkbox" className="sr-only" checked={checked} onChange={() => {
+                                      setEnrollEmployeeIds((prev) =>
+                                        prev.includes(emp.id) ? prev.filter((id) => id !== emp.id) : [...prev, emp.id]
+                                      );
+                                    }} />
+                                    <span className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-[10px] font-bold shrink-0 overflow-hidden">
+                                      {emp.avatar_url ? (
+                                        <img src={emp.avatar_url} alt="" className="w-7 h-7 object-cover" />
+                                      ) : (
+                                        `${emp.first_name[0] || ''}${emp.last_name[0] || ''}`.toUpperCase()
+                                      )}
+                                    </span>
+                                    <span className="flex-1 min-w-0">
+                                      <span className="block text-[13px] font-medium text-gray-900">{emp.first_name} {emp.last_name}</span>
+                                      <span className="block text-[11px] text-gray-400 truncate">{emp.department}</span>
+                                    </span>
+                                    {checked && <i className="ri-check-line text-[#253C7D] text-sm shrink-0" />}
+                                  </label>
+                                );
+                              })
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+                {enrollEmployeeIds.length > 0 && (
+                  <p className="mt-1.5 text-[11px] text-gray-400">{enrollEmployeeIds.length} employee{enrollEmployeeIds.length === 1 ? '' : 's'} selected</p>
+                )}
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1">Due Date</label>
@@ -716,10 +908,10 @@ export default function TrainingPage() {
               <button onClick={() => setShowEnrollModal(false)} className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap">Cancel</button>
               <button
                 onClick={saveEnrollment}
-                disabled={saving || !enrollCourseId || !enrollEmployeeId}
+                disabled={saving || !enrollCourseId || enrollEmployeeIds.length === 0}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#253C7D] rounded-lg hover:bg-[#1F336A] disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
-                {saving ? "Enrolling..." : "Enroll"}
+                {saving ? "Enrolling..." : `Enroll${enrollEmployeeIds.length > 1 ? ` (${enrollEmployeeIds.length})` : ''}`}
               </button>
             </div>
           </div>

@@ -104,7 +104,7 @@ export default function PayslipTab({ employeeId, employeeName }: Props) {
               <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_COLOR[selected.status] || "bg-gray-100 text-gray-600"}`}>{selected.status}</span>
               <button
                 onClick={() => downloadPayslip(selected)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-lg text-xs hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#253C7D] text-white rounded-xl text-[12px] font-semibold hover:bg-[#1F336A] shadow-sm transition-all cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-download-line" />
                 Download

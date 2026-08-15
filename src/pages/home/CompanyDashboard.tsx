@@ -145,10 +145,10 @@ export default function CompanyDashboard() {
       user?.id
         ? supabase.from("notifications").select("*").or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).eq("is_read", false).limit(3)
         : Promise.resolve({ data: [] }),
-      supabase.from("job_postings").select("*"),
-      supabase.from("candidates").select("*"),
+      supabase.from("job_postings").select("*").is("deleted_at", null),
+      supabase.from("candidates").select("*").is("deleted_at", null),
     ]);
-    const { data: announcementsData } = await supabase.from("announcements").select("*").order("pinned", { ascending: false }).order("published_at", { ascending: false }).limit(4);
+    const { data: announcementsData } = await supabase.from("announcements").select("*").is("deleted_at", null).order("pinned", { ascending: false }).order("published_at", { ascending: false }).limit(4);
 
     // HR KPIs
     const sevenDaysAgo = new Date();
@@ -156,8 +156,8 @@ export default function CompanyDashboard() {
     const fromDate = sevenDaysAgo.toISOString().split("T")[0];
     const [{ data: attData }, { data: trainEnroll }, { data: discData }, { data: offData }] = await Promise.all([
       supabase.from("attendance_records").select("status, date, hours_worked").gte("date", fromDate),
-      supabase.from("training_enrollments").select("status"),
-      supabase.from("disciplinary_records").select("status"),
+      supabase.from("training_enrollments").select("status").is("deleted_at", null),
+      supabase.from("disciplinary_records").select("status").is("deleted_at", null),
       supabase.from("offboarding_requests").select("last_day, created_at"),
     ]);
     const attRecords = attData || [];
@@ -439,7 +439,7 @@ export default function CompanyDashboard() {
               to="/onboarding"
               className="min-w-[220px] rounded-2xl p-5 bg-gray-100 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 hover:border-[#253C7D] hover:text-[#253C7D] transition-colors"
             >
-              <i className="ri-add-line text-3xl mb-2" />
+              <i className="ri-arrow-right-circle-line text-3xl mb-2" />
               <span className="text-[13px] font-medium">View All</span>
             </Link>
           </div>
