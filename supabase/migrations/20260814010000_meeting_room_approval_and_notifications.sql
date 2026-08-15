@@ -76,23 +76,7 @@ create policy "room_bookings_update" on room_bookings for update to authenticate
 -- Update notifications.source check constraint to allow meeting room notifications
 alter table notifications drop constraint if exists notifications_source_check;
 alter table notifications add constraint notifications_source_check
-  check (source is null or source in (
-    'hire',
-    'leave',
-    'payroll',
-    'branches',
-    'system',
-    'employees',
-    'onboarding',
-    'offboard',
-    'finance',
-    'it_management',
-    'benefits',
-    'tools',
-    'announcements',
-    'meeting_rooms',
-    'meeting-rooms'
-  )) not valid;
+  check (source in ('hire','leave','payroll','branches','system','employees','onboarding','offboard','finance','it_management','benefits','tools','meeting_rooms','meeting-rooms'));
 
 -- Insert Training Room
 insert into meeting_rooms (name, capacity, color)
