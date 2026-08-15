@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTheme } from "@/context/ThemeContext";
 import { getNotificationTarget } from "@/lib/notificationRoutes";
 import { toast } from "@/components/Toast";
 
@@ -81,6 +82,7 @@ function MobileDrawer({
   can: (module: string) => boolean;
   isAdmin: boolean;
 }) {
+  const { isDark, toggleTheme } = useTheme();
   const touchStartX = useRef<number>(0);
   const touchCurrentX = useRef<number>(0);
   const [dragX, setDragX] = useState(0);
@@ -211,12 +213,26 @@ function MobileDrawer({
             />
             <span className="text-[13px] font-semibold text-white tracking-wide">HRM_OPS</span>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 cursor-pointer"
-          >
-            <i className="ri-close-line text-lg" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleTheme}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-amber-400 hover:bg-white/10 cursor-pointer transition-colors"
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              aria-label="Toggle Theme"
+            >
+              {isDark ? (
+                <i className="ri-sun-line text-lg text-amber-400" />
+              ) : (
+                <i className="ri-moon-line text-lg text-gray-300" />
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 cursor-pointer"
+            >
+              <i className="ri-close-line text-lg" />
+            </button>
+          </div>
         </div>
 
         {/* Swipe hint */}
@@ -291,6 +307,7 @@ export default function TopBar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { can, isAdmin } = usePermissions();
+  const { isDark, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -593,7 +610,21 @@ export default function TopBar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Sun / Moon Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer text-gray-700 dark:text-amber-400 flex items-center justify-center"
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            aria-label="Toggle Theme"
+          >
+            {isDark ? (
+              <i className="ri-sun-line text-lg text-amber-400 transition-transform duration-300 hover:rotate-45" />
+            ) : (
+              <i className="ri-moon-line text-lg text-slate-700 hover:text-indigo-600 transition-transform duration-300 hover:-rotate-12" />
+            )}
+          </button>
+
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setNotifOpen(!notifOpen)}

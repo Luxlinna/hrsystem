@@ -52,11 +52,27 @@
   html.dark .bg-gray-50,
   html.dark .bg-gray-50\/30,
   html.dark .bg-gray-50\/50,
-  html.dark .bg-gray-100 {
+  html.dark .bg-gray-100,
+  html.dark [class*="bg-white"],
+  html.dark [class*="bg-white/"],
+  html.dark [class*="bg-[#FAFAFA]"],
+  html.dark [class*="bg-[#FAFAF8]"],
+  html.dark [class*="bg-[#F8FAFC]"],
+  html.dark [class*="bg-[#F5F5F0]"],
+  html.dark [class*="bg-[#F8F8F6]"],
+  html.dark [class*="bg-[#F8F8F7]"],
+  html.dark [class*="bg-gray-50"],
+  html.dark [class*="bg-gray-50/"],
+  html.dark [class*="bg-gray-100"],
+  html.dark [class*="bg-gray-100/"],
+  html.dark [class*="bg-slate-50"],
+  html.dark [class*="bg-slate-100"] {
     background-color: #111827 !important;
   }
 
-  html.dark .bg-gray-200 {
+  html.dark .bg-gray-200,
+  html.dark [class*="bg-gray-200"],
+  html.dark [class*="bg-slate-200"] {
     background-color: #1f2937 !important;
   }
 
@@ -67,14 +83,23 @@
   html.dark .border-gray-50,
   html.dark .border-gray-100,
   html.dark .border-gray-200,
-  html.dark .border-gray-300 {
+  html.dark .border-gray-300,
+  html.dark [class*="border-gray-"],
+  html.dark [class*="border-slate-"] {
     border-color: #263244 !important;
   }
 
   html.dark .text-\[\#1A1A1A\],
   html.dark .text-gray-900,
   html.dark .text-gray-800,
-  html.dark .text-gray-700 {
+  html.dark .text-gray-700,
+  html.dark [class*="text-gray-900"],
+  html.dark [class*="text-gray-800"],
+  html.dark [class*="text-gray-700"],
+  html.dark [class*="text-slate-900"],
+  html.dark [class*="text-slate-800"],
+  html.dark [class*="text-[#1A1A1A]"],
+  html.dark [class*="text-[#0F172A]"] {
     color: #f8fafc !important;
   }
 
@@ -105,14 +130,24 @@
   }
 
   html.dark .text-gray-600,
-  html.dark .text-gray-500 {
+  html.dark .text-gray-500,
+  html.dark [class*="text-gray-600"],
+  html.dark [class*="text-gray-500"],
+  html.dark [class*="text-slate-600"],
+  html.dark [class*="text-slate-500"] {
     color: #cbd5e1 !important;
   }
 
-  html.dark .text-gray-400 {
+  html.dark .text-gray-400,
+  html.dark [class*="text-gray-400"],
+  html.dark [class*="text-slate-400"] {
     color: #94a3b8 !important;
   }
 
+  html.dark [class*="hover:bg-gray-50"]:hover,
+  html.dark [class*="hover:bg-gray-100"]:hover,
+  html.dark [class*="hover:bg-gray-200"]:hover,
+  html.dark [class*="hover:bg-black/5"]:hover,
   html.dark .hover\:bg-gray-50:hover,
   html.dark .hover\:bg-gray-50\/50:hover,
   html.dark .hover\:bg-gray-100:hover,

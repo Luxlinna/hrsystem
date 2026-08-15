@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTheme } from "@/context/ThemeContext";
 
 const navGroups = [
   {
@@ -72,6 +73,7 @@ export default function Sidebar() {
   const [hovered, setHovered] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const { isDark, toggleTheme } = useTheme();
   const visibleGroups = navGroups
     .map((group) => ({ ...group, items: group.items.filter((item) => can(item.module)) }))
     .filter((group) => group.items.length > 0);
@@ -289,14 +291,33 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {/* Collapse toggle at bottom */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="shrink-0 flex items-center justify-center py-3 border-t border-white/10 text-gray-500 hover:text-white transition-colors"
-        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        <i className={`${collapsed ? "ri-arrow-right-s-line" : "ri-arrow-left-s-line"} text-lg`} />
-      </button>
+      {/* Theme toggle & Sidebar Collapse */}
+      <div className="shrink-0 flex items-center justify-between border-t border-white/10 px-3 py-2 text-gray-400">
+        <button
+          onClick={toggleTheme}
+          className={`flex items-center gap-2 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer ${
+            !isExpanded ? "w-full justify-center" : ""
+          }`}
+          title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          aria-label="Toggle Theme"
+        >
+          {isDark ? (
+            <i className="ri-sun-line text-lg text-amber-400" />
+          ) : (
+            <i className="ri-moon-line text-lg text-gray-300" />
+          )}
+          {isExpanded && <span className="text-[12px] font-medium text-gray-300">{isDark ? "Light Mode" : "Dark Mode"}</span>}
+        </button>
+        {isExpanded && (
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <i className={`${collapsed ? "ri-arrow-right-s-line" : "ri-arrow-left-s-line"} text-lg`} />
+          </button>
+        )}
+      </div>
     </aside>
   );
 }

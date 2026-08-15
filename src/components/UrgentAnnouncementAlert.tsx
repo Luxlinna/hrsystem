@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
 
 interface UrgentAnnouncement {
@@ -49,7 +50,10 @@ const playUrgentChime = () => {
 
 export default function UrgentAnnouncementAlert() {
   const { user } = useAuth();
-  const mustAcceptUrgentAnnouncements = Boolean(user?.id);
+  const { role, isAdmin, loading: permissionsLoading } = usePermissions();
+  const canManage = isAdmin || (!!role && !["Employee", "Staff"].includes(role.name));
+  const mustAcceptUrgentAnnouncements = !permissionsLoading && !canManage && Boolean(user?.id);
+
   const [announcements, setAnnouncements] = useState<UrgentAnnouncement[]>([]);
   const [acceptedIds, setAcceptedIds] = useState<Set<string>>(new Set());
   const [accepting, setAccepting] = useState(false);
@@ -62,7 +66,7 @@ export default function UrgentAnnouncementAlert() {
   );
 
   const loadUrgentAnnouncements = async () => {
-    if (!user?.id) {
+    if (!user?.id || !mustAcceptUrgentAnnouncements) {
       setAnnouncements([]);
       setAcceptedIds(new Set());
       return;
@@ -85,7 +89,7 @@ export default function UrgentAnnouncementAlert() {
   };
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || permissionsLoading) return;
     loadUrgentAnnouncements();
 
     const channel = supabase
@@ -97,7 +101,7 @@ export default function UrgentAnnouncementAlert() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user?.id, permissionsLoading, mustAcceptUrgentAnnouncements]);
 
   useEffect(() => {
     if (!mustAcceptUrgentAnnouncements || !active) return;
