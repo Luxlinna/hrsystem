@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
+import { toast } from "@/components/Toast";
 
 interface UrgentAnnouncement {
   id: string;
@@ -14,15 +14,47 @@ interface UrgentAnnouncement {
 
 const ALERT_INTERVAL_MS = 30000;
 
+const playUrgentChime = () => {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(880, now);
+    gain1.gain.setValueAtTime(0.15, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.25);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(1174, now + 0.15);
+    gain2.gain.setValueAtTime(0.2, now + 0.15);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.15);
+    osc2.stop(now + 0.45);
+  } catch (e) {
+    // Ignore audio restrictions gracefully
+  }
+};
+
 export default function UrgentAnnouncementAlert() {
   const { user } = useAuth();
-  const { role, isAdmin, loading: permissionsLoading } = usePermissions();
-  const mustAcceptUrgentAnnouncements = !permissionsLoading && !isAdmin && (!role || ["Employee", "Staff"].includes(role.name));
+  const mustAcceptUrgentAnnouncements = Boolean(user?.id);
   const [announcements, setAnnouncements] = useState<UrgentAnnouncement[]>([]);
   const [acceptedIds, setAcceptedIds] = useState<Set<string>>(new Set());
   const [accepting, setAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState("");
-  const lastBrowserAlertRef = useRef<Record<string, number>>({});
+  const lastAlertTimeRef = useRef<Record<string, number>>({});
 
   const active = useMemo(
     () => announcements.find((a) => !acceptedIds.has(a.id)) || null,
@@ -30,7 +62,7 @@ export default function UrgentAnnouncementAlert() {
   );
 
   const loadUrgentAnnouncements = async () => {
-    if (!user?.id || !mustAcceptUrgentAnnouncements) {
+    if (!user?.id) {
       setAnnouncements([]);
       setAcceptedIds(new Set());
       return;
@@ -40,6 +72,7 @@ export default function UrgentAnnouncementAlert() {
         .from("announcements")
         .select("id, title, content, category, published_at")
         .eq("priority", "urgent")
+        .is("deleted_at", null)
         .order("published_at", { ascending: false }),
       supabase
         .from("announcement_acknowledgements")
@@ -52,7 +85,7 @@ export default function UrgentAnnouncementAlert() {
   };
 
   useEffect(() => {
-    if (!user?.id || permissionsLoading) return;
+    if (!user?.id) return;
     loadUrgentAnnouncements();
 
     const channel = supabase
@@ -64,45 +97,62 @@ export default function UrgentAnnouncementAlert() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, permissionsLoading, mustAcceptUrgentAnnouncements]);
+  }, [user?.id]);
 
   useEffect(() => {
-    if (!mustAcceptUrgentAnnouncements || !active || !("Notification" in window)) return;
+    if (!mustAcceptUrgentAnnouncements || !active) return;
 
-    const showBrowserAlert = async () => {
-      if (Notification.permission === "default") await Notification.requestPermission();
-      if (Notification.permission !== "granted") return;
+    const triggerAlert = async () => {
       const now = Date.now();
-      if (now - (lastBrowserAlertRef.current[active.id] || 0) < ALERT_INTERVAL_MS) return;
-      lastBrowserAlertRef.current[active.id] = now;
-      const link = `${__BASE_PATH__ === "/" ? "" : __BASE_PATH__}/announcements?highlight=${active.id}`;
-      const options: NotificationOptions = {
-        body: "Please open HRM_OPS and click Accept.",
-        icon: "/favicon.png",
-        requireInteraction: true,
-        data: { link, source: "announcements", priority: "urgent" },
-      };
-      const registration = await navigator.serviceWorker?.ready.catch(() => null);
-      if (registration?.showNotification) {
-        await registration.showNotification(`Urgent announcement: ${active.title}`, {
-          ...options,
-          actions: [
-            { action: "accept", title: "Accept" },
-            { action: "close", title: "Close" },
-          ],
-        });
-        return;
-      }
+      const last = lastAlertTimeRef.current[active.id] || 0;
+      if (now - last < ALERT_INTERVAL_MS - 1000) return;
+      lastAlertTimeRef.current[active.id] = now;
 
-      const notification = new Notification(`Urgent announcement: ${active.title}`, options);
-      notification.onclick = () => {
-        window.focus();
-        window.location.href = link;
-      };
+      // In-app alert toast
+      toast(
+        "URGENT ANNOUNCEMENT",
+        `Action required: "${active.title}". Click Accept to dismiss.`,
+        "error"
+      );
+
+      // Play audio chime
+      playUrgentChime();
+
+      // Web Browser Notification if available
+      if ("Notification" in window) {
+        if (Notification.permission === "default") {
+          await Notification.requestPermission().catch(() => {});
+        }
+        if (Notification.permission === "granted") {
+          const link = `${__BASE_PATH__ === "/" ? "" : __BASE_PATH__}/announcements?highlight=${active.id}`;
+          const options: NotificationOptions = {
+            body: "Urgent acknowledgement required. Please click Accept in HRM_OPS.",
+            icon: "/favicon.png",
+            requireInteraction: true,
+            data: { link, source: "announcements", priority: "urgent" },
+          };
+          const registration = await navigator.serviceWorker?.ready.catch(() => null);
+          if (registration?.showNotification) {
+            await registration.showNotification(`Urgent Announcement: ${active.title}`, {
+              ...options,
+              actions: [
+                { action: "accept", title: "Accept" },
+                { action: "close", title: "Close" },
+              ],
+            }).catch(() => {});
+          } else {
+            const notification = new Notification(`Urgent Announcement: ${active.title}`, options);
+            notification.onclick = () => {
+              window.focus();
+              window.location.href = link;
+            };
+          }
+        }
+      }
     };
 
-    showBrowserAlert();
-    const timer = window.setInterval(showBrowserAlert, ALERT_INTERVAL_MS);
+    triggerAlert();
+    const timer = window.setInterval(triggerAlert, ALERT_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [active?.id, mustAcceptUrgentAnnouncements]);
 
@@ -121,6 +171,7 @@ export default function UrgentAnnouncementAlert() {
       console.error("urgent announcement accept failed:", error.message);
       return;
     }
+    toast("Accepted", "Urgent announcement acknowledged successfully.", "success");
     setAcceptedIds((prev) => new Set(prev).add(data?.announcement_id || announcementId));
   };
 
@@ -128,17 +179,20 @@ export default function UrgentAnnouncementAlert() {
 
   return (
     <div className="fixed inset-x-3 top-3 lg:top-4 z-[70] flex justify-center pointer-events-none">
-      <div className="pointer-events-auto w-full max-w-2xl bg-red-600 text-white rounded-xl shadow-lg border border-red-400/40 overflow-hidden">
-        <div className="px-3 py-2.5 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
-            <i className="ri-alarm-warning-line text-base" />
+      <div className="pointer-events-auto w-full max-w-2xl bg-red-600 text-white rounded-xl shadow-2xl border-2 border-red-400 overflow-hidden animate-bounce" style={{ animationDuration: '3s' }}>
+        <div className="px-4 py-3 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0 animate-pulse">
+            <i className="ri-alarm-warning-fill text-lg text-white" />
           </div>
           <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white/75">Urgent acknowledgement required</p>
-              <div className="flex items-baseline gap-2 min-w-0">
-                <h3 className="text-[13px] font-bold leading-tight truncate">{active.title}</h3>
-                {active.content && <p className="hidden sm:block text-[12px] text-white/80 truncate">{active.content}</p>}
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-white animate-ping" />
+                <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Urgent announcement — Action required every 30s</p>
+              </div>
+              <div className="flex items-baseline gap-2 min-w-0 mt-0.5">
+                <h3 className="text-[14px] font-bold leading-tight truncate">{active.title}</h3>
+                {active.content && <p className="hidden sm:block text-[12px] text-white/80 truncate max-w-xs">{active.content}</p>}
               </div>
               {acceptError && <p className="text-[11px] text-white font-semibold mt-0.5">{acceptError}</p>}
             </div>
@@ -147,15 +201,15 @@ export default function UrgentAnnouncementAlert() {
                 type="button"
                 onClick={accept}
                 disabled={accepting}
-                className="px-3 py-1.5 rounded-lg bg-white text-red-700 text-[12px] font-bold hover:bg-red-50 disabled:opacity-70 cursor-pointer"
+                className="px-4 py-2 rounded-lg bg-white text-red-700 text-[13px] font-extrabold hover:bg-red-50 active:scale-95 disabled:opacity-70 transition-transform cursor-pointer shadow"
               >
-                {accepting ? "Accepting..." : "Accept"}
+                {accepting ? "Accepting..." : "Accept Now"}
               </button>
               <Link
                 to={`/announcements?highlight=${active.id}`}
-                className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-[12px] font-semibold hover:bg-white/20"
+                className="px-3 py-2 rounded-lg bg-white/15 text-white text-[12px] font-semibold hover:bg-white/25 transition-colors"
               >
-                View Details
+                View
               </Link>
             </div>
           </div>

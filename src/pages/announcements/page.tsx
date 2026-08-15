@@ -42,7 +42,7 @@ export default function Announcements() {
   // Posting/editing company-wide announcements is a management action —
   // individual-contributor roles (Employee, Staff) can only read them.
   const canManage = isAdmin || (!!role && !["Employee", "Staff"].includes(role.name));
-  const mustAcceptUrgentAnnouncements = !canManage;
+  const mustAcceptUrgentAnnouncements = Boolean(user?.id);
   const authorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
