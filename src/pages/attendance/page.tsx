@@ -28,6 +28,7 @@ interface AttendanceRecord {
   clock_out: string | null;
   status: "present" | "absent" | "late" | "half_day" | "remote" | "holiday";
   late_minutes: number;
+  early_leave_minutes?: number | null;
   notes: string | null;
   employees?: Employee;
 }
@@ -373,7 +374,14 @@ export default function AttendancePage() {
                             {new Date(r.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                           </td>
                           <td className="px-5 py-3 text-sm text-gray-700">{formatTime(r.clock_in)}</td>
-                          <td className="px-5 py-3 text-sm text-gray-700">{formatTime(r.clock_out)}</td>
+                          <td className="px-5 py-3 text-sm text-gray-700">
+                            {formatTime(r.clock_out)}
+                            {r.early_leave_minutes && r.early_leave_minutes > 0 ? (
+                              <span className="block text-[11px] font-semibold text-amber-600">
+                                ({r.early_leave_minutes}m early)
+                              </span>
+                            ) : null}
+                          </td>
                           <td className="px-5 py-3 text-sm text-gray-600">{calcHours(r.clock_in, r.clock_out)}</td>
                           <td className="px-5 py-3">
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
@@ -647,6 +655,21 @@ export default function AttendancePage() {
                   <p className="text-sm text-amber-700 mt-0.5">{selectedRecord.late_minutes} minutes past expected start time</p>
                 </div>
               )}
+              {selectedRecord.early_leave_minutes && selectedRecord.early_leave_minutes > 0 ? (
+                <div className="p-3.5 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-xs font-bold text-orange-700 flex items-center gap-1.5">
+                    <i className="ri-logout-circle-line" />
+                    Early Checkout ({selectedRecord.early_leave_minutes} minutes early)
+                  </p>
+                  {selectedRecord.notes && (
+                    <p className="text-xs text-orange-900 mt-1 font-semibold">
+                      Reason: {selectedRecord.notes.includes("Early checkout reason:")
+                        ? selectedRecord.notes.split("Early checkout reason:")[1]?.trim()
+                        : selectedRecord.notes}
+                    </p>
+                  )}
+                </div>
+              ) : null}
               {selectedRecord.notes && (
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Notes</p>
