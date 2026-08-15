@@ -74,7 +74,20 @@ interface DailyLogRow {
   notes: string;
 }
 
-type ReportRow = LeaveRow | PayrollRow | HeadcountRow | ExpenseRow | HireRow | DailyLogRow;
+interface RoomBookingRow {
+  id: string;
+  room_name: string;
+  title: string;
+  employee: string;
+  department: string;
+  branch: string;
+  date: string;
+  time: string;
+  attendees: number;
+  status: string;
+}
+
+type ReportRow = LeaveRow | PayrollRow | HeadcountRow | ExpenseRow | HireRow | DailyLogRow | RoomBookingRow;
 
 const matchesEmployeeFilters = (
   row: { employee?: string; department?: string; branch?: string },
@@ -92,9 +105,10 @@ interface Props {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  approved: "bg-emerald-50 text-emerald-700",
-  pending: "bg-amber-50 text-amber-700",
-  rejected: "bg-red-50 text-red-700",
+  approved: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",
+  pending: "bg-amber-50 text-amber-700 border border-amber-200/60",
+  rejected: "bg-red-50 text-red-700 border border-red-200/60",
+  cancelled: "bg-gray-100 text-gray-600 border border-gray-200/60",
   paid: "bg-emerald-50 text-emerald-700",
   processed: "bg-sky-50 text-sky-700",
   active: "bg-emerald-50 text-emerald-700",
@@ -276,6 +290,52 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     onDataReady(mapped, cols);
   }, [config, onDataReady]);
 
+  const fetchRoomBookings = useCallback(async () => {
+    let q = supabase
+      .from("room_bookings")
+      .select("id, title, date, start_time, end_time, attendees_count, status, meeting_rooms(name), employees:booked_by(first_name, last_name, department, branches(name))")
+      .order("date", { ascending: false })
+      .order("start_time", { ascending: false });
+    if (config.dateFrom) q = q.gte("date", config.dateFrom);
+    if (config.dateTo) q = q.lte("date", config.dateTo);
+    const { data, error } = await q;
+    if (error) {
+      console.error("fetchRoomBookings error:", error);
+    }
+    const fmtTime = (t: string | null) => (t ? new Date(`2000-01-01T${t}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "");
+    const mapped: RoomBookingRow[] = (data || [])
+      .map((r: any) => {
+        const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim();
+        return {
+          id: r.id,
+          room_name: r.meeting_rooms?.name || "—",
+          title: r.title,
+          employee: empName || "Unknown",
+          department: r.employees?.department || "—",
+          branch: r.employees?.branches?.name || "—",
+          date: r.date,
+          time: r.start_time || r.end_time ? `${fmtTime(r.start_time)} – ${fmtTime(r.end_time)}` : "—",
+          attendees: r.attendees_count || 1,
+          status: r.status || "approved",
+        };
+      })
+      .filter((r) => matchesEmployeeFilters(r, config));
+    const cols = ["Room", "Title", "Booked By", "Department", "Branch", "Date", "Time", "Attendees", "Status"];
+    setRows(mapped);
+    setColumns(cols);
+    const approved = mapped.filter((r) => r.status === "approved").length;
+    const pending = mapped.filter((r) => r.status === "pending").length;
+    const cancelled = mapped.filter((r) => r.status === "cancelled").length;
+    const rejected = mapped.filter((r) => r.status === "rejected").length;
+    setSummary({
+      "Total Bookings": mapped.length,
+      Approved: approved,
+      Pending: pending,
+      "Cancelled / Rejected": cancelled + rejected,
+    });
+    onDataReady(mapped, cols);
+  }, [config, onDataReady]);
+
   useEffect(() => {
     setLoading(true);
     const run = async () => {
@@ -285,10 +345,43 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       else if (config.module === "expenses") await fetchExpenses();
       else if (config.module === "hire") await fetchHire();
       else if (config.module === "daily-logs") await fetchDailyLogs();
+      else if (config.module === "meeting-rooms") await fetchRoomBookings();
       setLoading(false);
     };
     run();
-  }, [config, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs]);
+  }, [config, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs, fetchRoomBookings]);
+
+  // Real-time live synchronization: re-fetches automatically when database records change
+  useEffect(() => {
+    const tableMap: Record<string, string> = {
+      leave: "leave_requests",
+      payroll: "payroll_records",
+      headcount: "employees",
+      expenses: "expense_records",
+      hire: "candidates",
+      "daily-logs": "work_logs",
+      "meeting-rooms": "room_bookings",
+    };
+    const targetTable = tableMap[config.module];
+    if (!targetTable) return;
+
+    const channel = supabase
+      .channel(`report_realtime_${config.module}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: targetTable }, () => {
+        if (config.module === "leave") fetchLeave();
+        else if (config.module === "payroll") fetchPayroll();
+        else if (config.module === "headcount") fetchHeadcount();
+        else if (config.module === "expenses") fetchExpenses();
+        else if (config.module === "hire") fetchHire();
+        else if (config.module === "daily-logs") fetchDailyLogs();
+        else if (config.module === "meeting-rooms") fetchRoomBookings();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [config.module, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs, fetchRoomBookings]);
 
   const REPORT_COLUMN_KEY_MAP: Record<string, string> = {
     "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
@@ -297,6 +390,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
     "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
     "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
+    "Room": "room_name", "Title": "title", "Booked By": "employee", "Attendees": "attendees", "Time": "time",
   };
 
   const renderCell = (col: string, row: ReportRow) => {
