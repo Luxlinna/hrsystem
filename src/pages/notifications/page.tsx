@@ -59,6 +59,7 @@ const sourceLabels: Record<string, string> = {
   benefits: "Benefits",
   tools: "Tools",
   announcements: "Announcements",
+  meeting_rooms: "Meeting Rooms",
 };
 
 export default function Notifications() {

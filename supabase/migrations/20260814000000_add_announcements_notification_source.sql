@@ -15,5 +15,7 @@ alter table notifications
     'it_management',
     'benefits',
     'tools',
-    'announcements'
+    'announcements',
+    'meeting_rooms',
+    'meeting-rooms'
   )) not valid;

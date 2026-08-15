@@ -16,7 +16,7 @@ begin
     select 1
     from user_role_assignments ura
     join app_roles ar on ar.id = ura.role_id
-    where ura.user_id = auth.uid()
+    where ura.user_id = auth.uid()::text
       and ar.name not in ('Employee', 'Staff')
       and (
         ar.is_admin

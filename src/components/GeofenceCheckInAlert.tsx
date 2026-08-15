@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { distanceMeters } from "@/lib/geo";
 import { todayYMD } from "@/lib/date";
+import { getCheckoutReminderWindow } from "@/lib/workSchedule";
 import { useAuth } from "@/context/AuthContext";
 
 interface BranchGeofence {
@@ -18,7 +19,6 @@ type Mode = "checkin" | "checkout";
 // only in the afternoon/evening — outside these windows (e.g. lunchtime)
 // no alert fires at all, even if the employee is right next to the office.
 const CHECKIN_WINDOW = { startMin: 7 * 60, endMin: 11 * 60 + 59 };
-const CHECKOUT_WINDOW = { startMin: 13 * 60, endMin: 19 * 60 };
 
 const inWindow = (w: { startMin: number; endMin: number }) => {
   const now = new Date();
@@ -103,7 +103,7 @@ export default function GeofenceCheckInAlert() {
 
           if (!hasClockedIn && !alertedModesRef.current.has("checkin") && inWindow(CHECKIN_WINDOW)) {
             fire("checkin");
-          } else if (hasClockedIn && !hasClockedOut && !alertedModesRef.current.has("checkout") && inWindow(CHECKOUT_WINDOW)) {
+          } else if (hasClockedIn && !hasClockedOut && !alertedModesRef.current.has("checkout") && inWindow(getCheckoutReminderWindow())) {
             fire("checkout");
           }
         },

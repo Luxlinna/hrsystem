@@ -92,6 +92,14 @@ export default function Leave() {
       .eq("status", "approved");
     setCalendarRequests(calReqs || []);
 
+    if (!user?.email) return;
+    const { data: me } = await supabase
+      .from("employees")
+      .select("id, first_name, last_name, role, department, annual_leave_days, branch_id")
+      .eq("email", user.email)
+      .maybeSingle();
+    setMyEmployee(me);
+
     if (canViewAll) {
       const { data: lr } = await supabase
         .from("leave_requests")
@@ -104,13 +112,6 @@ export default function Leave() {
       return;
     }
 
-    if (!user?.email) return;
-    const { data: me } = await supabase
-      .from("employees")
-      .select("id, first_name, last_name, role, department, annual_leave_days, branch_id")
-      .eq("email", user.email)
-      .maybeSingle();
-    setMyEmployee(me);
     if (!me) { setEmployees([]); setRequests([]); return; }
 
     // Branch manager: same as "view all" but scoped to employees who share
@@ -568,7 +569,7 @@ export default function Leave() {
                 <span className="text-[13px] text-gray-500 mt-1 md:mt-0">{r.end_date}</span>
                 <span className="text-[13px] font-semibold text-gray-900 mt-1 md:mt-0">{r.days}d</span>
                 <div className="flex gap-2 mt-2 md:mt-0">
-                  {canManage && r.status === "pending" && (
+                  {canManage && r.status === "pending" && r.employee_id !== myEmployee?.id && (
                     <>
                       <button
                         onClick={() => openApproval(r, "approved")}
@@ -584,7 +585,7 @@ export default function Leave() {
                       </button>
                     </>
                   )}
-                  {(!canManage || r.status !== "pending") && (
+                  {(!canManage || r.status !== "pending" || r.employee_id === myEmployee?.id) && (
                     <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full capitalize whitespace-nowrap ${
                       r.status === "approved" ? "bg-green-50 text-green-700" : r.status === "pending" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
                     }`}>

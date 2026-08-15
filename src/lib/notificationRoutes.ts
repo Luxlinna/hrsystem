@@ -39,6 +39,8 @@ export function getNotificationTarget(
       return { path: "/tools", module: "tools" };
     case "announcements":
       return { path: entityId ? `/announcements?highlight=${entityId}` : "/announcements", module: "announcements" };
+    case "meeting_rooms":
+      return { path: `/meeting-rooms${highlight}`, module: "meeting-rooms" };
     default:
       return null;
   }

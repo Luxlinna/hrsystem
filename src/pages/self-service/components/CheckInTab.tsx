@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { distanceMeters, getCurrentPosition } from "@/lib/geo";
 import { toYMD, todayYMD } from "@/lib/date";
+import { getEffectiveWorkEndTime } from "@/lib/workSchedule";
 import { hasRegisteredFingerprint, registerDeviceFingerprint, verifyDeviceFingerprint } from "@/lib/webauthn";
 import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
 
@@ -81,7 +82,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   // company-wide default; there's no company-wide default for end time, so
   // early-leave detection simply doesn't apply unless the branch sets one.
   const workStartTime = branch?.work_start_time || globalWorkStartTime;
-  const workEndTime = branch?.work_end_time || null;
+  const workEndTime = getEffectiveWorkEndTime(branch?.work_end_time);
 
   useEffect(() => {
     if (!employeeId) return;
