@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import PayslipTab from "./components/PayslipTab";
 import LeaveTab from "./components/LeaveTab";
 import BenefitsTab from "./components/BenefitsTab";
