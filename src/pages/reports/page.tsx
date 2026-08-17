@@ -11,13 +11,15 @@ const MODULES = [
   { id: "headcount", label: "Headcount Report", icon: "ri-team-line", color: "bg-sky-50 text-sky-700 border-sky-200", desc: "Employee distribution by branch and department" },
   { id: "expenses", label: "Expense Report", icon: "ri-bank-line", color: "bg-teal-50 text-teal-700 border-teal-200", desc: "All expense records with approval status" },
   { id: "hire", label: "Hire Pipeline", icon: "ri-briefcase-line", color: "bg-violet-50 text-violet-700 border-violet-200", desc: "Candidate pipeline and hiring funnel stages" },
+  { id: "onboarding", label: "Onboarding Journeys", icon: "ri-user-star-line", color: "bg-blue-50 text-blue-700 border-blue-200", desc: "New hire onboarding progression, active stages, and verification status" },
+  { id: "onboarding-tasks", label: "Onboarding Checklist", icon: "ri-checkbox-multiple-line", color: "bg-cyan-50 text-cyan-700 border-cyan-200", desc: "All onboarding task assignments, deadlines, category breakdown & completion audit" },
   { id: "daily-logs", label: "Daily Work Logs", icon: "ri-file-list-2-line", color: "bg-indigo-50 text-indigo-700 border-indigo-200", desc: "Every employee's daily work entries — what they worked on, when" },
   { id: "meeting-rooms", label: "Meeting Room Bookings", icon: "ri-community-line", color: "bg-rose-50 text-rose-700 border-rose-200", desc: "All meeting room booking records, status, and host details" },
 ];
 
 // Modules whose rows are tied to one employee, so the name/department/
 // branch filters below actually apply to them.
-const EMPLOYEE_SCOPED_MODULES = new Set(["leave", "payroll", "headcount", "daily-logs", "meeting-rooms"]);
+const EMPLOYEE_SCOPED_MODULES = new Set(["leave", "payroll", "headcount", "daily-logs", "meeting-rooms", "onboarding", "onboarding-tasks"]);
 
 // Maps displayed column labels to the report row object's property names,
 // shared by every export format so CSV/PDF/Excel stay consistent.
@@ -27,8 +29,31 @@ const COLUMN_KEY_MAP: Record<string, string> = {
   "Base Salary": "base_salary", "Bonus": "bonus", "Deductions": "deductions", "Net Pay": "net_pay",
   "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
   "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
-  "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
+  "Date": "date", "Candidate": "candidate", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
   "Time": "time", "Activity": "activity", "Notes": "notes",
+  "Room": "room_name", "Title": "title", "Booked By": "employee", "Attendees": "attendees",
+  "Role": "role", "Verified Docs": "verified_docs", "Requested By": "requested_by", "Started Date": "started_date",
+  "Task Name": "task_name", "Priority": "priority", "Assigned To": "assigned_to", "Due Date": "due_date",
+  "Verified By": "completed_by", "Verified Date & Time": "verified_at", "Verified At": "verified_at", "Completed Date": "completed_at",
+};
+
+const getWeekRange = () => {
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMon = (day === 0 ? -6 : 1) - day;
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + diffToMon);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  return { from: toYMD(mon), to: toYMD(sun) };
+};
+
+const getMonthRange = () => {
+  const n = new Date();
+  return {
+    from: toYMD(new Date(n.getFullYear(), n.getMonth(), 1)),
+    to: toYMD(new Date(n.getFullYear(), n.getMonth() + 1, 0)),
+  };
 };
 
 const cellValue = (row: any, col: string) => row[COLUMN_KEY_MAP[col] || col.toLowerCase()];
@@ -158,15 +183,7 @@ export default function ReportsPage() {
     setExporting("pdf");
     const module = MODULES.find((m) => m.id === activeModule);
     const dateRange = isDateScoped && (dateFrom || dateTo) ? ` | ${dateFrom || "—"} to ${dateTo || "—"}` : "";
-    const keyMap: Record<string, string> = {
-      "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
-      "End Date": "end_date", "Days": "days", "Status": "status", "Month": "month",
-      "Base Salary": "base_salary", "Bonus": "bonus", "Deductions": "deductions", "Net Pay": "net_pay",
-      "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
-      "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
-      "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date", "Time": "time", "Activity": "activity", "Notes": "notes",
-      "Room": "room_name", "Title": "title", "Booked By": "employee", "Attendees": "attendees",
-    };
+    
     const tableRows = reportData.map((row) =>
       `<tr>${reportColumns.map((col) => {
         const v = cellValue(row, col);
@@ -174,31 +191,51 @@ export default function ReportsPage() {
         if (col.includes("Salary") || col.includes("Pay") || col.includes("Bonus") || col.includes("Deduct") || col === "Amount") {
           val = `$${Number(v || 0).toLocaleString()}`;
         }
-        return `<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px">${val}</td>`;
+        return `<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;color:#334155">${val}</td>`;
       }).join("")}</tr>`
     ).join("");
 
-    const html = `<!DOCTYPE html><html><head><title>${module?.label}</title><style>
-      body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111}
-      h1{font-size:20px;margin-bottom:4px}p{font-size:12px;color:#666;margin-bottom:20px}
-      table{width:100%;border-collapse:collapse}
-      th{text-align:left;padding:8px 10px;background:#f5f5f5;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#666}
-      td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px}
-      .footer{margin-top:20px;font-size:10px;color:#999;text-align:right}
-      @media print{body{padding:0}}
+    const html = `<!DOCTYPE html><html><head><title>${module?.label || "Report"} - HRM_OPS</title><style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;margin:0;padding:24px;color:#0f172a}
+      h1{font-size:20px;font-weight:700;margin:0 0 4px 0;color:#1e293b}
+      p{font-size:12px;color:#64748b;margin:0 0 16px 0}
+      table{width:100%;border-collapse:collapse;margin-top:12px}
+      th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#475569;border-bottom:2px solid #cbd5e1}
+      td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;color:#334155}
+      tr:nth-child(even){background:#fafafa}
+      .footer{margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between}
+      @media print{body{padding:0} @page{size:landscape;margin:12mm}}
     </style></head><body>
       <h1>HRM_OPS — ${module?.label}</h1>
-      <p>Generated: ${new Date().toLocaleString("en-US")}${dateRange} · ${reportData.length} records</p>
+      <p>Generated: ${new Date().toLocaleString("en-US")}${dateRange} · <strong>${reportData.length} records</strong></p>
       <table><thead><tr>${reportColumns.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
       <tbody>${tableRows}</tbody></table>
-      <div class="footer">HRM_OPS HRMS · Confidential</div>
+      <div class="footer">
+        <span>HRM_OPS HRMS · Confidential Report</span>
+        <span>${new Date().toLocaleDateString("en-US")}</span>
+      </div>
     </body></html>`;
 
-    const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.onload = () => { win.print(); win.close(); };
+    try {
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+        setTimeout(() => {
+          try {
+            win.print();
+          } catch (e) {
+            console.error("Print error:", e);
+          }
+        }, 250);
+      } else {
+        window.print();
+      }
+    } catch (err) {
+      console.error("exportPDF error:", err);
+      window.print();
     }
     setTimeout(() => setExporting(null), 800);
   };
@@ -527,44 +564,46 @@ export default function ReportsPage() {
 
               {/* Quick Period Switcher Pills */}
               {isDateScoped && (
-                <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl border border-gray-200">
+                <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200 shadow-2xs">
                   <button
                     onClick={() => {
                       const t = todayYMD();
                       setDateFrom(t);
                       setDateTo(t);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       dateFrom === todayYMD() && dateTo === todayYMD()
-                        ? "bg-[#253C7D] text-white shadow-sm"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                        ? "bg-[#253C7D] text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
                     }`}
                   >
                     Per Day
                   </button>
                   <button
                     onClick={() => {
-                      const now = new Date();
-                      const day = now.getDay();
-                      const diffToMon = (day === 0 ? -6 : 1) - day;
-                      const mon = new Date(now);
-                      mon.setDate(now.getDate() + diffToMon);
-                      const sun = new Date(mon);
-                      sun.setDate(mon.getDate() + 6);
-                      setDateFrom(toYMD(mon));
-                      setDateTo(toYMD(sun));
+                      const w = getWeekRange();
+                      setDateFrom(w.from);
+                      setDateTo(w.to);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer text-gray-600 hover:text-gray-900 hover:bg-white`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      dateFrom === getWeekRange().from && dateTo === getWeekRange().to
+                        ? "bg-[#253C7D] text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
+                    }`}
                   >
                     Per Week
                   </button>
                   <button
                     onClick={() => {
-                      const n = new Date();
-                      setDateFrom(toYMD(new Date(n.getFullYear(), n.getMonth(), 1)));
-                      setDateTo(toYMD(new Date(n.getFullYear(), n.getMonth() + 1, 0)));
+                      const m = getMonthRange();
+                      setDateFrom(m.from);
+                      setDateTo(m.to);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer text-gray-600 hover:text-gray-900 hover:bg-white`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      dateFrom === getMonthRange().from && dateTo === getMonthRange().to
+                        ? "bg-[#253C7D] text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
+                    }`}
                   >
                     Per Month
                   </button>
@@ -573,10 +612,10 @@ export default function ReportsPage() {
                       setDateFrom("");
                       setDateTo("");
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       !dateFrom && !dateTo
-                        ? "bg-[#253C7D] text-white shadow-sm"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                        ? "bg-[#253C7D] text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
                     }`}
                   >
                     All Time
