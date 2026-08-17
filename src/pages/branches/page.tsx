@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { logActivity } from "@/lib/audit";
 import { toast } from "@/components/Toast";
 import { getCurrentPosition } from "@/lib/geo";
-import { geocodeAddress } from "@/lib/geocode";
+import { geocodeAddress, loadGoogleMaps, reverseGeocode } from "@/lib/geocode";
 
 interface Branch {
   id: string;
@@ -67,6 +67,8 @@ export default function Branches() {
   const [locating, setLocating] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [addressLookup, setAddressLookup] = useState("");
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
+  const placesAutocompleteRef = useRef<any>(null);
   const emptyForm = {
     name: "",
     location: "",
@@ -94,6 +96,49 @@ export default function Branches() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  useEffect(() => {
+    if (!showAddModal || !addressInputRef.current) return;
+    let cancelled = false;
+
+    loadGoogleMaps()
+      .then(() => {
+        if (cancelled || !addressInputRef.current || placesAutocompleteRef.current) return;
+        const autocomplete = new (window as any).google.maps.places.Autocomplete(addressInputRef.current, {
+          fields: ["formatted_address", "geometry", "name"],
+          types: ["geocode", "establishment"],
+        });
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          const loc = place?.geometry?.location;
+          if (!loc) {
+            toast("Error", "That place doesn't include coordinates. Try a more specific address.", "error");
+            return;
+          }
+          const formattedAddress = place.formatted_address || place.name || addressInputRef.current?.value || "";
+          setAddressLookup(formattedAddress);
+          setForm((f) => ({
+            ...f,
+            location: f.location || formattedAddress,
+            latitude: loc.lat().toFixed(6),
+            longitude: loc.lng().toFixed(6),
+          }));
+          toast("Location selected", "Coordinates added to the branch form.", "success");
+        });
+        placesAutocompleteRef.current = autocomplete;
+      })
+      .catch(() => {
+        // Manual lookup will surface a user-facing configuration/load error.
+      });
+
+    return () => {
+      cancelled = true;
+      if (placesAutocompleteRef.current) {
+        (window as any).google?.maps?.event?.clearInstanceListeners(placesAutocompleteRef.current);
+        placesAutocompleteRef.current = null;
+      }
+    };
+  }, [showAddModal]);
+
   const detailRequestId = useRef(0);
 
   const openDetail = async (branch: Branch) => {
@@ -119,6 +164,12 @@ export default function Branches() {
     setSubmitting(true);
     const latitude = form.latitude.trim() ? Number(form.latitude) : null;
     const longitude = form.longitude.trim() ? Number(form.longitude) : null;
+    if ((latitude != null && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) ||
+      (longitude != null && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180))) {
+      setSubmitting(false);
+      toast("Error", "Enter valid latitude and longitude values before saving.", "error");
+      return;
+    }
     const geofence_radius_m = form.geofence_radius_m.trim() ? Number(form.geofence_radius_m) : 100;
     const work_start_time = form.work_start_time.trim() || null;
     const work_end_time = form.work_end_time.trim() || null;
@@ -185,6 +236,7 @@ export default function Branches() {
       work_start_time: branch.work_start_time ? branch.work_start_time.slice(0, 5) : "",
       work_end_time: branch.work_end_time ? branch.work_end_time.slice(0, 5) : "",
     });
+    setAddressLookup(branch.location || "");
     setEditingBranchId(branch.id);
     setShowAddModal(true);
   };
@@ -197,10 +249,21 @@ export default function Branches() {
     setLocating(true);
     try {
       const pos = await getCurrentPosition();
+      const latitude = pos.coords.latitude;
+      const longitude = pos.coords.longitude;
+      let location = "";
+      try {
+        const result = await reverseGeocode(latitude, longitude);
+        location = result.formattedAddress;
+        setAddressLookup(result.formattedAddress);
+      } catch {
+        setAddressLookup("");
+      }
       setForm((f) => ({
         ...f,
-        latitude: pos.coords.latitude.toFixed(6),
-        longitude: pos.coords.longitude.toFixed(6),
+        location: location || f.location,
+        latitude: latitude.toFixed(6),
+        longitude: longitude.toFixed(6),
       }));
       toast("Location captured", `Accurate to about ±${Math.round(pos.coords.accuracy)}m`, "success");
     } catch (err: any) {
@@ -223,7 +286,13 @@ export default function Branches() {
     setGeocoding(true);
     try {
       const result = await geocodeAddress(addressLookup.trim());
-      setForm((f) => ({ ...f, latitude: result.lat.toFixed(6), longitude: result.lng.toFixed(6) }));
+      setAddressLookup(result.formattedAddress);
+      setForm((f) => ({
+        ...f,
+        location: f.location || result.formattedAddress,
+        latitude: result.lat.toFixed(6),
+        longitude: result.lng.toFixed(6),
+      }));
       toast(
         result.precise ? "Exact match found" : "Approximate match — please verify",
         result.formattedAddress,
@@ -694,6 +763,7 @@ export default function Branches() {
                 </div>
                 <div className="flex gap-2 mb-2">
                   <input
+                    ref={addressInputRef}
                     type="text"
                     value={addressLookup}
                     onChange={(e) => setAddressLookup(e.target.value)}

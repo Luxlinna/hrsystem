@@ -14,6 +14,7 @@ export type NotificationSource =
   | "it_management"
   | "benefits"
   | "tools"
+  | "announcements"
   | "meeting_rooms"
   | "meeting-rooms";
 
@@ -23,6 +24,7 @@ export interface NotifyInput {
   type?: NotificationType;
   source: NotificationSource;
   entityId?: string | null;
+  recipientUserId?: string | null;
 }
 
 // Company-wide notifications:
@@ -37,6 +39,7 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
       type: entry.type ?? "info",
       source: entry.source,
       entity_id: entry.entityId ?? null,
+      recipient_user_id: entry.recipientUserId ?? null,
     });
 
     if (!error) {
@@ -52,6 +55,7 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
       type: entry.type ?? "info",
       source: "system",
       entity_id: entry.entityId ?? null,
+      recipient_user_id: entry.recipientUserId ?? null,
     });
 
     if (fallbackRes.error) {

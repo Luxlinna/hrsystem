@@ -20,6 +20,7 @@ interface Employee {
   id: string;
   first_name: string;
   last_name: string;
+  department?: string;
   avatar_url?: string;
 }
 
@@ -122,7 +123,7 @@ export default function Tools() {
 
   const openAssign = (tool: Tool) => {
     setSelectedTool(tool);
-    setAssignEmployeeId("");
+    setAssignEmployeeIds([]);
     setAssignModalOpen(true);
   };
 

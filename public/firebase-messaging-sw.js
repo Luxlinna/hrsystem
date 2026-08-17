@@ -16,26 +16,40 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   const title = payload.notification?.title || "HRM_OPS";
   const body = payload.notification?.body || "";
+  const data = payload.data || {};
+  const isUrgentAnnouncement = data.source === "announcements" && data.priority === "urgent";
   self.registration.showNotification(title, {
     body,
     icon: "/favicon.png",
     badge: "/favicon.png",
-    data: payload.data || {},
+    requireInteraction: isUrgentAnnouncement,
+    actions: isUrgentAnnouncement
+      ? [
+          { action: "accept", title: "Accept" },
+          { action: "close", title: "Close" },
+        ]
+      : undefined,
+    data,
   });
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  if (event.action === "close") return;
+
   const link = event.notification.data?.link || "/";
+  const targetLink = event.action === "accept"
+    ? `${link}${link.includes("?") ? "&" : "?"}accept=1`
+    : link;
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if ("focus" in client) {
-          client.navigate(link);
+          client.navigate(targetLink);
           return client.focus();
         }
       }
-      if (clients.openWindow) return clients.openWindow(link);
+      if (clients.openWindow) return clients.openWindow(targetLink);
     })
   );
 });

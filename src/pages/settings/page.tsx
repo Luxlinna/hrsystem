@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Branch {
   id: string;
@@ -224,6 +225,7 @@ const currencyOptions = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CNY", "CHF"]
 export default function Settings() {
   const { user } = useAuth();
   const { role } = usePermissions();
+  const { theme, setTheme } = useTheme();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [section, setSection] = useState("general");
   const [settings, setSettings] = useState<Record<string, Setting>>();
@@ -345,6 +347,7 @@ export default function Settings() {
       <div className="flex gap-2 mb-6 flex-wrap">
         {[
           { key: "general", label: "General" },
+          { key: "appearance", label: "Appearance" },
           { key: "notifications", label: "Notifications" },
           { key: "permissions", label: "Permissions" },
           { key: "branches", label: "Branches" },
@@ -363,6 +366,39 @@ export default function Settings() {
           </button>
         ))}
       </div>
+
+      {section === "appearance" && (
+        <div className="max-w-xl space-y-5">
+          <div>
+            <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
+              Display Mode
+            </label>
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              {[
+                { key: "light", label: "Light", icon: "ri-sun-line" },
+                { key: "dark", label: "Dark", icon: "ri-moon-line" },
+              ].map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setTheme(option.key as "light" | "dark")}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border text-[13px] font-semibold transition-colors ${
+                    theme === option.key
+                      ? "border-[#253C7D] bg-[#253C7D] text-white"
+                      : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <i className={`${option.icon} text-base`} />
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-2">
+              This preference is saved on this browser and applies across the system.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* General Settings */}
       {section === "general" && (

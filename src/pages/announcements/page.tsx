@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { notify } from "@/lib/notify";
+import { useSearchParams } from "react-router-dom";
 
 interface Announcement {
   id: string;
@@ -40,21 +42,29 @@ export default function Announcements() {
   // Posting/editing company-wide announcements is a management action —
   // individual-contributor roles (Employee, Staff) can only read them.
   const canManage = isAdmin || (!!role && !["Employee", "Staff"].includes(role.name));
+  const mustAcceptUrgentAnnouncements = !canManage;
   const authorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<Announcement | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCat, setFilterCat] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [acceptedUrgentIds, setAcceptedUrgentIds] = useState<Set<string>>(new Set());
+  const [acceptingUrgent, setAcceptingUrgent] = useState(false);
+  const [acceptUrgentError, setAcceptUrgentError] = useState("");
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+  const shouldAcceptHighlighted = searchParams.get("accept") === "1";
   const [form, setForm] = useState({
     title: "", content: "", category: "news", priority: "normal",
     author_name: authorName, author_role: role?.name || "",
     pinned: false, visible_to: "all",
   });
+  const selectedItem = announcements.find((a) => a.id === selectedId) || null;
 
   const loadAnnouncements = async () => {
     const { data } = await supabase.from("announcements").select("*").is("deleted_at", null).order("pinned", { ascending: false }).order("published_at", { ascending: false });
@@ -62,17 +72,102 @@ export default function Announcements() {
     setLoading(false);
   };
 
+  const loadAcceptedUrgent = async () => {
+    if (!user?.id || !mustAcceptUrgentAnnouncements) {
+      setAcceptedUrgentIds(new Set());
+      return;
+    }
+    const { data } = await supabase
+      .from("announcement_acknowledgements")
+      .select("announcement_id")
+      .eq("user_id", user.id);
+    setAcceptedUrgentIds(new Set((data || []).map((row) => row.announcement_id)));
+  };
+
   useEffect(() => {
     loadAnnouncements();
+    loadAcceptedUrgent();
     const channel = supabase.channel("announcements-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "announcements" }, () => loadAnnouncements())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  const acceptUrgentAnnouncement = async (announcementId: string) => {
+    if (!user?.id || !mustAcceptUrgentAnnouncements || acceptingUrgent) return;
+    setAcceptingUrgent(true);
+    setAcceptUrgentError("");
+    const { data, error } = await supabase.from("announcement_acknowledgements").upsert(
+      { announcement_id: announcementId, user_id: user.id, accepted_at: new Date().toISOString() },
+      { onConflict: "announcement_id,user_id" }
+    ).select("announcement_id").single();
+    setAcceptingUrgent(false);
+    if (error) {
+      setAcceptUrgentError("Could not accept yet. Please refresh and try again.");
+      console.error("announcement accept failed:", error.message);
+      return;
+    }
+    setAcceptedUrgentIds((prev) => new Set(prev).add(data?.announcement_id || announcementId));
+  };
+
+  useEffect(() => {
+    if (!mustAcceptUrgentAnnouncements || !highlightId || !shouldAcceptHighlighted || acceptedUrgentIds.has(highlightId)) return;
+    acceptUrgentAnnouncement(highlightId);
+  }, [highlightId, shouldAcceptHighlighted, acceptedUrgentIds, mustAcceptUrgentAnnouncements]);
+
+  useEffect(() => {
+    if (!highlightId || announcements.length === 0) return;
+    const target = announcements.find((a) => a.id === highlightId);
+    if (!target) return;
+    setSelectedId(target.id);
+    const t = setTimeout(() => {
+      const el = document.getElementById(`announcement-${highlightId}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
+    }, 0);
+    return () => clearTimeout(t);
+  }, [highlightId, announcements]);
+
   const openAnnouncement = async (a: Announcement) => {
-    setSelectedItem(a);
+    setSelectedId(a.id);
     await supabase.from("announcements").update({ view_count: (a.view_count || 0) + 1 }).eq("id", a.id);
+  };
+
+  const alertEmployeesAboutAnnouncement = async (announcement: Announcement) => {
+    const category = categoryConfig[announcement.category]?.label || "Announcement";
+    const title = announcement.priority === "urgent" ? `Urgent ${category}` : `New ${category}`;
+    const message = announcement.title;
+    const notificationType = announcement.priority === "urgent" ? "error" : announcement.priority === "high" ? "warning" : "info";
+
+    const { error } = await supabase.rpc("create_announcement_notifications", {
+      p_announcement_id: announcement.id,
+      p_title: title,
+      p_message: message,
+      p_type: notificationType,
+    });
+
+    if (error) {
+      console.error("announcement notification fanout failed:", error.message);
+      notify({ source: "announcements", type: notificationType, title, message, entityId: announcement.id });
+    }
+
+    supabase.functions.invoke("send-push-notification", {
+      body: {
+        broadcast: true,
+        title,
+        body: `${announcement.title}${announcement.content ? ` - ${announcement.content.slice(0, 120)}` : ""}`,
+        link: `${window.location.origin}${__BASE_PATH__ === "/" ? "" : __BASE_PATH__}/announcements?highlight=${announcement.id}`,
+        data: {
+          source: "announcements",
+          announcement_id: announcement.id,
+          priority: announcement.priority,
+          link: `${window.location.origin}${__BASE_PATH__ === "/" ? "" : __BASE_PATH__}/announcements?highlight=${announcement.id}`,
+        },
+        excludeUserId: user?.id,
+      },
+    }).then(({ error }) => {
+      if (error) console.error("announcement push failed:", error.message);
+    });
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -80,13 +175,35 @@ export default function Announcements() {
     if (!canManage) return;
     setSubmitting(true);
     if (editingId) {
+      // Fetch the original announcement to compare priority
+      const { data: original } = await supabase
+        .from("announcements")
+        .select("priority")
+        .eq("id", editingId)
+        .single();
+
       await supabase.from("announcements").update({
         title: form.title, content: form.content, category: form.category,
         priority: form.priority, pinned: form.pinned, visible_to: form.visible_to,
       }).eq("id", editingId);
-      if (selectedItem?.id === editingId) setSelectedItem({ ...selectedItem, ...form });
+
+      // If the announcement is now urgent, send alerts (either it was already urgent or was upgraded)
+      if (form.priority === "urgent") {
+        const updatedAnnouncement = { ...form, id: editingId } as Announcement;
+        alertEmployeesAboutAnnouncement(updatedAnnouncement);
+      }
     } else {
-      await supabase.from("announcements").insert({ ...form, published_at: new Date().toISOString(), view_count: 0 });
+      const { data, error } = await supabase
+        .from("announcements")
+        .insert({ ...form, published_at: new Date().toISOString(), view_count: 0 })
+        .select()
+        .single();
+      if (error) {
+        setSubmitting(false);
+        console.error("announcement create failed:", error.message);
+        return;
+      }
+      alertEmployeesAboutAnnouncement(data as Announcement);
     }
     setForm({ title: "", content: "", category: "news", priority: "normal", author_name: authorName, author_role: role?.name || "", pinned: false, visible_to: "all" });
     setEditingId(null);
@@ -104,12 +221,10 @@ export default function Announcements() {
 
   const deleteAnnouncement = async (a: Announcement) => {
     if (!canManage) return;
-    if (!confirm(`Delete announcement "${a.title}"? It will be moved to the Recycle Bin and can be restored later.`)) return;
-    await supabase
-      .from("announcements")
-      .update({ deleted_at: new Date().toISOString(), deleted_by: authorName })
-      .eq("id", a.id);
-    setSelectedItem((prev) => (prev?.id === a.id ? null : prev));
+    if (!confirm(`Delete announcement "${a.title}"? This cannot be undone.`)) return;
+    await supabase.from("notifications").delete().eq("source", "announcements").eq("entity_id", a.id);
+    await supabase.from("announcements").delete().eq("id", a.id);
+    setSelectedId((prev) => (prev === a.id ? null : prev));
     loadAnnouncements();
   };
 
@@ -267,7 +382,7 @@ export default function Announcements() {
                           </button>
                         </>
                       )}
-                      <button onClick={() => setSelectedItem(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer">
+                      <button onClick={() => setSelectedId(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer">
                         <i className="ri-close-line text-gray-500 text-sm" />
                       </button>
                     </div>
@@ -285,6 +400,31 @@ export default function Announcements() {
                 </div>
                 <div className="p-5 overflow-y-auto max-h-[450px]">
                   <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-line">{selectedItem.content}</p>
+                  {mustAcceptUrgentAnnouncements && selectedItem.priority === "urgent" && (
+                    <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4">
+                      {acceptedUrgentIds.has(selectedItem.id) ? (
+                        <p className="text-[12px] font-semibold text-red-700 flex items-center gap-2">
+                          <i className="ri-checkbox-circle-line" />
+                          You accepted this urgent announcement.
+                        </p>
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          <p className="text-[12px] font-semibold text-red-700">
+                            Please accept this urgent announcement to stop repeated alerts.
+                          </p>
+                          {acceptUrgentError && <p className="text-[12px] font-semibold text-red-700">{acceptUrgentError}</p>}
+                          <button
+                            type="button"
+                            onClick={() => acceptUrgentAnnouncement(selectedItem.id)}
+                            disabled={acceptingUrgent}
+                            className="w-full py-2 rounded-lg bg-red-600 text-white text-[12px] font-bold hover:bg-red-700 disabled:opacity-70 cursor-pointer"
+                          >
+                            {acceptingUrgent ? "Accepting..." : "Accept Urgent Announcement"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="mt-5 flex items-center gap-3 text-[11px] text-gray-400 border-t border-gray-100 pt-4">
                     <i className="ri-eye-line" />
                     <span>{(selectedItem.view_count || 0).toLocaleString()} views</span>
@@ -389,6 +529,8 @@ function AnnouncementCard({
   const cfg = categoryConfig[a.category] || categoryConfig.general;
   return (
     <div
+      id={`announcement-${a.id}`}
+      tabIndex={-1}
       onClick={onClick}
       className={`bg-white border rounded-xl p-5 cursor-pointer hover:border-[#253C7D]/30 transition-all ${isSelected ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-100"}`}
     >

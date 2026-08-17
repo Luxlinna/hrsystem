@@ -11,6 +11,7 @@ interface MeetingRoom {
   name: string;
   capacity: number | null;
   color: string;
+  floor?: number;
   amenities?: string[];
 }
 
@@ -48,6 +49,70 @@ interface Booking {
   cancelled_at?: string | null;
   created_at?: string;
   employees?: BookingEmployee | null;
+}
+
+const ROOM_FLOORS: Record<string, number> = {
+  "Small Meeting Room": 3,
+  "Training Room": 3,
+  "VIP Room": 5,
+  "Big Meeting Room": 5,
+};
+
+const ROOM_FLOOR_DESCRIPTIONS: Record<string, string> = {
+  "Small Meeting Room": "Floor 3 · Team Sync, Interviews & Quick Huddles",
+  "Training Room": "Floor 3 · Workshops, Seminars & Large Training Sessions",
+  "VIP Room": "Floor 5 · Executive Board & VIP Presentations",
+};
+
+const getRoomFloor = (roomOrName?: MeetingRoom | string | null): number => {
+  if (!roomOrName) return 3;
+  if (typeof roomOrName === "object") {
+    if (roomOrName.floor) return roomOrName.floor;
+    return ROOM_FLOORS[roomOrName.name] || (roomOrName.name.toLowerCase().includes("vip") ? 5 : 3);
+  }
+  return ROOM_FLOORS[roomOrName] || (roomOrName.toLowerCase().includes("vip") ? 5 : 3);
+};
+
+function FloorBadge({
+  floor,
+  size = "md",
+  isVIP = false,
+}: {
+  floor: number;
+  size?: "sm" | "md" | "lg";
+  isVIP?: boolean;
+}) {
+  if (floor === 5 || isVIP) {
+    return (
+      <span
+        className={`inline-flex items-center gap-1 font-bold rounded-lg shrink-0 ${
+          size === "sm"
+            ? "px-1.5 py-0.5 text-[10px] bg-purple-50 text-purple-700 border border-purple-200/80"
+            : size === "lg"
+            ? "px-2.5 py-1 text-xs bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs"
+            : "px-2 py-0.5 text-[11px] bg-purple-50 text-purple-700 border border-purple-200"
+        }`}
+      >
+        <i className="ri-vip-crown-line text-purple-600" />
+        <span>Floor 5</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 font-bold rounded-lg shrink-0 ${
+        size === "sm"
+          ? "px-1.5 py-0.5 text-[10px] bg-sky-50 text-sky-700 border border-sky-200/80"
+          : size === "lg"
+          ? "px-2.5 py-1 text-xs bg-sky-50 text-sky-700 border border-sky-200 shadow-2xs"
+          : "px-2 py-0.5 text-[11px] bg-sky-50 text-sky-700 border border-sky-200"
+      }`}
+    >
+      <i className="ri-building-line text-sky-600" />
+      <span>Floor 3</span>
+    </span>
+  );
 }
 
 const ROOM_AMENITIES: Record<string, string[]> = {
@@ -160,6 +225,7 @@ export default function MeetingRoomsPage() {
 
   // View state
   const [viewMode, setViewMode] = useState<"timeline" | "month" | "cards">("timeline");
+  const [filterFloor, setFilterFloor] = useState<"all" | "3" | "5">("all");
   const [filterRoomId, setFilterRoomId] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusTab, setStatusTab] = useState<"all" | "pending" | "my">("all");
@@ -227,17 +293,17 @@ export default function MeetingRoomsPage() {
       return;
     }
 
-    // Rename Big Meeting Room -> VIP Room if present in DB
+    // Rename Big Meeting Room -> VIP Room if present in DB and set floor = 5
     if (data && data.some((r) => r.name === "Big Meeting Room")) {
       await supabase
         .from("meeting_rooms")
-        .update({ name: "VIP Room" })
+        .update({ name: "VIP Room", floor: 5 })
         .eq("name", "Big Meeting Room");
 
-      data = data.map((r) => (r.name === "Big Meeting Room" ? { ...r, name: "VIP Room" } : r));
+      data = data.map((r) => (r.name === "Big Meeting Room" ? { ...r, name: "VIP Room", floor: 5 } : r));
     }
 
-    // Auto-seed Training Room if it does not exist in DB yet
+    // Auto-seed Training Room if it does not exist in DB yet (Floor 3)
     if (data && !data.some((r) => r.name.toLowerCase().includes("training"))) {
       const { data: newRoom } = await supabase
         .from("meeting_rooms")
@@ -245,6 +311,7 @@ export default function MeetingRoomsPage() {
           name: "Training Room",
           capacity: 30,
           color: "#059669",
+          floor: 3,
         })
         .select()
         .single();
@@ -254,10 +321,14 @@ export default function MeetingRoomsPage() {
       }
     }
 
-    const enrichedRooms = (data || []).map((r) => ({
-      ...r,
-      amenities: ROOM_AMENITIES[r.name] || DEFAULT_AMENITIES,
-    }));
+    const enrichedRooms = (data || []).map((r) => {
+      const floor = r.floor || ROOM_FLOORS[r.name] || (r.name.toLowerCase().includes("vip") ? 5 : 3);
+      return {
+        ...r,
+        floor,
+        amenities: ROOM_AMENITIES[r.name] || DEFAULT_AMENITIES,
+      };
+    });
     setRooms(enrichedRooms);
   }, []);
 
@@ -536,7 +607,7 @@ export default function MeetingRoomsPage() {
         source: "meeting_rooms",
         type: "info",
         title: "Meeting Room Booking Modified",
-        message: `${empName} modified reservation for ${modalRoom.name} on ${bookingForm.date} (${fmtTime(
+        message: `${empName} modified reservation for ${modalRoom.name} (Floor ${modalRoom.floor || 3}) on ${bookingForm.date} (${fmtTime(
           bookingForm.start_time
         )}–${fmtTime(bookingForm.end_time)}) "${bookingForm.title}".`,
         entityId: editingBooking.id,
@@ -549,10 +620,11 @@ export default function MeetingRoomsPage() {
         entityId: editingBooking.id,
         actorName: empName,
         actorRole: role?.name || "Staff",
-        description: `Modified booking for ${modalRoom.name}: "${bookingForm.title}" (${bookingForm.attendees_count} ppl, Snacks: ${finalRefreshments})`,
+        description: `Modified booking for ${modalRoom.name} (Floor ${modalRoom.floor || 3}): "${bookingForm.title}" (${bookingForm.attendees_count} ppl, Snacks: ${finalRefreshments})`,
         metadata: {
           booking_id: editingBooking.id,
           room: modalRoom.name,
+          floor: modalRoom.floor || 3,
           date: bookingForm.date,
           start_time: bookingForm.start_time,
           end_time: bookingForm.end_time,
@@ -605,7 +677,7 @@ export default function MeetingRoomsPage() {
       source: "meeting_rooms",
       type: "info",
       title: "New Room Booking Request",
-      message: `${empName} requested ${modalRoom.name} (${bookingForm.attendees_count} ppl) for "${bookingForm.title}" on ${bookingForm.date} (${fmtTime(
+      message: `${empName} requested ${modalRoom.name} (Floor ${modalRoom.floor || 3}, ${bookingForm.attendees_count} ppl) for "${bookingForm.title}" on ${bookingForm.date} (${fmtTime(
         bookingForm.start_time
       )}–${fmtTime(bookingForm.end_time)}). Refreshments: ${finalRefreshments}. Requirements: ${finalRequirements}. Pending Admin/HR approval.`,
       entityId: data?.id || null,
@@ -618,9 +690,10 @@ export default function MeetingRoomsPage() {
       entityId: data?.id || null,
       actorName: empName,
       actorRole: role?.name || "Staff",
-      description: `Submitted booking for ${modalRoom.name}: "${bookingForm.title}" (${bookingForm.attendees_count} ppl, Refreshments: ${finalRefreshments}, Requirements: ${finalRequirements})`,
+      description: `Submitted booking for ${modalRoom.name} (Floor ${modalRoom.floor || 3}): "${bookingForm.title}" (${bookingForm.attendees_count} ppl, Refreshments: ${finalRefreshments}, Requirements: ${finalRequirements})`,
       metadata: {
         room: modalRoom.name,
+        floor: modalRoom.floor || 3,
         date: bookingForm.date,
         start_time: bookingForm.start_time,
         end_time: bookingForm.end_time,
@@ -973,12 +1046,19 @@ export default function MeetingRoomsPage() {
     return bookings.filter((b) => b.status === "pending");
   }, [bookings]);
 
-  // Filtered bookings based on tabs, search, and room
+  // Filtered bookings based on tabs, search, floor, and room
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {
       const isCreator =
         b.booked_by === employeeId ||
         (!!user?.email && b.employees?.email === user.email);
+
+      const targetRoom = rooms.find((r) => r.id === b.room_id);
+      const roomFloor = targetRoom?.floor || ROOM_FLOORS[targetRoom?.name || ""] || (targetRoom?.name?.includes("VIP") ? 5 : 3);
+
+      if (filterFloor !== "all" && roomFloor !== parseInt(filterFloor, 10)) {
+        return false;
+      }
 
       if (filterRoomId !== "all" && b.room_id !== filterRoomId) return false;
 
@@ -997,12 +1077,13 @@ export default function MeetingRoomsPage() {
           .toLowerCase()
           .includes(query);
         const deptMatch = (b.employees?.department || "").toLowerCase().includes(query);
-        const roomName = rooms.find((r) => r.id === b.room_id)?.name.toLowerCase() || "";
-        if (!titleMatch && !nameMatch && !deptMatch && !roomName.includes(query)) return false;
+        const roomName = targetRoom?.name.toLowerCase() || "";
+        const floorMatch = `floor ${roomFloor}`.includes(query) || `${roomFloor}f`.includes(query);
+        if (!titleMatch && !nameMatch && !deptMatch && !roomName.includes(query) && !floorMatch) return false;
       }
       return true;
     });
-  }, [bookings, filterRoomId, statusTab, employeeId, searchQuery, rooms, canApprove, user?.email]);
+  }, [bookings, filterFloor, filterRoomId, statusTab, employeeId, searchQuery, rooms, canApprove, user?.email]);
 
   const bookingsForSelectedDate = useMemo(() => {
     return filteredBookings.filter((b) => b.date === selectedDate);
@@ -1232,49 +1313,60 @@ export default function MeetingRoomsPage() {
           </div>
         </div>
 
-        {/* Card 2 & 3: Rooms Live Pulse */}
-        {stats.roomStatusMap.map((roomStat) => (
-          <div
-            key={roomStat.room.id}
-            className="bg-white border border-slate-100/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">
-                {roomStat.room.name}
-              </span>
-              <span
-                className="w-3 h-3 rounded-full shrink-0"
-                style={{ backgroundColor: roomStat.room.color }}
-              />
+        {/* Card 2 & 3 & 4: Rooms Live Pulse */}
+        {stats.roomStatusMap
+          .filter((roomStat) => filterFloor === "all" || (roomStat.room.floor || 3) === parseInt(filterFloor, 10))
+          .map((roomStat) => (
+            <div
+              key={roomStat.room.id}
+              className="bg-white border border-slate-100/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: roomStat.room.color }}
+                    />
+                    <span className="text-xs font-bold text-gray-900 truncate">
+                      {roomStat.room.name}
+                    </span>
+                  </div>
+                  <FloorBadge
+                    floor={roomStat.room.floor || 3}
+                    size="sm"
+                    isVIP={roomStat.room.name.includes("VIP")}
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-1">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                      roomStat.isOccupied
+                        ? "bg-rose-50 text-rose-700 border border-rose-200"
+                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        roomStat.isOccupied ? "bg-rose-500" : "bg-emerald-500"
+                      }`}
+                    />
+                    {roomStat.isOccupied ? "Occupied" : "Free Now"}
+                  </span>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {roomStat.room.capacity || "—"} seats
+                  </span>
+                </div>
+              </div>
+              <p className="mt-2.5 text-[11px] text-gray-600 truncate">
+                {roomStat.isOccupied && roomStat.activeBooking
+                  ? `Until ${fmtTime(roomStat.activeBooking.end_time)} · ${roomStat.activeBooking.title}`
+                  : roomStat.nextBooking
+                  ? `Next: ${fmtTime(roomStat.nextBooking.start_time)} (${roomStat.nextBooking.title})`
+                  : "No more bookings today"}
+              </p>
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  roomStat.isOccupied
-                    ? "bg-rose-50 text-rose-700 border border-rose-200"
-                    : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    roomStat.isOccupied ? "bg-rose-500" : "bg-emerald-500"
-                  }`}
-                />
-                {roomStat.isOccupied ? "Occupied" : "Free Now"}
-              </span>
-              <span className="text-xs text-gray-400 font-medium">
-                Cap: {roomStat.room.capacity || "—"}
-              </span>
-            </div>
-            <p className="mt-2 text-[11px] text-gray-600 truncate">
-              {roomStat.isOccupied && roomStat.activeBooking
-                ? `Until ${fmtTime(roomStat.activeBooking.end_time)} · ${roomStat.activeBooking.title}`
-                : roomStat.nextBooking
-                ? `Next: ${fmtTime(roomStat.nextBooking.start_time)} (${roomStat.nextBooking.title})`
-                : "No more bookings today"}
-            </p>
-          </div>
-        ))}
+          ))}
 
         {/* Card 4: Pending Approvals for Admin/HR OR My Bookings for Employee */}
         <div className="bg-white border border-slate-100/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -1409,14 +1501,14 @@ export default function MeetingRoomsPage() {
           </div>
         </div>
 
-        {/* Right: Search, Room Filter, View Modes */}
+        {/* Right: Search, Floor Filter, Room Filter, View Modes */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Search box */}
           <div className="relative flex-1 sm:w-44">
             <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
             <input
               type="text"
-              placeholder="Search meetings..."
+              placeholder="Search meetings, floors..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:outline-none focus:border-[#253C7D] transition"
@@ -1431,18 +1523,67 @@ export default function MeetingRoomsPage() {
             )}
           </div>
 
-          {/* Room Filter Pills */}
+          {/* Floor Quick Filter Tabs */}
+          <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200/80">
+            <button
+              onClick={() => {
+                setFilterFloor("all");
+                setFilterRoomId("all");
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                filterFloor === "all" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              All Floors
+            </button>
+            <button
+              onClick={() => {
+                setFilterFloor("3");
+                setFilterRoomId("all");
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                filterFloor === "3" ? "bg-white text-sky-800 shadow-sm" : "text-gray-600 hover:text-gray-900"
+              }`}
+              title="Filter Floor 3 (Training & Small Room)"
+            >
+              <i className="ri-building-line text-xs text-sky-600" />
+              <span>Floor 3</span>
+            </button>
+            <button
+              onClick={() => {
+                setFilterFloor("5");
+                setFilterRoomId("all");
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                filterFloor === "5" ? "bg-white text-purple-800 shadow-sm" : "text-gray-600 hover:text-gray-900"
+              }`}
+              title="Filter Floor 5 (VIP Room)"
+            >
+              <i className="ri-vip-crown-line text-xs text-purple-600" />
+              <span>Floor 5</span>
+            </button>
+          </div>
+
+          {/* Room Filter Select */}
           <select
             value={filterRoomId}
             onChange={(e) => setFilterRoomId(e.target.value)}
             className="border border-gray-200 bg-gray-50 rounded-xl text-xs sm:text-sm px-3 py-1.5 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium text-gray-700 cursor-pointer"
           >
-            <option value="all">All Rooms ({rooms.length})</option>
-            {rooms.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name} ({r.capacity} seats)
-              </option>
-            ))}
+            <option value="all">
+              {filterFloor === "all"
+                ? `All Rooms (${rooms.length})`
+                : `All Floor ${filterFloor} Rooms (${
+                    rooms.filter((r) => (r.floor || 3) === parseInt(filterFloor, 10)).length
+                  })`}
+            </option>
+            {rooms
+              .filter((r) => filterFloor === "all" || (r.floor || 3) === parseInt(filterFloor, 10))
+              .map((r) => (
+                <option key={r.id} value={r.id}>
+                  [Floor {r.floor || 3}] {r.name} ({r.capacity} seats)
+                </option>
+              ))}
           </select>
 
           {/* View Mode Toggle */}
@@ -1526,22 +1667,40 @@ export default function MeetingRoomsPage() {
             <div className="min-w-[760px]">
               {/* Room Header Columns */}
               <div className="grid grid-cols-[100px_repeat(auto-fit,minmax(280px,1fr))] border-b border-gray-200 bg-gray-50 text-xs font-bold text-gray-600">
-                <div className="p-3.5 text-center border-r border-gray-200">Time</div>
+                <div className="p-3.5 text-center border-r border-gray-200 flex flex-col justify-center">
+                  <span>Time</span>
+                  <span className="text-[10px] text-gray-400 font-normal">8:00 – 20:00</span>
+                </div>
                 {rooms
-                  .filter((r) => filterRoomId === "all" || r.id === filterRoomId)
+                  .filter(
+                    (r) =>
+                      (filterFloor === "all" || (r.floor || 3) === parseInt(filterFloor, 10)) &&
+                      (filterRoomId === "all" || r.id === filterRoomId)
+                  )
                   .map((room) => (
                     <div
                       key={room.id}
-                      className="p-3.5 border-r border-gray-200 last:border-r-0 flex items-center justify-between"
+                      className="p-3.5 border-r border-gray-200 last:border-r-0 flex items-center justify-between gap-2"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: room.color }} />
-                        <span className="font-bold text-gray-900 text-sm">{room.name}</span>
-                        <span className="text-gray-400 font-normal">({room.capacity} seats)</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: room.color }} />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-gray-900 text-sm truncate">{room.name}</span>
+                            <FloorBadge
+                              floor={room.floor || 3}
+                              size="sm"
+                              isVIP={room.name.includes("VIP")}
+                            />
+                          </div>
+                          <p className="text-[11px] text-gray-500 font-normal mt-0.5 truncate">
+                            {room.capacity} seats · Level {room.floor || 3}
+                          </p>
+                        </div>
                       </div>
                       <button
                         onClick={() => openBookModal(room)}
-                        className="text-xs text-[#253C7D] hover:bg-[#253C7D]/10 px-2 py-1 rounded font-semibold cursor-pointer"
+                        className="text-xs text-[#253C7D] hover:bg-[#253C7D]/10 px-2 py-1 rounded-lg font-bold cursor-pointer transition border border-transparent hover:border-[#253C7D]/20 shrink-0"
                       >
                         + Book
                       </button>
@@ -1571,7 +1730,11 @@ export default function MeetingRoomsPage() {
 
                       {/* Room Slots */}
                       {rooms
-                        .filter((r) => filterRoomId === "all" || r.id === filterRoomId)
+                        .filter(
+                          (r) =>
+                            (filterFloor === "all" || (r.floor || 3) === parseInt(filterFloor, 10)) &&
+                            (filterRoomId === "all" || r.id === filterRoomId)
+                        )
                         .map((room) => {
                           const slotBookings = bookingsForSelectedDate.filter((b) => {
                             if (b.room_id !== room.id) return false;
@@ -1687,7 +1850,11 @@ export default function MeetingRoomsPage() {
         /* ================= ROOM CARDS & UPCOMING LIST ================= */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {rooms
-            .filter((r) => filterRoomId === "all" || r.id === filterRoomId)
+            .filter(
+              (r) =>
+                (filterFloor === "all" || (r.floor || 3) === parseInt(filterFloor, 10)) &&
+                (filterRoomId === "all" || r.id === filterRoomId)
+            )
             .map((room) => {
               const roomBookings = bookingsForSelectedDate.filter((b) => b.room_id === room.id);
               const roomStat = stats.roomStatusMap.find((s) => s.room.id === room.id);
@@ -1702,8 +1869,13 @@ export default function MeetingRoomsPage() {
                     {/* Top Room Banner */}
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div>
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2.5 flex-wrap">
                           <h2 className="text-xl font-bold text-gray-900">{room.name}</h2>
+                          <FloorBadge
+                            floor={room.floor || 3}
+                            size="md"
+                            isVIP={room.name.includes("VIP")}
+                          />
                           <span
                             className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
                               roomStat?.isOccupied
@@ -1719,8 +1891,12 @@ export default function MeetingRoomsPage() {
                             {roomStat?.isOccupied ? "In Use" : "Available"}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                        <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-gray-700">Capacity: {room.capacity} seats</span>
+                          <span>•</span>
+                          <span className="text-gray-600 font-medium">
+                            {ROOM_FLOOR_DESCRIPTIONS[room.name] || `Floor ${room.floor || 3}`}
+                          </span>
                           <span>•</span>
                           <span>{roomBookings.length} {roomBookings.length === 1 ? "booking" : "bookings"} on this date</span>
                         </p>
@@ -2047,14 +2223,22 @@ export default function MeetingRoomsPage() {
 
             {/* Modal Body */}
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-              {/* 1. Room Selector Pills */}
+              {/* 1. Room Selector Pills with Floor Indicators */}
               <div>
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1.5">
-                  Select Room
-                </label>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block">
+                    Select Room & Floor
+                  </label>
+                  <span className="text-[11px] font-semibold text-gray-500">
+                    Floor 3: Training & Small · Floor 5: VIP
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {rooms.map((r) => {
                     const isSelected = modalRoom.id === r.id;
+                    const floor = r.floor || ROOM_FLOORS[r.name] || 3;
+                    const isVIP = r.name.includes("VIP") || floor === 5;
+
                     return (
                       <button
                         key={r.id}
@@ -2065,23 +2249,63 @@ export default function MeetingRoomsPage() {
                             setBookingForm({ ...bookingForm, attendees_count: r.capacity });
                           }
                         }}
-                        className={`p-3 rounded-xl border text-left transition cursor-pointer flex items-center gap-2.5 ${
+                        className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between gap-2 relative ${
                           isSelected
-                            ? "border-[#253C7D] bg-[#253C7D]/5 ring-2 ring-[#253C7D]/20"
+                            ? "border-[#253C7D] bg-[#253C7D]/5 ring-2 ring-[#253C7D]/20 shadow-xs"
                             : "border-gray-200 hover:border-gray-300 bg-gray-50/50"
                         }`}
                       >
-                        <span
-                          className="w-3.5 h-3.5 rounded-full shrink-0"
-                          style={{ backgroundColor: r.color }}
-                        />
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-gray-900 truncate">{r.name}</p>
-                          <p className="text-[11px] text-gray-500">Up to {r.capacity} seats</p>
+                        <div className="flex items-start justify-between gap-1.5">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{ backgroundColor: r.color }}
+                            />
+                            <p className="text-xs font-bold text-gray-900 truncate">{r.name}</p>
+                          </div>
+                          {isSelected && (
+                            <i className="ri-checkbox-circle-fill text-[#253C7D] text-sm shrink-0" />
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between gap-1 text-[11px]">
+                          <span
+                            className={`font-bold px-1.5 py-0.5 rounded ${
+                              isVIP
+                                ? "bg-purple-100 text-purple-800 border border-purple-200"
+                                : "bg-sky-100 text-sky-800 border border-sky-200"
+                            }`}
+                          >
+                            Floor {floor}
+                          </span>
+                          <span className="text-gray-500 font-medium">{r.capacity} seats</span>
                         </div>
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Selected Room Location Banner */}
+                <div className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: modalRoom.color }}
+                    />
+                    <span className="font-bold text-gray-900">{modalRoom.name}</span>
+                    <FloorBadge
+                      floor={modalRoom.floor || 3}
+                      size="sm"
+                      isVIP={modalRoom.name.includes("VIP")}
+                    />
+                  </div>
+                  <span className="text-gray-500 font-medium text-[11px]">
+                    {modalRoom.floor === 5
+                      ? "📍 5th Floor · Executive VIP Suite"
+                      : modalRoom.name.toLowerCase().includes("training")
+                      ? "📍 3rd Floor · Training & Workshop Hall"
+                      : "📍 3rd Floor · Small Meeting Room"}
+                  </span>
                 </div>
               </div>
 
@@ -2619,8 +2843,21 @@ export default function MeetingRoomsPage() {
 
             {/* Body */}
             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto text-xs">
-              {/* Booker Info */}
+              {/* Booker Info & Room Location */}
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                {(() => {
+                  const bRoom = rooms.find((r) => r.id === approvalModal.booking.room_id);
+                  const bFloor = bRoom?.floor || (bRoom?.name?.includes("VIP") ? 5 : 3);
+                  return (
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-200/70">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: bRoom?.color || "#253C7D" }} />
+                        <span className="font-bold text-slate-900 text-sm">{bRoom?.name || "Meeting Room"}</span>
+                      </div>
+                      <FloorBadge floor={bFloor} size="sm" isVIP={bRoom?.name?.includes("VIP")} />
+                    </div>
+                  );
+                })()}
                 <p className="font-bold text-slate-900 text-sm">{approvalModal.booking.title}</p>
                 <p className="text-slate-600 mt-0.5">
                   Booked by:{" "}
@@ -2921,6 +3158,9 @@ export default function MeetingRoomsPage() {
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/80">
                       <i className="ri-door-open-line" />
                       <span>{room?.name || "Meeting Room"}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase">
+                        Floor {room?.floor || (room?.name?.includes("VIP") ? 5 : 3)}
+                      </span>
                       <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase">
                         {selectedBooking.status}
                       </span>
@@ -2944,6 +3184,32 @@ export default function MeetingRoomsPage() {
 
                   {/* Body */}
                   <div className="p-5 sm:p-6 space-y-3.5 text-xs max-h-[65vh] overflow-y-auto">
+                    {/* Location Card */}
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[#253C7D] shadow-2xs">
+                          <i className="ri-map-pin-2-line text-base" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 text-xs">
+                            {room?.name} · Floor {room?.floor || (room?.name?.includes("VIP") ? 5 : 3)}
+                          </p>
+                          <p className="text-slate-500 text-[11px]">
+                            {room?.floor === 5
+                              ? "5th Floor Executive VIP Suite"
+                              : room?.name.toLowerCase().includes("training")
+                              ? "3rd Floor Training & Workshop Hall"
+                              : "3rd Floor Small Meeting Room"}
+                          </p>
+                        </div>
+                      </div>
+                      <FloorBadge
+                        floor={room?.floor || (room?.name?.includes("VIP") ? 5 : 3)}
+                        size="md"
+                        isVIP={room?.name?.includes("VIP")}
+                      />
+                    </div>
+
                     {/* Booker profile card */}
                     <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
                       <div className="flex items-center gap-3">

@@ -179,7 +179,7 @@ export default function Employees() {
           <span>Status</span>
           <span>Join Date</span>
         </div>
-        {pagedEmployees.map((e) => (
+        {filtered.map((e) => (
           <Link
             key={e.id}
             to={`/employees/${e.id}`}

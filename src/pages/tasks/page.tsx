@@ -9,6 +9,7 @@ interface Employee {
   first_name: string;
   last_name: string;
   department: string;
+  avatar_url?: string;
 }
 
 interface Task {
