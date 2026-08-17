@@ -142,9 +142,13 @@ export default function Onboarding() {
         supabase.from("onboarding_documents").select("*").order("created_at", { ascending: true }),
         supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url, branches(name)").order("first_name"),
       ]);
-      setRequests(ob || []);
+      setRequests((ob as any) || []);
       setDocuments(docs || []);
-      setEmployees(emps || []);
+      const formattedEmps = (emps || []).map((e: any) => ({
+        ...e,
+        branches: Array.isArray(e.branches) ? e.branches[0] || null : e.branches || null,
+      }));
+      setEmployees(formattedEmps);
     } catch (err) {
       console.error("Failed to load onboarding data:", err);
     } finally {
