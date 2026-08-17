@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { uploadFile } from "@/lib/storage";
 import { useAuth } from "@/context/AuthContext";
@@ -86,10 +86,61 @@ const DOCUMENT_TEMPLATES: Record<string, string[]> = {
   complete: ["Onboarding Sign-off", "30-Day Check-in Plan", "Feedback Survey"],
 };
 
+const DEFAULT_CHECKLIST_TASKS = [
+  // 1. Documents (5 items)
+  { task_name: "Sign Offer Letter & Employment Terms", category: "documents", priority: "high", description: "Review and collect signed formal employment offer letter." },
+  { task_name: "Verify National ID / Passport & Proof of Address", category: "documents", priority: "high", description: "Collect identity documents for HR & compliance verification." },
+  { task_name: "Sign Employment Contract & Agreements", category: "documents", priority: "high", description: "Execute formal employment contract and core agreement terms." },
+  { task_name: "Submit Bank Account & Tax Filing Details", category: "documents", priority: "medium", description: "Set up payroll bank routing and relevant tax deduction forms." },
+  { task_name: "Sign Non-Disclosure & Confidentiality Agreement", category: "documents", priority: "high", description: "Execute company NDA and data privacy acknowledgments." },
+
+  // 2. IT & Equipment Setup (5 items)
+  { task_name: "Provision Laptop & Workstation Hardware", category: "it_setup", priority: "high", description: "Configure primary computer, peripherals, and security tags." },
+  { task_name: "Create Corporate Email & Slack/Teams Account", category: "it_setup", priority: "high", description: "Set up Google Workspace/Office 365, Slack/Teams, and 2FA." },
+  { task_name: "Configure VPN & Secure Remote Access", category: "it_setup", priority: "medium", description: "Install network profiles, corporate VPN client, and certificates." },
+  { task_name: "Grant Software & Internal Tool Licenses", category: "it_setup", priority: "medium", description: "Assign access to Jira, GitHub, Figma, ERP, or department tools." },
+  { task_name: "Issue Security Access Badge & Keycards", category: "it_setup", priority: "medium", description: "Provide building access card, office security badge, and parking passes." },
+
+  // 3. Training & Orientation (4 items)
+  { task_name: "HR Orientation & Company Policies Walkthrough", category: "training", priority: "high", description: "Walkthrough company mission, structure, benefits, and conduct rules." },
+  { task_name: "Team Introductions & Welcome Meeting", category: "training", priority: "medium", description: "Introduce new hire to team members, key stakeholders, and leaders." },
+  { task_name: "Role-Specific Skills Training & Setup Plan", category: "training", priority: "high", description: "Execute initial department training roadmap and technical setup." },
+  { task_name: "Review & Acknowledge Employee Handbook", category: "training", priority: "low", description: "Read handbook and complete acknowledgment sign-off." },
+
+  // 4. Final Sign-off & Culture (3 items)
+  { task_name: "Final Onboarding Sign-off & Buddy Review", category: "general", priority: "high", description: "Complete formal onboarding review and manager milestone sign-off." },
+  { task_name: "Schedule 30-Day Check-in & Feedback Review", category: "general", priority: "medium", description: "Calendar manager 1-on-1 check-in milestone and probation roadmap." },
+  { task_name: "Complete New Hire Experience Feedback Survey", category: "general", priority: "low", description: "Submit onboarding survey to improve orientation experience." },
+];
+
 export default function Onboarding() {
   const { user } = useAuth();
   const { role } = usePermissions();
-  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
+
+  const [currentEmployeeName, setCurrentEmployeeName] = useState<string>("");
+
+  useEffect(() => {
+    if (!user?.email) return;
+    supabase
+      .from("employees")
+      .select("first_name, last_name, role")
+      .eq("email", user.email)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && (data.first_name || data.last_name)) {
+          setCurrentEmployeeName(`${data.first_name} ${data.last_name}`.trim());
+        }
+      });
+  }, [user?.email]);
+
+  const actorName =
+    currentEmployeeName ||
+    (user?.user_metadata?.display_name as string) ||
+    (user?.user_metadata?.full_name as string) ||
+    (user?.user_metadata?.first_name && user?.user_metadata?.last_name
+      ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+      : "") ||
+    (user?.email ? user.email.split("@")[0] : "Admin User");
 
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
@@ -304,6 +355,18 @@ export default function Onboarding() {
       if (initialDocs.length > 0) {
         await supabase.from("onboarding_documents").insert(initialDocs);
       }
+
+      // Auto-populate default checklist tasks
+      const initialTasks = DEFAULT_CHECKLIST_TASKS.map((t, idx) => ({
+        onboarding_request_id: data.id,
+        task_name: t.task_name,
+        description: t.description,
+        category: t.category,
+        priority: t.priority,
+        sort_order: idx + 1,
+        completed: false,
+      }));
+      await supabase.from("onboarding_checklist_tasks").insert(initialTasks);
     }
     setStarting(false);
 
@@ -402,10 +465,31 @@ export default function Onboarding() {
     }
 
     const { error } = await supabase.from("onboarding_documents").insert(toInsert);
+
+    // Also populate checklist tasks if empty
+    const { data: existingTasks } = await supabase
+      .from("onboarding_checklist_tasks")
+      .select("id")
+      .eq("onboarding_request_id", req.id)
+      .is("deleted_at", null);
+
+    if (!existingTasks || existingTasks.length === 0) {
+      const initialTasks = DEFAULT_CHECKLIST_TASKS.map((t, idx) => ({
+        onboarding_request_id: req.id,
+        task_name: t.task_name,
+        description: t.description,
+        category: t.category,
+        priority: t.priority,
+        sort_order: idx + 1,
+        completed: false,
+      }));
+      await supabase.from("onboarding_checklist_tasks").insert(initialTasks);
+    }
+
     if (error) {
       toast("Error", "Failed to populate checklist items", "error");
     } else {
-      toast("Checklist Loaded", `Added ${toInsert.length} standard checklist items`, "success");
+      toast("Checklist Loaded", `Added ${toInsert.length} standard checklist items & task assignments`, "success");
       loadData();
     }
   };
@@ -416,8 +500,9 @@ export default function Onboarding() {
       toast("Approval Failed", "Could not approve onboarding request", "error");
     } else {
       setRequests((prev) => prev.map((r) => (r.id === req.id ? { ...r, status: "approved" } : r)));
+      setExpandedRequest(req.id);
       const empName = req.employees ? `${req.employees.first_name} ${req.employees.last_name}` : "new hire";
-      toast("Onboarding Approved", `${empName} is now active in the onboarding pipeline`, "success");
+      toast("Onboarding Approved", `${empName} approved! Step 1 (Document Collection) is now unlocked.`, "success");
       logActivity({
         module: "onboarding",
         action: "approved",
@@ -575,14 +660,88 @@ export default function Onboarding() {
     }
   };
 
-  const toggleDocStatus = async (doc: OnboardingDoc) => {
+const matchDocAndTask = (docName: string, taskName: string): boolean => {
+  const d = docName.toLowerCase().trim();
+  const t = taskName.toLowerCase().trim();
+  if (t.includes(d) || d.includes(t)) return true;
+
+  const keywords: [string[], string[]][] = [
+    [["offer"], ["offer", "employment terms"]],
+    [["id", "verification", "passport"], ["verify", "id", "passport"]],
+    [["contract", "employment"], ["contract", "employment terms"]],
+    [["bank", "details", "tax"], ["bank", "tax", "filing"]],
+    [["nda", "agreement", "confidentiality"], ["nda", "confidentiality"]],
+    [["laptop", "assignment", "hardware"], ["laptop", "hardware", "workstation"]],
+    [["email", "account", "slack"], ["email", "slack", "teams"]],
+    [["vpn", "access"], ["vpn", "remote"]],
+    [["software", "license", "licenses"], ["software", "license", "licenses", "tool"]],
+    [["security", "badge", "access"], ["badge", "workspace", "access"]],
+    [["orientation", "checklist"], ["orientation", "walkthrough"]],
+    [["team", "intro", "introduction"], ["team", "introduction", "welcome"]],
+    [["training", "schedule"], ["training", "setup"]],
+    [["handbook"], ["handbook", "acknowledge"]],
+    [["signoff", "sign-off"], ["signoff", "sign-off", "complete"]],
+    [["checkin", "check-in", "30day", "30-day"], ["checkin", "check-in", "30day", "30-day"]],
+    [["survey", "feedback"], ["feedback", "survey"]],
+  ];
+
+  for (const [docKeys, taskKeys] of keywords) {
+    const docMatches = docKeys.some((k) => d.includes(k));
+    const taskMatches = taskKeys.some((k) => t.includes(k));
+    if (docMatches && taskMatches) return true;
+  }
+
+  return false;
+};
+
+  const toggleDocStatus = async (doc: OnboardingDoc, req?: OnboardingRequest) => {
+    if (req) {
+      if (req.status === "pending") {
+        toast("Pending Approval", "Please click 'Approve Journey' before verifying checklist items.", "info");
+        return;
+      }
+      const currentStageIdx = STAGES.findIndex((s) => s.key === req.stage);
+      const docStageIdx = STAGES.findIndex((s) => s.key === doc.stage);
+      if (docStageIdx > currentStageIdx && req.status !== "completed") {
+        toast("Step Locked", "Please complete earlier steps and click 'Move On' first.", "info");
+        return;
+      }
+    }
     const newStatus = doc.status === "complete" ? "pending" : "complete";
+    const isCompleted = newStatus === "complete";
+    const now = new Date().toISOString();
+
     const { error } = await supabase.from("onboarding_documents").update({ status: newStatus }).eq("id", doc.id);
     if (error) {
       toast("Status Update Failed", "Could not update document status", "error");
     } else {
       setDocuments((prev) => prev.map((d) => (d.id === doc.id ? { ...d, status: newStatus } : d)));
-      toast("Status Updated", `Item marked as ${newStatus}`, "info");
+      toast("Status Updated", `Item marked as ${newStatus === "complete" ? "verified" : "pending"}`, "info");
+
+      // Bidirectional sync with onboarding_checklist_tasks
+      try {
+        const { data: relatedTasks } = await supabase
+          .from("onboarding_checklist_tasks")
+          .select("id, task_name")
+          .eq("onboarding_request_id", doc.onboarding_request_id)
+          .is("deleted_at", null);
+
+        if (relatedTasks && relatedTasks.length > 0) {
+          const matchingTasks = relatedTasks.filter((t) => matchDocAndTask(doc.document_name, t.task_name));
+          for (const t of matchingTasks) {
+            await supabase
+              .from("onboarding_checklist_tasks")
+              .update({
+                completed: isCompleted,
+                completed_at: isCompleted ? now : null,
+                completed_by: isCompleted ? actorName : null,
+              })
+              .eq("id", t.id);
+          }
+        }
+      } catch (e) {
+        console.error("Task sync error:", e);
+      }
     }
   };
 
@@ -883,6 +1042,15 @@ export default function Onboarding() {
                       </button>
                     )}
 
+                    <Link
+                      to={`/onboarding-checklist?hire=${req.id}`}
+                      className="px-3 py-1.5 rounded-lg text-[12px] font-semibold flex items-center gap-1.5 bg-[#253C7D]/10 text-[#253C7D] hover:bg-[#253C7D]/20 transition-colors"
+                      title="Open interactive task checklist"
+                    >
+                      <i className="ri-task-line text-xs" />
+                      <span>Checklist</span>
+                    </Link>
+
                     <button
                       onClick={() => setExpandedRequest(isExpanded ? null : req.id)}
                       className="px-3 py-1.5 rounded-lg text-[12px] font-semibold flex items-center gap-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 transition-colors cursor-pointer"
@@ -922,24 +1090,39 @@ export default function Onboarding() {
                   {/* Connected stage status bar */}
                   <div className="grid grid-cols-4 gap-1.5 text-center">
                     {STAGES.map((s, idx) => {
-                      const isDone = idx < currentStageIdx || req.status === "completed";
-                      const isCurrent = idx === currentStageIdx && req.status !== "completed";
+                      const isDone = (idx < currentStageIdx && req.status === "approved") || req.status === "completed";
+                      const isCurrent = idx === currentStageIdx && req.status === "approved";
+                      const isPendingStage = req.status === "pending";
                       const stageDocs = getDocsForRequestAndStage(req.id, s.key);
                       const verified = stageDocs.filter((d) => d.status === "complete").length;
 
                       return (
                         <div
                           key={s.key}
-                          className={`py-1.5 px-2 rounded border text-xs font-medium flex items-center justify-between ${
+                          onClick={() => setExpandedRequest(req.id)}
+                          title="Click to manage 4-stage checklist"
+                          className={`py-1.5 px-2 rounded border text-xs font-medium flex items-center justify-between transition-all cursor-pointer hover:shadow-xs ${
                             isDone
-                              ? "bg-green-50/70 border-green-200 text-green-800"
+                              ? "bg-green-50/70 border-green-200 text-green-800 hover:bg-green-100/70"
                               : isCurrent
-                              ? "bg-[#253C7D]/10 border-[#253C7D]/30 text-[#253C7D] font-bold"
-                              : "bg-gray-50 border-gray-200/60 text-gray-400"
+                              ? "bg-[#253C7D]/10 border-[#253C7D]/30 text-[#253C7D] font-bold ring-1 ring-[#253C7D]/20 hover:bg-[#253C7D]/15"
+                              : isPendingStage
+                              ? "bg-amber-50/30 border-amber-200/50 text-gray-500 hover:bg-amber-50/60"
+                              : "bg-gray-50 border-gray-200/60 text-gray-400 hover:bg-gray-100/60"
                           }`}
                         >
                           <span className="truncate flex items-center gap-1">
-                            <i className={isDone ? "ri-checkbox-circle-fill text-green-600" : isCurrent ? "ri-play-circle-line" : "ri-circle-line"} />
+                            <i
+                              className={
+                                isDone
+                                  ? "ri-checkbox-circle-fill text-green-600"
+                                  : isCurrent
+                                  ? "ri-play-circle-line text-[#253C7D]"
+                                  : isPendingStage
+                                  ? "ri-time-line text-amber-600"
+                                  : "ri-lock-line text-gray-400"
+                              }
+                            />
                             <span className="hidden sm:inline">{s.label}</span>
                             <span className="sm:hidden">{s.shortLabel}</span>
                           </span>
@@ -955,23 +1138,48 @@ export default function Onboarding() {
                 {/* ==================== EXPANDED 4-STAGE CHECKLIST GRID ==================== */}
                 {isExpanded && (
                   <div className="border-t border-gray-100 bg-gray-50/50 p-5">
+                    {req.status === "pending" && (
+                      <div className="mb-4 p-3 bg-amber-50/90 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-amber-900">
+                        <div className="flex items-center gap-2 text-xs">
+                          <i className="ri-information-fill text-amber-600 text-base shrink-0" />
+                          <span>
+                            <strong>Journey Pending Approval:</strong> Checklist items are in <strong>View-Only</strong> mode. Click <strong>"Approve Journey"</strong> above to start selecting and verifying items.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(req)}
+                          className="px-3 py-1 bg-[#253C7D] hover:bg-[#1F336A] text-white text-xs font-semibold rounded-lg shrink-0 transition-colors cursor-pointer shadow-xs"
+                        >
+                          Approve Journey
+                        </button>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {STAGES.map((stage, idx) => {
                         const stageDocs = getDocsForRequestAndStage(req.id, stage.key);
                         const progress = getStageProgress(req.id, stage.key);
-                        const isCurrent = stage.key === req.stage;
-                        const isDone = idx < currentStageIdx || req.status === "completed";
+                        const isPending = req.status === "pending";
+                        const isApproved = req.status === "approved";
+                        const isDone = (idx < currentStageIdx && isApproved) || req.status === "completed";
+                        const isCurrent = stage.key === req.stage && isApproved && req.status !== "completed";
+                        const isFutureLocked = (idx > currentStageIdx && req.status !== "completed") || isPending;
                         const allDone = isStageComplete(req.id, stage.key);
+                        const canChecklist = (isCurrent || isDone) && !isPending;
+                        const isUnlocked = (isCurrent || isDone) && isApproved;
 
                         return (
                           <div
                             key={stage.key}
-                            className={`bg-white rounded-xl border p-4 flex flex-col justify-between transition-all ${
+                            className={`rounded-xl border p-4 flex flex-col justify-between transition-all ${
                               isCurrent
-                                ? "border-[#253C7D] ring-2 ring-[#253C7D]/10 shadow-xs"
+                                ? "bg-white border-[#253C7D] ring-2 ring-[#253C7D]/15 shadow-sm"
                                 : isDone
-                                ? "border-green-200"
-                                : "border-gray-200"
+                                ? "bg-white border-green-200 shadow-2xs hover:border-green-300"
+                                : isPending
+                                ? "bg-amber-50/20 border-amber-200/60"
+                                : "bg-gray-50/70 border-gray-200 opacity-80"
                             }`}
                           >
                             {/* Column Stage Header */}
@@ -984,28 +1192,50 @@ export default function Onboarding() {
                                         ? "bg-green-600 text-white"
                                         : isCurrent
                                         ? "bg-[#253C7D] text-white"
-                                        : "bg-gray-100 text-gray-500"
+                                        : isPending
+                                        ? "bg-amber-100 text-amber-700"
+                                        : "bg-gray-100 text-gray-400"
                                     }`}
                                   >
-                                    {isDone ? "✓" : idx + 1}
+                                    {isDone ? "✓" : isFutureLocked && !isPending ? <i className="ri-lock-line text-[10px]" /> : idx + 1}
                                   </span>
                                   <div className="min-w-0">
-                                    <h4 className="text-[13px] font-bold text-gray-900 truncate leading-tight">
-                                      {stage.label}
-                                    </h4>
+                                    <div className="flex items-center gap-1.5">
+                                      <h4 className="text-[13px] font-bold text-gray-900 truncate leading-tight">
+                                        {stage.label}
+                                      </h4>
+                                    </div>
                                     <p className="text-[10px] text-gray-400 truncate">{stage.description}</p>
                                   </div>
                                 </div>
 
-                                {req.status === "approved" && (
-                                  <button
-                                    onClick={() => openDocModal(req, stage.key)}
-                                    title="Add Document / Item"
-                                    className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-[#253C7D] hover:bg-gray-100 cursor-pointer shrink-0"
-                                  >
-                                    <i className="ri-add-line text-base font-bold" />
-                                  </button>
-                                )}
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {isCurrent && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D]">
+                                      Active Step
+                                    </span>
+                                  )}
+                                  {isDone && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                                      ✓ Done
+                                    </span>
+                                  )}
+                                  {isFutureLocked && !isPending && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 flex items-center gap-0.5">
+                                      <i className="ri-lock-line text-[9px]" /> Locked
+                                    </span>
+                                  )}
+
+                                  {isUnlocked && (
+                                    <button
+                                      onClick={() => openDocModal(req, stage.key)}
+                                      title="Add Document / Item"
+                                      className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-[#253C7D] hover:bg-gray-100 cursor-pointer shrink-0 ml-1"
+                                    >
+                                      <i className="ri-add-line text-base font-bold" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
 
                               {/* Progress bar inside stage */}
@@ -1034,28 +1264,48 @@ export default function Onboarding() {
                                       className={`p-2 rounded-lg border text-xs flex items-start gap-2 group transition-colors ${
                                         isDocComplete
                                           ? "bg-green-50/30 border-green-100"
-                                          : "bg-gray-50/50 border-gray-100 hover:bg-gray-50"
+                                          : isUnlocked
+                                          ? "bg-white border-gray-200 hover:border-gray-300"
+                                          : "bg-gray-50/50 border-gray-100"
                                       }`}
                                     >
                                       {/* Quick Checkbox */}
                                       <button
                                         type="button"
-                                        onClick={() => toggleDocStatus(doc)}
-                                        title={isDocComplete ? "Mark as pending" : "Mark as completed"}
-                                        className={`w-4 h-4 rounded mt-0.5 flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                                        disabled={!canChecklist}
+                                        onClick={() => canChecklist && toggleDocStatus(doc, req)}
+                                        title={
+                                          isPending
+                                            ? "Pending Approval: Click 'Approve Journey' above to enable verification."
+                                            : isFutureLocked
+                                            ? `Locked: Complete Step ${currentStageIdx + 1} and click 'Move On' to unlock.`
+                                            : isDocComplete
+                                            ? "Mark as unverified"
+                                            : "Mark as verified"
+                                        }
+                                        className={`w-4 h-4 rounded mt-0.5 flex items-center justify-center shrink-0 transition-all ${
                                           isDocComplete
-                                            ? "bg-green-600 text-white"
-                                            : "border border-gray-300 hover:border-[#253C7D]"
+                                            ? "bg-green-600 text-white cursor-pointer hover:bg-green-700"
+                                            : canChecklist
+                                            ? "border border-gray-300 hover:border-[#253C7D] bg-white cursor-pointer hover:scale-105"
+                                            : "border border-gray-200 bg-gray-100 text-gray-300 cursor-not-allowed"
                                         }`}
                                       >
                                         {isDocComplete && <i className="ri-check-line text-[10px] font-bold" />}
+                                        {!isDocComplete && isFutureLocked && !isPending && (
+                                          <i className="ri-lock-fill text-[8px] text-gray-300" />
+                                        )}
                                       </button>
 
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-1">
                                           <span
                                             className={`text-[12px] truncate ${
-                                              isDocComplete ? "text-gray-400 line-through" : "text-gray-800 font-medium"
+                                              isDocComplete
+                                                ? "text-gray-400 line-through"
+                                                : isFutureLocked
+                                                ? "text-gray-500 font-medium"
+                                                : "text-gray-800 font-medium"
                                             }`}
                                           >
                                             {doc.document_name}
@@ -1080,7 +1330,7 @@ export default function Onboarding() {
                                         )}
                                       </div>
 
-                                      {req.status === "approved" && (
+                                      {isUnlocked && (
                                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
                                           <button
                                             onClick={() => openEditDocModal(req, doc)}
@@ -1108,7 +1358,7 @@ export default function Onboarding() {
                               </div>
 
                               {/* Quick Add Presets */}
-                              {req.status === "approved" && (
+                              {isUnlocked && (
                                 <div className="pt-2 border-t border-gray-100">
                                   <div className="flex flex-wrap gap-1">
                                     {DOCUMENT_TEMPLATES[stage.key]
@@ -1130,31 +1380,67 @@ export default function Onboarding() {
                             </div>
 
                             {/* Stage Action Footer Button */}
-                            {req.status === "approved" && isCurrent && (
-                              <div className="mt-3 pt-3 border-t border-gray-100">
-                                {stage.key !== "complete" ? (
-                                  <button
-                                    onClick={() => advanceStage(req)}
-                                    className={`w-full py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer ${
-                                      allDone
-                                        ? "bg-[#253C7D] hover:bg-[#1F336A] text-white shadow-xs"
-                                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                                    }`}
-                                  >
-                                    <span>Advance Stage</span>
-                                    <i className="ri-arrow-right-line" />
-                                  </button>
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              {isCurrent ? (
+                                stage.key !== "complete" ? (
+                                  <div className="space-y-1.5">
+                                    <button
+                                      onClick={() => advanceStage(req)}
+                                      className={`w-full py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.99] ${
+                                        allDone
+                                          ? "bg-[#253C7D] hover:bg-[#1F336A] text-white"
+                                          : "bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200"
+                                      }`}
+                                      title={allDone ? "Step verified! Click Move On to unlock the next step" : "Click Move On to proceed to the next step"}
+                                    >
+                                      <span>Move On</span>
+                                      <i className="ri-arrow-right-line font-bold" />
+                                    </button>
+                                    {allDone && (
+                                      <p className="text-[10px] text-emerald-600 text-center font-medium">
+                                        ✓ All items verified! Ready to move on.
+                                      </p>
+                                    )}
+                                  </div>
                                 ) : (
-                                  <button
-                                    onClick={() => completeOnboarding(req)}
-                                    className="w-full py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-xs"
-                                  >
-                                    <i className="ri-check-line" />
-                                    <span>Complete Onboarding</span>
-                                  </button>
-                                )}
-                              </div>
-                            )}
+                                  <div className="space-y-1.5">
+                                    <button
+                                      onClick={() => completeOnboarding(req)}
+                                      className="w-full py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.99]"
+                                    >
+                                      <i className="ri-check-double-line text-sm" />
+                                      <span>Complete Onboarding</span>
+                                    </button>
+                                    {allDone && (
+                                      <p className="text-[10px] text-emerald-600 text-center font-medium">
+                                        ✓ Final items verified! Click to finish journey.
+                                      </p>
+                                    )}
+                                  </div>
+                                )
+                              ) : isDone ? (
+                                <div className="text-center py-1">
+                                  <span className="text-[11px] text-green-700 bg-green-50 px-2.5 py-1 rounded-md font-medium inline-flex items-center gap-1 border border-green-200">
+                                    <i className="ri-checkbox-circle-fill text-xs" />
+                                    Step Completed ({stageDocs.filter((d) => d.status === "complete").length}/{stageDocs.length} verified)
+                                  </span>
+                                </div>
+                              ) : isPending ? (
+                                <div className="text-center py-1">
+                                  <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-1 rounded-md font-medium inline-flex items-center gap-1 border border-amber-200/70">
+                                    <i className="ri-lock-line text-xs" />
+                                    View Only (Pending Approval)
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="text-center py-1">
+                                  <span className="text-[10px] text-gray-400 flex items-center justify-center gap-1 font-medium">
+                                    <i className="ri-lock-line text-[11px]" />
+                                    Locked (Complete Step {currentStageIdx + 1} & click Move On)
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -1244,7 +1530,15 @@ export default function Onboarding() {
 
                         {req.status === "approved" && (
                           <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                            <span className="text-[10px] text-gray-400">Click to view</span>
+                            <Link
+                              to={`/onboarding-checklist?hire=${req.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-[10px] font-bold text-[#253C7D] hover:underline flex items-center gap-0.5"
+                              title="Open task checklist"
+                            >
+                              <i className="ri-task-line text-[10px]" />
+                              <span>Checklist</span>
+                            </Link>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -1355,6 +1649,15 @@ export default function Onboarding() {
                               Approve
                             </button>
                           )}
+                          <Link
+                            to={`/onboarding-checklist?hire=${req.id}`}
+                            className="px-2.5 py-1 bg-[#253C7D]/10 hover:bg-[#253C7D]/20 text-[#253C7D] rounded text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1"
+          
+                            title="Open task checklist"
+                          >
+                            <i className="ri-task-line text-xs" />
+                            <span>Checklist</span>
+                          </Link>
                           <button
                             onClick={() => {
                               setViewMode("cards");

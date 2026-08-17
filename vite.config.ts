@@ -86,6 +86,9 @@ export default defineConfig({
     host: "0.0.0.0",
     allowedHosts: [".onrender.com"],
   },
+  optimizeDeps: {
+    include: ["react", "react-dom", "react-router-dom", "react-easy-crop", "@supabase/supabase-js"],
+  },
   preview: {
     port,
     host: "0.0.0.0",
