@@ -93,7 +93,15 @@ export default function Onboarding() {
 
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
-  const [employees, setEmployees] = useState<{ id: string; first_name: string; last_name: string; role: string; department: string }[]>([]);
+  const [employees, setEmployees] = useState<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    department: string;
+    avatar_url?: string | null;
+    branches?: { name: string } | null;
+  }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // View & Filter States
@@ -132,11 +140,15 @@ export default function Onboarding() {
           .select("*, employees(first_name, last_name, role, department, branch_id, branches(name))")
           .order("created_at", { ascending: false }),
         supabase.from("onboarding_documents").select("*").order("created_at", { ascending: true }),
-        supabase.from("employees").select("id, first_name, last_name, role, department").order("first_name"),
+        supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url, branches(name)").order("first_name"),
       ]);
-      setRequests(ob || []);
+      setRequests((ob as any) || []);
       setDocuments(docs || []);
-      setEmployees(emps || []);
+      const formattedEmps = (emps || []).map((e: any) => ({
+        ...e,
+        branches: Array.isArray(e.branches) ? e.branches[0] || null : e.branches || null,
+      }));
+      setEmployees(formattedEmps);
     } catch (err) {
       console.error("Failed to load onboarding data:", err);
     } finally {
@@ -171,14 +183,14 @@ export default function Onboarding() {
     return () => clearTimeout(t);
   }, [highlightId, requests]);
 
-  // Non-completed employees set
-  const employeesInProgress = useMemo(() => {
-    return new Set(requests.filter((r) => r.status !== "completed").map((r) => r.employee_id));
+  // All employees who have already been added to onboarding (whether completed, approved, or pending)
+  const onboardedEmployeeIds = useMemo(() => {
+    return new Set(requests.map((r) => r.employee_id));
   }, [requests]);
 
   const eligibleEmployees = useMemo(() => {
-    return employees.filter((e) => !employeesInProgress.has(e.id));
-  }, [employees, employeesInProgress]);
+    return employees.filter((e) => !onboardedEmployeeIds.has(e.id));
+  }, [employees, onboardedEmployeeIds]);
 
   const filteredEligibleEmployees = useMemo(() => {
     if (!empSearch.trim()) return eligibleEmployees;
@@ -187,10 +199,16 @@ export default function Onboarding() {
       (e) =>
         e.first_name.toLowerCase().includes(q) ||
         e.last_name.toLowerCase().includes(q) ||
+        `${e.first_name} ${e.last_name}`.toLowerCase().includes(q) ||
         (e.role && e.role.toLowerCase().includes(q)) ||
-        (e.department && e.department.toLowerCase().includes(q))
+        (e.department && e.department.toLowerCase().includes(q)) ||
+        (e.branches?.name && e.branches.name.toLowerCase().includes(q))
     );
   }, [eligibleEmployees, empSearch]);
+
+  const selectedEmp = useMemo(() => {
+    return employees.find((e) => e.id === startEmployeeId) || null;
+  }, [employees, startEmployeeId]);
 
   // Helper document queries
   const getDocsForRequestAndStage = (reqId: string, stageKey: string) =>
@@ -222,7 +240,36 @@ export default function Onboarding() {
   const handleStartOnboarding = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!startEmployeeId) return;
+
+    // Check if employee already has an onboarding record in state
+    const existing = requests.find((r) => r.employee_id === startEmployeeId);
+    if (existing) {
+      toast(
+        "Already Onboarded",
+        `This employee already has an onboarding record (${existing.status === "completed" ? "Completed" : existing.status}) and cannot be onboarded again.`,
+        "error"
+      );
+      return;
+    }
+
     setStarting(true);
+
+    // Double-check with DB directly to prevent duplicate records
+    const { data: dbCheck } = await supabase
+      .from("onboarding_requests")
+      .select("id, status")
+      .eq("employee_id", startEmployeeId)
+      .maybeSingle();
+
+    if (dbCheck) {
+      setStarting(false);
+      toast(
+        "Already Onboarded",
+        "This employee already has an onboarding record in the database and cannot be added again.",
+        "error"
+      );
+      return;
+    }
 
     const { data, error } = await supabase
       .from("onboarding_requests")
@@ -291,6 +338,41 @@ export default function Onboarding() {
     setShowStartModal(false);
     setEmpSearch("");
     loadData();
+  };
+
+  const handleDeleteRequest = async (req: OnboardingRequest) => {
+    const empName = req.employees
+      ? `${req.employees.first_name} ${req.employees.last_name}`
+      : "this employee";
+    if (
+      !confirm(
+        `Are you sure you want to remove the onboarding journey for ${empName}? This will delete this onboarding request and its documents.`
+      )
+    )
+      return;
+
+    try {
+      await supabase.from("onboarding_documents").delete().eq("onboarding_request_id", req.id);
+      const { error } = await supabase.from("onboarding_requests").delete().eq("id", req.id);
+
+      if (error) {
+        toast("Error", "Failed to delete onboarding record: " + error.message, "error");
+      } else {
+        toast("Record Deleted", `Onboarding record for ${empName} has been deleted.`, "success");
+        logActivity({
+          module: "onboarding",
+          action: "deleted",
+          entityType: "onboarding_request",
+          entityId: req.id,
+          actorName,
+          actorRole: role?.name || "Unknown",
+          description: `Deleted onboarding record for ${empName}`,
+        });
+        loadData();
+      }
+    } catch (err: any) {
+      toast("Error", "Failed to delete onboarding record", "error");
+    }
   };
 
   const handlePopulateDefaultChecklist = async (req: OnboardingRequest) => {
@@ -808,6 +890,17 @@ export default function Onboarding() {
                       <span>{isExpanded ? "Collapse" : "Manage 4 Stages"}</span>
                       {isExpanded ? <i className="ri-arrow-up-s-line" /> : <i className="ri-arrow-down-s-line" />}
                     </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteRequest(req);
+                      }}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                      title="Delete / Cancel this onboarding record"
+                    >
+                      <i className="ri-delete-bin-line text-sm" />
+                    </button>
                   </div>
                 </div>
 
@@ -1257,7 +1350,7 @@ export default function Onboarding() {
                           {req.status === "pending" && (
                             <button
                               onClick={() => handleApprove(req)}
-                              className="px-2.5 py-1 bg-[#253C7D] text-white rounded text-[11px] font-semibold hover:bg-[#1F336A]"
+                              className="px-2.5 py-1 bg-[#253C7D] text-white rounded text-[11px] font-semibold hover:bg-[#1F336A] transition-colors cursor-pointer"
                             >
                               Approve
                             </button>
@@ -1267,9 +1360,16 @@ export default function Onboarding() {
                               setViewMode("cards");
                               setExpandedRequest(req.id);
                             }}
-                            className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-[11px] font-semibold"
+                            className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-[11px] font-semibold transition-colors cursor-pointer"
                           >
                             Manage
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRequest(req)}
+                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                            title="Delete onboarding record"
+                          >
+                            <i className="ri-delete-bin-line text-xs" />
                           </button>
                         </div>
                       </td>
@@ -1299,7 +1399,7 @@ export default function Onboarding() {
             {eligibleEmployees.length === 0 ? (
               <>
                 <p className="text-[13px] text-gray-500 mb-4">
-                  Every employee in the directory already has an onboarding journey in progress. Add a new employee first in the{" "}
+                  Every employee in the directory already has an onboarding journey or has completed onboarding. Add a new employee first in the{" "}
                   <strong>Employees</strong> module, then return here to start theirs.
                 </p>
                 <button
@@ -1312,43 +1412,166 @@ export default function Onboarding() {
             ) : (
               <form onSubmit={handleStartOnboarding} className="space-y-4">
                 <div>
-                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
-
-                  <div className="relative mb-2">
-                    <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-                    <input
-                      type="text"
-                      placeholder="Search candidate name..."
-                      value={empSearch}
-                      onChange={(e) => setEmpSearch(e.target.value)}
-                      className="w-full pl-7 pr-3 py-1.5 rounded-lg text-[12px] bg-gray-50 border border-gray-200 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-[#253C7D]"
-                    />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[12px] font-semibold text-gray-700">
+                      Candidate *
+                    </label>
+                    <span className="text-[11px] font-semibold text-gray-500">
+                      {eligibleEmployees.length} eligible
+                    </span>
                   </div>
 
-                  <select
-                    required
-                    value={startEmployeeId}
-                    onChange={(e) => setStartEmployeeId(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
-                  >
-                    <option value="">Select employee</option>
-                    {filteredEligibleEmployees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.first_name} {emp.last_name} — {emp.role || emp.department}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[11px] text-gray-400 mt-1.5">
+                  {/* Real-time Candidate Search Input */}
+                  <div className="relative mb-2.5">
+                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                    <input
+                      type="text"
+                      placeholder="Search candidate name, role, department..."
+                      value={empSearch}
+                      onChange={(e) => setEmpSearch(e.target.value)}
+                      className="w-full pl-8 pr-8 py-2 rounded-xl text-[12px] bg-gray-50 border border-gray-200 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-[#253C7D] focus:bg-white transition-all shadow-inner"
+                      autoFocus
+                    />
+                    {empSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setEmpSearch("")}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs cursor-pointer"
+                        title="Clear search"
+                      >
+                        <i className="ri-close-circle-fill" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Selected Candidate Preview Card */}
+                  {selectedEmp && (
+                    <div className="mb-2.5 p-3 rounded-xl bg-blue-50/80 border border-blue-200/80 flex items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {selectedEmp.avatar_url ? (
+                          <img
+                            src={selectedEmp.avatar_url}
+                            alt=""
+                            className="w-9 h-9 rounded-full object-cover border border-blue-200 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-[#253C7D] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                            {selectedEmp.first_name?.[0]}
+                            {selectedEmp.last_name?.[0]}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-bold text-gray-900 truncate">
+                            {selectedEmp.first_name} {selectedEmp.last_name}
+                          </p>
+                          <p className="text-[11px] text-gray-600 truncate">
+                            {selectedEmp.role || "Staff"} · {selectedEmp.department || "General"}
+                            {selectedEmp.branches?.name ? ` · ${selectedEmp.branches.name}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-200/80 text-[#253C7D] shrink-0 flex items-center gap-1">
+                        <i className="ri-check-line" />
+                        Selected
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Dynamic Candidate List */}
+                  <div className="space-y-1 max-h-56 overflow-y-auto pr-1 border border-gray-200/80 rounded-xl p-1.5 bg-gray-50/50">
+                    {filteredEligibleEmployees.length === 0 ? (
+                      <div className="p-4 text-center text-gray-400">
+                        <i className="ri-user-search-line text-2xl mb-1 block text-gray-300" />
+                        <p className="text-[12px] font-semibold text-gray-600">
+                          No matching candidate found
+                        </p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {empSearch ? `No candidates matching "${empSearch}"` : "No eligible candidates available"}
+                        </p>
+                      </div>
+                    ) : (
+                      filteredEligibleEmployees.map((emp) => {
+                        const isSelected = startEmployeeId === emp.id;
+                        return (
+                          <button
+                            key={emp.id}
+                            type="button"
+                            onClick={() => setStartEmployeeId(emp.id)}
+                            className={`w-full p-2.5 rounded-lg text-left transition-all flex items-center justify-between gap-2.5 cursor-pointer border ${
+                              isSelected
+                                ? "bg-white border-[#253C7D] ring-2 ring-[#253C7D]/20 shadow-xs"
+                                : "bg-white border-gray-200/60 hover:border-gray-300 hover:bg-gray-50/80"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {emp.avatar_url ? (
+                                <img
+                                  src={emp.avatar_url}
+                                  alt=""
+                                  className="w-8 h-8 rounded-full object-cover border border-gray-200 shrink-0"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-[#253C7D]/10 text-[#253C7D] font-bold text-xs flex items-center justify-center shrink-0">
+                                  {emp.first_name?.[0]}
+                                  {emp.last_name?.[0]}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-[13px] font-bold text-gray-900 truncate">
+                                  {emp.first_name} {emp.last_name}
+                                </p>
+                                <p className="text-[11px] text-gray-500 truncate">
+                                  {emp.role || "Staff"} · {emp.department || "General"}
+                                  {emp.branches?.name ? ` · ${emp.branches.name}` : ""}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="shrink-0">
+                              {isSelected ? (
+                                <i className="ri-checkbox-circle-fill text-[#253C7D] text-lg" />
+                              ) : (
+                                <span className="text-[11px] text-gray-500 font-semibold px-2 py-0.5 rounded bg-gray-100 group-hover:bg-gray-200">
+                                  Select
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-gray-400 mt-2">
                     Don't see them? Add them in the <strong>Employees</strong> module first.
                   </p>
                 </div>
-                <button
-                  type="submit"
-                  disabled={starting || !startEmployeeId}
-                  className="w-full px-4 py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors disabled:opacity-60 cursor-pointer"
-                >
-                  {starting ? "Starting..." : "Start Onboarding"}
-                </button>
+
+                <div className="pt-2 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowStartModal(false)}
+                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={starting || !startEmployeeId}
+                    className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-xl text-[13px] font-semibold hover:bg-[#1F336A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {starting ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Starting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="ri-user-add-line" />
+                        <span>Start Onboarding</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </form>
             )}
           </div>
