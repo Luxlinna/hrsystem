@@ -175,10 +175,23 @@ export default function Announcements() {
     if (!canManage) return;
     setSubmitting(true);
     if (editingId) {
+      // Fetch the original announcement to compare priority
+      const { data: original } = await supabase
+        .from("announcements")
+        .select("priority")
+        .eq("id", editingId)
+        .single();
+
       await supabase.from("announcements").update({
         title: form.title, content: form.content, category: form.category,
         priority: form.priority, pinned: form.pinned, visible_to: form.visible_to,
       }).eq("id", editingId);
+
+      // If the announcement is now urgent, send alerts (either it was already urgent or was upgraded)
+      if (form.priority === "urgent") {
+        const updatedAnnouncement = { ...form, id: editingId } as Announcement;
+        alertEmployeesAboutAnnouncement(updatedAnnouncement);
+      }
     } else {
       const { data, error } = await supabase
         .from("announcements")
