@@ -36,6 +36,17 @@ interface UserAssignment {
   app_roles?: { id: number; name: string; color: string } | null;
 }
 
+interface AuthAccount {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+}
+
+interface AuthAccountsResult {
+  accounts: AuthAccount[];
+  assignments: UserAssignment[] | null;
+}
+
 const ALL_MODULES = [
   { key: "dashboard", label: "Dashboard", icon: "ri-dashboard-line", group: "Core" },
   { key: "employees", label: "Employees", icon: "ri-user-search-line", group: "Core" },
@@ -77,6 +88,21 @@ const COLORS = [
   "#253C7D","#7C3AED","#059669","#D97706","#DC2626","#2563EB","#DB2777","#EA580C","#64748B","#0369A1",
 ];
 
+async function readFunctionJson(res: Response) {
+  const text = await res.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+}
+
+function getInviteError(result: any) {
+  return result?.error || result?.message || "Failed to send invite";
+}
+
 // "Own record only" pages — each has a per-role override so admins decide
 // who's allowed to see every employee's data instead of just their own.
 const SCOPE_OVERRIDES = [
@@ -101,12 +127,57 @@ const BLANK_ROLE = {
   ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, false])) as Record<typeof SCOPE_OVERRIDES[number]["key"], boolean>,
 };
 
+async function listAuthAccounts(): Promise<AuthAccountsResult> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return { accounts: [], assignments: null };
+
+  const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/list-auth-users`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${session.access_token}`,
+      "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+    },
+  });
+  const result = await readFunctionJson(res);
+  if (!res.ok || result.error) {
+    console.error("Failed to list auth users", { status: res.status, result });
+    throw new Error(result.error || "Failed to list auth users");
+  }
+  return {
+    accounts: Array.isArray(result.users) ? result.users : [],
+    assignments: Array.isArray(result.assignments) ? result.assignments : null,
+  };
+}
+
+async function manageUserRole(action: "update_role" | "delete_assignment", assignmentId: number, roleId?: number | null) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Not authenticated");
+
+  const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/manage-user-role`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session.access_token}`,
+      "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      action,
+      assignment_id: assignmentId,
+      role_id: roleId ?? null,
+    }),
+  });
+
+  const result = await readFunctionJson(res);
+  if (!res.ok || result.error) throw new Error(result.error || "Failed to update user role");
+}
+
 export default function AdminPortal() {
   const [activeTab, setActiveTab] = useState<"roles" | "users">("roles");
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [users, setUsers] = useState<UserAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
+  const [userLoadError, setUserLoadError] = useState<string | null>(null);
 
   // Role editor
   const [editingRole, setEditingRole] = useState<AppRole | null>(null);
@@ -116,8 +187,9 @@ export default function AdminPortal() {
 
   // User assignment
   const [showAddUser, setShowAddUser] = useState(false);
-  const [newUser, setNewUser] = useState({ email: "", display_name: "", role_id: "" });
+  const [newUser, setNewUser] = useState({ email: "", display_name: "", role_id: "", sendInvite: true });
   const [savingUser, setSavingUser] = useState(false);
+  const [invitingUserId, setInvitingUserId] = useState<number | null>(null);
 
   const showToast = (msg: string, type: "ok" | "err" = "ok") => {
     setToast({ msg, type });
@@ -126,12 +198,58 @@ export default function AdminPortal() {
 
   const loadData = async () => {
     setLoading(true);
-    const [rolesRes, usersRes] = await Promise.all([
+    setUserLoadError(null);
+    const authAccountsPromise = listAuthAccounts().catch((error) => {
+      setUserLoadError(error.message || "Could not fetch Auth accounts");
+      return { accounts: [], assignments: null } as AuthAccountsResult;
+    });
+    const [rolesRes, usersRes, employeesRes, authAccountsResult] = await Promise.all([
       supabase.from("app_roles").select("*").order("id"),
       supabase.from("user_role_assignments").select("*, app_roles(id, name, color)").order("created_at", { ascending: false }),
+      supabase.from("employees").select("email, first_name, last_name").not("email", "is", null),
+      authAccountsPromise,
     ]);
+
+    const authAccounts = authAccountsResult.accounts;
+    const existingEmails = new Set((usersRes.data || []).map((u) => u.email.toLowerCase()));
+    const missingAuthAssignments = authAccounts
+      .filter((account) => account.email && !existingEmails.has(account.email.toLowerCase()))
+      .map((account) => ({
+        user_id: account.id,
+        email: account.email!.toLowerCase(),
+        display_name: account.display_name,
+        role_id: null,
+      }));
+    missingAuthAssignments.forEach((account) => existingEmails.add(account.email));
+
+    const missingEmployeeAssignments = (employeesRes.data || [])
+      .filter((employee) => employee.email && !existingEmails.has(employee.email.toLowerCase()))
+      .map((employee) => ({
+        email: employee.email.toLowerCase(),
+        display_name: `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || null,
+        role_id: null,
+      }));
+
+    let mergedUsers = authAccountsResult.assignments || usersRes.data || [];
+    const missingAssignments = [...missingAuthAssignments, ...missingEmployeeAssignments];
+    if (missingAssignments.length > 0) {
+      const { error: syncError } = await supabase
+        .from("user_role_assignments")
+        .upsert(missingAssignments, { onConflict: "email", ignoreDuplicates: true });
+
+      if (!syncError) {
+        const refreshedUsers = await supabase
+          .from("user_role_assignments")
+          .select("*, app_roles(id, name, color)")
+          .order("created_at", { ascending: false });
+        mergedUsers = refreshedUsers.data || mergedUsers;
+      } else {
+        console.error("Failed to sync employee user assignments", syncError);
+      }
+    }
+
     setRoles(rolesRes.data || []);
-    setUsers(usersRes.data || []);
+    setUsers(mergedUsers);
     setLoading(false);
   };
 
@@ -229,30 +347,93 @@ export default function AdminPortal() {
   const saveNewUser = async () => {
     if (!newUser.email.trim()) { showToast("Email is required", "err"); return; }
     setSavingUser(true);
-    const { error } = await supabase.from("user_role_assignments").insert({
-      email: newUser.email.trim(),
-      display_name: newUser.display_name.trim() || null,
-      role_id: newUser.role_id ? parseInt(newUser.role_id) : null,
-    });
-    setSavingUser(false);
-    if (error) { showToast("Failed to add user. Email may already exist.", "err"); return; }
-    showToast("User added!");
+
+    if (newUser.sendInvite) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/invite-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`,
+          "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          email: newUser.email.trim(),
+          display_name: newUser.display_name.trim() || null,
+          role_id: newUser.role_id || null,
+          redirect_to: `${window.location.origin}/reset-password`,
+        }),
+      });
+      const result = await readFunctionJson(res);
+      setSavingUser(false);
+      if (!res.ok || result.error) {
+        console.error("Invite failed", { status: res.status, result });
+        showToast(getInviteError(result), "err");
+        return;
+      }
+      showToast("Invite sent! User will receive an email to set up their account.");
+    } else {
+      const { error } = await supabase.from("user_role_assignments").insert({
+        email: newUser.email.trim(),
+        display_name: newUser.display_name.trim() || null,
+        role_id: newUser.role_id ? parseInt(newUser.role_id) : null,
+      });
+      setSavingUser(false);
+      if (error) { showToast("Failed to add user. Email may already exist.", "err"); return; }
+      showToast("User added!");
+    }
+
     setShowAddUser(false);
-    setNewUser({ email: "", display_name: "", role_id: "" });
+    setNewUser({ email: "", display_name: "", role_id: "", sendInvite: true });
     loadData();
   };
 
+  const resendInvite = async (user: UserAssignment) => {
+    setInvitingUserId(user.id);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/invite-user`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session?.access_token}`,
+        "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        email: user.email,
+        display_name: user.display_name,
+        role_id: user.role_id ? String(user.role_id) : null,
+        redirect_to: `${window.location.origin}/reset-password`,
+      }),
+    });
+    const result = await readFunctionJson(res);
+    setInvitingUserId(null);
+    if (!res.ok || result.error) {
+      console.error("Invite failed", { status: res.status, result });
+      showToast(getInviteError(result), "err");
+      return;
+    }
+    showToast("Invite sent!");
+  };
+
   const updateUserRole = async (userId: number, roleId: number | null) => {
-    const { error } = await supabase.from("user_role_assignments").update({ role_id: roleId, updated_at: new Date().toISOString() }).eq("id", userId);
-    if (error) { showToast("Failed to update role", "err"); return; }
+    try {
+      await manageUserRole("update_role", userId, roleId);
+    } catch (error: any) {
+      showToast(error.message || "Failed to update role", "err");
+      return;
+    }
     invalidatePermissionsCache();
     loadData();
     showToast("Role updated!");
   };
 
   const removeUser = async (userId: number) => {
-    const { error } = await supabase.from("user_role_assignments").delete().eq("id", userId);
-    if (error) { showToast("Failed to remove user", "err"); return; }
+    try {
+      await manageUserRole("delete_assignment", userId);
+    } catch (error: any) {
+      showToast(error.message || "Failed to remove user", "err");
+      return;
+    }
     showToast("User removed");
     loadData();
   };
@@ -564,10 +745,32 @@ export default function AdminPortal() {
                 </div>
               </div>
 
+              {userLoadError && (
+                <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex gap-3 text-red-700">
+                  <i className="ri-error-warning-line text-lg shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold">Could not fetch Supabase Auth accounts</p>
+                    <p className="text-xs mt-1">{userLoadError}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Add user form */}
               {showAddUser && (
                 <div className="bg-[#253C7D]/5 border border-[#253C7D]/20 rounded-xl p-5">
                   <h4 className="text-sm font-bold text-gray-900 mb-4">Add User</h4>
+                  <div className="flex items-center gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-xl">
+                    <input
+                      type="checkbox"
+                      id="sendInvite"
+                      checked={newUser.sendInvite}
+                      onChange={(e) => setNewUser((p) => ({ ...p, sendInvite: e.target.checked }))}
+                      className="w-4 h-4 rounded cursor-pointer accent-[#253C7D]"
+                    />
+                    <label htmlFor="sendInvite" className="text-sm font-medium text-gray-800 cursor-pointer">
+                      Send email invitation <span className="text-xs text-gray-400 font-normal">(creates auth account + sends setup link via Gmail)</span>
+                    </label>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                     <div>
                       <label className="text-xs text-gray-500 mb-1.5 block">Email *</label>
@@ -608,8 +811,8 @@ export default function AdminPortal() {
                       disabled={savingUser}
                       className="flex items-center gap-2 px-5 py-2 bg-[#253C7D] text-white rounded-lg text-sm hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer whitespace-nowrap"
                     >
-                      {savingUser ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-user-add-line" />}
-                      Add User
+                      {savingUser ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className={newUser.sendInvite ? "ri-mail-send-line" : "ri-user-add-line"} />}
+                      {newUser.sendInvite ? "Send Invite" : "Add User"}
                     </button>
                   </div>
                 </div>
@@ -651,6 +854,18 @@ export default function AdminPortal() {
                             >
                               {user.app_roles.name}
                             </span>
+                          )}
+                          {!user.user_id && (
+                            <button
+                              onClick={() => resendInvite(user)}
+                              disabled={invitingUserId === user.id}
+                              title="Send invite email"
+                              className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-400 cursor-pointer shrink-0 disabled:opacity-60"
+                            >
+                              {invitingUserId === user.id
+                                ? <span className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                : <i className="ri-mail-send-line text-sm" />}
+                            </button>
                           )}
                           <button
                             onClick={() => removeUser(user.id)}
