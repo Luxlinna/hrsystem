@@ -49,19 +49,21 @@ serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: currentUser, error: userError } = await userClient.auth.getUser();
-    if (userError || !currentUser?.user) return json({ error: "Not authenticated" }, 401);
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return json({ error: "Not authenticated" }, 401);
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
+    const { data: currentUser, error: userError } = await admin.auth.getUser(token);
+    if (userError || !currentUser?.user) return json({ error: "Not authenticated" }, 401);
+
     if (!isBootstrapAdminEmail(currentUser.user.email)) {
+      const email = currentUser.user.email?.toLowerCase() || "";
       const { data: assignment, error: assignmentError } = await admin
         .from("user_role_assignments")
         .select("app_roles(is_admin)")
-        .or(`user_id.eq.${currentUser.user.id},email.eq.${currentUser.user.email?.toLowerCase() || ""}`)
+        .or(`user_id.eq.${currentUser.user.id},email.eq.${email}`)
+        .is("deleted_at", null)
+        .limit(1)
         .maybeSingle();
 
       if (assignmentError) throw assignmentError;
@@ -70,7 +72,7 @@ serve(async (req) => {
       if (!role?.is_admin) return json({ error: "Not authorized" }, 403);
     }
 
-    const { action, assignment_id, role_id } = await req.json();
+    const { action, assignment_id, role_id, email, display_name } = await req.json();
     if (action === "list_deleted_users") {
       const { data, error } = await admin
         .from("user_role_assignments")
@@ -83,38 +85,75 @@ serve(async (req) => {
     }
 
     const assignmentId = parseAssignmentId(assignment_id);
-    if (!assignmentId) return json({ error: "Valid assignment_id is required" }, 400);
 
     if (action === "update_role") {
       const roleId = parseRoleId(role_id);
       if (roleId === undefined) return json({ error: "Valid role_id is required" }, 400);
 
-      const { data, error } = await admin
-        .from("user_role_assignments")
-        .update({ role_id: roleId, updated_at: new Date().toISOString() })
-        .eq("id", assignmentId)
-        .select("id")
-        .maybeSingle();
+      if (assignmentId) {
+        const { data, error } = await admin
+          .from("user_role_assignments")
+          .update({ role_id: roleId, updated_at: new Date().toISOString() })
+          .eq("id", assignmentId)
+          .select("id")
+          .maybeSingle();
 
-      if (error) throw error;
-      if (!data) return json({ error: "Assignment not found" }, 404);
-      return json({ success: true });
+        if (error) throw error;
+        if (!data) return json({ error: "Assignment not found" }, 404);
+        return json({ success: true });
+      } else if (email) {
+        const normalizedEmail = String(email).trim().toLowerCase();
+        const { error } = await admin
+          .from("user_role_assignments")
+          .upsert({
+            email: normalizedEmail,
+            display_name: display_name ? String(display_name).trim() : null,
+            role_id: roleId,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "email" });
+
+        if (error) throw error;
+        return json({ success: true });
+      } else {
+        return json({ error: "Valid assignment_id or email is required" }, 400);
+      }
     }
 
     if (action === "delete_assignment") {
-      const { error } = await admin
-        .from("user_role_assignments")
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_by: currentUser.user.email || currentUser.user.id,
-          role_id: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", assignmentId);
+      if (assignmentId) {
+        const { error } = await admin
+          .from("user_role_assignments")
+          .update({
+            deleted_at: new Date().toISOString(),
+            deleted_by: currentUser.user.email || currentUser.user.id,
+            role_id: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", assignmentId);
 
-      if (error) throw error;
-      return json({ success: true });
+        if (error) throw error;
+        return json({ success: true });
+      } else if (email) {
+        const normalizedEmail = String(email).trim().toLowerCase();
+        const { error } = await admin
+          .from("user_role_assignments")
+          .upsert({
+            email: normalizedEmail,
+            display_name: display_name ? String(display_name).trim() : null,
+            deleted_at: new Date().toISOString(),
+            deleted_by: currentUser.user.email || currentUser.user.id,
+            role_id: null,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "email" });
+
+        if (error) throw error;
+        return json({ success: true });
+      } else {
+        return json({ error: "Valid assignment_id or email is required" }, 400);
+      }
     }
+
+    if (!assignmentId) return json({ error: "Valid assignment_id is required" }, 400);
 
     if (action === "restore_assignment") {
       const { error } = await admin

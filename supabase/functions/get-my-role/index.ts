@@ -28,15 +28,14 @@ serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return json({ error: "Not authenticated" }, 401);
 
-    const { data: currentUser, error: userError } = await userClient.auth.getUser();
+    const admin = createClient(supabaseUrl, serviceRoleKey);
+    const { data: currentUser, error: userError } = await admin.auth.getUser(token);
     if (userError || !currentUser?.user) return json({ error: "Not authenticated" }, 401);
 
     const email = currentUser.user.email?.toLowerCase() || "";
-    const admin = createClient(supabaseUrl, serviceRoleKey);
 
     const { data, error } = await admin
       .from("user_role_assignments")

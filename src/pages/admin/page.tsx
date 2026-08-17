@@ -131,44 +131,105 @@ async function listAuthAccounts(): Promise<AuthAccountsResult> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) return { accounts: [], assignments: null };
 
-  const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/list-auth-users`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${session.access_token}`,
-      "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
-    },
-  });
-  const result = await readFunctionJson(res);
-  if (!res.ok || result.error) {
-    console.error("Failed to list auth users", { status: res.status, result });
-    throw new Error(result.error || "Failed to list auth users");
+  try {
+    const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/list-auth-users`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${session.access_token}`,
+        "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+      },
+    });
+    const result = await readFunctionJson(res);
+    if (!res.ok || result.error) {
+      console.warn("Notice: Auth accounts list function unavailable", { status: res.status, result });
+      return { accounts: [], assignments: null };
+    }
+    return {
+      accounts: Array.isArray(result.users) ? result.users : [],
+      assignments: Array.isArray(result.assignments) ? result.assignments : null,
+    };
+  } catch (err: any) {
+    console.warn("Notice: Auth accounts fetch error:", err);
+    return { accounts: [], assignments: null };
   }
-  return {
-    accounts: Array.isArray(result.users) ? result.users : [],
-    assignments: Array.isArray(result.assignments) ? result.assignments : null,
-  };
 }
 
-async function manageUserRole(action: "update_role" | "delete_assignment", assignmentId: number, roleId?: number | null) {
+async function manageUserRole(
+  action: "update_role" | "delete_assignment",
+  assignmentId?: number | null,
+  roleId?: number | null,
+  email?: string | null,
+  displayName?: string | null
+) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not authenticated");
 
-  const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/manage-user-role`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${session.access_token}`,
-      "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({
-      action,
-      assignment_id: assignmentId,
-      role_id: roleId ?? null,
-    }),
-  });
+  try {
+    const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/manage-user-role`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+        "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        action,
+        assignment_id: assignmentId && assignmentId > 0 ? assignmentId : undefined,
+        role_id: roleId ?? null,
+        email: email || undefined,
+        display_name: displayName || undefined,
+      }),
+    });
 
-  const result = await readFunctionJson(res);
-  if (!res.ok || result.error) throw new Error(result.error || "Failed to update user role");
+    const result = await readFunctionJson(res);
+    if (!res.ok || result.error) {
+      throw new Error(result.error || "Failed to update user role");
+    }
+  } catch (err: any) {
+    // If edge function returned an error, fallback to direct Supabase client call
+    if (action === "update_role" && assignmentId && assignmentId > 0) {
+      const { error } = await supabase
+        .from("user_role_assignments")
+        .update({ role_id: roleId ?? null, updated_at: new Date().toISOString() })
+        .eq("id", assignmentId);
+      if (error) throw new Error(error.message || err.message || "Failed to update user role");
+    } else if (action === "update_role" && email) {
+      const { error } = await supabase
+        .from("user_role_assignments")
+        .upsert({
+          email: email.toLowerCase(),
+          display_name: displayName || null,
+          role_id: roleId ?? null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "email" });
+      if (error) throw new Error(error.message || err.message || "Failed to update user role");
+    } else if (action === "delete_assignment" && assignmentId && assignmentId > 0) {
+      const { error } = await supabase
+        .from("user_role_assignments")
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_by: session.user.email || null,
+          role_id: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", assignmentId);
+      if (error) throw new Error(error.message || err.message || "Failed to remove user");
+    } else if (action === "delete_assignment" && email) {
+      const { error } = await supabase
+        .from("user_role_assignments")
+        .upsert({
+          email: email.toLowerCase(),
+          display_name: displayName || null,
+          deleted_at: new Date().toISOString(),
+          deleted_by: session.user.email || null,
+          role_id: null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "email" });
+      if (error) throw new Error(error.message || err.message || "Failed to remove user");
+    } else {
+      throw err;
+    }
+  }
 }
 
 export default function AdminPortal() {
@@ -190,6 +251,7 @@ export default function AdminPortal() {
   const [newUser, setNewUser] = useState({ email: "", display_name: "", role_id: "", sendInvite: true });
   const [savingUser, setSavingUser] = useState(false);
   const [invitingUserId, setInvitingUserId] = useState<number | null>(null);
+  const [employees, setEmployees] = useState<{ email: string; first_name?: string; last_name?: string }[]>([]);
 
   const showToast = (msg: string, type: "ok" | "err" = "ok") => {
     setToast({ msg, type });
@@ -200,56 +262,42 @@ export default function AdminPortal() {
     setLoading(true);
     setUserLoadError(null);
     const authAccountsPromise = listAuthAccounts().catch((error) => {
-      setUserLoadError(error.message || "Could not fetch Auth accounts");
+      console.warn("Could not fetch Auth accounts:", error);
       return { accounts: [], assignments: null } as AuthAccountsResult;
     });
-    const [rolesRes, usersRes, employeesRes, authAccountsResult] = await Promise.all([
+
+    const [rolesRes, usersRes, deletedRes, employeesRes, authAccountsResult] = await Promise.all([
       supabase.from("app_roles").select("*").order("id"),
-      supabase.from("user_role_assignments").select("*, app_roles(id, name, color)").order("created_at", { ascending: false }),
+      supabase.from("user_role_assignments").select("*, app_roles(id, name, color)").is("deleted_at", null).order("created_at", { ascending: false }),
+      supabase.from("user_role_assignments").select("email").not("deleted_at", "is", null),
       supabase.from("employees").select("email, first_name, last_name").not("email", "is", null),
       authAccountsPromise,
     ]);
 
-    const authAccounts = authAccountsResult.accounts;
-    const existingEmails = new Set((usersRes.data || []).map((u) => u.email.toLowerCase()));
-    const missingAuthAssignments = authAccounts
-      .filter((account) => account.email && !existingEmails.has(account.email.toLowerCase()))
-      .map((account) => ({
-        user_id: account.id,
-        email: account.email!.toLowerCase(),
-        display_name: account.display_name,
-        role_id: null,
-      }));
-    missingAuthAssignments.forEach((account) => existingEmails.add(account.email));
+    const activeAssignments: UserAssignment[] = (authAccountsResult.assignments || usersRes.data || []).filter((user: any) => !user.deleted_at);
+    const activeEmails = new Set(activeAssignments.map((u) => u.email?.toLowerCase()).filter(Boolean));
+    const deletedEmails = new Set((deletedRes.data || []).map((u: any) => u.email?.toLowerCase()).filter(Boolean));
 
-    const missingEmployeeAssignments = (employeesRes.data || [])
-      .filter((employee) => employee.email && !existingEmails.has(employee.email.toLowerCase()))
-      .map((employee) => ({
-        email: employee.email.toLowerCase(),
-        display_name: `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || null,
-        role_id: null,
-      }));
-
-    let mergedUsers = (authAccountsResult.assignments || usersRes.data || []).filter((user) => !user.deleted_at);
-    const missingAssignments = [...missingAuthAssignments, ...missingEmployeeAssignments];
-    if (missingAssignments.length > 0) {
-      const { error: syncError } = await supabase
-        .from("user_role_assignments")
-        .upsert(missingAssignments, { onConflict: "email", ignoreDuplicates: true });
-
-      if (!syncError) {
-        const refreshedUsers = await supabase
-          .from("user_role_assignments")
-          .select("*, app_roles(id, name, color)")
-          .order("created_at", { ascending: false });
-        mergedUsers = refreshedUsers.data || mergedUsers;
-      } else {
-        console.error("Failed to sync employee user assignments", syncError);
-      }
-    }
+    // Only include any registered auth users who don't have an assignment row yet and haven't been deleted
+    let virtualIdCounter = -1;
+    const unassignedAuthUsers: UserAssignment[] = (authAccountsResult.accounts || [])
+      .filter((account) => account.email && !activeEmails.has(account.email.toLowerCase()) && !deletedEmails.has(account.email.toLowerCase()))
+      .map((account) => {
+        activeEmails.add(account.email!.toLowerCase());
+        return {
+          id: virtualIdCounter--,
+          user_id: account.id,
+          email: account.email!.toLowerCase(),
+          display_name: account.display_name,
+          role_id: null,
+          created_at: new Date().toISOString(),
+          app_roles: null,
+        };
+      });
 
     setRoles(rolesRes.data || []);
-    setUsers(mergedUsers);
+    setUsers([...activeAssignments, ...unassignedAuthUsers]);
+    setEmployees(employeesRes.data || []);
     setLoading(false);
   };
 
@@ -415,10 +463,10 @@ export default function AdminPortal() {
     showToast("Invite sent!");
   };
 
-  const updateUserRole = async (userId: number, roleId: number | null) => {
+  const updateUserRole = async (targetUser: UserAssignment, roleId: number | null) => {
     const previousUsers = users;
     const nextRole = roles.find((role) => role.id === roleId) || null;
-    setUsers((current) => current.map((user) => user.id === userId
+    setUsers((current) => current.map((user) => user.id === targetUser.id
       ? {
           ...user,
           role_id: roleId,
@@ -428,28 +476,35 @@ export default function AdminPortal() {
     ));
 
     try {
-      await manageUserRole("update_role", userId, roleId);
+      await manageUserRole("update_role", targetUser.id > 0 ? targetUser.id : null, roleId, targetUser.email, targetUser.display_name);
+      invalidatePermissionsCache();
+      showToast("Role updated!");
+      if (targetUser.id <= 0) {
+        loadData();
+      }
     } catch (error: any) {
       setUsers(previousUsers);
       showToast(error.message || "Failed to update role", "err");
-      return;
     }
-    invalidatePermissionsCache();
-    showToast("Role updated!");
   };
 
-  const removeUser = async (userId: number) => {
+  const removeUser = async (targetUser: UserAssignment) => {
     const previousUsers = users;
-    setUsers((current) => current.filter((user) => user.id !== userId));
+    setUsers((current) => current.filter((user) => user.id !== targetUser.id));
 
     try {
-      await manageUserRole("delete_assignment", userId);
+      await manageUserRole(
+        "delete_assignment",
+        targetUser.id > 0 ? targetUser.id : null,
+        null,
+        targetUser.email,
+        targetUser.display_name
+      );
+      showToast("User moved to Recycle Bin");
     } catch (error: any) {
       setUsers(previousUsers);
       showToast(error.message || "Failed to remove user", "err");
-      return;
     }
-    showToast("User removed");
   };
 
   return (
@@ -785,7 +840,31 @@ export default function AdminPortal() {
                       Send email invitation <span className="text-xs text-gray-400 font-normal">(creates auth account + sends setup link via Gmail)</span>
                     </label>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1.5 block">Select Employee (Optional)</label>
+                      <select
+                        onChange={(e) => {
+                          const selected = employees.find((emp) => emp.email === e.target.value);
+                          if (selected) {
+                            setNewUser((p) => ({
+                              ...p,
+                              email: selected.email,
+                              display_name: `${selected.first_name || ""} ${selected.last_name || ""}`.trim() || p.display_name,
+                            }));
+                          }
+                        }}
+                        defaultValue=""
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
+                      >
+                        <option value="">-- Quick autofill from Employee --</option>
+                        {employees.map((emp) => (
+                          <option key={emp.email} value={emp.email}>
+                            {`${emp.first_name || ""} ${emp.last_name || ""}`.trim()} ({emp.email})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label className="text-xs text-gray-500 mb-1.5 block">Email *</label>
                       <input
@@ -853,7 +932,7 @@ export default function AdminPortal() {
                         <div className="flex items-center gap-3">
                           <select
                             value={user.role_id || ""}
-                            onChange={(e) => updateUserRole(user.id, e.target.value ? parseInt(e.target.value) : null)}
+                            onChange={(e) => updateUserRole(user, e.target.value ? parseInt(e.target.value) : null)}
                             className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
                           >
                             <option value="">No role (no access until assigned)</option>
@@ -882,7 +961,7 @@ export default function AdminPortal() {
                             </button>
                           )}
                           <button
-                            onClick={() => removeUser(user.id)}
+                            onClick={() => removeUser(user)}
                             className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-400 cursor-pointer shrink-0"
                           >
                             <i className="ri-delete-bin-line text-sm" />

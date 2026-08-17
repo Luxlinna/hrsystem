@@ -71,13 +71,16 @@ serve(async (req) => {
     if (existingError) throw existingError;
 
     if (existing) {
-      if (existing.user_id) {
-        return json({ error: "User already has an account", version: functionVersion }, 400);
-      }
-      // Update existing pre-provisioned record
+      // Update existing record and un-delete if soft-deleted
       const { error: updateError } = await supabaseAdmin
         .from("user_role_assignments")
-        .update({ display_name: normalizedDisplayName, role_id: normalizedRoleId })
+        .update({
+          display_name: normalizedDisplayName || existing.display_name,
+          role_id: normalizedRoleId,
+          deleted_at: null,
+          deleted_by: null,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", existing.id);
       if (updateError) throw updateError;
     } else {
@@ -92,40 +95,64 @@ serve(async (req) => {
       if (insertError) throw insertError;
     }
 
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    let linkData: any = null;
+    let linkError: any = null;
+
+    const generateInvite = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",
       email: normalizedEmail,
       options: {
-        redirectTo: redirect_to || `${new URL(req.url).origin}/auth/reset-password`,
+        redirectTo: redirect_to || `${new URL(req.url).origin}/reset-password`,
         data: {
           display_name: normalizedDisplayName || normalizedEmail.split("@")[0],
         },
       },
     });
 
-    if (linkError || !linkData?.properties?.action_link) {
-      console.error("Invite link error:", linkError);
-      return json({ error: linkError?.message || "Failed to generate invite link", version: functionVersion }, 500);
+    if (generateInvite.error || !generateInvite.data?.properties?.action_link) {
+      // User may already exist in Auth; generate a recovery link so they can access their account
+      const generateRecovery = await supabaseAdmin.auth.admin.generateLink({
+        type: "recovery",
+        email: normalizedEmail,
+        options: {
+          redirectTo: redirect_to || `${new URL(req.url).origin}/reset-password`,
+        },
+      });
+      linkData = generateRecovery.data;
+      linkError = generateRecovery.error;
+    } else {
+      linkData = generateInvite.data;
     }
 
-    const smtpUser = requireEnv("SMTP_USER");
-    const inviteLink = linkData.properties.action_link;
-    const name = normalizedDisplayName || normalizedEmail.split("@")[0];
-    const transporter = nodemailer.createTransport({
-      host: Deno.env.get("SMTP_HOST") || "smtp.gmail.com",
-      port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
-      secure: Deno.env.get("SMTP_SECURE") === "true",
-      auth: {
-        user: smtpUser,
-        pass: requireEnv("SMTP_PASS"),
-      },
-    });
+    if (linkError || !linkData?.properties?.action_link) {
+      console.error("Invite link error:", linkError || generateInvite.error);
+      return json({ error: linkError?.message || generateInvite.error?.message || "Failed to generate invite link", version: functionVersion }, 500);
+    }
 
-    await transporter.sendMail({
-      from: Deno.env.get("EMAIL_FROM") || smtpUser,
-      to: normalizedEmail,
-      subject: "You're invited to HRM_OPS - Set up your account",
-      html: `
+    const smtpUser = Deno.env.get("SMTP_USER");
+    const smtpPass = Deno.env.get("SMTP_PASS");
+    let emailSent = false;
+    let emailError: string | null = null;
+
+    if (smtpUser && smtpPass) {
+      try {
+        const inviteLink = linkData.properties.action_link;
+        const name = normalizedDisplayName || normalizedEmail.split("@")[0];
+        const transporter = nodemailer.createTransport({
+          host: Deno.env.get("SMTP_HOST") || "smtp.gmail.com",
+          port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
+          secure: Deno.env.get("SMTP_SECURE") === "true",
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
+          },
+        });
+
+        await transporter.sendMail({
+          from: Deno.env.get("EMAIL_FROM") || smtpUser,
+          to: normalizedEmail,
+          subject: "You're invited to HRM_OPS - Set up your account",
+          html: `
 <!DOCTYPE html>
 <html>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">
@@ -145,11 +172,36 @@ serve(async (req) => {
   </div>
 </body>
 </html>`,
-    });
+        });
+        emailSent = true;
+      } catch (err: any) {
+        console.error("SMTP send error:", err);
+        emailError = err.message || "Failed to send email via SMTP";
+      }
+    } else {
+      try {
+        const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(normalizedEmail, {
+          redirectTo: redirect_to || `${new URL(req.url).origin}/auth/reset-password`,
+          data: {
+            display_name: normalizedDisplayName || normalizedEmail.split("@")[0],
+          },
+        });
+        if (!inviteError) {
+          emailSent = true;
+        } else {
+          emailError = inviteError.message;
+        }
+      } catch (err: any) {
+        emailError = err.message;
+      }
+    }
 
     return json({
       success: true,
-      message: "Invitation sent successfully",
+      message: emailSent ? "Invitation sent successfully" : "User invited successfully",
+      invite_link: linkData.properties.action_link,
+      email_sent: emailSent,
+      email_error: emailError,
       version: functionVersion,
       user: linkData.user,
     });

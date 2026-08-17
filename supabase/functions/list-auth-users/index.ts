@@ -37,19 +37,21 @@ serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: currentUser, error: userError } = await userClient.auth.getUser();
-    if (userError || !currentUser?.user) return json({ error: "Not authenticated" }, 401);
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return json({ error: "Not authenticated" }, 401);
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
+    const { data: currentUser, error: userError } = await admin.auth.getUser(token);
+    if (userError || !currentUser?.user) return json({ error: "Not authenticated" }, 401);
+
     if (!isBootstrapAdminEmail(currentUser.user.email)) {
+      const email = currentUser.user.email?.toLowerCase() || "";
       const { data: assignment, error: assignmentError } = await admin
         .from("user_role_assignments")
         .select("app_roles(is_admin)")
-        .or(`user_id.eq.${currentUser.user.id},email.eq.${currentUser.user.email?.toLowerCase() || ""}`)
+        .or(`user_id.eq.${currentUser.user.id},email.eq.${email}`)
+        .is("deleted_at", null)
+        .limit(1)
         .maybeSingle();
 
       if (assignmentError) throw assignmentError;

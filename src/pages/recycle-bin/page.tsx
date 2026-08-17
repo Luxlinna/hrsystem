@@ -40,6 +40,7 @@ const MODULES: ModuleConfig[] = [
   { table: "training_enrollments", name: "Training Enrollments", icon: "ri-bookmark-line", select: "id, status, training_courses(title), deleted_at, deleted_by", label: (r) => r.training_courses?.title || `Enrollment #${r.id}`, detail: (r) => `Enrollment · ${r.status}` },
   { table: "room_bookings", name: "Room Bookings", icon: "ri-door-open-line", select: "id, title, date, deleted_at, deleted_by", label: (r) => r.title, detail: (r) => `Room Booking · ${r.date}` },
   { table: "onboarding_checklist_tasks", name: "Onboarding Checklist", icon: "ri-task-line", select: "id, task_name, category, deleted_at, deleted_by", label: (r) => r.task_name, detail: (r) => `Checklist Task · ${r.category}` },
+  { table: "user_role_assignments", name: "User Roles & Accounts", icon: "ri-user-settings-line", select: "id, email, display_name, deleted_at, deleted_by, app_roles(name)", label: (r) => r.display_name ? `${r.display_name} (${r.email})` : r.email, detail: (r) => `User Account · ${r.app_roles?.name || "No role"}` },
   { table: "shift_assignments", name: "Shift Assignments", icon: "ri-calendar-schedule-line", select: "id, status, employee:employees(first_name, last_name), deleted_at, deleted_by", label: (r) => `${r.employee?.first_name || "?"} ${r.employee?.last_name || "?"}`, detail: (r) => `Shift Assignment · ${r.status}` },
   { table: "work_logs", name: "Daily Work Logs", icon: "ri-file-list-3-line", select: "id, activity, log_date, deleted_at, deleted_by", label: (r) => r.activity, detail: (r) => `Work Log · ${r.log_date}` },
 ];
@@ -89,10 +90,40 @@ export default function RecycleBinPage() {
 
   const restore = async (item: BinItem) => {
     setWorking(true);
-    const { error } = await supabase
-      .from(item.table)
-      .update({ deleted_at: null, deleted_by: null })
-      .eq("id", item.id);
+    let error: any = null;
+
+    if (item.table === "user_role_assignments") {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/manage-user-role`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token}`,
+            "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            action: "restore_assignment",
+            assignment_id: item.id,
+          }),
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || result.error) throw new Error(result.error || "Failed to restore user");
+      } catch (err) {
+        const { error: dbErr } = await supabase
+          .from("user_role_assignments")
+          .update({ deleted_at: null, deleted_by: null })
+          .eq("id", item.id);
+        error = dbErr;
+      }
+    } else {
+      const { error: dbErr } = await supabase
+        .from(item.table)
+        .update({ deleted_at: null, deleted_by: null })
+        .eq("id", item.id);
+      error = dbErr;
+    }
+
     setWorking(false);
     if (error) { toast("Error", "Failed to restore item", "error"); return; }
     toast("Restored", `"${item.label}" is back in ${MODULES.find((m) => m.table === item.table)?.name}.`, "success");
@@ -102,12 +133,38 @@ export default function RecycleBinPage() {
 
   const deleteForever = async (item: BinItem) => {
     setWorking(true);
-    const { error } = await supabase.from(item.table).delete().eq("id", item.id);
-    if (!error && item.table === "documents" && item.raw?.file_url) {
-      // Permanently removing a document also removes its file from storage.
-      const filePath = item.raw.file_url.split("/documents/")[1];
-      if (filePath) await supabase.storage.from("documents").remove([filePath]);
+    let error: any = null;
+
+    if (item.table === "user_role_assignments") {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/manage-user-role`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token}`,
+            "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            action: "delete_user_forever",
+            assignment_id: item.id,
+          }),
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || result.error) throw new Error(result.error || "Failed to delete user permanently");
+      } catch (err) {
+        const { error: dbErr } = await supabase.from("user_role_assignments").delete().eq("id", item.id);
+        error = dbErr;
+      }
+    } else {
+      const { error: dbErr } = await supabase.from(item.table).delete().eq("id", item.id);
+      error = dbErr;
+      if (!error && item.table === "documents" && item.raw?.file_url) {
+        const filePath = item.raw.file_url.split("/documents/")[1];
+        if (filePath) await supabase.storage.from("documents").remove([filePath]);
+      }
     }
+
     setWorking(false);
     if (error) { toast("Error", "Failed to delete item", "error"); return; }
     toast("Deleted forever", `"${item.label}" was permanently erased.`, "success");
