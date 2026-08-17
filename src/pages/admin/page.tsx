@@ -47,6 +47,15 @@ interface AuthAccountsResult {
   assignments: UserAssignment[] | null;
 }
 
+interface DirectoryEmployee {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: string | null;
+  department: string | null;
+}
+
 const ALL_MODULES = [
   { key: "dashboard", label: "Dashboard", icon: "ri-dashboard-line", group: "Core" },
   { key: "employees", label: "Employees", icon: "ri-user-search-line", group: "Core" },
@@ -249,9 +258,10 @@ export default function AdminPortal() {
   // User assignment
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({ email: "", display_name: "", role_id: "", sendInvite: true });
+  const [selectedEmployeeEmail, setSelectedEmployeeEmail] = useState("");
   const [savingUser, setSavingUser] = useState(false);
   const [invitingUserId, setInvitingUserId] = useState<number | null>(null);
-  const [employees, setEmployees] = useState<{ email: string; first_name?: string; last_name?: string }[]>([]);
+  const [employees, setEmployees] = useState<DirectoryEmployee[]>([]);
 
   const showToast = (msg: string, type: "ok" | "err" = "ok") => {
     setToast({ msg, type });
@@ -270,7 +280,7 @@ export default function AdminPortal() {
       supabase.from("app_roles").select("*").order("id"),
       supabase.from("user_role_assignments").select("*, app_roles(id, name, color)").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("user_role_assignments").select("email").not("deleted_at", "is", null),
-      supabase.from("employees").select("email, first_name, last_name").not("email", "is", null),
+      supabase.from("employees").select("id, email, first_name, last_name, role, department").not("email", "is", null).order("first_name"),
       authAccountsPromise,
     ]);
 
@@ -433,6 +443,7 @@ export default function AdminPortal() {
 
     setShowAddUser(false);
     setNewUser({ email: "", display_name: "", role_id: "", sendInvite: true });
+    setSelectedEmployeeEmail("");
     loadData();
   };
 
@@ -805,7 +816,11 @@ export default function AdminPortal() {
                     Add Me
                   </button>
                   <button
-                    onClick={() => setShowAddUser(true)}
+                    onClick={() => {
+                      setSelectedEmployeeEmail("");
+                      setNewUser({ email: "", display_name: "", role_id: "", sendInvite: true });
+                      setShowAddUser(true);
+                    }}
                     className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white rounded-xl text-sm hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-add-line" />
@@ -845,22 +860,28 @@ export default function AdminPortal() {
                       <label className="text-xs text-gray-500 mb-1.5 block">Select Employee (Optional)</label>
                       <select
                         onChange={(e) => {
+                          setSelectedEmployeeEmail(e.target.value);
                           const selected = employees.find((emp) => emp.email === e.target.value);
                           if (selected) {
+                            const matchingRole = roles.find(
+                              (role) => role.name.trim().toLocaleLowerCase() === selected.role?.trim().toLocaleLowerCase()
+                            );
                             setNewUser((p) => ({
                               ...p,
                               email: selected.email,
                               display_name: `${selected.first_name || ""} ${selected.last_name || ""}`.trim() || p.display_name,
+                              // Employee directory titles map to an app access role when their names match.
+                              role_id: matchingRole ? String(matchingRole.id) : "",
                             }));
                           }
                         }}
-                        defaultValue=""
+                        value={selectedEmployeeEmail}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
                       >
                         <option value="">-- Quick autofill from Employee --</option>
                         {employees.map((emp) => (
                           <option key={emp.email} value={emp.email}>
-                            {`${emp.first_name || ""} ${emp.last_name || ""}`.trim()} ({emp.email})
+                            {`${emp.first_name || ""} ${emp.last_name || ""}`.trim()} — {emp.role || "No directory role"} ({emp.email})
                           </option>
                         ))}
                       </select>
@@ -898,7 +919,7 @@ export default function AdminPortal() {
                     </div>
                   </div>
                   <div className="flex gap-2 justify-end">
-                    <button onClick={() => setShowAddUser(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
+                    <button onClick={() => { setShowAddUser(false); setSelectedEmployeeEmail(""); }} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
                     <button
                       onClick={saveNewUser}
                       disabled={savingUser}
