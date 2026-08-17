@@ -87,7 +87,46 @@ interface RoomBookingRow {
   status: string;
 }
 
-type ReportRow = LeaveRow | PayrollRow | HeadcountRow | ExpenseRow | HireRow | DailyLogRow | RoomBookingRow;
+interface OnboardingRow {
+  id: string;
+  employee: string;
+  role: string;
+  department: string;
+  branch: string;
+  stage: string;
+  status: string;
+  verified_docs: string;
+  requested_by: string;
+  started_date: string;
+}
+
+interface OnboardingTaskRow {
+  id: string;
+  task_name: string;
+  candidate: string;
+  employee?: string;
+  department: string;
+  branch: string;
+  category: string;
+  priority: string;
+  assigned_to: string;
+  due_date: string;
+  status: string;
+  completed_by: string;
+  completed_at: string;
+  verified_at: string;
+}
+
+type ReportRow =
+  | LeaveRow
+  | PayrollRow
+  | HeadcountRow
+  | ExpenseRow
+  | HireRow
+  | DailyLogRow
+  | RoomBookingRow
+  | OnboardingRow
+  | OnboardingTaskRow;
 
 const matchesEmployeeFilters = (
   row: { employee?: string; department?: string; branch?: string },
@@ -106,6 +145,7 @@ interface Props {
 
 const STATUS_COLOR: Record<string, string> = {
   approved: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",
+  completed: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",
   pending: "bg-amber-50 text-amber-700 border border-amber-200/60",
   rejected: "bg-red-50 text-red-700 border border-red-200/60",
   cancelled: "bg-gray-100 text-gray-600 border border-gray-200/60",
@@ -116,6 +156,10 @@ const STATUS_COLOR: Record<string, string> = {
   hired: "bg-emerald-50 text-emerald-700",
   interview: "bg-sky-50 text-sky-700",
   screening: "bg-violet-50 text-violet-700",
+  document: "bg-amber-50 text-amber-700 border border-amber-200/60",
+  it_setup: "bg-blue-50 text-blue-700 border border-blue-200/60",
+  training: "bg-purple-50 text-purple-700 border border-purple-200/60",
+  complete: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",
 };
 
 export default function ReportViewer({ config, onDataReady }: Props) {
@@ -358,6 +402,144 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     onDataReady(mapped, cols);
   }, [config, onDataReady]);
 
+  const fetchOnboarding = useCallback(async () => {
+    let q = supabase
+      .from("onboarding_requests")
+      .select("id, stage, status, day_count, requested_by, created_at, employees(id, first_name, last_name, role, department, branches(name)), onboarding_documents(id, status)")
+      .order("created_at", { ascending: false });
+
+    if (config.dateFrom) q = q.gte("created_at", config.dateFrom);
+    if (config.dateTo) q = q.lte("created_at", config.dateTo + "T23:59:59");
+
+    const { data, error } = await q;
+    if (error) console.error("fetchOnboarding error:", error);
+
+    const STAGE_LABELS: Record<string, string> = {
+      document: "Document Collection",
+      it_setup: "IT & Equipment Setup",
+      training: "Training & Orientation",
+      complete: "Final Sign-off",
+    };
+
+    const mapped: OnboardingRow[] = (data || [])
+      .map((r: any) => {
+        const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim();
+        const totalDocs = r.onboarding_documents?.length || 0;
+        const verifiedDocs = (r.onboarding_documents || []).filter((d: any) => d.status === "complete").length;
+        const docProgress = totalDocs > 0 ? `${verifiedDocs}/${totalDocs} verified` : "0 verified";
+
+        return {
+          id: r.id,
+          employee: empName || "Unknown Candidate",
+          role: r.employees?.role || "—",
+          department: r.employees?.department || "—",
+          branch: r.employees?.branches?.name || "—",
+          stage: STAGE_LABELS[r.stage] || r.stage || "Document Collection",
+          status: r.status || "pending",
+          verified_docs: docProgress,
+          requested_by: r.requested_by || "Admin",
+          started_date: r.created_at?.substring(0, 10) || "—",
+        };
+      })
+      .filter((r) => matchesEmployeeFilters(r, config));
+
+    const cols = ["Employee", "Role", "Department", "Branch", "Stage", "Status", "Verified Docs", "Requested By", "Started Date"];
+    setRows(mapped);
+    setColumns(cols);
+
+    const completed = mapped.filter((r) => r.status === "completed").length;
+    const approved = mapped.filter((r) => r.status === "approved" || r.status === "in_progress").length;
+    const pending = mapped.filter((r) => r.status === "pending").length;
+
+    setSummary({
+      "Total Onboarding": mapped.length,
+      "Approved & Active": approved,
+      "Completed / Graduated": completed,
+      "Pending Approval": pending,
+    });
+    onDataReady(mapped, cols);
+  }, [config, onDataReady]);
+
+  const fetchOnboardingTasks = useCallback(async () => {
+    let q = supabase
+      .from("onboarding_checklist_tasks")
+      .select("id, task_name, description, category, priority, assigned_to, assigned_to_role, due_date, completed, completed_by, completed_at, sort_order, onboarding_requests(id, stage, status, employees(id, first_name, last_name, department, branches(name)))")
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true });
+
+    if (config.dateFrom) q = q.gte("due_date", config.dateFrom);
+    if (config.dateTo) q = q.lte("due_date", config.dateTo);
+
+    const { data, error } = await q;
+    if (error) console.error("fetchOnboardingTasks error:", error);
+
+    const CATEGORY_LABELS: Record<string, string> = {
+      documents: "Documents",
+      it_setup: "IT Setup",
+      training: "Training",
+      general: "General & Culture",
+    };
+
+    const formatDateTime = (iso: string | null) => {
+      if (!iso) return "—";
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString("en-US", {
+          month: "short",
+          day: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+      } catch {
+        return iso;
+      }
+    };
+
+    const mapped: OnboardingTaskRow[] = (data || [])
+      .map((r: any) => {
+        const emp = r.onboarding_requests?.employees;
+        const candidateName = emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : "—";
+        const isDone = Boolean(r.completed);
+
+        return {
+          id: r.id,
+          task_name: r.task_name,
+          candidate: candidateName,
+          employee: candidateName,
+          department: emp?.department || "—",
+          branch: emp?.branches?.name || "—",
+          category: CATEGORY_LABELS[r.category] || r.category || "General",
+          priority: r.priority || "medium",
+          assigned_to: r.assigned_to ? `${r.assigned_to}${r.assigned_to_role ? ` (${r.assigned_to_role})` : ""}` : "Unassigned",
+          due_date: r.due_date || "No deadline",
+          status: isDone ? "completed" : "pending",
+          completed_by: r.completed_by || "—",
+          completed_at: r.completed_at ? r.completed_at.substring(0, 10) : "—",
+          verified_at: formatDateTime(r.completed_at),
+        };
+      })
+      .filter((r) => matchesEmployeeFilters(r, config));
+
+    const cols = ["Task Name", "Candidate", "Department", "Branch", "Category", "Priority", "Assigned To", "Due Date", "Status", "Verified By", "Verified Date & Time"];
+    setRows(mapped);
+    setColumns(cols);
+
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const completedCount = mapped.filter((r) => r.status === "completed").length;
+    const pendingCount = mapped.filter((r) => r.status === "pending").length;
+    const overdueCount = mapped.filter((r) => r.status === "pending" && r.due_date !== "No deadline" && r.due_date < todayStr).length;
+
+    setSummary({
+      "Total Tasks": mapped.length,
+      "Completed / Verified": completedCount,
+      "Pending Tasks": pendingCount,
+      "Overdue Tasks": overdueCount,
+    });
+    onDataReady(mapped, cols);
+  }, [config, onDataReady]);
+
   useEffect(() => {
     setLoading(true);
     const run = async () => {
@@ -366,12 +548,14 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       else if (config.module === "headcount") await fetchHeadcount();
       else if (config.module === "expenses") await fetchExpenses();
       else if (config.module === "hire") await fetchHire();
+      else if (config.module === "onboarding") await fetchOnboarding();
+      else if (config.module === "onboarding-tasks") await fetchOnboardingTasks();
       else if (config.module === "daily-logs") await fetchDailyLogs();
       else if (config.module === "meeting-rooms") await fetchRoomBookings();
       setLoading(false);
     };
     run();
-  }, [config, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs, fetchRoomBookings]);
+  }, [config, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchOnboarding, fetchOnboardingTasks, fetchDailyLogs, fetchRoomBookings]);
 
   // Real-time live synchronization: re-fetches automatically when database records change
   useEffect(() => {
@@ -381,6 +565,8 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       headcount: "employees",
       expenses: "expense_records",
       hire: "candidates",
+      onboarding: "onboarding_requests",
+      "onboarding-tasks": "onboarding_checklist_tasks",
       "daily-logs": "work_logs",
       "meeting-rooms": "room_bookings",
     };
@@ -395,6 +581,8 @@ export default function ReportViewer({ config, onDataReady }: Props) {
         else if (config.module === "headcount") fetchHeadcount();
         else if (config.module === "expenses") fetchExpenses();
         else if (config.module === "hire") fetchHire();
+        else if (config.module === "onboarding") fetchOnboarding();
+        else if (config.module === "onboarding-tasks") fetchOnboardingTasks();
         else if (config.module === "daily-logs") fetchDailyLogs();
         else if (config.module === "meeting-rooms") fetchRoomBookings();
       })
@@ -403,7 +591,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [config.module, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs, fetchRoomBookings]);
+  }, [config.module, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchOnboarding, fetchOnboardingTasks, fetchDailyLogs, fetchRoomBookings]);
 
   const REPORT_COLUMN_KEY_MAP: Record<string, string> = {
     "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
@@ -411,18 +599,45 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     "Base Salary": "base_salary", "Bonus": "bonus", "Deductions": "deductions", "Net Pay": "net_pay",
     "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
     "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
-    "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
+    "Date": "date", "Candidate": "candidate", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
     "Room": "room_name", "Title": "title", "Booked By": "employee", "Attendees": "attendees", "Time": "time",
+    "Role": "role", "Verified Docs": "verified_docs", "Requested By": "requested_by", "Started Date": "started_date",
+    "Task Name": "task_name", "Priority": "priority", "Assigned To": "assigned_to", "Due Date": "due_date",
+    "Verified By": "completed_by", "Verified Date & Time": "verified_at", "Verified At": "verified_at", "Completed Date": "completed_at",
   };
 
   const renderCell = (col: string, row: ReportRow) => {
-    const key = REPORT_COLUMN_KEY_MAP[col] || col.toLowerCase();
+    const key = REPORT_COLUMN_KEY_MAP[col] || col.toLowerCase().replace(/ /g, "_");
     const val = (row as any)[key] ?? "—";
+
     if (col === "Status" || col === "status") {
       return (
-        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium capitalize ${STATUS_COLOR[String(val).toLowerCase()] || "bg-gray-100 text-gray-600"}`}>
+        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold capitalize ${STATUS_COLOR[String(val).toLowerCase()] || "bg-gray-100 text-gray-700"}`}>
           {String(val)}
         </span>
+      );
+    }
+    if (col === "Priority") {
+      const p = String(val).toLowerCase();
+      const pBg =
+        p === "high"
+          ? "bg-red-50 text-red-700 border-red-200"
+          : p === "medium"
+          ? "bg-amber-50 text-amber-700 border-amber-200"
+          : "bg-emerald-50 text-emerald-700 border-emerald-200";
+      return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${pBg} uppercase`}>{String(val)}</span>;
+    }
+    if (col === "Stage" || col === "Category") {
+      return <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800">{String(val)}</span>;
+    }
+    if (col === "Verified Docs") {
+      return <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-[#253C7D] border border-blue-200">{String(val)}</span>;
+    }
+    if (col === "Verified Date & Time" || col === "Verified At") {
+      return val && val !== "—" ? (
+        <span className="text-[11px] text-slate-600 font-medium whitespace-nowrap">{String(val)}</span>
+      ) : (
+        <span className="text-slate-400 italic">—</span>
       );
     }
     if (col.includes("Salary") || col.includes("Pay") || col.includes("Bonus") || col.includes("Deduct") || col === "Amount") {
