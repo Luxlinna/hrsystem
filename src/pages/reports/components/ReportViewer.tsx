@@ -311,7 +311,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
   const fetchRoomBookings = useCallback(async () => {
     let q = supabase
       .from("room_bookings")
-      .select("id, title, date, start_time, end_time, attendees_count, status, meeting_rooms(name), employees:booked_by(first_name, last_name, department, branches(name))")
+      .select("id, title, date, start_time, end_time, attendees_count, status, meeting_rooms(name, floor), employees:booked_by(first_name, last_name, department, branches(name))")
       .order("date", { ascending: false })
       .order("start_time", { ascending: false });
     if (config.dateFrom) q = q.gte("date", config.dateFrom);
@@ -324,9 +324,13 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     const mapped: RoomBookingRow[] = (data || [])
       .map((r: any) => {
         const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim();
+        const roomFloor = r.meeting_rooms?.floor || (r.meeting_rooms?.name?.includes("VIP") ? 5 : 3);
+        const roomDisplay = r.meeting_rooms?.name
+          ? `${r.meeting_rooms.name} (Floor ${roomFloor})`
+          : "—";
         return {
           id: r.id,
-          room_name: r.meeting_rooms?.name || "—",
+          room_name: roomDisplay,
           title: r.title,
           employee: empName || "Unknown",
           department: r.employees?.department || "—",
