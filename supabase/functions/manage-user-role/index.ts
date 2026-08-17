@@ -71,6 +71,17 @@ serve(async (req) => {
     }
 
     const { action, assignment_id, role_id } = await req.json();
+    if (action === "list_deleted_users") {
+      const { data, error } = await admin
+        .from("user_role_assignments")
+        .select("*, app_roles(id, name, color)")
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false });
+
+      if (error) throw error;
+      return json({ users: data || [] });
+    }
+
     const assignmentId = parseAssignmentId(assignment_id);
     if (!assignmentId) return json({ error: "Valid assignment_id is required" }, 400);
 
@@ -91,6 +102,48 @@ serve(async (req) => {
     }
 
     if (action === "delete_assignment") {
+      const { error } = await admin
+        .from("user_role_assignments")
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_by: currentUser.user.email || currentUser.user.id,
+          role_id: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", assignmentId);
+
+      if (error) throw error;
+      return json({ success: true });
+    }
+
+    if (action === "restore_assignment") {
+      const { error } = await admin
+        .from("user_role_assignments")
+        .update({
+          deleted_at: null,
+          deleted_by: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", assignmentId);
+
+      if (error) throw error;
+      return json({ success: true });
+    }
+
+    if (action === "delete_user_forever") {
+      const { data: assignment, error: lookupError } = await admin
+        .from("user_role_assignments")
+        .select("user_id")
+        .eq("id", assignmentId)
+        .maybeSingle();
+
+      if (lookupError) throw lookupError;
+      if (!assignment) return json({ error: "Assignment not found" }, 404);
+      if (assignment.user_id) {
+        const { error: authDeleteError } = await admin.auth.admin.deleteUser(assignment.user_id);
+        if (authDeleteError) throw authDeleteError;
+      }
+
       const { error } = await admin
         .from("user_role_assignments")
         .delete()

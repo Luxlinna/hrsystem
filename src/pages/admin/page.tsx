@@ -230,7 +230,7 @@ export default function AdminPortal() {
         role_id: null,
       }));
 
-    let mergedUsers = authAccountsResult.assignments || usersRes.data || [];
+    let mergedUsers = (authAccountsResult.assignments || usersRes.data || []).filter((user) => !user.deleted_at);
     const missingAssignments = [...missingAuthAssignments, ...missingEmployeeAssignments];
     if (missingAssignments.length > 0) {
       const { error: syncError } = await supabase
@@ -416,26 +416,40 @@ export default function AdminPortal() {
   };
 
   const updateUserRole = async (userId: number, roleId: number | null) => {
+    const previousUsers = users;
+    const nextRole = roles.find((role) => role.id === roleId) || null;
+    setUsers((current) => current.map((user) => user.id === userId
+      ? {
+          ...user,
+          role_id: roleId,
+          app_roles: nextRole ? { id: nextRole.id, name: nextRole.name, color: nextRole.color } : null,
+        }
+      : user
+    ));
+
     try {
       await manageUserRole("update_role", userId, roleId);
     } catch (error: any) {
+      setUsers(previousUsers);
       showToast(error.message || "Failed to update role", "err");
       return;
     }
     invalidatePermissionsCache();
-    loadData();
     showToast("Role updated!");
   };
 
   const removeUser = async (userId: number) => {
+    const previousUsers = users;
+    setUsers((current) => current.filter((user) => user.id !== userId));
+
     try {
       await manageUserRole("delete_assignment", userId);
     } catch (error: any) {
+      setUsers(previousUsers);
       showToast(error.message || "Failed to remove user", "err");
       return;
     }
     showToast("User removed");
-    loadData();
   };
 
   return (

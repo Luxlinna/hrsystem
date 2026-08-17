@@ -101,6 +101,7 @@ serve(async (req) => {
     const { data: assignments, error: assignmentsError } = await admin
       .from("user_role_assignments")
       .select("*, app_roles(id, name, color)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (assignmentsError) throw assignmentsError;
