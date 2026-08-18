@@ -57,6 +57,7 @@ const sourceLabels: Record<string, string> = {
   finance: "Finance",
   it_management: "IT",
   benefits: "Benefits",
+  training: "Training",
   tools: "Tools",
   announcements: "Announcements",
   meeting_rooms: "Meeting Rooms",
