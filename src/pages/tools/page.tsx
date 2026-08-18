@@ -68,7 +68,7 @@ const actionLabels: Record<string, string> = {
 
 export default function Tools() {
   const { user } = useAuth();
-  const { role } = usePermissions();
+  const { role, isAdmin } = usePermissions();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const [tab, setTab] = useState("tools");
   const [tools, setTools] = useState<Tool[]>([]);
@@ -84,6 +84,8 @@ export default function Tools() {
   const [assignOpen, setAssignOpen] = useState(false);
   const assignRef = useRef<HTMLDivElement>(null);
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [toolEditor, setToolEditor] = useState<Tool | null | "new">(null);
+  const [toolForm, setToolForm] = useState({ name: "", description: "", icon: "ri-apps-line", category: "Productivity", status: "active" });
 
   useEffect(() => {
     loadData();
@@ -184,6 +186,24 @@ export default function Tools() {
     loadData();
   };
 
+  const saveTool = async () => {
+    if (!isAdmin || !toolForm.name.trim()) return;
+    const payload = { ...toolForm, name: toolForm.name.trim(), description: toolForm.description.trim() };
+    const result = toolEditor === "new"
+      ? await supabase.from("tools").insert(payload)
+      : await supabase.from("tools").update(payload).eq("id", (toolEditor as Tool).id);
+    if (result.error) { toast("Error", result.error.message, "error"); return; }
+    toast("Saved", `Tool ${toolEditor === "new" ? "created" : "updated"}.`, "success");
+    setToolEditor(null); loadData();
+  };
+
+  const deleteTool = async (tool: Tool) => {
+    if (!isAdmin || !window.confirm(`Delete ${tool.name}?`)) return;
+    const { error } = await supabase.from("tools").delete().eq("id", tool.id);
+    if (error) { toast("Error", error.message, "error"); return; }
+    toast("Deleted", `${tool.name} was deleted.`, "success"); loadData();
+  };
+
   const totalAssignments = assignments.length;
   const totalUsages = usages.length;
   const activeTools = tools.filter((t) => t.status === "active").length;
@@ -200,10 +220,10 @@ export default function Tools() {
   return (
     <div className="p-6 lg:p-10 min-h-screen bg-white">
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">HR Tools</h1>
+        <div className="flex items-start justify-between gap-4"><div><h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">HR Tools</h1>
         <p className="text-[13px] text-gray-500 mt-1">
           Manage tool access, track usage, and monitor employee productivity utilities
-        </p>
+        </p></div>{isAdmin && <button onClick={() => { setToolForm({ name: "", description: "", icon: "ri-apps-line", category: "Productivity", status: "active" }); setToolEditor("new"); }} className="px-4 py-2.5 rounded-lg bg-[#253C7D] text-white text-[12px] font-semibold hover:bg-[#1F336A]"><i className="ri-add-line mr-1" />Add Tool</button>}</div>
       </div>
 
       {/* Stats */}
@@ -313,6 +333,7 @@ export default function Tools() {
                     >
                       Manage
                     </button>
+                    {isAdmin && <><button onClick={() => { setToolForm({ name: t.name, description: t.description, icon: t.icon, category: t.category, status: t.status }); setToolEditor(t); }} className="px-2 py-1.5 border border-gray-200 text-gray-600 text-[11px] rounded-lg hover:bg-gray-50"><i className="ri-edit-line" /></button><button onClick={() => deleteTool(t)} className="px-2 py-1.5 border border-red-100 text-red-500 text-[11px] rounded-lg hover:bg-red-50"><i className="ri-delete-bin-line" /></button></>}
                   </div>
                 </div>
               );
@@ -566,6 +587,18 @@ export default function Tools() {
                 {assignEmployeeIds.length > 1 ? `Grant Access (${assignEmployeeIds.length})` : "Grant Access"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {toolEditor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-5"><h3 className="text-lg font-bold text-gray-900">{toolEditor === "new" ? "Add Tool" : "Edit Tool"}</h3><button onClick={() => setToolEditor(null)} className="text-gray-400 hover:text-gray-700"><i className="ri-close-line text-xl" /></button></div>
+            <div className="space-y-3">
+              {([['name','Tool name'],['description','Description'],['icon','Icon class (e.g. ri-apps-line)'],['category','Category']] as const).map(([key, label]) => <label key={key} className="block text-[12px] font-medium text-gray-600">{label}<input value={toolForm[key]} onChange={e => setToolForm({ ...toolForm, [key]: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-[13px] focus:outline-none focus:border-[#253C7D]" /></label>)}
+              <label className="block text-[12px] font-medium text-gray-600">Status<select value={toolForm.status} onChange={e => setToolForm({ ...toolForm, status: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-[13px]"><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+            </div>
+            <div className="mt-6 flex gap-3"><button onClick={() => setToolEditor(null)} className="flex-1 rounded-lg border border-gray-200 py-2.5 text-[13px] hover:bg-gray-50">Cancel</button><button onClick={saveTool} className="flex-1 rounded-lg bg-[#253C7D] py-2.5 text-[13px] font-semibold text-white hover:bg-[#1F336A]">Save Tool</button></div>
           </div>
         </div>
       )}

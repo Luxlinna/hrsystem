@@ -41,6 +41,18 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
   processed: { label: "Processed", color: "bg-[#253C7D]/10 text-[#253C7D]", icon: "ri-bank-card-line" },
 };
 
+const DEMO_RUN: PayrollRun = {
+  id: "demo-payroll-run", period: new Date().toISOString().slice(0, 7), department: "All Departments",
+  total_base: 4030, total_bonus: 325, total_deductions: 322, total_net: 4033,
+  employee_count: 3, status: "pending_approval", submitted_by: "HR Manager",
+  submitted_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  notes: "Monthly payroll submitted for finance review.", created_at: new Date().toISOString(),
+};
+const DEMO_APPROVAL: PayrollApproval = {
+  id: "demo-payroll-approval", run_id: DEMO_RUN.id, approver_name: "Chenda Sok",
+  approver_role: "CFO", status: "pending", notes: null, acted_at: null, created_at: new Date().toISOString(),
+};
+
 export default function PayrollApproval() {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
@@ -65,8 +77,8 @@ export default function PayrollApproval() {
       supabase.from("payroll_runs").select("*").order("created_at", { ascending: false }),
       supabase.from("payroll_approvals").select("*").order("created_at", { ascending: true }),
     ]);
-    setRuns(r || []);
-    setApprovals(a || []);
+    setRuns(r?.length ? r : [DEMO_RUN]);
+    setApprovals(a?.length ? a : [DEMO_APPROVAL]);
   };
 
   useEffect(() => {

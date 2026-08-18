@@ -31,6 +31,7 @@ interface AttendanceRecord {
   early_leave_minutes?: number | null;
   notes: string | null;
   employees?: Employee;
+  deleted_at?: string | null;
 }
 
 interface NewRecord {
@@ -70,6 +71,8 @@ export default function AttendancePage() {
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"records" | "summary">("records");
+  const [recordPage, setRecordPage] = useState(1);
+  const recordsPerPage = 10;
 
   const [newRecord, setNewRecord] = useState<NewRecord>({
     employee_id: "",
@@ -94,6 +97,7 @@ export default function AttendancePage() {
         supabase
           .from("attendance_records")
           .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+          .is("deleted_at", null)
           .order("date", { ascending: false })
           .limit(200),
         supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url").eq("status", "active").order("first_name"),
@@ -133,6 +137,7 @@ export default function AttendancePage() {
         ? await supabase
             .from("attendance_records")
             .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+            .is("deleted_at", null)
             .in("employee_id", ids)
             .order("date", { ascending: false })
             .limit(200)
@@ -146,6 +151,7 @@ export default function AttendancePage() {
     const { data: recData } = await supabase
       .from("attendance_records")
       .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
+      .is("deleted_at", null)
       .eq("employee_id", me.id)
       .order("date", { ascending: false })
       .limit(200);
@@ -160,6 +166,9 @@ export default function AttendancePage() {
     if (filterDate && r.date !== filterDate) return false;
     return true;
   });
+  const totalRecordPages = Math.max(1, Math.ceil(filtered.length / recordsPerPage));
+  const pagedRecords = filtered.slice((recordPage - 1) * recordsPerPage, recordPage * recordsPerPage);
+  useEffect(() => { setRecordPage(1); }, [filterEmployee, filterStatus, filterDate]);
 
   // Summary stats
   const todayYMD = toYMD(new Date());
@@ -202,6 +211,31 @@ export default function AttendancePage() {
     setShowModal(false);
     setNewRecord({ employee_id: "", date: toYMD(new Date()), clock_in: "09:00", clock_out: "17:30", status: "present", late_minutes: 0, notes: "" });
     fetchData();
+  }
+
+  async function deleteRecord(record: AttendanceRecord) {
+    if (!isAdmin) return;
+    const { error } = await supabase.from("attendance_records").update({ deleted_at: new Date().toISOString(), deleted_by: user?.email || "Admin" }).eq("id", record.id);
+    if (error) { toast("Error", `Failed to move attendance record to Recycle Bin: ${error.message}`, "error"); return; }
+    toast("Moved to Recycle Bin", "Attendance record was removed from the active list.", "success");
+    fetchData();
+  }
+  async function bulkDeleteAttendance(scope: "all" | "week" | "month" | "year") {
+    if (!isAdmin) return;
+    const now = new Date();
+    const start = new Date(now);
+    if (scope === "week") start.setDate(now.getDate() - now.getDay());
+    if (scope === "month") start.setDate(1);
+    if (scope === "year") { start.setMonth(0, 1); }
+    const next = new Date(start);
+    if (scope === "week") next.setDate(start.getDate() + 7);
+    if (scope === "month") next.setMonth(start.getMonth() + 1);
+    if (scope === "year") next.setFullYear(start.getFullYear() + 1);
+    let q = supabase.from("attendance_records").update({ deleted_at: new Date().toISOString(), deleted_by: user?.email || "Admin" }).is("deleted_at", null);
+    if (scope !== "all") q = q.gte("date", toYMD(start)).lt("date", toYMD(next));
+    const { error } = await q;
+    if (error) { toast("Error", error.message, "error"); return; }
+    toast("Moved to Recycle Bin", `${scope === "all" ? "All" : scope} attendance records were removed.`, "success"); fetchData();
   }
 
   function formatTime(t: string | null) {
@@ -324,6 +358,7 @@ export default function AttendancePage() {
                 Clear
               </button>
             )}
+            {isAdmin && <div className="flex gap-2 ml-auto"><button onClick={() => bulkDeleteAttendance("all")} className="px-2.5 py-2 text-xs text-red-700 border border-red-200 rounded-lg hover:bg-red-50">Delete All</button></div>}
           </div>
 
           {/* Table */}
@@ -342,11 +377,11 @@ export default function AttendancePage() {
                       <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3">Clock Out</th>
                       <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3">Hours</th>
                       <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3">Status</th>
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3">Notes</th>
+                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3">Notes</th>{isAdmin && <th className="px-5 py-3" />}
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((r) => {
+                    {pagedRecords.map((r) => {
                       const cfg = STATUS_CONFIG[r.status];
                       const emp = r.employees;
                       return (
@@ -390,7 +425,7 @@ export default function AttendancePage() {
                               {r.status === "late" && r.late_minutes > 0 && ` (+${r.late_minutes}m)`}
                             </span>
                           </td>
-                          <td className="px-5 py-3 text-xs text-gray-400 max-w-[180px] truncate">{r.notes || "—"}</td>
+                          <td className="px-5 py-3 text-xs text-gray-400 max-w-[180px] truncate">{r.notes || "—"}</td>{isAdmin && <td className="px-5 py-3 text-right"><button onClick={(e) => { e.stopPropagation(); deleteRecord(r); }} className="text-xs text-red-600 hover:text-red-700"><i className="ri-delete-bin-line" /></button></td>}
                         </tr>
                       );
                     })}
@@ -399,7 +434,7 @@ export default function AttendancePage() {
 
                 {/* Mobile Cards */}
                 <div className="md:hidden divide-y divide-gray-50">
-                  {filtered.map((r) => {
+                  {pagedRecords.map((r) => {
                     const cfg = STATUS_CONFIG[r.status];
                     const emp = r.employees;
                     return (
@@ -463,7 +498,7 @@ export default function AttendancePage() {
               <div className="p-12 text-center text-gray-400 text-sm">No attendance records match your filters.</div>
             )}
           </div>
-          <p className="text-xs text-gray-400 mt-2">{filtered.length} records shown</p>
+          <div className="mt-4 flex items-center justify-between gap-3"><p className="text-xs text-gray-400">{filtered.length === 0 ? 0 : (recordPage - 1) * recordsPerPage + 1}–{Math.min(recordPage * recordsPerPage, filtered.length)} of {filtered.length} records</p><div className="flex items-center gap-2"><button disabled={recordPage === 1} onClick={() => setRecordPage((p) => Math.max(1, p - 1))} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">Previous</button><span className="text-xs text-gray-500">Page {recordPage} of {totalRecordPages}</span><button disabled={recordPage >= totalRecordPages} onClick={() => setRecordPage((p) => Math.min(totalRecordPages, p + 1))} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">Next</button></div></div>
         </>
       )}
 

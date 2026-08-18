@@ -47,6 +47,8 @@ const MODULES: ModuleConfig[] = [
   { table: "shift_assignments", name: "Shift Assignments", icon: "ri-calendar-schedule-line", select: "id, status, employee:employees(first_name, last_name), deleted_at, deleted_by", label: (r) => `${r.employee?.first_name || "?"} ${r.employee?.last_name || "?"}`, detail: (r) => `Shift Assignment · ${r.status}` },
   { table: "leave_requests", name: "Leave Requests", icon: "ri-calendar-event-line", select: "id, leave_type, start_date, end_date, days, deleted_at, deleted_by, employees(first_name, last_name)", label: (r) => `${r.employees?.first_name || ""} ${r.employees?.last_name || ""} (${r.leave_type})`, detail: (r) => `Leave · ${r.start_date} to ${r.end_date} (${r.days} days)` },
   { table: "work_logs", name: "Daily Work Logs", icon: "ri-file-list-3-line", select: "id, activity, log_date, deleted_at, deleted_by", label: (r) => r.activity, detail: (r) => `Work Log · ${r.log_date}` },
+  { table: "unity_apps", name: "Unity Apps", icon: "ri-apps-line", select: "id, name, category, vendor, deleted_at, deleted_by", label: (r) => r.name, detail: (r) => `Unity App · ${r.category} · ${r.vendor || "No vendor"}` },
+  { table: "attendance_records", name: "Attendance Records", icon: "ri-time-line", select: "id, employee_id, date, status, deleted_at, deleted_by, employees(first_name, last_name)", label: (r) => `${r.employees?.first_name || "Employee"} ${r.employees?.last_name || ""} · ${r.date}`, detail: (r) => `Attendance · ${r.status}` },
 ];
 
 export default function RecycleBinPage() {

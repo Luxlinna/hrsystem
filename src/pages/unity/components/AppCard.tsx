@@ -7,6 +7,9 @@ interface AppCardProps {
   todayMinutes: number;
   onClick: () => void;
   onGrantAccess: () => void;
+  isAdmin?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 const categoryColors: Record<string, string> = {
@@ -19,7 +22,7 @@ const categoryColors: Record<string, string> = {
   Security: "bg-red-50 text-red-700",
 };
 
-export default function AppCard({ app, accessCount, usageCount, todayMinutes, onClick, onGrantAccess }: AppCardProps) {
+export default function AppCard({ app, accessCount, usageCount, todayMinutes, onClick, onGrantAccess, isAdmin, onEdit, onDelete }: AppCardProps) {
   const statusColor =
     app.status === "active" ? "bg-green-100 text-green-700" :
     app.status === "maintenance" ? "bg-amber-100 text-amber-700" :
@@ -83,6 +86,7 @@ export default function AppCard({ app, accessCount, usageCount, todayMinutes, on
           Grant
         </button>
       </div>
+      {isAdmin && <div className="mt-2 flex gap-2"><button onClick={(e) => { e.stopPropagation(); onEdit?.(); }} className="flex-1 py-1.5 text-[11px] border border-gray-200 rounded-lg hover:bg-gray-50"><i className="ri-edit-line mr-1" />Edit</button><button onClick={(e) => { e.stopPropagation(); onDelete?.(); }} className="flex-1 py-1.5 text-[11px] text-red-600 border border-red-100 rounded-lg hover:bg-red-50"><i className="ri-delete-bin-line mr-1" />Delete</button></div>}
     </div>
   );
 }

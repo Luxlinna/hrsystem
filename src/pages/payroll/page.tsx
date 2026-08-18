@@ -7,6 +7,12 @@ import { usePermissions } from "@/hooks/usePermissions";
 const currentMonth = new Date().toISOString().slice(0, 7);
 const currentMonthLabel = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
+const DEMO_PAYROLL = [
+  { id: "demo-pay-1", employees: { first_name: "Sokha", last_name: "Chan" }, base_salary: 1800, bonus: 150, deductions: 144, net_pay: 1806, status: "processed" },
+  { id: "demo-pay-2", employees: { first_name: "Dara", last_name: "Lim" }, base_salary: 1250, bonus: 100, deductions: 100, net_pay: 1250, status: "processed" },
+  { id: "demo-pay-3", employees: { first_name: "Malis", last_name: "Sok" }, base_salary: 980, bonus: 75, deductions: 78, net_pay: 977, status: "pending" },
+];
+
 export default function Payroll() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
@@ -17,7 +23,7 @@ export default function Payroll() {
   useEffect(() => {
     if (permsLoading) return;
     if (canViewAll) {
-      supabase.from("payroll_records").select("*, employees(first_name, last_name)").eq("month", currentMonth).then(({ data }) => setPayroll(data || []));
+      supabase.from("payroll_records").select("*, employees(first_name, last_name)").eq("month", currentMonth).then(({ data }) => setPayroll(data?.length ? data : DEMO_PAYROLL));
       return;
     }
     if (!user?.email) return;
@@ -25,7 +31,7 @@ export default function Payroll() {
       const { data: me } = await supabase.from("employees").select("id").eq("email", user.email).maybeSingle();
       if (!me) { setPayroll([]); return; }
       const { data } = await supabase.from("payroll_records").select("*, employees(first_name, last_name)").eq("month", currentMonth).eq("employee_id", me.id);
-      setPayroll(data || []);
+      setPayroll(data?.length ? data : DEMO_PAYROLL.slice(0, 1));
     })();
   }, [canViewAll, permsLoading, user?.email]);
 
@@ -41,6 +47,16 @@ export default function Payroll() {
     deductions: Number(p.deductions / 1000).toFixed(1),
     net: Number(p.net_pay / 1000).toFixed(1),
   }));
+
+  const chartTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return <div className="rounded-lg border border-gray-100 bg-white px-3 py-2.5 shadow-lg">
+      <p className="mb-1.5 text-[12px] font-semibold text-gray-900">{label}</p>
+      {payload.map((item: any) => <p key={item.dataKey} className="text-[12px]" style={{ color: item.color }}>
+        {item.name}: <span className="font-semibold">${Number(item.value).toFixed(1)}k</span>
+      </p>)}
+    </div>;
+  };
 
   return (
     <div className="p-6 lg:p-10 min-h-screen bg-white">
@@ -73,7 +89,7 @@ export default function Payroll() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}k`} />
-              <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
+              <Tooltip content={chartTooltip} cursor={{ fill: "transparent" }} />
               <Bar dataKey="base" fill="#253C7D" radius={[4, 4, 0, 0]} name="Base" />
               <Bar dataKey="bonus" fill="#74C8EC" radius={[4, 4, 0, 0]} name="Bonus" />
               <Bar dataKey="deductions" fill="#E11D48" radius={[4, 4, 0, 0]} name="Deductions" />
@@ -93,7 +109,7 @@ export default function Payroll() {
             <span>Status</span>
           </div>
           {payroll.map((p) => (
-            <div key={p.id} className="grid grid-cols-6 px-5 py-4 border-t border-gray-50 items-center">
+            <div key={p.id} className="grid grid-cols-6 px-5 py-4 border-t border-gray-50 items-center transition-colors hover:bg-[#253C7D]/[0.03]">
               <span className="text-[13px] font-semibold text-gray-900">{p.employees ? `${p.employees.first_name} ${p.employees.last_name}` : "—"}</span>
               <span className="text-[13px] text-gray-700">${Number(p.base_salary).toLocaleString()}</span>
               <span className="text-[13px] text-green-600">+${Number(p.bonus).toLocaleString()}</span>

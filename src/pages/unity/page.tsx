@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import AppCard from "./components/AppCard";
 import AppDetailPanel from "./components/AppDetailPanel";
 import { UnityApp, AppAccess, AppUsageLog, Employee } from "./types";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const categoryColors: Record<string, string> = {
   Communication: "bg-emerald-50 text-emerald-700",
@@ -15,6 +16,7 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function UnityApps() {
+  const { isAdmin } = usePermissions();
   const [apps, setApps] = useState<UnityApp[]>([]);
   const [accesses, setAccesses] = useState<AppAccess[]>([]);
   const [usageLogs, setUsageLogs] = useState<AppUsageLog[]>([]);
@@ -26,10 +28,14 @@ export default function UnityApps() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"directory" | "activity" | "costs">("directory");
+  const [editor, setEditor] = useState<UnityApp | "new" | null>(null);
+  const [form, setForm] = useState<any>({ name: "", description: "", category: "Productivity", icon: "ri-apps-line", color: "#253C7D", integration_url: "", docs_url: "", status: "active", version: "1.0.0", vendor: "", monthly_cost: "0" });
+  const saveApp = async () => { if (!isAdmin || !form.name.trim()) return; const { id, created_at, ...fields } = form; const payload = { ...fields, name: form.name.trim(), monthly_cost: Number(form.monthly_cost) || 0 }; const { error } = editor === "new" ? await supabase.from("unity_apps").insert(payload) : await supabase.from("unity_apps").update(payload).eq("id", (editor as UnityApp).id); if (error) return window.alert(error.message); setEditor(null); loadAll(); };
+  const deleteApp = async (app: UnityApp) => { if (!isAdmin) return; const { error } = await supabase.from("unity_apps").update({ deleted_at: new Date().toISOString(), deleted_by: "Admin" }).eq("id", app.id); if (error) window.alert(error.message); else loadAll(); };
 
   const loadAll = async () => {
     const [{ data: a }, { data: ac }, { data: ul }, { data: emp }] = await Promise.all([
-      supabase.from("unity_apps").select("*").order("name"),
+      supabase.from("unity_apps").select("*").is("deleted_at", null).order("name"),
       supabase.from("app_access").select("*, employees(first_name, last_name, role, department, avatar_url)").eq("is_active", true),
       supabase.from("app_usage_logs").select("*, unity_apps(name, icon, color), employees(first_name, last_name, avatar_url)").order("logged_at", { ascending: false }).limit(100),
       supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url").eq("status", "active"),
@@ -100,7 +106,7 @@ export default function UnityApps() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Unity Apps</h1>
           <p className="text-[13px] text-gray-500 mt-1">Integrated workplace apps — manage access, track usage, control costs</p>
-        </div>
+        </div>{isAdmin && <button onClick={() => { setForm({ name: "", description: "", category: "Productivity", icon: "ri-apps-line", color: "#253C7D", integration_url: "", docs_url: "", status: "active", version: "1.0.0", vendor: "", monthly_cost: "0" }); setEditor("new"); }} className="px-4 py-2.5 rounded-lg bg-[#253C7D] text-white text-[12px] font-semibold"><i className="ri-add-line mr-1" />Add App</button>}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
@@ -190,6 +196,7 @@ export default function UnityApps() {
                 todayMinutes={getTodayMinutes(app.id)}
                 onClick={() => setSelectedApp(app)}
                 onGrantAccess={() => setSelectedApp(app)}
+                isAdmin={isAdmin} onEdit={() => { setForm({ ...app, monthly_cost: String(app.monthly_cost) }); setEditor(app); }} onDelete={() => deleteApp(app)}
               />
             ))}
             {filteredApps.length === 0 && (
@@ -287,6 +294,7 @@ export default function UnityApps() {
           onRefresh={loadAll}
         />
       )}
+      {editor && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"><div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"><h3 className="text-lg font-bold mb-4">{editor === "new" ? "Add App" : "Edit App"}</h3><div className="grid grid-cols-2 gap-3">{["name","description","icon","color","vendor","version","integration_url","docs_url","monthly_cost"].map(k => <label key={k} className="text-[11px] font-medium text-gray-600">{k.replace("_", " ")}<input value={form[k] || ""} onChange={e => setForm({ ...form, [k]: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px]" /></label>)}<label className="text-[11px] font-medium text-gray-600">Category<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px]">{["Communication","Engineering","Design","Productivity","Sales","HR","Security"].map(x => <option key={x}>{x}</option>)}</select></label><label className="text-[11px] font-medium text-gray-600">Status<select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-[12px]"><option>active</option><option>maintenance</option></select></label></div><div className="flex gap-3 mt-5"><button onClick={() => setEditor(null)} className="flex-1 py-2 border rounded-lg">Cancel</button><button onClick={saveApp} className="flex-1 py-2 bg-[#253C7D] text-white rounded-lg">Save</button></div></div></div>}
     </div>
   );
 }
