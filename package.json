@@ -29,7 +29,8 @@
     "react-router-dom": "^7.6.3",
     "recharts": "3.2.0",
     "remixicon": "^4.9.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "denomailer": "^1.6.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

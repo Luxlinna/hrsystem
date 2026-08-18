@@ -182,6 +182,7 @@ export default function OnboardingChecklist() {
         supabase
           .from("onboarding_requests")
           .select("*, employees(id, first_name, last_name, role, department, avatar_url, branches(name))")
+          .is("deleted_at", null)
           .order("created_at", { ascending: false }),
         supabase
           .from("onboarding_checklist_tasks")

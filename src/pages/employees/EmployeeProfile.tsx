@@ -452,6 +452,7 @@ export default function EmployeeProfile() {
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
                   >
                     <option value="active">Active</option>
+                    <option value="onboarding">Onboarding</option>
                     <option value="on_leave">On Leave</option>
                     <option value="inactive">Inactive</option>
                     <option value="suspended">Suspended</option>

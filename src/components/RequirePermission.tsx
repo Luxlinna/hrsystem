@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { usePermissions } from "@/hooks/usePermissions";
+import { isBootstrapAdminEmail, usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/context/AuthContext";
 
 function LoadingScreen() {
   return (
@@ -25,9 +26,10 @@ function AccessDenied({ message }: { message: string }) {
 
 export function RequireAdmin({ children }: { children: ReactNode }) {
   const { isAdmin, loading } = usePermissions();
+  const { user } = useAuth();
 
-  if (loading) return <LoadingScreen />;
-  if (!isAdmin) return <AccessDenied message="You don't have permission to access the admin portal." />;
+  if (loading && !isBootstrapAdminEmail(user?.email)) return <LoadingScreen />;
+  if (!isAdmin && !isBootstrapAdminEmail(user?.email)) return <AccessDenied message="You don't have permission to access the admin portal." />;
   return <>{children}</>;
 }
 

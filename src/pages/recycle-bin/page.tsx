@@ -41,6 +41,8 @@ const MODULES: ModuleConfig[] = [
   { table: "room_bookings", name: "Room Bookings", icon: "ri-door-open-line", select: "id, title, date, deleted_at, deleted_by", label: (r) => r.title, detail: (r) => `Room Booking · ${r.date}` },
   { table: "onboarding_requests", name: "Onboarding Requests", icon: "ri-user-star-line", select: "id, stage, status, deleted_at, deleted_by, employees(first_name, last_name)", label: (r) => `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Candidate", detail: (r) => `Onboarding · stage ${r.stage}` },
   { table: "onboarding_checklist_tasks", name: "Onboarding Checklist", icon: "ri-task-line", select: "id, task_name, category, deleted_at, deleted_by", label: (r) => r.task_name, detail: (r) => `Checklist Task · ${r.category}` },
+  { table: "employees", name: "Employees", icon: "ri-team-line", select: "id, first_name, last_name, email, role, department, deleted_at, deleted_by", label: (r) => `${r.first_name} ${r.last_name}`, detail: (r) => `${r.role || "Employee"} · ${r.department || "No department"} · ${r.email}` },
+  { table: "user_role_assignments", name: "User Roles & Accounts", icon: "ri-user-settings-line", select: "id, email, display_name, deleted_at, deleted_by, app_roles(name)", label: (r) => r.display_name ? `${r.display_name} (${r.email})` : r.email, detail: (r) => `User Account · ${r.app_roles?.name || "No role"}` },
   { table: "shifts", name: "Shifts", icon: "ri-time-line", select: "id, name, department, shift_date, start_time, end_time, deleted_at, deleted_by", label: (r) => `${r.name} (${r.shift_date})`, detail: (r) => `Shift · ${r.start_time} - ${r.end_time} · ${r.department}` },
   { table: "shift_assignments", name: "Shift Assignments", icon: "ri-calendar-schedule-line", select: "id, status, employee:employees(first_name, last_name), deleted_at, deleted_by", label: (r) => `${r.employee?.first_name || "?"} ${r.employee?.last_name || "?"}`, detail: (r) => `Shift Assignment · ${r.status}` },
   { table: "leave_requests", name: "Leave Requests", icon: "ri-calendar-event-line", select: "id, leave_type, start_date, end_date, days, deleted_at, deleted_by, employees(first_name, last_name)", label: (r) => `${r.employees?.first_name || ""} ${r.employees?.last_name || ""} (${r.leave_type})`, detail: (r) => `Leave · ${r.start_date} to ${r.end_date} (${r.days} days)` },
@@ -52,7 +54,7 @@ export default function RecycleBinPage() {
   const [items, setItems] = useState<BinItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
-  const [confirming, setConfirming] = useState<{ table: string; id: string | number } | null>(null);
+  const [confirming, setConfirming] = useState<BinItem | null>(null);
   const [working, setWorking] = useState(false);
 
   const loadItems = useCallback(async () => {
@@ -92,10 +94,46 @@ export default function RecycleBinPage() {
 
   const restore = async (item: BinItem) => {
     setWorking(true);
-    const { error } = await supabase
-      .from(item.table)
-      .update({ deleted_at: null, deleted_by: null })
-      .eq("id", item.id);
+    let error: any = null;
+
+    if (item.table === "user_role_assignments") {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/manage-user-role`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token}`,
+            "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            action: "restore_assignment",
+            assignment_id: item.id,
+          }),
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || result.error) throw new Error(result.error || "Failed to restore user");
+      } catch (err) {
+        const { error: dbErr } = await supabase
+          .from("user_role_assignments")
+          .update({ deleted_at: null, deleted_by: null })
+          .eq("id", item.id);
+        error = dbErr;
+      }
+    } else if (item.table === "onboarding_requests") {
+      const [{ error: dbErr }] = await Promise.all([
+        supabase.from("onboarding_requests").update({ deleted_at: null, deleted_by: null }).eq("id", item.id),
+        supabase.from("onboarding_checklist_tasks").update({ deleted_at: null, deleted_by: null }).eq("onboarding_request_id", item.id),
+      ]);
+      error = dbErr;
+    } else {
+      const { error: dbErr } = await supabase
+        .from(item.table)
+        .update({ deleted_at: null, deleted_by: null })
+        .eq("id", item.id);
+      error = dbErr;
+    }
+
     setWorking(false);
     if (error) { toast("Error", "Failed to restore item", "error"); return; }
     toast("Restored", `"${item.label}" is back in ${MODULES.find((m) => m.table === item.table)?.name}.`, "success");
@@ -105,12 +143,45 @@ export default function RecycleBinPage() {
 
   const deleteForever = async (item: BinItem) => {
     setWorking(true);
-    const { error } = await supabase.from(item.table).delete().eq("id", item.id);
-    if (!error && item.table === "documents" && item.raw?.file_url) {
-      // Permanently removing a document also removes its file from storage.
-      const filePath = item.raw.file_url.split("/documents/")[1];
-      if (filePath) await supabase.storage.from("documents").remove([filePath]);
+    let error: any = null;
+
+    if (item.table === "user_role_assignments") {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/manage-user-role`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token}`,
+            "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            action: "delete_user_forever",
+            assignment_id: item.id,
+          }),
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || result.error) throw new Error(result.error || "Failed to delete user permanently");
+      } catch (err) {
+        const { error: dbErr } = await supabase.from("user_role_assignments").delete().eq("id", item.id);
+        error = dbErr;
+      }
+    } else if (item.table === "onboarding_requests") {
+      const [{ error: dbErr }] = await Promise.all([
+        supabase.from("onboarding_checklist_tasks").delete().eq("onboarding_request_id", item.id),
+        supabase.from("onboarding_documents").delete().eq("onboarding_request_id", item.id),
+        supabase.from("onboarding_requests").delete().eq("id", item.id),
+      ]);
+      error = dbErr;
+    } else {
+      const { error: dbErr } = await supabase.from(item.table).delete().eq("id", item.id);
+      error = dbErr;
+      if (!error && item.table === "documents" && item.raw?.file_url) {
+        const filePath = item.raw.file_url.split("/documents/")[1];
+        if (filePath) await supabase.storage.from("documents").remove([filePath]);
+      }
     }
+
     setWorking(false);
     if (error) { toast("Error", "Failed to delete item", "error"); return; }
     toast("Deleted forever", `"${item.label}" was permanently erased.`, "success");
@@ -194,7 +265,6 @@ export default function RecycleBinPage() {
         ) : (
           filtered.map((item) => {
             const cfg = MODULES.find((m) => m.table === item.table)!;
-            const isConfirming = confirming?.table === item.table && confirming?.id === item.id;
             return (
               <div key={`${item.table}-${item.id}`} className="bg-white rounded-xl border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
@@ -224,31 +294,62 @@ export default function RecycleBinPage() {
                     <i className="ri-refresh-line" />
                     Restore
                   </button>
-                  {isConfirming ? (
-                    <button
-                      onClick={() => deleteForever(item)}
-                      disabled={working}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 cursor-pointer whitespace-nowrap disabled:opacity-50"
-                    >
-                      <i className="ri-alert-line" />
-                      Confirm permanent delete
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setConfirming({ table: item.table, id: item.id })}
-                      disabled={working}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 cursor-pointer whitespace-nowrap disabled:opacity-50"
-                    >
-                      <i className="ri-delete-bin-2-line" />
-                      Delete forever
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setConfirming(item)}
+                    disabled={working}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 cursor-pointer whitespace-nowrap disabled:opacity-50"
+                  >
+                    <i className="ri-delete-bin-2-line" />
+                    Delete forever
+                  </button>
                 </div>
               </div>
             );
           })
         )}
       </div>
+
+      {confirming && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="permanent-delete-title"
+          onMouseDown={() => !working && setConfirming(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <i className="ri-alert-line text-xl" />
+            </div>
+            <h2 id="permanent-delete-title" className="text-lg font-semibold text-gray-900">Delete forever?</h2>
+            <p className="mt-2 text-sm leading-6 text-gray-600">
+              Are you sure you want to permanently delete <span className="font-semibold text-gray-900">&ldquo;{confirming.label}&rdquo;</span>? This action cannot be undone.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirming(null)}
+                disabled={working}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteForever(confirming)}
+                disabled={working}
+                className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                <i className="ri-delete-bin-2-line" />
+                {working ? "Deleting..." : "Delete forever"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <p className="text-xs text-gray-400 mt-6">
         Note: personal notifications and system configuration are permanently deleted by design and never appear here.

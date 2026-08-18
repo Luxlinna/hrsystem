@@ -11,12 +11,7 @@ insert into app_roles (name, description, color, is_admin, allowed_modules) valu
   ('Employee', 'Self-service access only', '#059669',
     false, array['dashboard','self-service','leave','leave-calendar','notifications','announcements','training']);
 
-insert into user_role_assignments (user_id, email, display_name, role_id)
-select '945c5681-1b83-4705-aa01-7f3591c81fdd'::uuid, 'admin@hrnexus.com', 'Admin User', id from app_roles where name = 'Super Admin';
-insert into user_role_assignments (user_id, email, display_name, role_id)
-select '32aaf32d-00b4-4bb4-8c46-d245bfd56b4d'::uuid, 'manager@hrnexus.com', 'HR Manager', id from app_roles where name = 'HR Manager';
-insert into user_role_assignments (user_id, email, display_name, role_id)
-select 'bbdc857d-3d9b-4f8d-9baa-da1a995d506d'::uuid, 'employee@hrnexus.com', 'Demo Employee', id from app_roles where name = 'Employee';
+-- Commented out user role assignment inserts
 
 -- =========================================================================
 -- Branches (Phnom Penh HQ + 10 branches)

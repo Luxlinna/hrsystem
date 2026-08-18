@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -11,11 +11,14 @@ export default function ResetPasswordPage() {
   const [checking, setChecking] = useState(true);
   const [hasSession, setHasSession] = useState(false);
   const [done, setDone] = useState(false);
+  const [invitedEmail, setInvitedEmail] = useState("");
   const { updatePassword } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setHasSession(!!data.session);
+      setInvitedEmail(data.session?.user.email || "");
       setChecking(false);
     });
   }, []);
@@ -34,7 +37,9 @@ export default function ResetPasswordPage() {
     setLoading(true);
     try {
       await updatePassword(password);
-      setDone(true);
+      // The invitation token has already established an authenticated
+      // session. After setting the password, take the user straight in.
+      navigate("/", { replace: true });
     } catch (err: any) {
       setError(err.message || "Failed to update password");
     } finally {
@@ -48,24 +53,24 @@ export default function ResetPasswordPage() {
         <div className="text-center mb-8">
           <img src="/logo-mark.png" alt="HRM_OPS Logo" className="w-14 h-14 object-contain mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-[#1A1A1A]">
-            {done ? "Password Updated" : "Reset Password"}
+            {done ? "Account Ready" : "Sign Up Account"}
           </h1>
           <p className="text-[13px] text-gray-500 mt-1">
-            {done ? "You can now sign in with your new password" : "Choose a new password for your account"}
+            {done ? "You can now sign in with your new password" : "Create a password to activate your account"}
           </p>
         </div>
 
         {checking ? (
           <div className="flex flex-col items-center py-8 text-gray-400">
             <span className="w-6 h-6 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
-            <p className="text-[12px] mt-3">Verifying your reset link...</p>
+            <p className="text-[12px] mt-3">Verifying your invitation...</p>
           </div>
         ) : done ? (
           <>
             <div className="flex flex-col items-center text-center p-6 bg-emerald-50 border border-emerald-100 rounded-xl">
               <i className="ri-checkbox-circle-line text-3xl text-emerald-600 mb-3" />
               <p className="text-[13px] text-emerald-800 leading-relaxed">
-                Your password has been changed successfully.
+                Your account password has been created successfully.
               </p>
             </div>
             <Link
@@ -80,14 +85,14 @@ export default function ResetPasswordPage() {
             <div className="flex flex-col items-center text-center p-6 bg-amber-50 border border-amber-100 rounded-xl">
               <i className="ri-error-warning-line text-3xl text-amber-500 mb-3" />
               <p className="text-[13px] text-amber-800 leading-relaxed">
-                This reset link is invalid or has expired. Request a new link to reset your password.
+                This invitation link is invalid or has expired. Ask an administrator to send a new invitation.
               </p>
             </div>
             <Link
-              to="/forgot-password"
+              to="/login"
               className="mt-8 w-full block text-center py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] active:scale-[0.98] transition-all"
             >
-              Request New Link
+              Back to Sign In
             </Link>
           </>
         ) : (
@@ -99,6 +104,22 @@ export default function ResetPasswordPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
+                  Invited Email
+                </label>
+                <div className="relative">
+                  <i className="ri-mail-line absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-gray-400 pointer-events-none" />
+                  <input
+                    type="email"
+                    value={invitedEmail}
+                    readOnly
+                    aria-label="Invited email"
+                    className="w-full cursor-not-allowed bg-gray-50 pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-600"
+                    placeholder="Loading invited email..."
+                  />
+                </div>
+              </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
                   New Password
@@ -118,7 +139,7 @@ export default function ResetPasswordPage() {
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
-                  Confirm New Password
+                  Confirm Password
                 </label>
                 <div className="relative">
                   <i className="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-gray-400 pointer-events-none" />
@@ -137,7 +158,7 @@ export default function ResetPasswordPage() {
                 disabled={loading}
                 className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] active:scale-[0.98] transition-all disabled:opacity-60"
               >
-                {loading ? "Updating..." : "Update Password"}
+                {loading ? "Creating Account..." : "Create Account"}
               </button>
             </form>
           </>
