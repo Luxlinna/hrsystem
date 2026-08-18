@@ -189,6 +189,7 @@ export default function Onboarding() {
         supabase
           .from("onboarding_requests")
           .select("*, employees(first_name, last_name, role, department, branch_id, branches(name))")
+          .is("deleted_at", null)
           .order("created_at", { ascending: false }),
         supabase.from("onboarding_documents").select("*").order("created_at", { ascending: true }),
         supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url, branches(name)").order("first_name"),
@@ -415,13 +416,15 @@ export default function Onboarding() {
       return;
 
     try {
-      await supabase.from("onboarding_documents").delete().eq("onboarding_request_id", req.id);
-      const { error } = await supabase.from("onboarding_requests").delete().eq("id", req.id);
+      const { error } = await supabase.from("onboarding_requests").update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: actorName,
+      }).eq("id", req.id);
 
       if (error) {
         toast("Error", "Failed to delete onboarding record: " + error.message, "error");
       } else {
-        toast("Record Deleted", `Onboarding record for ${empName} has been deleted.`, "success");
+        toast("Record Deleted", `Onboarding record for ${empName} has been moved to Recycle Bin.`, "success");
         logActivity({
           module: "onboarding",
           action: "deleted",
