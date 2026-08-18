@@ -39,6 +39,7 @@ export default function Employees() {
   const [roles, setRoles] = useState<{ id: number; name: string; color: string }[]>([]);
   const [accountStatus, setAccountStatus] = useState<Record<string, { invited: boolean; hasAccount: boolean }>>({});
   const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const pageWindow = (current: number, total: number): (number | "...")[] => {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -51,7 +52,7 @@ export default function Employees() {
   };
 
   const loadEmployees = () => {
-    supabase.from("employees").select("*, branches(name)").order("first_name").then(({ data, error }) => {
+    supabase.from("employees").select("*, branches(name)").is("deleted_at", null).order("first_name").then(({ data, error }) => {
       if (error) { toast("Error", "Failed to load employee directory", "error"); return; }
       setEmployees(data || []);
     });
@@ -84,6 +85,9 @@ export default function Employees() {
 
   const depts = Array.from(new Set(employees.map((e) => e.department)));
   const branchCount = new Set(employees.map((e) => e.branch_id).filter(Boolean)).size;
+  // Reporting lines can point to any manager in the company. Include the
+  // department in the option label so same-named managers are distinguishable.
+  const managers = employees.filter((employee) => /\bmanager\b/i.test(employee.role || ""));
 
   const filtered = employees.filter((e) => {
     const matchesSearch = `${e.first_name} ${e.last_name} ${e.email} ${e.role}`.toLowerCase().includes(search.toLowerCase());
@@ -159,7 +163,7 @@ export default function Employees() {
           email: e.email,
           display_name: `${e.first_name} ${e.last_name}`,
           role_id: roles.find((r) => r.name === e.role)?.id || null,
-          redirect_to: `${window.location.origin}/auth/reset-password`,
+          redirect_to: `${window.location.origin}/reset-password`,
         },
       });
       if (error) throw error;
@@ -170,6 +174,28 @@ export default function Employees() {
     } finally {
       setInvitingId(null);
     }
+  };
+
+  const deleteEmployee = async (employee: any) => {
+    if (!canManage) return;
+    const name = `${employee.first_name} ${employee.last_name}`;
+    if (!confirm(`Move "${name}" to the Recycle Bin? The employee can be restored later.`)) return;
+
+    setDeletingId(employee.id);
+    const { error } = await supabase
+      .from("employees")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", employee.id);
+    setDeletingId(null);
+
+    if (error) {
+      toast("Error", "Failed to move employee to the Recycle Bin", "error");
+      return;
+    }
+
+    toast("Employee moved to Recycle Bin", `${name} can be restored from the Recycle Bin.`, "success");
+    logActivity({ module: "employees", action: "deleted", entityType: "employee", entityId: employee.id, actorName, actorRole: role?.name || "Unknown", description: `${name} moved to the Recycle Bin` });
+    loadEmployees();
   };
 
   return (
@@ -220,7 +246,7 @@ export default function Employees() {
       </div>
 
       <div className="border border-gray-100 rounded-xl overflow-hidden">
-        <div className="hidden md:grid grid-cols-7 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+        <div className={`hidden md:grid ${canManage ? "grid-cols-8" : "grid-cols-7"} bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider`}>
           <span>Employee</span>
           <span>Role</span>
           <span>Department</span>
@@ -228,8 +254,9 @@ export default function Employees() {
           <span>Status</span>
           <span>Account</span>
           <span>Join Date</span>
+          {canManage && <span className="text-right">Actions</span>}
         </div>
-        {filtered.map((e) => {
+        {pagedEmployees.map((e) => {
           const acc = accountStatus[e.email];
           const isInvited = acc?.invited;
           const hasAccount = acc?.hasAccount;
@@ -237,7 +264,7 @@ export default function Employees() {
           <Link
             key={e.id}
             to={`/employees/${e.id}`}
-            className="grid grid-cols-1 md:grid-cols-7 px-5 py-4 border-t border-gray-50 items-center hover:bg-[#253C7D]/5 transition-colors cursor-pointer"
+            className={`grid grid-cols-1 ${canManage ? "md:grid-cols-8" : "md:grid-cols-7"} px-5 py-4 border-t border-gray-50 items-center hover:bg-[#253C7D]/5 transition-colors cursor-pointer`}
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-sm font-bold">
@@ -284,6 +311,20 @@ export default function Employees() {
               )}
             </span>
             <span className="text-[13px] text-gray-500 mt-1 md:mt-0">{e.join_date || "N/A"}</span>
+            {canManage && (
+              <span className="mt-2 md:mt-0 text-left md:text-right">
+                <button
+                  type="button"
+                  onClick={(ev) => { ev.preventDefault(); deleteEmployee(e); }}
+                  disabled={deletingId === e.id}
+                  aria-label={`Delete ${e.first_name} ${e.last_name}`}
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+                >
+                  <i className="ri-delete-bin-line" />
+                  {deletingId === e.id ? "Removing..." : "Delete"}
+                </button>
+              </span>
+            )}
           </Link>
           );
         })}
@@ -402,8 +443,11 @@ export default function Employees() {
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Reports To</label>
                   <select value={form.reports_to} onChange={(e) => setForm({ ...form, reports_to: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer">
                     <option value="">No manager</option>
-                    {employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>)}
+                    {managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.first_name} {manager.last_name} — {manager.department || "No department"}</option>)}
                   </select>
+                  {managers.length === 0 && (
+                    <p className="mt-1 text-[11px] text-gray-400">No managers are available in the directory.</p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

@@ -140,7 +140,7 @@ export default function Onboarding() {
           .select("*, employees(first_name, last_name, role, department, branch_id, branches(name))")
           .order("created_at", { ascending: false }),
         supabase.from("onboarding_documents").select("*").order("created_at", { ascending: true }),
-        supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url, branches(name)").order("first_name"),
+        supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url, branches(name)").is("deleted_at", null).order("first_name"),
       ]);
       setRequests((ob as any) || []);
       setDocuments(docs || []);
@@ -162,6 +162,9 @@ export default function Onboarding() {
       .channel("onboarding-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_requests" }, () => loadData())
       .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_documents" }, () => loadData())
+      // Keep the Start Onboarding directory in sync when an employee is
+      // created or updated in the Employees module.
+      .on("postgres_changes", { event: "*", schema: "public", table: "employees" }, () => loadData())
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
@@ -205,6 +208,15 @@ export default function Onboarding() {
         (e.branches?.name && e.branches.name.toLowerCase().includes(q))
     );
   }, [eligibleEmployees, empSearch]);
+
+  const openStartOnboarding = () => {
+    // Reload from the Employees directory each time the picker opens so it
+    // never presents a stale, in-memory candidate list.
+    loadData();
+    setStartEmployeeId("");
+    setEmpSearch("");
+    setShowStartModal(true);
+  };
 
   const selectedEmp = useMemo(() => {
     return employees.find((e) => e.id === startEmployeeId) || null;
@@ -669,11 +681,7 @@ export default function Onboarding() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => {
-              setStartEmployeeId("");
-              setEmpSearch("");
-              setShowStartModal(true);
-            }}
+            onClick={openStartOnboarding}
             className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
           >
             <i className="ri-user-add-line" />
