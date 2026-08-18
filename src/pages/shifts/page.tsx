@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, type CSSProperties } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/components/Toast";
@@ -773,7 +774,7 @@ export default function Shifts() {
       {/* Main Content Area */}
       <div className={`flex-1 min-w-0 transition-all duration-200 ${selectedShift ? "sm:mr-[380px] lg:mr-[400px]" : ""}`}>
         <div className="p-6 lg:p-10">
-          
+
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
@@ -784,9 +785,18 @@ export default function Shifts() {
                 {kpiTotalShiftsThisWeek} shifts this week &middot; {kpiTotalWeeklyHours} total scheduled hours &middot; {kpiCoveragePercentage}% staffing coverage
               </p>
             </div>
-            
+
             {/* Header Action Suite */}
             <div className="flex flex-wrap items-center gap-2">
+              <Link
+                to={`/reports?module=shifts&from=${formatDate(weekDates[0])}&to=${formatDate(weekDates[6])}`}
+                title="Open detailed Shift Scheduling Report in Reports Center"
+                className="inline-flex items-center gap-1.5 border border-blue-200 bg-blue-50/80 text-blue-800 px-3.5 py-2.5 rounded-xl text-xs font-semibold hover:bg-blue-100 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
+              >
+                <i className="ri-file-chart-line text-xs text-blue-700" />
+                <span>Shift Reports</span>
+              </Link>
+
               <button
                 onClick={() => setShowWorkloadDrawer(true)}
                 title="View weekly staff workload & hours allocation"
@@ -846,7 +856,7 @@ export default function Shifts() {
           {/* Productivity Toolbar */}
           <div className="bg-white border border-gray-200/80 rounded-xl p-3.5 mb-5 shadow-2xs space-y-3">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-              
+
               {/* Left: View Switcher & Date Navigation */}
               <div className="flex flex-wrap items-center gap-3">
                 {/* View Switcher Pills */}
@@ -862,11 +872,10 @@ export default function Shifts() {
                     <button
                       key={v.id}
                       onClick={() => setViewMode(v.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-md transition-all cursor-pointer ${
-                        viewMode === v.id
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-md transition-all cursor-pointer ${viewMode === v.id
                           ? "bg-white text-[#253C7D] font-bold shadow-2xs"
                           : "text-gray-600 hover:text-gray-900"
-                      }`}
+                        }`}
                     >
                       <i className={`${v.icon} text-xs`} />
                       <span>{v.label}</span>
@@ -981,25 +990,23 @@ export default function Shifts() {
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-100">
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Filter By:</span>
-                
+
                 <button
                   onClick={() => setQuickFilter("all")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${
-                    quickFilter === "all"
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${quickFilter === "all"
                       ? "bg-[#253C7D] text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                    }`}
                 >
                   All ({shifts.length})
                 </button>
 
                 <button
                   onClick={() => setQuickFilter("open")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
-                    quickFilter === "open"
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${quickFilter === "open"
                       ? "bg-amber-600 text-white"
                       : "bg-amber-50 text-amber-800 hover:bg-amber-100"
-                  }`}
+                    }`}
                 >
                   <i className="ri-user-add-line text-xs" />
                   <span>Needs Staff ({totalOpenShiftsCount})</span>
@@ -1007,11 +1014,10 @@ export default function Shifts() {
 
                 <button
                   onClick={() => setQuickFilter("filled")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
-                    quickFilter === "filled"
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${quickFilter === "filled"
                       ? "bg-emerald-600 text-white"
                       : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                  }`}
+                    }`}
                 >
                   <i className="ri-check-line text-xs" />
                   <span>Fully Staffed ({totalFilledShiftsCount})</span>
@@ -1075,9 +1081,8 @@ export default function Shifts() {
                     return (
                       <div
                         key={i}
-                        className={`p-3 relative group transition-colors ${
-                          isToday ? "bg-[#253C7D]/8" : ""
-                        }`}
+                        className={`p-3 relative group transition-colors ${isToday ? "bg-[#253C7D]/8" : ""
+                          }`}
                       >
                         <div className="flex items-center justify-between">
                           <div>
@@ -1125,9 +1130,8 @@ export default function Shifts() {
                     return (
                       <div
                         key={i}
-                        className={`p-2 space-y-2 flex flex-col ${
-                          isToday ? "bg-[#253C7D]/2" : ""
-                        }`}
+                        className={`p-2 space-y-2 flex flex-col ${isToday ? "bg-[#253C7D]/2" : ""
+                          }`}
                       >
                         {dayShifts.map((sh) => {
                           const aCount = sh.assignmentCount ?? 0;
@@ -1140,13 +1144,11 @@ export default function Shifts() {
                             <div
                               key={sh.id}
                               onClick={() => setSelectedShift(isSelected ? null : sh)}
-                              className={`group relative rounded-xl bg-white border transition-all duration-150 cursor-pointer shadow-2xs hover:shadow-md ${
-                                density === "compact" ? "p-2 space-y-1" : "p-2.5 space-y-1.5"
-                              } ${
-                                isSelected
+                              className={`group relative rounded-xl bg-white border transition-all duration-150 cursor-pointer shadow-2xs hover:shadow-md ${density === "compact" ? "p-2 space-y-1" : "p-2.5 space-y-1.5"
+                                } ${isSelected
                                   ? "ring-2 ring-offset-1 border-transparent shadow-sm"
                                   : "hover:border-gray-300"
-                              }`}
+                                }`}
                               style={{
                                 borderLeftWidth: "4px",
                                 borderLeftColor: sh.color || "#253C7D",
@@ -1217,13 +1219,12 @@ export default function Shifts() {
 
                                 {/* Capacity Pill */}
                                 <span
-                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 ${
-                                    isFull
+                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 ${isFull
                                       ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
                                       : aCount === 0
-                                      ? "bg-rose-50 text-rose-600 font-semibold"
-                                      : "bg-amber-50 text-amber-700 font-semibold"
-                                  }`}
+                                        ? "bg-rose-50 text-rose-600 font-semibold"
+                                        : "bg-amber-50 text-amber-700 font-semibold"
+                                    }`}
                                 >
                                   {isFull ? (
                                     <>
@@ -1346,9 +1347,8 @@ export default function Shifts() {
                         <div
                           key={sh.id}
                           onClick={() => setSelectedShift(isSelected ? null : sh)}
-                          className={`p-4 rounded-xl border transition-all cursor-pointer ${
-                            isSelected ? "ring-2 ring-[#253C7D] border-transparent bg-gray-50/60" : "border-gray-100 bg-white hover:border-gray-200"
-                          }`}
+                          className={`p-4 rounded-xl border transition-all cursor-pointer ${isSelected ? "ring-2 ring-[#253C7D] border-transparent bg-gray-50/60" : "border-gray-100 bg-white hover:border-gray-200"
+                            }`}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
@@ -1391,9 +1391,8 @@ export default function Shifts() {
                               </div>
 
                               <span
-                                className={`text-xs font-bold px-2.5 py-1 rounded-md ${
-                                  isFull ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"
-                                }`}
+                                className={`text-xs font-bold px-2.5 py-1 rounded-md ${isFull ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"
+                                  }`}
                               >
                                 {isFull ? "Fully Staffed" : `${sh.assignmentCount || 0}/${sh.capacity} Staffed`}
                               </span>
@@ -1407,11 +1406,10 @@ export default function Shifts() {
                                 }}
                                 disabled={isFull}
                                 title={isFull ? "Shift is full" : "Assign staff"}
-                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                                  isFull
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${isFull
                                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                                     : "bg-[#253C7D]/10 hover:bg-[#253C7D]/20 text-[#253C7D] cursor-pointer"
-                                }`}
+                                  }`}
                               >
                                 {isFull ? "Full" : "+ Assign"}
                               </button>
@@ -1471,9 +1469,8 @@ export default function Shifts() {
                       <div
                         key={sh.id}
                         onClick={() => setSelectedShift(isSelected ? null : sh)}
-                        className={`grid grid-cols-12 px-5 py-3.5 items-center hover:bg-[#253C7D]/5 transition-colors cursor-pointer ${
-                          isSelected || isChecked ? "bg-[#253C7D]/10" : ""
-                        }`}
+                        className={`grid grid-cols-12 px-5 py-3.5 items-center hover:bg-[#253C7D]/5 transition-colors cursor-pointer ${isSelected || isChecked ? "bg-[#253C7D]/10" : ""
+                          }`}
                       >
                         <div className="col-span-1" onClick={(e) => e.stopPropagation()}>
                           <input
@@ -1508,9 +1505,8 @@ export default function Shifts() {
 
                         <div className="col-span-1">
                           <span
-                            className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              isFull ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
-                            }`}
+                            className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full ${isFull ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                              }`}
                           >
                             {isFull ? "Full" : `${aCount}/${sh.capacity}`}
                           </span>
@@ -1524,9 +1520,8 @@ export default function Shifts() {
                               setShowAssignModal(true);
                             }}
                             disabled={isFull}
-                            className={`p-1.5 rounded-lg transition-colors ${
-                              isFull ? "opacity-30 cursor-not-allowed text-gray-400" : "hover:bg-gray-100 text-gray-600 hover:text-[#253C7D] cursor-pointer"
-                            }`}
+                            className={`p-1.5 rounded-lg transition-colors ${isFull ? "opacity-30 cursor-not-allowed text-gray-400" : "hover:bg-gray-100 text-gray-600 hover:text-[#253C7D] cursor-pointer"
+                              }`}
                             title={isFull ? "Shift at capacity (Full)" : "Assign Staff"}
                           >
                             <i className="ri-user-add-line text-sm" />
@@ -1593,15 +1588,13 @@ export default function Shifts() {
                           setCurrentDate(date);
                           setViewMode("day");
                         }}
-                        className={`min-h-[105px] p-2 transition-all hover:bg-gray-50 cursor-pointer flex flex-col justify-between ${
-                          !isCurrentMonth ? "opacity-35 bg-gray-50/40" : ""
-                        } ${isToday ? "bg-[#253C7D]/4" : ""}`}
+                        className={`min-h-[105px] p-2 transition-all hover:bg-gray-50 cursor-pointer flex flex-col justify-between ${!isCurrentMonth ? "opacity-35 bg-gray-50/40" : ""
+                          } ${isToday ? "bg-[#253C7D]/4" : ""}`}
                       >
                         <div className="flex items-center justify-between">
                           <span
-                            className={`text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center ${
-                              isToday ? "bg-[#253C7D] text-white" : "text-gray-700"
-                            }`}
+                            className={`text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center ${isToday ? "bg-[#253C7D] text-white" : "text-gray-700"
+                              }`}
                           >
                             {date.getDate()}
                           </span>
@@ -1857,13 +1850,12 @@ export default function Shifts() {
               {staffWorkload.map(({ employee: emp, totalHours, shiftCount, isOvertime, isUnscheduled }) => (
                 <div
                   key={emp.id}
-                  className={`p-3 rounded-2xl border transition-all ${
-                    isOvertime
+                  className={`p-3 rounded-2xl border transition-all ${isOvertime
                       ? "bg-amber-50/60 border-amber-200"
                       : isUnscheduled
-                      ? "bg-slate-50/60 border-slate-200/80 opacity-70"
-                      : "bg-white border-slate-200 shadow-2xs"
-                  }`}
+                        ? "bg-slate-50/60 border-slate-200/80 opacity-70"
+                        : "bg-white border-slate-200 shadow-2xs"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1891,9 +1883,8 @@ export default function Shifts() {
                   {/* Progress bar */}
                   <div className="mt-2.5 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${
-                        isOvertime ? "bg-amber-500" : totalHours >= 30 ? "bg-emerald-500" : "bg-[#253C7D]"
-                      }`}
+                      className={`h-full rounded-full ${isOvertime ? "bg-amber-500" : totalHours >= 30 ? "bg-emerald-500" : "bg-[#253C7D]"
+                        }`}
                       style={{ width: `${Math.min(100, (totalHours / 40) * 100)}%` }}
                     />
                   </div>
@@ -1988,7 +1979,7 @@ export default function Shifts() {
       {(showCreateModal || showEditModal) && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-100">
-            
+
             {/* Modal Header */}
             <div
               className="p-5 text-white relative shrink-0 transition-colors"
@@ -2024,7 +2015,7 @@ export default function Shifts() {
 
             {/* Modal Form Body */}
             <form onSubmit={showEditModal ? handleEditShift : handleCreateShift} className="p-6 overflow-y-auto space-y-5 flex-1">
-              
+
               {/* Quick Shift Presets (on Create) */}
               {!showEditModal && (
                 <div>
@@ -2039,11 +2030,10 @@ export default function Shifts() {
                           key={tpl.name}
                           type="button"
                           onClick={() => applyTemplate(tpl)}
-                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                            isActive
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${isActive
                               ? "bg-blue-50 border-[#253C7D] ring-1 ring-[#253C7D] shadow-2xs"
                               : "bg-slate-50/70 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
-                          }`}
+                            }`}
                         >
                           <p className="text-xs font-bold text-slate-900 truncate flex items-center justify-between">
                             <span>{tpl.label}</span>
@@ -2202,11 +2192,10 @@ export default function Shifts() {
                         key={c.value}
                         onClick={() => setShiftForm({ ...shiftForm, color: c.value })}
                         title={c.name}
-                        className={`w-7 h-7 rounded-full cursor-pointer transition-all ${
-                          shiftForm.color === c.value
+                        className={`w-7 h-7 rounded-full cursor-pointer transition-all ${shiftForm.color === c.value
                             ? "scale-115 ring-2 ring-offset-2 ring-slate-800 shadow-sm"
                             : "opacity-80 hover:opacity-100 hover:scale-105"
-                        }`}
+                          }`}
                         style={{ backgroundColor: c.value }}
                       />
                     ))}
@@ -2357,7 +2346,7 @@ export default function Shifts() {
       {showAssignModal && selectedShift && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-100">
-            
+
             {/* 1. Hero Header with Shift Theme Gradient */}
             <div
               className="p-5 text-white relative overflow-hidden shrink-0"
@@ -2378,11 +2367,11 @@ export default function Shifts() {
                       </span>
                     )}
                   </div>
-                  
+
                   <h2 className="text-xl font-bold text-white mt-1.5 truncate">
                     Assign Staff &bull; {selectedShift.name}
                   </h2>
-                  
+
                   <p className="text-xs text-white/80 mt-0.5 flex items-center gap-2">
                     <span>
                       {new Date(selectedShift.shift_date + "T00:00:00").toLocaleDateString("en-US", {
@@ -2437,7 +2426,7 @@ export default function Shifts() {
 
             {/* 2. Modal Body / Selection Roster */}
             <div className="p-5 flex-1 overflow-y-auto overflow-x-hidden space-y-4">
-              
+
               {/* If shift is full */}
               {remainingSpots <= 0 ? (
                 <div className="p-8 text-center bg-emerald-50/70 border border-emerald-200/80 rounded-2xl my-4">
@@ -2518,7 +2507,7 @@ export default function Shifts() {
                             <span className="font-semibold text-[11px]">
                               {filtered.length} available staff
                             </span>
-                            
+
                             {filtered.length > 0 && (
                               <button
                                 type="button"
@@ -2565,13 +2554,12 @@ export default function Shifts() {
                                         setAssignEmployeeIds([...assignEmployeeIds, emp.id]);
                                       }
                                     }}
-                                    className={`p-3 rounded-2xl border transition-all select-none flex items-center justify-between gap-2.5 ${
-                                      isSlotDisabled
+                                    className={`p-3 rounded-2xl border transition-all select-none flex items-center justify-between gap-2.5 ${isSlotDisabled
                                         ? "opacity-40 cursor-not-allowed bg-slate-50 border-slate-200"
                                         : isChecked
-                                        ? "bg-blue-50/80 border-[#253C7D] shadow-2xs ring-1 ring-[#253C7D] cursor-pointer"
-                                        : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-2xs cursor-pointer"
-                                    }`}
+                                          ? "bg-blue-50/80 border-[#253C7D] shadow-2xs ring-1 ring-[#253C7D] cursor-pointer"
+                                          : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-2xs cursor-pointer"
+                                      }`}
                                   >
                                     <div className="flex items-center gap-2.5 min-w-0">
                                       <span className="w-9 h-9 rounded-xl bg-[#253C7D]/10 text-[#253C7D] font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">

@@ -87,7 +87,22 @@ interface RoomBookingRow {
   status: string;
 }
 
-type ReportRow = LeaveRow | PayrollRow | HeadcountRow | ExpenseRow | HireRow | DailyLogRow | RoomBookingRow;
+interface ShiftRow {
+  id: string;
+  shift_date: string;
+  shift_name: string;
+  employee: string;
+  department: string;
+  branch: string;
+  time: string;
+  hours: number;
+  capacity: number;
+  staffing: string;
+  status: string;
+  notes: string;
+}
+
+type ReportRow = LeaveRow | PayrollRow | HeadcountRow | ExpenseRow | HireRow | DailyLogRow | RoomBookingRow | ShiftRow;
 
 const matchesEmployeeFilters = (
   row: { employee?: string; department?: string; branch?: string },
@@ -112,7 +127,10 @@ const STATUS_COLOR: Record<string, string> = {
   paid: "bg-emerald-50 text-emerald-700",
   processed: "bg-sky-50 text-sky-700",
   active: "bg-emerald-50 text-emerald-700",
-  open: "bg-amber-50 text-amber-700",
+  open: "bg-amber-50 text-amber-700 border border-amber-200/60",
+  scheduled: "bg-blue-50 text-blue-700 border border-blue-200/60",
+  completed: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",
+  filled: "bg-emerald-50 text-emerald-700 border border-emerald-200/60",
   hired: "bg-emerald-50 text-emerald-700",
   interview: "bg-sky-50 text-sky-700",
   screening: "bg-violet-50 text-violet-700",
@@ -358,10 +376,116 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     onDataReady(mapped, cols);
   }, [config, onDataReady]);
 
+  const fetchShifts = useCallback(async () => {
+    let shiftQuery = supabase
+      .from("shifts")
+      .select("id, name, branch_id, department, start_time, end_time, shift_date, capacity, color, notes, branches(name)")
+      .order("shift_date", { ascending: false })
+      .order("start_time", { ascending: true });
+
+    if (config.dateFrom) shiftQuery = shiftQuery.gte("shift_date", config.dateFrom);
+    if (config.dateTo) shiftQuery = shiftQuery.lte("shift_date", config.dateTo);
+
+    const [{ data: shiftData, error: sErr }, { data: assignData, error: aErr }] = await Promise.all([
+      shiftQuery,
+      supabase
+        .from("shift_assignments")
+        .select("id, shift_id, employee_id, status, employees(first_name, last_name, department, role, branches(name))")
+        .is("deleted_at", null),
+    ]);
+
+    if (sErr) console.error("fetchShifts shifts error:", sErr);
+    if (aErr) console.error("fetchShifts assignments error:", aErr);
+
+    const calcHours = (start?: string, end?: string): number => {
+      if (!start || !end) return 0;
+      const [sH, sM] = start.split(":").map(Number);
+      const [eH, eM] = end.split(":").map(Number);
+      let sm = sH * 60 + sM;
+      let em = eH * 60 + eM;
+      if (em < sm) em += 24 * 60;
+      return Math.round(((em - sm) / 60) * 10) / 10;
+    };
+
+    const mapped: ShiftRow[] = [];
+    const shiftsList = shiftData || [];
+    const assignsList = assignData || [];
+
+    shiftsList.forEach((s: any) => {
+      const shiftAssigns = assignsList.filter((a: any) => a.shift_id === s.id);
+      const durationHours = calcHours(s.start_time, s.end_time);
+      const timeDisplay = s.start_time && s.end_time ? `${s.start_time.slice(0, 5)} – ${s.end_time.slice(0, 5)}` : "—";
+      const branchName = s.branches?.name || "—";
+      const capacity = s.capacity || 1;
+
+      if (shiftAssigns.length > 0) {
+        shiftAssigns.forEach((a: any) => {
+          const empName = `${a.employees?.first_name || ""} ${a.employees?.last_name || ""}`.trim() || "Assigned Staff";
+          const empDept = a.employees?.department || s.department || "—";
+          const empBranch = a.employees?.branches?.name || branchName;
+
+          mapped.push({
+            id: a.id,
+            shift_date: s.shift_date,
+            shift_name: s.name,
+            employee: empName,
+            department: empDept,
+            branch: empBranch,
+            time: `${timeDisplay} (${durationHours}h)`,
+            hours: durationHours,
+            capacity: capacity,
+            staffing: `${shiftAssigns.length}/${capacity}`,
+            status: a.status || "scheduled",
+            notes: s.notes || "",
+          });
+        });
+      } else {
+        // Shift with no assignments yet (Open / Needs Staff)
+        mapped.push({
+          id: s.id,
+          shift_date: s.shift_date,
+          shift_name: s.name,
+          employee: "— (Open / Needs Staff)",
+          department: s.department || "—",
+          branch: branchName,
+          time: `${timeDisplay} (${durationHours}h)`,
+          hours: durationHours,
+          capacity: capacity,
+          staffing: `0/${capacity}`,
+          status: "open",
+          notes: s.notes || "",
+        });
+      }
+    });
+
+    const filtered = mapped.filter((r) => matchesEmployeeFilters(r, config));
+    const cols = ["Shift Date", "Shift Name", "Employee", "Department", "Branch", "Time", "Hours", "Capacity", "Staffing", "Status", "Notes"];
+    setRows(filtered);
+    setColumns(cols);
+
+    // Summary calculation
+    const totalScheduledHours = filtered.reduce((acc, r) => acc + (r.status !== "open" ? r.hours : 0), 0);
+    const assignedStaffCount = filtered.filter((r) => r.status !== "open").length;
+    const openSlotsCount = filtered.filter((r) => r.status === "open").length;
+    const totalCapacitySum = shiftsList.reduce((acc: number, s: any) => acc + (s.capacity || 1), 0);
+    const coveragePct = totalCapacitySum > 0 ? Math.round((assignedStaffCount / totalCapacitySum) * 100) : 100;
+
+    setSummary({
+      "Total Shifts": shiftsList.length,
+      "Scheduled Hours": `${Math.round(totalScheduledHours * 10) / 10} hrs`,
+      "Staff Assigned": assignedStaffCount,
+      "Open Slots": openSlotsCount,
+      "Staffing Coverage": `${coveragePct}%`,
+    });
+
+    onDataReady(filtered, cols);
+  }, [config, onDataReady]);
+
   useEffect(() => {
     setLoading(true);
     const run = async () => {
       if (config.module === "leave") await fetchLeave();
+      else if (config.module === "shifts") await fetchShifts();
       else if (config.module === "payroll") await fetchPayroll();
       else if (config.module === "headcount") await fetchHeadcount();
       else if (config.module === "expenses") await fetchExpenses();
@@ -371,12 +495,13 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       setLoading(false);
     };
     run();
-  }, [config, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs, fetchRoomBookings]);
+  }, [config, fetchLeave, fetchShifts, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs, fetchRoomBookings]);
 
   // Real-time live synchronization: re-fetches automatically when database records change
   useEffect(() => {
-    const tableMap: Record<string, string> = {
+    const tableMap: Record<string, string | string[]> = {
       leave: "leave_requests",
+      shifts: ["shifts", "shift_assignments"],
       payroll: "payroll_records",
       headcount: "employees",
       expenses: "expense_records",
@@ -384,26 +509,30 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       "daily-logs": "work_logs",
       "meeting-rooms": "room_bookings",
     };
-    const targetTable = tableMap[config.module];
-    if (!targetTable) return;
+    const target = tableMap[config.module];
+    if (!target) return;
 
-    const channel = supabase
-      .channel(`report_realtime_${config.module}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: targetTable }, () => {
-        if (config.module === "leave") fetchLeave();
-        else if (config.module === "payroll") fetchPayroll();
-        else if (config.module === "headcount") fetchHeadcount();
-        else if (config.module === "expenses") fetchExpenses();
-        else if (config.module === "hire") fetchHire();
-        else if (config.module === "daily-logs") fetchDailyLogs();
-        else if (config.module === "meeting-rooms") fetchRoomBookings();
-      })
-      .subscribe();
+    const tables = Array.isArray(target) ? target : [target];
+    const channels = tables.map((tbl) => {
+      return supabase
+        .channel(`report_realtime_${config.module}_${tbl}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: tbl }, () => {
+          if (config.module === "leave") fetchLeave();
+          else if (config.module === "shifts") fetchShifts();
+          else if (config.module === "payroll") fetchPayroll();
+          else if (config.module === "headcount") fetchHeadcount();
+          else if (config.module === "expenses") fetchExpenses();
+          else if (config.module === "hire") fetchHire();
+          else if (config.module === "daily-logs") fetchDailyLogs();
+          else if (config.module === "meeting-rooms") fetchRoomBookings();
+        })
+        .subscribe();
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      channels.forEach((ch) => supabase.removeChannel(ch));
     };
-  }, [config.module, fetchLeave, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs, fetchRoomBookings]);
+  }, [config.module, fetchLeave, fetchShifts, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchDailyLogs, fetchRoomBookings]);
 
   const REPORT_COLUMN_KEY_MAP: Record<string, string> = {
     "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
@@ -413,6 +542,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
     "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
     "Room": "room_name", "Title": "title", "Booked By": "employee", "Attendees": "attendees", "Time": "time",
+    "Shift Date": "shift_date", "Shift Name": "shift_name", "Hours": "hours", "Capacity": "capacity", "Staffing": "staffing", "Notes": "notes",
   };
 
   const renderCell = (col: string, row: ReportRow) => {

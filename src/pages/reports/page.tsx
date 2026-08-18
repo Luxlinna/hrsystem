@@ -7,6 +7,7 @@ import ReportViewer from "./components/ReportViewer";
 
 const MODULES = [
   { id: "leave", label: "Leave Summary", icon: "ri-calendar-event-line", color: "bg-amber-50 text-amber-700 border-amber-200", desc: "All leave requests by employee, type, and status" },
+  { id: "shifts", label: "Shift Scheduling", icon: "ri-time-line", color: "bg-blue-50 text-blue-700 border-blue-200", desc: "Shift rosters, employee allocations, coverage, and scheduled hours" },
   { id: "payroll", label: "Payroll Report", icon: "ri-money-dollar-circle-line", color: "bg-emerald-50 text-emerald-700 border-emerald-200", desc: "Salary, bonuses, deductions and net pay records" },
   { id: "headcount", label: "Headcount Report", icon: "ri-team-line", color: "bg-sky-50 text-sky-700 border-sky-200", desc: "Employee distribution by branch and department" },
   { id: "expenses", label: "Expense Report", icon: "ri-bank-line", color: "bg-teal-50 text-teal-700 border-teal-200", desc: "All expense records with approval status" },
@@ -17,7 +18,7 @@ const MODULES = [
 
 // Modules whose rows are tied to one employee, so the name/department/
 // branch filters below actually apply to them.
-const EMPLOYEE_SCOPED_MODULES = new Set(["leave", "payroll", "headcount", "daily-logs", "meeting-rooms"]);
+const EMPLOYEE_SCOPED_MODULES = new Set(["leave", "shifts", "payroll", "headcount", "daily-logs", "meeting-rooms"]);
 
 // Maps displayed column labels to the report row object's property names,
 // shared by every export format so CSV/PDF/Excel stay consistent.
@@ -29,6 +30,8 @@ const COLUMN_KEY_MAP: Record<string, string> = {
   "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
   "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
   "Time": "time", "Activity": "activity", "Notes": "notes",
+  "Room": "room_name", "Title": "title", "Booked By": "employee", "Attendees": "attendees",
+  "Shift Date": "shift_date", "Shift Name": "shift_name", "Hours": "hours", "Capacity": "capacity", "Staffing": "staffing",
 };
 
 const cellValue = (row: any, col: string) => row[COLUMN_KEY_MAP[col] || col.toLowerCase()];
@@ -42,23 +45,31 @@ export default function ReportsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const paramMod = searchParams.get("module");
   const [activeModule, setActiveModuleState] = useState(
-    paramMod && MODULES.some((m) => m.id === paramMod) ? paramMod : "leave"
+    paramMod && MODULES.some((m) => m.id === paramMod) ? paramMod : "shifts"
   );
+
+  const [dateFrom, setDateFrom] = useState(searchParams.get("from") || "");
+  const [dateTo, setDateTo] = useState(searchParams.get("to") || "");
 
   useEffect(() => {
     const mod = searchParams.get("module");
     if (mod && MODULES.some((m) => m.id === mod)) {
       setActiveModuleState(mod);
     }
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+    if (fromParam !== null) setDateFrom(fromParam);
+    if (toParam !== null) setDateTo(toParam);
   }, [searchParams]);
 
   const setActiveModule = (modId: string) => {
     setActiveModuleState(modId);
-    setSearchParams({ module: modId }, { replace: true });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("module", modId);
+      return next;
+    }, { replace: true });
   };
-
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [branchFilter, setBranchFilter] = useState("");
@@ -276,9 +287,8 @@ export default function ReportsPage() {
                 <button
                   key={m.id}
                   onClick={() => setActiveModule(m.id)}
-                  className={`w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-all cursor-pointer ${
-                    activeModule === m.id ? `${m.color} border-current` : "border-transparent hover:bg-gray-50 text-gray-700"
-                  }`}
+                  className={`w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-all cursor-pointer ${activeModule === m.id ? `${m.color} border-current` : "border-transparent hover:bg-gray-50 text-gray-700"
+                    }`}
                 >
                   <div className={`w-8 h-8 flex items-center justify-center rounded-lg shrink-0 ${activeModule === m.id ? "bg-current/10" : "bg-gray-100"}`}>
                     <i className={`${m.icon} text-sm ${activeModule === m.id ? "" : "text-gray-500"}`} />
@@ -388,11 +398,10 @@ export default function ReportsPage() {
                       setDateFrom(t);
                       setDateTo(t);
                     }}
-                    className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer text-center ${
-                      dateFrom === todayYMD() && dateTo === todayYMD()
+                    className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer text-center ${dateFrom === todayYMD() && dateTo === todayYMD()
                         ? "bg-[#253C7D] text-white"
                         : "bg-gray-50 hover:bg-gray-100 text-gray-700"
-                    }`}
+                      }`}
                   >
                     Today
                   </button>
@@ -513,8 +522,8 @@ export default function ReportsPage() {
                         {dateFrom === todayYMD() && dateTo === todayYMD()
                           ? "Per Day (Today)"
                           : dateFrom || dateTo
-                          ? `${dateFrom || "Start"} → ${dateTo || "Today"}`
-                          : "All Time"}
+                            ? `${dateFrom || "Start"} → ${dateTo || "Today"}`
+                            : "All Time"}
                       </span>
                     )}
                   </div>
@@ -534,11 +543,10 @@ export default function ReportsPage() {
                       setDateFrom(t);
                       setDateTo(t);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                      dateFrom === todayYMD() && dateTo === todayYMD()
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${dateFrom === todayYMD() && dateTo === todayYMD()
                         ? "bg-[#253C7D] text-white shadow-sm"
                         : "text-gray-600 hover:text-gray-900 hover:bg-white"
-                    }`}
+                      }`}
                   >
                     Per Day
                   </button>
@@ -573,11 +581,10 @@ export default function ReportsPage() {
                       setDateFrom("");
                       setDateTo("");
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                      !dateFrom && !dateTo
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${!dateFrom && !dateTo
                         ? "bg-[#253C7D] text-white shadow-sm"
                         : "text-gray-600 hover:text-gray-900 hover:bg-white"
-                    }`}
+                      }`}
                   >
                     All Time
                   </button>
