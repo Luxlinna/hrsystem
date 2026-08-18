@@ -137,6 +137,7 @@ const initials = (first?: string, last?: string) =>
 
 export default function AttendancePage() {
   const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const canViewAll = isAdmin || !!role?.attendance_view_all_employees;
   const canViewOwnBranch = !canViewAll && !!role?.attendance_view_own_branch;
@@ -155,6 +156,8 @@ export default function AttendancePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
   const [filterDatePreset, setFilterDatePreset] = useState<
     "all" | "today" | "yesterday" | "this_week" | "last_week" | "this_month" | "last_month" | "this_year" | "last_year" | "single_date" | "custom_range"
   >("all");
@@ -206,6 +209,7 @@ export default function AttendancePage() {
         supabase
           .from("attendance_records")
           .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
+          .is("deleted_at", null)
           .order("date", { ascending: false })
           .limit(2000),
         supabase
@@ -254,6 +258,7 @@ export default function AttendancePage() {
         ? await supabase
             .from("attendance_records")
             .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
+            .is("deleted_at", null)
             .in("employee_id", ids)
             .order("date", { ascending: false })
             .limit(2000)
@@ -268,6 +273,7 @@ export default function AttendancePage() {
       .from("attendance_records")
       .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
       .eq("employee_id", me.id)
+      .is("deleted_at", null)
       .order("date", { ascending: false })
       .limit(1000);
     setRecords((recData as AttendanceRecord[]) || []);
@@ -378,6 +384,30 @@ export default function AttendancePage() {
       return true;
     });
   }, [records, filterStatus, filterDepartment, dateRangeBounds, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = filteredRecords.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const pageEnd = Math.min(safePage * pageSize, filteredRecords.length);
+  const pagedRecords = filteredRecords.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const pageWindow = (current: number, total: number): (number | "...")[] => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
+  };
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filterDepartment, filterStatus, filterDatePreset, fromDate, toDate, singleDate, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   // KPI Metrics (Calculated dynamically based on selected date or today)
   const activeScopeRecords = useMemo(() => {
@@ -577,13 +607,16 @@ export default function AttendancePage() {
 
   // Delete Record
   async function handleDeleteRecord(id: number) {
-    if (!confirm("Are you sure you want to delete this attendance record?")) return;
-    const { error } = await supabase.from("attendance_records").delete().eq("id", id);
+    if (!confirm("Move this attendance record to the Recycle Bin? It can be restored later.")) return;
+    const { error } = await supabase
+      .from("attendance_records")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", id);
     if (error) {
-      toast("Error", "Failed to delete record", "error");
+      toast("Error", "Failed to move record to the Recycle Bin", "error");
       return;
     }
-    toast("Record Deleted", "Attendance entry removed.", "success");
+    toast("Record Moved", "Attendance entry moved to the Recycle Bin.", "success");
     setSelectedRecord(null);
     setEditingRecord(null);
     fetchData();
@@ -630,7 +663,7 @@ export default function AttendancePage() {
 
   if (loading && records.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
+      <div className="attendance-hub min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading attendance control center...</p>
       </div>
@@ -638,7 +671,7 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="attendance-hub min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header & Fast Actions */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
@@ -1101,7 +1134,7 @@ export default function AttendancePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredRecords.map((r) => {
+                    {pagedRecords.map((r) => {
                       const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.present;
                       const emp = r.employees;
                       const isWorkingNow = r.clock_in && !r.clock_out && r.date === todayYMD;
@@ -1218,7 +1251,7 @@ export default function AttendancePage() {
           ) : (
             /* Cards View */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredRecords.map((r) => {
+              {pagedRecords.map((r) => {
                 const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.present;
                 const emp = r.employees;
                 const isWorkingNow = r.clock_in && !r.clock_out && r.date === todayYMD;
@@ -1289,6 +1322,58 @@ export default function AttendancePage() {
               })}
             </div>
           )}
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 mt-4 bg-white border border-gray-100 rounded-2xl">
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-[11px] text-gray-500">
+                Showing <span className="font-semibold text-gray-700">{pageStart}</span>–<span className="font-semibold text-gray-700">{pageEnd}</span> of <span className="font-semibold text-gray-700">{filteredRecords.length}</span> attendance records
+              </p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-gray-400">Per page</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-2 py-1 border border-gray-200 rounded-lg text-[11px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                >
+                  {[10, 20, 50].map((size) => <option key={size} value={size}>{size}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={safePage === 1}
+                aria-label="Previous page"
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                <i className="ri-arrow-left-s-line" />
+              </button>
+              {pageWindow(safePage, totalPages).map((pageNumber, index) =>
+                pageNumber === "..." ? (
+                  <span key={`ellipsis-${index}`} className="w-8 h-8 flex items-center justify-center text-[11px] text-gray-400">…</span>
+                ) : (
+                  <button
+                    key={pageNumber}
+                    onClick={() => setPage(pageNumber)}
+                    aria-label={`Page ${pageNumber}`}
+                    aria-current={pageNumber === safePage ? "page" : undefined}
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${pageNumber === safePage ? "bg-[#253C7D] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  >
+                    {pageNumber}
+                  </button>
+                )
+              )}
+              <button
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                disabled={safePage === totalPages}
+                aria-label="Next page"
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                <i className="ri-arrow-right-s-line" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

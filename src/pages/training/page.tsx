@@ -288,7 +288,7 @@ export default function TrainingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F8F6] p-6">
+    <div className="training-hub min-h-screen bg-[#F8F8F6] p-6">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/components/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface BinItem {
   table: string;
@@ -42,6 +43,8 @@ const MODULES: ModuleConfig[] = [
   { table: "onboarding_requests", name: "Onboarding Requests", icon: "ri-user-star-line", select: "id, stage, status, deleted_at, deleted_by, employees(first_name, last_name)", label: (r) => `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Candidate", detail: (r) => `Onboarding · stage ${r.stage}` },
   { table: "onboarding_checklist_tasks", name: "Onboarding Checklist", icon: "ri-task-line", select: "id, task_name, category, deleted_at, deleted_by", label: (r) => r.task_name, detail: (r) => `Checklist Task · ${r.category}` },
   { table: "employees", name: "Employees", icon: "ri-team-line", select: "id, first_name, last_name, email, role, department, deleted_at, deleted_by", label: (r) => `${r.first_name} ${r.last_name}`, detail: (r) => `${r.role || "Employee"} · ${r.department || "No department"} · ${r.email}` },
+  { table: "onboarding_documents", name: "Onboarding Documents", icon: "ri-file-text-line", select: "id, document_name, document_type, deleted_at, deleted_by", label: (r) => r.document_name, detail: (r) => `Onboarding document · ${r.document_type || "General"}` },
+  { table: "attendance_records", name: "Attendance Records", icon: "ri-calendar-check-line", select: "id, date, status, deleted_at, deleted_by, employees(first_name, last_name)", label: (r) => `${r.employees?.first_name || "Unknown"} ${r.employees?.last_name || "employee"} · ${r.date}`, detail: (r) => `Attendance · ${r.status}` },
   { table: "user_role_assignments", name: "User Roles & Accounts", icon: "ri-user-settings-line", select: "id, email, display_name, deleted_at, deleted_by, app_roles(name)", label: (r) => r.display_name ? `${r.display_name} (${r.email})` : r.email, detail: (r) => `User Account · ${r.app_roles?.name || "No role"}` },
   { table: "shifts", name: "Shifts", icon: "ri-time-line", select: "id, name, department, shift_date, start_time, end_time, deleted_at, deleted_by", label: (r) => `${r.name} (${r.shift_date})`, detail: (r) => `Shift · ${r.start_time} - ${r.end_time} · ${r.department}` },
   { table: "shift_assignments", name: "Shift Assignments", icon: "ri-calendar-schedule-line", select: "id, status, employee:employees(first_name, last_name), deleted_at, deleted_by", label: (r) => `${r.employee?.first_name || "?"} ${r.employee?.last_name || "?"}`, detail: (r) => `Shift Assignment · ${r.status}` },
@@ -51,6 +54,7 @@ const MODULES: ModuleConfig[] = [
 
 export default function RecycleBinPage() {
   const { user } = useAuth();
+  const { isAdmin } = usePermissions();
   const [items, setItems] = useState<BinItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -142,6 +146,10 @@ export default function RecycleBinPage() {
   };
 
   const deleteForever = async (item: BinItem) => {
+    if (!isAdmin) {
+      toast("Access denied", "Only administrators can permanently delete Recycle Bin items.", "error");
+      return;
+    }
     setWorking(true);
     let error: any = null;
 
@@ -294,14 +302,16 @@ export default function RecycleBinPage() {
                     <i className="ri-refresh-line" />
                     Restore
                   </button>
-                  <button
-                    onClick={() => setConfirming(item)}
-                    disabled={working}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 cursor-pointer whitespace-nowrap disabled:opacity-50"
-                  >
-                    <i className="ri-delete-bin-2-line" />
-                    Delete forever
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setConfirming(item)}
+                      disabled={working}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 cursor-pointer whitespace-nowrap disabled:opacity-50"
+                    >
+                      <i className="ri-delete-bin-2-line" />
+                      Delete forever
+                    </button>
+                  )}
                 </div>
               </div>
             );
