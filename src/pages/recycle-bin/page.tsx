@@ -39,10 +39,13 @@ const MODULES: ModuleConfig[] = [
   { table: "training_courses", name: "Training Courses", icon: "ri-graduation-cap-line", select: "id, title, category, deleted_at, deleted_by", label: (r) => r.title, detail: (r) => `Course · ${r.category}` },
   { table: "training_enrollments", name: "Training Enrollments", icon: "ri-bookmark-line", select: "id, status, training_courses(title), deleted_at, deleted_by", label: (r) => r.training_courses?.title || `Enrollment #${r.id}`, detail: (r) => `Enrollment · ${r.status}` },
   { table: "room_bookings", name: "Room Bookings", icon: "ri-door-open-line", select: "id, title, date, deleted_at, deleted_by", label: (r) => r.title, detail: (r) => `Room Booking · ${r.date}` },
+  { table: "onboarding_requests", name: "Onboarding Requests", icon: "ri-user-star-line", select: "id, stage, status, deleted_at, deleted_by, employees(first_name, last_name)", label: (r) => `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Candidate", detail: (r) => `Onboarding · stage ${r.stage}` },
   { table: "onboarding_checklist_tasks", name: "Onboarding Checklist", icon: "ri-task-line", select: "id, task_name, category, deleted_at, deleted_by", label: (r) => r.task_name, detail: (r) => `Checklist Task · ${r.category}` },
   { table: "employees", name: "Employees", icon: "ri-team-line", select: "id, first_name, last_name, email, role, department, deleted_at, deleted_by", label: (r) => `${r.first_name} ${r.last_name}`, detail: (r) => `${r.role || "Employee"} · ${r.department || "No department"} · ${r.email}` },
   { table: "user_role_assignments", name: "User Roles & Accounts", icon: "ri-user-settings-line", select: "id, email, display_name, deleted_at, deleted_by, app_roles(name)", label: (r) => r.display_name ? `${r.display_name} (${r.email})` : r.email, detail: (r) => `User Account · ${r.app_roles?.name || "No role"}` },
+  { table: "shifts", name: "Shifts", icon: "ri-time-line", select: "id, name, department, shift_date, start_time, end_time, deleted_at, deleted_by", label: (r) => `${r.name} (${r.shift_date})`, detail: (r) => `Shift · ${r.start_time} - ${r.end_time} · ${r.department}` },
   { table: "shift_assignments", name: "Shift Assignments", icon: "ri-calendar-schedule-line", select: "id, status, employee:employees(first_name, last_name), deleted_at, deleted_by", label: (r) => `${r.employee?.first_name || "?"} ${r.employee?.last_name || "?"}`, detail: (r) => `Shift Assignment · ${r.status}` },
+  { table: "leave_requests", name: "Leave Requests", icon: "ri-calendar-event-line", select: "id, leave_type, start_date, end_date, days, deleted_at, deleted_by, employees(first_name, last_name)", label: (r) => `${r.employees?.first_name || ""} ${r.employees?.last_name || ""} (${r.leave_type})`, detail: (r) => `Leave · ${r.start_date} to ${r.end_date} (${r.days} days)` },
   { table: "work_logs", name: "Daily Work Logs", icon: "ri-file-list-3-line", select: "id, activity, log_date, deleted_at, deleted_by", label: (r) => r.activity, detail: (r) => `Work Log · ${r.log_date}` },
 ];
 
@@ -117,6 +120,12 @@ export default function RecycleBinPage() {
           .eq("id", item.id);
         error = dbErr;
       }
+    } else if (item.table === "onboarding_requests") {
+      const [{ error: dbErr }] = await Promise.all([
+        supabase.from("onboarding_requests").update({ deleted_at: null, deleted_by: null }).eq("id", item.id),
+        supabase.from("onboarding_checklist_tasks").update({ deleted_at: null, deleted_by: null }).eq("onboarding_request_id", item.id),
+      ]);
+      error = dbErr;
     } else {
       const { error: dbErr } = await supabase
         .from(item.table)
@@ -157,6 +166,13 @@ export default function RecycleBinPage() {
         const { error: dbErr } = await supabase.from("user_role_assignments").delete().eq("id", item.id);
         error = dbErr;
       }
+    } else if (item.table === "onboarding_requests") {
+      const [{ error: dbErr }] = await Promise.all([
+        supabase.from("onboarding_checklist_tasks").delete().eq("onboarding_request_id", item.id),
+        supabase.from("onboarding_documents").delete().eq("onboarding_request_id", item.id),
+        supabase.from("onboarding_requests").delete().eq("id", item.id),
+      ]);
+      error = dbErr;
     } else {
       const { error: dbErr } = await supabase.from(item.table).delete().eq("id", item.id);
       error = dbErr;
