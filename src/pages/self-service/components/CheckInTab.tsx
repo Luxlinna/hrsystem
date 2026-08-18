@@ -3,8 +3,6 @@ import { supabase } from "@/lib/supabase";
 import { distanceMeters, getCurrentPosition } from "@/lib/geo";
 import { toYMD, todayYMD } from "@/lib/date";
 import { getEffectiveWorkEndTime } from "@/lib/workSchedule";
-import { hasRegisteredFingerprint, registerDeviceFingerprint, verifyDeviceFingerprint } from "@/lib/webauthn";
-import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
 
 interface AttendanceRecord {
   id: string;
@@ -57,8 +55,6 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const [checkInDistance, setCheckInDistance] = useState<number | null>(null);
   const [checkInAccuracy, setCheckInAccuracy] = useState<number | null>(null);
   const [globalWorkStartTime, setGlobalWorkStartTime] = useState("09:00");
-  const [hasFingerprint, setHasFingerprint] = useState(false);
-  const [biometricError, setBiometricError] = useState("");
 
   const today = todayYMD();
 
@@ -83,11 +79,6 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   // early-leave detection simply doesn't apply unless the branch sets one.
   const workStartTime = branch?.work_start_time || globalWorkStartTime;
   const workEndTime = getEffectiveWorkEndTime(branch?.work_end_time);
-
-  useEffect(() => {
-    if (!employeeId) return;
-    hasRegisteredFingerprint(employeeId).then(setHasFingerprint);
-  }, [employeeId]);
 
   const loadRecords = async () => {
     if (!employeeId) return;
@@ -187,32 +178,10 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     setCheckInMessage("");
     setCheckInDistance(null);
     setCheckInAccuracy(null);
-    setBiometricError("");
   };
 
   const handleConfirmClockIn = async () => {
-    if (!browserSupportsWebAuthn()) {
-      setBiometricError("This browser/device doesn't support fingerprint verification. Try a modern phone or laptop browser (Chrome, Safari, Edge).");
-      return;
-    }
-    setBiometricError("");
     setProcessing(true);
-    try {
-      if (hasFingerprint) {
-        await verifyDeviceFingerprint();
-      } else {
-        await registerDeviceFingerprint(navigator.platform || "This device");
-        setHasFingerprint(true);
-      }
-    } catch (err: any) {
-      setProcessing(false);
-      setBiometricError(
-        err?.name === "NotAllowedError"
-          ? "Fingerprint check was cancelled or didn't match. Try again."
-          : err?.message || "Fingerprint verification failed."
-      );
-      return;
-    }
     await handleClockIn();
   };
 
@@ -267,29 +236,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       return;
     }
 
-    if (!browserSupportsWebAuthn()) {
-      setBiometricError("This browser/device doesn't support fingerprint verification. Try a modern phone or laptop browser (Chrome, Safari, Edge).");
-      return;
-    }
-
-    setBiometricError("");
     setProcessing(true);
-    try {
-      if (hasFingerprint) {
-        await verifyDeviceFingerprint();
-      } else {
-        await registerDeviceFingerprint(navigator.platform || "This device");
-        setHasFingerprint(true);
-      }
-    } catch (err: any) {
-      setProcessing(false);
-      setBiometricError(
-        err?.name === "NotAllowedError"
-          ? "Fingerprint check was cancelled or didn't match. Try again."
-          : err?.message || "Fingerprint verification failed."
-      );
-      return;
-    }
 
     const checkoutNotes = requiresReason
       ? [todayRecord.notes, `Early checkout reason: ${earlyCheckoutReason.trim()}`].filter(Boolean).join("\n")
@@ -396,7 +343,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                 </button>
                 {branch?.latitude && (
                   <p className="text-white/60 text-[11px] text-center">
-                    Requires location (within {branch.geofence_radius_m}m of {branch.name}) and fingerprint verification
+                    Requires location within {branch.geofence_radius_m}m of {branch.name}
                   </p>
                 )}
                 <p className="text-white/60 text-[11px] text-center">
@@ -420,24 +367,16 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                   <i className="ri-checkbox-circle-fill text-emerald-300 text-base shrink-0 mt-0.5" />
                   <p className="text-[12px] leading-relaxed">{checkInMessage}</p>
                 </div>
-                {biometricError && (
-                  <div className="bg-red-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
-                    <i className="ri-fingerprint-line text-red-200 text-base shrink-0 mt-0.5" />
-                    <p className="text-[12px] leading-relaxed">{biometricError}</p>
-                  </div>
-                )}
                 <button
                   onClick={handleConfirmClockIn}
                   disabled={processing}
                   className="w-full flex items-center justify-center gap-2 bg-white text-[#253C7D] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
                 >
-                  <i className="ri-fingerprint-line text-lg" />
-                  {processing ? "Verifying fingerprint..." : hasFingerprint ? "Confirm with Fingerprint" : "Register Fingerprint & Clock In"}
+                  <i className="ri-checkbox-circle-line text-lg" />
+                  {processing ? "Clocking in..." : "Confirm Clock In"}
                 </button>
                 <p className="text-white/60 text-[11px] text-center">
-                  {hasFingerprint
-                    ? "Your device will ask for Touch ID / fingerprint / Windows Hello to confirm it's you."
-                    : "First time here — you'll be asked to register this device's fingerprint, then it'll be required every time you clock in."}
+                  Your arrival time will be recorded after you confirm.
                 </p>
                 <button
                   onClick={resetCheckInFlow}
@@ -491,19 +430,13 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                     />
                   </div>
                 )}
-                {biometricError && (
-                  <div className="bg-red-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
-                    <i className="ri-fingerprint-line text-red-200 text-base shrink-0 mt-0.5" />
-                    <p className="text-[12px] leading-relaxed">{biometricError}</p>
-                  </div>
-                )}
                 <button
                   onClick={handleClockOut}
                   disabled={processing}
                   className="w-full flex items-center justify-center gap-2 bg-white/20 backdrop-blur border border-white/40 text-white font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/30 transition-colors disabled:opacity-60 cursor-pointer"
                 >
-                  <i className="ri-fingerprint-line text-lg" />
-                  {processing ? "Verifying fingerprint..." : "Confirm Fingerprint & Clock Out"}
+                  <i className="ri-logout-box-r-line text-lg" />
+                  {processing ? "Clocking out..." : "Clock Out"}
                 </button>
               </div>
             )}
