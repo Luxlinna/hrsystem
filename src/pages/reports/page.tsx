@@ -7,28 +7,55 @@ import ReportViewer from "./components/ReportViewer";
 
 const MODULES = [
   { id: "leave", label: "Leave Summary", icon: "ri-calendar-event-line", color: "bg-amber-50 text-amber-700 border-amber-200", desc: "All leave requests by employee, type, and status" },
+  { id: "shifts", label: "Shift Scheduling", icon: "ri-time-line", color: "bg-blue-50 text-blue-700 border-blue-200", desc: "Shift rosters, employee allocations, coverage, and scheduled hours" },
   { id: "payroll", label: "Payroll Report", icon: "ri-money-dollar-circle-line", color: "bg-emerald-50 text-emerald-700 border-emerald-200", desc: "Salary, bonuses, deductions and net pay records" },
   { id: "headcount", label: "Headcount Report", icon: "ri-team-line", color: "bg-sky-50 text-sky-700 border-sky-200", desc: "Employee distribution by branch and department" },
   { id: "expenses", label: "Expense Report", icon: "ri-bank-line", color: "bg-teal-50 text-teal-700 border-teal-200", desc: "All expense records with approval status" },
   { id: "hire", label: "Hire Pipeline", icon: "ri-briefcase-line", color: "bg-violet-50 text-violet-700 border-violet-200", desc: "Candidate pipeline and hiring funnel stages" },
+  { id: "onboarding", label: "Onboarding Journeys", icon: "ri-user-star-line", color: "bg-blue-50 text-blue-700 border-blue-200", desc: "New hire onboarding progression, active stages, and verification status" },
+  { id: "onboarding-tasks", label: "Onboarding Checklist", icon: "ri-checkbox-multiple-line", color: "bg-cyan-50 text-cyan-700 border-cyan-200", desc: "All onboarding task assignments, deadlines, category breakdown & completion audit" },
   { id: "daily-logs", label: "Daily Work Logs", icon: "ri-file-list-2-line", color: "bg-indigo-50 text-indigo-700 border-indigo-200", desc: "Every employee's daily work entries — what they worked on, when" },
   { id: "meeting-rooms", label: "Meeting Room Bookings", icon: "ri-community-line", color: "bg-rose-50 text-rose-700 border-rose-200", desc: "All meeting room booking records, status, and host details" },
 ];
 
 // Modules whose rows are tied to one employee, so the name/department/
 // branch filters below actually apply to them.
-const EMPLOYEE_SCOPED_MODULES = new Set(["leave", "payroll", "headcount", "daily-logs", "meeting-rooms"]);
+const EMPLOYEE_SCOPED_MODULES = new Set(["leave", "shifts", "payroll", "headcount", "daily-logs", "meeting-rooms", "onboarding", "onboarding-tasks"]);
 
-// Maps displayed column labels to the report row object's property names,
-// shared by every export format so CSV/PDF/Excel stay consistent.
 const COLUMN_KEY_MAP: Record<string, string> = {
   "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
   "End Date": "end_date", "Days": "days", "Status": "status", "Month": "month",
   "Base Salary": "base_salary", "Bonus": "bonus", "Deductions": "deductions", "Net Pay": "net_pay",
   "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
+  "Deleted / Inactive": "deleted_count",
   "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
-  "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
+  "Date": "date", "Candidate": "candidate", "Position": "position", "Stage": "stage", "Applied Date": "applied_date",
   "Time": "time", "Activity": "activity", "Notes": "notes",
+  "Room": "room_name", "Title": "title", "Booked By": "employee", "Attendees": "attendees",
+  "Role": "role", "Verified Docs": "verified_docs", "Requested By": "requested_by", "Started Date": "started_date",
+  "Task Name": "task_name", "Priority": "priority", "Assigned To": "assigned_to", "Due Date": "due_date",
+  "Verified By": "completed_by", "Verified Date & Time": "verified_at", "Verified At": "verified_at", "Completed Date": "completed_at",
+  "Shift Date": "shift_date", "Shift Name": "shift_name", "Hours": "hours", "Capacity": "capacity", "Staffing": "staffing",
+  "Deleted By": "deleted_by", "Deleted Date & Time": "deleted_at_formatted", "Deleted At": "deleted_at_formatted",
+};
+
+const getWeekRange = () => {
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMon = (day === 0 ? -6 : 1) - day;
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + diffToMon);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  return { from: toYMD(mon), to: toYMD(sun) };
+};
+
+const getMonthRange = () => {
+  const n = new Date();
+  return {
+    from: toYMD(new Date(n.getFullYear(), n.getMonth(), 1)),
+    to: toYMD(new Date(n.getFullYear(), n.getMonth() + 1, 0)),
+  };
 };
 
 const cellValue = (row: any, col: string) => row[COLUMN_KEY_MAP[col] || col.toLowerCase()];
@@ -42,23 +69,32 @@ export default function ReportsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const paramMod = searchParams.get("module");
   const [activeModule, setActiveModuleState] = useState(
-    paramMod && MODULES.some((m) => m.id === paramMod) ? paramMod : "leave"
+    paramMod && MODULES.some((m) => m.id === paramMod) ? paramMod : "shifts"
   );
+
+  const [dateFrom, setDateFrom] = useState(searchParams.get("from") || "");
+  const [dateTo, setDateTo] = useState(searchParams.get("to") || "");
 
   useEffect(() => {
     const mod = searchParams.get("module");
     if (mod && MODULES.some((m) => m.id === mod)) {
       setActiveModuleState(mod);
     }
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+    if (fromParam !== null) setDateFrom(fromParam);
+    if (toParam !== null) setDateTo(toParam);
   }, [searchParams]);
 
   const setActiveModule = (modId: string) => {
     setActiveModuleState(modId);
-    setSearchParams({ module: modId }, { replace: true });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("module", modId);
+      return next;
+    }, { replace: true });
   };
-
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [recordStatus, setRecordStatus] = useState<"all" | "active" | "deleted">("all");
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [branchFilter, setBranchFilter] = useState("");
@@ -98,8 +134,8 @@ export default function ReportsPage() {
   const isDateScoped = activeModule !== "headcount";
 
   const reportConfig = useMemo(
-    () => ({ module: activeModule, dateFrom, dateTo, employeeSearch, departmentFilter, branchFilter }),
-    [activeModule, dateFrom, dateTo, employeeSearch, departmentFilter, branchFilter]
+    () => ({ module: activeModule, dateFrom, dateTo, employeeSearch, departmentFilter, branchFilter, recordStatus }),
+    [activeModule, dateFrom, dateTo, employeeSearch, departmentFilter, branchFilter, recordStatus]
   );
 
   const handleDataReady = useCallback((rows: any[], cols: string[]) => {
@@ -158,15 +194,7 @@ export default function ReportsPage() {
     setExporting("pdf");
     const module = MODULES.find((m) => m.id === activeModule);
     const dateRange = isDateScoped && (dateFrom || dateTo) ? ` | ${dateFrom || "—"} to ${dateTo || "—"}` : "";
-    const keyMap: Record<string, string> = {
-      "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
-      "End Date": "end_date", "Days": "days", "Status": "status", "Month": "month",
-      "Base Salary": "base_salary", "Bonus": "bonus", "Deductions": "deductions", "Net Pay": "net_pay",
-      "Branch": "branch", "Total Headcount": "employee_count", "Active": "active", "Onboarding": "onboarding",
-      "Description": "description", "Category": "category", "Amount": "amount", "Submitted By": "submitted_by",
-      "Date": "date", "Candidate": "name", "Position": "position", "Stage": "stage", "Applied Date": "applied_date", "Time": "time", "Activity": "activity", "Notes": "notes",
-      "Room": "room_name", "Title": "title", "Booked By": "employee", "Attendees": "attendees",
-    };
+    
     const tableRows = reportData.map((row) =>
       `<tr>${reportColumns.map((col) => {
         const v = cellValue(row, col);
@@ -174,31 +202,51 @@ export default function ReportsPage() {
         if (col.includes("Salary") || col.includes("Pay") || col.includes("Bonus") || col.includes("Deduct") || col === "Amount") {
           val = `$${Number(v || 0).toLocaleString()}`;
         }
-        return `<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px">${val}</td>`;
+        return `<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;color:#334155">${val}</td>`;
       }).join("")}</tr>`
     ).join("");
 
-    const html = `<!DOCTYPE html><html><head><title>${module?.label}</title><style>
-      body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111}
-      h1{font-size:20px;margin-bottom:4px}p{font-size:12px;color:#666;margin-bottom:20px}
-      table{width:100%;border-collapse:collapse}
-      th{text-align:left;padding:8px 10px;background:#f5f5f5;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#666}
-      td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px}
-      .footer{margin-top:20px;font-size:10px;color:#999;text-align:right}
-      @media print{body{padding:0}}
+    const html = `<!DOCTYPE html><html><head><title>${module?.label || "Report"} - HRM_OPS</title><style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;margin:0;padding:24px;color:#0f172a}
+      h1{font-size:20px;font-weight:700;margin:0 0 4px 0;color:#1e293b}
+      p{font-size:12px;color:#64748b;margin:0 0 16px 0}
+      table{width:100%;border-collapse:collapse;margin-top:12px}
+      th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#475569;border-bottom:2px solid #cbd5e1}
+      td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:11px;color:#334155}
+      tr:nth-child(even){background:#fafafa}
+      .footer{margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between}
+      @media print{body{padding:0} @page{size:landscape;margin:12mm}}
     </style></head><body>
       <h1>HRM_OPS — ${module?.label}</h1>
-      <p>Generated: ${new Date().toLocaleString("en-US")}${dateRange} · ${reportData.length} records</p>
+      <p>Generated: ${new Date().toLocaleString("en-US")}${dateRange} · <strong>${reportData.length} records</strong></p>
       <table><thead><tr>${reportColumns.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
       <tbody>${tableRows}</tbody></table>
-      <div class="footer">HRM_OPS HRMS · Confidential</div>
+      <div class="footer">
+        <span>HRM_OPS HRMS · Confidential Report</span>
+        <span>${new Date().toLocaleDateString("en-US")}</span>
+      </div>
     </body></html>`;
 
-    const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.onload = () => { win.print(); win.close(); };
+    try {
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+        setTimeout(() => {
+          try {
+            win.print();
+          } catch (e) {
+            console.error("Print error:", e);
+          }
+        }, 250);
+      } else {
+        window.print();
+      }
+    } catch (err) {
+      console.error("exportPDF error:", err);
+      window.print();
     }
     setTimeout(() => setExporting(null), 800);
   };
@@ -276,9 +324,8 @@ export default function ReportsPage() {
                 <button
                   key={m.id}
                   onClick={() => setActiveModule(m.id)}
-                  className={`w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-all cursor-pointer ${
-                    activeModule === m.id ? `${m.color} border-current` : "border-transparent hover:bg-gray-50 text-gray-700"
-                  }`}
+                  className={`w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-all cursor-pointer ${activeModule === m.id ? `${m.color} border-current` : "border-transparent hover:bg-gray-50 text-gray-700"
+                    }`}
                 >
                   <div className={`w-8 h-8 flex items-center justify-center rounded-lg shrink-0 ${activeModule === m.id ? "bg-current/10" : "bg-gray-100"}`}>
                     <i className={`${m.icon} text-sm ${activeModule === m.id ? "" : "text-gray-500"}`} />
@@ -289,6 +336,56 @@ export default function ReportsPage() {
                   </div>
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Record Status (Active vs Deleted Audit) */}
+          <div className="bg-white border border-gray-100 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Record Status</p>
+              {recordStatus !== "all" && (
+                <button
+                  onClick={() => setRecordStatus("all")}
+                  className="text-[11px] text-[#253C7D] hover:underline cursor-pointer"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-50 rounded-xl border border-gray-200/80">
+              <button
+                type="button"
+                onClick={() => setRecordStatus("all")}
+                className={`py-1.5 px-2 text-xs font-semibold rounded-lg transition-all cursor-pointer text-center ${
+                  recordStatus === "all"
+                    ? "bg-[#253C7D] text-white shadow-xs"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white/80"
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setRecordStatus("active")}
+                className={`py-1.5 px-2 text-xs font-semibold rounded-lg transition-all cursor-pointer text-center ${
+                  recordStatus === "active"
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "text-gray-600 hover:text-emerald-700 hover:bg-white/80"
+                }`}
+              >
+                Active
+              </button>
+              <button
+                type="button"
+                onClick={() => setRecordStatus("deleted")}
+                className={`py-1.5 px-2 text-xs font-semibold rounded-lg transition-all cursor-pointer text-center ${
+                  recordStatus === "deleted"
+                    ? "bg-rose-600 text-white shadow-xs"
+                    : "text-gray-600 hover:text-rose-700 hover:bg-white/80"
+                }`}
+              >
+                Deleted
+              </button>
             </div>
           </div>
 
@@ -388,11 +485,10 @@ export default function ReportsPage() {
                       setDateFrom(t);
                       setDateTo(t);
                     }}
-                    className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer text-center ${
-                      dateFrom === todayYMD() && dateTo === todayYMD()
+                    className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer text-center ${dateFrom === todayYMD() && dateTo === todayYMD()
                         ? "bg-[#253C7D] text-white"
                         : "bg-gray-50 hover:bg-gray-100 text-gray-700"
-                    }`}
+                      }`}
                   >
                     Today
                   </button>
@@ -513,8 +609,8 @@ export default function ReportsPage() {
                         {dateFrom === todayYMD() && dateTo === todayYMD()
                           ? "Per Day (Today)"
                           : dateFrom || dateTo
-                          ? `${dateFrom || "Start"} → ${dateTo || "Today"}`
-                          : "All Time"}
+                            ? `${dateFrom || "Start"} → ${dateTo || "Today"}`
+                            : "All Time"}
                       </span>
                     )}
                   </div>
@@ -527,44 +623,46 @@ export default function ReportsPage() {
 
               {/* Quick Period Switcher Pills */}
               {isDateScoped && (
-                <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl border border-gray-200">
+                <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200 shadow-2xs">
                   <button
                     onClick={() => {
                       const t = todayYMD();
                       setDateFrom(t);
                       setDateTo(t);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       dateFrom === todayYMD() && dateTo === todayYMD()
-                        ? "bg-[#253C7D] text-white shadow-sm"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                        ? "bg-[#253C7D] text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
                     }`}
                   >
                     Per Day
                   </button>
                   <button
                     onClick={() => {
-                      const now = new Date();
-                      const day = now.getDay();
-                      const diffToMon = (day === 0 ? -6 : 1) - day;
-                      const mon = new Date(now);
-                      mon.setDate(now.getDate() + diffToMon);
-                      const sun = new Date(mon);
-                      sun.setDate(mon.getDate() + 6);
-                      setDateFrom(toYMD(mon));
-                      setDateTo(toYMD(sun));
+                      const w = getWeekRange();
+                      setDateFrom(w.from);
+                      setDateTo(w.to);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer text-gray-600 hover:text-gray-900 hover:bg-white`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      dateFrom === getWeekRange().from && dateTo === getWeekRange().to
+                        ? "bg-[#253C7D] text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
+                    }`}
                   >
                     Per Week
                   </button>
                   <button
                     onClick={() => {
-                      const n = new Date();
-                      setDateFrom(toYMD(new Date(n.getFullYear(), n.getMonth(), 1)));
-                      setDateTo(toYMD(new Date(n.getFullYear(), n.getMonth() + 1, 0)));
+                      const m = getMonthRange();
+                      setDateFrom(m.from);
+                      setDateTo(m.to);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer text-gray-600 hover:text-gray-900 hover:bg-white`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      dateFrom === getMonthRange().from && dateTo === getMonthRange().to
+                        ? "bg-[#253C7D] text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
+                    }`}
                   >
                     Per Month
                   </button>
@@ -573,10 +671,10 @@ export default function ReportsPage() {
                       setDateFrom("");
                       setDateTo("");
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       !dateFrom && !dateTo
-                        ? "bg-[#253C7D] text-white shadow-sm"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                        ? "bg-[#253C7D] text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-white/80"
                     }`}
                   >
                     All Time

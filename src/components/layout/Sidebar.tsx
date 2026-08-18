@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/context/AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
+import { isBootstrapAdminEmail, usePermissions } from "@/hooks/usePermissions";
 import { useTheme } from "@/context/ThemeContext";
 
 const navGroups = [
@@ -70,6 +70,7 @@ export default function Sidebar() {
   const { collapsed, setCollapsed } = useSidebar();
   const { user } = useAuth();
   const { can, isAdmin } = usePermissions();
+  const canOpenAdminPortal = isAdmin || isBootstrapAdminEmail(user?.email);
   const [hovered, setHovered] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -221,7 +222,7 @@ export default function Sidebar() {
         )}
 
         {/* Admin Portal — Super Admins only */}
-        {isAdmin && (
+        {canOpenAdminPortal && (
           <div className={`${isExpanded ? "mx-3" : "mx-2"}`}>
             <Link
               to="/admin"
@@ -245,7 +246,7 @@ export default function Sidebar() {
         )}
 
         {/* Recycle Bin — Super Admins only */}
-        {isAdmin && (
+        {canOpenAdminPortal && (
           <div className={`${isExpanded ? "mx-3" : "mx-2"}`}>
             <Link
               to="/recycle-bin"

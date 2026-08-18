@@ -1,0 +1,54 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceRoleKey =
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+      Deno.env.get("SUPABASE_SECRET_KEY");
+
+    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+      return json({ error: "Role function is missing Supabase environment variables" }, 500);
+    }
+
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return json({ error: "Not authenticated" }, 401);
+
+    const admin = createClient(supabaseUrl, serviceRoleKey);
+    const { data: currentUser, error: userError } = await admin.auth.getUser(token);
+    if (userError || !currentUser?.user) return json({ error: "Not authenticated" }, 401);
+
+    const email = currentUser.user.email?.toLowerCase() || "";
+
+    const { data, error } = await admin
+      .from("user_role_assignments")
+      .select("*, app_roles(*)")
+      .or(`user_id.eq.${currentUser.user.id},email.eq.${email}`)
+      .order("user_id", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    return json({ assignment: data || null });
+  } catch (err: any) {
+    console.error("Get my role error:", err);
+    return json({ error: err.message || "Internal server error" }, 500);
+  }
+});

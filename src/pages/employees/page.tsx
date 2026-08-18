@@ -36,6 +36,10 @@ export default function Employees() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [roles, setRoles] = useState<{ id: number; name: string; color: string }[]>([]);
+  const [accountStatus, setAccountStatus] = useState<Record<string, { invited: boolean; hasAccount: boolean }>>({});
+  const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const pageWindow = (current: number, total: number): (number | "...")[] => {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -48,7 +52,7 @@ export default function Employees() {
   };
 
   const loadEmployees = () => {
-    supabase.from("employees").select("*, branches(name)").order("first_name").then(({ data, error }) => {
+    supabase.from("employees").select("*, branches(name)").is("deleted_at", null).order("first_name").then(({ data, error }) => {
       if (error) { toast("Error", "Failed to load employee directory", "error"); return; }
       setEmployees(data || []);
     });
@@ -57,7 +61,23 @@ export default function Employees() {
   useEffect(() => {
     loadEmployees();
     supabase.from("branches").select("id, name").order("name").then(({ data }) => setBranches(data || []));
+    supabase.from("app_roles").select("id, name, color").order("name").then(({ data }) => setRoles(data || []));
   }, []);
+
+  // Load account status for each employee
+  useEffect(() => {
+    const emails = employees.map((e) => e.email);
+    if (emails.length === 0) return;
+    supabase.rpc("get_user_account_status", { emails }).then(({ data }) => {
+      if (data) {
+        const statusMap: Record<string, { invited: boolean; hasAccount: boolean }> = {};
+        data.forEach((row: any) => {
+          statusMap[row.email] = { invited: row.invited, hasAccount: row.has_account };
+        });
+        setAccountStatus(statusMap);
+      }
+    });
+  }, [employees]);
 
   useEffect(() => {
     setPage(1);
@@ -65,6 +85,9 @@ export default function Employees() {
 
   const depts = Array.from(new Set(employees.map((e) => e.department)));
   const branchCount = new Set(employees.map((e) => e.branch_id).filter(Boolean)).size;
+  // Reporting lines can point to any manager in the company. Include the
+  // department in the option label so same-named managers are distinguishable.
+  const managers = employees.filter((employee) => /\bmanager\b/i.test(employee.role || ""));
 
   const filtered = employees.filter((e) => {
     const matchesSearch = `${e.first_name} ${e.last_name} ${e.email} ${e.role}`.toLowerCase().includes(search.toLowerCase());
@@ -118,8 +141,60 @@ export default function Employees() {
       description: `${form.first_name} ${form.last_name} added to the employee directory`,
     });
     notify({ source: "employees", type: "info", title: "New employee added", message: `${form.first_name} ${form.last_name} (${form.role || "no title"}) joined ${form.department || "the company"}.`, entityId: data.id });
+
+    // Pre-provision user_role_assignments by email (so they can be invited)
+    await supabase.from("user_role_assignments").upsert({
+      email: form.email.trim(),
+      display_name: `${form.first_name.trim()} ${form.last_name.trim()}`,
+      role_id: roles.find((r) => r.name === form.role.trim())?.id || null,
+    }, { onConflict: "email" });
+
     setForm(emptyForm);
     setShowAddModal(false);
+    loadEmployees();
+  };
+
+  const inviteUser = async (e: any) => {
+    if (!canManage) return;
+    setInvitingId(e.id);
+    try {
+      const { error } = await supabase.functions.invoke("invite-user", {
+        body: {
+          email: e.email,
+          display_name: `${e.first_name} ${e.last_name}`,
+          role_id: roles.find((r) => r.name === e.role)?.id || null,
+          redirect_to: `${window.location.origin}/reset-password`,
+        },
+      });
+      if (error) throw error;
+      toast("Invitation sent", `An invite link was sent to ${e.email}`, "success");
+      setAccountStatus((prev) => ({ ...prev, [e.email]: { invited: true, hasAccount: false } }));
+    } catch (err: any) {
+      toast("Invite failed", err.message || "Could not send invitation", "error");
+    } finally {
+      setInvitingId(null);
+    }
+  };
+
+  const deleteEmployee = async (employee: any) => {
+    if (!canManage) return;
+    const name = `${employee.first_name} ${employee.last_name}`;
+    if (!confirm(`Move "${name}" to the Recycle Bin? The employee can be restored later.`)) return;
+
+    setDeletingId(employee.id);
+    const { error } = await supabase
+      .from("employees")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", employee.id);
+    setDeletingId(null);
+
+    if (error) {
+      toast("Error", "Failed to move employee to the Recycle Bin", "error");
+      return;
+    }
+
+    toast("Employee moved to Recycle Bin", `${name} can be restored from the Recycle Bin.`, "success");
+    logActivity({ module: "employees", action: "deleted", entityType: "employee", entityId: employee.id, actorName, actorRole: role?.name || "Unknown", description: `${name} moved to the Recycle Bin` });
     loadEmployees();
   };
 
@@ -171,19 +246,25 @@ export default function Employees() {
       </div>
 
       <div className="border border-gray-100 rounded-xl overflow-hidden">
-        <div className="hidden md:grid grid-cols-6 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+        <div className={`hidden md:grid ${canManage ? "grid-cols-8" : "grid-cols-7"} bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider`}>
           <span>Employee</span>
           <span>Role</span>
           <span>Department</span>
           <span>Branch</span>
           <span>Status</span>
+          <span>Account</span>
           <span>Join Date</span>
+          {canManage && <span className="text-right">Actions</span>}
         </div>
-        {filtered.map((e) => (
+        {pagedEmployees.map((e) => {
+          const acc = accountStatus[e.email];
+          const isInvited = acc?.invited;
+          const hasAccount = acc?.hasAccount;
+          return (
           <Link
             key={e.id}
             to={`/employees/${e.id}`}
-            className="grid grid-cols-1 md:grid-cols-6 px-5 py-4 border-t border-gray-50 items-center hover:bg-[#253C7D]/5 transition-colors cursor-pointer"
+            className={`grid grid-cols-1 ${canManage ? "md:grid-cols-8" : "md:grid-cols-7"} px-5 py-4 border-t border-gray-50 items-center hover:bg-[#253C7D]/5 transition-colors cursor-pointer`}
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-sm font-bold">
@@ -205,9 +286,48 @@ export default function Employees() {
                 {e.status}
               </span>
             </span>
+            <span className="mt-1 md:mt-0">
+              {hasAccount ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">
+                  <i className="ri-checkbox-circle-line" />
+                  Active
+                </span>
+              ) : isInvited ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-blue-50 text-blue-700">
+                  <i className="ri-mail-send-line" />
+                  Invited
+                </span>
+              ) : canManage ? (
+                <button
+                  onClick={(ev) => { ev.preventDefault(); inviteUser(e); }}
+                  disabled={invitingId === e.id}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-[#253C7D] hover:text-white transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  <i className="ri-mail-line" />
+                  {invitingId === e.id ? "Sending..." : "Invite"}
+                </button>
+              ) : (
+                <span className="text-[11px] text-gray-400">No account</span>
+              )}
+            </span>
             <span className="text-[13px] text-gray-500 mt-1 md:mt-0">{e.join_date || "N/A"}</span>
+            {canManage && (
+              <span className="mt-2 md:mt-0 text-left md:text-right">
+                <button
+                  type="button"
+                  onClick={(ev) => { ev.preventDefault(); deleteEmployee(e); }}
+                  disabled={deletingId === e.id}
+                  aria-label={`Delete ${e.first_name} ${e.last_name}`}
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+                >
+                  <i className="ri-delete-bin-line" />
+                  {deletingId === e.id ? "Removing..." : "Delete"}
+                </button>
+              </span>
+            )}
           </Link>
-        ))}
+          );
+        })}
         {filtered.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <i className="ri-team-line text-4xl mb-2 block" />
@@ -323,8 +443,11 @@ export default function Employees() {
                   <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Reports To</label>
                   <select value={form.reports_to} onChange={(e) => setForm({ ...form, reports_to: e.target.value })} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer">
                     <option value="">No manager</option>
-                    {employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>)}
+                    {managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.first_name} {manager.last_name} — {manager.department || "No department"}</option>)}
                   </select>
+                  {managers.length === 0 && (
+                    <p className="mt-1 text-[11px] text-gray-400">No managers are available in the directory.</p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
