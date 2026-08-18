@@ -33,6 +33,14 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+export function RequireRecycleBin({ children }: { children: ReactNode }) {
+  const { isAdmin, role, loading } = usePermissions();
+  const { user } = useAuth();
+  if (loading && !isBootstrapAdminEmail(user?.email)) return <LoadingScreen />;
+  if (!isAdmin && !role?.employees_manage && !isBootstrapAdminEmail(user?.email)) return <AccessDenied message="You don't have permission to access the Recycle Bin." />;
+  return <>{children}</>;
+}
+
 export function RequireModule({ module, children }: { module: string; children: ReactNode }) {
   const { can, loading } = usePermissions();
 

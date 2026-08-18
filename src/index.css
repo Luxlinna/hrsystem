@@ -495,4 +495,13 @@
   html.dark .recharts-surface:focus {
     outline-color: rgb(41 171 226 / 0.5) !important;
   }
+
+  html.dark .tasks-page { background: #0b1220 !important; color: #e5e7eb; }
+  html.dark .tasks-page .bg-white { background-color: #111827 !important; }
+  html.dark .tasks-page .bg-gray-50, html.dark .tasks-page .bg-slate-50, html.dark .tasks-page .bg-gray-100 { background-color: #1f2937 !important; }
+  html.dark .tasks-page .text-gray-900, html.dark .tasks-page .text-gray-800 { color: #f3f4f6 !important; }
+  html.dark .tasks-page .text-gray-700, html.dark .tasks-page .text-gray-600 { color: #d1d5db !important; }
+  html.dark .tasks-page .text-gray-500, html.dark .tasks-page .text-gray-400 { color: #9ca3af !important; }
+  html.dark .tasks-page [class*="border-gray"] { border-color: #263244 !important; }
+  html.dark .tasks-page input, html.dark .tasks-page select, html.dark .tasks-page textarea { background-color: #172033 !important; color: #f3f4f6 !important; border-color: #334155 !important; }
 }

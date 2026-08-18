@@ -69,8 +69,9 @@ export default function Sidebar() {
   const location = useLocation();
   const { collapsed, setCollapsed } = useSidebar();
   const { user } = useAuth();
-  const { can, isAdmin } = usePermissions();
+  const { can, isAdmin, role } = usePermissions();
   const canOpenAdminPortal = isAdmin || isBootstrapAdminEmail(user?.email);
+  const canOpenRecycleBin = canOpenAdminPortal || !!role?.employees_manage;
   const [hovered, setHovered] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -246,7 +247,7 @@ export default function Sidebar() {
         )}
 
         {/* Recycle Bin — Super Admins only */}
-        {canOpenAdminPortal && (
+        {canOpenRecycleBin && (
           <div className={`${isExpanded ? "mx-3" : "mx-2"}`}>
             <Link
               to="/recycle-bin"

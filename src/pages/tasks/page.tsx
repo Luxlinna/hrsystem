@@ -496,7 +496,7 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="tasks-page min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
       {/* Floating Toast Notification */}
       {toast && (
         <div

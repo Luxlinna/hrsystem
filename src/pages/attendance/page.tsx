@@ -59,6 +59,7 @@ export default function AttendancePage() {
   const canViewAll = isAdmin || !!role?.attendance_view_all_employees;
   const canViewOwnBranch = !canViewAll && !!role?.attendance_view_own_branch;
   const canManage = canViewAll || canViewOwnBranch;
+  const canDelete = isAdmin || !!role?.employees_manage;
 
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -214,14 +215,14 @@ export default function AttendancePage() {
   }
 
   async function deleteRecord(record: AttendanceRecord) {
-    if (!isAdmin) return;
+    if (!canDelete) return;
     const { error } = await supabase.from("attendance_records").update({ deleted_at: new Date().toISOString(), deleted_by: user?.email || "Admin" }).eq("id", record.id);
     if (error) { toast("Error", `Failed to move attendance record to Recycle Bin: ${error.message}`, "error"); return; }
     toast("Moved to Recycle Bin", "Attendance record was removed from the active list.", "success");
     fetchData();
   }
   async function bulkDeleteAttendance(scope: "all" | "week" | "month" | "year") {
-    if (!isAdmin) return;
+    if (!canDelete) return;
     const now = new Date();
     const start = new Date(now);
     if (scope === "week") start.setDate(now.getDate() - now.getDay());
@@ -358,7 +359,7 @@ export default function AttendancePage() {
                 Clear
               </button>
             )}
-            {isAdmin && <div className="flex gap-2 ml-auto"><button onClick={() => bulkDeleteAttendance("all")} className="px-2.5 py-2 text-xs text-red-700 border border-red-200 rounded-lg hover:bg-red-50">Delete All</button></div>}
+            {canDelete && <div className="flex gap-2 ml-auto"><button onClick={() => bulkDeleteAttendance("all")} className="px-2.5 py-2 text-xs text-red-700 border border-red-200 rounded-lg hover:bg-red-50">Delete All</button></div>}
           </div>
 
           {/* Table */}
@@ -377,7 +378,7 @@ export default function AttendancePage() {
                       <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3">Clock Out</th>
                       <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3">Hours</th>
                       <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3">Status</th>
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3">Notes</th>{isAdmin && <th className="px-5 py-3" />}
+                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3">Notes</th>{canDelete && <th className="px-5 py-3" />}
                     </tr>
                   </thead>
                   <tbody>
@@ -425,7 +426,7 @@ export default function AttendancePage() {
                               {r.status === "late" && r.late_minutes > 0 && ` (+${r.late_minutes}m)`}
                             </span>
                           </td>
-                          <td className="px-5 py-3 text-xs text-gray-400 max-w-[180px] truncate">{r.notes || "—"}</td>{isAdmin && <td className="px-5 py-3 text-right"><button onClick={(e) => { e.stopPropagation(); deleteRecord(r); }} className="text-xs text-red-600 hover:text-red-700"><i className="ri-delete-bin-line" /></button></td>}
+                          <td className="px-5 py-3 text-xs text-gray-400 max-w-[180px] truncate">{r.notes || "—"}</td>{canDelete && <td className="px-5 py-3 text-right"><button onClick={(e) => { e.stopPropagation(); deleteRecord(r); }} className="text-xs text-red-600 hover:text-red-700"><i className="ri-delete-bin-line" /></button></td>}
                         </tr>
                       );
                     })}
