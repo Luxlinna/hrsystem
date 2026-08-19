@@ -13,6 +13,7 @@ export type NotificationSource =
   | "finance"
   | "it_management"
   | "benefits"
+  | "training"
   | "tools"
   | "announcements"
   | "meeting_rooms"

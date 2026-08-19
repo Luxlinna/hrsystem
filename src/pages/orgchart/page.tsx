@@ -71,9 +71,8 @@ function OrgNode({ node, onToggle, searchTerm, deptFilter, onSelectEmployee }: {
     <div className="flex flex-col items-center">
       {node.depth > 0 && <div className="w-px h-6 bg-gray-200" />}
       <div
-        className={`relative flex flex-col items-center p-4 rounded-xl border-2 transition-all cursor-pointer min-w-[180px] max-w-[220px] ${
-          isMatch && searchTerm ? "border-[#253C7D] bg-[#253C7D]/5 scale-105" : "border-gray-200 bg-white hover:border-gray-300"
-        }`}
+        className={`relative flex flex-col items-center p-4 rounded-xl border-2 transition-all cursor-pointer min-w-[180px] max-w-[220px] ${isMatch && searchTerm ? "border-[#253C7D] bg-[#253C7D]/5 scale-105" : "border-gray-200 bg-white hover:border-gray-300"
+          }`}
         onClick={() => { onSelectEmployee(node); if (hasChildren) onToggle(node.id); }}
       >
         <div className={`absolute top-0 left-0 right-0 h-1 ${deptColor} rounded-t-xl`} />

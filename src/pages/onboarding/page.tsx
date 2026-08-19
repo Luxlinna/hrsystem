@@ -191,7 +191,7 @@ export default function Onboarding() {
           .select("*, employees(first_name, last_name, role, department, branch_id, branches(name))")
           .is("deleted_at", null)
           .order("created_at", { ascending: false }),
-        supabase.from("onboarding_documents").select("*").order("created_at", { ascending: true }),
+        supabase.from("onboarding_documents").select("*").is("deleted_at", null).order("created_at", { ascending: true }),
         supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url, branches(name)").is("deleted_at", null).order("first_name"),
       ]);
       setRequests((ob as any) || []);
@@ -767,13 +767,16 @@ const matchDocAndTask = (docName: string, taskName: string): boolean => {
   };
 
   const deleteDocument = async (doc: OnboardingDoc) => {
-    if (!confirm(`Remove "${doc.document_name}" from checklist?`)) return;
-    const { error } = await supabase.from("onboarding_documents").delete().eq("id", doc.id);
+    if (!confirm(`Move "${doc.document_name}" to the Recycle Bin? It can be restored later.`)) return;
+    const { error } = await supabase
+      .from("onboarding_documents")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+      .eq("id", doc.id);
     if (error) {
-      toast("Error", "Failed to remove item", "error");
+      toast("Error", "Failed to move item to the Recycle Bin", "error");
     } else {
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-      toast("Removed", `Document "${doc.document_name}" removed`, "success");
+      toast("Moved to Recycle Bin", `Document "${doc.document_name}" can be restored later`, "success");
     }
   };
 

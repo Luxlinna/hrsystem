@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { notify } from "@/lib/notify";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "@/components/Toast";
 
 interface Announcement {
   id: string;
@@ -221,10 +222,18 @@ export default function Announcements() {
 
   const deleteAnnouncement = async (a: Announcement) => {
     if (!canManage) return;
-    if (!confirm(`Delete announcement "${a.title}"? This cannot be undone.`)) return;
+    if (!confirm(`Move announcement "${a.title}" to the Recycle Bin? It can be restored later.`)) return;
+    const { error } = await supabase
+      .from("announcements")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: authorName })
+      .eq("id", a.id);
+    if (error) {
+      toast("Error", "Failed to move announcement to the Recycle Bin", "error");
+      return;
+    }
     await supabase.from("notifications").delete().eq("source", "announcements").eq("entity_id", a.id);
-    await supabase.from("announcements").delete().eq("id", a.id);
     setSelectedId((prev) => (prev === a.id ? null : prev));
+    toast("Moved to Recycle Bin", "Announcement can be restored later.", "success");
     loadAnnouncements();
   };
 

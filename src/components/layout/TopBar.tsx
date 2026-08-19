@@ -72,6 +72,7 @@ function MobileDrawer({
   handleLogout,
   can,
   isAdmin,
+  canOpenRecycleBin,
 }: {
   open: boolean;
   onClose: () => void;
@@ -81,6 +82,7 @@ function MobileDrawer({
   handleLogout: () => void;
   can: (module: string) => boolean;
   isAdmin: boolean;
+  canOpenRecycleBin: boolean;
 }) {
   const { isDark, toggleTheme } = useTheme();
   const touchStartX = useRef<number>(0);
@@ -178,12 +180,12 @@ function MobileDrawer({
     .map((group) => ({ ...group, items: group.items.filter((item) => can(item.module)) }))
     .filter((group) => group.items.length > 0);
 
-  if (isAdmin) {
+  if (isAdmin || canOpenRecycleBin) {
     visibleDrawerGroups.push({
       label: "Admin",
       items: [
-        { path: "/admin", label: "Admin Portal", icon: "ri-admin-line", module: "admin" },
         { path: "/recycle-bin", label: "Recycle Bin", icon: "ri-delete-bin-6-line", module: "admin" },
+        ...(isAdmin ? [{ path: "/admin", label: "Admin Portal", icon: "ri-admin-line", module: "admin" }] : []),
       ],
     });
   }
@@ -306,7 +308,8 @@ export default function TopBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { can, isAdmin } = usePermissions();
+  const { can, isAdmin, role } = usePermissions();
+  const canOpenRecycleBin = isAdmin || /manager/i.test(role?.name || "");
   const { isDark, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -511,6 +514,7 @@ export default function TopBar() {
       handleLogout={handleLogout}
       can={can}
       isAdmin={isAdmin}
+      canOpenRecycleBin={canOpenRecycleBin}
     />
     <header className={`sticky top-0 z-40 ${bgClass} transition-all duration-300`}>
       <div className="flex items-center justify-between px-4 lg:px-8 py-3">
@@ -709,16 +713,18 @@ export default function TopBar() {
                       Settings
                     </Link>
                   )}
-                  {isAdmin && (
+                  {(isAdmin || canOpenRecycleBin) && (
                     <>
-                      <Link
-                        to="/admin"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <i className="ri-admin-line text-sm text-gray-400" />
-                        Admin Portal
-                      </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <i className="ri-admin-line text-sm text-gray-400" />
+                          Admin Portal
+                        </Link>
+                      )}
                       <Link
                         to="/recycle-bin"
                         onClick={() => setProfileOpen(false)}

@@ -33,9 +33,32 @@
   html.dark table {
     color: #e5e7eb;
   }
+
+  /* Modern, subtle scrollbar across the whole application */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.6);
+  }
 }
 
 @layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
   html.dark .bg-transparent {
     background-color: transparent !important;
   }
@@ -78,6 +101,12 @@
 
   html.dark .bg-black\/40 {
     background-color: rgb(0 0 0 / 0.68) !important;
+  }
+
+  /* Page-level surfaces for the Time & Attendance and Training hubs. */
+  html.dark .attendance-hub,
+  html.dark .training-hub {
+    background-color: #0f172a !important;
   }
 
   html.dark .border-gray-50,

@@ -3,10 +3,11 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
+import { notify } from "@/lib/notify";
 
 
 interface Course {
-  id: number;
+  id: string;
   title: string;
   description: string | null;
   category: string;
@@ -18,8 +19,8 @@ interface Course {
 }
 
 interface Enrollment {
-  id: number;
-  course_id: number;
+  id: string;
+  course_id: string;
   employee_id: string;
   status: "enrolled" | "in_progress" | "completed" | "failed" | "dropped";
   progress: number;
@@ -37,6 +38,7 @@ interface Employee {
   id: string;
   first_name: string;
   last_name: string;
+  email: string;
   department: string;
   avatar_url: string | null;
 }
@@ -71,7 +73,7 @@ export default function TrainingPage() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
-  const [enrollCourseId, setEnrollCourseId] = useState<number | null>(null);
+  const [enrollCourseId, setEnrollCourseId] = useState<string | null>(null);
   const [enrollEmployeeIds, setEnrollEmployeeIds] = useState<string[]>([]);
   const [enrollDueDate, setEnrollDueDate] = useState("");
   const [enrollSearch, setEnrollSearch] = useState("");
@@ -97,7 +99,7 @@ export default function TrainingPage() {
   const [newCourse, setNewCourse] = useState({
     title: "", description: "", category: "General", duration_hours: "", instructor: "", format: "online", status: "active",
   });
-  const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
 
   // Close the enroll dropdown when clicking outside.
   useEffect(() => {
@@ -123,7 +125,7 @@ export default function TrainingPage() {
     const [cRes, eRes, empRes] = await Promise.all([
       supabase.from("training_courses").select("*").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("training_enrollments").select("*, employees(id, first_name, last_name, department, avatar_url), training_courses(*)").is("deleted_at", null).order("enrolled_at", { ascending: false }),
-      supabase.from("employees").select("id, first_name, last_name, department, avatar_url").eq("status", "active").order("first_name"),
+      supabase.from("employees").select("id, first_name, last_name, email, department, avatar_url").eq("status", "active").is("deleted_at", null).order("first_name"),
     ]);
     if (cRes.data) setCourses(cRes.data);
     if (eRes.data) setEnrollments(eRes.data as Enrollment[]);
@@ -149,6 +151,7 @@ export default function TrainingPage() {
     }
     return true;
   });
+  const selectedEnrollmentEmployees = employees.filter((employee) => enrollEmployeeIds.includes(employee.id));
 
   const enrollTotalPages = Math.max(1, Math.ceil(filteredEnrollments.length / pageSize));
   const enrollSafePage = Math.min(page, enrollTotalPages);
@@ -242,6 +245,32 @@ export default function TrainingPage() {
     const { error } = await supabase.from("training_enrollments").insert(payload);
     setSaving(false);
     if (error) { toast("Error", "Failed to enroll employees", "error"); return; }
+
+    const course = courses.find((item) => item.id === enrollCourseId);
+    const enrolledEmployees = employees.filter((employee) => enrollEmployeeIds.includes(employee.id));
+    const emails = enrolledEmployees.map((employee) => employee.email).filter(Boolean);
+    const { data: assignments } = emails.length > 0
+      ? await supabase.from("user_role_assignments").select("email, user_id").in("email", emails).is("deleted_at", null)
+      : { data: [] };
+    const userIdsByEmail = new Map((assignments || [])
+      .filter((assignment: any) => assignment.user_id)
+      .map((assignment: any) => [assignment.email.toLowerCase(), assignment.user_id]));
+
+    // Send a personal notification only to employees who already have an
+    // account; a null recipient would make the notification company-wide.
+    await Promise.all(enrolledEmployees.map((employee) => {
+      const recipientUserId = userIdsByEmail.get(employee.email.toLowerCase());
+      if (!recipientUserId) return Promise.resolve();
+      return notify({
+        source: "training",
+        type: "info",
+        title: "Training assigned",
+        message: `You have been enrolled in ${course?.title || "a training course"}${enrollDueDate ? `. Complete it by ${new Date(`${enrollDueDate}T00:00:00`).toLocaleDateString()}.` : "."}`,
+        entityId: enrollCourseId,
+        recipientUserId,
+      });
+    }));
+
     toast("Success", `${enrollEmployeeIds.length} employee${enrollEmployeeIds.length === 1 ? '' : 's'} enrolled.`, "success");
     setShowEnrollModal(false);
     setEnrollCourseId(null);
@@ -251,7 +280,7 @@ export default function TrainingPage() {
     fetchData();
   }
 
-  async function issueCertificate(enrollmentId: number) {
+  async function issueCertificate(enrollmentId: string) {
     if (!canManage) return;
     const { error } = await supabase.from("training_enrollments").update({ certificate_issued: true }).eq("id", enrollmentId);
     if (error) { toast("Error", "Failed to issue certificate", "error"); return; }
@@ -259,7 +288,7 @@ export default function TrainingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F8F6] p-6">
+    <div className="training-hub min-h-screen bg-[#F8F8F6] p-6">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
@@ -772,19 +801,23 @@ export default function TrainingPage() {
 
       {/* Enroll Employee Modal */}
       {showEnrollModal && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowEnrollModal(false)} />
-          <div className="relative bg-white rounded-2xl w-full max-w-[440px] max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="text-base font-semibold text-gray-900">Enroll Employee in Course</h3>
-            </div>
-            <div className="p-6 space-y-4">
+          <div className="relative w-full max-w-[560px] overflow-visible rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-gray-100 px-6 py-5">
               <div>
-                <label className="text-xs font-medium text-gray-500 block mb-1">Course *</label>
+                <h3 className="text-lg font-semibold text-gray-900">Enroll employees</h3>
+                <p className="mt-1 text-xs text-gray-500">Assign a course and notify the selected employees.</p>
+              </div>
+              <button onClick={() => setShowEnrollModal(false)} className="-mr-2 -mt-1 flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Close enrollment form"><i className="ri-close-line text-lg" /></button>
+            </div>
+            <div className="max-h-[65vh] space-y-5 overflow-y-auto px-6 py-5">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-700">Course <span className="text-red-500">*</span></label>
                 <select
                   value={enrollCourseId || ""}
-                  onChange={(e) => setEnrollCourseId(parseInt(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  onChange={(e) => setEnrollCourseId(e.target.value || null)}
+                  className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm font-medium text-gray-800 focus:border-[#253C7D] focus:outline-none focus:ring-2 focus:ring-[#253C7D]/10"
                 >
                   <option value="">Select course...</option>
                   {courses.filter((c) => c.status === "active").map((c) => (
@@ -793,7 +826,7 @@ export default function TrainingPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 block mb-1">Employee(s) *</label>
+                <div className="mb-1.5 flex items-center justify-between"><label className="block text-xs font-semibold text-gray-700">Employees <span className="text-red-500">*</span></label><span className="text-[11px] font-medium text-[#253C7D]">{enrollEmployeeIds.length} selected</span></div>
                 <div className="relative" ref={enrollRef}>
                   <div className="relative">
                     <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
@@ -808,12 +841,12 @@ export default function TrainingPage() {
                       }}
                       onFocus={() => setEnrollOpen(true)}
                       placeholder="Search by name, department..."
-                      className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-[#253C7D] bg-white"
+                      className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#253C7D] focus:outline-none focus:ring-2 focus:ring-[#253C7D]/10"
                     />
                     <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
                   {enrollOpen && (
-                    <div className="absolute z-20 mt-1.5 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto py-1">
+                    <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl">
                       {(() => {
                         const filtered = employees.filter((emp) => {
                           const q = enrollSearch.trim().toLowerCase();
@@ -822,9 +855,7 @@ export default function TrainingPage() {
                         });
                         return (
                           <>
-                            <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                              {filtered.length} employee{filtered.length === 1 ? '' : 's'}{enrollSearch.trim() ? ` matching "${enrollSearch.trim()}"` : ''}
-                            </p>
+                            <p className="border-b border-gray-100 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">{filtered.length} available employee{filtered.length === 1 ? '' : 's'}</p>
                             <button
                               type="button"
                               onMouseDown={(e) => e.preventDefault()}
@@ -833,7 +864,7 @@ export default function TrainingPage() {
                                 const allSelected = allIds.length > 0 && allIds.every((id) => enrollEmployeeIds.includes(id));
                                 setEnrollEmployeeIds(allSelected ? [] : allIds);
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                              className="flex w-full items-center gap-3 border-b border-gray-100 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-100"
                             >
                               <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
                                 filtered.length > 0 && filtered.every((e) => enrollEmployeeIds.includes(e.id))
@@ -847,7 +878,7 @@ export default function TrainingPage() {
                               </span>
                               Select all ({filtered.length})
                             </button>
-                            {filtered.length === 0 ? (
+                            <div className="max-h-52 overflow-y-auto py-1">{filtered.length === 0 ? (
                               <p className="px-3 py-4 text-[12px] text-gray-400">No employees match your search.</p>
                             ) : (
                               filtered.map((emp) => {
@@ -856,7 +887,7 @@ export default function TrainingPage() {
                                   <label
                                     key={emp.id}
                                     onMouseDown={(e) => e.preventDefault()}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors cursor-pointer ${checked ? "bg-[#253C7D]/5" : "hover:bg-gray-50"}`}
+                                    className={`mx-1 flex w-[calc(100%-8px)] items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors ${checked ? "bg-[#253C7D]/10" : "hover:bg-gray-50"}`}
                                   >
                                     <span className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
                                       checked ? "bg-[#253C7D] border-[#253C7D]" : "border-gray-300 bg-white"
@@ -883,34 +914,38 @@ export default function TrainingPage() {
                                   </label>
                                 );
                               })
-                            )}
+                            )}</div>
                           </>
                         );
                       })()}
                     </div>
                   )}
                 </div>
-                {enrollEmployeeIds.length > 0 && (
-                  <p className="mt-1.5 text-[11px] text-gray-400">{enrollEmployeeIds.length} employee{enrollEmployeeIds.length === 1 ? '' : 's'} selected</p>
+                {selectedEnrollmentEmployees.length > 0 && (
+                  <div className="mt-3 rounded-xl border border-[#253C7D]/10 bg-[#253C7D]/5 p-3">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[#253C7D]">Selected employees</p>
+                    <div className="flex flex-wrap gap-1.5">{selectedEnrollmentEmployees.slice(0, 4).map((employee) => <span key={employee.id} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[11px] font-medium text-gray-700 shadow-sm">{employee.first_name} {employee.last_name}<button type="button" onClick={() => setEnrollEmployeeIds((ids) => ids.filter((id) => id !== employee.id))} className="text-gray-400 hover:text-red-500" aria-label={`Remove ${employee.first_name} ${employee.last_name}`}><i className="ri-close-line" /></button></span>)}{selectedEnrollmentEmployees.length > 4 && <span className="rounded-full bg-white px-2 py-1 text-[11px] font-medium text-gray-500">+{selectedEnrollmentEmployees.length - 4} more</span>}</div>
+                  </div>
                 )}
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 block mb-1">Due Date</label>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-700">Due date <span className="font-normal text-gray-400">(optional)</span></label>
                 <input
                   type="date"
                   value={enrollDueDate}
                   onChange={(e) => setEnrollDueDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#253C7D]"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm text-gray-800 focus:border-[#253C7D] focus:outline-none focus:ring-2 focus:ring-[#253C7D]/10"
                 />
               </div>
             </div>
-            <div className="px-6 pb-6 flex gap-3">
-              <button onClick={() => setShowEnrollModal(false)} className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap">Cancel</button>
+            <div className="flex gap-3 border-t border-gray-100 bg-gray-50/70 px-6 py-4">
+              <button onClick={() => setShowEnrollModal(false)} className="flex-1 whitespace-nowrap rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
               <button
                 onClick={saveEnrollment}
                 disabled={saving || !enrollCourseId || enrollEmployeeIds.length === 0}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#253C7D] rounded-lg hover:bg-[#1F336A] disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#253C7D] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1F336A] disabled:cursor-not-allowed disabled:opacity-50"
               >
+                <i className="ri-user-add-line" />
                 {saving ? "Enrolling..." : `Enroll${enrollEmployeeIds.length > 1 ? ` (${enrollEmployeeIds.length})` : ''}`}
               </button>
             </div>

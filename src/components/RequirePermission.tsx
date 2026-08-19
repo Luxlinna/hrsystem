@@ -33,6 +33,18 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+export function RequireRecycleBin({ children }: { children: ReactNode }) {
+  const { role, isAdmin, loading } = usePermissions();
+  const { user } = useAuth();
+  const isManager = /manager/i.test(role?.name || "");
+
+  if (loading && !isBootstrapAdminEmail(user?.email)) return <LoadingScreen />;
+  if (!isAdmin && !isManager && !isBootstrapAdminEmail(user?.email)) {
+    return <AccessDenied message="Only administrators and managers can access the Recycle Bin." />;
+  }
+  return <>{children}</>;
+}
+
 export function RequireModule({ module, children }: { module: string; children: ReactNode }) {
   const { can, loading } = usePermissions();
 

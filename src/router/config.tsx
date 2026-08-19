@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactElement } from "react";
 import type { RouteObject } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { RequireAdmin, RequireModule } from "@/components/RequirePermission";
+import { RequireAdmin, RequireModule, RequireRecycleBin } from "@/components/RequirePermission";
 
 const Home = lazy(() => import("../pages/home/page"));
 const NotFound = lazy(() => import("../pages/NotFound"));
@@ -107,7 +107,7 @@ const routes: RouteObject[] = [
       },
       {
         path: "recycle-bin",
-        element: <Suspense fallback={fallback}><RequireAdmin><RecycleBin /></RequireAdmin></Suspense>,
+        element: <Suspense fallback={fallback}><RequireRecycleBin><RecycleBin /></RequireRecycleBin></Suspense>,
       },
     ],
   },
