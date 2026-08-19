@@ -60,8 +60,16 @@ export default function UrgentAnnouncementAlert() {
   const [acceptError, setAcceptError] = useState("");
   const lastAlertTimeRef = useRef<Record<string, number>>({});
 
+  // Check if announcement is older than 24 hours
+  const isOlderThan24Hours = (publishedAt: string): boolean => {
+    const published = new Date(publishedAt).getTime();
+    const now = Date.now();
+    const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+    return now - published > twentyFourHoursMs;
+  };
+
   const active = useMemo(
-    () => announcements.find((a) => !acceptedIds.has(a.id)) || null,
+    () => announcements.find((a) => !acceptedIds.has(a.id) && isOlderThan24Hours(a.published_at)) || null,
     [announcements, acceptedIds]
   );
 
@@ -98,8 +106,14 @@ export default function UrgentAnnouncementAlert() {
       .on("postgres_changes", { event: "*", schema: "public", table: "announcement_acknowledgements" }, () => loadUrgentAnnouncements())
       .subscribe();
 
+    // Poll every 30 seconds for announcements older than 24 hours
+    const pollInterval = setInterval(() => {
+      loadUrgentAnnouncements();
+    }, ALERT_INTERVAL_MS);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [user?.id, permissionsLoading, mustAcceptUrgentAnnouncements]);
 
@@ -112,10 +126,15 @@ export default function UrgentAnnouncementAlert() {
       if (now - last < ALERT_INTERVAL_MS - 1000) return;
       lastAlertTimeRef.current[active.id] = now;
 
+      // Calculate how long ago the announcement was published
+      const published = new Date(active.published_at).getTime();
+      const hoursAgo = Math.floor((now - published) / (60 * 60 * 1000));
+      const timeAgo = hoursAgo > 0 ? `${hoursAgo}h ago` : `${Math.floor((now - published) / (60 * 1000))}m ago`;
+
       // In-app alert toast
       toast(
-        "URGENT ANNOUNCEMENT",
-        `Action required: "${active.title}". Click Accept to dismiss.`,
+        "URGENT ANNOUNCEMENT (24h+ overdue)",
+        `Overdue for ${timeAgo}: "${active.title}". Click Accept to dismiss.`,
         "error"
       );
 
@@ -130,7 +149,7 @@ export default function UrgentAnnouncementAlert() {
         if (Notification.permission === "granted") {
           const link = `${__BASE_PATH__ === "/" ? "" : __BASE_PATH__}/announcements?highlight=${active.id}`;
           const options: NotificationOptions = {
-            body: "Urgent acknowledgement required. Please click Accept in HRM_OPS.",
+            body: `Urgent announcement overdue 24h+. Please click Accept in HRM_OPS.`,
             icon: "/favicon.png",
             requireInteraction: true,
             data: { link, source: "announcements", priority: "urgent" },
