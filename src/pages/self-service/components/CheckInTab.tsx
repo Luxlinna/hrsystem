@@ -284,17 +284,49 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     return map[status] || "bg-gray-100 text-gray-600";
   };
 
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    return toYMD(d);
-  });
-
   const presentCount = records.filter((r) => r.status === "present" || r.status === "late").length;
   const lateCount = records.filter((r) => r.status === "late").length;
   const earlyLeaveCount = records.filter((r) => (r.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes).length;
   const absentCount = records.filter((r) => r.status === "absent").length;
   const totalHours = records.reduce((s, r) => s + (r.hours_worked || 0), 0);
+
+  const daysWithHours = records.filter((r) => (r.hours_worked || 0) > 0).length;
+  const avgHours = daysWithHours > 0 ? totalHours / daysWithHours : 0;
+  const punctuality = presentCount > 0 ? Math.round(((presentCount - lateCount) / presentCount) * 100) : 0;
+
+  const fmtHM = (hours: number) => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours % 1) * 60);
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  };
+
+  // Live "worked so far" counter — ticks with the clock while still on shift.
+  const elapsedHours = (() => {
+    if (!isCheckedIn || isCheckedOut || !todayRecord?.clock_in) return 0;
+    const start = new Date(`${today}T${todayRecord.clock_in}`).getTime();
+    return Math.max(0, (currentTime.getTime() - start) / 3600000);
+  })();
+
+  // How far through the scheduled shift we currently are.
+  const shiftProgress = (() => {
+    if (!workEndTime) return null;
+    const [sh, sm] = workStartTime.split(":").map(Number);
+    const [eh, em] = workEndTime.split(":").map(Number);
+    const start = sh * 60 + sm;
+    const end = eh * 60 + em;
+    if (end <= start) return null;
+    const now = currentTime.getHours() * 60 + currentTime.getMinutes();
+    return Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
+  })();
+
+  const fmtClock = (t: string) => new Date(`2000-01-01T${t}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  // Today first, going backward — mirrors how the rest of this tab reads (most recent first).
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    return toYMD(d);
+  });
 
   if (loading) return (
     <div className="flex items-center justify-center h-40">
@@ -310,20 +342,83 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
         </div>
       )}
 
-      {/* Live Clock + Check In/Out Panel */}
-      <div className="bg-gradient-to-br from-[#253C7D] to-[#29ABE2] rounded-2xl p-6 text-white">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div>
-            <p className="text-white/70 text-[12px] font-medium uppercase tracking-wider mb-1">Live Clock</p>
-            <p className="text-4xl font-bold font-mono tracking-tight">
+      {/* Live Clock + Today's Shift + Check In/Out Panel */}
+      <div className="bg-gradient-to-br from-[#253C7D] via-[#2E5AA8] to-[#29ABE2] rounded-2xl p-5 sm:p-6 text-white">
+        <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-5 lg:gap-7 items-center">
+          {/* Live clock */}
+          <div className="lg:pr-7 lg:border-r lg:border-white/15">
+            <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Live Clock</p>
+            <p className="text-4xl font-bold font-mono tracking-tight tabular-nums">
               {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </p>
-            <p className="text-white/70 text-[13px] mt-1">
+            <p className="text-white/70 text-[12px] mt-1">
               {currentTime.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
             </p>
           </div>
 
-          <div className="flex flex-col gap-2 md:w-80">
+          {/* Today's shift snapshot */}
+          <div className="min-w-0">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Today's Shift</p>
+              <span className="text-[11px] font-semibold text-white/70">
+                {fmtClock(workStartTime)}{workEndTime ? ` – ${fmtClock(workEndTime)}` : ""}
+              </span>
+            </div>
+
+            {/* Shift progress track with clock-in / clock-out markers */}
+            {shiftProgress !== null && (
+              <div className="relative h-2 rounded-full bg-white/15 overflow-hidden mb-3">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-white/80 transition-all duration-1000"
+                  style={{ width: `${shiftProgress}%` }}
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-white/10 backdrop-blur rounded-xl px-3 py-2 border border-white/15">
+                <p className="text-white/55 text-[10px] font-bold uppercase tracking-wider">In</p>
+                <p className="text-[15px] font-bold tabular-nums mt-0.5">
+                  {todayRecord?.clock_in?.slice(0, 5) || "—"}
+                </p>
+                {(todayRecord?.late_minutes || 0) > scheduleSettings.lateGraceMinutes && (
+                  <p className="text-amber-200 text-[10px] font-semibold mt-0.5">{todayRecord?.late_minutes}m late</p>
+                )}
+              </div>
+              <div className="bg-white/10 backdrop-blur rounded-xl px-3 py-2 border border-white/15">
+                <p className="text-white/55 text-[10px] font-bold uppercase tracking-wider">Out</p>
+                <p className="text-[15px] font-bold tabular-nums mt-0.5">
+                  {todayRecord?.clock_out?.slice(0, 5) || "—"}
+                </p>
+                {(todayRecord?.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes && (
+                  <p className="text-orange-200 text-[10px] font-semibold mt-0.5">{todayRecord?.early_leave_minutes}m early</p>
+                )}
+              </div>
+              <div className="bg-white/10 backdrop-blur rounded-xl px-3 py-2 border border-white/15">
+                <p className="text-white/55 text-[10px] font-bold uppercase tracking-wider">
+                  {isCheckedIn && !isCheckedOut ? "Working" : "Hours"}
+                </p>
+                <p className="text-[15px] font-bold tabular-nums mt-0.5">
+                  {isCheckedIn && !isCheckedOut
+                    ? fmtHM(elapsedHours)
+                    : todayRecord?.hours_worked
+                    ? fmtHM(todayRecord.hours_worked)
+                    : "—"}
+                </p>
+                {isCheckedIn && !isCheckedOut && (
+                  <p className="text-emerald-200 text-[10px] font-semibold mt-0.5 flex items-center gap-1">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-300" />
+                    </span>
+                    Live
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 lg:w-72">
             {!isCheckedIn && checkInStep === "idle" && (
               <div className="space-y-2">
                 <input
@@ -343,14 +438,10 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                 </button>
                 {branch?.latitude && (
                   <p className="text-white/60 text-[11px] text-center">
-                    Requires location within {branch.geofence_radius_m}m of {branch.name}
+                    <i className="ri-map-pin-line mr-1" />
+                    Within {branch.geofence_radius_m}m of {branch.name}
                   </p>
                 )}
-                <p className="text-white/60 text-[11px] text-center">
-                  Work starts at {new Date(`2000-01-01T${workStartTime}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-                  {workEndTime && ` and ends at ${new Date(`2000-01-01T${workEndTime}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
-                  {" — "}arrivals after start{workEndTime ? " or exits before end" : ""} are flagged
-                </p>
               </div>
             )}
 
@@ -406,13 +497,6 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
             {isCheckedIn && !isCheckedOut && (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 bg-white/20 rounded-xl px-4 py-2">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400" />
-                  </span>
-                  <span className="text-[13px] font-semibold">Clocked in at {todayRecord?.clock_in?.slice(0, 5)}</span>
-                </div>
                 {isEarlyCheckoutNow && (
                   <div className="space-y-1">
                     <div className="bg-amber-400/20 border border-amber-200/40 rounded-xl px-4 py-3">
@@ -442,68 +526,109 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
             )}
 
             {isCheckedOut && (
-              <div className="bg-white/20 rounded-xl px-5 py-4 text-center">
-                <i className="ri-checkbox-circle-fill text-2xl text-green-300 mb-1 block" />
-                <p className="font-bold text-[14px]">Day Complete</p>
-                <p className="text-white/70 text-[12px] mt-0.5">
-                  {todayRecord?.clock_in?.slice(0, 5)} → {todayRecord?.clock_out?.slice(0, 5)}
-                  {todayRecord?.hours_worked ? ` · ${todayRecord.hours_worked}h worked` : ""}
-                </p>
+              <div className="bg-white/15 border border-white/20 rounded-xl px-4 py-3 flex items-center gap-3">
+                <i className="ri-checkbox-circle-fill text-xl text-emerald-300 shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-bold text-[14px]">Day Complete</p>
+                  <p className="text-white/70 text-[11px] mt-0.5">
+                    {todayRecord?.hours_worked ? `${fmtHM(todayRecord.hours_worked)} logged today` : "Shift recorded"}
+                  </p>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {[
-          { label: "Days Present", value: presentCount, icon: "ri-user-follow-line", color: "text-emerald-600 bg-emerald-50" },
-          { label: "Late Arrivals", value: lateCount, icon: "ri-time-line", color: "text-amber-600 bg-amber-50" },
-          { label: "Early Leaves", value: earlyLeaveCount, icon: "ri-logout-circle-line", color: "text-orange-600 bg-orange-50" },
-          { label: "Absences", value: absentCount, icon: "ri-user-unfollow-line", color: "text-red-500 bg-red-50" },
-          { label: "Total Hours", value: `${totalHours.toFixed(0)}h`, icon: "ri-timer-line", color: "text-[#253C7D] bg-[#253C7D]/10" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white border border-gray-100 rounded-xl p-4">
-            <div className={`w-8 h-8 flex items-center justify-center rounded-lg mb-2 ${s.color}`}>
-              <i className={`${s.icon} text-sm`} />
+      {/* Stats Strip — last 30 days */}
+      <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Last 30 Days</p>
+          <p className="text-[11px] text-gray-400">{records.length} record{records.length === 1 ? "" : "s"}</p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-gray-100">
+          {[
+            { label: "Days Present", value: presentCount, sub: `${daysWithHours} with hours`, icon: "ri-user-follow-line", color: "text-emerald-600 bg-emerald-50" },
+            { label: "Punctuality", value: `${punctuality}%`, sub: `${presentCount - lateCount} on time`, icon: "ri-shield-check-line", color: "text-teal-600 bg-teal-50" },
+            { label: "Late Arrivals", value: lateCount, sub: `${scheduleSettings.lateGraceMinutes}m grace`, icon: "ri-time-line", color: "text-amber-600 bg-amber-50" },
+            { label: "Early Leaves", value: earlyLeaveCount, sub: `${scheduleSettings.earlyLeaveGraceMinutes}m grace`, icon: "ri-logout-circle-line", color: "text-orange-600 bg-orange-50" },
+            { label: "Absences", value: absentCount, sub: absentCount === 0 ? "Perfect record" : "Needs review", icon: "ri-user-unfollow-line", color: "text-rose-500 bg-rose-50" },
+            { label: "Total Hours", value: `${totalHours.toFixed(0)}h`, sub: `avg ${avgHours.toFixed(1)}h/day`, icon: "ri-timer-line", color: "text-[#253C7D] bg-[#253C7D]/10" },
+          ].map((s) => (
+            <div key={s.label} className="px-4 py-3.5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className={`w-6 h-6 flex items-center justify-center rounded-md shrink-0 ${s.color}`}>
+                  <i className={`${s.icon} text-[11px]`} />
+                </div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate">{s.label}</p>
+              </div>
+              <p className="text-xl font-black text-gray-900 leading-none tabular-nums">{s.value}</p>
+              <p className="text-[10px] text-gray-400 mt-1 truncate">{s.sub}</p>
             </div>
-            <p className="text-xl font-bold text-gray-900">{s.value}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">{s.label}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Last 7 Days mini-calendar */}
-      <div>
-        <p className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Last 7 Days</p>
-        <div className="flex gap-2 flex-wrap">
+      {/* Last 7 Days — at-a-glance clock in/out, not just a status dot */}
+      <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Last 7 Days</p>
+          <div className="flex items-center gap-3 text-[10px] font-semibold text-gray-400">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400" />On time</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" />Late</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-300" />Absent</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 p-3">
           {last7Days.map((d) => {
             const rec = records.find((r) => r.date === d);
-            const dayName = new Date(d).toLocaleDateString("en-US", { weekday: "short" });
-            const dayNum = new Date(d).getDate();
+            const dt = new Date(d);
+            const dayName = dt.toLocaleDateString("en-US", { weekday: "short" });
+            const dayNum = dt.getDate();
             const isT = d === today;
+            const isLate = (rec?.late_minutes || 0) > scheduleSettings.lateGraceMinutes;
+            const isEarly = !!rec?.clock_out && (rec?.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes;
+
+            const dotColor =
+              rec?.status === "absent" ? "bg-rose-400" :
+              isLate ? "bg-amber-400" :
+              rec ? "bg-emerald-400" :
+              "bg-gray-200";
+
             return (
               <div
                 key={d}
-                className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 min-w-[52px] border ${
-                  isT ? "border-[#253C7D] bg-[#253C7D]/5" :
-                  rec?.status === "present" ? "border-emerald-200 bg-emerald-50" :
-                  rec?.status === "late" ? "border-amber-200 bg-amber-50" :
-                  rec?.status === "absent" ? "border-red-200 bg-red-50" :
-                  "border-gray-100 bg-white"
+                className={`rounded-xl border p-2.5 flex flex-col items-center gap-1 text-center ${
+                  isT ? "border-[#253C7D] ring-1 ring-[#253C7D]/20 bg-[#253C7D]/[0.03]" : "border-gray-100 bg-white"
                 }`}
               >
-                <span className="text-[10px] text-gray-400 font-medium">{dayName}</span>
-                <span className={`text-[14px] font-bold ${isT ? "text-[#253C7D]" : "text-gray-700"}`}>{dayNum}</span>
+                <div className="flex items-center gap-1">
+                  <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                  <span className={`text-[10px] font-bold uppercase tracking-wide ${isT ? "text-[#253C7D]" : "text-gray-400"}`}>{dayName}</span>
+                </div>
+                <span className={`text-[15px] font-black tabular-nums leading-none ${isT ? "text-[#253C7D]" : "text-gray-800"}`}>{dayNum}</span>
+
                 {rec ? (
-                  <i className={`text-[11px] ${
-                    rec.status === "present" ? "ri-check-line text-emerald-500" :
-                    rec.status === "late" ? "ri-time-line text-amber-500" :
-                    "ri-close-line text-red-400"
-                  }`} />
+                  <div className="w-full mt-1 pt-1.5 border-t border-gray-100 space-y-0.5">
+                    <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-gray-600 tabular-nums">
+                      <i className="ri-login-box-line text-emerald-500 text-[10px]" />
+                      {rec.clock_in?.slice(0, 5) || "—"}
+                    </div>
+                    <div className="flex items-center justify-center gap-1 text-[10px] font-semibold text-gray-600 tabular-nums">
+                      <i className="ri-logout-box-line text-gray-400 text-[10px]" />
+                      {rec.clock_out?.slice(0, 5) || "—"}
+                    </div>
+                    {rec.hours_worked ? (
+                      <p className="text-[10px] font-bold text-gray-900 tabular-nums pt-0.5">{fmtHM(rec.hours_worked)}</p>
+                    ) : (isLate || isEarly) ? (
+                      <p className={`text-[9px] font-bold pt-0.5 ${isLate ? "text-amber-600" : "text-orange-500"}`}>
+                        {isLate ? `+${rec.late_minutes}m` : `−${rec.early_leave_minutes}m`}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : (
-                  <span className="text-[10px] text-gray-300">{isT ? "Today" : "—"}</span>
+                  <p className="text-[10px] text-gray-300 mt-1 pt-1.5 border-t border-gray-50">No record</p>
                 )}
               </div>
             );
@@ -512,19 +637,25 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       </div>
 
       {/* Attendance History */}
-      <div>
-        <p className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Attendance History (30 days)</p>
+      <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Attendance History</p>
+          <p className="text-[11px] text-gray-400">
+            {totalHours.toFixed(1)}h across {records.length} day{records.length === 1 ? "" : "s"}
+          </p>
+        </div>
 
         {records.length === 0 ? (
-          <div className="bg-white border border-gray-100 rounded-xl text-center py-10 text-gray-400">
-            <i className="ri-fingerprint-line text-3xl mb-2 block" />
-            <p className="text-[13px]">No attendance records yet</p>
+          <div className="text-center py-10 text-gray-400">
+            <i className="ri-fingerprint-line text-3xl mb-2 block text-gray-300" />
+            <p className="text-[13px] font-semibold text-gray-600">No attendance records yet</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">Your clock-ins for the last 30 days will appear here.</p>
           </div>
         ) : (
           <>
             {/* Mobile: stacked cards */}
-            <div className="sm:hidden space-y-2">
-              {records.slice(0, 20).map((r) => (
+            <div className="sm:hidden max-h-[420px] overflow-y-auto p-2 space-y-2">
+              {records.map((r) => (
                 <div key={r.id} className="bg-white border border-gray-100 rounded-xl p-3.5">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[13px] font-semibold text-gray-800">
@@ -558,33 +689,56 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
             </div>
 
             {/* Desktop/tablet: table */}
-            <div className="hidden sm:block bg-white border border-gray-100 rounded-xl overflow-x-auto">
-              <div className="min-w-[480px]">
-                <div className="grid grid-cols-5 bg-gray-50 px-4 py-2.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+            <div className="hidden sm:block overflow-x-auto max-h-[440px] overflow-y-auto">
+              <div className="min-w-[560px]">
+                <div className="grid grid-cols-[1.4fr_1fr_1.3fr_1fr_0.9fr] bg-gray-50/90 backdrop-blur px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider sticky top-0 z-10 border-b border-gray-100">
                   <span>Date</span>
                   <span>Clock In</span>
                   <span>Clock Out</span>
                   <span>Hours</span>
-                  <span>Status</span>
+                  <span className="text-right">Status</span>
                 </div>
-                {records.slice(0, 20).map((r) => (
-                  <div key={r.id} className="grid grid-cols-5 px-4 py-3 border-t border-gray-50 text-[12px]">
-                    <span className="text-gray-700 font-medium">
-                      {new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                    <span className="text-gray-600">{r.clock_in?.slice(0, 5) || "—"}</span>
-                    <span className="text-gray-600">
-                      {r.clock_out?.slice(0, 5) || "—"}
-                      {r.clock_out && r.early_leave_minutes > scheduleSettings.earlyLeaveGraceMinutes && (
-                        <span className="text-orange-500 text-[10px] font-semibold ml-1">({r.early_leave_minutes}m early)</span>
-                      )}
-                    </span>
-                    <span className="text-gray-600 font-medium">{r.hours_worked ? `${r.hours_worked}h` : "—"}</span>
-                    <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize w-fit ${getStatusColor(r.status)}`}>
-                      {r.status}
-                    </span>
-                  </div>
-                ))}
+                {records.map((r) => {
+                  const isLate = (r.late_minutes || 0) > scheduleSettings.lateGraceMinutes;
+                  const isEarly = !!r.clock_out && (r.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes;
+                  const dt = new Date(r.date);
+                  return (
+                    <div
+                      key={r.id}
+                      className={`grid grid-cols-[1.4fr_1fr_1.3fr_1fr_0.9fr] items-center px-4 py-2.5 border-b border-gray-50 last:border-0 text-[12px] hover:bg-slate-50/80 transition-colors ${
+                        r.date === today ? "bg-[#253C7D]/[0.03]" : ""
+                      }`}
+                    >
+                      <span className="text-gray-800 font-semibold">
+                        {dt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        <span className="text-gray-400 font-medium ml-1.5">
+                          {dt.toLocaleDateString("en-US", { weekday: "short" })}
+                        </span>
+                        {r.date === today && (
+                          <span className="ml-1.5 text-[9px] font-bold text-[#253C7D] bg-[#253C7D]/10 px-1.5 py-0.5 rounded">TODAY</span>
+                        )}
+                      </span>
+                      <span className="text-gray-600 tabular-nums">
+                        {r.clock_in?.slice(0, 5) || "—"}
+                        {isLate && (
+                          <span className="text-amber-600 text-[10px] font-semibold ml-1">+{r.late_minutes}m</span>
+                        )}
+                      </span>
+                      <span className="text-gray-600 tabular-nums">
+                        {r.clock_out?.slice(0, 5) || (r.clock_in ? <span className="text-emerald-600 font-semibold">Active</span> : "—")}
+                        {isEarly && (
+                          <span className="text-orange-500 text-[10px] font-semibold ml-1">−{r.early_leave_minutes}m</span>
+                        )}
+                      </span>
+                      <span className="text-gray-800 font-bold tabular-nums">{r.hours_worked ? `${r.hours_worked}h` : "—"}</span>
+                      <span className="flex justify-end">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${getStatusColor(r.status)}`}>
+                          {r.status}
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </>

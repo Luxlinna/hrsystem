@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { useTheme } from "@/context/ThemeContext";
 import { getNotificationTarget } from "@/lib/notificationRoutes";
 import { toast } from "@/components/Toast";
@@ -68,6 +69,7 @@ function MobileDrawer({
   onClose,
   location,
   displayName,
+  avatarUrl,
   user,
   handleLogout,
   can,
@@ -78,6 +80,7 @@ function MobileDrawer({
   onClose: () => void;
   location: ReturnType<typeof useLocation>;
   displayName: string;
+  avatarUrl?: string;
   user: any;
   handleLogout: () => void;
   can: (module: string) => boolean;
@@ -278,8 +281,8 @@ function MobileDrawer({
         <div className="shrink-0 border-t border-white/10 px-5 py-4">
           <div className="flex items-center gap-3">
             <Link to="/profile" onClick={onClose} className="flex items-center gap-3 min-w-0 flex-1">
-              {user?.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} alt={displayName} className="w-9 h-9 rounded-lg object-cover shrink-0" />
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="w-9 h-9 rounded-lg object-cover shrink-0" />
               ) : (
                 <div className="w-9 h-9 rounded-lg bg-[#253C7D] flex items-center justify-center text-white text-[12px] font-bold shrink-0">
                   {displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
@@ -309,6 +312,7 @@ export default function TopBar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { can, isAdmin, role } = usePermissions();
+  const { employee: myEmployee } = useMyEmployee();
   const canOpenRecycleBin = isAdmin || /manager/i.test(role?.name || "");
   const { isDark, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -499,8 +503,15 @@ export default function TopBar() {
   const iconColor = "text-gray-700";
   const bgClass = "bg-white/80 backdrop-blur-md border-b border-gray-100";
 
-  const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "HR Admin";
-  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+  // Prefer the real HR employee record (source of truth) over Supabase Auth's
+  // user_metadata, which is editable independently and can drift — e.g. an
+  // invite flow that set display_name to a role/title instead of a real name.
+  const displayName =
+    (myEmployee && `${myEmployee.first_name} ${myEmployee.last_name}`.trim()) ||
+    (user?.user_metadata?.display_name as string) ||
+    user?.email?.split("@")[0] ||
+    "HR Admin";
+  const avatarUrl = myEmployee?.avatar_url || (user?.user_metadata?.avatar_url as string | undefined);
 
   return (
     <>
@@ -510,6 +521,7 @@ export default function TopBar() {
       onClose={() => setMenuOpen(false)}
       location={location}
       displayName={displayName}
+      avatarUrl={avatarUrl}
       user={user}
       handleLogout={handleLogout}
       can={can}

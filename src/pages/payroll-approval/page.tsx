@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTheme } from "@/context/ThemeContext";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { toast } from "@/components/Toast";
@@ -416,7 +417,7 @@ export default function PayrollApproval() {
 
   if (loading && runs.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading payroll approval center...</p>
       </div>
@@ -424,7 +425,7 @@ export default function PayrollApproval() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -455,7 +456,31 @@ export default function PayrollApproval() {
         )}
       </div>
 
+      {/* Pending Approval Alert Banner */}
+      {canManage && pendingRuns.length > 0 && (
+        <div
+          onClick={() => setTab("pending")}
+          className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-amber-100/70 transition-colors group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+            <i className="ri-time-line text-sm" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black text-amber-700">
+              {pendingRuns.length} Payroll Run{pendingRuns.length > 1 ? "s" : ""} Awaiting Approval
+            </p>
+            <p className="text-[11px] text-amber-600/80 mt-0.5">
+              Click to review and sign off — runs are pending disbursement authorization.
+            </p>
+          </div>
+          <span className="text-[11px] font-bold text-amber-600 group-hover:text-amber-800 transition-colors whitespace-nowrap flex items-center gap-1">
+            Review now <i className="ri-arrow-right-line" />
+          </span>
+        </div>
+      )}
+
       {/* Executive KPI Performance Bar */}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-6">
         {/* Pending Approval */}
         <div

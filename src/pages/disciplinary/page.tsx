@@ -53,29 +53,38 @@ interface NewRecord {
 }
 
 const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string; desc: string }> = {
-  verbal_warning: { label: "Verbal Warning", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: "ri-discuss-line", desc: "First-level policy review" },
-  written_warning: { label: "Written Warning", color: "text-orange-700", bg: "bg-orange-50 border-orange-200", icon: "ri-file-warning-line", desc: "Formal documented notice" },
-  final_warning: { label: "Final Warning", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: "ri-error-warning-line", desc: "Last notice before escalation" },
-  pip: { label: "Performance Plan (PIP)", color: "text-violet-700", bg: "bg-violet-50 border-violet-200", icon: "ri-focus-3-line", desc: "Structured performance goals" },
-  incident: { label: "Workplace Incident", color: "text-rose-700", bg: "bg-rose-50 border-rose-200", icon: "ri-alert-line", desc: "Safety or policy violation" },
-  suspension: { label: "Suspension", color: "text-purple-700", bg: "bg-purple-50 border-purple-200", icon: "ri-pause-circle-line", desc: "Temporary work removal" },
-  termination: { label: "Termination", color: "text-gray-700", bg: "bg-gray-100 border-gray-300", icon: "ri-user-unfollow-line", desc: "Employment separation" },
+  verbal_warning: { label: "Verbal Warning", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30", icon: "ri-discuss-line", desc: "First-level policy review" },
+  written_warning: { label: "Written Warning", color: "text-orange-700 dark:text-orange-400", bg: "bg-orange-50 border-orange-200 dark:bg-orange-500/15 dark:border-orange-500/30", icon: "ri-file-warning-line", desc: "Formal documented notice" },
+  final_warning: { label: "Final Warning", color: "text-red-700 dark:text-red-400", bg: "bg-red-50 border-red-200 dark:bg-red-500/15 dark:border-red-500/30", icon: "ri-error-warning-line", desc: "Last notice before escalation" },
+  pip: { label: "Performance Plan (PIP)", color: "text-violet-700 dark:text-violet-400", bg: "bg-violet-50 border-violet-200 dark:bg-violet-500/15 dark:border-violet-500/30", icon: "ri-focus-3-line", desc: "Structured performance goals" },
+  incident: { label: "Workplace Incident", color: "text-rose-700 dark:text-rose-400", bg: "bg-rose-50 border-rose-200 dark:bg-rose-500/15 dark:border-rose-500/30", icon: "ri-alert-line", desc: "Safety or policy violation" },
+  suspension: { label: "Suspension", color: "text-purple-700 dark:text-purple-400", bg: "bg-purple-50 border-purple-200 dark:bg-purple-500/15 dark:border-purple-500/30", icon: "ri-pause-circle-line", desc: "Temporary work removal" },
+  termination: { label: "Termination", color: "text-gray-700 dark:text-slate-300", bg: "bg-gray-100 border-gray-300 dark:bg-slate-700/50 dark:border-slate-600", icon: "ri-user-unfollow-line", desc: "Employment separation" },
 };
 
 const SEVERITY_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  low: { label: "Low", color: "text-sky-700", bg: "bg-sky-50 border-sky-200", dot: "bg-sky-500" },
-  medium: { label: "Medium", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", dot: "bg-amber-500" },
-  high: { label: "High", color: "text-rose-700", bg: "bg-rose-50 border-rose-200", dot: "bg-rose-500" },
-  critical: { label: "Critical", color: "text-red-800", bg: "bg-red-100 border-red-300 font-black", dot: "bg-red-600 animate-pulse" },
+  low: { label: "Low", color: "text-sky-700 dark:text-sky-400", bg: "bg-sky-50 border-sky-200 dark:bg-sky-500/15 dark:border-sky-500/30", dot: "bg-sky-500" },
+  medium: { label: "Medium", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30", dot: "bg-amber-500" },
+  high: { label: "High", color: "text-rose-700 dark:text-rose-400", bg: "bg-rose-50 border-rose-200 dark:bg-rose-500/15 dark:border-rose-500/30", dot: "bg-rose-500" },
+  critical: { label: "Critical", color: "text-red-800 dark:text-red-400", bg: "bg-red-100 border-red-300 dark:bg-red-500/20 dark:border-red-500/40 font-black", dot: "bg-red-600 animate-pulse" },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  open: { label: "Open Case", color: "text-sky-700", bg: "bg-sky-50 border-sky-200" },
-  in_progress: { label: "In Progress", color: "text-amber-700", bg: "bg-amber-50 border-amber-200" },
-  escalated: { label: "Escalated", color: "text-red-700", bg: "bg-red-50 border-red-200" },
-  resolved: { label: "Resolved", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
-  closed: { label: "Closed", color: "text-gray-600", bg: "bg-gray-100 border-gray-200" },
+  open: { label: "Open Case", color: "text-sky-700 dark:text-sky-400", bg: "bg-sky-50 border-sky-200 dark:bg-sky-500/15 dark:border-sky-500/30" },
+  in_progress: { label: "In Progress", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30" },
+  escalated: { label: "Escalated", color: "text-red-700 dark:text-red-400", bg: "bg-red-50 border-red-200 dark:bg-red-500/15 dark:border-red-500/30" },
+  resolved: { label: "Resolved", color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/30" },
+  closed: { label: "Closed", color: "text-gray-600 dark:text-slate-400", bg: "bg-gray-100 border-gray-200 dark:bg-slate-700/50 dark:border-slate-600" },
 };
+
+// A case is overdue when it has a follow-up target date in the past and hasn't
+// been resolved/closed yet. Shared by the KPI count, the tab filter, and the
+// per-record overdue badges so all three stay in sync.
+const isOverdueRecord = (r: Pick<DisciplinaryRecord, "follow_up_date" | "status">) =>
+  !!r.follow_up_date &&
+  r.status !== "resolved" &&
+  r.status !== "closed" &&
+  new Date(r.follow_up_date + "T00:00:00") < new Date();
 
 export default function DisciplinaryPage() {
   const { user } = useAuth();
@@ -408,7 +417,7 @@ export default function DisciplinaryPage() {
 
   if (loading && records.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading disciplinary & compliance records...</p>
       </div>
@@ -416,7 +425,7 @@ export default function DisciplinaryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -477,7 +486,34 @@ export default function DisciplinaryPage() {
         </div>
       </div>
 
+      {/* Overdue Follow-up Alert Banner */}
+      {canManage && (() => {
+        const overdueCount = records.filter(isOverdueRecord).length;
+        return overdueCount > 0 ? (
+          <div
+            onClick={() => { setActiveTab("open"); setPage(1); }}
+            className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-rose-100/70 transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 animate-pulse">
+              <i className="ri-alarm-warning-line text-sm" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-black text-rose-700">
+                {overdueCount} Case{overdueCount > 1 ? "s" : ""} Have Overdue Follow-Up Dates
+              </p>
+              <p className="text-[11px] text-rose-600/80 mt-0.5">
+                Immediate action required — these cases passed their follow-up milestone without resolution.
+              </p>
+            </div>
+            <span className="text-[11px] font-bold text-rose-600 group-hover:text-rose-800 transition-colors whitespace-nowrap flex items-center gap-1">
+              Review now <i className="ri-arrow-right-line" />
+            </span>
+          </div>
+        ) : null;
+      })()}
+
       {/* Executive Metric Cards */}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
         {/* Open & In Progress Cases */}
         <div

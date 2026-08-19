@@ -671,7 +671,7 @@ export default function ITManagement() {
 
   if (loading && assets.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading IT operations & asset center...</p>
       </div>
@@ -679,7 +679,7 @@ export default function ITManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
