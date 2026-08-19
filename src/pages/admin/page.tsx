@@ -419,7 +419,7 @@ export default function AdminPortal() {
           email: newUser.email.trim(),
           display_name: newUser.display_name.trim() || null,
           role_id: newUser.role_id || null,
-          redirect_to: `${window.location.origin}/reset-password`,
+          redirect_to: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
         }),
       });
       const result = await readFunctionJson(res);
@@ -461,7 +461,7 @@ export default function AdminPortal() {
         email: user.email,
         display_name: user.display_name,
         role_id: user.role_id ? String(user.role_id) : null,
-        redirect_to: `${window.location.origin}/reset-password`,
+        redirect_to: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
       }),
     });
     const result = await readFunctionJson(res);
