@@ -286,6 +286,7 @@ export default function Leave() {
         const { data: lr } = await supabase
           .from("leave_requests")
           .select("*, employees(first_name, last_name, role, department, avatar_url, email)")
+          .is("deleted_at", null)
           .order("created_at", { ascending: false });
         setRequests((lr || []).map(normalizeLeaveRequest));
 
@@ -321,6 +322,7 @@ export default function Leave() {
             .from("leave_requests")
             .select("*, employees(first_name, last_name, role, department, avatar_url, email)")
             .in("employee_id", ids)
+            .is("deleted_at", null)
             .order("created_at", { ascending: false })
           : { data: [] };
         setRequests((lr || []).map(normalizeLeaveRequest));
@@ -334,6 +336,7 @@ export default function Leave() {
         .from("leave_requests")
         .select("*, employees(first_name, last_name, role, department, avatar_url, email)")
         .eq("employee_id", me.id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       setRequests((lr || []).map(normalizeLeaveRequest));
     } catch (err) {
@@ -727,7 +730,10 @@ export default function Leave() {
       } else {
         const deleteFallback = await supabase
           .from("leave_requests")
-          .delete()
+          .update({
+            deleted_at: new Date().toISOString(),
+            deleted_by: (user?.user_metadata?.display_name as string) || user?.email || "Unknown",
+          })
           .eq("id", cancelTargetRequest.id)
           .eq("employee_id", myEmployee.id);
         if (!deleteFallback.error) {
