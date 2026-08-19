@@ -1,6 +1,28 @@
 import { supabase } from "./supabase";
 
-type AuditModule = "hire" | "leave" | "payroll" | "onboarding" | "employees" | "offboard" | "it" | "finance" | "benefits" | "tools" | "unity" | "branches" | "settings" | "meeting_rooms";
+type AuditModule =
+  | "hire"
+  | "leave"
+  | "payroll"
+  | "onboarding"
+  | "employees"
+  | "offboard"
+  | "it"
+  | "finance"
+  | "benefits"
+  | "tools"
+  | "unity"
+  | "branches"
+  | "settings"
+  | "meeting_rooms"
+  | "documents"
+  | "attendance"
+  | "performance"
+  | "announcements"
+  | "disciplinary"
+  | "tasks"
+  | "shifts"
+  | "reports";
 type AuditAction = "created" | "updated" | "approved" | "rejected" | "deleted" | "processed" | "cancelled";
 
 interface LogActivityInput {

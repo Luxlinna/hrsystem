@@ -7,6 +7,11 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { toast } from "@/components/Toast";
+import {
+  startOnboardingForEmployee,
+  ONBOARDING_DOCUMENT_TEMPLATES as DOCUMENT_TEMPLATES,
+  ONBOARDING_DEFAULT_CHECKLIST_TASKS as DEFAULT_CHECKLIST_TASKS,
+} from "@/lib/onboarding";
 
 interface OnboardingRequest {
   id: string;
@@ -77,40 +82,6 @@ const STAGES: StageConfig[] = [
     description: "Probation roadmap, checklist sign-off & go-live",
     icon: "ri-checkbox-circle-line",
   },
-];
-
-const DOCUMENT_TEMPLATES: Record<string, string[]> = {
-  document: ["Offer Letter", "ID Verification", "Employment Contract", "Bank Details Form", "NDA Agreement"],
-  it_setup: ["Laptop Assignment", "Email Account Setup", "VPN Access Request", "Software Licenses", "Security Badge"],
-  training: ["HR Orientation Checklist", "Team Introduction", "Role Training Schedule", "Handbook Acknowledgment"],
-  complete: ["Onboarding Sign-off", "30-Day Check-in Plan", "Feedback Survey"],
-};
-
-const DEFAULT_CHECKLIST_TASKS = [
-  // 1. Documents (5 items)
-  { task_name: "Sign Offer Letter & Employment Terms", category: "documents", priority: "high", description: "Review and collect signed formal employment offer letter." },
-  { task_name: "Verify National ID / Passport & Proof of Address", category: "documents", priority: "high", description: "Collect identity documents for HR & compliance verification." },
-  { task_name: "Sign Employment Contract & Agreements", category: "documents", priority: "high", description: "Execute formal employment contract and core agreement terms." },
-  { task_name: "Submit Bank Account & Tax Filing Details", category: "documents", priority: "medium", description: "Set up payroll bank routing and relevant tax deduction forms." },
-  { task_name: "Sign Non-Disclosure & Confidentiality Agreement", category: "documents", priority: "high", description: "Execute company NDA and data privacy acknowledgments." },
-
-  // 2. IT & Equipment Setup (5 items)
-  { task_name: "Provision Laptop & Workstation Hardware", category: "it_setup", priority: "high", description: "Configure primary computer, peripherals, and security tags." },
-  { task_name: "Create Corporate Email & Slack/Teams Account", category: "it_setup", priority: "high", description: "Set up Google Workspace/Office 365, Slack/Teams, and 2FA." },
-  { task_name: "Configure VPN & Secure Remote Access", category: "it_setup", priority: "medium", description: "Install network profiles, corporate VPN client, and certificates." },
-  { task_name: "Grant Software & Internal Tool Licenses", category: "it_setup", priority: "medium", description: "Assign access to Jira, GitHub, Figma, ERP, or department tools." },
-  { task_name: "Issue Security Access Badge & Keycards", category: "it_setup", priority: "medium", description: "Provide building access card, office security badge, and parking passes." },
-
-  // 3. Training & Orientation (4 items)
-  { task_name: "HR Orientation & Company Policies Walkthrough", category: "training", priority: "high", description: "Walkthrough company mission, structure, benefits, and conduct rules." },
-  { task_name: "Team Introductions & Welcome Meeting", category: "training", priority: "medium", description: "Introduce new hire to team members, key stakeholders, and leaders." },
-  { task_name: "Role-Specific Skills Training & Setup Plan", category: "training", priority: "high", description: "Execute initial department training roadmap and technical setup." },
-  { task_name: "Review & Acknowledge Employee Handbook", category: "training", priority: "low", description: "Read handbook and complete acknowledgment sign-off." },
-
-  // 4. Final Sign-off & Culture (3 items)
-  { task_name: "Final Onboarding Sign-off & Buddy Review", category: "general", priority: "high", description: "Complete formal onboarding review and manager milestone sign-off." },
-  { task_name: "Schedule 30-Day Check-in & Feedback Review", category: "general", priority: "medium", description: "Calendar manager 1-on-1 check-in milestone and probation roadmap." },
-  { task_name: "Complete New Hire Experience Feedback Survey", category: "general", priority: "low", description: "Submit onboarding survey to improve orientation experience." },
 ];
 
 export default function Onboarding() {
@@ -335,52 +306,7 @@ export default function Onboarding() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("onboarding_requests")
-      .insert({
-        employee_id: startEmployeeId,
-        stage: "document",
-        status: "pending",
-        day_count: 0,
-        requested_by: actorName,
-      })
-      .select()
-      .single();
-
-    if (!error) {
-      await supabase.from("employees").update({ status: "onboarding" }).eq("id", startEmployeeId);
-      // Auto-populate default template checklist items
-      const initialDocs: any[] = [];
-      Object.entries(DOCUMENT_TEMPLATES).forEach(([stageKey, templates]) => {
-        templates.forEach((name) => {
-          initialDocs.push({
-            onboarding_request_id: data.id,
-            employee_id: startEmployeeId,
-            document_name: name,
-            stage: stageKey,
-            status: "pending",
-            file_url: null,
-            file_name: null,
-            notes: null,
-          });
-        });
-      });
-      if (initialDocs.length > 0) {
-        await supabase.from("onboarding_documents").insert(initialDocs);
-      }
-
-      // Auto-populate default checklist tasks
-      const initialTasks = DEFAULT_CHECKLIST_TASKS.map((t, idx) => ({
-        onboarding_request_id: data.id,
-        task_name: t.task_name,
-        description: t.description,
-        category: t.category,
-        priority: t.priority,
-        sort_order: idx + 1,
-        completed: false,
-      }));
-      await supabase.from("onboarding_checklist_tasks").insert(initialTasks);
-    }
+    const { data, error } = await startOnboardingForEmployee(startEmployeeId, actorName);
     setStarting(false);
 
     if (error) {
