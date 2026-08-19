@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { distanceMeters, getCurrentPosition } from "@/lib/geo";
 import { toYMD, todayYMD } from "@/lib/date";
-import { getEffectiveWorkEndTime } from "@/lib/workSchedule";
+import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows } from "@/lib/workSchedule";
 
 interface AttendanceRecord {
   id: string;
@@ -26,9 +26,6 @@ interface BranchGeofence {
   work_start_time: string | null;
   work_end_time: string | null;
 }
-
-const LATE_GRACE_MINUTES = 15;
-const EARLY_LEAVE_GRACE_MINUTES = 15;
 
 interface Props {
   employeeId: string;
@@ -55,6 +52,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const [checkInDistance, setCheckInDistance] = useState<number | null>(null);
   const [checkInAccuracy, setCheckInAccuracy] = useState<number | null>(null);
   const [globalWorkStartTime, setGlobalWorkStartTime] = useState("09:00");
+  const [scheduleSettings, setScheduleSettings] = useState(DEFAULT_WORK_SCHEDULE);
 
   const today = todayYMD();
 
@@ -69,16 +67,17 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   }, []);
 
   useEffect(() => {
-    supabase.from("system_settings").select("value").eq("key", "work_start_time").maybeSingle().then(({ data }) => {
-      if (data?.value) setGlobalWorkStartTime(data.value);
+    supabase.from("system_settings").select("key, value").then(({ data }) => {
+      if (data) { const next = settingsFromRows(data); setScheduleSettings(next); setGlobalWorkStartTime(next.workStartTime); }
     });
   }, []);
 
   // A branch's own schedule (set in Branch Management) wins over the
   // company-wide default; there's no company-wide default for end time, so
   // early-leave detection simply doesn't apply unless the branch sets one.
-  const workStartTime = branch?.work_start_time || globalWorkStartTime;
-  const workEndTime = getEffectiveWorkEndTime(branch?.work_end_time);
+  const daySchedule = getScheduleForDate(scheduleSettings);
+  const workStartTime = branch?.work_start_time || daySchedule?.startTime || globalWorkStartTime;
+  const workEndTime = branch?.work_end_time || daySchedule?.endTime || null;
 
   const loadRecords = async () => {
     if (!employeeId) return;
@@ -186,11 +185,12 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   };
 
   const handleClockIn = async () => {
+    if (!daySchedule) { showToast("error", "Today is not configured as a working day."); return; }
     const now = new Date();
     const timeStr = now.toTimeString().split(" ")[0];
     const [startH, startM] = workStartTime.split(":").map(Number);
     const lateMinutes = Math.max(0, (now.getHours() * 60 + now.getMinutes()) - (startH * 60 + startM));
-    const status = lateMinutes > LATE_GRACE_MINUTES ? "late" : "present";
+    const status = lateMinutes > scheduleSettings.lateGraceMinutes ? "late" : "present";
 
     // Upsert (not insert) on the employee/date unique constraint: a
     // double-tap, or the geofence auto-prompt racing a manual tap, then
@@ -209,7 +209,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     if (error) {
       showToast("error", "Failed to clock in. Please try again.");
     } else {
-      showToast("success", `Clocked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > LATE_GRACE_MINUTES ? ` — ${lateMinutes} min late` : " — On time!"}`);
+      showToast("success", `Clocked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > scheduleSettings.lateGraceMinutes ? ` — ${lateMinutes} min late` : " — On time!"}`);
       setNotes("");
       setEarlyCheckoutReason("");
       loadRecords();
@@ -230,7 +230,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       earlyLeaveMinutes = Math.max(0, (endH * 60 + endM) - (now.getHours() * 60 + now.getMinutes()));
     }
 
-    const requiresReason = earlyLeaveMinutes > EARLY_LEAVE_GRACE_MINUTES;
+    const requiresReason = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes;
     if (requiresReason && !earlyCheckoutReason.trim()) {
       showToast("error", "Please enter a reason before checking out early.");
       return;
@@ -251,7 +251,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       showToast("error", "Failed to clock out. Please try again.");
     } else {
       const hrs = hoursWorked ? `${Math.floor(hoursWorked)}h ${Math.round((hoursWorked % 1) * 60)}m worked` : "";
-      const earlyNote = earlyLeaveMinutes > EARLY_LEAVE_GRACE_MINUTES ? ` — ${earlyLeaveMinutes} min early` : "";
+      const earlyNote = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes ? ` — ${earlyLeaveMinutes} min early` : "";
       showToast("success", `Clocked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
       loadRecords();
     }
@@ -264,7 +264,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     const [endH, endM] = workEndTime.split(":").map(Number);
     return Math.max(0, (endH * 60 + endM) - (currentTime.getHours() * 60 + currentTime.getMinutes()));
   })();
-  const isEarlyCheckoutNow = earlyCheckoutMinutesNow > EARLY_LEAVE_GRACE_MINUTES;
+  const isEarlyCheckoutNow = earlyCheckoutMinutesNow > scheduleSettings.earlyLeaveGraceMinutes;
 
   const autoCheckedOutRef = useRef(false);
   useEffect(() => {
@@ -292,7 +292,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
   const presentCount = records.filter((r) => r.status === "present" || r.status === "late").length;
   const lateCount = records.filter((r) => r.status === "late").length;
-  const earlyLeaveCount = records.filter((r) => (r.early_leave_minutes || 0) > EARLY_LEAVE_GRACE_MINUTES).length;
+  const earlyLeaveCount = records.filter((r) => (r.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes).length;
   const absentCount = records.filter((r) => r.status === "absent").length;
   const totalHours = records.reduce((s, r) => s + (r.hours_worked || 0), 0);
 
@@ -543,7 +543,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                       <p className="text-gray-400 text-[10px] uppercase tracking-wide">Clock Out</p>
                       <p className="text-gray-700 font-medium">
                         {r.clock_out?.slice(0, 5) || "—"}
-                        {r.clock_out && r.early_leave_minutes > EARLY_LEAVE_GRACE_MINUTES && (
+                        {r.clock_out && r.early_leave_minutes > scheduleSettings.earlyLeaveGraceMinutes && (
                           <span className="block text-orange-500 text-[10px] font-semibold">{r.early_leave_minutes}m early</span>
                         )}
                       </p>
@@ -575,7 +575,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                     <span className="text-gray-600">{r.clock_in?.slice(0, 5) || "—"}</span>
                     <span className="text-gray-600">
                       {r.clock_out?.slice(0, 5) || "—"}
-                      {r.clock_out && r.early_leave_minutes > EARLY_LEAVE_GRACE_MINUTES && (
+                      {r.clock_out && r.early_leave_minutes > scheduleSettings.earlyLeaveGraceMinutes && (
                         <span className="text-orange-500 text-[10px] font-semibold ml-1">({r.early_leave_minutes}m early)</span>
                       )}
                     </span>
