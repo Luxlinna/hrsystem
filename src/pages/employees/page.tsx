@@ -163,7 +163,7 @@ export default function Employees() {
           email: e.email,
           display_name: `${e.first_name} ${e.last_name}`,
           role_id: roles.find((r) => r.name === e.role)?.id || null,
-          redirect_to: `${window.location.origin}/reset-password`,
+          redirect_to: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
         },
       });
       if (error) throw error;

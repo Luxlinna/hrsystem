@@ -184,6 +184,13 @@ const keyLabels: Record<string, string> = {
   fiscal_year_start: "Fiscal Year Start",
   week_start_day: "Week Start Day",
   work_start_time: "Work Start Time",
+  work_end_time: "Work End Time",
+  working_days: "Working Days",
+  saturday_start_time: "Saturday Start Time",
+  saturday_end_time: "Saturday End Time",
+  late_grace_minutes: "Late Grace Period",
+  early_leave_grace_minutes: "Early Checkout Grace Period",
+  checkout_reminder_minutes: "Checkout Reminder Window",
   default_work_hours: "Default Work Hours / Week",
   overtime_threshold: "Overtime Threshold (hours)",
   leave_approval_required: "Leave Approval Required",
@@ -402,7 +409,7 @@ export default function Settings() {
 
       {/* General Settings */}
       {section === "general" && (
-        <div className="max-w-xl space-y-5">
+        <div className="w-full max-w-none space-y-5">
           <div>
             <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
               Company Name
@@ -552,6 +559,32 @@ export default function Settings() {
                   Save
                 </button>
               )}
+            </div>
+          </div>
+
+          <div className="w-full border border-[#253C7D]/30 bg-white rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-start gap-3 bg-[#253C7D] text-white p-5 sm:p-6">
+              <div className="w-10 h-10 rounded-lg bg-white text-[#253C7D] flex items-center justify-center shrink-0">
+                <i className="ri-calendar-schedule-line text-lg" />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-semibold">Attendance Schedule</h3>
+                <p className="text-[12px] text-white/75 mt-0.5">Control working days, shift hours, late arrival, early checkout, and reminder timing.</p>
+              </div>
+            </div>
+            <div className="p-5 sm:p-6 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {["work_end_time", "working_days", "saturday_start_time", "saturday_end_time", "late_grace_minutes", "early_leave_grace_minutes", "checkout_reminder_minutes"].map((key) => (
+                <div key={key} className="min-w-0">
+                  <label className="text-[12px] font-semibold text-gray-800">{keyLabels[key]}</label>
+                  <div className="flex gap-2 mt-1">
+                    <input type={key.includes("time") ? "time" : key === "working_days" ? "text" : "number"} value={getVal(key)} onChange={(e) => updateValue(key, e.target.value)} className="min-w-0 flex-1 px-4 py-2.5 bg-white border-2 border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]" />
+                    {edited[key] !== undefined && <button onClick={() => saveSetting(key)} disabled={saving} className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg disabled:opacity-40">Save</button>}
+                  </div>
+                </div>
+              ))}
+              </div>
+              <p className="text-[11px] text-gray-500 border-t border-gray-200 pt-4">Working days use day numbers: Sunday 0, Monday 1 through Saturday 6. Example: <span className="font-semibold text-gray-700">1,2,3,4,5,6</span>.</p>
             </div>
           </div>
 

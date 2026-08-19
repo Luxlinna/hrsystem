@@ -109,6 +109,39 @@
     background-color: #0f172a !important;
   }
 
+  /* Page-level background override for all hub pages that use bg-[#F8F9FB]. */
+  html.dark [class*="bg-[#F8F9FB]"],
+  html.dark [class*="bg-[#F8F9FA]"],
+  html.dark [class*="bg-[#F8FAFC]"],
+  html.dark [class*="bg-[#FAFAFA]"],
+  html.dark [class*="bg-[#FAFAF8]"],
+  html.dark [class*="bg-[#F5F5F0]"],
+  html.dark [class*="bg-[#F8F8F6]"],
+  html.dark [class*="bg-[#F8F8F7]"] {
+    background-color: #0f172a !important;
+  }
+
+  /* Modal and drawer gradient header backgrounds */
+  html.dark [class*="from-slate-50"],
+  html.dark [class*="from-gray-50"],
+  html.dark [class*="from-white"] {
+    --tw-gradient-from: #1e293b !important;
+  }
+  html.dark [class*="via-gray-50"],
+  html.dark [class*="via-slate-50"] {
+    --tw-gradient-via: #1e293b !important;
+  }
+  html.dark [class*="to-white"],
+  html.dark [class*="to-gray-50"],
+  html.dark [class*="to-slate-50"] {
+    --tw-gradient-to: #111827 !important;
+  }
+
+  /* Text color for [#0F172A] and similar dark-text-on-light defaults */
+  html.dark [class*="text-[#0F172A]"] {
+    color: #f8fafc !important;
+  }
+
   html.dark .border-gray-50,
   html.dark .border-gray-100,
   html.dark .border-gray-200,
@@ -181,7 +214,9 @@
   html.dark .hover\:bg-gray-50\/50:hover,
   html.dark .hover\:bg-gray-100:hover,
   html.dark .hover\:bg-gray-200:hover,
-  html.dark .hover\:bg-black\/5:hover {
+  html.dark .hover\:bg-black\/5:hover,
+  html.dark .hover\:bg-slate-50\/80:hover,
+  html.dark [class*="hover:bg-slate-50"]:hover {
     background-color: #1e293b !important;
   }
 

@@ -16,6 +16,8 @@ import {
 } from "recharts";
 import { uploadFile } from "@/lib/storage";
 import { Link } from "react-router-dom";
+import { notify } from "@/lib/notify";
+import { startOnboardingForEmployee } from "@/lib/onboarding";
 
 const STAGE_CONFIG: Record<
   string,
@@ -192,6 +194,13 @@ export default function Hire() {
   const [interviewModal, setInterviewModal] = useState(false);
   const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
 
+  // Move-to-Onboarding Modal
+  const [onboardingModal, setOnboardingModal] = useState(false);
+  const [onboardingCandidate, setOnboardingCandidate] = useState<Candidate | null>(null);
+  const [onboardingBranchId, setOnboardingBranchId] = useState("");
+  const [onboardingJoinDate, setOnboardingJoinDate] = useState("");
+  const [movingToOnboarding, setMovingToOnboarding] = useState(false);
+
   // Feedback Modal
   const [feedbackModal, setFeedbackModal] = useState(false);
   const [feedbackInterview, setFeedbackInterview] = useState<Interview | null>(null);
@@ -326,6 +335,101 @@ export default function Hire() {
       .eq("id", id);
     if (error) { toast("Error", "Failed to delete candidate", "error"); return; }
     toast("Candidate Deleted", "Candidate sent to Recycle Bin.", "success");
+    loadData();
+  };
+
+  const openMoveToOnboarding = (c: Candidate) => {
+    setOnboardingCandidate(c);
+    const job = jobs.find((j) => j.id === c.job_posting_id);
+    setOnboardingBranchId(job?.branch_id || branches[0]?.id || "");
+    setOnboardingJoinDate(new Date().toISOString().split("T")[0]);
+    setOnboardingModal(true);
+  };
+
+  const handleMoveToOnboarding = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onboardingCandidate || movingToOnboarding) return;
+    setMovingToOnboarding(true);
+
+    const c = onboardingCandidate;
+    const job = jobs.find((j) => j.id === c.job_posting_id);
+    const [first_name, ...rest] = c.full_name.trim().split(/\s+/);
+    const last_name = rest.join(" ") || "-";
+
+    // Reuse an existing employee record for this email if one already exists
+    // instead of violating the employees.email unique constraint.
+    const { data: existingEmp } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("email", c.email)
+      .maybeSingle();
+
+    let employeeId = existingEmp?.id as string | undefined;
+
+    if (!employeeId) {
+      const { data: newEmp, error: empError } = await supabase
+        .from("employees")
+        .insert({
+          first_name,
+          last_name,
+          email: c.email,
+          phone: c.phone || null,
+          role: job?.title || null,
+          department: job?.department || null,
+          branch_id: onboardingBranchId || null,
+          status: "onboarding",
+          join_date: onboardingJoinDate,
+        })
+        .select()
+        .single();
+
+      if (empError) {
+        setMovingToOnboarding(false);
+        toast("Error", "Failed to create employee record for onboarding", "error");
+        return;
+      }
+      employeeId = newEmp.id;
+    } else {
+      const { data: existingRequest } = await supabase
+        .from("onboarding_requests")
+        .select("id")
+        .eq("employee_id", employeeId)
+        .maybeSingle();
+      if (existingRequest) {
+        setMovingToOnboarding(false);
+        toast("Already Onboarded", `${c.full_name} already has an onboarding journey in progress.`, "error");
+        return;
+      }
+    }
+
+    const { data, error } = await startOnboardingForEmployee(employeeId!, actorName);
+    setMovingToOnboarding(false);
+
+    if (error) {
+      toast("Error", "Failed to start onboarding journey", "error");
+      return;
+    }
+
+    toast("Moved to Onboarding", `${c.full_name} has been added to the Onboarding module.`, "success");
+    logActivity({
+      module: "onboarding",
+      action: "created",
+      entityType: "onboarding_request",
+      entityId: data.id,
+      actorName,
+      actorRole: role?.name || "Admin",
+      description: `${c.full_name} moved from Recruitment to Onboarding after being hired`,
+    });
+    notify({
+      source: "onboarding",
+      type: "info",
+      title: "Onboarding started",
+      message: `${c.full_name}'s onboarding journey has begun.`,
+      entityId: data.id,
+    });
+
+    setOnboardingModal(false);
+    setOnboardingCandidate(null);
     loadData();
   };
 
@@ -552,7 +656,7 @@ export default function Hire() {
       if (error) { toast("Error", "Failed to update candidate", "error"); return; }
       toast("Candidate updated", "Candidate profile updated.", "success");
     } else {
-      const { error } = await supabase.from("candidates").insert([{ ...payload, stage: "applied", rating: 0 }]);
+      const { error } = await supabase.from("candidates").insert([{ ...payload, stage: "applied", rating: null }]);
       setUploadingResume(false);
       if (error) { toast("Error", "Failed to add candidate", "error"); return; }
       toast("Candidate added", "New candidate added to applicant tracking.", "success");
@@ -1455,13 +1559,23 @@ export default function Hire() {
                       </Link>
 
                       <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => openCreateInterview(c.id)}
-                          className="px-2.5 py-1 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
-                        >
-                          <i className="ri-calendar-line text-xs" />
-                          Interview
-                        </button>
+                        {c.stage === "hired" ? (
+                          <button
+                            onClick={() => openMoveToOnboarding(c)}
+                            className="px-2.5 py-1 text-xs font-bold text-[#253C7D] bg-[#253C7D]/10 hover:bg-[#253C7D]/20 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                          >
+                            <i className="ri-user-follow-line text-xs" />
+                            Onboarding
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => openCreateInterview(c.id)}
+                            className="px-2.5 py-1 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                          >
+                            <i className="ri-calendar-line text-xs" />
+                            Interview
+                          </button>
+                        )}
                         <button
                           onClick={() => openEditCandidate(c)}
                           className="w-7 h-7 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 flex items-center justify-center transition-colors cursor-pointer"
@@ -1576,12 +1690,21 @@ export default function Hire() {
                               >
                                 View
                               </Link>
-                              <button
-                                onClick={() => openCreateInterview(c.id)}
-                                className="px-2.5 py-1 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg"
-                              >
-                                Interview
-                              </button>
+                              {c.stage === "hired" ? (
+                                <button
+                                  onClick={() => openMoveToOnboarding(c)}
+                                  className="px-2.5 py-1 text-xs font-bold text-[#253C7D] bg-[#253C7D]/10 hover:bg-[#253C7D]/20 rounded-lg"
+                                >
+                                  Onboarding
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => openCreateInterview(c.id)}
+                                  className="px-2.5 py-1 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg"
+                                >
+                                  Interview
+                                </button>
+                              )}
                               <button
                                 onClick={() => openEditCandidate(c)}
                                 className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-lg border border-gray-200"
@@ -2373,6 +2496,103 @@ export default function Hire() {
                   className="px-5 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-60"
                 >
                   {savingFeedback ? "Saving..." : "Save & Complete"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MOVE TO ONBOARDING MODAL */}
+      {onboardingModal && onboardingCandidate && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/40 backdrop-blur-xs overflow-y-auto no-scrollbar"
+          onClick={() => !movingToOnboarding && setOnboardingModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-gray-100/80 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center justify-between gap-4 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center font-bold text-sm">
+                  <i className="ri-user-follow-line" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Move to Onboarding</h3>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{onboardingCandidate.full_name}</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setOnboardingModal(false)}
+                className="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <i className="ri-close-line text-lg" />
+              </button>
+            </div>
+
+            <form onSubmit={handleMoveToOnboarding} className="p-5 sm:p-6 space-y-4">
+              <p className="text-xs text-gray-500 leading-relaxed">
+                This creates an employee record for <strong className="text-gray-700">{onboardingCandidate.full_name}</strong> and
+                starts their onboarding journey with the standard document & task checklist.
+              </p>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                  Role & Department
+                </label>
+                <p className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                  {jobs.find((j) => j.id === onboardingCandidate.job_posting_id)?.title || "General"}
+                  {" · "}
+                  {jobs.find((j) => j.id === onboardingCandidate.job_posting_id)?.department || "—"}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                  Branch
+                </label>
+                <select
+                  value={onboardingBranchId}
+                  onChange={(e) => setOnboardingBranchId(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:border-[#253C7D] focus:bg-white cursor-pointer"
+                >
+                  <option value="">No Branch</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                  Join Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={onboardingJoinDate}
+                  onChange={(e) => setOnboardingJoinDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:border-[#253C7D] focus:bg-white"
+                />
+              </div>
+
+              <div className="flex items-center gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setOnboardingModal(false)}
+                  className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={movingToOnboarding}
+                  className="flex-1 px-4 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  {movingToOnboarding ? "Moving..." : "Start Onboarding"}
                 </button>
               </div>
             </form>

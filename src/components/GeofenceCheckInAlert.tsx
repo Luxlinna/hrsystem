@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { distanceMeters } from "@/lib/geo";
 import { todayYMD } from "@/lib/date";
-import { getCheckoutReminderWindow } from "@/lib/workSchedule";
+import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows } from "@/lib/workSchedule";
 import { useAuth } from "@/context/AuthContext";
 
 interface BranchGeofence {
@@ -56,6 +56,10 @@ export default function GeofenceCheckInAlert() {
 
       const branch = (employee as any).branches as BranchGeofence | undefined;
       if (!branch?.latitude || !branch?.longitude) return;
+      const { data: scheduleRows } = await supabase.from("system_settings").select("key, value");
+      const scheduleSettings = scheduleRows ? settingsFromRows(scheduleRows) : DEFAULT_WORK_SCHEDULE;
+      const daySchedule = getScheduleForDate(scheduleSettings);
+      if (!daySchedule) return;
 
       const { data: todayRecord } = await supabase
         .from("attendance_records")
@@ -103,7 +107,7 @@ export default function GeofenceCheckInAlert() {
 
           if (!hasClockedIn && !alertedModesRef.current.has("checkin") && inWindow(CHECKIN_WINDOW)) {
             fire("checkin");
-          } else if (hasClockedIn && !hasClockedOut && !alertedModesRef.current.has("checkout") && inWindow(getCheckoutReminderWindow())) {
+          } else if (hasClockedIn && !hasClockedOut && !alertedModesRef.current.has("checkout") && inWindow({ startMin: daySchedule.endMin - scheduleSettings.checkoutReminderMinutes, endMin: daySchedule.endMin })) {
             fire("checkout");
           }
         },

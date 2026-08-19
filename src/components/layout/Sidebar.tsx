@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/context/AuthContext";
 import { isBootstrapAdminEmail, usePermissions } from "@/hooks/usePermissions";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { useTheme } from "@/context/ThemeContext";
 
 const navGroups = [
@@ -70,6 +71,7 @@ export default function Sidebar() {
   const { collapsed, setCollapsed } = useSidebar();
   const { user } = useAuth();
   const { can, isAdmin, role } = usePermissions();
+  const { employee: myEmployee } = useMyEmployee();
   const canOpenAdminPortal = isAdmin || isBootstrapAdminEmail(user?.email);
   const canOpenRecycleBin = canOpenAdminPortal || /manager/i.test(role?.name || "");
   const [hovered, setHovered] = useState(false);
@@ -81,9 +83,16 @@ export default function Sidebar() {
     .filter((group) => group.items.length > 0);
 
   const isExpanded = !collapsed || hovered;
-  const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "HR Admin";
+  // Prefer the real HR employee record over Supabase Auth's user_metadata,
+  // which can drift independently (e.g. an invite flow that stored a role
+  // title as display_name instead of the person's actual name).
+  const displayName =
+    (myEmployee && `${myEmployee.first_name} ${myEmployee.last_name}`.trim()) ||
+    (user?.user_metadata?.display_name as string) ||
+    user?.email?.split("@")[0] ||
+    "HR Admin";
   const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+  const avatarUrl = myEmployee?.avatar_url || (user?.user_metadata?.avatar_url as string | undefined);
 
   useEffect(() => {
     supabase
@@ -127,13 +136,21 @@ export default function Sidebar() {
   const handleMouseEnter = useCallback(() => setHovered(true), []);
   const handleMouseLeave = useCallback(() => setHovered(false), []);
 
+  // Every color below branches on isDark — previously the toggle button
+  // changed its own icon but the sidebar's background/text stayed hardcoded
+  // dark regardless of theme, so "Light Mode" never actually applied here.
+  const activeClass = isDark ? "bg-[#29ABE2]/20 text-[#29ABE2]" : "bg-[#253C7D]/10 text-[#253C7D] font-semibold";
+  const inactiveClass = isDark ? "text-gray-400 hover:bg-white/5 hover:text-white" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
+  const tooltipClass = "absolute left-full ml-3 px-2.5 py-1 bg-gray-800 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity shadow-lg border border-gray-700";
+  const borderClass = isDark ? "border-white/10" : "border-gray-200";
+
   return (
     <aside
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`hidden lg:flex flex-col h-screen bg-[#1A1A1A] fixed left-0 top-0 z-50 transition-all duration-300 ease-in-out ${
-        isExpanded ? "w-[260px]" : "w-[64px]"
-      }`}
+      className={`hidden lg:flex flex-col h-screen fixed left-0 top-0 z-50 transition-all duration-300 ease-in-out ${
+        isDark ? "bg-[#1A1A1A]" : `bg-white border-r ${borderClass} shadow-sm`
+      } ${isExpanded ? "w-[260px]" : "w-[64px]"}`}
     >
       {/* Logo */}
       <div className={`flex items-center shrink-0 transition-all duration-300 ${isExpanded ? "justify-start px-5 pt-6 pb-4" : "justify-center pt-5 pb-3"}`}>
@@ -144,7 +161,7 @@ export default function Sidebar() {
             className="w-8 h-8 object-contain shrink-0"
           />
           {isExpanded && (
-            <span className="text-[13px] font-serif font-semibold text-white tracking-wide whitespace-nowrap">
+            <span className={`text-[13px] font-serif font-semibold tracking-wide whitespace-nowrap ${isDark ? "text-white" : "text-gray-900"}`}>
               HRM_OPS
             </span>
           )}
@@ -156,7 +173,7 @@ export default function Sidebar() {
         {visibleGroups.map((group) => (
           <div key={group.label}>
             {isExpanded && (
-              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider px-5 mb-1.5 block">
+              <span className={`text-[10px] font-medium uppercase tracking-wider px-5 mb-1.5 block ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                 {group.label}
               </span>
             )}
@@ -169,21 +186,13 @@ export default function Sidebar() {
                     to={item.path}
                     className={`flex items-center rounded-lg transition-all duration-200 group relative ${
                       isExpanded ? "gap-3 px-3 py-2.5 mx-3" : "justify-center py-3 mx-2"
-                    } ${
-                      isActive
-                        ? "bg-[#29ABE2]/20 text-[#29ABE2]"
-                        : "text-gray-400 hover:bg-white/5 hover:text-white"
-                    }`}
+                    } ${isActive ? activeClass : inactiveClass}`}
                   >
                     <i className={`${item.icon} text-lg w-5 h-5 flex items-center justify-center shrink-0`} />
                     {isExpanded && (
                       <span className="text-[13px] whitespace-nowrap">{item.label}</span>
                     )}
-                    {!isExpanded && (
-                      <span className="absolute left-full ml-3 px-2.5 py-1 bg-gray-800 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity shadow-lg border border-gray-700">
-                        {item.label}
-                      </span>
-                    )}
+                    {!isExpanded && <span className={tooltipClass}>{item.label}</span>}
                   </Link>
                 );
               })}
@@ -198,11 +207,7 @@ export default function Sidebar() {
               to="/notifications"
               className={`flex items-center rounded-lg transition-all duration-200 group relative ${
                 isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
-              } ${
-                location.pathname === "/notifications"
-                  ? "bg-[#29ABE2]/20 text-[#29ABE2]"
-                  : "text-gray-400 hover:bg-white/5 hover:text-white"
-              }`}
+              } ${location.pathname === "/notifications" ? activeClass : inactiveClass}`}
             >
               <div className="relative">
                 <i className="ri-notification-3-line text-lg w-5 h-5 flex items-center justify-center shrink-0" />
@@ -213,11 +218,7 @@ export default function Sidebar() {
                 )}
               </div>
               {isExpanded && <span className="text-[13px] whitespace-nowrap">Notifications</span>}
-              {!isExpanded && (
-                <span className="absolute left-full ml-3 px-2.5 py-1 bg-gray-800 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity shadow-lg border border-gray-700">
-                  Notifications
-                </span>
-              )}
+              {!isExpanded && <span className={tooltipClass}>Notifications</span>}
             </Link>
           </div>
         )}
@@ -229,19 +230,11 @@ export default function Sidebar() {
               to="/admin"
               className={`flex items-center rounded-lg transition-all duration-200 group relative ${
                 isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
-              } ${
-                location.pathname === "/admin"
-                  ? "bg-[#29ABE2]/20 text-[#29ABE2]"
-                  : "text-gray-400 hover:bg-white/5 hover:text-white"
-              }`}
+              } ${location.pathname === "/admin" ? activeClass : inactiveClass}`}
             >
               <i className="ri-admin-line text-lg w-5 h-5 flex items-center justify-center shrink-0" />
               {isExpanded && <span className="text-[13px] whitespace-nowrap">Admin Portal</span>}
-              {!isExpanded && (
-                <span className="absolute left-full ml-3 px-2.5 py-1 bg-gray-800 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity shadow-lg border border-gray-700">
-                  Admin Portal
-                </span>
-              )}
+              {!isExpanded && <span className={tooltipClass}>Admin Portal</span>}
             </Link>
           </div>
         )}
@@ -253,67 +246,77 @@ export default function Sidebar() {
               to="/recycle-bin"
               className={`flex items-center rounded-lg transition-all duration-200 group relative ${
                 isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
-              } ${
-                location.pathname === "/recycle-bin"
-                  ? "bg-[#29ABE2]/20 text-[#29ABE2]"
-                  : "text-gray-400 hover:bg-white/5 hover:text-white"
-              }`}
+              } ${location.pathname === "/recycle-bin" ? activeClass : inactiveClass}`}
             >
               <i className="ri-delete-bin-6-line text-lg w-5 h-5 flex items-center justify-center shrink-0" />
               {isExpanded && <span className="text-[13px] whitespace-nowrap">Recycle Bin</span>}
-              {!isExpanded && (
-                <span className="absolute left-full ml-3 px-2.5 py-1 bg-gray-800 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity shadow-lg border border-gray-700">
-                  Recycle Bin
-                </span>
-              )}
+              {!isExpanded && <span className={tooltipClass}>Recycle Bin</span>}
             </Link>
           </div>
         )}
       </div>
 
       {/* User */}
-      <div className="shrink-0 border-t border-white/10 px-3 py-4">
+      <div className={`shrink-0 border-t ${borderClass} px-3 py-4`}>
         <Link
           to="/profile"
-          className={`flex items-center gap-3 rounded-lg transition-all duration-200 ${isExpanded ? "px-2" : "justify-center"}`}
+          className={`flex items-center gap-3 rounded-lg transition-all duration-200 p-1.5 -m-1.5 ${isExpanded ? "px-2" : "justify-center"} ${
+            isDark ? "hover:bg-white/5" : "hover:bg-gray-100"
+          }`}
         >
           {avatarUrl ? (
-            <img src={avatarUrl} alt={displayName} className="w-9 h-9 rounded-lg object-cover shrink-0 border border-white/10" />
+            <img src={avatarUrl} alt={displayName} className={`w-9 h-9 rounded-lg object-cover shrink-0 border ${borderClass}`} />
           ) : (
-            <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white text-[12px] font-bold shrink-0 border border-white/10">
+            <div
+              className={`w-9 h-9 rounded-lg flex items-center justify-center text-[12px] font-bold shrink-0 border ${
+                isDark ? "bg-white/10 text-white border-white/10" : "bg-[#253C7D]/10 text-[#253C7D] border-[#253C7D]/15"
+              }`}
+            >
               {initials}
             </div>
           )}
           {isExpanded && (
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-white truncate">{displayName}</p>
-              <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
+              <p className={`text-[13px] font-semibold truncate ${isDark ? "text-white" : "text-gray-900"}`}>{displayName}</p>
+              {role?.name ? (
+                <span
+                  className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded truncate max-w-full ${
+                    isDark ? "bg-white/10 text-gray-300" : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {role.name}
+                </span>
+              ) : (
+                <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
+              )}
             </div>
           )}
         </Link>
       </div>
 
       {/* Theme toggle & Sidebar Collapse */}
-      <div className="shrink-0 flex items-center justify-between border-t border-white/10 px-3 py-2 text-gray-400">
+      <div className={`shrink-0 flex items-center justify-between border-t ${borderClass} px-3 py-2`}>
         <button
           onClick={toggleTheme}
-          className={`flex items-center gap-2 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer ${
-            !isExpanded ? "w-full justify-center" : ""
-          }`}
+          className={`flex items-center gap-2 p-2 rounded-lg transition-colors cursor-pointer ${
+            isDark ? "text-gray-400 hover:text-white hover:bg-white/10" : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+          } ${!isExpanded ? "w-full justify-center" : ""}`}
           title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
           aria-label="Toggle Theme"
         >
           {isDark ? (
             <i className="ri-sun-line text-lg text-amber-400" />
           ) : (
-            <i className="ri-moon-line text-lg text-gray-300" />
+            <i className="ri-moon-line text-lg text-gray-500" />
           )}
-          {isExpanded && <span className="text-[12px] font-medium text-gray-300">{isDark ? "Light Mode" : "Dark Mode"}</span>}
+          {isExpanded && <span className="text-[12px] font-medium">{isDark ? "Light Mode" : "Dark Mode"}</span>}
         </button>
         {isExpanded && (
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${
+              isDark ? "text-gray-400 hover:text-white hover:bg-white/10" : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+            }`}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <i className={`${collapsed ? "ri-arrow-right-s-line" : "ri-arrow-left-s-line"} text-lg`} />
