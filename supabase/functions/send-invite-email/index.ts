@@ -57,12 +57,26 @@ serve(async (req) => {
     });
     if (createUserError) return json({ error: createUserError.message }, 500);
 
+    // Build the redirect target.
+    // NOTE: Deno.env.get("SUPABASE_URL") will contain "supabase.co" for ANY
+    // hosted Supabase project, including a dev/staging project — it does NOT
+    // reliably tell you whether *your app* is running in production. If you
+    // use the same hosted Supabase project for local dev and prod, prefer
+    // an explicit APP_ENV / DEPLOY_ENV secret instead. Kept here as requested,
+    // but flagged so it doesn't silently bite you later.
+    const isProduction = Deno.env.get("SUPABASE_URL")?.includes("supabase.co");
+    const defaultRedirect = isProduction
+      ? "https://hrsystem-quit.onrender.com/auth/reset-password"
+      : `${new URL(req.url).origin}/auth/reset-password`;
+
+    const finalRedirect = redirect_to || defaultRedirect;
+
     // Generate password reset / setup link
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email,
       options: {
-        redirectTo: redirect_to || "http://localhost:5173/reset-password",
+        redirectTo: finalRedirect,
       },
     });
     if (linkError || !linkData?.properties?.action_link) {
