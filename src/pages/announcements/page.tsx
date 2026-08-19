@@ -30,7 +30,7 @@ const CATEGORY_CONFIG: Record<string, { color: string; bg: string; icon: string;
   news: { color: "text-slate-600", bg: "bg-slate-100 border-slate-200", icon: "ri-newspaper-line", label: "Company News", desc: "General releases & milestones" },
   event: { color: "text-[#253C7D]", bg: "bg-[#253C7D]/10 border-[#253C7D]/20", icon: "ri-calendar-event-line", label: "Event", desc: "Townhalls, parties & dates" },
   policy: { color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: "ri-file-text-line", label: "Policy", desc: "SOPs & rule changes" },
-  benefits: { color: "text-teal-700", bg: "bg-teal-50 border-teal-200", icon: "ri-heart-pulse-line", label: "Benefits & Perks", desc: "Health, insurance & rewards" },
+  benefits: { color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: "ri-heart-pulse-line", label: "Benefits & Perks", desc: "Health, insurance & rewards" },
   compliance: { color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: "ri-shield-check-line", label: "Compliance", desc: "Legal, safety & audits" },
   hr: { color: "text-[#253C7D]", bg: "bg-[#253C7D]/10 border-[#253C7D]/20", icon: "ri-user-settings-line", label: "HR Updates", desc: "Staffing, shifts & org notes" },
   general: { color: "text-slate-600", bg: "bg-slate-100 border-slate-200", icon: "ri-information-line", label: "General Notice", desc: "General information" },

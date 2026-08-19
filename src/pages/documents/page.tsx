@@ -41,25 +41,27 @@ interface DocumentFolder {
 }
 
 const DEFAULT_FOLDERS: DocumentFolder[] = [
-  { id: "policy", label: "Policies", icon: "ri-file-text-line", color: "text-blue-600", bg: "bg-blue-50", is_system: true, sort_order: 1, parent_id: null },
-  { id: "contract", label: "Contracts", icon: "ri-draft-line", color: "text-amber-600", bg: "bg-amber-50", is_system: true, sort_order: 2, parent_id: null },
-  { id: "template", label: "Templates", icon: "ri-file-copy-line", color: "text-violet-600", bg: "bg-violet-50", is_system: true, sort_order: 3, parent_id: null },
-  { id: "compliance", label: "Compliance", icon: "ri-shield-check-line", color: "text-cyan-600", bg: "bg-cyan-50", is_system: true, sort_order: 4, parent_id: null },
-  { id: "benefits", label: "Benefits", icon: "ri-heart-pulse-line", color: "text-rose-600", bg: "bg-rose-50", is_system: true, sort_order: 5, parent_id: null },
-  { id: "training", label: "Training", icon: "ri-graduation-cap-line", color: "text-emerald-600", bg: "bg-emerald-50", is_system: true, sort_order: 6, parent_id: null },
+  // System folders are categories, so they share the brand accent and are told
+  // apart by their icon — colour here is reserved for file type and visibility.
+  { id: "policy", label: "Policies", icon: "ri-file-text-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", is_system: true, sort_order: 1, parent_id: null },
+  { id: "contract", label: "Contracts", icon: "ri-draft-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", is_system: true, sort_order: 2, parent_id: null },
+  { id: "template", label: "Templates", icon: "ri-file-copy-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", is_system: true, sort_order: 3, parent_id: null },
+  { id: "compliance", label: "Compliance", icon: "ri-shield-check-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", is_system: true, sort_order: 4, parent_id: null },
+  { id: "benefits", label: "Benefits", icon: "ri-heart-pulse-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", is_system: true, sort_order: 5, parent_id: null },
+  { id: "training", label: "Training", icon: "ri-graduation-cap-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", is_system: true, sort_order: 6, parent_id: null },
   { id: "org", label: "Org Docs", icon: "ri-organization-chart", color: "text-slate-600", bg: "bg-slate-100", is_system: true, sort_order: 7, parent_id: null },
 ];
 
+// Custom-folder swatches, constrained to the design system so a user can't
+// paint the sidebar into a rainbow. Existing folders saved with a retired
+// swatch (violet/cyan/indigo/orange) still render from their stored classes;
+// they simply fall back to the first preset when reopened in the edit form.
 const FOLDER_COLOR_PRESETS = [
-  { id: "blue", label: "Blue", color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
-  { id: "amber", label: "Amber", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
-  { id: "violet", label: "Violet", color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200" },
-  { id: "cyan", label: "Cyan", color: "text-cyan-600", bg: "bg-cyan-50", border: "border-cyan-200" },
-  { id: "rose", label: "Rose", color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" },
-  { id: "emerald", label: "Emerald", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+  { id: "navy", label: "Navy", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", border: "border-[#253C7D]/20" },
   { id: "slate", label: "Slate", color: "text-slate-600", bg: "bg-slate-100", border: "border-slate-200" },
-  { id: "indigo", label: "Indigo", color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-200" },
-  { id: "orange", label: "Orange", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200" },
+  { id: "emerald", label: "Emerald", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+  { id: "amber", label: "Amber", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
+  { id: "rose", label: "Rose", color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" },
 ];
 
 const AVAILABLE_FOLDER_ICONS = [
@@ -113,28 +115,32 @@ const FILE_TYPE_ICON: Record<string, string> = {
   mp3: "ri-music-line",
 };
 
+// Only the four office formats people actually scan a list for keep a colour
+// (and they keep the conventional one — PDF red, Excel green). Everything else
+// is neutral: previously eight file families each had their own hue, which is
+// what turned a long document list into confetti.
 const FILE_TYPE_COLOR: Record<string, string> = {
   pdf: "bg-rose-50 text-rose-600 border-rose-200",
-  doc: "bg-sky-50 text-sky-600 border-sky-200",
-  docx: "bg-sky-50 text-sky-600 border-sky-200",
+  doc: "bg-[#253C7D]/10 text-[#253C7D] border-[#253C7D]/20",
+  docx: "bg-[#253C7D]/10 text-[#253C7D] border-[#253C7D]/20",
   xls: "bg-emerald-50 text-emerald-700 border-emerald-200",
   xlsx: "bg-emerald-50 text-emerald-700 border-emerald-200",
   csv: "bg-emerald-50 text-emerald-700 border-emerald-200",
   ppt: "bg-amber-50 text-amber-600 border-amber-200",
   pptx: "bg-amber-50 text-amber-600 border-amber-200",
-  jpg: "bg-violet-50 text-violet-600 border-violet-200",
-  jpeg: "bg-violet-50 text-violet-600 border-violet-200",
-  png: "bg-violet-50 text-violet-600 border-violet-200",
-  gif: "bg-violet-50 text-violet-600 border-violet-200",
-  webp: "bg-violet-50 text-violet-600 border-violet-200",
-  svg: "bg-violet-50 text-violet-600 border-violet-200",
-  txt: "bg-gray-100 text-gray-700 border-gray-200",
-  md: "bg-gray-100 text-gray-700 border-gray-200",
-  json: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  zip: "bg-orange-50 text-orange-600 border-orange-200",
-  rar: "bg-orange-50 text-orange-600 border-orange-200",
-  mp4: "bg-pink-50 text-pink-600 border-pink-200",
-  mp3: "bg-pink-50 text-pink-600 border-pink-200",
+  jpg: "bg-slate-100 text-slate-600 border-slate-200",
+  jpeg: "bg-slate-100 text-slate-600 border-slate-200",
+  png: "bg-slate-100 text-slate-600 border-slate-200",
+  gif: "bg-slate-100 text-slate-600 border-slate-200",
+  webp: "bg-slate-100 text-slate-600 border-slate-200",
+  svg: "bg-slate-100 text-slate-600 border-slate-200",
+  txt: "bg-slate-100 text-slate-600 border-slate-200",
+  md: "bg-slate-100 text-slate-600 border-slate-200",
+  json: "bg-slate-100 text-slate-600 border-slate-200",
+  zip: "bg-slate-100 text-slate-600 border-slate-200",
+  rar: "bg-slate-100 text-slate-600 border-slate-200",
+  mp4: "bg-slate-100 text-slate-600 border-slate-200",
+  mp3: "bg-slate-100 text-slate-600 border-slate-200",
 };
 
 const MAX_FILE_SIZE_MB = 25;
@@ -143,7 +149,7 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 const VISIBILITY_LABELS: Record<string, { label: string; color: string }> = {
   all: { label: "All Staff", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   hr_only: { label: "HR Only", color: "bg-amber-50 text-amber-700 border-amber-200" },
-  managers: { label: "Managers Only", color: "bg-violet-50 text-violet-700 border-violet-200" },
+  managers: { label: "Managers Only", color: "bg-[#253C7D]/10 text-[#253C7D] border-[#253C7D]/20" },
 };
 
 export default function DocumentsPage() {
@@ -472,7 +478,8 @@ export default function DocumentsPage() {
 
   const openEditFolderModal = (folder: DocumentFolder) => {
     setEditingFolder(folder);
-    const matchedPreset = FOLDER_COLOR_PRESETS.find((p) => p.color === folder.color)?.id || "blue";
+    const matchedPreset =
+      FOLDER_COLOR_PRESETS.find((p) => p.color === folder.color)?.id || FOLDER_COLOR_PRESETS[0].id;
     setFolderForm({
       label: folder.label,
       parentId: folder.parent_id || "",
@@ -884,18 +891,18 @@ export default function DocumentsPage() {
             setStatusFilter("all");
           }}
           className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-            filterTemplate === true ? "border-violet-500 ring-2 ring-violet-500/10" : "border-gray-200/80"
+            filterTemplate === true ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-200/80"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-violet-600 uppercase tracking-wider">Templates</span>
-            <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
+            <span className="text-[11px] font-bold text-[#253C7D] uppercase tracking-wider">Templates</span>
+            <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
               <i className="ri-file-copy-line text-sm" />
             </div>
           </div>
-          <p className="text-2xl font-black text-violet-700 mt-2">{templatesCount}</p>
+          <p className="text-2xl font-black text-[#253C7D] mt-2">{templatesCount}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">Ready for reuse</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-violet-500" />
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#253C7D]/100" />
         </div>
 
         {/* Total Downloads */}
@@ -1439,7 +1446,7 @@ export default function DocumentsPage() {
                             </span>
                           )}
                           {doc.is_template && (
-                            <span className="text-[9px] font-extrabold px-2 py-0.5 bg-violet-50 text-violet-700 border border-violet-200 rounded-full">
+                            <span className="text-[9px] font-extrabold px-2 py-0.5 bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 rounded-full">
                               Template
                             </span>
                           )}
@@ -1695,7 +1702,7 @@ export default function DocumentsPage() {
                         v{selectedDoc.version}
                       </span>
                       {selectedDoc.is_template && (
-                        <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-md bg-violet-50 text-violet-700 border border-violet-200">
+                        <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-md bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20">
                           Template
                         </span>
                       )}
@@ -1968,12 +1975,12 @@ export default function DocumentsPage() {
                 {/* TAB 3: QUICK RELOCATE FOLDER */}
                 {drawerTab === "move" && canManageDocs && (
                   <div className="space-y-4">
-                    <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-2xl text-xs text-blue-900">
+                    <div className="p-3 bg-[#253C7D]/5 border border-[#253C7D]/15 rounded-2xl text-xs text-[#253C7D]">
                       <p className="font-bold flex items-center gap-1 mb-1">
                         <i className="ri-information-line" />
                         Quick Move Destination:
                       </p>
-                      <p className="text-[11px] text-blue-700">
+                      <p className="text-[11px] text-[#253C7D]">
                         Select any category or subfolder to immediately reassign this document.
                       </p>
                     </div>

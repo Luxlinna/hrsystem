@@ -540,18 +540,18 @@ export default function PayrollApproval() {
         <div
           onClick={() => setTab("itemized")}
           className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-            tab === "itemized" ? "border-sky-500 ring-2 ring-sky-500/10" : "border-gray-200/80"
+            tab === "itemized" ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-200/80"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-sky-600 uppercase tracking-wider">Employee Payslips</span>
-            <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+            <span className="text-[11px] font-bold text-[#253C7D] uppercase tracking-wider">Employee Payslips</span>
+            <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
               <i className="ri-user-star-line text-sm" />
             </div>
           </div>
-          <p className="text-2xl font-black text-sky-700 mt-2">{itemizedRecords.length}</p>
+          <p className="text-2xl font-black text-[#253C7D] mt-2">{itemizedRecords.length}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">Historical entries loaded</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-sky-500" />
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#253C7D]/100" />
         </div>
       </div>
 
@@ -617,11 +617,11 @@ export default function PayrollApproval() {
                 tab === "itemized" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
               }`}
             >
-              <i className="ri-list-check-2 text-sm text-sky-600" />
+              <i className="ri-list-check-2 text-sm text-[#253C7D]" />
               <span>Itemized Employee Records</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold leading-none ${
-                  tab === "itemized" ? "bg-sky-100 text-sky-700" : "bg-gray-200 text-gray-600"
+                  tab === "itemized" ? "bg-[#253C7D]/15 text-[#253C7D]" : "bg-gray-200 text-gray-600"
                 }`}
               >
                 {itemizedRecords.length}
@@ -1089,7 +1089,7 @@ export default function PayrollApproval() {
                           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
                             rec.status === "paid"
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-sky-50 text-sky-700 border border-sky-200"
+                              : "bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20"
                           }`}
                         >
                           {rec.status}
