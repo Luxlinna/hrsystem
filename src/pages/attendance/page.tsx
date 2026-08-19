@@ -218,8 +218,8 @@ export default function AttendancePage() {
           .eq("status", "active")
           .order("first_name"),
       ]);
-      if (recRes.data) setRecords(recRes.data as AttendanceRecord[]);
-      if (empRes.data) setEmployees(empRes.data as Employee[]);
+      if (recRes.data) setRecords(recRes.data as unknown as AttendanceRecord[]);
+      if (empRes.data) setEmployees(empRes.data as unknown as Employee[]);
       setLoading(false);
       return;
     }
@@ -235,7 +235,7 @@ export default function AttendancePage() {
       .eq("email", user.email)
       .maybeSingle();
 
-    setMyEmployee(me as Employee | null);
+    setMyEmployee(me as unknown as Employee | null);
 
     if (!me) {
       setEmployees([]);
@@ -251,7 +251,7 @@ export default function AttendancePage() {
         .eq("status", "active")
         .eq("branch_id", me.branch_id)
         .order("first_name");
-      setEmployees((team as Employee[]) || []);
+      setEmployees((team as unknown as Employee[]) || []);
 
       const ids = (team || []).map((e) => e.id);
       const { data: recData } = ids.length
@@ -263,12 +263,12 @@ export default function AttendancePage() {
             .order("date", { ascending: false })
             .limit(2000)
         : { data: [] };
-      setRecords((recData as AttendanceRecord[]) || []);
+      setRecords((recData as unknown as AttendanceRecord[]) || []);
       setLoading(false);
       return;
     }
 
-    setEmployees([me as Employee]);
+    setEmployees([me as unknown as Employee]);
     const { data: recData } = await supabase
       .from("attendance_records")
       .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
@@ -276,7 +276,7 @@ export default function AttendancePage() {
       .is("deleted_at", null)
       .order("date", { ascending: false })
       .limit(1000);
-    setRecords((recData as AttendanceRecord[]) || []);
+    setRecords((recData as unknown as AttendanceRecord[]) || []);
     setLoading(false);
   }
 
