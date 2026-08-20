@@ -339,6 +339,7 @@ create table announcements (
   pinned boolean not null default false,
   visible_to text default 'all' check (visible_to in ('all','hq','management')),
   published_at timestamptz not null default now(),
+  urgent_alert_hours int not null default 24 check (urgent_alert_hours between 1 and 168),
   view_count int not null default 0,
   created_at timestamptz not null default now()
 );

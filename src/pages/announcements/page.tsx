@@ -18,6 +18,7 @@ interface Announcement {
   pinned: boolean;
   visible_to: string;
   published_at: string;
+  urgent_alert_hours: number | null;
   view_count: number;
   created_at: string;
 }
@@ -52,6 +53,7 @@ export default function Announcements() {
   const canManage = isAdmin || (!!role && !["Employee", "Staff"].includes(role.name));
   const mustAcceptUrgentAnnouncements = !canManage;
   const authorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
+  const actorName = authorName;
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,6 +96,7 @@ export default function Announcements() {
     author_role: role?.name || "Corporate Operations",
     pinned: false,
     visible_to: "all",
+    urgent_alert_hours: 24,
   });
 
   const selectedItem = useMemo(
@@ -291,6 +294,7 @@ export default function Announcements() {
           content: form.content.trim(),
           category: form.category,
           priority: form.priority,
+          urgent_alert_hours: form.urgent_alert_hours,
           pinned: form.pinned,
           visible_to: form.visible_to,
         })
@@ -353,6 +357,7 @@ export default function Announcements() {
       author_role: role?.name || "Corporate Operations",
       pinned: false,
       visible_to: "all",
+      urgent_alert_hours: 24,
     });
     setEditingId(null);
     setShowCreateModal(false);
@@ -372,6 +377,7 @@ export default function Announcements() {
       author_role: a.author_role,
       pinned: a.pinned,
       visible_to: a.visible_to,
+      urgent_alert_hours: a.urgent_alert_hours || 24,
     });
     setEditingId(a.id);
     setComposerMode("write");
@@ -550,6 +556,7 @@ export default function Announcements() {
                   author_role: role?.name || "Corporate Operations",
                   pinned: false,
                   visible_to: "all",
+                  urgent_alert_hours: 24,
                 });
                 setEditingId(null);
                 setComposerMode("write");
@@ -802,6 +809,7 @@ export default function Announcements() {
                   author_role: role?.name || "Corporate Operations",
                   pinned: false,
                   visible_to: "all",
+                  urgent_alert_hours: 24,
                 });
                 setEditingId(null);
                 setComposerMode("write");
@@ -1431,6 +1439,35 @@ export default function Announcements() {
                     </div>
                   </div>
 
+                  {form.priority === "urgent" && (
+                    <div className="p-3.5 rounded-2xl border border-rose-200 bg-rose-50/70">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="min-w-0">
+                          <label className="text-[11px] font-extrabold text-rose-700 uppercase tracking-wider block mb-1">
+                            Urgent Alert Duration
+                          </label>
+                          <p className="text-[11px] text-rose-700/70 font-medium">
+                            Staff will be alerted every 30 seconds until accepted or until this time expires.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <input
+                            type="number"
+                            min={1}
+                            max={168}
+                            value={form.urgent_alert_hours}
+                            onChange={(e) => {
+                              const nextValue = Math.min(168, Math.max(1, Number(e.target.value) || 1));
+                              setForm({ ...form, urgent_alert_hours: nextValue });
+                            }}
+                            className="w-20 px-3 py-2 bg-white border border-rose-200 rounded-xl text-sm font-extrabold text-rose-800 focus:outline-none focus:border-rose-500"
+                          />
+                          <span className="text-xs font-bold text-rose-700">hours</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Announcement Title */}
                   <div>
                     <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-1.5">
@@ -1657,7 +1694,7 @@ export default function Announcements() {
                     {form.priority === "urgent" && (
                       <div className="mb-4 p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 text-xs font-bold">
                         <i className="ri-error-warning-line text-sm" />
-                        <span>Requires Immediate Staff Acknowledgment</span>
+                        <span>Requires staff acknowledgment for {form.urgent_alert_hours} hours</span>
                       </div>
                     )}
 

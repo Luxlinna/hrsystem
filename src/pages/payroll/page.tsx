@@ -134,7 +134,14 @@ export default function Payroll() {
       ]);
 
       setAllRecords((recordsData as PayrollRecord[]) || []);
-      setEmployees((empsData as Employee[]) || []);
+      setEmployees(
+        ((empsData || []) as (Omit<Employee, "branches"> & { branches?: Employee["branches"] | Employee["branches"][] })[]).map(
+          (employee) => ({
+            ...employee,
+            branches: Array.isArray(employee.branches) ? employee.branches[0] || null : employee.branches || null,
+          })
+        )
+      );
 
       // If no records in current month, set selectedMonth to the latest month with data
       if (recordsData && recordsData.length > 0) {
