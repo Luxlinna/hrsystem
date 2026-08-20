@@ -1144,6 +1144,28 @@ export default function MeetingRoomsPage() {
     };
   }, [bookings, filteredBookings, selectedDate, employeeId, rooms, pendingBookings, user?.email]);
 
+  // Rooms visible in the Timeline view after the floor/room filters. The
+  // header row and every hour row must all agree on this exact count —
+  // `repeat(auto-fit, minmax(280px,1fr))` sizes its columns off the
+  // container's declared width, not off how many room columns actually
+  // exist, so when there are more rooms than fit in that width, the extra
+  // ones silently wrap onto a second implicit grid row instead of scrolling.
+  const visibleTimelineRooms = useMemo(
+    () =>
+      rooms.filter(
+        (r) =>
+          (filterFloor === "all" || (r.floor || 3) === parseInt(filterFloor, 10)) &&
+          (filterRoomId === "all" || r.id === filterRoomId)
+      ),
+    [rooms, filterFloor, filterRoomId]
+  );
+  // Tailwind's JIT compiler can't see a class string built from a runtime
+  // value at build time, so the column count has to go through an inline
+  // style rather than a dynamically-interpolated `grid-cols-[...]` class.
+  const timelineRoomCols = Math.max(1, visibleTimelineRooms.length);
+  const timelineGridTemplateColumns = `100px repeat(${timelineRoomCols}, minmax(280px, 1fr))`;
+  const timelineMinWidth = 100 + timelineRoomCols * 280;
+
   // Month grid generator
   const monthGridCells = useMemo(() => {
     const d = new Date(`${selectedDate}T00:00:00`);
@@ -1190,7 +1212,7 @@ export default function MeetingRoomsPage() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed top-5 right-5 z-50 px-5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-xl flex items-center gap-2.5 transition-all duration-300 transform translate-y-0 ${
+          className={`fixed top-4 left-4 right-4 sm:top-5 sm:right-5 sm:left-auto sm:max-w-sm z-50 px-5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-xl flex items-center gap-2.5 transition-all duration-300 transform translate-y-0 ${
             toast.type === "success"
               ? "bg-[#1E293B] border border-emerald-500/30"
               : toast.type === "error"
@@ -1214,12 +1236,17 @@ export default function MeetingRoomsPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#253C7D] to-[#1E293B] flex items-center justify-center text-white shadow-md shadow-[#253C7D]/20">
+          {/* items-start (not center) keeps the icon pinned to the title's
+              top edge — with items-center it drifts toward the middle of
+              the whole block once the description wraps to two lines on a
+              narrow screen, reading as misaligned instead of "belonging to"
+              the heading. */}
+          <div className="flex items-start gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#253C7D] to-[#1E293B] flex items-center justify-center text-white shadow-md shadow-[#253C7D]/20 shrink-0">
               <i className="ri-community-line text-xl" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                   Meeting Rooms
                 </h1>
@@ -1229,14 +1256,14 @@ export default function MeetingRoomsPage() {
                   </span>
                 )}
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
                 Everyone can reserve rooms. Admin & HR Managers approve bookings and manage cancellations with instant notifications.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center flex-wrap gap-2.5">
           <Link
             to="/reports?module=meeting-rooms"
             className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 hover:text-[#253C7D] hover:bg-gray-50 transition shadow-sm text-sm font-semibold cursor-pointer"
@@ -1504,7 +1531,7 @@ export default function MeetingRoomsPage() {
         {/* Right: Search, Floor Filter, Room Filter, View Modes */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Search box */}
-          <div className="relative flex-1 sm:w-44">
+          <div className="relative w-full sm:w-44 sm:flex-1 min-w-0">
             <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
             <input
               type="text"
@@ -1664,20 +1691,17 @@ export default function MeetingRoomsPage() {
 
           {/* Timeline Grid */}
           <div className="overflow-x-auto">
-            <div className="min-w-[760px]">
+            <div style={{ minWidth: timelineMinWidth }}>
               {/* Room Header Columns */}
-              <div className="grid grid-cols-[100px_repeat(auto-fit,minmax(280px,1fr))] border-b border-gray-200 bg-gray-50 text-xs font-bold text-gray-600">
+              <div
+                className="grid border-b border-gray-200 bg-gray-50 text-xs font-bold text-gray-600"
+                style={{ gridTemplateColumns: timelineGridTemplateColumns }}
+              >
                 <div className="p-3.5 text-center border-r border-gray-200 flex flex-col justify-center">
                   <span>Time</span>
                   <span className="text-[10px] text-gray-400 font-normal">8:00 – 20:00</span>
                 </div>
-                {rooms
-                  .filter(
-                    (r) =>
-                      (filterFloor === "all" || (r.floor || 3) === parseInt(filterFloor, 10)) &&
-                      (filterRoomId === "all" || r.id === filterRoomId)
-                  )
-                  .map((room) => (
+                {visibleTimelineRooms.map((room) => (
                     <div
                       key={room.id}
                       className="p-3.5 border-r border-gray-200 last:border-r-0 flex items-center justify-between gap-2"
@@ -1718,7 +1742,8 @@ export default function MeetingRoomsPage() {
                   return (
                     <div
                       key={hour}
-                      className="grid grid-cols-[100px_repeat(auto-fit,minmax(280px,1fr))] min-h-[70px] hover:bg-slate-50/40 transition-colors"
+                      className="grid min-h-[70px] hover:bg-slate-50/40 transition-colors"
+                      style={{ gridTemplateColumns: timelineGridTemplateColumns }}
                     >
                       {/* Hour Label */}
                       <div className="p-3 text-center border-r border-gray-200 bg-gray-50/70 text-xs font-semibold text-gray-500 flex flex-col justify-center">
@@ -1729,13 +1754,7 @@ export default function MeetingRoomsPage() {
                       </div>
 
                       {/* Room Slots */}
-                      {rooms
-                        .filter(
-                          (r) =>
-                            (filterFloor === "all" || (r.floor || 3) === parseInt(filterFloor, 10)) &&
-                            (filterRoomId === "all" || r.id === filterRoomId)
-                        )
-                        .map((room) => {
+                      {visibleTimelineRooms.map((room) => {
                           const slotBookings = bookingsForSelectedDate.filter((b) => {
                             if (b.room_id !== room.id) return false;
                             return b.start_time < hourEndStr && b.end_time > hourStartStr;
@@ -1867,8 +1886,8 @@ export default function MeetingRoomsPage() {
                   <div className="h-2" style={{ backgroundColor: room.color }} />
                   <div className="p-6 flex-1 flex flex-col">
                     {/* Top Room Banner */}
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div>
+                    <div className="flex items-start justify-between flex-wrap gap-4 mb-4">
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <h2 className="text-xl font-bold text-gray-900">{room.name}</h2>
                           <FloorBadge
@@ -2058,6 +2077,12 @@ export default function MeetingRoomsPage() {
       ) : (
         /* ================= MONTH REVIEW CALENDAR ================= */
         <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+          {/* A 7-column grid squeezes each day into ~45px on a phone, which
+              can't fit "9:00 AM Operation Team Meeting" legibly — scroll the
+              whole grid horizontally on narrow screens instead, same as the
+              Timeline view already does, so day cells stay readable. */}
+          <div className="overflow-x-auto">
+          <div className="min-w-[640px]">
           {/* Calendar Header Day Names */}
           <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
@@ -2182,6 +2207,8 @@ export default function MeetingRoomsPage() {
               );
             })}
           </div>
+          </div>
+          </div>
         </div>
       )}
 
@@ -2196,14 +2223,20 @@ export default function MeetingRoomsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-gradient-to-r from-[#253C7D] to-[#1E293B] text-white flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <i className={`${editingBooking ? "ri-edit-box-fill text-amber-400" : "ri-calendar-check-fill text-emerald-400"} text-xl`} />
-                <div>
-                  <h3 className="text-base font-bold">
+            <div className="px-6 py-4 bg-gradient-to-r from-[#253C7D] to-[#1E293B] text-white flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    editingBooking ? "bg-amber-400/20 text-amber-300" : "bg-emerald-400/20 text-emerald-300"
+                  }`}
+                >
+                  <i className={`${editingBooking ? "ri-edit-box-fill" : "ri-calendar-check-fill"} text-lg`} />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold truncate">
                     {editingBooking ? "Edit Meeting Reservation" : "Reserve Meeting Room"}
                   </h3>
-                  <p className="text-xs text-gray-300">
+                  <p className="text-xs text-gray-300 truncate">
                     {editingBooking ? `Modifying "${editingBooking.title}"` : "Requires Admin / HR Manager approval"}
                   </p>
                 </div>
@@ -2215,7 +2248,7 @@ export default function MeetingRoomsPage() {
                     setEditingBooking(null);
                   }
                 }}
-                className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/80 hover:text-white transition cursor-pointer"
+                className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/80 hover:text-white transition cursor-pointer shrink-0"
               >
                 <i className="ri-close-line text-xl" />
               </button>
@@ -2286,8 +2319,8 @@ export default function MeetingRoomsPage() {
                 </div>
 
                 {/* Selected Room Location Banner */}
-                <div className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
+                <div className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center flex-wrap justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span
                       className="w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: modalRoom.color }}
@@ -2402,6 +2435,30 @@ export default function MeetingRoomsPage() {
                   {durationLabel}
                 </span>
               </div>
+
+              {/* Live Conflict Feedback — right after date/time so a clash
+                  surfaces before the user spends time on attendees,
+                  requirements, and refreshments they'd have to redo. */}
+              {activeConflict ? (
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">
+                  <i className="ri-error-warning-fill text-rose-600 text-base shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Time Conflict Detected — pick a different time</p>
+                    <p className="mt-0.5 text-rose-700">
+                      "{activeConflict.title}" is already scheduled in {modalRoom.name} from{" "}
+                      {fmtTime(activeConflict.start_time)} to {fmtTime(activeConflict.end_time)} by{" "}
+                      {activeConflict.employees?.first_name || "another member"} ({activeConflict.status}).
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                  <i className="ri-checkbox-circle-fill text-emerald-600 text-base" />
+                  <span className="font-semibold">
+                    {modalRoom.name} is available for this slot.
+                  </span>
+                </div>
+              )}
 
               {/* 4. Number of Attendees */}
               <div>
@@ -2630,31 +2687,10 @@ export default function MeetingRoomsPage() {
                 </div>
               </div>
 
-              {/* Live Conflict Feedback */}
-              {activeConflict ? (
-                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">
-                  <i className="ri-error-warning-fill text-rose-600 text-base shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold">Time Conflict Detected</p>
-                    <p className="mt-0.5 text-rose-700">
-                      "{activeConflict.title}" is already scheduled in {modalRoom.name} from{" "}
-                      {fmtTime(activeConflict.start_time)} to {fmtTime(activeConflict.end_time)} by{" "}
-                      {activeConflict.employees?.first_name || "another member"} ({activeConflict.status}).
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
-                  <i className="ri-checkbox-circle-fill text-emerald-600 text-base" />
-                  <span className="font-semibold">
-                    {modalRoom.name} is available for this slot.
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -2664,7 +2700,7 @@ export default function MeetingRoomsPage() {
                   }
                 }}
                 disabled={saving}
-                className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-100 text-xs font-bold transition cursor-pointer disabled:opacity-60"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-100 text-xs font-bold transition cursor-pointer disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -2672,7 +2708,7 @@ export default function MeetingRoomsPage() {
                 type="button"
                 onClick={handleBook}
                 disabled={saving || !!activeConflict}
-                className="px-5 py-2.5 rounded-xl bg-[#253C7D] hover:bg-[#1C2E60] text-white text-xs font-bold shadow-md transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#253C7D] hover:bg-[#1C2E60] text-white text-xs font-bold shadow-md transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {saving ? (
                   <>
@@ -2694,11 +2730,11 @@ export default function MeetingRoomsPage() {
       {/* ================= REASON MODAL (ADMIN / HR REJECT OR CANCEL ONLY) ================= */}
       {reasonModal.isOpen && reasonModal.booking && canApprove && (
         <div
-          className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-[70] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-[70] flex items-center justify-center p-4 overflow-y-auto"
           onClick={() => !processingAction && setReasonModal({ ...reasonModal, isOpen: false })}
         >
           <div
-            className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden transform transition-all"
+            className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden transform transition-all my-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-6 py-4 bg-rose-600 text-white flex items-center justify-between">
@@ -2780,12 +2816,12 @@ export default function MeetingRoomsPage() {
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
               <button
                 type="button"
                 onClick={() => !processingAction && setReasonModal({ ...reasonModal, isOpen: false })}
                 disabled={processingAction}
-                className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-100 text-xs font-bold transition cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-100 text-xs font-bold transition cursor-pointer"
               >
                 Go Back
               </button>
@@ -2793,7 +2829,7 @@ export default function MeetingRoomsPage() {
                 type="button"
                 onClick={confirmReasonAction}
                 disabled={processingAction || !reasonModal.reason.trim()}
-                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {processingAction ? (
                   <>
@@ -2886,7 +2922,7 @@ export default function MeetingRoomsPage() {
 
                 return (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                         <i className="ri-settings-3-line text-[#253C7D]" />
                         <span>Special Requirements & Equipment</span>
@@ -2935,20 +2971,20 @@ export default function MeetingRoomsPage() {
                                 : "bg-rose-50/50 border-rose-300 text-rose-900 hover:bg-rose-50 opacity-85"
                             }`}
                           >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
                               <i
-                                className={`text-base ${
+                                className={`text-base shrink-0 ${
                                   isApproved
                                     ? "ri-checkbox-circle-fill text-emerald-600"
                                     : "ri-close-circle-fill text-rose-500"
                                 }`}
                               />
-                              <span className={`font-semibold ${!isApproved ? "line-through text-slate-500" : ""}`}>
+                              <span className={`font-semibold truncate ${!isApproved ? "line-through text-slate-500" : ""}`}>
                                 {item}
                               </span>
                             </div>
                             <span
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0 ml-2 ${
                                 isApproved
                                   ? "bg-emerald-200/70 text-emerald-800"
                                   : "bg-rose-200/70 text-rose-800"
@@ -2976,7 +3012,7 @@ export default function MeetingRoomsPage() {
 
                 return (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                         <i className="ri-cup-line text-blue-600" />
                         <span>Snacks & Refreshments</span>
@@ -3025,20 +3061,20 @@ export default function MeetingRoomsPage() {
                                 : "bg-rose-50/50 border-rose-300 text-rose-900 hover:bg-rose-50 opacity-85"
                             }`}
                           >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
                               <i
-                                className={`text-base ${
+                                className={`text-base shrink-0 ${
                                   isApproved
                                     ? "ri-checkbox-circle-fill text-emerald-600"
                                     : "ri-close-circle-fill text-rose-500"
                                 }`}
                               />
-                              <span className={`font-semibold ${!isApproved ? "line-through text-slate-500" : ""}`}>
+                              <span className={`font-semibold truncate ${!isApproved ? "line-through text-slate-500" : ""}`}>
                                 {item}
                               </span>
                             </div>
                             <span
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0 ml-2 ${
                                 isApproved
                                   ? "bg-emerald-200/70 text-emerald-800"
                                   : "bg-rose-200/70 text-rose-800"
@@ -3151,35 +3187,37 @@ export default function MeetingRoomsPage() {
                   >
                     <button
                       onClick={() => setSelectedBooking(null)}
-                      className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 flex items-center justify-center text-white transition cursor-pointer"
+                      className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 flex items-center justify-center text-white transition cursor-pointer z-10"
                     >
                       <i className="ri-close-line text-lg" />
                     </button>
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/80">
-                      <i className="ri-door-open-line" />
-                      <span>{room?.name || "Meeting Room"}</span>
-                      <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase">
-                        Floor {room?.floor || (room?.name?.includes("VIP") ? 5 : 3)}
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase">
-                        {selectedBooking.status}
-                      </span>
+                    <div className="pr-10">
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/80 flex-wrap">
+                        <i className="ri-door-open-line" />
+                        <span>{room?.name || "Meeting Room"}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase">
+                          Floor {room?.floor || (room?.name?.includes("VIP") ? 5 : 3)}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase">
+                          {selectedBooking.status}
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-bold text-white mt-1.5">{selectedBooking.title}</h3>
+                      <p className="text-xs text-white/90 mt-1 flex items-center gap-1.5 font-medium flex-wrap">
+                        <i className="ri-time-line" />
+                        <span>
+                          {fmtTime(selectedBooking.start_time)} – {fmtTime(selectedBooking.end_time)}
+                        </span>
+                        <span>•</span>
+                        <span>
+                          {new Date(`${selectedBooking.date}T00:00:00`).toLocaleDateString("en-US", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </p>
                     </div>
-                    <h3 className="text-xl font-bold text-white mt-1.5">{selectedBooking.title}</h3>
-                    <p className="text-xs text-white/90 mt-1 flex items-center gap-1.5 font-medium">
-                      <i className="ri-time-line" />
-                      <span>
-                        {fmtTime(selectedBooking.start_time)} – {fmtTime(selectedBooking.end_time)}
-                      </span>
-                      <span>•</span>
-                      <span>
-                        {new Date(`${selectedBooking.date}T00:00:00`).toLocaleDateString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                    </p>
                   </div>
 
                   {/* Body */}

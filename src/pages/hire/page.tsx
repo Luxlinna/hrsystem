@@ -105,7 +105,7 @@ interface Candidate {
   applied_at: string;
   resume_url: string | null;
   resume_name: string | null;
-  job_postings?: { id: string; title: string; department: string };
+  job_postings?: { id: string; title: string; department: string; branch_id: string };
 }
 
 interface Interview {
@@ -118,7 +118,7 @@ interface Interview {
   feedback: string;
   score: number;
   notes: string;
-  candidates?: { id: string; full_name: string; job_postings?: { title: string; department?: string } };
+  candidates?: { id: string; full_name: string; job_posting_id?: string; job_postings?: { title: string; department?: string } };
   employees?: { id: string; first_name: string; last_name: string; avatar_url?: string };
 }
 
@@ -253,12 +253,12 @@ export default function Hire() {
           .order("posted_at", { ascending: false }),
         supabase
           .from("candidates")
-          .select("*, job_postings(id, title, department)")
+          .select("*, job_postings(id, title, department, branch_id)")
           .is("deleted_at", null)
           .order("applied_at", { ascending: false }),
         supabase
           .from("interviews")
-          .select("*, candidates(id, full_name, job_postings(title, department)), employees(id, first_name, last_name, avatar_url)")
+          .select("*, candidates(id, full_name, job_posting_id, job_postings(title, department)), employees(id, first_name, last_name, avatar_url)")
           .is("deleted_at", null)
           .order("scheduled_at", { ascending: false }),
         supabase.from("branches").select("id, name").order("name"),

@@ -595,7 +595,7 @@ export default function LeaveCalendar() {
       {/* Toast Alert */}
       {toast && (
         <div
-          className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border backdrop-blur-md text-[13px] font-medium transition-all transform animate-in slide-in-from-top-4 duration-200 ${
+          className={`fixed top-4 left-4 right-4 sm:top-6 sm:right-6 sm:left-auto sm:max-w-sm z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border backdrop-blur-md text-[13px] font-medium transition-all transform animate-in slide-in-from-top-4 duration-200 ${
             toast.type === "success"
               ? "bg-emerald-950/90 border-emerald-700/50 text-emerald-100"
               : toast.type === "error"
@@ -821,7 +821,7 @@ export default function LeaveCalendar() {
       <div className="bg-white p-4 sm:p-5 rounded-3xl border border-gray-200/80 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Month/Year Picker & Jump to Today */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center bg-gray-100/80 rounded-2xl p-1 border border-gray-200/60">
               <button
                 onClick={prevMonth}
@@ -830,7 +830,7 @@ export default function LeaveCalendar() {
               >
                 <i className="ri-arrow-left-s-line text-lg" />
               </button>
-              <span className="px-4 text-sm sm:text-base font-extrabold text-gray-900 min-w-[150px] text-center">
+              <span className="px-2 sm:px-4 text-sm sm:text-base font-extrabold text-gray-900 min-w-[110px] sm:min-w-[150px] text-center">
                 {MONTHS[month]} {year}
               </span>
               <button
@@ -850,48 +850,54 @@ export default function LeaveCalendar() {
             </button>
           </div>
 
-          {/* View Mode Switcher (Month Grid / Timeline Matrix / Agenda List) */}
-          <div className="flex items-center bg-gray-100/80 p-1 rounded-2xl border border-gray-200/60 self-start md:self-auto">
+          {/* View Mode Switcher (Month Grid / Timeline Matrix / Agenda List) —
+              full-width equal thirds on phones (labels shorten to fit),
+              back to a natural-width inline segmented control from sm: up. */}
+          <div className="grid grid-cols-3 sm:inline-flex sm:items-center bg-gray-100/80 p-1 rounded-2xl border border-gray-200/60 self-start md:self-auto w-full sm:w-auto">
             <button
               onClick={() => setViewMode("month")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 viewMode === "month"
                   ? "bg-white text-[#253C7D] shadow-sm"
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >
               <i className="ri-calendar-line text-sm" />
-              <span>Month Grid</span>
+              <span className="hidden sm:inline">Month Grid</span>
+              <span className="sm:hidden">Month</span>
             </button>
             <button
               onClick={() => setViewMode("timeline")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 viewMode === "timeline"
                   ? "bg-white text-[#253C7D] shadow-sm"
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >
               <i className="ri-git-commit-line text-sm" />
-              <span>Team Timeline</span>
+              <span className="hidden sm:inline">Team Timeline</span>
+              <span className="sm:hidden">Timeline</span>
             </button>
             <button
               onClick={() => setViewMode("agenda")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 viewMode === "agenda"
                   ? "bg-white text-[#253C7D] shadow-sm"
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >
               <i className="ri-list-check text-sm" />
-              <span>Agenda List</span>
+              <span className="hidden sm:inline">Agenda List</span>
+              <span className="sm:hidden">Agenda</span>
             </button>
           </div>
         </div>
 
         {/* Filter Toolbar */}
         <div className="pt-3 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3 flex-wrap">
-          {/* Left: Status Toggles */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+          {/* Left: Status Toggles — wraps on phones instead of hiding behind
+              a sideways scroll; single scrollable row again from md: up. */}
+          <div className="flex items-center flex-wrap md:flex-nowrap gap-1.5 md:overflow-x-auto md:pb-1">
             {[
               { id: "approved", label: "Approved Only", icon: "ri-checkbox-circle-line" },
               { id: "pending", label: "Include Pending", icon: "ri-time-line" },
@@ -912,10 +918,14 @@ export default function LeaveCalendar() {
             ))}
           </div>
 
-          {/* Right: Dropdowns & Live Search */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full md:w-auto">
+          {/* Right: Dropdowns & Live Search — an explicit stacked layout on
+              phones (full-width search, then the two selects sharing a row)
+              reads far cleaner than letting flex-wrap decide, which left the
+              search box starved of width alongside two shrink-resistant
+              selects. Reverts to one natural-width row from sm: up. */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
             {/* Search */}
-            <div className="relative flex-1 sm:w-56">
+            <div className="relative w-full sm:w-56">
               <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
               <input
                 type="text"
@@ -934,49 +944,51 @@ export default function LeaveCalendar() {
               )}
             </div>
 
-            {/* Department */}
-            <select
-              value={deptFilter}
-              onChange={(e) => setDeptFilter(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl border border-gray-200 text-[12px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
-            >
-              <option value="all">All Departments</option>
-              {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-
-            {/* Leave Type */}
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl border border-gray-200 text-[12px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
-            >
-              <option value="all">All Leave Types</option>
-              {Object.entries(LEAVE_TYPE_CONFIG).map(([type, cfg]) => (
-                <option key={type} value={type}>
-                  {cfg.label}
-                </option>
-              ))}
-            </select>
-
-            {/* Reset */}
-            {(deptFilter !== "all" || typeFilter !== "all" || statusFilter !== "approved" || searchQuery) && (
-              <button
-                onClick={() => {
-                  setDeptFilter("all");
-                  setTypeFilter("all");
-                  setStatusFilter("approved");
-                  setSearchQuery("");
-                }}
-                className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                title="Reset filters"
+            <div className="flex items-center gap-2">
+              {/* Department */}
+              <select
+                value={deptFilter}
+                onChange={(e) => setDeptFilter(e.target.value)}
+                className="flex-1 sm:flex-none min-w-0 px-2.5 py-1.5 rounded-xl border border-gray-200 text-[12px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
               >
-                <i className="ri-refresh-line" />
-              </button>
-            )}
+                <option value="all">All Departments</option>
+                {departments.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+
+              {/* Leave Type */}
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="flex-1 sm:flex-none min-w-0 px-2.5 py-1.5 rounded-xl border border-gray-200 text-[12px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              >
+                <option value="all">All Leave Types</option>
+                {Object.entries(LEAVE_TYPE_CONFIG).map(([type, cfg]) => (
+                  <option key={type} value={type}>
+                    {cfg.label}
+                  </option>
+                ))}
+              </select>
+
+              {/* Reset */}
+              {(deptFilter !== "all" || typeFilter !== "all" || statusFilter !== "approved" || searchQuery) && (
+                <button
+                  onClick={() => {
+                    setDeptFilter("all");
+                    setTypeFilter("all");
+                    setStatusFilter("approved");
+                    setSearchQuery("");
+                  }}
+                  className="shrink-0 px-2 py-1.5 text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                  title="Reset filters"
+                >
+                  <i className="ri-refresh-line" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1414,6 +1426,7 @@ export default function LeaveCalendar() {
                     const cfg = LEAVE_TYPE_CONFIG[l.leave_type] || {
                       label: l.leave_type,
                       badgeBg: "bg-gray-100 text-gray-800",
+                      icon: "ri-calendar-event-line",
                     };
                     return (
                       <div
@@ -1434,7 +1447,8 @@ export default function LeaveCalendar() {
                             <p className="text-[10px] text-gray-500 truncate">{l.employees?.department}</p>
                           </div>
                         </div>
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${cfg.badgeBg}`}>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${cfg.badgeBg}`}>
+                          <i className={`${cfg.icon} text-[10px]`} />
                           {cfg.label}
                         </span>
                       </div>
@@ -1472,6 +1486,7 @@ export default function LeaveCalendar() {
                   const cfg = LEAVE_TYPE_CONFIG[l.leave_type] || {
                     label: l.leave_type,
                     badgeBg: "bg-gray-100 text-gray-800",
+                    icon: "ri-calendar-event-line",
                   };
                   return (
                     <div
@@ -1494,7 +1509,8 @@ export default function LeaveCalendar() {
                           </p>
                         </div>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${cfg.badgeBg}`}>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${cfg.badgeBg}`}>
+                        <i className={`${cfg.icon} text-[10px]`} />
                         {cfg.label}
                       </span>
                     </div>
@@ -1598,8 +1614,8 @@ export default function LeaveCalendar() {
       {/* ======================= LEAVE INSPECTION MODAL ======================= */}
       {inspectLeave && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden transform animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden transform animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="w-8 h-8 rounded-xl bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
                   <i className="ri-calendar-event-line text-lg" />
@@ -1614,7 +1630,7 @@ export default function LeaveCalendar() {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto">
               {/* Employee Summary */}
               <div className="flex items-center gap-3.5 p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
                 <div className="w-12 h-12 rounded-full bg-[#253C7D] text-white flex items-center justify-center font-bold text-sm shadow-sm overflow-hidden shrink-0">
@@ -1684,12 +1700,12 @@ export default function LeaveCalendar() {
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+              <div className="pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <button
                   onClick={() => {
                     navigate(`/leave?highlight=${inspectLeave.id}`);
                   }}
-                  className="px-4 py-2.5 bg-[#253C7D]/10 hover:bg-[#253C7D]/20 text-[#253C7D] text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-[#253C7D]/10 hover:bg-[#253C7D]/20 text-[#253C7D] text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <i className="ri-external-link-line" />
                   <span>Open in Leave Hub</span>
@@ -1697,7 +1713,7 @@ export default function LeaveCalendar() {
 
                 <button
                   onClick={() => setInspectLeave(null)}
-                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                 >
                   Close
                 </button>
@@ -1728,6 +1744,7 @@ export default function LeaveCalendar() {
                 const cfg = LEAVE_TYPE_CONFIG[l.leave_type] || {
                   label: l.leave_type,
                   badgeBg: "bg-gray-100 text-gray-800",
+                  icon: "ri-calendar-event-line",
                 };
                 return (
                   <div
@@ -1751,7 +1768,8 @@ export default function LeaveCalendar() {
                         <p className="text-[10px] text-gray-500">{l.employees?.department}</p>
                       </div>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${cfg.badgeBg}`}>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${cfg.badgeBg}`}>
+                      <i className={`${cfg.icon} text-[10px]`} />
                       {cfg.label}
                     </span>
                   </div>
@@ -1765,8 +1783,8 @@ export default function LeaveCalendar() {
       {/* ======================= QUICK REQUEST LEAVE MODAL ======================= */}
       {showRequestModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden transform animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden transform animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="w-8 h-8 rounded-xl bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
                   <i className="ri-add-line text-lg font-bold" />
@@ -1781,7 +1799,7 @@ export default function LeaveCalendar() {
               </button>
             </div>
 
-            <form onSubmit={handleQuickRequestSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleQuickRequestSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* Employee Selector (if Manager/Admin) */}
               {canManage ? (
                 <div>

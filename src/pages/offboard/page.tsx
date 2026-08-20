@@ -18,6 +18,7 @@ import {
   PieChart,
   Pie,
   Legend,
+  type PieLabelRenderProps,
 } from "recharts";
 
 interface Offboarding {
@@ -1409,7 +1410,16 @@ export default function Offboard() {
                       innerRadius={55}
                       paddingAngle={3}
                       dataKey="value"
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      // recharts types Pie's `label` prop as the same generic
+                      // signature every chart component uses, which doesn't
+                      // include the pie-specific fields (name, percent) it
+                      // actually passes at runtime — PieLabelRenderProps is
+                      // the type recharts itself exports for this callback,
+                      // so the `any` cast is just bridging that type gap.
+                      label={
+                        (({ name, percent }: PieLabelRenderProps) =>
+                          `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`) as any
+                      }
                     >
                       {reasonChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
