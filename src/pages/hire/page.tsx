@@ -105,7 +105,7 @@ interface Candidate {
   applied_at: string;
   resume_url: string | null;
   resume_name: string | null;
-  job_postings?: { id: string; title: string; department: string; branch_id: string };
+  job_postings?: { id: string; title: string; department: string; branch_id?: string | null };
 }
 
 interface Interview {

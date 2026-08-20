@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/components/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { extractR2Key, deleteDocument, isCloudflareR2Url } from "@/lib/r2-storage";
 
 interface BinItem {
   table: string;
@@ -185,8 +186,13 @@ export default function RecycleBinPage() {
       const { error: dbErr } = await supabase.from(item.table).delete().eq("id", item.id);
       error = dbErr;
       if (!error && item.table === "documents" && item.raw?.file_url) {
-        const filePath = item.raw.file_url.split("/documents/")[1];
-        if (filePath) await supabase.storage.from("documents").remove([filePath]);
+        if (isCloudflareR2Url(item.raw.file_url)) {
+          const key = extractR2Key(item.raw.file_url);
+          if (key) await deleteDocument(key).catch(() => {});
+        } else if (item.raw.file_url.includes("/storage/v1/")) {
+          const filePath = item.raw.file_url.split("/documents/")[1];
+          if (filePath) await supabase.storage.from("documents").remove([filePath]);
+        }
       }
     }
 
