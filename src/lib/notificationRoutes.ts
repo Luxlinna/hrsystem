@@ -45,3 +45,19 @@ export function getNotificationTarget(
       return null;
   }
 }
+
+// Whether the signed-in role should see a given notification at all — not
+// just whether clicking it goes anywhere. A broadcast (recipient_user_id
+// null) notification about a module a role can't open is just noise: they
+// can't act on it and clicking it already no-ops in getNotificationTarget's
+// callers. "system" has no module (see above) so it's exempt and always
+// shown; everything else is only shown to roles that can open its module.
+export function canSeeNotification(
+  source: string,
+  can: (module: string) => boolean
+): boolean {
+  if (source === "system") return true;
+  const target = getNotificationTarget(source);
+  if (!target) return true;
+  return can(target.module);
+}

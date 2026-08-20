@@ -225,13 +225,21 @@ export function usePermissions(): UsePermissionsReturn {
     };
   }, [user, authLoading, resolveRole]);
 
-  const can = (module: string): boolean => {
-    if (loading) return false;
-    if (!role) return false; // unassigned = no access
-    if (role.is_admin) return true;
-    if (role.allowed_modules.includes("*")) return true;
-    return role.allowed_modules.includes(module);
-  };
+  // Memoized so its identity only changes when the underlying permissions
+  // actually do — components legitimately put `can` in effect/callback
+  // dependency arrays, and a fresh function on every render there turns
+  // into an infinite fetch loop (effect runs -> setState -> re-render ->
+  // new `can` -> effect runs again).
+  const can = useCallback(
+    (module: string): boolean => {
+      if (loading) return false;
+      if (!role) return false; // unassigned = no access
+      if (role.is_admin) return true;
+      if (role.allowed_modules.includes("*")) return true;
+      return role.allowed_modules.includes(module);
+    },
+    [loading, role]
+  );
 
   const isAdmin = !loading && !!role && (role.is_admin || role.allowed_modules.includes("*"));
 

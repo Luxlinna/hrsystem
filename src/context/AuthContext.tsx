@@ -7,8 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
-import { isDeviceRemembered as checkDeviceRemembered, setDeviceRemembered, forgetDevice as clearDeviceRemembered } from "@/lib/otp";
+import { supabase, markSessionAlive } from "@/lib/supabase";
 
 interface AuthContextType {
   user: User | null;
@@ -52,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       if (data.session?.access_token) {
         supabase.realtime.setAuth(data.session.access_token);
+        markSessionAlive();
       }
     });
 
@@ -59,10 +59,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       setLoading(false);
       supabase.realtime.setAuth(session?.access_token ?? null);
+      if (session) markSessionAlive();
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // --- Device-remember helpers (stored in localStorage) ---
+  const DEVICE_KEY = (email: string) => `otp_device_${email}`;
+
+  const checkDeviceRemembered = (email: string): boolean => {
+    return localStorage.getItem(DEVICE_KEY(email)) === "true";
+  };
+
+  const setDeviceRemembered = (email: string) => {
+    localStorage.setItem(DEVICE_KEY(email), "true");
+  };
+
+  const clearDeviceRemembered = (email: string) => {
+    localStorage.removeItem(DEVICE_KEY(email));
+  };
+  // ----------------------------------------------------------
 
   const login = async (email: string, password: string): Promise<{ otpRequired: boolean }> => {
     // If device is remembered, skip OTP
@@ -133,7 +150,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    // GoTrue returns a "session_not_found" error on /logout once a session
+    // has already been invalidated server-side (e.g. after the dead-session
+    // recovery in supabase.ts already tried signing it out). supabase-js
+    // only treats the plain 401/403/404 case as "already signed out, fine"
+    // — this one slips through as AuthSessionMissingError instead, so
+    // signOut() returns without ever clearing the local session, leaving
+    // the user stuck looking logged in. Clear local state ourselves so
+    // logout always succeeds from the app's point of view regardless of
+    // what the server round trip reports.
+    await supabase.auth.signOut().catch(() => {});
+    setUser(null);
   };
 
   const resetPassword = async (email: string) => {
