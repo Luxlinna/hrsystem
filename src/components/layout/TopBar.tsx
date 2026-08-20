@@ -581,7 +581,7 @@ export default function TopBar() {
         </div>
 
         {/* Global Search */}
-        <div className="flex-1 max-w-xs lg:max-w-md mx-4" ref={searchRef}>
+        <div className="flex-1 min-w-0 max-w-xs lg:max-w-md mx-4" ref={searchRef}>
           <div className="relative">
             <i className={`ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-sm ${
               searchFocused ? "text-[#253C7D]" : "text-gray-400"

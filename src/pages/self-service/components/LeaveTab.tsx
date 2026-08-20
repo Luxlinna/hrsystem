@@ -24,8 +24,12 @@ const STATUS_COLOR: Record<string, string> = {
 
 const LEAVE_TYPES = ["vacation", "sick", "personal", "maternity", "paternity", "bereavement", "unpaid"];
 
+const rangesOverlap = (aStart: string, aEnd: string, bStart: string, bEnd: string) =>
+  aStart <= bEnd && bStart <= aEnd;
+
 export default function LeaveTab({ employeeId }: Props) {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [entitlement, setEntitlement] = useState(18);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +50,16 @@ export default function LeaveTab({ employeeId }: Props) {
 
   useEffect(() => {
     fetchLeave();
+  }, [employeeId]);
+
+  useEffect(() => {
+    if (!employeeId) return;
+    supabase
+      .from("employees")
+      .select("annual_leave_days")
+      .eq("id", employeeId)
+      .maybeSingle()
+      .then(({ data }) => setEntitlement(data?.annual_leave_days ?? 18));
   }, [employeeId]);
 
   // Real-time subscription: live status updates without refresh
@@ -93,6 +107,23 @@ export default function LeaveTab({ employeeId }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.start_date || !form.end_date) return;
+    if (form.end_date < form.start_date) {
+      setToast("End date must be on or after start date.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+    const conflict = requests.find(
+      (r) =>
+        (r.status === "pending" || r.status === "approved") &&
+        rangesOverlap(form.start_date, form.end_date, r.start_date, r.end_date)
+    );
+    if (conflict) {
+      setToast(
+        `This overlaps your ${conflict.status} ${conflict.leave_type} request (${conflict.start_date} → ${conflict.end_date}).`
+      );
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
     setSubmitting(true);
     const days = calcDays(form.start_date, form.end_date);
     const { error } = await supabase.from("leave_requests").insert({
@@ -113,36 +144,62 @@ export default function LeaveTab({ employeeId }: Props) {
     fetchLeave();
   };
 
+  const currentYear = new Date().getFullYear();
   const totalApproved = requests.filter((r) => r.status === "approved").reduce((s, r) => s + r.days, 0);
   const totalPending = requests.filter((r) => r.status === "pending").length;
+  // "Remaining" is entitlement minus what's already spoken for this year —
+  // approved AND pending, so a still-undecided request counts against the
+  // balance too (otherwise it reads as bookable twice over while it waits).
+  const vacationCommittedDays = requests
+    .filter(
+      (r) =>
+        r.leave_type === "vacation" &&
+        (r.status === "approved" || r.status === "pending") &&
+        new Date(r.start_date).getFullYear() === currentYear
+    )
+    .reduce((s, r) => s + r.days, 0);
+  const remainingDays = Math.max(0, entitlement - vacationCommittedDays);
 
   if (loading) return <div className="flex items-center justify-center h-40"><div className="w-7 h-7 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-5">
       {toast && (
-        <div className="fixed top-5 right-5 z-50 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg">
+        <div className="fixed top-4 left-4 right-4 sm:top-5 sm:right-5 sm:left-auto sm:max-w-sm z-50 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg">
           {toast}
         </div>
       )}
 
-      {/* Stats + action */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1 grid grid-cols-3 gap-3">
+      {/* Stats + action — an explicit stacked layout on phones (stats grid
+          on top, full-width button below) reads cleaner than letting the
+          button wrap and float beside a two-row stat grid. Sits side by
+          side from sm: up. */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 min-w-0">
           {[
+            { label: "Days Remaining", value: remainingDays, highlight: true },
             { label: "Total Requests", value: requests.length },
             { label: "Days Approved", value: totalApproved },
             { label: "Pending", value: totalPending },
           ].map((s) => (
-            <div key={s.label} className="bg-white border border-gray-100 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">{s.value}</p>
+            <div
+              key={s.label}
+              className={`rounded-xl p-4 text-center border ${
+                s.highlight
+                  ? "bg-[#253C7D]/5 border-[#253C7D]/20"
+                  : "bg-white border-gray-100"
+              }`}
+            >
+              <p className={`text-2xl font-bold ${s.highlight ? "text-[#253C7D]" : "text-gray-900"}`}>
+                {s.value}
+              </p>
               <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white rounded-xl text-sm hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 bg-[#253C7D] text-white rounded-xl text-sm font-semibold hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap shrink-0"
         >
           <i className={`${showForm ? "ri-close-line" : "ri-add-line"}`} />
           {showForm ? "Cancel" : "New Request"}
