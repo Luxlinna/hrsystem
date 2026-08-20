@@ -341,24 +341,29 @@ export default function Branches() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex">
+    <div className="min-h-screen bg-[#F8FAFC] flex font-sans">
       {/* Main */}
       <div className={`flex-1 min-w-0 transition-all duration-300 ${selectedBranch ? "sm:mr-[420px]" : ""}`}>
-        <div className="p-6 lg:p-10">
+        <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                <span>Workspace</span>
+                <i className="ri-arrow-right-s-line text-xs" />
+                <span className="text-[#253C7D] font-bold">Branch Management</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
                 Branch Management
               </h1>
-              <p className="text-[13px] text-gray-500 mt-1">
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
                 {activeBranches} active branches &middot; {totalEmployees.toLocaleString()} total employees
               </p>
             </div>
             {canManage && (
               <button
                 onClick={() => { setForm(emptyForm); setAddressLookup(""); setEditingBranchId(null); setShowAddModal(true); }}
-                className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-4 py-2.5 rounded-xl text-[13px] font-semibold hover:bg-[#1E3066] transition-all shadow-md shadow-[#253C7D]/20 whitespace-nowrap cursor-pointer"
               >
                 <i className="ri-add-line" />
                 Add Branch
@@ -367,17 +372,21 @@ export default function Branches() {
           </div>
 
           {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-6">
             {[
-              { label: "Total Branches", value: branches.length, icon: "ri-building-2-line", color: "text-[#253C7D]" },
-              { label: "Active", value: activeBranches, icon: "ri-checkbox-circle-line", color: "text-emerald-600" },
-              { label: "Total Employees", value: totalEmployees.toLocaleString(), icon: "ri-user-3-line", color: "text-violet-600" },
-              { label: "Avg per Branch", value: Math.round(totalEmployees / Math.max(branches.length, 1)), icon: "ri-group-line", color: "text-amber-600" },
+              { label: "Total Branches", value: branches.length, icon: "ri-building-2-line", color: "#253C7D" },
+              { label: "Active", value: activeBranches, icon: "ri-checkbox-circle-line", color: "#059669" },
+              { label: "Total Employees", value: totalEmployees.toLocaleString(), icon: "ri-user-3-line", color: "#7C3AED" },
+              { label: "Avg per Branch", value: Math.round(totalEmployees / Math.max(branches.length, 1)), icon: "ri-group-line", color: "#D97706" },
             ].map((s) => (
-              <div key={s.label} className="bg-white border border-gray-100 rounded-xl p-4">
-                <i className={`${s.icon} ${s.color} text-xl`} />
-                <p className="text-xl font-bold text-gray-900 mt-2">{s.value}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">{s.label}</p>
+              <div key={s.label} className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate pr-2">{s.label}</span>
+                  <div className="w-7 h-7 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${s.color}14`, color: s.color }}>
+                    <i className={`${s.icon} text-sm`} />
+                  </div>
+                </div>
+                <p className="text-xl font-black text-gray-900 mt-2">{s.value}</p>
               </div>
             ))}
           </div>
@@ -410,8 +419,8 @@ export default function Branches() {
             {filtered.map((b) => (
               <div
                 key={b.id}
-                className={`bg-white border rounded-xl p-5 transition-all cursor-pointer hover:border-[#253C7D]/30 ${
-                  selectedBranch?.id === b.id ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-100"
+                className={`bg-white border rounded-2xl shadow-2xs hover:shadow-xs p-5 transition-all cursor-pointer hover:border-[#253C7D]/30 ${
+                  selectedBranch?.id === b.id ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-200/80"
                 }`}
                 onClick={() => openDetail(b)}
               >
@@ -466,9 +475,12 @@ export default function Branches() {
             ))}
 
             {filtered.length === 0 && (
-              <div className="col-span-3 py-16 text-center">
-                <i className="ri-building-2-line text-4xl text-gray-300" />
-                <p className="text-gray-400 mt-2">No branches match your search</p>
+              <div className="sm:col-span-2 xl:col-span-3 text-center py-20 bg-white border border-gray-200/80 rounded-2xl shadow-2xs">
+                <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                  <i className="ri-building-2-line text-2xl text-gray-300" />
+                </div>
+                <p className="text-sm font-bold text-gray-700">No branches match your search</p>
+                <p className="text-xs text-gray-400 mt-1">Try adjusting your search or status filter.</p>
               </div>
             )}
           </div>
@@ -603,7 +615,7 @@ export default function Branches() {
                 onClick={() => toggleBranchStatus(selectedBranch)}
                 className={`w-full mt-4 py-2 rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${
                   selectedBranch.status === "active"
-                    ? "bg-red-50 text-red-600 hover:bg-red-100"
+                    ? "bg-rose-50 text-rose-600 hover:bg-rose-100"
                     : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                 }`}
               >
@@ -683,7 +695,7 @@ export default function Branches() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
           <form
             onSubmit={handleAddBranch}
-            className="bg-white rounded-2xl w-full max-w-2xl my-8 sm:my-0 max-h-[calc(100vh-4rem)] flex flex-col"
+            className="bg-white rounded-2xl w-full max-w-2xl my-8 sm:my-0 max-h-[calc(100vh-4rem)] flex flex-col shadow-2xl border border-gray-100"
           >
             <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
               <div>
