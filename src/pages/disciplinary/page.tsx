@@ -52,30 +52,47 @@ interface NewRecord {
   pip_goals: string;
 }
 
+// Case TYPE is a category, not an urgency level — severity and status below
+// already carry the urgency signal. Encoding urgency three times in three
+// different hues is what made this page read as a rainbow, so types are
+// mostly neutral here and differentiated by their icon instead. Only the
+// genuinely terminal actions (final warning, suspension) keep a warm tone.
 const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string; desc: string }> = {
-  verbal_warning: { label: "Verbal Warning", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: "ri-discuss-line", desc: "First-level policy review" },
-  written_warning: { label: "Written Warning", color: "text-orange-700", bg: "bg-orange-50 border-orange-200", icon: "ri-file-warning-line", desc: "Formal documented notice" },
-  final_warning: { label: "Final Warning", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: "ri-error-warning-line", desc: "Last notice before escalation" },
-  pip: { label: "Performance Plan (PIP)", color: "text-violet-700", bg: "bg-violet-50 border-violet-200", icon: "ri-focus-3-line", desc: "Structured performance goals" },
-  incident: { label: "Workplace Incident", color: "text-rose-700", bg: "bg-rose-50 border-rose-200", icon: "ri-alert-line", desc: "Safety or policy violation" },
-  suspension: { label: "Suspension", color: "text-purple-700", bg: "bg-purple-50 border-purple-200", icon: "ri-pause-circle-line", desc: "Temporary work removal" },
-  termination: { label: "Termination", color: "text-gray-700", bg: "bg-gray-100 border-gray-300", icon: "ri-user-unfollow-line", desc: "Employment separation" },
+  verbal_warning: { label: "Verbal Warning", color: "text-slate-700 dark:text-slate-300", bg: "bg-slate-100 border-slate-200 dark:bg-slate-700/50 dark:border-slate-600", icon: "ri-discuss-line", desc: "First-level policy review" },
+  written_warning: { label: "Written Warning", color: "text-slate-700 dark:text-slate-300", bg: "bg-slate-100 border-slate-200 dark:bg-slate-700/50 dark:border-slate-600", icon: "ri-file-warning-line", desc: "Formal documented notice" },
+  final_warning: { label: "Final Warning", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30", icon: "ri-error-warning-line", desc: "Last notice before escalation" },
+  pip: { label: "Performance Plan (PIP)", color: "text-[#253C7D] dark:text-sky-400", bg: "bg-[#253C7D]/10 border-[#253C7D]/20 dark:bg-sky-400/15 dark:border-sky-400/30", icon: "ri-focus-3-line", desc: "Structured performance goals" },
+  incident: { label: "Workplace Incident", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30", icon: "ri-alert-line", desc: "Safety or policy violation" },
+  suspension: { label: "Suspension", color: "text-rose-700 dark:text-rose-400", bg: "bg-rose-50 border-rose-200 dark:bg-rose-500/15 dark:border-rose-500/30", icon: "ri-pause-circle-line", desc: "Temporary work removal" },
+  termination: { label: "Termination", color: "text-slate-700 dark:text-slate-300", bg: "bg-slate-200/70 border-slate-300 dark:bg-slate-700/70 dark:border-slate-600", icon: "ri-user-unfollow-line", desc: "Employment separation" },
 };
 
+// Severity ramp: neutral → amber → rose. "critical" reuses rose rather than a
+// separate red family (red and rose were near-identical on screen) and instead
+// escalates via weight and a pulsing dot.
 const SEVERITY_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  low: { label: "Low", color: "text-sky-700", bg: "bg-sky-50 border-sky-200", dot: "bg-sky-500" },
-  medium: { label: "Medium", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", dot: "bg-amber-500" },
-  high: { label: "High", color: "text-rose-700", bg: "bg-rose-50 border-rose-200", dot: "bg-rose-500" },
-  critical: { label: "Critical", color: "text-red-800", bg: "bg-red-100 border-red-300 font-black", dot: "bg-red-600 animate-pulse" },
+  low: { label: "Low", color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-100 border-slate-200 dark:bg-slate-700/50 dark:border-slate-600", dot: "bg-slate-400" },
+  medium: { label: "Medium", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30", dot: "bg-amber-500" },
+  high: { label: "High", color: "text-rose-700 dark:text-rose-400", bg: "bg-rose-50 border-rose-200 dark:bg-rose-500/15 dark:border-rose-500/30", dot: "bg-rose-500" },
+  critical: { label: "Critical", color: "text-rose-800 dark:text-rose-300", bg: "bg-rose-100 border-rose-300 dark:bg-rose-500/25 dark:border-rose-500/40 font-black", dot: "bg-rose-600 animate-pulse" },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  open: { label: "Open Case", color: "text-sky-700", bg: "bg-sky-50 border-sky-200" },
-  in_progress: { label: "In Progress", color: "text-amber-700", bg: "bg-amber-50 border-amber-200" },
-  escalated: { label: "Escalated", color: "text-red-700", bg: "bg-red-50 border-red-200" },
-  resolved: { label: "Resolved", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
-  closed: { label: "Closed", color: "text-gray-600", bg: "bg-gray-100 border-gray-200" },
+  open: { label: "Open Case", color: "text-[#253C7D] dark:text-sky-400", bg: "bg-[#253C7D]/10 border-[#253C7D]/20 dark:bg-sky-400/15 dark:border-sky-400/30" },
+  in_progress: { label: "In Progress", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30" },
+  escalated: { label: "Escalated", color: "text-rose-700 dark:text-rose-400", bg: "bg-rose-50 border-rose-200 dark:bg-rose-500/15 dark:border-rose-500/30" },
+  resolved: { label: "Resolved", color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/30" },
+  closed: { label: "Closed", color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-100 border-slate-200 dark:bg-slate-700/50 dark:border-slate-600" },
 };
+
+// A case is overdue when it has a follow-up target date in the past and hasn't
+// been resolved/closed yet. Shared by the KPI count, the tab filter, and the
+// per-record overdue badges so all three stay in sync.
+const isOverdueRecord = (r: Pick<DisciplinaryRecord, "follow_up_date" | "status">) =>
+  !!r.follow_up_date &&
+  r.status !== "resolved" &&
+  r.status !== "closed" &&
+  new Date(r.follow_up_date + "T00:00:00") < new Date();
 
 export default function DisciplinaryPage() {
   const { user } = useAuth();
@@ -408,7 +425,7 @@ export default function DisciplinaryPage() {
 
   if (loading && records.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading disciplinary & compliance records...</p>
       </div>
@@ -416,7 +433,7 @@ export default function DisciplinaryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -477,7 +494,34 @@ export default function DisciplinaryPage() {
         </div>
       </div>
 
+      {/* Overdue Follow-up Alert Banner */}
+      {canManage && (() => {
+        const overdueCount = records.filter(isOverdueRecord).length;
+        return overdueCount > 0 ? (
+          <div
+            onClick={() => { setActiveTab("open"); setPage(1); }}
+            className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-rose-100/70 transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 animate-pulse">
+              <i className="ri-alarm-warning-line text-sm" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-black text-rose-700">
+                {overdueCount} Case{overdueCount > 1 ? "s" : ""} Have Overdue Follow-Up Dates
+              </p>
+              <p className="text-[11px] text-rose-600/80 mt-0.5">
+                Immediate action required — these cases passed their follow-up milestone without resolution.
+              </p>
+            </div>
+            <span className="text-[11px] font-bold text-rose-600 group-hover:text-rose-800 transition-colors whitespace-nowrap flex items-center gap-1">
+              Review now <i className="ri-arrow-right-line" />
+            </span>
+          </div>
+        ) : null;
+      })()}
+
       {/* Executive Metric Cards */}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
         {/* Open & In Progress Cases */}
         <div
@@ -507,18 +551,18 @@ export default function DisciplinaryPage() {
             setPage(1);
           }}
           className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-            activeTab === "pip" ? "border-violet-500 ring-2 ring-violet-500/10" : "border-gray-200/80"
+            activeTab === "pip" ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-200/80"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-violet-700 uppercase tracking-wider">Active PIPs</span>
-            <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-700 flex items-center justify-center">
+            <span className="text-[11px] font-bold text-[#253C7D] uppercase tracking-wider">Active PIPs</span>
+            <div className="w-7 h-7 rounded-lg bg-[#253C7D]/5 text-[#253C7D] flex items-center justify-center">
               <i className="ri-focus-3-line text-sm" />
             </div>
           </div>
-          <p className="text-2xl font-black text-violet-800 mt-2">{pipCount}</p>
+          <p className="text-2xl font-black text-[#253C7D] mt-2">{pipCount}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">Improvement plans tracked</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-violet-500" />
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#253C7D]/50" />
         </div>
 
         {/* High / Critical Severities */}
@@ -753,12 +797,12 @@ export default function DisciplinaryPage() {
                 <div
                   className={`absolute top-0 left-0 bottom-0 w-1.5 ${
                     r.severity === "critical"
-                      ? "bg-red-600"
+                      ? "bg-rose-600"
                       : r.severity === "high"
                       ? "bg-rose-500"
                       : r.severity === "medium"
                       ? "bg-amber-500"
-                      : "bg-sky-500"
+                      : "bg-slate-400"
                   }`}
                 />
 
@@ -822,13 +866,13 @@ export default function DisciplinaryPage() {
 
                   {/* PIP Progress Bar Preview */}
                   {r.type === "pip" && r.pip_start_date && r.pip_end_date && (
-                    <div className="p-2.5 bg-violet-50/70 border border-violet-100 rounded-xl text-xs space-y-1 mb-3">
-                      <div className="flex items-center justify-between text-[10px] text-violet-800 font-bold">
+                    <div className="p-2.5 bg-[#253C7D]/5 border border-[#253C7D]/15 rounded-xl text-xs space-y-1 mb-3">
+                      <div className="flex items-center justify-between text-[10px] text-[#253C7D] font-bold">
                         <span>PIP Duration</span>
                         <span>{new Date(r.pip_end_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                       </div>
-                      <div className="w-full bg-violet-200/70 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-violet-600 h-full w-2/3 rounded-full" />
+                      <div className="w-full bg-[#253C7D]/20 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-[#253C7D] h-full w-2/3 rounded-full" />
                       </div>
                     </div>
                   )}
@@ -1206,18 +1250,18 @@ export default function DisciplinaryPage() {
 
                 {/* Performance Improvement Plan (PIP) Block */}
                 {selectedRecord.type === "pip" && (
-                  <div className="border border-violet-200 rounded-2xl p-4 bg-violet-50 space-y-3">
+                  <div className="border border-[#253C7D]/25 rounded-2xl p-4 bg-[#253C7D]/5 space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-xs font-black text-violet-800 uppercase tracking-wide flex items-center gap-1.5">
+                      <p className="text-xs font-black text-[#253C7D] uppercase tracking-wide flex items-center gap-1.5">
                         <i className="ri-focus-3-line" />
                         Performance Improvement Plan (PIP)
                       </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-2.5 bg-white rounded-xl border border-violet-100">
-                        <span className="text-[10px] text-violet-400 font-bold block mb-0.5">Start Date</span>
-                        <span className="font-extrabold text-violet-900">
+                      <div className="p-2.5 bg-white rounded-xl border border-[#253C7D]/15">
+                        <span className="text-[10px] text-[#253C7D]/60 font-bold block mb-0.5">Start Date</span>
+                        <span className="font-extrabold text-[#253C7D]">
                           {selectedRecord.pip_start_date
                             ? new Date(selectedRecord.pip_start_date + "T00:00:00").toLocaleDateString("en-US", {
                                 month: "short",
@@ -1227,9 +1271,9 @@ export default function DisciplinaryPage() {
                             : "—"}
                         </span>
                       </div>
-                      <div className="p-2.5 bg-white rounded-xl border border-violet-100">
-                        <span className="text-[10px] text-violet-400 font-bold block mb-0.5">End Date</span>
-                        <span className="font-extrabold text-violet-900">
+                      <div className="p-2.5 bg-white rounded-xl border border-[#253C7D]/15">
+                        <span className="text-[10px] text-[#253C7D]/60 font-bold block mb-0.5">End Date</span>
+                        <span className="font-extrabold text-[#253C7D]">
                           {selectedRecord.pip_end_date
                             ? new Date(selectedRecord.pip_end_date + "T00:00:00").toLocaleDateString("en-US", {
                                 month: "short",
@@ -1242,11 +1286,11 @@ export default function DisciplinaryPage() {
                     </div>
 
                     {selectedRecord.pip_goals && (
-                      <div className="p-3 bg-white rounded-xl border border-violet-100 space-y-1">
-                        <span className="text-[10px] text-violet-400 font-bold uppercase tracking-wider block">
+                      <div className="p-3 bg-white rounded-xl border border-[#253C7D]/15 space-y-1">
+                        <span className="text-[10px] text-[#253C7D]/60 font-bold uppercase tracking-wider block">
                           Key Milestones &amp; Measurable Goals:
                         </span>
-                        <p className="text-xs text-violet-900 leading-relaxed whitespace-pre-line">
+                        <p className="text-xs text-[#253C7D] leading-relaxed whitespace-pre-line">
                           {selectedRecord.pip_goals}
                         </p>
                       </div>
@@ -1501,43 +1545,43 @@ export default function DisciplinaryPage() {
 
               {/* PIP Configuration Section (Expands if type === 'pip') */}
               {newRecord.type === "pip" && (
-                <div className="border border-violet-200 rounded-2xl p-4 bg-violet-50 space-y-3 animate-in fade-in duration-200">
+                <div className="border border-[#253C7D]/25 rounded-2xl p-4 bg-[#253C7D]/5 space-y-3 animate-in fade-in duration-200">
                   <div className="flex items-center gap-2">
-                    <i className="ri-focus-3-line text-violet-700 text-lg" />
+                    <i className="ri-focus-3-line text-[#253C7D] text-lg" />
                     <div>
-                      <p className="text-xs font-black text-violet-900">Performance Improvement Plan Details</p>
-                      <p className="text-[10px] text-violet-600">Establish measurable performance milestones</p>
+                      <p className="text-xs font-black text-[#253C7D]">Performance Improvement Plan Details</p>
+                      <p className="text-[10px] text-[#253C7D]/80">Establish measurable performance milestones</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-extrabold text-violet-700 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] font-extrabold text-[#253C7D] uppercase tracking-wider block mb-1">
                         PIP Start Date
                       </label>
                       <input
                         type="date"
                         value={newRecord.pip_start_date}
                         onChange={(e) => setNewRecord({ ...newRecord, pip_start_date: e.target.value })}
-                        className="w-full px-3 py-2 text-xs font-bold text-violet-900 bg-white border border-violet-200 rounded-xl focus:outline-none focus:border-violet-500"
+                        className="w-full px-3 py-2 text-xs font-bold text-[#253C7D] bg-white border border-[#253C7D]/25 rounded-xl focus:outline-none focus:border-[#253C7D]"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-extrabold text-violet-700 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] font-extrabold text-[#253C7D] uppercase tracking-wider block mb-1">
                         PIP End / Review Date
                       </label>
                       <input
                         type="date"
                         value={newRecord.pip_end_date}
                         onChange={(e) => setNewRecord({ ...newRecord, pip_end_date: e.target.value })}
-                        className="w-full px-3 py-2 text-xs font-bold text-violet-900 bg-white border border-violet-200 rounded-xl focus:outline-none focus:border-violet-500"
+                        className="w-full px-3 py-2 text-xs font-bold text-[#253C7D] bg-white border border-[#253C7D]/25 rounded-xl focus:outline-none focus:border-[#253C7D]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-extrabold text-violet-700 uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] font-extrabold text-[#253C7D] uppercase tracking-wider block mb-1">
                       Measurable Objectives &amp; Goals
                     </label>
                     <textarea
@@ -1545,7 +1589,7 @@ export default function DisciplinaryPage() {
                       value={newRecord.pip_goals}
                       onChange={(e) => setNewRecord({ ...newRecord, pip_goals: e.target.value })}
                       placeholder="1. Maintain on-time arrival rate above 95%&#10;2. Complete weekly sprint deliverables&#10;3. Bi-weekly check-in with supervisor"
-                      className="w-full px-3.5 py-2 text-xs text-violet-950 bg-white border border-violet-200 rounded-xl focus:outline-none focus:border-violet-500 leading-relaxed"
+                      className="w-full px-3.5 py-2 text-xs text-[#253C7D] bg-white border border-[#253C7D]/25 rounded-xl focus:outline-none focus:border-[#253C7D] leading-relaxed"
                     />
                   </div>
                 </div>

@@ -45,9 +45,9 @@ const STATUS_CONFIG: Record<
   },
   approved: {
     label: "Approved",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-    border: "border-blue-200",
+    bg: "bg-[#253C7D]/10",
+    text: "text-[#253C7D]",
+    border: "border-[#253C7D]/20",
     icon: "ri-checkbox-circle-line",
   },
   paid: {
@@ -81,18 +81,22 @@ const CATEGORIES = [
   "Other",
 ];
 
+// Expense categories carry no inherent good/bad meaning, so they don't earn
+// distinct hues — a rainbow here just competed with the status colors that DO
+// mean something. Instead these step down a single brand-navy → slate ramp,
+// which stays legible in a donut/legend while reading as one calm system.
 const CATEGORY_COLORS: Record<string, string> = {
   "Office Rent": "#253C7D",
-  "IT Equipment": "#0284C7",
-  Travel: "#F59E0B",
-  Training: "#8B5CF6",
-  Marketing: "#EC4899",
-  Utilities: "#10B981",
-  Software: "#6366F1",
-  Catering: "#F97316",
+  "IT Equipment": "#33518F",
+  Travel: "#4266A1",
+  Training: "#527CB3",
+  Marketing: "#6592C4",
+  Utilities: "#7FA6D0",
+  Software: "#9BBADC",
+  Catering: "#B7CDE7",
   "Office Supplies": "#64748B",
-  Legal: "#DC2626",
-  Other: "#94A3B8",
+  Legal: "#94A3B8",
+  Other: "#CBD5E1",
 };
 
 // Helper for Local YYYY-MM-DD
@@ -506,7 +510,7 @@ export default function Finance() {
 
   if (loading && expenses.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading financial operations...</p>
       </div>
@@ -514,7 +518,7 @@ export default function Finance() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -610,18 +614,18 @@ export default function Finance() {
         <div
           onClick={() => setStatusFilter("approved")}
           className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-            statusFilter === "approved" ? "border-blue-500 ring-2 ring-blue-500/10" : "border-gray-200/80"
+            statusFilter === "approved" ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-200/80"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Approved</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+            <span className="text-[11px] font-bold text-[#253C7D] uppercase tracking-wider">Approved</span>
+            <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
               <i className="ri-checkbox-circle-line text-sm" />
             </div>
           </div>
-          <p className="text-2xl font-black text-blue-700 mt-2">${(approvedAmount / 1000).toFixed(1)}k</p>
+          <p className="text-2xl font-black text-[#253C7D] mt-2">${(approvedAmount / 1000).toFixed(1)}k</p>
           <p className="text-[11px] text-gray-400 mt-0.5">Ready for payout</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500" />
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#253C7D]" />
         </div>
 
         {/* Pending Review */}
@@ -995,7 +999,7 @@ export default function Finance() {
                             <>
                               <button
                                 onClick={() => updateStatus(d.id, "approved")}
-                                className="px-2.5 py-1 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                                className="px-2.5 py-1 text-xs font-bold text-[#253C7D] bg-[#253C7D]/10 hover:bg-[#253C7D]/20 rounded-lg transition-colors cursor-pointer"
                               >
                                 Approve
                               </button>
@@ -1184,7 +1188,7 @@ export default function Finance() {
                           e.stopPropagation();
                           updateStatus(d.id, "approved");
                         }}
-                        className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition-colors cursor-pointer text-center"
+                        className="flex-1 py-1.5 bg-[#253C7D]/10 hover:bg-[#253C7D]/20 text-[#253C7D] text-xs font-bold rounded-xl transition-colors cursor-pointer text-center"
                       >
                         Approve
                       </button>
@@ -1277,7 +1281,7 @@ export default function Finance() {
               <div className="p-6 space-y-5">
                 {/* Amount Highlight Card */}
                 <div className="p-5 bg-gradient-to-r from-[#253C7D] to-[#17254E] rounded-3xl text-white shadow-md">
-                  <span className="text-[10px] font-bold text-sky-200 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider block">
                     Expenditure Amount
                   </span>
                   <p className="text-3xl font-black text-white mt-1">
@@ -1348,7 +1352,7 @@ export default function Finance() {
                 <>
                   <button
                     onClick={() => updateStatus(selectedExpense.id, "approved")}
-                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+                    className="flex-1 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
                   >
                     Approve Expense
                   </button>

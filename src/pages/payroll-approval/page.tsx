@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTheme } from "@/context/ThemeContext";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { toast } from "@/components/Toast";
@@ -416,7 +417,7 @@ export default function PayrollApproval() {
 
   if (loading && runs.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading payroll approval center...</p>
       </div>
@@ -424,7 +425,7 @@ export default function PayrollApproval() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -455,7 +456,31 @@ export default function PayrollApproval() {
         )}
       </div>
 
+      {/* Pending Approval Alert Banner */}
+      {canManage && pendingRuns.length > 0 && (
+        <div
+          onClick={() => setTab("pending")}
+          className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-amber-100/70 transition-colors group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+            <i className="ri-time-line text-sm" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black text-amber-700">
+              {pendingRuns.length} Payroll Run{pendingRuns.length > 1 ? "s" : ""} Awaiting Approval
+            </p>
+            <p className="text-[11px] text-amber-600/80 mt-0.5">
+              Click to review and sign off — runs are pending disbursement authorization.
+            </p>
+          </div>
+          <span className="text-[11px] font-bold text-amber-600 group-hover:text-amber-800 transition-colors whitespace-nowrap flex items-center gap-1">
+            Review now <i className="ri-arrow-right-line" />
+          </span>
+        </div>
+      )}
+
       {/* Executive KPI Performance Bar */}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-6">
         {/* Pending Approval */}
         <div
@@ -515,18 +540,18 @@ export default function PayrollApproval() {
         <div
           onClick={() => setTab("itemized")}
           className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-            tab === "itemized" ? "border-sky-500 ring-2 ring-sky-500/10" : "border-gray-200/80"
+            tab === "itemized" ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-200/80"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-sky-600 uppercase tracking-wider">Employee Payslips</span>
-            <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+            <span className="text-[11px] font-bold text-[#253C7D] uppercase tracking-wider">Employee Payslips</span>
+            <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
               <i className="ri-user-star-line text-sm" />
             </div>
           </div>
-          <p className="text-2xl font-black text-sky-700 mt-2">{itemizedRecords.length}</p>
+          <p className="text-2xl font-black text-[#253C7D] mt-2">{itemizedRecords.length}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">Historical entries loaded</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-sky-500" />
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#253C7D]/100" />
         </div>
       </div>
 
@@ -592,11 +617,11 @@ export default function PayrollApproval() {
                 tab === "itemized" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
               }`}
             >
-              <i className="ri-list-check-2 text-sm text-sky-600" />
+              <i className="ri-list-check-2 text-sm text-[#253C7D]" />
               <span>Itemized Employee Records</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold leading-none ${
-                  tab === "itemized" ? "bg-sky-100 text-sky-700" : "bg-gray-200 text-gray-600"
+                  tab === "itemized" ? "bg-[#253C7D]/15 text-[#253C7D]" : "bg-gray-200 text-gray-600"
                 }`}
               >
                 {itemizedRecords.length}
@@ -1064,7 +1089,7 @@ export default function PayrollApproval() {
                           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
                             rec.status === "paid"
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-sky-50 text-sky-700 border border-sky-200"
+                              : "bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20"
                           }`}
                         >
                           {rec.status}

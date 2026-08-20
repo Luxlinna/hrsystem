@@ -37,6 +37,7 @@ interface Employee {
   avatar_url?: string | null;
   email?: string;
   branch_id?: string;
+  reports_to?: string | null;
 }
 
 interface LeaveTypePolicy {
@@ -186,6 +187,11 @@ export default function Leave() {
   const canViewAll = isAdmin || !!role?.leave_view_all_employees;
   const canViewOwnBranch = !canViewAll && !!role?.leave_view_own_branch;
   const canManage = canViewAll || canViewOwnBranch;
+  // Seeing the team's leave and deciding it are different rights. canManage
+  // only widens *visibility*; approving/rejecting requires the explicit
+  // leave_approve capability, which the DB enforces too (trigger
+  // trg_enforce_leave_approval), so hiding the buttons isn't the only guard.
+  const canApproveLeave = isAdmin || !!role?.leave_approve;
 
   // View tabs
   const [activeTab, setActiveTab] = useState<"requests" | "balances" | "calendar">("requests");
@@ -195,6 +201,7 @@ export default function Leave() {
   const [calendarRequests, setCalendarRequests] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
+  const [myApproverName, setMyApproverName] = useState<string>("");
   const [leaveTypePolicies, setLeaveTypePolicies] = useState<LeaveTypePolicy[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -277,10 +284,24 @@ export default function Leave() {
 
       const { data: me } = await supabase
         .from("employees")
-        .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email")
+        .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to")
         .eq("email", user.email)
         .maybeSingle();
       setMyEmployee(me);
+
+      // Who will decide my requests. Fetched separately rather than as a
+      // nested embed because employees has two relationships to branches,
+      // which makes a self-join embed ambiguous for PostgREST.
+      if (me?.reports_to) {
+        const { data: mgr } = await supabase
+          .from("employees")
+          .select("first_name, last_name")
+          .eq("id", me.reports_to)
+          .maybeSingle();
+        setMyApproverName(mgr ? `${mgr.first_name} ${mgr.last_name}`.trim() : "");
+      } else {
+        setMyApproverName("");
+      }
 
       if (canViewAll) {
         const { data: lr } = await supabase
@@ -459,18 +480,31 @@ export default function Leave() {
       .reduce((sum, r) => sum + (r.days || 0), 0);
   };
 
+  // "Remaining" means what's actually still bookable, so days already
+  // committed to an undecided request count against it. Without holding
+  // pending days, the balances tab didn't add up (used + pending + remaining
+  // exceeded the entitlement) and the submit guard below let someone request
+  // their whole allowance twice over while the first request sat unreviewed.
   const getRemaining = (employeeId: string, type: string): number | null => {
     const entitlement = getEntitlement(employeeId, type);
     if (entitlement === null) return null;
     const used = getUsedDays(employeeId, type);
-    return Math.max(0, entitlement - used);
+    const pending = getPendingDays(employeeId, type);
+    return Math.max(0, entitlement - used - pending);
   };
 
   // Stats
   const targetEmpId = myEmployee?.id || "";
   const myAnnualUsed = targetEmpId ? getUsedDays(targetEmpId, "annual") : 0;
+  // Days sitting in un-decided requests. They aren't "taken" yet, but they are
+  // spoken for — leaving them out let someone with 18 days and 5 days pending
+  // still see "18 left" and request the full allowance again.
+  const myAnnualPending = targetEmpId ? getPendingDays(targetEmpId, "annual") : 0;
   const myAnnualEntitlement = (myEmployee?.annual_leave_days ?? 18);
-  const myAnnualRemaining = Math.max(0, myAnnualEntitlement - myAnnualUsed);
+  // Reuse the shared helper so the KPI can't drift from the balances tab.
+  const myAnnualRemaining = targetEmpId
+    ? getRemaining(targetEmpId, "annual") ?? myAnnualEntitlement
+    : myAnnualEntitlement;
 
   const todayStr = toYMD(new Date());
   const currentlyOnLeaveCount = calendarRequests.filter(
@@ -487,6 +521,8 @@ export default function Leave() {
     onLeaveToday: currentlyOnLeaveCount,
     myAnnualRemaining,
     myAnnualEntitlement,
+    myAnnualUsed,
+    myAnnualPending,
   };
 
   // Filtered requests
@@ -806,6 +842,16 @@ export default function Leave() {
 
   const confirmApproval = async () => {
     if (!selectedRequest || processingApproval) return;
+
+    // Guard the action itself, not just the buttons — a stale tab open from
+    // before a role change would otherwise still post the update.
+    if (!canApproveLeave) {
+      setToast({ type: "error", message: "Your role is not permitted to approve or reject leave requests." });
+      setShowApprovalModal(false);
+      setSelectedRequest(null);
+      return;
+    }
+
     setProcessingApproval(true);
 
     if (approvalAction === "approved") {
@@ -845,7 +891,14 @@ export default function Leave() {
     }
 
     if (error) {
-      setToast({ type: "error", message: "Failed to update request status" });
+      // 42501 = the DB-side permission trigger rejected this actor.
+      const denied = (error as any).code === "42501" || /not permitted/i.test(error.message || "");
+      setToast({
+        type: "error",
+        message: denied
+          ? "Your role is not permitted to approve or reject leave requests."
+          : "Failed to update request status",
+      });
     } else {
       setToast({ type: "success", message: `Leave request ${approvalAction} successfully` });
       setRequests((prev) =>
@@ -1005,25 +1058,31 @@ export default function Leave() {
             </span>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Leave Management</h1>
             <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#253C7D]/10 text-[#253C7D]">
-              {canManage ? "Admin & Team View" : "Employee Portal"}
+              {canApproveLeave ? "Admin & Team View" : canManage ? "Team View" : "Employee Portal"}
             </span>
           </div>
           <p className="text-[13px] text-gray-500">
-            {canManage
+            {canApproveLeave
               ? "Oversee leave requests, review employee attendance schedules, and track annual quotas"
+              : canManage
+              ? "Review your team's leave schedule and track annual quotas"
               : "Check your available leave balance, submit time-off applications, and track approval status"}
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            onClick={exportToCSV}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-gray-200 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm cursor-pointer"
-            title="Download leave report as CSV"
-          >
-            <i className="ri-download-2-line text-gray-500" />
-            <span>Export CSV</span>
-          </button>
+          {/* A reporting tool, not a self-service one — an employee exporting
+              their own handful of rows is just noise next to Request Leave. */}
+          {canManage && (
+            <button
+              onClick={exportToCSV}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-gray-200 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm cursor-pointer"
+              title="Download leave report as CSV"
+            >
+              <i className="ri-download-2-line text-gray-500" />
+              <span>Export CSV</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -1041,120 +1100,171 @@ export default function Leave() {
         </div>
       </div>
 
-      {/* KPI Metrics Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-6">
-        {/* Pending Approvals */}
-        <div
-          onClick={() => {
-            setStatusFilter("pending");
-            setActiveTab("requests");
-          }}
-          className="group relative overflow-hidden bg-white border border-amber-200/80 hover:border-amber-400/80 rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold tracking-wider text-amber-700 uppercase">
-              Pending Review
-            </span>
-            <span className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
-              <i className="ri-time-line text-base" />
-            </span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-gray-900 tracking-tight">{stats.pending}</span>
-            {stats.pending > 0 && (
-              <span className="flex items-center gap-1 text-[11px] font-medium text-amber-600">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                Action needed
+      {/* KPI Metrics Strip — an approver leads with the queue they must clear;
+          an employee leads with the allowance they're spending. */}
+      {(() => {
+        const entitlement = stats.myAnnualEntitlement || 1;
+        const takenPct = Math.min(100, Math.round((stats.myAnnualUsed / entitlement) * 100));
+        const pendingPct = Math.min(100 - takenPct, Math.round((stats.myAnnualPending / entitlement) * 100));
+
+        const balanceCard = (
+          <div
+            key="balance"
+            onClick={() => setActiveTab("balances")}
+            className="group relative overflow-hidden bg-white border border-[#253C7D]/20 hover:border-[#253C7D]/40 rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold tracking-wider text-[#253C7D] uppercase">
+                My Annual Balance
               </span>
-            )}
-          </div>
-          <p className="text-[11px] text-gray-400 mt-1">Awaiting manager review</p>
-        </div>
+              <span className="w-8 h-8 rounded-xl bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] group-hover:scale-110 transition-transform">
+                <i className="ri-shield-star-line text-base" />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-black text-[#253C7D] tracking-tight">{stats.myAnnualRemaining}</span>
+              <span className="text-[12px] font-semibold text-gray-500">
+                / {stats.myAnnualEntitlement} days available
+              </span>
+            </div>
 
-        {/* Approved Requests */}
-        <div
-          onClick={() => {
-            setStatusFilter("approved");
-            setActiveTab("requests");
-          }}
-          className="group relative overflow-hidden bg-white border border-emerald-200/80 hover:border-emerald-400/80 rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold tracking-wider text-emerald-700 uppercase">
-              Approved Requests
-            </span>
-            <span className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
-              <i className="ri-checkbox-circle-line text-base" />
-            </span>
+            {/* Taken (solid) and pending (hatched) both consume the allowance. */}
+            <div className="w-full h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden flex">
+              <div
+                className="h-full bg-[#253C7D] transition-all duration-500"
+                style={{ width: `${takenPct}%` }}
+                title={`${stats.myAnnualUsed} days taken`}
+              />
+              <div
+                className="h-full bg-[#253C7D]/35 transition-all duration-500"
+                style={{ width: `${pendingPct}%` }}
+                title={`${stats.myAnnualPending} days awaiting approval`}
+              />
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              {stats.myAnnualUsed} taken
+              {stats.myAnnualPending > 0 && (
+                <>
+                  {" · "}
+                  <span className="text-[#253C7D] font-semibold">{stats.myAnnualPending} pending</span>
+                </>
+              )}
+            </p>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-gray-900 tracking-tight">{stats.approved}</span>
-            <span className="text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-              {stats.totalApprovedDays} days total
-            </span>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-1">Confirmed time-off</p>
-        </div>
+        );
 
-        {/* On Leave Today */}
-        <div
-          onClick={() => {
-            setActiveTab("calendar");
-          }}
-          className="group relative overflow-hidden bg-white border border-indigo-200/80 hover:border-indigo-400/80 rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold tracking-wider text-indigo-700 uppercase">
-              Out of Office Today
-            </span>
-            <span className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-              <i className="ri-user-unfollow-line text-base" />
-            </span>
+        const pendingCard = (
+          <div
+            key="pending"
+            onClick={() => {
+              setStatusFilter("pending");
+              setActiveTab("requests");
+            }}
+            className={`group relative overflow-hidden bg-white border rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer ${
+              canApproveLeave
+                ? "border-amber-200/80 hover:border-amber-400/80"
+                : "border-gray-200/80 hover:border-gray-300"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span
+                className={`text-[11px] font-semibold tracking-wider uppercase ${
+                  canApproveLeave ? "text-amber-700" : "text-gray-600"
+                }`}
+              >
+                {canApproveLeave ? "Pending Review" : "My Pending Requests"}
+              </span>
+              <span
+                className={`w-8 h-8 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${
+                  canApproveLeave ? "bg-amber-50 text-amber-600" : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                <i className="ri-time-line text-base" />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-black text-gray-900 tracking-tight">{stats.pending}</span>
+              {stats.pending > 0 && (
+                <span
+                  className={`flex items-center gap-1 text-[11px] font-medium ${
+                    canApproveLeave ? "text-amber-600" : "text-gray-500"
+                  }`}
+                >
+                  {/* Only an approver actually has something to do here. */}
+                  {canApproveLeave && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
+                  {canApproveLeave ? "Action needed" : "Awaiting approval"}
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1 truncate">
+              {canApproveLeave
+                ? "Awaiting your review"
+                : myApproverName
+                ? `Pending with ${myApproverName}`
+                : "Submitted, not yet decided"}
+            </p>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-gray-900 tracking-tight">{stats.onLeaveToday}</span>
-            <span className="text-[11px] font-medium text-indigo-600">
-              {stats.onLeaveToday === 1 ? "1 colleague away" : `${stats.onLeaveToday} colleagues away`}
-            </span>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-1">Company-wide active leaves</p>
-        </div>
+        );
 
-        {/* Available Annual Balance */}
-        <div
-          onClick={() => {
-            setActiveTab("balances");
-          }}
-          className="group relative overflow-hidden bg-white border border-[#253C7D]/20 hover:border-[#253C7D]/40 rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold tracking-wider text-[#253C7D] uppercase">
-              My Annual Balance
-            </span>
-            <span className="w-8 h-8 rounded-xl bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] group-hover:scale-110 transition-transform">
-              <i className="ri-shield-star-line text-base" />
-            </span>
+        const approvedCard = (
+          <div
+            key="approved"
+            onClick={() => {
+              setStatusFilter("approved");
+              setActiveTab("requests");
+            }}
+            className="group relative overflow-hidden bg-white border border-emerald-200/80 hover:border-emerald-400/80 rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold tracking-wider text-emerald-700 uppercase">
+                {canApproveLeave ? "Approved Requests" : "My Approved Leave"}
+              </span>
+              <span className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                <i className="ri-checkbox-circle-line text-base" />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-black text-gray-900 tracking-tight">{stats.approved}</span>
+              <span className="text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                {stats.totalApprovedDays} days total
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1">Confirmed time-off</p>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-[#253C7D] tracking-tight">{stats.myAnnualRemaining}</span>
-            <span className="text-[12px] font-semibold text-gray-500">
-              / {stats.myAnnualEntitlement} days left
-            </span>
+        );
+
+        const outOfOfficeCard = (
+          <div
+            key="ooo"
+            onClick={() => setActiveTab("calendar")}
+            className="group relative overflow-hidden bg-white border border-indigo-200/80 hover:border-indigo-400/80 rounded-2xl p-4 transition-all hover:shadow-md cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold tracking-wider text-indigo-700 uppercase">
+                Out of Office Today
+              </span>
+              <span className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                <i className="ri-user-unfollow-line text-base" />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-black text-gray-900 tracking-tight">{stats.onLeaveToday}</span>
+              <span className="text-[11px] font-medium text-indigo-600">
+                {stats.onLeaveToday === 1 ? "1 colleague away" : `${stats.onLeaveToday} colleagues away`}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1">Company-wide active leaves</p>
           </div>
-          {/* Progress bar */}
-          <div className="w-full h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
-            <div
-              className="h-full bg-[#253C7D] rounded-full transition-all duration-500"
-              style={{
-                width: `${Math.min(
-                  100,
-                  Math.round((stats.myAnnualRemaining / (stats.myAnnualEntitlement || 1)) * 100)
-                )}%`,
-              }}
-            />
+        );
+
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-6">
+            {canApproveLeave
+              ? [pendingCard, approvedCard, outOfOfficeCard, balanceCard]
+              : [balanceCard, pendingCard, approvedCard, outOfOfficeCard]}
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Main Tab Navigation Header */}
       <div className="flex items-center justify-between gap-4 border-b border-gray-200/80 mb-6">
@@ -1481,7 +1591,7 @@ export default function Leave() {
                         <td className="py-3.5 px-5 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             {/* Manager Actions for Pending Requests */}
-                            {canManage && r.status === "pending" && !isSelf && (
+                            {canApproveLeave && r.status === "pending" && !isSelf && (
                               <>
                                 <button
                                   onClick={() => openApproval(r, "approved")}
@@ -2437,7 +2547,7 @@ export default function Leave() {
 
               {/* Action buttons inside details */}
               <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
-                {canManage &&
+                {canApproveLeave &&
                   inspectRequest.status === "pending" &&
                   inspectRequest.employee_id !== myEmployee?.id && (
                     <>

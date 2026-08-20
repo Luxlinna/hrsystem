@@ -73,26 +73,31 @@ const CATEGORY_STYLES: Record<
   string,
   { label: string; icon: string; color: string; bg: string; border: string }
 > = {
-  Productivity: { label: "Productivity", icon: "ri-flashlight-line", color: "text-teal-700", bg: "bg-teal-50", border: "border-teal-200" },
-  Documents: { label: "Documents", icon: "ri-file-text-line", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" },
-  Reviews: { label: "Performance & Reviews", icon: "ri-star-line", color: "text-rose-700", bg: "bg-rose-50", border: "border-rose-200" },
-  Finance: { label: "Finance & Payroll", icon: "ri-wallet-3-line", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
-  Scheduling: { label: "Scheduling & Shift", icon: "ri-calendar-event-line", color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200" },
-  Compliance: { label: "Legal & Compliance", icon: "ri-shield-check-line", color: "text-cyan-700", bg: "bg-cyan-50", border: "border-cyan-200" },
-  Feedback: { label: "Surveys & Feedback", icon: "ri-chat-smile-2-line", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200" },
-  Hiring: { label: "Talent & Hiring", icon: "ri-user-search-line", color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200" },
+  // Tool categories are navigation labels, not states — eight competing hues
+  // made the grid read as a toy box. They now share the brand accent and are
+  // told apart by icon and label.
+  Productivity: { label: "Productivity", icon: "ri-flashlight-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", border: "border-[#253C7D]/20" },
+  Documents: { label: "Documents", icon: "ri-file-text-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", border: "border-[#253C7D]/20" },
+  Reviews: { label: "Performance & Reviews", icon: "ri-star-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", border: "border-[#253C7D]/20" },
+  Finance: { label: "Finance & Payroll", icon: "ri-wallet-3-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", border: "border-[#253C7D]/20" },
+  Scheduling: { label: "Scheduling & Shift", icon: "ri-calendar-event-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", border: "border-[#253C7D]/20" },
+  Compliance: { label: "Legal & Compliance", icon: "ri-shield-check-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", border: "border-[#253C7D]/20" },
+  Feedback: { label: "Surveys & Feedback", icon: "ri-chat-smile-2-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", border: "border-[#253C7D]/20" },
+  Hiring: { label: "Talent & Hiring", icon: "ri-user-search-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", border: "border-[#253C7D]/20" },
 };
 
 const ACTION_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  login: { label: "Signed into Tool", icon: "ri-login-box-line", color: "text-blue-600 bg-blue-50" },
-  track_hours: { label: "Logged Work Hours", icon: "ri-time-line", color: "text-teal-600 bg-teal-50" },
-  generate_doc: { label: "Generated Document", icon: "ri-file-add-line", color: "text-amber-600 bg-amber-50" },
-  create_review: { label: "Initiated Review", icon: "ri-star-smile-line", color: "text-rose-600 bg-rose-50" },
-  submit_expense: { label: "Submitted Expense", icon: "ri-money-dollar-circle-line", color: "text-emerald-600 bg-emerald-50" },
-  create_schedule: { label: "Published Schedule", icon: "ri-calendar-check-line", color: "text-indigo-600 bg-indigo-50" },
-  run_audit: { label: "Executed Audit Scan", icon: "ri-shield-flash-line", color: "text-cyan-600 bg-cyan-50" },
-  create_survey: { label: "Created Pulse Survey", icon: "ri-questionnaire-line", color: "text-violet-600 bg-violet-50" },
-  submit_referral: { label: "Submitted Candidate", icon: "ri-user-shared-line", color: "text-orange-600 bg-orange-50" },
+  // Activity-feed entries are a log, not an alert stream — neutral chips keep
+  // the feed readable and stop it competing with the page's real signals.
+  login: { label: "Signed into Tool", icon: "ri-login-box-line", color: "text-slate-600 bg-slate-100" },
+  track_hours: { label: "Logged Work Hours", icon: "ri-time-line", color: "text-slate-600 bg-slate-100" },
+  generate_doc: { label: "Generated Document", icon: "ri-file-add-line", color: "text-slate-600 bg-slate-100" },
+  create_review: { label: "Initiated Review", icon: "ri-star-smile-line", color: "text-slate-600 bg-slate-100" },
+  submit_expense: { label: "Submitted Expense", icon: "ri-money-dollar-circle-line", color: "text-slate-600 bg-slate-100" },
+  create_schedule: { label: "Published Schedule", icon: "ri-calendar-check-line", color: "text-slate-600 bg-slate-100" },
+  run_audit: { label: "Executed Audit Scan", icon: "ri-shield-flash-line", color: "text-slate-600 bg-slate-100" },
+  create_survey: { label: "Created Pulse Survey", icon: "ri-questionnaire-line", color: "text-slate-600 bg-slate-100" },
+  submit_referral: { label: "Submitted Candidate", icon: "ri-user-shared-line", color: "text-slate-600 bg-slate-100" },
 };
 
 const initials = (first?: string, last?: string) =>
@@ -373,7 +378,7 @@ export default function Tools() {
 
   if (loading && tools.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading HR productivity tools...</p>
       </div>
@@ -381,7 +386,7 @@ export default function Tools() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -470,18 +475,18 @@ export default function Tools() {
         <div
           onClick={() => setTab("activity")}
           className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-            tab === "activity" ? "border-indigo-500 ring-2 ring-indigo-500/10" : "border-gray-200/80"
+            tab === "activity" ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-200/80"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">Usage Events</span>
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <span className="text-[11px] font-bold text-[#253C7D] uppercase tracking-wider">Usage Events</span>
+            <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
               <i className="ri-bar-chart-line text-sm" />
             </div>
           </div>
-          <p className="text-2xl font-black text-indigo-700 mt-2">{totalUsages}</p>
+          <p className="text-2xl font-black text-[#253C7D] mt-2">{totalUsages}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">Logged Operations</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500" />
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#253C7D]/100" />
         </div>
 
         {/* Avg Activity per Tool */}

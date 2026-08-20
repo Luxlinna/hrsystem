@@ -57,16 +57,19 @@ const ASSET_TYPE_CONFIG: Record<
   string,
   { label: string; icon: string; color: string; bg: string }
 > = {
-  Laptop: { label: "Laptop", icon: "ri-macbook-line", color: "text-blue-600", bg: "bg-blue-50" },
-  Display: { label: "Monitor / Display", icon: "ri-tv-2-line", color: "text-indigo-600", bg: "bg-indigo-50" },
-  Mobile: { label: "Mobile Device", icon: "ri-smartphone-line", color: "text-emerald-600", bg: "bg-emerald-50" },
-  Phone: { label: "VoIP / Desk Phone", icon: "ri-phone-line", color: "text-teal-600", bg: "bg-teal-50" },
-  Peripheral: { label: "Peripheral & Accessory", icon: "ri-keyboard-line", color: "text-amber-600", bg: "bg-amber-50" },
-  Server: { label: "Server Infrastructure", icon: "ri-server-line", color: "text-purple-600", bg: "bg-purple-50" },
-  Network: { label: "Network & Router", icon: "ri-wifi-line", color: "text-cyan-600", bg: "bg-cyan-50" },
-  Power: { label: "Power & UPS", icon: "ri-flashlight-line", color: "text-orange-600", bg: "bg-orange-50" },
-  Furniture: { label: "Office Equipment", icon: "ri-armchair-line", color: "text-slate-600", bg: "bg-slate-50" },
-  Other: { label: "Other Asset", icon: "ri-box-3-line", color: "text-gray-600", bg: "bg-gray-50" },
+  // Asset TYPE is a category — it says nothing about whether the asset needs
+  // attention. Status and ticket priority below own the colour signal, so
+  // types share the brand accent and rely on their icon to differentiate.
+  Laptop: { label: "Laptop", icon: "ri-macbook-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  Display: { label: "Monitor / Display", icon: "ri-tv-2-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  Mobile: { label: "Mobile Device", icon: "ri-smartphone-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  Phone: { label: "VoIP / Desk Phone", icon: "ri-phone-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  Peripheral: { label: "Peripheral & Accessory", icon: "ri-keyboard-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  Server: { label: "Server Infrastructure", icon: "ri-server-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  Network: { label: "Network & Router", icon: "ri-wifi-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  Power: { label: "Power & UPS", icon: "ri-flashlight-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  Furniture: { label: "Office Equipment", icon: "ri-armchair-line", color: "text-slate-600", bg: "bg-slate-100" },
+  Other: { label: "Other Asset", icon: "ri-box-3-line", color: "text-slate-600", bg: "bg-slate-100" },
 };
 
 const ASSET_STATUS_CONFIG: Record<
@@ -116,9 +119,9 @@ const TICKET_STATUS_CONFIG: Record<
   },
   in_progress: {
     label: "In Progress",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-    border: "border-blue-200",
+    bg: "bg-[#253C7D]/10",
+    text: "text-[#253C7D]",
+    border: "border-[#253C7D]/20",
     icon: "ri-loader-2-line",
   },
   resolved: {
@@ -150,9 +153,9 @@ const PRIORITY_CONFIG: Record<
   },
   medium: {
     label: "Medium",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-    border: "border-blue-200",
+    bg: "bg-[#253C7D]/10",
+    text: "text-[#253C7D]",
+    border: "border-[#253C7D]/20",
     icon: "ri-equal-line",
   },
   high: {
@@ -671,7 +674,7 @@ export default function ITManagement() {
 
   if (loading && assets.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading IT operations & asset center...</p>
       </div>
@@ -679,7 +682,7 @@ export default function ITManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -830,19 +833,19 @@ export default function ITManagement() {
           }}
           className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
             tab === "tickets" && ticketStatusFilter === "open"
-              ? "border-blue-500 ring-2 ring-blue-500/10"
+              ? "border-amber-500 ring-2 ring-amber-500/10"
               : "border-gray-200/80"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Open Tickets</span>
-            <div className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Open Tickets</span>
+            <div className="w-6 h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
               <i className="ri-time-line text-xs" />
             </div>
           </div>
-          <p className="text-2xl font-black text-blue-700 mt-2">{openTickets}</p>
+          <p className="text-2xl font-black text-amber-700 mt-2">{openTickets}</p>
           <p className="text-[10px] text-gray-400 mt-0.5">Awaiting assignment</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500" />
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-amber-500" />
         </div>
 
         {/* In Progress Tickets */}
@@ -853,19 +856,19 @@ export default function ITManagement() {
           }}
           className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
             tab === "tickets" && ticketStatusFilter === "in_progress"
-              ? "border-purple-500 ring-2 ring-purple-500/10"
+              ? "border-[#253C7D] ring-2 ring-[#253C7D]/10"
               : "border-gray-200/80"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">In Progress</span>
-            <div className="w-6 h-6 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+            <span className="text-[10px] font-bold text-[#253C7D] uppercase tracking-wider">In Progress</span>
+            <div className="w-6 h-6 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
               <i className="ri-loader-2-line text-xs" />
             </div>
           </div>
-          <p className="text-2xl font-black text-purple-700 mt-2">{inProgressTickets}</p>
+          <p className="text-2xl font-black text-[#253C7D] mt-2">{inProgressTickets}</p>
           <p className="text-[10px] text-gray-400 mt-0.5">Under investigation</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-500" />
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#253C7D]/100" />
         </div>
 
         {/* Critical & Resolved */}
@@ -1574,11 +1577,11 @@ export default function ITManagement() {
           {/* Security Posture Dashboard */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
             {[
-              { label: "Active VPN Tunnels", value: "87", sub: "All branches online", color: "bg-blue-50 text-blue-700" },
+              { label: "Active VPN Tunnels", value: "87", sub: "All branches online", color: "bg-[#253C7D]/10 text-[#253C7D]" },
               { label: "Failed Auth (24h)", value: "12", sub: "Blocked by firewall", color: "bg-rose-50 text-rose-700" },
               { label: "2FA Coverage", value: "96%", sub: "Enforced for staff", color: "bg-emerald-50 text-emerald-700" },
-              { label: "Active MDM Devices", value: "142", sub: "Compliant firmware", color: "bg-purple-50 text-purple-700" },
-              { label: "Security Incidents", value: "0", sub: "Last 30 days", color: "bg-teal-50 text-teal-700" },
+              { label: "Active MDM Devices", value: "142", sub: "Compliant firmware", color: "bg-[#253C7D]/10 text-[#253C7D]" },
+              { label: "Security Incidents", value: "0", sub: "Last 30 days", color: "bg-slate-100 text-slate-700" },
               { label: "Last Audit Pass", value: "100%", sub: "SOC-2 / ISO 27001", color: "bg-slate-100 text-slate-800" },
             ].map((s) => (
               <div key={s.label} className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-2xs">

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { invalidateMyEmployeeCache } from "@/hooks/useMyEmployee";
 import { toast } from "@/components/Toast";
 import AvatarCropModal from "@/components/AvatarCropModal";
 
@@ -140,7 +141,14 @@ export default function Profile() {
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-      await updateProfile({ avatar_url: `${data.publicUrl}?t=${Date.now()}` });
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+      await updateProfile({ avatar_url: publicUrl });
+      // Also sync onto the HR employee record — that's what Directory,
+      // Org Chart, and Self-Service actually read, not the auth account.
+      if (employee?.id) {
+        await supabase.from("employees").update({ avatar_url: publicUrl }).eq("id", employee.id);
+        invalidateMyEmployeeCache();
+      }
       toast("Photo updated", "Your profile photo has been changed.", "success");
     } catch (err: any) {
       toast("Upload failed", err.message || "Could not upload photo.", "error");
@@ -185,6 +193,10 @@ export default function Profile() {
         if (removeError) throw removeError;
       }
       await updateProfile({ avatar_url: "" });
+      if (employee?.id) {
+        await supabase.from("employees").update({ avatar_url: null }).eq("id", employee.id);
+        invalidateMyEmployeeCache();
+      }
       toast("Photo removed", "Your profile photo has been removed.", "success");
     } catch (err: any) {
       toast("Failed", err.message || "Could not remove photo.", "error");
@@ -204,6 +216,7 @@ export default function Profile() {
         const firstName = nameParts[0] || "";
         const lastName = nameParts.slice(1).join(" ") || "";
         await supabase.from("employees").update({ first_name: firstName, last_name: lastName }).eq("id", employee.id);
+        invalidateMyEmployeeCache();
       }
       toast("Saved", "Your name has been updated.", "success");
     } catch (err: any) {

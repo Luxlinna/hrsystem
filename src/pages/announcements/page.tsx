@@ -23,14 +23,18 @@ interface Announcement {
   created_at: string;
 }
 
+// A deliberately small palette: 4 tones, each tied to a meaning, reused
+// across categories that share that meaning (rather than one arbitrary
+// color per category). Rose is reserved for true urgency (PRIORITY_CONFIG)
+// so it stays meaningful instead of also doing duty as a category color.
 const CATEGORY_CONFIG: Record<string, { color: string; bg: string; icon: string; label: string; desc: string }> = {
-  news: { color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: "ri-newspaper-line", label: "Company News", desc: "General releases & milestones" },
-  event: { color: "text-violet-700", bg: "bg-violet-50 border-violet-200", icon: "ri-calendar-event-line", label: "Event", desc: "Townhalls, parties & dates" },
+  news: { color: "text-slate-600", bg: "bg-slate-100 border-slate-200", icon: "ri-newspaper-line", label: "Company News", desc: "General releases & milestones" },
+  event: { color: "text-[#253C7D]", bg: "bg-[#253C7D]/10 border-[#253C7D]/20", icon: "ri-calendar-event-line", label: "Event", desc: "Townhalls, parties & dates" },
   policy: { color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: "ri-file-text-line", label: "Policy", desc: "SOPs & rule changes" },
-  benefits: { color: "text-rose-700", bg: "bg-rose-50 border-rose-200", icon: "ri-heart-pulse-line", label: "Benefits & Perks", desc: "Health, insurance & rewards" },
-  compliance: { color: "text-cyan-700", bg: "bg-cyan-50 border-cyan-200", icon: "ri-shield-check-line", label: "Compliance", desc: "Legal, safety & audits" },
+  benefits: { color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: "ri-heart-pulse-line", label: "Benefits & Perks", desc: "Health, insurance & rewards" },
+  compliance: { color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: "ri-shield-check-line", label: "Compliance", desc: "Legal, safety & audits" },
   hr: { color: "text-[#253C7D]", bg: "bg-[#253C7D]/10 border-[#253C7D]/20", icon: "ri-user-settings-line", label: "HR Updates", desc: "Staffing, shifts & org notes" },
-  general: { color: "text-slate-700", bg: "bg-slate-100 border-slate-200", icon: "ri-information-line", label: "General Notice", desc: "General information" },
+  general: { color: "text-slate-600", bg: "bg-slate-100 border-slate-200", icon: "ri-information-line", label: "General Notice", desc: "General information" },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; badge: string; dot: string; desc: string }> = {
@@ -39,10 +43,13 @@ const PRIORITY_CONFIG: Record<string, { label: string; badge: string; dot: strin
   urgent: { label: "Urgent Alert", badge: "bg-rose-50 text-rose-700 border-rose-200 ring-1 ring-rose-500/20 font-black", dot: "bg-rose-500", desc: "Requires staff acknowledgment" },
 };
 
+// Audience is metadata, not urgency — kept neutral so it doesn't compete
+// with priority/category colors. Management gets the brand tint since
+// restricted visibility is worth a small signal.
 const AUDIENCE_CONFIG: Record<string, { label: string; badge: string; icon: string }> = {
-  all: { label: "All Employees", badge: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "ri-global-line" },
-  hq: { label: "HQ Staff Only", badge: "bg-blue-50 text-blue-700 border-blue-200", icon: "ri-building-line" },
-  management: { label: "Management Only", badge: "bg-violet-50 text-violet-700 border-violet-200", icon: "ri-shield-user-line" },
+  all: { label: "All Employees", badge: "bg-gray-100 text-gray-600 border-gray-200", icon: "ri-global-line" },
+  hq: { label: "HQ Staff Only", badge: "bg-gray-100 text-gray-600 border-gray-200", icon: "ri-building-line" },
+  management: { label: "Management Only", badge: "bg-[#253C7D]/10 text-[#253C7D] border-[#253C7D]/20", icon: "ri-shield-user-line" },
 };
 
 const QUICK_EMOJIS = ["📢", "🎉", "🚨", "📅", "💡", "📌", "🎯", "⚠️", "🌟", "🏆"];
@@ -506,7 +513,7 @@ export default function Announcements() {
 
   if (loading && announcements.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading company announcements...</p>
       </div>
@@ -514,7 +521,7 @@ export default function Announcements() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -1265,7 +1272,7 @@ export default function Announcements() {
                   </div>
 
                   <div className="flex items-center gap-1.5 text-[11px]">
-                    <i className="ri-global-line text-emerald-600" />
+                    <i className="ri-global-line text-gray-400" />
                     <span>Visibility: <strong>{aud.label}</strong></span>
                   </div>
                 </div>
@@ -1645,8 +1652,8 @@ export default function Announcements() {
               ) : (
                 /* LIVE PREVIEW MODE */
                 <div className="space-y-4 py-2">
-                  <div className="p-3 bg-blue-50/80 border border-blue-100 rounded-2xl text-xs text-blue-900 flex items-center gap-2">
-                    <i className="ri-eye-line text-blue-600 text-base shrink-0" />
+                  <div className="p-3 bg-[#253C7D]/5 border border-[#253C7D]/15 rounded-2xl text-xs text-[#253C7D] flex items-center gap-2">
+                    <i className="ri-eye-line text-base shrink-0" />
                     <span>This is a live preview of how your announcement card will appear on employee feeds:</span>
                   </div>
 
