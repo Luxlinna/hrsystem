@@ -4,6 +4,7 @@ import { toast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
+import { getDocumentUploadUrl } from "@/lib/r2-storage";
 
 interface Document {
   id: string;
@@ -316,15 +317,21 @@ export default function DocumentsPage() {
       const ext = fileUpload.name.split(".").pop() || "pdf";
       fileName = fileUpload.name;
       fileSizeKb = Math.round(fileUpload.size / 1024);
-      const filePath = `documents/${Date.now()}_${fileUpload.name}`;
-      const { error: uploadErr } = await supabase.storage.from("documents").upload(filePath, fileUpload);
-      if (uploadErr) {
+      const key = `documents/${form.category}/${Date.now()}_${fileUpload.name}`;
+      try {
+        const { uploadUrl, publicUrl } = await getDocumentUploadUrl(key);
+        const uploadRes = await fetch(uploadUrl, {
+          method: "PUT",
+          body: fileUpload,
+          headers: { "Content-Type": fileUpload.type || "application/octet-stream" },
+        });
+        if (!uploadRes.ok) throw new Error("Failed to upload file to storage");
+        fileUrl = publicUrl;
+      } catch (err: any) {
         setSubmitting(false);
-        toast("Upload Error", uploadErr.message, "error");
+        toast("Upload Error", err.message || "Failed to upload file", "error");
         return;
       }
-      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(filePath);
-      fileUrl = urlData?.publicUrl || null;
       setForm((prev) => ({ ...prev, file_type: ext }));
     } else if (fileLink.trim()) {
       fileUrl = fileLink.trim();
@@ -449,7 +456,7 @@ export default function DocumentsPage() {
       is_template: doc.is_template,
       tags: doc.tags?.join(", ") || "",
     });
-    if (doc.file_url && !doc.file_url.includes("/storage/v1/")) {
+    if (doc.file_url && !doc.file_url.includes("/storage/v1/") && !doc.file_url.includes(".r2.dev")) {
       setFileLink(doc.file_url);
     } else {
       setFileLink("");
