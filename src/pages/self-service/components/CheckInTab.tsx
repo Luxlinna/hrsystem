@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { distanceMeters, getCurrentPosition } from "@/lib/geo";
 import { toYMD, todayYMD } from "@/lib/date";
 import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows } from "@/lib/workSchedule";
+import { notifyAttendanceEvent } from "@/lib/attendanceNotify";
 
 interface AttendanceRecord {
   id: string;
@@ -213,6 +214,13 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       setNotes("");
       setEarlyCheckoutReason("");
       loadRecords();
+      notifyAttendanceEvent({
+        employeeName,
+        employeeId,
+        type: "in",
+        isException: lateMinutes > scheduleSettings.lateGraceMinutes,
+        exceptionMinutes: lateMinutes,
+      });
     }
   };
 
@@ -254,6 +262,13 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       const earlyNote = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes ? ` — ${earlyLeaveMinutes} min early` : "";
       showToast("success", `Clocked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
       loadRecords();
+      notifyAttendanceEvent({
+        employeeName,
+        employeeId,
+        type: "out",
+        isException: earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes,
+        exceptionMinutes: earlyLeaveMinutes,
+      });
     }
   };
 

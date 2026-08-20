@@ -25,6 +25,7 @@ interface AppRole {
   task_view_all_employees: boolean;
   task_view_own_branch: boolean;
   meeting_rooms_approve: boolean;
+  attendance_notify: boolean;
   created_at: string;
 }
 
@@ -137,6 +138,7 @@ const SCOPE_OVERRIDES = [
   { group: "action", key: "leave_approve", label: "Can approve / reject leave requests", hint: "Off by default. Required to act on someone else's leave request. Enforced in the database, not just hidden in the UI — without it a role can still submit and cancel its own leave." },
   { group: "action", key: "meeting_rooms_approve", label: "Can approve / reject meeting room bookings", hint: "Allows this role to approve, reject, and adjust requirements & refreshments for meeting room reservations across all branches." },
   { group: "action", key: "employees_manage", label: "Can edit employee records (role, department, status, manager)", hint: "Off by default — this role can view the Employee Directory but profiles open read-only." },
+  { group: "action", key: "attendance_notify", label: "Receives attendance check-in / check-out notifications", hint: "Off by default. When on, this role gets notified on employee check-ins and check-outs — whether that's every clock event or only late/early exceptions is set globally in Settings → Notifications." },
 
   { group: "visibility", key: "self_service_all_employees", label: "Can view/switch other employees in Self-Service", hint: "Off by default — this role only sees the employee record matching their own account email." },
   { group: "visibility", key: "leave_view_all_employees", label: "Can view all employees' leave requests", hint: "Off by default — this role only sees and submits their own leave requests (the team calendar stays visible either way). Viewing does NOT grant approval — use \"Can approve / reject leave requests\" above for that." },

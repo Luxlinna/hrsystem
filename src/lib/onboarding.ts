@@ -7,6 +7,26 @@ export const ONBOARDING_DOCUMENT_TEMPLATES: Record<string, string[]> = {
   complete: ["Onboarding Sign-off", "30-Day Check-in Plan", "Feedback Survey"],
 };
 
+// How many days after the onboarding request is created each stage's items
+// are due. Items not verified/completed by then read as "Overdue" in the
+// checklist (computed live from due_date, not a stored status).
+export const STAGE_DEFAULT_DUE_DAYS: Record<string, number> = {
+  document: 3,
+  it_setup: 7,
+  training: 14,
+  complete: 21,
+};
+
+// Task categories don't share the document stage keys 1:1, so map them here.
+export const CATEGORY_TO_STAGE: Record<string, string> = {
+  documents: "document",
+  it_setup: "it_setup",
+  training: "training",
+  general: "complete",
+};
+
+const addDays = (from: Date, days: number) => new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
+
 export const ONBOARDING_DEFAULT_CHECKLIST_TASKS = [
   // 1. Documents (5 items)
   { task_name: "Sign Offer Letter & Employment Terms", category: "documents", priority: "high", description: "Review and collect signed formal employment offer letter." },
@@ -57,8 +77,11 @@ export async function startOnboardingForEmployee(employeeId: string, requestedBy
 
   await supabase.from("employees").update({ status: "onboarding" }).eq("id", employeeId);
 
+  const startedAt = new Date(data.created_at);
+
   const initialDocs: any[] = [];
   Object.entries(ONBOARDING_DOCUMENT_TEMPLATES).forEach(([stageKey, templates]) => {
+    const dueDate = addDays(startedAt, STAGE_DEFAULT_DUE_DAYS[stageKey] ?? 7).toISOString();
     templates.forEach((name) => {
       initialDocs.push({
         onboarding_request_id: data.id,
@@ -69,6 +92,7 @@ export async function startOnboardingForEmployee(employeeId: string, requestedBy
         file_url: null,
         file_name: null,
         notes: null,
+        due_date: dueDate,
       });
     });
   });
@@ -84,6 +108,7 @@ export async function startOnboardingForEmployee(employeeId: string, requestedBy
     priority: t.priority,
     sort_order: idx + 1,
     completed: false,
+    due_date: addDays(startedAt, STAGE_DEFAULT_DUE_DAYS[CATEGORY_TO_STAGE[t.category]] ?? 7).toISOString().split("T")[0],
   }));
   await supabase.from("onboarding_checklist_tasks").insert(initialTasks);
 

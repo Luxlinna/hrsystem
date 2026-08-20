@@ -195,6 +195,7 @@ const keyLabels: Record<string, string> = {
   overtime_threshold: "Overtime Threshold (hours)",
   leave_approval_required: "Leave Approval Required",
   auto_payroll_reminder: "Auto Payroll Reminder",
+  attendance_notify_scope: "Attendance Check-in/Check-out Notification Scope",
 };
 
 const notificationKeys = [
@@ -772,6 +773,35 @@ export default function Settings() {
                 </div>
               );
             })}
+          </div>
+
+          <div className="border border-gray-100 rounded-xl p-5">
+            <label className="text-[13px] font-semibold text-gray-700">
+              Attendance check-in / check-out notifications
+            </label>
+            <p className="text-[11px] text-gray-500 mt-0.5 mb-3">
+              Who receives these is set per-role in Admin Portal → Roles ("Receives attendance check-in / check-out
+              notifications"). This controls how often they fire for whoever is opted in.
+            </p>
+            <div className="flex gap-2">
+              <select
+                value={getVal("attendance_notify_scope") || "exceptions"}
+                onChange={(e) => updateValue("attendance_notify_scope", e.target.value)}
+                className="flex-1 px-4 py-2.5 bg-white border-2 border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
+              >
+                <option value="exceptions">Only late check-ins / early check-outs</option>
+                <option value="all">Every check-in and check-out</option>
+              </select>
+              {edited["attendance_notify_scope"] !== undefined && (
+                <button
+                  onClick={() => saveSetting("attendance_notify_scope")}
+                  disabled={saving}
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
+                >
+                  Save
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

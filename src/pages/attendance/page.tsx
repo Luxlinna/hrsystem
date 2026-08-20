@@ -5,6 +5,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import { Link } from "react-router-dom";
+import { notifyAttendanceEvent } from "@/lib/attendanceNotify";
 
 // Local YYYY-MM-DD formatter
 function toYMD(d: Date): string {
@@ -519,6 +520,12 @@ export default function AttendancePage() {
         return;
       }
       toast("Clocked In Successfully", `Checked in at ${formatTime(nowTime)}`, "success");
+      notifyAttendanceEvent({
+        employeeName: `${myEmployee.first_name} ${myEmployee.last_name}`,
+        employeeId: myEmployee.id,
+        type: "in",
+        isException: false,
+      });
     } else {
       const { error } = await supabase
         .from("attendance_records")
@@ -530,6 +537,12 @@ export default function AttendancePage() {
         return;
       }
       toast("Clocked Out Successfully", `Checked out at ${formatTime(nowTime)}`, "success");
+      notifyAttendanceEvent({
+        employeeName: `${myEmployee.first_name} ${myEmployee.last_name}`,
+        employeeId: myEmployee.id,
+        type: "out",
+        isException: false,
+      });
     }
     fetchData();
   };

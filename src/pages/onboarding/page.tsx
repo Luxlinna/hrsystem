@@ -11,6 +11,8 @@ import {
   startOnboardingForEmployee,
   ONBOARDING_DOCUMENT_TEMPLATES as DOCUMENT_TEMPLATES,
   ONBOARDING_DEFAULT_CHECKLIST_TASKS as DEFAULT_CHECKLIST_TASKS,
+  STAGE_DEFAULT_DUE_DAYS,
+  CATEGORY_TO_STAGE,
 } from "@/lib/onboarding";
 
 interface OnboardingRequest {
@@ -41,6 +43,7 @@ interface OnboardingDoc {
   file_url: string | null;
   file_name: string | null;
   notes: string | null;
+  due_date: string | null;
   uploaded_at?: string;
   created_at?: string;
 }
@@ -143,7 +146,7 @@ export default function Onboarding() {
   const [showDocModal, setShowDocModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<OnboardingRequest | null>(null);
   const [selectedStage, setSelectedStage] = useState("");
-  const [docForm, setDocForm] = useState({ document_name: "", notes: "" });
+  const [docForm, setDocForm] = useState({ document_name: "", notes: "", due_date: "" });
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -258,6 +261,50 @@ export default function Onboarding() {
   const isStageComplete = (reqId: string, stageKey: string) => {
     const docs = getDocsForRequestAndStage(reqId, stageKey);
     return docs.length > 0 && docs.every((d) => d.status === "complete");
+  };
+
+  const isDocOverdue = (doc: OnboardingDoc) => {
+    if (doc.status === "complete" || !doc.due_date) return false;
+    return new Date(doc.due_date) < new Date();
+  };
+
+  const formatDateTimeLocal = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const DEADLINE_PRESETS = [
+    { label: "+1 day", days: 1 },
+    { label: "+3 days", days: 3 },
+    { label: "+1 week", days: 7 },
+    { label: "+2 weeks", days: 14 },
+    { label: "+1 month", days: 30 },
+    { label: "+3 months", days: 90 },
+  ];
+
+  const bulkSetStageDeadline = async (req: OnboardingRequest, stageKey: string, days: number) => {
+    const target = getDocsForRequestAndStage(req.id, stageKey).filter((d) => d.status !== "complete" && !d.due_date);
+    if (target.length === 0) {
+      toast("No Items to Update", "Every item in this step is already complete or has a due date.", "info");
+      return;
+    }
+    const due = new Date();
+    due.setDate(due.getDate() + days);
+    const { error } = await supabase
+      .from("onboarding_documents")
+      .update({ due_date: due.toISOString() })
+      .in("id", target.map((d) => d.id));
+    if (error) {
+      toast("Error", "Failed to set deadlines", "error");
+    } else {
+      const stageLabel = STAGES.find((s) => s.key === stageKey)?.label || stageKey;
+      toast(
+        "Deadline Set",
+        `${target.length} item${target.length > 1 ? "s" : ""} in "${stageLabel}" due ${due.toLocaleDateString()}`,
+        "success"
+      );
+      loadData();
+    }
   };
 
   const getOverallProgress = (req: OnboardingRequest) => {
@@ -388,8 +435,10 @@ export default function Onboarding() {
   const handlePopulateDefaultChecklist = async (req: OnboardingRequest) => {
     const existing = documents.filter((d) => d.onboarding_request_id === req.id);
     const toInsert: any[] = [];
+    const startedAt = new Date(req.created_at);
 
     Object.entries(DOCUMENT_TEMPLATES).forEach(([stageKey, templates]) => {
+      const dueDate = new Date(startedAt.getTime() + (STAGE_DEFAULT_DUE_DAYS[stageKey] ?? 7) * 86400000).toISOString();
       templates.forEach((name) => {
         if (!existing.some((d) => d.stage === stageKey && d.document_name === name)) {
           toInsert.push({
@@ -401,6 +450,7 @@ export default function Onboarding() {
             file_url: null,
             file_name: null,
             notes: null,
+            due_date: dueDate,
           });
         }
       });
@@ -429,6 +479,9 @@ export default function Onboarding() {
         priority: t.priority,
         sort_order: idx + 1,
         completed: false,
+        due_date: new Date(startedAt.getTime() + (STAGE_DEFAULT_DUE_DAYS[CATEGORY_TO_STAGE[t.category]] ?? 7) * 86400000)
+          .toISOString()
+          .split("T")[0],
       }));
       await supabase.from("onboarding_checklist_tasks").insert(initialTasks);
     }
@@ -518,7 +571,10 @@ export default function Onboarding() {
   const openDocModal = (req: OnboardingRequest, stage: string) => {
     setSelectedRequest(req);
     setSelectedStage(stage);
-    setDocForm({ document_name: "", notes: "" });
+    const defaultDue = new Date(
+      new Date(req.created_at).getTime() + (STAGE_DEFAULT_DUE_DAYS[stage] ?? 7) * 86400000
+    );
+    setDocForm({ document_name: "", notes: "", due_date: formatDateTimeLocal(defaultDue) });
     setSelectedFileName(null);
     setEditingDocId(null);
     setShowDocModal(true);
@@ -527,7 +583,11 @@ export default function Onboarding() {
   const openEditDocModal = (req: OnboardingRequest, doc: OnboardingDoc) => {
     setSelectedRequest(req);
     setSelectedStage(doc.stage);
-    setDocForm({ document_name: doc.document_name, notes: doc.notes || "" });
+    setDocForm({
+      document_name: doc.document_name,
+      notes: doc.notes || "",
+      due_date: doc.due_date ? doc.due_date.slice(0, 16) : "",
+    });
     setSelectedFileName(doc.file_name);
     setEditingDocId(doc.id);
     setShowDocModal(true);
@@ -559,6 +619,7 @@ export default function Onboarding() {
           .update({
             document_name: docForm.document_name.trim(),
             notes: docForm.notes.trim() || null,
+            due_date: docForm.due_date ? new Date(docForm.due_date).toISOString() : null,
             ...(file ? { file_url: fileUrl, file_name: fileName, status: "complete" } : {}),
           })
           .eq("id", editingDocId)
@@ -571,6 +632,7 @@ export default function Onboarding() {
           file_url: fileUrl,
           file_name: fileName,
           notes: docForm.notes.trim() || null,
+          due_date: docForm.due_date ? new Date(docForm.due_date).toISOString() : null,
         });
 
     setUploading(false);
@@ -580,7 +642,7 @@ export default function Onboarding() {
       toast("Error", editingDocId ? "Failed to save document" : "Failed to add checklist item", "error");
     } else {
       toast("Saved", editingDocId ? "Document updated" : "Document added to checklist", "success");
-      setDocForm({ document_name: "", notes: "" });
+      setDocForm({ document_name: "", notes: "", due_date: "" });
       setSelectedFileName(null);
       setEditingDocId(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -589,6 +651,9 @@ export default function Onboarding() {
   };
 
   const quickAddPresetDoc = async (req: OnboardingRequest, stageKey: string, docName: string) => {
+    const dueDate = new Date(
+      new Date(req.created_at).getTime() + (STAGE_DEFAULT_DUE_DAYS[stageKey] ?? 7) * 86400000
+    ).toISOString();
     const { error } = await supabase.from("onboarding_documents").insert({
       onboarding_request_id: req.id,
       employee_id: req.employee_id,
@@ -598,6 +663,7 @@ export default function Onboarding() {
       file_url: null,
       file_name: null,
       notes: null,
+      due_date: dueDate,
     });
     if (error) {
       toast("Error", "Could not add item", "error");
@@ -1021,8 +1087,16 @@ const matchDocAndTask = (docName: string, taskName: string): boolean => {
                 {/* Progress Bar & Stage Stepper */}
                 <div className="px-5 pb-4">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] text-gray-500">
-                      Overall Progress ({reqDocs.filter((d) => d.status === "complete").length} of {reqDocs.length} items verified)
+                    <span className="text-[11px] text-gray-500 flex items-center gap-2">
+                      <span>
+                        Overall Progress ({reqDocs.filter((d) => d.status === "complete").length} of {reqDocs.length} items verified)
+                      </span>
+                      {reqDocs.filter((d) => isDocOverdue(d)).length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
+                          <i className="ri-alarm-warning-line" />
+                          {reqDocs.filter((d) => isDocOverdue(d)).length} Overdue
+                        </span>
+                      )}
                     </span>
                     <span className="text-[11px] font-semibold text-[#253C7D]">{overallProgress}%</span>
                   </div>
@@ -1173,6 +1247,26 @@ const matchDocAndTask = (docName: string, taskName: string): boolean => {
                                   )}
 
                                   {isUnlocked && (
+                                    <select
+                                      value=""
+                                      onChange={(e) => {
+                                        const days = Number(e.target.value);
+                                        if (days) bulkSetStageDeadline(req, stage.key, days);
+                                        e.target.value = "";
+                                      }}
+                                      title="Set a deadline for every item in this step that doesn't have one yet"
+                                      className="text-[9px] border border-gray-200 rounded px-1 py-0.5 text-gray-500 bg-white cursor-pointer focus:outline-none hover:border-[#253C7D]/40 max-w-[68px] shrink-0"
+                                    >
+                                      <option value="">Deadline</option>
+                                      {DEADLINE_PRESETS.map((p) => (
+                                        <option key={p.days} value={p.days}>
+                                          {p.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  )}
+
+                                  {isUnlocked && (
                                     <button
                                       onClick={() => openDocModal(req, stage.key)}
                                       title="Add Document / Item"
@@ -1204,12 +1298,15 @@ const matchDocAndTask = (docName: string, taskName: string): boolean => {
                               <div className="space-y-1.5 mb-3 max-h-56 overflow-y-auto pr-1">
                                 {stageDocs.map((doc) => {
                                   const isDocComplete = doc.status === "complete";
+                                  const overdue = isDocOverdue(doc);
                                   return (
                                     <div
                                       key={doc.id}
                                       className={`p-2 rounded-lg border text-xs flex items-start gap-2 group transition-colors ${
                                         isDocComplete
                                           ? "bg-green-50/30 border-green-100"
+                                          : overdue
+                                          ? "bg-red-50/40 border-red-200"
                                           : isUnlocked
                                           ? "bg-white border-gray-200 hover:border-gray-300"
                                           : "bg-gray-50/50 border-gray-100"
@@ -1273,6 +1370,29 @@ const matchDocAndTask = (docName: string, taskName: string): boolean => {
 
                                         {doc.notes && (
                                           <p className="text-[10px] text-gray-400 truncate mt-0.5">{doc.notes}</p>
+                                        )}
+
+                                        {doc.due_date && (
+                                          <div
+                                            className={`flex items-center gap-1 mt-0.5 text-[10px] ${
+                                              overdue ? "text-red-600 font-semibold" : "text-gray-400"
+                                            }`}
+                                          >
+                                            <i className="ri-calendar-line" />
+                                            <span>
+                                              Due {new Date(doc.due_date).toLocaleString(undefined, {
+                                                month: "short",
+                                                day: "numeric",
+                                                hour: "numeric",
+                                                minute: "2-digit",
+                                              })}
+                                            </span>
+                                            {overdue && (
+                                              <span className="text-[9px] uppercase px-1 rounded bg-red-100 text-red-700 font-bold">
+                                                Overdue
+                                              </span>
+                                            )}
+                                          </div>
                                         )}
                                       </div>
 
@@ -1917,6 +2037,36 @@ const matchDocAndTask = (docName: string, taskName: string): boolean => {
                   className="hidden"
                   onChange={(e) => setSelectedFileName(e.target.files?.[0]?.name || null)}
                 />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[12px] font-semibold text-gray-700">Due Date & Time (optional)</label>
+                  <div className="flex items-center gap-1 flex-wrap justify-end">
+                    {DEADLINE_PRESETS.map((p) => (
+                      <button
+                        key={p.days}
+                        type="button"
+                        onClick={() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() + p.days);
+                          setDocForm({ ...docForm, due_date: formatDateTimeLocal(d) });
+                        }}
+                        className="px-1.5 py-0.5 text-[10px] bg-gray-100 hover:bg-gray-200 rounded text-gray-600 font-medium cursor-pointer"
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <input
+                  type="datetime-local"
+                  value={docForm.due_date}
+                  onChange={(e) => setDocForm({ ...docForm, due_date: e.target.value })}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">
+                  If not verified by this time, the item will show as overdue in the checklist.
+                </p>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Notes (optional)</label>
