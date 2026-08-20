@@ -52,7 +52,6 @@ const ADMIN_ACTIONS = [
   { label: "Finance", icon: "ri-bank-line", path: "/finance", module: "finance" },
   { label: "Settings", icon: "ri-settings-3-line", path: "/settings", module: "settings" },
   { label: "Unity Apps", icon: "ri-apps-line", path: "/unity-apps", module: "unity-apps" },
-  { label: "Help", icon: "ri-question-line", path: "/settings", module: "settings" },
 ];
 
 export default function CompanyDashboard() {
@@ -297,11 +296,15 @@ export default function CompanyDashboard() {
 
   const pieData = Object.entries(deptData ?? {}).map(([name, value]) => ({ name, value }));
   const currentMonthLabel = new Date().toLocaleDateString("en-US", { month: "long" });
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
 
   const showLeave = can("leave");
   const showPayroll = can("payroll");
   const showHrInsights = can("attendance") || can("training") || can("disciplinary");
   const showAnalyticsCharts = can("analytics");
+  const showAttentionRow = showLeave || can("onboarding") || can("notifications");
 
   if (loading) {
     return (
@@ -312,7 +315,12 @@ export default function CompanyDashboard() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div
+      className="min-h-screen bg-[#F8FAFC]"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Pull-to-refresh indicator */}
       {isPulling && pullDistance > 10 && (
         <div
@@ -324,153 +332,205 @@ export default function CompanyDashboard() {
         </div>
       )}
 
-      {/* Live Status Bar */}
-      <div
-        className="bg-[#1A1A1A] text-white px-6 lg:px-10 py-2 flex items-center justify-between"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className="flex items-center gap-2 text-[11px] text-gray-400">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-          </span>
-          <span className="hidden sm:inline">Live Dashboard — data updates in real-time</span>
-          <span className="sm:hidden">Live</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="hidden sm:inline text-[11px] text-gray-500">
-            Last updated: {lastUpdated.toLocaleTimeString()}
-          </span>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-white/10 disabled:opacity-50 cursor-pointer whitespace-nowrap"
-            title="Refresh dashboard"
-          >
-            <i className={`ri-refresh-line ${refreshing ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">{refreshing ? "Refreshing..." : "Refresh"}</span>
-          </button>
-        </div>
-      </div>
+      {/* Hero */}
+      <section className="relative bg-gradient-to-br from-[#253C7D] via-[#2E5AA8] to-[#29ABE2] text-white">
+        <div className="px-4 sm:px-6 lg:px-10 pt-8 pb-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-white/60 uppercase tracking-wider mb-1">
+                <span>Workspace</span>
+                <i className="ri-arrow-right-s-line text-xs" />
+                <span className="text-white font-bold">Dashboard</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight flex items-center gap-2.5 flex-wrap">
+                {greeting}, {displayName}
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-100 bg-emerald-400/20 border border-emerald-300/30 px-2.5 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                  Live
+                </span>
+              </h1>
+              <p className="text-xs sm:text-sm text-white/70 mt-1.5">
+                Real-time workforce overview across {stats.branches} {stats.branches === 1 ? "branch" : "branches"} &middot; updated {lastUpdated.toLocaleTimeString()}
+              </p>
+            </div>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold rounded-xl backdrop-blur-sm transition-all cursor-pointer disabled:opacity-50"
+              >
+                <i className={`ri-refresh-line text-sm ${refreshing ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">{refreshing ? "Refreshing..." : "Refresh"}</span>
+              </button>
+            </div>
+          </div>
 
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-[#253C7D] via-[#29ABE2] to-[#74C8EC] text-white">
-        <div className="px-6 lg:px-10 pt-6 pb-16">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mt-4">
-            HR / Command / Center
-          </h1>
-          <div className="flex gap-8 mt-10">
+          <div className="flex gap-8 mt-7">
             <div>
-              <p className="text-2xl md:text-3xl font-bold">{stats.branches}</p>
-              <p className="text-sm text-white/70 mt-1">Active Branches</p>
-            </div>
-            <div className="relative -top-3">
-              <p className="text-2xl md:text-3xl font-bold">{stats.notificationsUnread}</p>
-              <p className="text-sm text-white/70 mt-1">Alerts</p>
+              <p className="text-xl sm:text-2xl font-bold">{stats.branches}</p>
+              <p className="text-[11px] text-white/70 mt-0.5">Active Branches</p>
             </div>
             <div>
-              <p className="text-2xl md:text-3xl font-bold">{stats.activeEmployees}</p>
-              <p className="text-sm text-white/70 mt-1">Active Employees</p>
+              <p className="text-xl sm:text-2xl font-bold">{stats.activeEmployees}</p>
+              <p className="text-[11px] text-white/70 mt-0.5">Active Employees</p>
+            </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-bold">{stats.notificationsUnread}</p>
+              <p className="text-[11px] text-white/70 mt-0.5">Alerts</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Live Stats Grid */}
-      <section className="bg-[#F5F5F0] px-6 lg:px-10 py-10 md:py-14">
-        <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">Real-time Metrics</p>
-        <h2 className="text-3xl md:text-4xl font-extrabold text-[#1A1A1A] mb-8 md:mb-10">Workforce / Analytics</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="p-4 sm:p-6 lg:p-8">
+        {/* KPI Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-6">
           {[
-            { label: "Total Employees", value: stats.employees.toLocaleString(), icon: "ri-user-3-line", color: "text-[#253C7D]", link: "/employees", module: "employees" },
-            { label: "Active Now", value: stats.activeEmployees.toLocaleString(), icon: "ri-user-follow-line", color: "text-emerald-600", link: "/employees", module: "employees" },
-            { label: "Open Roles", value: stats.openJobs.toString(), icon: "ri-briefcase-line", color: "text-blue-600", link: "/hire", module: "hire" },
-            { label: "Pending Leaves", value: stats.leavePending.toString(), icon: "ri-time-line", color: "text-amber-600", link: "/leave", module: "leave" },
-            { label: "Onboarding", value: stats.onboardingPending.toString(), icon: "ri-user-add-line", color: "text-violet-600", link: "/onboarding", module: "onboarding" },
-            { label: "Candidates", value: stats.totalCandidates.toString(), icon: "ri-team-line", color: "text-rose-600", link: "/hire", module: "hire" },
-            { label: `Payroll (${currentMonthLabel.slice(0, 3)})`, value: `$${(stats.payrollTotal / 1000).toFixed(1)}k`, icon: "ri-money-dollar-circle-line", color: "text-teal-600", link: "/payroll-module", module: "payroll" },
-            { label: "Processed", value: `${stats.payrollProcessed}`, icon: "ri-check-double-line", color: "text-green-600", link: "/payroll-module", module: "payroll" },
+            { label: "Total Employees", value: stats.employees.toLocaleString(), icon: "ri-user-3-line", accent: "#253C7D", link: "/employees", module: "employees" },
+            { label: "Active Now", value: stats.activeEmployees.toLocaleString(), icon: "ri-user-follow-line", accent: "#059669", link: "/employees", module: "employees" },
+            { label: "Open Roles", value: stats.openJobs.toString(), icon: "ri-briefcase-line", accent: "#2563EB", link: "/hire", module: "hire" },
+            { label: "Pending Leaves", value: stats.leavePending.toString(), icon: "ri-time-line", accent: "#D97706", link: "/leave", module: "leave" },
+            { label: "Onboarding", value: stats.onboardingPending.toString(), icon: "ri-user-add-line", accent: "#7C3AED", link: "/onboarding", module: "onboarding" },
+            { label: "Candidates", value: stats.totalCandidates.toString(), icon: "ri-team-line", accent: "#E11D48", link: "/hire", module: "hire" },
+            { label: `Payroll (${currentMonthLabel.slice(0, 3)})`, value: `$${(stats.payrollTotal / 1000).toFixed(1)}k`, icon: "ri-money-dollar-circle-line", accent: "#0D9488", link: "/payroll-module", module: "payroll" },
+            { label: "Processed", value: `${stats.payrollProcessed}`, icon: "ri-check-double-line", accent: "#16A34A", link: "/payroll-module", module: "payroll" },
           ].filter((s) => can(s.module)).map((s) => (
             <Link
               key={s.label}
               to={s.link}
-              className="bg-white rounded-2xl p-5 md:p-6 border border-gray-100 hover:border-[#253C7D]/20 hover:shadow-sm transition-all group"
+              className="bg-white border border-gray-200/80 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-all group relative overflow-hidden"
             >
-              <i className={`${s.icon} ${s.color} text-xl w-8 h-8 flex items-center justify-center mb-3`} />
-              <p className="text-xl font-bold text-gray-900 group-hover:text-[#253C7D] transition-colors">{s.value}</p>
-              <p className="text-[11px] text-gray-500 mt-1">{s.label}</p>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate pr-2">{s.label}</span>
+                <div className="w-7 h-7 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${s.accent}14`, color: s.accent }}>
+                  <i className={`${s.icon} text-sm`} />
+                </div>
+              </div>
+              <p className="text-xl font-black text-gray-900 mt-2 group-hover:text-[#253C7D] transition-colors">{s.value}</p>
+              <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: s.accent }} />
             </Link>
           ))}
         </div>
-      </section>
 
-      {/* Onboarding Pipeline */}
-      {can("onboarding") && (
-        <section className="bg-white px-6 lg:px-10 py-10 md:py-14">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Onboarding Pipeline</h2>
-            <span className="text-[13px] text-gray-500">{onboarding.length} pending approvals</span>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            {onboarding.length > 0 ? onboarding.map((o) => (
+        {/* Needs Your Attention — the actionable items an admin opens this
+            page for, surfaced immediately instead of buried below a hero
+            and a full metrics section. */}
+        {showAttentionRow && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
+            {showLeave && (
               <Link
-                to="/onboarding"
-                key={o.id}
-                className="min-w-[220px] rounded-2xl p-5 bg-gradient-to-br from-[#253C7D] to-[#29ABE2] text-white relative overflow-hidden hover:shadow-md transition-shadow"
+                to="/leave"
+                className="bg-white border border-gray-200/80 hover:border-amber-300 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3.5"
               >
-                <span className="absolute top-4 right-4 bg-white/20 backdrop-blur text-[11px] font-semibold px-2.5 py-1 rounded-full">
-                  Day {o.day_count}
-                </span>
-                <div className="mt-8">
-                  <p className="text-base font-semibold">{o.employees?.first_name} {o.employees?.last_name}</p>
-                  <p className="text-[13px] text-white/80 mt-1">{o.employees?.role || "New Hire"}</p>
-                  <p className="text-[11px] text-white/60 mt-3 capitalize">Stage: {o.stage.replace("_", " ")}</p>
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <i className="ri-time-line text-lg" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-lg font-black text-gray-900">{stats.leavePending}</p>
+                  <p className="text-[11px] font-semibold text-gray-500 truncate">
+                    {stats.leavePending === 1 ? "leave request awaiting review" : "leave requests awaiting review"}
+                  </p>
                 </div>
               </Link>
-            )) : (
-              <div className="min-w-[220px] rounded-2xl p-5 bg-gray-50 border border-gray-100 flex flex-col items-center justify-center text-gray-400 text-center">
-                <i className="ri-user-add-line text-2xl mb-2" />
-                <p className="text-[13px] font-medium">No pending onboarding</p>
-              </div>
             )}
-            <Link
-              to="/onboarding"
-              className="min-w-[220px] rounded-2xl p-5 bg-gray-100 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 hover:border-[#253C7D] hover:text-[#253C7D] transition-colors"
-            >
-              <i className="ri-arrow-right-circle-line text-3xl mb-2" />
-              <span className="text-[13px] font-medium">View All</span>
-            </Link>
-          </div>
-        </section>
-      )}
-
-      {/* Pending Actions + Payroll Split */}
-      {(showLeave || showPayroll) && (
-        <section className="bg-white px-6 lg:px-10 py-10 md:py-14">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left: Pending Actions / Leave */}
-            {showLeave && (
-              <div className={showPayroll ? "lg:w-[55%]" : "lg:w-full"}>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="w-2 h-2 rounded-full bg-[#1A1A1A]" />
-                  <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Pending Actions</span>
+            {can("onboarding") && (
+              <Link
+                to="/onboarding"
+                className="bg-white border border-gray-200/80 hover:border-violet-300 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3.5"
+              >
+                <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                  <i className="ri-user-add-line text-lg" />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A] mb-6">Leave Requests</h2>
+                <div className="min-w-0">
+                  <p className="text-lg font-black text-gray-900">{stats.onboardingPending}</p>
+                  <p className="text-[11px] font-semibold text-gray-500 truncate">
+                    {stats.onboardingPending === 1 ? "onboarding case in progress" : "onboarding cases in progress"}
+                  </p>
+                </div>
+              </Link>
+            )}
+            {can("notifications") && (
+              <Link
+                to="/notifications"
+                className="bg-white border border-gray-200/80 hover:border-rose-300 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3.5"
+              >
+                <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                  <i className="ri-notification-3-line text-lg" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-lg font-black text-gray-900">{stats.notificationsUnread}</p>
+                  <p className="text-[11px] font-semibold text-gray-500 truncate">
+                    {stats.notificationsUnread === 1 ? "unread notification" : "unread notifications"}
+                  </p>
+                </div>
+              </Link>
+            )}
+          </div>
+        )}
+
+        {/* Onboarding Pipeline */}
+        {can("onboarding") && (
+          <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-gray-900">Onboarding Pipeline</h2>
+              <span className="text-[11px] text-gray-500">{onboarding.length} pending</span>
+            </div>
+            <div className="flex gap-3.5 overflow-x-auto pb-1 scrollbar-hide">
+              {onboarding.length > 0 ? onboarding.map((o) => (
+                <Link
+                  to="/onboarding"
+                  key={o.id}
+                  className="min-w-[210px] rounded-xl p-4 bg-gradient-to-br from-[#253C7D] to-[#1E3066] text-white relative overflow-hidden hover:shadow-md transition-shadow shrink-0"
+                >
+                  <span className="absolute top-3 right-3 bg-white/20 backdrop-blur text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    Day {o.day_count}
+                  </span>
+                  <div className="mt-6">
+                    <p className="text-sm font-bold">{o.employees?.first_name} {o.employees?.last_name}</p>
+                    <p className="text-[12px] text-white/80 mt-0.5">{o.employees?.role || "New Hire"}</p>
+                    <p className="text-[10px] text-white/60 mt-2.5 capitalize">Stage: {o.stage.replace("_", " ")}</p>
+                  </div>
+                </Link>
+              )) : (
+                <div className="min-w-[210px] rounded-xl p-4 bg-gray-50 border border-gray-100 flex flex-col items-center justify-center text-gray-400 text-center shrink-0">
+                  <i className="ri-user-add-line text-xl mb-1.5" />
+                  <p className="text-[12px] font-medium">No pending onboarding</p>
+                </div>
+              )}
+              <Link
+                to="/onboarding"
+                className="min-w-[140px] rounded-xl p-4 bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-500 hover:border-[#253C7D] hover:text-[#253C7D] transition-colors shrink-0"
+              >
+                <i className="ri-arrow-right-circle-line text-2xl mb-1.5" />
+                <span className="text-[12px] font-semibold">View All</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Pending Actions + Payroll Split */}
+        {(showLeave || showPayroll) && (
+          <div className="flex flex-col lg:flex-row gap-4 mb-6">
+            {/* Left: Leave */}
+            {showLeave && (
+              <div className={`bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6 ${showPayroll ? "lg:w-[55%]" : "lg:w-full"}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-bold text-gray-900">Recent Leave Requests</h2>
+                  <Link to="/leave" className="text-[11px] text-[#253C7D] font-bold hover:underline">View All</Link>
+                </div>
                 <div className="border border-gray-100 rounded-xl overflow-hidden">
                   {/* Desktop table header */}
-                  <div className="hidden sm:grid grid-cols-4 bg-gray-50 px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                  <div className="hidden sm:grid grid-cols-4 bg-gray-50 px-4 py-2.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                     <span>Employee</span>
                     <span>Type</span>
                     <span>Dates</span>
                     <span>Status</span>
                   </div>
-                  {leaveRequests.map((l) => (
+                  {leaveRequests.length > 0 ? leaveRequests.map((l) => (
                     <Fragment key={l.id}>
                       {/* Desktop row */}
                       <div key={`desk-${l.id}`} className="hidden sm:grid grid-cols-4 px-4 py-3 border-t border-gray-50 text-[13px]">
-                        <span className="text-gray-900 font-medium">
+                        <span className="text-gray-900 font-medium truncate">
                           {l.employees ? `${l.employees.first_name} ${l.employees.last_name}` : "Unknown"}
                         </span>
                         <span className="text-gray-600 capitalize">{l.leave_type}</span>
@@ -478,7 +538,7 @@ export default function CompanyDashboard() {
                           {l.start_date?.slice(5)} - {l.end_date?.slice(5)}
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <span className={`w-2 h-2 rounded-full ${ l.status === "approved" ? "bg-green-500" : l.status === "pending" ? "bg-amber-500" : "bg-red-500" }`} />
+                          <span className={`w-2 h-2 rounded-full ${l.status === "approved" ? "bg-emerald-500" : l.status === "pending" ? "bg-amber-500" : "bg-rose-500"}`} />
                           <span className="text-gray-600 capitalize">{l.status}</span>
                         </span>
                       </div>
@@ -493,385 +553,344 @@ export default function CompanyDashboard() {
                           </p>
                         </div>
                         <span className={`shrink-0 text-[10px] font-semibold px-2.5 py-1 rounded-full capitalize ml-2 ${
-                          l.status === "approved" ? "bg-green-100 text-green-700" : l.status === "pending" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+                          l.status === "approved" ? "bg-emerald-100 text-emerald-700" : l.status === "pending" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"
                         }`}>
                           {l.status}
                         </span>
                       </div>
                     </Fragment>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3 mt-4">
-                  <span className="text-[13px] font-semibold text-gray-900">Auto-Approval</span>
-                  <span className="flex items-center gap-1 text-[11px] text-green-600 font-medium">
-                    <i className="ri-checkbox-circle-fill text-green-500" />
-                    Verified
-                  </span>
+                  )) : (
+                    <p className="text-center py-8 text-[13px] text-gray-400">No leave requests yet</p>
+                  )}
                 </div>
               </div>
             )}
 
             {/* Right: Payroll Overview */}
             {showPayroll && (
-              <div className={showLeave ? "lg:w-[45%]" : "lg:w-full"}>
-                <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A] mb-6">{currentMonthLabel} Payroll</h2>
-                <div className="border border-gray-100 rounded-xl p-5 md:p-6 bg-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[13px] text-gray-500">Total Net Pay</span>
-                    <span className="text-lg font-bold text-gray-900">
-                      ${(stats.payrollTotal / 1000).toFixed(1)}k
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="text-[13px] text-gray-500">Processed</span>
-                    <span className="text-[13px] font-semibold text-gray-900">
-                      {stats.payrollProcessed} / {payroll.length} employees
-                    </span>
-                  </div>
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={payroll.map((p, i) => ({ name: `E${i + 1}`, net: Number(p.net_pay / 1000).toFixed(1), status: p.status }))}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}k`} />
-                        <Tooltip
-                          contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-                          formatter={(value: any) => [`$${value}k`, "Net Pay"]}
-                        />
-                        <Bar dataKey="net" fill="#253C7D" radius={[6, 6, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+              <div className={`bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6 ${showLeave ? "lg:w-[45%]" : "lg:w-full"}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-bold text-gray-900">{currentMonthLabel} Payroll</h2>
+                  <Link to="/payroll-module" className="text-[11px] text-[#253C7D] font-bold hover:underline">View All</Link>
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[12px] text-gray-500">Total Net Pay</span>
+                  <span className="text-base font-bold text-gray-900">
+                    ${(stats.payrollTotal / 1000).toFixed(1)}k
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[12px] text-gray-500">Processed</span>
+                  <span className="text-[12px] font-semibold text-gray-900">
+                    {stats.payrollProcessed} / {payroll.length} employees
+                  </span>
+                </div>
+                <div className="h-44">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={payroll.map((p, i) => ({ name: `E${i + 1}`, net: Number(p.net_pay / 1000).toFixed(1), status: p.status }))}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}k`} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                        formatter={(value: any) => [`$${value}k`, "Net Pay"]}
+                      />
+                      <Bar dataKey="net" fill="#253C7D" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             )}
           </div>
-        </section>
-      )}
+        )}
 
-      {/* Hiring Overview */}
-      {can("hire") && (
-        <section className="bg-[#FAFAF8] px-6 lg:px-10 py-10 md:py-14">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">Recruitment</p>
-              <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Hiring Overview</h2>
+        {/* Hiring Overview */}
+        {can("hire") && (
+          <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-gray-900">Hiring Overview</h2>
+              <Link to="/hire" className="text-[11px] text-[#253C7D] font-bold hover:underline">View All</Link>
             </div>
-            <Link to="/hire" className="text-[13px] text-[#253C7D] font-semibold hover:underline">
-              View All <i className="ri-arrow-right-line" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 className="text-[14px] font-semibold text-gray-900 mb-4">Open Positions</h3>
-              <div className="space-y-3">
-                {jobs.filter((j) => j.status === "active").slice(0, 5).map((j) => (
-                  <Link to="/hire" key={j.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                    <div>
-                      <p className="text-[13px] font-semibold text-gray-900">{j.title}</p>
-                      <p className="text-[11px] text-gray-500">{j.department} &middot; {j.location}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="border border-gray-100 rounded-xl p-4">
+                <h3 className="text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-3">Open Positions</h3>
+                <div className="space-y-1">
+                  {jobs.filter((j) => j.status === "active").slice(0, 5).map((j) => (
+                    <Link to="/hire" key={j.id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-semibold text-gray-900 truncate">{j.title}</p>
+                        <p className="text-[11px] text-gray-500 truncate">{j.department} &middot; {j.location}</p>
+                      </div>
+                      <span className="text-[11px] text-[#253C7D] font-medium shrink-0 ml-2">${j.salary_min?.toLocaleString()}k+</span>
+                    </Link>
+                  ))}
+                  {jobs.filter((j) => j.status === "active").length === 0 && (
+                    <p className="text-[13px] text-gray-400 text-center py-4">No open positions</p>
+                  )}
+                </div>
+              </div>
+              <div className="border border-gray-100 rounded-xl p-4">
+                <h3 className="text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-3">Recent Applicants</h3>
+                <div className="space-y-1">
+                  {candidates.slice(0, 5).map((c) => (
+                    <Link to={`/hire/candidate/${c.id}`} key={c.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold text-[11px] shrink-0">
+                        {c.full_name?.split(" ").map((n: string) => n[0]).join("")}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-gray-900 truncate">{c.full_name}</p>
+                        <p className="text-[11px] text-gray-500 truncate">{c.stage} &middot; {new Date(c.applied_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                      </div>
+                    </Link>
+                  ))}
+                  {candidates.length === 0 && (
+                    <p className="text-[13px] text-gray-400 text-center py-4">No applicants yet</p>
+                  )}
+                </div>
+              </div>
+              <div className="border border-gray-100 rounded-xl p-4">
+                <h3 className="text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-3">Hiring Funnel</h3>
+                <div className="space-y-2 mt-1">
+                  {[
+                    { stage: "Applied", count: candidates.filter((c) => c.stage === "applied").length, color: "bg-gray-300" },
+                    { stage: "Screening", count: candidates.filter((c) => c.stage === "screening").length, color: "bg-amber-400" },
+                    { stage: "Interview", count: candidates.filter((c) => c.stage === "interview").length, color: "bg-sky-400" },
+                    { stage: "Offer", count: candidates.filter((c) => c.stage === "offer").length, color: "bg-emerald-400" },
+                    { stage: "Hired", count: candidates.filter((c) => c.stage === "hired").length, color: "bg-[#253C7D]" },
+                  ].map((f) => (
+                    <div key={f.stage} className="flex items-center gap-3">
+                      <span className="text-[11px] text-gray-500 w-16 shrink-0">{f.stage}</span>
+                      <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${f.color} rounded-full transition-all duration-500`}
+                          style={{ width: `${Math.max((f.count / Math.max(candidates.length, 1)) * 100, 8)}%` }}
+                        />
+                      </div>
+                      <span className="text-[11px] font-bold text-gray-700 w-6 text-right shrink-0">{f.count}</span>
                     </div>
-                    <span className="text-[11px] text-[#253C7D] font-medium">${j.salary_min?.toLocaleString()}k+</span>
-                  </Link>
-                ))}
-                {jobs.filter((j) => j.status === "active").length === 0 && (
-                  <p className="text-[13px] text-gray-400 text-center py-4">No open positions</p>
-                )}
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 className="text-[14px] font-semibold text-gray-900 mb-4">Recent Applicants</h3>
-              <div className="space-y-3">
-                {candidates.slice(0, 5).map((c) => (
-                  <Link to={`/hire/candidate/${c.id}`} key={c.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                    <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold text-xs">
-                      {c.full_name?.split(" ").map((n: string) => n[0]).join("")}
+          </div>
+        )}
+
+        {/* Announcements */}
+        {can("announcements") && (
+          <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-gray-900">Latest Announcements</h2>
+              <Link to="/announcements" className="text-[11px] text-[#253C7D] font-bold hover:underline">View All</Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {announcements.slice(0, 4).map((a) => {
+                const catColors: Record<string, string> = { event: "text-violet-600 bg-violet-50", policy: "text-amber-600 bg-amber-50", news: "text-emerald-600 bg-emerald-50", benefits: "text-sky-600 bg-sky-50", compliance: "text-rose-600 bg-rose-50", hr: "text-[#253C7D] bg-[#253C7D]/10", general: "text-gray-600 bg-gray-100" };
+                const catIcons: Record<string, string> = { event: "ri-calendar-event-line", policy: "ri-file-text-line", news: "ri-newspaper-line", benefits: "ri-heart-pulse-line", compliance: "ri-shield-check-line", hr: "ri-user-settings-line", general: "ri-information-line" };
+                const colClass = catColors[a.category] || catColors.general;
+                const iconClass = catIcons[a.category] || catIcons.general;
+                const daysAgo = Math.floor((Date.now() - new Date(a.published_at).getTime()) / 86400000);
+                return (
+                  <Link to="/announcements" key={a.id} className="flex gap-3 p-3.5 border border-gray-100 rounded-xl hover:border-[#253C7D]/20 hover:bg-gray-50/50 transition-all">
+                    <div className={`w-9 h-9 shrink-0 flex items-center justify-center rounded-lg ${colClass}`}>
+                      <i className={`${iconClass} text-sm`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-gray-900 truncate">{c.full_name}</p>
-                      <p className="text-[11px] text-gray-500">{c.stage} &middot; {new Date(c.applied_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[13px] font-semibold text-gray-900 leading-tight line-clamp-1">{a.title}</p>
+                        {a.pinned && <i className="ri-pushpin-line text-[#253C7D] text-xs shrink-0 mt-0.5" />}
+                      </div>
+                      <p className="text-[12px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">{a.content}</p>
+                      <p className="text-[11px] text-gray-400 mt-2">{daysAgo === 0 ? "Today" : `${daysAgo}d ago`} &middot; {a.author_name}</p>
                     </div>
                   </Link>
-                ))}
-                {candidates.length === 0 && (
-                  <p className="text-[13px] text-gray-400 text-center py-4">No applicants yet</p>
-                )}
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 className="text-[14px] font-semibold text-gray-900 mb-4">Hiring Funnel</h3>
-              <div className="space-y-2">
-                {[
-                  { stage: "Applied", count: candidates.filter((c) => c.stage === "applied").length, color: "bg-gray-200" },
-                  { stage: "Screening", count: candidates.filter((c) => c.stage === "screening").length, color: "bg-amber-200" },
-                  { stage: "Interview", count: candidates.filter((c) => c.stage === "interview").length, color: "bg-blue-200" },
-                  { stage: "Offer", count: candidates.filter((c) => c.stage === "offer").length, color: "bg-emerald-200" },
-                  { stage: "Hired", count: candidates.filter((c) => c.stage === "hired").length, color: "bg-[#253C7D]" },
-                ].map((f) => (
-                  <div key={f.stage} className="flex items-center gap-3">
-                    <span className="text-[12px] text-gray-500 w-20">{f.stage}</span>
-                    <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${f.color} rounded-full transition-all duration-500`}
-                        style={{ width: `${Math.max((f.count / Math.max(candidates.length, 1)) * 100, 8)}%` }}
-                      />
-                    </div>
-                    <span className="text-[12px] font-semibold text-gray-700 w-8 text-right">{f.count}</span>
-                  </div>
-                ))}
-              </div>
+                );
+              })}
+              {announcements.length === 0 && (
+                <div className="col-span-2 text-center py-8 border border-dashed border-gray-200 rounded-xl">
+                  <p className="text-[13px] text-gray-400">No announcements yet</p>
+                </div>
+              )}
             </div>
           </div>
-        </section>
-      )}
+        )}
 
-      {/* Announcements Section */}
-      {can("announcements") && (
-        <section className="bg-white px-6 lg:px-10 py-10 md:py-14">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">Company</p>
-              <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Latest Announcements</h2>
+        {/* HR Analytics KPI Widgets */}
+        {showHrInsights && (
+          <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-gray-900">HR Analytics KPIs</h2>
+              <span className="text-[11px] text-gray-400">Last 7 days</span>
             </div>
-            <Link to="/announcements" className="text-[13px] text-[#253C7D] font-semibold hover:underline">
-              View All <i className="ri-arrow-right-line" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {announcements.slice(0, 4).map((a) => {
-              const catColors: Record<string, string> = { event: "text-violet-600 bg-violet-50", policy: "text-amber-600 bg-amber-50", news: "text-emerald-600 bg-emerald-50", benefits: "text-sky-600 bg-sky-50", compliance: "text-red-600 bg-red-50", hr: "text-[#253C7D] bg-[#253C7D]/10", general: "text-gray-600 bg-gray-100" };
-              const catIcons: Record<string, string> = { event: "ri-calendar-event-line", policy: "ri-file-text-line", news: "ri-newspaper-line", benefits: "ri-heart-pulse-line", compliance: "ri-shield-check-line", hr: "ri-user-settings-line", general: "ri-information-line" };
-              const colClass = catColors[a.category] || catColors.general;
-              const iconClass = catIcons[a.category] || catIcons.general;
-              const daysAgo = Math.floor((Date.now() - new Date(a.published_at).getTime()) / 86400000);
-              return (
-                <Link to="/announcements" key={a.id} className="flex gap-3 p-4 border border-gray-100 rounded-xl hover:border-[#253C7D]/20 transition-all">
-                  <div className={`w-9 h-9 shrink-0 flex items-center justify-center rounded-lg ${colClass}`}>
-                    <i className={`${iconClass} text-sm`} />
+
+            {/* KPI Cards Row */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+              {[
+                { label: "Attendance Rate", value: `${hrKpis.attendanceRate}%`, icon: "ri-user-follow-line", color: "text-emerald-600", bg: "bg-emerald-50", link: "/attendance", module: "attendance", note: "Last 7 days" },
+                { label: "Avg Hours/Day", value: `${hrKpis.avgHoursWorked}h`, icon: "ri-timer-2-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", link: "/attendance", module: "attendance", note: "Per employee" },
+                { label: "Late Arrival Rate", value: `${hrKpis.lateRate}%`, icon: "ri-time-line", color: hrKpis.lateRate > 15 ? "text-rose-600" : "text-amber-600", bg: hrKpis.lateRate > 15 ? "bg-rose-50" : "bg-amber-50", link: "/attendance", module: "attendance", note: "Of check-ins" },
+                { label: "Training Completion", value: `${hrKpis.trainingCompletionRate}%`, icon: "ri-graduation-cap-line", color: "text-violet-600", bg: "bg-violet-50", link: "/training", module: "training", note: "All enrollments" },
+                { label: "Active Trainings", value: hrKpis.inProgressTrainings.toString(), icon: "ri-book-open-line", color: "text-sky-600", bg: "bg-sky-50", link: "/training", module: "training", note: "In progress" },
+                { label: "Open Cases", value: hrKpis.openDisciplinaryCases.toString(), icon: "ri-alert-line", color: hrKpis.openDisciplinaryCases > 3 ? "text-rose-600" : "text-orange-600", bg: hrKpis.openDisciplinaryCases > 3 ? "bg-rose-50" : "bg-orange-50", link: "/disciplinary", module: "disciplinary", note: "Disciplinary" },
+              ].filter((kpi) => can(kpi.module)).map((kpi) => (
+                <Link key={kpi.label} to={kpi.link} className="border border-gray-100 rounded-xl p-3.5 hover:border-[#253C7D]/20 transition-all group">
+                  <div className={`w-7 h-7 flex items-center justify-center rounded-lg mb-2 ${kpi.bg}`}>
+                    <i className={`${kpi.icon} ${kpi.color} text-sm`} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-[13px] font-semibold text-gray-900 leading-tight line-clamp-1">{a.title}</p>
-                      {a.pinned && <i className="ri-pushpin-line text-[#253C7D] text-xs shrink-0 mt-0.5" />}
-                    </div>
-                    <p className="text-[12px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">{a.content}</p>
-                    <p className="text-[11px] text-gray-400 mt-2">{daysAgo === 0 ? "Today" : `${daysAgo}d ago`} &middot; {a.author_name}</p>
-                  </div>
+                  <p className={`text-lg font-bold ${kpi.color}`}>{kpi.value}</p>
+                  <p className="text-[10px] font-semibold text-gray-700 mt-0.5 leading-tight">{kpi.label}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{kpi.note}</p>
                 </Link>
-              );
-            })}
-            {announcements.length === 0 && (
-              <div className="col-span-2 text-center py-8 border border-dashed border-gray-200 rounded-xl">
-                <p className="text-[13px] text-gray-400">No announcements yet</p>
+              ))}
+            </div>
+
+            {/* Attendance Trend Sparkline */}
+            {can("attendance") && (
+              <div className="border border-gray-100 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[12px] font-bold text-gray-700 uppercase tracking-wider">7-Day Attendance Trend</h3>
+                  <Link to="/attendance" className="text-[11px] text-[#253C7D] font-semibold hover:underline">Full Report</Link>
+                </div>
+                <div className="flex items-end gap-2 h-20">
+                  {hrKpis.attendanceTrend.map((d, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <div className="w-full flex items-end justify-center" style={{ height: "56px" }}>
+                        <div
+                          className={`w-full rounded-t-lg transition-all ${
+                            d.rate >= 85 ? "bg-emerald-400" : d.rate >= 70 ? "bg-amber-400" : "bg-rose-400"
+                          }`}
+                          style={{ height: `${Math.max(8, d.rate * 0.56)}px` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-gray-400">{d.day}</span>
+                      <span className={`text-[10px] font-bold ${
+                        d.rate >= 85 ? "text-emerald-600" : d.rate >= 70 ? "text-amber-600" : "text-rose-500"
+                      }`}>{d.rate > 0 ? `${d.rate}%` : "—"}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-        </section>
-      )}
+        )}
 
-      {/* HR Analytics KPI Widgets */}
-      {showHrInsights && (
-        <section className="bg-[#F5F5F0] px-6 lg:px-10 py-10 md:py-14">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">Live Intelligence</p>
-              <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">HR Analytics KPIs</h2>
-            </div>
-            <div className="flex items-center gap-2 text-[12px] text-gray-500">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#253C7D] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#253C7D]" />
-              </span>
-              Last 7 days
+        {/* Analytics Charts */}
+        {showAnalyticsCharts && (
+          <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6 mb-6">
+            <h2 className="text-sm font-bold text-gray-900 mb-4">Analytics Charts</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Weekly Attendance */}
+              <div className="border border-gray-100 rounded-xl p-4">
+                <h3 className="text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-3">Weekly Attendance Overview</h3>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={attendanceData}>
+                      <defs>
+                        <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#253C7D" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#253C7D" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="colorAbsent" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#E11D48" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#E11D48" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
+                      <Area type="monotone" dataKey="present" stroke="#253C7D" fill="url(#colorPresent)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="absent" stroke="#E11D48" fill="url(#colorAbsent)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Department Distribution */}
+              <div className="border border-gray-100 rounded-xl p-4">
+                <h3 className="text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-3">Department Distribution</h3>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={85}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {pieData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex flex-wrap gap-3 mt-3">
+                  {pieData.map((d, i) => (
+                    <div key={d.name} className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: pieColors[i % pieColors.length] }} />
+                      <span className="text-[11px] text-gray-600">{d.name} ({d.value})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hiring Trend */}
+              <div className="border border-gray-100 rounded-xl p-4 lg:col-span-2">
+                <h3 className="text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-3">Hiring vs Termination Trend</h3>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={hiringTrend} barGap={4}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
+                      <Bar dataKey="hires" fill="#253C7D" radius={[4, 4, 0, 0]} name="Hires" />
+                      <Bar dataKey="terminations" fill="#E11D48" radius={[4, 4, 0, 0]} name="Terminations" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             </div>
           </div>
+        )}
 
-          {/* KPI Cards Row */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            {[
-              { label: "Attendance Rate", value: `${hrKpis.attendanceRate}%`, icon: "ri-user-follow-line", color: "text-emerald-600", bg: "bg-emerald-50", link: "/attendance", module: "attendance", note: "Last 7 days" },
-              { label: "Avg Hours/Day", value: `${hrKpis.avgHoursWorked}h`, icon: "ri-timer-2-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10", link: "/attendance", module: "attendance", note: "Per employee" },
-              { label: "Late Arrival Rate", value: `${hrKpis.lateRate}%`, icon: "ri-time-line", color: hrKpis.lateRate > 15 ? "text-red-600" : "text-amber-600", bg: hrKpis.lateRate > 15 ? "bg-red-50" : "bg-amber-50", link: "/attendance", module: "attendance", note: "Of check-ins" },
-              { label: "Training Completion", value: `${hrKpis.trainingCompletionRate}%`, icon: "ri-graduation-cap-line", color: "text-violet-600", bg: "bg-violet-50", link: "/training", module: "training", note: "All enrollments" },
-              { label: "Active Trainings", value: hrKpis.inProgressTrainings.toString(), icon: "ri-book-open-line", color: "text-sky-600", bg: "bg-sky-50", link: "/training", module: "training", note: "In progress" },
-              { label: "Open Cases", value: hrKpis.openDisciplinaryCases.toString(), icon: "ri-alert-line", color: hrKpis.openDisciplinaryCases > 3 ? "text-red-600" : "text-orange-600", bg: hrKpis.openDisciplinaryCases > 3 ? "bg-red-50" : "bg-orange-50", link: "/disciplinary", module: "disciplinary", note: "Disciplinary" },
-            ].filter((kpi) => can(kpi.module)).map((kpi) => (
-              <Link key={kpi.label} to={kpi.link} className="bg-white rounded-2xl p-4 border border-gray-100 hover:border-[#253C7D]/20 transition-all group">
-                <div className={`w-8 h-8 flex items-center justify-center rounded-lg mb-2.5 ${kpi.bg}`}>
-                  <i className={`${kpi.icon} ${kpi.color} text-sm`} />
-                </div>
-                <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
-                <p className="text-[11px] font-semibold text-gray-700 mt-1 leading-tight">{kpi.label}</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{kpi.note}</p>
+        {/* Quick Action Shortcuts */}
+        <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-sm font-bold text-gray-900">Administrative Actions</h2>
+              <p className="text-[11px] text-gray-500 mt-0.5">Quick access to core HR modules and operations</p>
+            </div>
+            {can("payroll") && (
+              <Link
+                to="/payroll-module"
+                className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1C2E60] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-colors shrink-0"
+              >
+                Process Payroll
+                <i className="ri-arrow-right-line" />
+              </Link>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {ADMIN_ACTIONS.filter((item) => can(item.module)).map((item) => (
+              <Link
+                key={item.label}
+                to={item.path}
+                className="flex flex-col items-center gap-2 bg-gray-50 hover:bg-[#253C7D]/5 border border-gray-100 hover:border-[#253C7D]/20 rounded-xl px-5 py-4 w-[100px] transition-colors group"
+              >
+                <i className={`${item.icon} text-lg text-gray-600 group-hover:text-[#253C7D] w-6 h-6 flex items-center justify-center transition-colors`} />
+                <span className="text-[11px] font-medium text-gray-600 group-hover:text-[#253C7D] transition-colors whitespace-nowrap">
+                  {item.label}
+                </span>
               </Link>
             ))}
           </div>
-
-          {/* Attendance Trend Sparkline */}
-          {can("attendance") && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[14px] font-semibold text-gray-900">7-Day Attendance Trend</h3>
-                <Link to="/attendance" className="text-[12px] text-[#253C7D] font-semibold hover:underline">Full Report <i className="ri-arrow-right-line" /></Link>
-              </div>
-              <div className="flex items-end gap-2 h-20">
-                {hrKpis.attendanceTrend.map((d, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full flex items-end justify-center" style={{ height: "56px" }}>
-                      <div
-                        className={`w-full rounded-t-lg transition-all ${
-                          d.rate >= 85 ? "bg-emerald-400" : d.rate >= 70 ? "bg-amber-400" : "bg-red-400"
-                        }`}
-                        style={{ height: `${Math.max(8, d.rate * 0.56)}px` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-gray-400">{d.day}</span>
-                    <span className={`text-[10px] font-bold ${
-                      d.rate >= 85 ? "text-emerald-600" : d.rate >= 70 ? "text-amber-600" : "text-red-500"
-                    }`}>{d.rate > 0 ? `${d.rate}%` : "—"}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Notifications Banner */}
-      {can("notifications") && (
-        <section className="bg-[#F5F5F0] px-6 lg:px-10 py-10 md:py-14 text-center">
-          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-4">System Notice</p>
-          <p className="text-lg md:text-xl text-gray-700 max-w-2xl mx-auto leading-relaxed">
-            All {stats.branches} branches are now synchronized under the unified payroll engine. Please review branch exceptions before monthly close.
-          </p>
-          <div className="flex justify-center gap-3 mt-6">
-            {notifications.map((n) => (
-              <div key={n.id} className="bg-white border border-gray-100 rounded-lg px-4 py-3 text-left max-w-xs">
-                <p className="text-[12px] font-semibold text-gray-900">{n.title}</p>
-                <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">{n.message}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Analytics Charts */}
-      {showAnalyticsCharts && (
-        <section className="bg-white px-6 lg:px-10 py-10 md:py-14">
-          <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A] mb-6">Analytics Charts</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Weekly Attendance */}
-            <div className="border border-gray-100 rounded-xl p-5 md:p-6">
-              <h3 className="text-[14px] font-semibold text-gray-900 mb-4">Weekly Attendance Overview</h3>
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={attendanceData}>
-                    <defs>
-                      <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#253C7D" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#253C7D" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="colorAbsent" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#E11D48" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#E11D48" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-                    <Area type="monotone" dataKey="present" stroke="#253C7D" fill="url(#colorPresent)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="absent" stroke="#E11D48" fill="url(#colorAbsent)" strokeWidth={2} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Department Distribution */}
-            <div className="border border-gray-100 rounded-xl p-5 md:p-6">
-              <h3 className="text-[14px] font-semibold text-gray-900 mb-4">Department Distribution</h3>
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={85}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
-                      {pieData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex flex-wrap gap-3 mt-3">
-                {pieData.map((d, i) => (
-                  <div key={d.name} className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: pieColors[i % pieColors.length] }} />
-                    <span className="text-[11px] text-gray-600">{d.name} ({d.value})</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Hiring Trend */}
-            <div className="border border-gray-100 rounded-xl p-5 md:p-6 lg:col-span-2">
-              <h3 className="text-[14px] font-semibold text-gray-900 mb-4">Hiring vs Termination Trend</h3>
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={hiringTrend} barGap={4}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-                    <Bar dataKey="hires" fill="#253C7D" radius={[4, 4, 0, 0]} name="Hires" />
-                    <Bar dataKey="terminations" fill="#E11D48" radius={[4, 4, 0, 0]} name="Terminations" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Quick Action Shortcuts */}
-      <section className="bg-white px-6 lg:px-10 py-10 md:py-14">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Administrative Actions</h2>
-          <p className="text-[13px] text-gray-500 mt-2">Quick access to core HR modules and operations</p>
         </div>
-        {can("payroll") && (
-          <div className="flex justify-center mb-8">
-            <Link
-              to="/payroll-module"
-              className="inline-flex items-center gap-2 bg-[#3D2B1F] text-white px-6 py-3 rounded-full text-[13px] font-semibold hover:bg-[#2a1d15] transition-colors"
-            >
-              Process Payroll
-              <i className="ri-arrow-right-line" />
-            </Link>
-          </div>
-        )}
-        <div className="flex flex-wrap justify-center gap-3">
-          {ADMIN_ACTIONS.filter((item) => can(item.module)).map((item) => (
-            <Link
-              key={item.label}
-              to={item.path}
-              className="flex flex-col items-center gap-2 bg-gray-50 hover:bg-[#253C7D]/5 border border-gray-100 hover:border-[#253C7D]/20 rounded-xl px-5 py-4 w-[100px] transition-colors group"
-            >
-              <i className={`${item.icon} text-lg text-gray-600 group-hover:text-[#253C7D] w-6 h-6 flex items-center justify-center transition-colors`} />
-              <span className="text-[11px] font-medium text-gray-600 group-hover:text-[#253C7D] transition-colors whitespace-nowrap">
-                {item.label}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      </div>
 
       {/* Mobile FAB — Quick Actions */}
       <div className="lg:hidden fixed bottom-20 right-4 z-50 flex flex-col items-end gap-2" ref={fabRef}>
@@ -909,68 +928,6 @@ export default function CompanyDashboard() {
           <i className={`${fabOpen ? "ri-close-line" : "ri-add-line"} text-2xl w-6 h-6 flex items-center justify-center`} />
         </button>
       </div>
-
-      {/* Footer */}
-      <footer className="bg-[#F5F5F0] border-t border-gray-200/50 px-6 lg:px-10 py-10 md:py-14">
-        <div className="flex flex-col lg:flex-row gap-10">
-          <div className="lg:w-[40%]">
-            <h3 className="text-2xl font-bold text-[#1A1A1A] leading-tight">
-              HR Management /<br />System
-            </h3>
-            <p className="text-[13px] text-gray-500 mt-4 leading-relaxed max-w-sm">
-              A unified platform for managing human resources across all {stats.branches} branches. Streamline onboarding, payroll, leave, and workforce analytics in one place.
-            </p>
-            <div className="mt-6">
-              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Support Email</label>
-              <input
-                type="email"
-                placeholder="support@hrmops.com"
-                className="mt-1 w-full max-w-xs bg-transparent border-b border-gray-300 py-2 text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-            <button className="mt-6 inline-flex items-center gap-2 border border-gray-300 rounded-lg px-5 py-2.5 text-[13px] font-medium text-gray-700 hover:border-gray-400 transition-colors">
-              Contact Support
-            </button>
-          </div>
-          <div className="lg:w-[60%] grid grid-cols-2 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Operations</p>
-              <div className="space-y-2">
-                {can("payroll") && <Link to="/payroll-module" className="block text-[13px] text-gray-600 hover:text-gray-900">Payroll</Link>}
-                {can("finance") && <Link to="/finance" className="block text-[13px] text-gray-600 hover:text-gray-900">Finance</Link>}
-                {can("it-management") && <Link to="/it-management" className="block text-[13px] text-gray-600 hover:text-gray-900">IT Management</Link>}
-                {can("analytics") && <Link to="/analytics" className="block text-[13px] text-gray-600 hover:text-gray-900">Analytics</Link>}
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Workforce</p>
-              <div className="space-y-2">
-                {can("hire") && <Link to="/hire" className="block text-[13px] text-gray-600 hover:text-gray-900">Hire</Link>}
-                {can("offboard") && <Link to="/offboard" className="block text-[13px] text-gray-600 hover:text-gray-900">Off Board</Link>}
-                {can("org-chart") && <Link to="/org-chart" className="block text-[13px] text-gray-600 hover:text-gray-900">Org Chart</Link>}
-                {can("tools") && <Link to="/tools" className="block text-[13px] text-gray-600 hover:text-gray-900">Tools</Link>}
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">System</p>
-              <div className="space-y-2">
-                {can("benefits") && <Link to="/benefits" className="block text-[13px] text-gray-600 hover:text-gray-900">Benefits</Link>}
-                {can("settings") && <Link to="/settings" className="block text-[13px] text-gray-600 hover:text-gray-900">Settings</Link>}
-                {can("unity-apps") && <Link to="/unity-apps" className="block text-[13px] text-gray-600 hover:text-gray-900">Unity Apps</Link>}
-                <Link to="/" className="block text-[13px] text-gray-600 hover:text-gray-900">Help Center</Link>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="mt-10 pt-6 border-t border-gray-200/50 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[11px] text-gray-400">2026 HRM_OPS. All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <Link to="/settings" className="text-[11px] text-gray-500 hover:text-gray-700">Privacy</Link>
-            <Link to="/settings" className="text-[11px] text-gray-500 hover:text-gray-700">Terms</Link>
-            <Link to="/settings" className="text-[11px] text-gray-500 hover:text-gray-700">Security</Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
