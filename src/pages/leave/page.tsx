@@ -720,6 +720,17 @@ export default function Leave() {
         end_date: "",
         reason: "",
       });
+
+      const empName = myEmployee
+        ? `${myEmployee.first_name} ${myEmployee.last_name}`.trim()
+        : "An employee";
+      notify({
+        source: "leave",
+        type: "warning",
+        title: "New Leave Request Pending",
+        message: `${empName} has requested ${LEAVE_TYPE_CONFIG[formData.leave_type]?.label || formData.leave_type} leave from ${formData.start_date} to ${formData.end_date} (${days} day${days !== 1 ? "s" : ""}).`,
+      });
+
       loadData();
     }
   };

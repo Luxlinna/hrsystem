@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
           <img src="/logo-mark.png" alt="HRM_OPS Logo" className="w-14 h-14 object-contain mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-[#1A1A1A]">Forgot Password</h1>
           <p className="text-[13px] text-gray-500 mt-1">
-            {sent ? "Check your inbox" : "We'll email you a reset link"}
+            {sent ? "Request submitted" : "Ask an admin to approve your reset"}
           </p>
         </div>
 
@@ -39,9 +39,8 @@ export default function ForgotPasswordPage() {
             <div className="flex flex-col items-center text-center p-6 bg-emerald-50 border border-emerald-100 rounded-xl">
               <i className="ri-mail-check-line text-3xl text-emerald-600 mb-3" />
               <p className="text-[13px] text-emerald-800 leading-relaxed">
-                If an account exists for <span className="font-semibold">{email}</span>, a password
-                reset link is on its way. Check your inbox and follow the link to choose a new
-                password.
+                If an account exists for <span className="font-semibold">{email}</span>, an
+                administrator has been notified. After approval, your reset link will be emailed to you.
               </p>
             </div>
             <Link
@@ -79,7 +78,7 @@ export default function ForgotPasswordPage() {
                 disabled={loading}
                 className="w-full py-2.5 bg-[#253C7D] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] active:scale-[0.98] transition-all disabled:opacity-60"
               >
-                {loading ? "Sending..." : "Send Reset Link"}
+                {loading ? "Submitting..." : "Request Admin Approval"}
               </button>
             </form>
 

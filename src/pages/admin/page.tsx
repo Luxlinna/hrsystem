@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { invalidatePermissionsCache } from "@/hooks/usePermissions";
+import { useSearchParams } from "react-router-dom";
 
 interface AppRole {
   id: number;
@@ -55,6 +56,16 @@ interface DirectoryEmployee {
   last_name: string | null;
   role: string | null;
   department: string | null;
+}
+
+interface PasswordResetRequest {
+  id: string;
+  email: string;
+  status: "pending" | "approved" | "rejected";
+  requested_at: string;
+  acted_at: string | null;
+  admin_note: string | null;
+  reset_link_sent_at: string | null;
 }
 
 const ALL_MODULES = [
@@ -252,9 +263,14 @@ async function manageUserRole(
 }
 
 export default function AdminPortal() {
-  const [activeTab, setActiveTab] = useState<"roles" | "users">("roles");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"roles" | "users" | "password-resets">(
+    searchParams.get("tab") === "password-resets" ? "password-resets" : "roles"
+  );
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [users, setUsers] = useState<UserAssignment[]>([]);
+  const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>([]);
+  const [actingResetId, setActingResetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
   const [userLoadError, setUserLoadError] = useState<string | null>(null);
@@ -286,11 +302,12 @@ export default function AdminPortal() {
       return { accounts: [], assignments: null } as AuthAccountsResult;
     });
 
-    const [rolesRes, usersRes, deletedRes, employeesRes, authAccountsResult] = await Promise.all([
+    const [rolesRes, usersRes, deletedRes, employeesRes, resetRequestsRes, authAccountsResult] = await Promise.all([
       supabase.from("app_roles").select("*").order("id"),
       supabase.from("user_role_assignments").select("*, app_roles(id, name, color)").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("user_role_assignments").select("email").not("deleted_at", "is", null),
       supabase.from("employees").select("id, email, first_name, last_name, role, department").not("email", "is", null).order("first_name"),
+      supabase.from("password_reset_requests").select("*").order("requested_at", { ascending: false }).limit(50),
       authAccountsPromise,
     ]);
 
@@ -318,10 +335,15 @@ export default function AdminPortal() {
     setRoles(rolesRes.data || []);
     setUsers([...activeAssignments, ...unassignedAuthUsers]);
     setEmployees(employeesRes.data || []);
+    setPasswordResetRequests((resetRequestsRes.data || []) as PasswordResetRequest[]);
     setLoading(false);
   };
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    if (searchParams.get("tab") === "password-resets") setActiveTab("password-resets");
+  }, [searchParams]);
 
   // ── Role CRUD ──
   const openNewRole = () => {
@@ -528,6 +550,34 @@ export default function AdminPortal() {
     }
   };
 
+  const handlePasswordResetAction = async (requestId: string, action: "approve" | "reject") => {
+    setActingResetId(requestId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/approve-password-reset`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`,
+          "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          request_id: requestId,
+          action,
+          redirect_to: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
+        }),
+      });
+      const result = await readFunctionJson(res);
+      if (!res.ok || result.error) throw new Error(result.error || "Failed to update password reset request");
+      showToast(action === "approve" ? "Reset link sent to user" : "Reset request rejected");
+      loadData();
+    } catch (error: any) {
+      showToast(error.message || "Failed to update password reset request", "err");
+    } finally {
+      setActingResetId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F8F7] p-4 md:p-6">
       {/* Toast */}
@@ -557,16 +607,27 @@ export default function AdminPortal() {
         {[
           { id: "roles", label: "Roles & Permissions", icon: "ri-shield-user-line" },
           { id: "users", label: "User Management", icon: "ri-team-line" },
+          {
+            id: "password-resets",
+            label: "Password Resets",
+            icon: "ri-lock-password-line",
+            count: passwordResetRequests.filter((request) => request.status === "pending").length,
+          },
         ].map((t) => (
           <button
             key={t.id}
-            onClick={() => setActiveTab(t.id as "roles" | "users")}
+            onClick={() => setActiveTab(t.id as "roles" | "users" | "password-resets")}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
               activeTab === t.id ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-700"
             }`}
           >
             <i className={t.icon} />
             {t.label}
+            {"count" in t && t.count > 0 && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === t.id ? "bg-white text-gray-900" : "bg-rose-100 text-rose-700"}`}>
+                {t.count}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -1057,6 +1118,83 @@ export default function AdminPortal() {
                     Users are matched by their account email. You can add a user by email before they sign up — the assignment links automatically the first time they log in. Users with no role assigned have no access until an admin assigns one. Role restrictions determine which modules a user can open, including in the sidebar and navigation.
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "password-resets" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Password Reset Requests</p>
+                  <p className="text-xs text-gray-500">Approve a request to email the user a secure reset link.</p>
+                </div>
+                <button
+                  onClick={loadData}
+                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-50 cursor-pointer"
+                >
+                  <i className="ri-refresh-line" />
+                  Refresh
+                </button>
+              </div>
+
+              <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+                {passwordResetRequests.length === 0 ? (
+                  <div className="p-10 text-center text-gray-400">
+                    <i className="ri-lock-password-line text-3xl" />
+                    <p className="text-sm mt-2">No password reset requests yet.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {passwordResetRequests.map((request) => {
+                      const isPending = request.status === "pending";
+                      const isActing = actingResetId === request.id;
+                      return (
+                        <div key={request.id} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-bold text-gray-900">{request.email}</p>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  request.status === "pending"
+                                    ? "bg-amber-50 text-amber-700"
+                                    : request.status === "approved"
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-rose-50 text-rose-700"
+                                }`}
+                              >
+                                {request.status}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Requested {new Date(request.requested_at).toLocaleString()}
+                              {request.acted_at ? ` · Acted ${new Date(request.acted_at).toLocaleString()}` : ""}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              disabled={!isPending || isActing}
+                              onClick={() => handlePasswordResetAction(request.id, "reject")}
+                              className="px-3 py-2 rounded-xl border border-rose-200 text-rose-700 text-xs font-bold hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              type="button"
+                              disabled={!isPending || isActing}
+                              onClick={() => handlePasswordResetAction(request.id, "approve")}
+                              className="px-3 py-2 rounded-xl bg-[#253C7D] text-white text-xs font-bold hover:bg-[#1F336A] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                              {isActing ? "Working..." : "Approve & Send Link"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}

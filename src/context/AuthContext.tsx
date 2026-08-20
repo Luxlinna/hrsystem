@@ -164,10 +164,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
+    const { data, error } = await supabase.functions.invoke("request-password-reset", {
+      body: { email },
     });
-    if (error) throw error;
+    if (error) throw new Error((data as any)?.error || error.message || "Failed to request password reset");
+    if ((data as any)?.error) throw new Error((data as any).error);
   };
 
   const updateProfile = async (updates: { display_name?: string; avatar_url?: string }) => {

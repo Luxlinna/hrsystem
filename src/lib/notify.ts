@@ -17,7 +17,8 @@ export type NotificationSource =
   | "tools"
   | "announcements"
   | "meeting_rooms"
-  | "meeting-rooms";
+  | "meeting-rooms"
+  | "password_reset";
 
 export interface NotifyInput {
   title: string;

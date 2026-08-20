@@ -613,6 +613,12 @@ export default function Hire() {
         actorRole: role?.name || "Admin",
         description: `New job posting: ${payload.title}`,
       });
+      notify({
+        source: "hire",
+        type: "info",
+        title: "New Job Posting",
+        message: `A new job posting "${payload.title}" has been created in ${payload.department}.`,
+      });
     }
 
     setJobModal(false);
@@ -660,6 +666,12 @@ export default function Hire() {
       setUploadingResume(false);
       if (error) { toast("Error", "Failed to add candidate", "error"); return; }
       toast("Candidate added", "New candidate added to applicant tracking.", "success");
+      notify({
+        source: "hire",
+        type: "info",
+        title: "New Candidate Applied",
+        message: `${payload.full_name} has applied and been added to the recruitment pipeline.`,
+      });
     }
 
     setCandidateModal(false);
@@ -692,6 +704,13 @@ export default function Hire() {
       setSchedulingInterview(false);
       if (error) { toast("Error", "Failed to schedule interview", "error"); return; }
       toast("Interview scheduled", "Interview added to calendar.", "success");
+      const candName = candidates.find((c) => c.id === payload.candidate_id)?.full_name || "a candidate";
+      notify({
+        source: "hire",
+        type: "info",
+        title: "Interview Scheduled",
+        message: `An interview has been scheduled for ${candName} on ${new Date(newInterview.scheduled_at).toLocaleDateString()}.`,
+      });
     }
 
     setInterviewModal(false);

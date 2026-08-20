@@ -61,17 +61,63 @@ Deno.serve(async (req) => {
     }
 
     // Create the user in Supabase Auth (without sending Supabase's own email)
-    const { data: userData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      email_confirm: false,
-      user_metadata: {
-        display_name: display_name || email.split("@")[0],
-      },
-    });
+    let userData = null;
+    let createUserError = null;
+
+    try {
+      const result = await supabaseAdmin.auth.admin.createUser({
+        email,
+        email_confirm: false,
+        user_metadata: {
+          display_name: display_name || email.split("@")[0],
+        },
+      });
+      userData = result.data;
+      createUserError = result.error;
+    } catch (e: any) {
+      createUserError = e;
+    }
+
+    let userId: string | null = null;
 
     if (createUserError) {
-      console.error("Create user error:", createUserError);
-      return json({ error: createUserError.message }, 500);
+      const errMsg = createUserError.message || String(createUserError);
+      if (errMsg.includes("already been registered") || errMsg.includes("already exists")) {
+        // Retrieve the existing user's ID by listing users
+        const listResult = await supabaseAdmin.auth.admin.listUsers({
+          perPage: 1000,
+        });
+        if (listResult.error) {
+          console.error("List users error:", listResult.error);
+          return json({ error: listResult.error.message }, 500);
+        }
+        const users = listResult.data?.users || [];
+        const existingAuthUser = users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+        if (existingAuthUser) {
+          userId = existingAuthUser.id;
+        } else {
+          return json({ error: "User is already registered but could not be retrieved from auth records." }, 500);
+        }
+      } else {
+        console.error("Create user error:", createUserError);
+        return json({ error: errMsg }, 500);
+      }
+    } else if (userData?.user) {
+      userId = userData.user.id;
+    }
+
+    if (!userId) {
+      return json({ error: "Failed to determine user ID" }, 500);
+    }
+
+    // Update/link the user_id in user_role_assignments immediately
+    const { error: linkError } = await supabaseAdmin
+      .from("user_role_assignments")
+      .update({ user_id: userId })
+      .eq("email", email);
+
+    if (linkError) {
+      console.error("Failed to link user_id in user_role_assignments:", linkError);
     }
 
     // Generate password reset link (user will set password via this link)
