@@ -1,11 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { useTheme } from "@/context/ThemeContext";
-import { getNotificationTarget } from "@/lib/notificationRoutes";
+import { getNotificationTarget, canSeeNotification } from "@/lib/notificationRoutes";
 import { toast } from "@/components/Toast";
 
 interface NotificationRow {
@@ -15,6 +15,7 @@ interface NotificationRow {
   type: "info" | "success" | "warning" | "error";
   source: string;
   entity_id: string | null;
+  recipient_user_id: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -318,10 +319,15 @@ export default function TopBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notifs, setNotifs] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifs, setNotifs] = useState<NotificationRow[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  // usePermissions() hands back a new `can` function identity every render,
+  // so closing over it directly in the effect below (or listing it as a
+  // dep) would tear down and recreate the realtime subscription constantly.
+  // A ref keeps the toast check reading the latest permissions without that.
+  const canRef = useRef(can);
+  canRef.current = can;
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -413,19 +419,22 @@ export default function TopBar() {
     setSearchFocused(false);
   };
 
+  // Personal notifications (recipient_user_id set) are scoped server-side;
+  // broadcasts are filtered client-side to this role's accessible modules
+  // below (visibleNotifs) — same rule as the full Notifications page, so
+  // the bell badge and the page never disagree. Fetch a generous batch
+  // rather than just the 6 shown, so the unread badge stays accurate after
+  // that filtering.
   useEffect(() => {
-    supabase
-      .from("notifications")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(6)
-      .then(({ data }) => setNotifs(data || []));
+    if (!user?.id) return;
 
     supabase
       .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("is_read", false)
-      .then(({ count }) => setUnreadCount(count || 0));
+      .select("*")
+      .or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`)
+      .order("created_at", { ascending: false })
+      .limit(40)
+      .then(({ data }) => setNotifs(data || []));
 
     const channel = supabase
       .channel("topbar-notifs")
@@ -434,9 +443,11 @@ export default function TopBar() {
         { event: "INSERT", schema: "public", table: "notifications" },
         (payload) => {
           const row = payload.new as NotificationRow;
-          setNotifs((prev) => [row, ...prev].slice(0, 6));
-          setUnreadCount((c) => c + 1);
-          toast(row.title, row.message, row.type);
+          if (row.recipient_user_id && row.recipient_user_id !== user.id) return;
+          setNotifs((prev) => [row, ...prev].slice(0, 40));
+          if (row.recipient_user_id === user.id || canSeeNotification(row.source, canRef.current)) {
+            toast(row.title, row.message, row.type);
+          }
         }
       )
       .on(
@@ -444,10 +455,8 @@ export default function TopBar() {
         { event: "UPDATE", schema: "public", table: "notifications" },
         (payload) => {
           const row = payload.new as NotificationRow;
-          const old = payload.old as NotificationRow;
+          if (row.recipient_user_id && row.recipient_user_id !== user.id) return;
           setNotifs((prev) => prev.map((n) => (n.id === row.id ? row : n)));
-          if (!old.is_read && row.is_read) setUnreadCount((c) => Math.max(0, c - 1));
-          else if (old.is_read && !row.is_read) setUnreadCount((c) => c + 1);
         }
       )
       .on(
@@ -455,8 +464,8 @@ export default function TopBar() {
         { event: "DELETE", schema: "public", table: "notifications" },
         (payload) => {
           const old = payload.old as NotificationRow;
+          if (old.recipient_user_id && old.recipient_user_id !== user.id) return;
           setNotifs((prev) => prev.filter((n) => n.id !== old.id));
-          if (!old.is_read) setUnreadCount((c) => Math.max(0, c - 1));
         }
       )
       .subscribe();
@@ -464,7 +473,20 @@ export default function TopBar() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
+
+  const visibleNotifs = useMemo(
+    () =>
+      notifs.filter(
+        (n) => n.recipient_user_id === user?.id || canSeeNotification(n.source, can)
+      ),
+    [notifs, can, user?.id]
+  );
+  const previewNotifs = useMemo(() => visibleNotifs.slice(0, 6), [visibleNotifs]);
+  const unreadCount = useMemo(
+    () => visibleNotifs.filter((n) => !n.is_read).length,
+    [visibleNotifs]
+  );
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -484,7 +506,6 @@ export default function TopBar() {
     setNotifs((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
-    setUnreadCount((c) => Math.max(0, c - 1));
   };
 
   const openNotification = (n: NotificationRow) => {
@@ -497,6 +518,7 @@ export default function TopBar() {
   const handleLogout = async () => {
     await logout();
     setProfileOpen(false);
+    navigate("/login", { replace: true });
   };
 
   const textColor = "text-gray-600 hover:text-gray-900";
@@ -662,7 +684,10 @@ export default function TopBar() {
                   </Link>
                 </div>
                 <div className="max-h-72 overflow-y-auto">
-                  {notifs.map((n) => (
+                  {previewNotifs.length === 0 && (
+                    <p className="px-4 py-6 text-center text-[12px] text-gray-400">You're all caught up</p>
+                  )}
+                  {previewNotifs.map((n) => (
                     <button
                       key={n.id}
                       onClick={() => openNotification(n)}
