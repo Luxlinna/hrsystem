@@ -36,15 +36,30 @@ async function sendEmail(to: string, resetLink: string) {
   await transporter.sendMail({
     from: emailFrom,
     to,
-    subject: "Password reset approved",
-    html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
-        <h2>Password reset approved</h2>
-        <p>An administrator approved your request to reset your HR System password.</p>
-        <p><a href="${resetLink}" style="display:inline-block;background:#253C7D;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:700;">Set new password</a></p>
-        <p style="font-size:12px;color:#6b7280;">If the button does not work, copy and paste this link into your browser:<br>${resetLink}</p>
-      </div>
-    `,
+    subject: "Password Reset Approved — HR System",
+    html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 22px;">Password Reset Approved</h1>
+  </div>
+  <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+    <p style="font-size: 16px; margin-top: 0;">Hello,</p>
+    <p style="font-size: 15px; color: #475569;">An administrator has approved your request to reset your HR System password. Click the button below to set a new password:</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${resetLink}" style="display:inline-block;background:#253C7D;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;">Set New Password</a>
+    </div>
+    <p style="font-size: 13px; color: #94a3b8; text-align: center;">This link will expire in 1 hour for security purposes.</p>
+    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+    <p style="font-size: 12px; color: #94a3b8; margin: 0;">If you didn't request this, please ignore this email or contact your administrator.</p>
+    <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">— The HR System Team</p>
+  </div>
+</body>
+</html>`,
   });
 }
 

@@ -345,6 +345,24 @@ export default function AdminPortal() {
     if (searchParams.get("tab") === "password-resets") setActiveTab("password-resets");
   }, [searchParams]);
 
+  // Realtime subscription for new password reset requests
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin_password_resets")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "password_reset_requests" },
+        () => { loadData(); }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "password_reset_requests" },
+        () => { loadData(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   // ── Role CRUD ──
   const openNewRole = () => {
     setEditingRole(null);

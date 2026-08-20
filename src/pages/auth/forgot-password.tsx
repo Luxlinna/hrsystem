@@ -39,8 +39,10 @@ export default function ForgotPasswordPage() {
             <div className="flex flex-col items-center text-center p-6 bg-emerald-50 border border-emerald-100 rounded-xl">
               <i className="ri-mail-check-line text-3xl text-emerald-600 mb-3" />
               <p className="text-[13px] text-emerald-800 leading-relaxed">
-                If an account exists for <span className="font-semibold">{email}</span>, an
-                administrator has been notified. After approval, your reset link will be emailed to you.
+                If an account exists for <span className="font-semibold">{email}</span>, your request has been submitted to an administrator for approval.
+              </p>
+              <p className="text-[12px] text-emerald-700 mt-2 leading-relaxed">
+                Once approved, you will receive a password reset link via email. Please check your inbox.
               </p>
             </div>
             <Link

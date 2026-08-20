@@ -1,5 +1,4 @@
-import { serve } from "std/http/server.ts";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,7 +23,7 @@ async function findUserByEmail(admin: any, email: string) {
   return null;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
@@ -38,7 +37,7 @@ serve(async (req) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const generic = { success: true, message: "If the account exists, an administrator has been notified." };
+    const generic = { success: true, message: "Your request has been submitted to an administrator for approval. Once approved, you will receive a password reset link via email." };
     const authUser = await findUserByEmail(admin, normalizedEmail);
 
     if (!authUser) return json(generic);
