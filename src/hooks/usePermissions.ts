@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -12,6 +12,8 @@ export interface UserRole {
   employees_manage: boolean;
   self_service_all_employees: boolean;
   leave_view_all_employees: boolean;
+  /** Deciding leave is a separate right from seeing it — see migration 20260819010000. */
+  leave_approve: boolean;
   payroll_view_all_employees: boolean;
   attendance_view_all_employees: boolean;
   performance_view_all_employees: boolean;
@@ -57,6 +59,7 @@ function bootstrapAdminRole(): UserRole {
     employees_manage: true,
     self_service_all_employees: true,
     leave_view_all_employees: true,
+    leave_approve: true,
     payroll_view_all_employees: true,
     attendance_view_all_employees: true,
     performance_view_all_employees: true,
@@ -101,6 +104,7 @@ function toUserRole(data: any): UserRole | null {
     employees_manage: !!r.employees_manage,
     self_service_all_employees: !!r.self_service_all_employees,
     leave_view_all_employees: !!r.leave_view_all_employees,
+    leave_approve: !!r.leave_approve,
     payroll_view_all_employees: !!r.payroll_view_all_employees,
     attendance_view_all_employees: !!r.attendance_view_all_employees,
     performance_view_all_employees: !!r.performance_view_all_employees,
@@ -120,6 +124,47 @@ export function usePermissions(): UsePermissionsReturn {
   const [role, setRole] = useState<UserRole | null>(cachedRole);
   const [loading, setLoading] = useState(!cachedRole);
 
+  const resolveRole = useCallback(async (currentUser: NonNullable<typeof user>) => {
+    // Link this auth user to any pre-provisioned assignment row (matched by
+    // email) via a SECURITY DEFINER RPC — it can only ever set user_id on a
+    // row that already matches this user's own email, never touch role_id.
+    await supabase.rpc("link_my_role_assignment");
+
+    // An .or() can legitimately match two rows (one by user_id, one by the
+    // pre-provisioned email row), which makes .maybeSingle() error out and
+    // silently drop the user to the edge-function fallback. Order and take
+    // the first instead so a duplicate row degrades to "use the linked one"
+    // rather than "no role at all".
+    const { data, error } = await supabase
+      .from("user_role_assignments")
+      .select("*, app_roles(*)")
+      .or(`user_id.eq.${currentUser.id},email.eq.${currentUser.email?.toLowerCase() || ""}`)
+      .order("user_id", { nullsFirst: false })
+      .limit(1);
+
+    const row = !error && data && data.length > 0 ? data[0] : null;
+    const assignment = row?.app_roles ? row : await fetchRoleFromFunction();
+    const userRole = toUserRole(assignment);
+
+    if (userRole) {
+      cachedRole = userRole;
+      cachedUid = currentUser.id;
+      setRole(userRole);
+    } else if (isBootstrapAdminEmail(currentUser.email)) {
+      const fallbackRole = bootstrapAdminRole();
+      cachedRole = fallbackRole;
+      cachedUid = currentUser.id;
+      setRole(fallbackRole);
+    } else {
+      // No assignment (or the read failed) = no access until an admin
+      // assigns a role via the Admin Portal. Never fail open.
+      cachedRole = null;
+      cachedUid = currentUser.id;
+      setRole(null);
+    }
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -138,48 +183,63 @@ export function usePermissions(): UsePermissionsReturn {
       return;
     }
 
-    (async () => {
-      // Link this auth user to any pre-provisioned assignment row (matched by
-      // email) via a SECURITY DEFINER RPC — it can only ever set user_id on a
-      // row that already matches this user's own email, never touch role_id.
-      await supabase.rpc("link_my_role_assignment");
+    resolveRole(user);
+  }, [user, authLoading, resolveRole]);
 
-      const { data, error } = await supabase
-        .from("user_role_assignments")
-        .select("*, app_roles(*)")
-        .or(`user_id.eq.${user.id},email.eq.${user.email?.toLowerCase() || ""}`)
-        .maybeSingle();
+  // A role change made by an admin happens in *their* browser, so the affected
+  // user's open session would otherwise keep its cached permissions until a
+  // full reload. Re-resolve when the tab regains focus, and react immediately
+  // if this user's own assignment row changes.
+  useEffect(() => {
+    if (authLoading || !user) return;
 
-      const assignment = !error && data?.app_roles ? data : await fetchRoleFromFunction();
-      const userRole = toUserRole(assignment);
+    const refresh = () => {
+      cachedRole = null;
+      cachedUid = null;
+      resolveRole(user);
+    };
 
-      if (userRole) {
-        cachedRole = userRole;
-        cachedUid = user.id;
-        setRole(userRole);
-      } else if (isBootstrapAdminEmail(user.email)) {
-        const fallbackRole = bootstrapAdminRole();
-        cachedRole = fallbackRole;
-        cachedUid = user.id;
-        setRole(fallbackRole);
-      } else {
-        // No assignment (or the read failed) = no access until an admin
-        // assigns a role via the Admin Portal. Never fail open.
-        cachedRole = null;
-        cachedUid = user.id;
-        setRole(null);
-      }
-      setLoading(false);
-    })();
-  }, [user, authLoading]);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
-  const can = (module: string): boolean => {
-    if (loading) return false;
-    if (!role) return false; // unassigned = no access
-    if (role.is_admin) return true;
-    if (role.allowed_modules.includes("*")) return true;
-    return role.allowed_modules.includes(module);
-  };
+    const channel = supabase
+      .channel(`my-role-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_role_assignments" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { user_id?: string; email?: string } | null;
+          const mine =
+            row?.user_id === user.id ||
+            (!!row?.email && row.email.toLowerCase() === (user.email?.toLowerCase() || ""));
+          if (mine) refresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      supabase.removeChannel(channel);
+    };
+  }, [user, authLoading, resolveRole]);
+
+  // Memoized so its identity only changes when the underlying permissions
+  // actually do — components legitimately put `can` in effect/callback
+  // dependency arrays, and a fresh function on every render there turns
+  // into an infinite fetch loop (effect runs -> setState -> re-render ->
+  // new `can` -> effect runs again).
+  const can = useCallback(
+    (module: string): boolean => {
+      if (loading) return false;
+      if (!role) return false; // unassigned = no access
+      if (role.is_admin) return true;
+      if (role.allowed_modules.includes("*")) return true;
+      return role.allowed_modules.includes(module);
+    },
+    [loading, role]
+  );
 
   const isAdmin = !loading && !!role && (role.is_admin || role.allowed_modules.includes("*"));
 

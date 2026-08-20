@@ -56,14 +56,18 @@ const PLAN_TYPE_CONFIG: Record<
   string,
   { label: string; icon: string; color: string; bg: string }
 > = {
-  health: { label: "Medical Health", icon: "ri-heart-pulse-line", color: "text-rose-600", bg: "bg-rose-50" },
-  dental: { label: "Dental Care", icon: "ri-empathize-line", color: "text-blue-600", bg: "bg-blue-50" },
-  vision: { label: "Vision & Optical", icon: "ri-eye-line", color: "text-indigo-600", bg: "bg-indigo-50" },
-  life: { label: "Life Insurance", icon: "ri-shield-star-line", color: "text-amber-600", bg: "bg-amber-50" },
-  retirement: { label: "Retirement & 401(k)", icon: "ri-safe-2-line", color: "text-emerald-600", bg: "bg-emerald-50" },
-  commuter: { label: "Commuter & Transit", icon: "ri-car-line", color: "text-purple-600", bg: "bg-purple-50" },
-  wellness: { label: "Wellness & Gym", icon: "ri-run-line", color: "text-teal-600", bg: "bg-teal-50" },
-  other: { label: "Other Perk", icon: "ri-gift-line", color: "text-slate-600", bg: "bg-slate-50" },
+  // Plan types are categories, not states — none is more urgent or "better"
+  // than another, so they share one branded accent and are told apart by their
+  // icon and label. Colour on this page is reserved for enrollment STATUS,
+  // where it actually carries meaning.
+  health: { label: "Medical Health", icon: "ri-heart-pulse-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  dental: { label: "Dental Care", icon: "ri-empathize-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  vision: { label: "Vision & Optical", icon: "ri-eye-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  life: { label: "Life Insurance", icon: "ri-shield-star-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  retirement: { label: "Retirement & 401(k)", icon: "ri-safe-2-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  commuter: { label: "Commuter & Transit", icon: "ri-car-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  wellness: { label: "Wellness & Gym", icon: "ri-run-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+  other: { label: "Other Perk", icon: "ri-gift-line", color: "text-slate-600", bg: "bg-slate-100" },
 };
 
 const initials = (first?: string, last?: string) =>
@@ -660,14 +664,14 @@ export default function Benefits() {
         {/* Total Eligible Capacity */}
         <div className="bg-white border border-gray-200/80 rounded-2xl p-4 shadow-2xs relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Total Capacity</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+            <span className="text-[11px] font-bold text-[#253C7D] uppercase tracking-wider">Total Capacity</span>
+            <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
               <i className="ri-team-line text-sm" />
             </div>
           </div>
-          <p className="text-2xl font-black text-blue-700 mt-2">{totalEligible}</p>
+          <p className="text-2xl font-black text-[#253C7D] mt-2">{totalEligible}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">Eligible seats across plans</p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500" />
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#253C7D]/100" />
         </div>
       </div>
 
@@ -1407,7 +1411,7 @@ export default function Benefits() {
               <div className="p-6 space-y-5">
                 {/* Financial Overview Card */}
                 <div className="p-5 bg-gradient-to-r from-[#253C7D] to-[#17254E] rounded-3xl text-white shadow-md">
-                  <span className="text-[10px] font-bold text-sky-200 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider block">
                     Max Annual Coverage Limit
                   </span>
                   <p className="text-3xl font-black text-white mt-1">
