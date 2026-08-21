@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useTheme } from "@/context/ThemeContext";
 import { getNotificationTarget, canSeeNotification } from "@/lib/notificationRoutes";
 import { toast } from "@/components/Toast";
@@ -320,6 +321,9 @@ export default function TopBar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifs, setNotifs] = useState<NotificationRow[]>([]);
+  // The dropdown previews a capped batch of recent notifications, but the
+  // badge counts the whole unread backlog via the shared hook.
+  const { unreadCount, dismissUnread } = useUnreadNotifications();
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   // usePermissions() hands back a new `can` function identity every render,
@@ -421,10 +425,9 @@ export default function TopBar() {
 
   // Personal notifications (recipient_user_id set) are scoped server-side;
   // broadcasts are filtered client-side to this role's accessible modules
-  // below (visibleNotifs) — same rule as the full Notifications page, so
-  // the bell badge and the page never disagree. Fetch a generous batch
-  // rather than just the 6 shown, so the unread badge stays accurate after
-  // that filtering.
+  // below (visibleNotifs) — same rule as the full Notifications page. Fetch
+  // a generous batch rather than just the 6 shown, so the preview still has
+  // enough rows to fill after that filtering.
   useEffect(() => {
     if (!user?.id) return;
 
@@ -483,10 +486,6 @@ export default function TopBar() {
     [notifs, can, user?.id]
   );
   const previewNotifs = useMemo(() => visibleNotifs.slice(0, 6), [visibleNotifs]);
-  const unreadCount = useMemo(
-    () => visibleNotifs.filter((n) => !n.is_read).length,
-    [visibleNotifs]
-  );
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -502,6 +501,7 @@ export default function TopBar() {
   }, []);
 
   const markRead = async (id: string) => {
+    dismissUnread(id);
     await supabase.from("notifications").update({ is_read: true }).eq("id", id);
     setNotifs((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))

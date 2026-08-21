@@ -1,10 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { useState, useCallback } from "react";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/context/AuthContext";
 import { isBootstrapAdminEmail, usePermissions } from "@/hooks/usePermissions";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useTheme } from "@/context/ThemeContext";
 
 const navGroups = [
@@ -75,7 +75,7 @@ export default function Sidebar() {
   const canOpenAdminPortal = isAdmin || isBootstrapAdminEmail(user?.email);
   const canOpenRecycleBin = canOpenAdminPortal || /manager/i.test(role?.name || "");
   const [hovered, setHovered] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount } = useUnreadNotifications();
 
   const { isDark, toggleTheme } = useTheme();
   const visibleGroups = navGroups
@@ -93,45 +93,6 @@ export default function Sidebar() {
     "HR Admin";
   const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const avatarUrl = myEmployee?.avatar_url || (user?.user_metadata?.avatar_url as string | undefined);
-
-  useEffect(() => {
-    supabase
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("is_read", false)
-      .then(({ count }) => setUnreadCount(count || 0));
-
-    const channel = supabase
-      .channel("sidebar-notifs")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications" },
-        () => setUnreadCount((c) => c + 1)
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "notifications" },
-        (payload) => {
-          const old = payload.old as { is_read: boolean };
-          const row = payload.new as { is_read: boolean };
-          if (!old.is_read && row.is_read) setUnreadCount((c) => Math.max(0, c - 1));
-          else if (old.is_read && !row.is_read) setUnreadCount((c) => c + 1);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "notifications" },
-        (payload) => {
-          const old = payload.old as { is_read: boolean };
-          if (!old.is_read) setUnreadCount((c) => Math.max(0, c - 1));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   const handleMouseEnter = useCallback(() => setHovered(true), []);
   const handleMouseLeave = useCallback(() => setHovered(false), []);
