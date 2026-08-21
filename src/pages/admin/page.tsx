@@ -573,12 +573,17 @@ export default function AdminPortal() {
   const handlePasswordResetAction = async (requestId: string, action: "approve" | "reject") => {
     setActingResetId(requestId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      let { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Not authenticated");
+      if ((session.expires_at ?? 0) * 1000 <= Date.now()) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        session = refreshed.session ?? session;
+      }
       const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/approve-password-reset`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token}`,
+          "Authorization": `Bearer ${session.access_token}`,
           "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({
