@@ -25,6 +25,8 @@ export interface UserRole {
   task_view_all_employees: boolean;
   task_view_own_branch: boolean;
   meeting_rooms_approve: boolean;
+  /** Opt-in to attendance check-in/check-out notifications — see migration 20260821000000. */
+  attendance_notify: boolean;
 }
 
 interface UsePermissionsReturn {
@@ -71,6 +73,7 @@ function bootstrapAdminRole(): UserRole {
     task_view_all_employees: true,
     task_view_own_branch: true,
     meeting_rooms_approve: true,
+    attendance_notify: true,
   };
 }
 
@@ -116,6 +119,7 @@ function toUserRole(data: any): UserRole | null {
     task_view_all_employees: !!r.task_view_all_employees,
     task_view_own_branch: !!r.task_view_own_branch,
     meeting_rooms_approve: !!r.meeting_rooms_approve,
+    attendance_notify: !!r.attendance_notify,
   };
 }
 

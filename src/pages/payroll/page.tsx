@@ -144,14 +144,13 @@ export default function Payroll() {
       ]);
 
       setAllRecords((recordsData as PayrollRecord[]) || []);
-      setEmployees(
-        ((empsData || []) as (Omit<Employee, "branches"> & { branches?: Employee["branches"] | Employee["branches"][] })[]).map(
-          (employee) => ({
-            ...employee,
-            branches: Array.isArray(employee.branches) ? employee.branches[0] || null : employee.branches || null,
-          })
-        )
-      );
+      // supabase-js's untyped client can't tell employees→branches is a
+      // to-one relationship from the select string alone, so it infers
+      // `branches` as an array — PostgREST actually returns a single object
+      // here (confirmed by the `emp.branches?.name` access below), so this
+      // is a real mismatch between the client's generic inference and
+      // runtime shape, not an actual data-shape bug.
+      setEmployees((empsData as unknown as Employee[]) || []);
 
       // If no records in current month, set selectedMonth to the latest month with data
       if (recordsData && recordsData.length > 0) {

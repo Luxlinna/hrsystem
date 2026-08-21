@@ -13,6 +13,7 @@ import { toast } from "@/components/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import { logActivity } from "@/lib/audit";
+import { notify } from "@/lib/notify";
 
 interface Branch {
   id: string;
@@ -330,6 +331,14 @@ export default function Finance() {
       description: `${exp?.category || "Expense"} ($${exp ? Number(exp.amount).toLocaleString() : "?"}) marked ${status}`,
     });
 
+    notify({
+      source: "finance",
+      type: status === "approved" ? "success" : status === "rejected" ? "warning" : "info",
+      title: `Expense ${status === "approved" ? "Approved" : status === "rejected" ? "Rejected" : "Updated"}`,
+      message: `${exp?.category || "Expense"} ($${exp ? Number(exp.amount).toLocaleString() : "?"}) has been marked as ${STATUS_CONFIG[status]?.label || status}.`,
+      entityId: id,
+    });
+
     setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
     if (selectedExpense && selectedExpense.id === id) {
       setSelectedExpense({ ...selectedExpense, status });
@@ -377,6 +386,12 @@ export default function Finance() {
       actorName,
       actorRole: role?.name || "Unknown",
       description: `New ${expenseForm.category} expense submitted ($${Number(expenseForm.amount).toLocaleString()})`,
+    });
+    notify({
+      source: "finance",
+      type: "warning",
+      title: "New Expense Pending Review",
+      message: `${expenseForm.submitted_by || actorName} submitted a ${expenseForm.category} expense of $${Number(expenseForm.amount).toLocaleString()} for approval.`,
     });
     loadData();
   };

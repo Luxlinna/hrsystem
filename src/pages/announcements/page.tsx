@@ -185,7 +185,7 @@ export default function Announcements() {
       action: "updated",
       entityType: "announcement_acknowledgement",
       entityId: announcementId,
-      actorName,
+      actorName: authorName,
       actorRole: role?.name || "Staff",
       description: `Acknowledged urgent announcement "${selectedItem?.title || announcementId}"`,
     });
@@ -254,7 +254,7 @@ export default function Announcements() {
         action: "updated",
         entityType: "announcement",
         entityId: a.id,
-        actorName,
+        actorName: authorName,
         actorRole: role?.name || "Unknown",
         description: `${newPinned ? "Pinned" : "Unpinned"} announcement "${a.title}"`,
       });
@@ -319,7 +319,7 @@ export default function Announcements() {
         action: "updated",
         entityType: "announcement",
         entityId: editingId,
-        actorName,
+        actorName: authorName,
         actorRole: role?.name || "Unknown",
         description: `Updated announcement "${form.title}"`,
       });
@@ -349,7 +349,7 @@ export default function Announcements() {
         action: "created",
         entityType: "announcement",
         entityId: data.id,
-        actorName,
+        actorName: authorName,
         actorRole: role?.name || "Unknown",
         description: `Published announcement "${form.title}" (${form.category})`,
       });
@@ -414,7 +414,7 @@ export default function Announcements() {
       action: "deleted",
       entityType: "announcement",
       entityId: a.id,
-      actorName,
+      actorName: authorName,
       actorRole: role?.name || "Unknown",
       description: `Moved announcement "${a.title}" to Recycle Bin`,
     });

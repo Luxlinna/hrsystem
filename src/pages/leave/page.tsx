@@ -410,7 +410,16 @@ export default function Leave() {
     setPage(Math.floor(idx / pageSize) + 1);
     setActiveTab("requests");
     const t = setTimeout(() => {
-      const el = document.getElementById(`leave-request-${highlightId}`);
+      // The desktop table row and the mobile card share the request's id but
+      // render as two separate elements (one hidden via CSS depending on
+      // viewport) — pick whichever one is actually visible.
+      const desktopEl = document.getElementById(`leave-request-desktop-${highlightId}`);
+      const mobileEl = document.getElementById(`leave-request-mobile-${highlightId}`);
+      const el =
+        (desktopEl && desktopEl.offsetParent !== null && desktopEl) ||
+        (mobileEl && mobileEl.offsetParent !== null && mobileEl) ||
+        desktopEl ||
+        mobileEl;
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
       el?.focus({ preventScroll: true });
     }, 150);
@@ -711,6 +720,17 @@ export default function Leave() {
         end_date: "",
         reason: "",
       });
+
+      const empName = myEmployee
+        ? `${myEmployee.first_name} ${myEmployee.last_name}`.trim()
+        : "An employee";
+      notify({
+        source: "leave",
+        type: "warning",
+        title: "New Leave Request Pending",
+        message: `${empName} has requested ${LEAVE_TYPE_CONFIG[formData.leave_type]?.label || formData.leave_type} leave from ${formData.start_date} to ${formData.end_date} (${days} day${days !== 1 ? "s" : ""}).`,
+      });
+
       loadData();
     }
   };
@@ -1030,7 +1050,7 @@ export default function Leave() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl border backdrop-blur-md text-[13px] font-medium transition-all transform animate-in slide-in-from-top-4 duration-200 ${toast.type === "success"
+          className={`fixed top-4 left-4 right-4 sm:top-6 sm:right-6 sm:left-auto sm:max-w-sm z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl border backdrop-blur-md text-[13px] font-medium transition-all transform animate-in slide-in-from-top-4 duration-200 ${toast.type === "success"
               ? "bg-emerald-950/90 border-emerald-700/50 text-emerald-100"
               : toast.type === "error"
                 ? "bg-rose-950/90 border-rose-700/50 text-rose-100"
@@ -1267,11 +1287,11 @@ export default function Leave() {
       })()}
 
       {/* Main Tab Navigation Header */}
-      <div className="flex items-center justify-between gap-4 border-b border-gray-200/80 mb-6">
-        <div className="flex items-center gap-2">
+      <div className="border-b border-gray-200/80 mb-6 overflow-x-auto">
+        <div className="flex items-center gap-2 w-max min-w-full">
           <button
             onClick={() => setActiveTab("requests")}
-            className={`inline-flex items-center gap-2 py-3 px-4 font-semibold text-[13px] border-b-2 transition-all cursor-pointer ${activeTab === "requests"
+            className={`inline-flex items-center gap-2 py-3 px-4 font-semibold text-[13px] border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === "requests"
                 ? "border-[#253C7D] text-[#253C7D]"
                 : "border-transparent text-gray-500 hover:text-gray-900"
               }`}
@@ -1290,24 +1310,26 @@ export default function Leave() {
 
           <button
             onClick={() => setActiveTab("balances")}
-            className={`inline-flex items-center gap-2 py-3 px-4 font-semibold text-[13px] border-b-2 transition-all cursor-pointer ${activeTab === "balances"
+            className={`inline-flex items-center gap-2 py-3 px-4 font-semibold text-[13px] border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === "balances"
                 ? "border-[#253C7D] text-[#253C7D]"
                 : "border-transparent text-gray-500 hover:text-gray-900"
               }`}
           >
             <i className="ri-pie-chart-2-line text-base" />
-            <span>Leave Balances & Quotas</span>
+            <span className="hidden sm:inline">Leave Balances & Quotas</span>
+            <span className="sm:hidden">Balances</span>
           </button>
 
           <button
             onClick={() => setActiveTab("calendar")}
-            className={`inline-flex items-center gap-2 py-3 px-4 font-semibold text-[13px] border-b-2 transition-all cursor-pointer ${activeTab === "calendar"
+            className={`inline-flex items-center gap-2 py-3 px-4 font-semibold text-[13px] border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === "calendar"
                 ? "border-[#253C7D] text-[#253C7D]"
                 : "border-transparent text-gray-500 hover:text-gray-900"
               }`}
           >
             <i className="ri-calendar-line text-base" />
-            <span>Team Schedule Calendar</span>
+            <span className="hidden sm:inline">Team Schedule Calendar</span>
+            <span className="sm:hidden">Calendar</span>
           </button>
         </div>
       </div>
@@ -1317,8 +1339,11 @@ export default function Leave() {
         <div className="space-y-4">
           {/* Advanced Multi-Filter Toolbar */}
           <div className="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 flex-wrap">
-            {/* Left: Status Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+            {/* Left: Status Filter Pills — wraps on phones so every filter
+                stays visible at a glance instead of hiding behind a
+                sideways scroll; collapses back to one scrollable row once
+                there's enough width for it to make sense. */}
+            <div className="flex items-center flex-wrap md:flex-nowrap gap-1.5 md:overflow-x-auto md:pb-1">
               {[
                 { id: "all", label: "All Requests", count: requests.length },
                 {
@@ -1370,10 +1395,14 @@ export default function Leave() {
               ))}
             </div>
 
-            {/* Right: Search + Dropdown Filters */}
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full md:w-auto">
+            {/* Right: Search + Dropdown Filters — an explicit stacked layout
+                on phones (full-width search, then the filters sharing a
+                row) reads far cleaner than letting flex-wrap decide, which
+                left the search box starved of width alongside two
+                shrink-resistant selects. Reverts to one row from sm: up. */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
               {/* Search */}
-              <div className="relative flex-1 sm:w-60">
+              <div className="relative w-full sm:w-60">
                 <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                 <input
                   type="text"
@@ -1395,67 +1424,70 @@ export default function Leave() {
                 )}
               </div>
 
-              {/* Department filter */}
-              {canManage && departments.length > 0 && (
+              <div className="flex items-center gap-2">
+                {/* Department filter */}
+                {canManage && departments.length > 0 && (
+                  <select
+                    value={departmentFilter}
+                    onChange={(e) => {
+                      setDepartmentFilter(e.target.value);
+                      setPage(1);
+                    }}
+                    className="flex-1 sm:flex-none min-w-0 px-2.5 py-1.5 rounded-xl border border-gray-200 text-[12px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  >
+                    <option value="all">All Departments</option>
+                    {departments.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {/* Leave Type filter */}
                 <select
-                  value={departmentFilter}
+                  value={leaveTypeFilter}
                   onChange={(e) => {
-                    setDepartmentFilter(e.target.value);
+                    setLeaveTypeFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="px-2.5 py-1.5 rounded-xl border border-gray-200 text-[12px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  className="flex-1 sm:flex-none min-w-0 px-2.5 py-1.5 rounded-xl border border-gray-200 text-[12px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
-                  <option value="all">All Departments</option>
-                  {departments.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
+                  <option value="all">All Leave Types</option>
+                  {Object.entries(LEAVE_TYPE_CONFIG).map(([type, cfg]) => (
+                    <option key={type} value={type}>
+                      {cfg.label}
                     </option>
                   ))}
                 </select>
-              )}
 
-              {/* Leave Type filter */}
-              <select
-                value={leaveTypeFilter}
-                onChange={(e) => {
-                  setLeaveTypeFilter(e.target.value);
-                  setPage(1);
-                }}
-                className="px-2.5 py-1.5 rounded-xl border border-gray-200 text-[12px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
-              >
-                <option value="all">All Leave Types</option>
-                {Object.entries(LEAVE_TYPE_CONFIG).map(([type, cfg]) => (
-                  <option key={type} value={type}>
-                    {cfg.label}
-                  </option>
-                ))}
-              </select>
-
-              {/* Reset filter button */}
-              {(statusFilter !== "all" ||
-                leaveTypeFilter !== "all" ||
-                departmentFilter !== "all" ||
-                searchQuery) && (
-                  <button
-                    onClick={() => {
-                      setStatusFilter("all");
-                      setLeaveTypeFilter("all");
-                      setDepartmentFilter("all");
-                      setSearchQuery("");
-                      setPage(1);
-                    }}
-                    className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                    title="Reset filters"
-                  >
-                    <i className="ri-refresh-line" />
-                  </button>
-                )}
+                {/* Reset filter button */}
+                {(statusFilter !== "all" ||
+                  leaveTypeFilter !== "all" ||
+                  departmentFilter !== "all" ||
+                  searchQuery) && (
+                    <button
+                      onClick={() => {
+                        setStatusFilter("all");
+                        setLeaveTypeFilter("all");
+                        setDepartmentFilter("all");
+                        setSearchQuery("");
+                        setPage(1);
+                      }}
+                      className="shrink-0 px-2 py-1.5 text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                      title="Reset filters"
+                    >
+                      <i className="ri-refresh-line" />
+                    </button>
+                  )}
+              </div>
             </div>
           </div>
 
           {/* Leave Requests Table */}
           <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Desktop: full table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50/80 border-b border-gray-200/80 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
@@ -1491,7 +1523,7 @@ export default function Leave() {
                     return (
                       <tr
                         key={r.id}
-                        id={`leave-request-${r.id}`}
+                        id={`leave-request-desktop-${r.id}`}
                         tabIndex={-1}
                         className={`group hover:bg-slate-50/80 transition-colors ${isHighlighted ? "bg-indigo-50/40 ring-2 ring-inset ring-[#253C7D]/30" : ""
                           }`}
@@ -1657,6 +1689,168 @@ export default function Leave() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile: card list */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {pagedRows.map((r) => {
+                const typeCfg = LEAVE_TYPE_CONFIG[r.leave_type] || {
+                  label: r.leave_type,
+                  icon: "ri-calendar-event-line",
+                  bg: "bg-gray-50",
+                  text: "text-gray-700",
+                  border: "border-gray-200",
+                  badgeBg: "bg-gray-100 text-gray-800",
+                };
+                const statusCfg = STATUS_CONFIG[r.status] || {
+                  label: r.status,
+                  icon: "ri-checkbox-circle-line",
+                  bg: "bg-gray-100 text-gray-700 border-gray-200",
+                  text: "text-gray-700",
+                  dot: "bg-gray-400",
+                };
+                const isSelf = r.employee_id === myEmployee?.id;
+                const isHighlighted = r.id === highlightId;
+
+                return (
+                  <div
+                    key={r.id}
+                    id={`leave-request-mobile-${r.id}`}
+                    tabIndex={-1}
+                    className={`p-4 space-y-3 ${isHighlighted ? "bg-indigo-50/40 ring-2 ring-inset ring-[#253C7D]/30" : ""}`}
+                  >
+                    {/* Employee + view details */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#253C7D] to-[#3B5998] text-white flex items-center justify-center font-bold text-xs shadow-sm overflow-hidden flex-shrink-0">
+                          {r.employees?.avatar_url ? (
+                            <img src={r.employees.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span>
+                              {r.employees?.first_name?.charAt(0) || "E"}
+                              {r.employees?.last_name?.charAt(0) || ""}
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[13px] font-bold text-gray-900 leading-snug truncate">
+                              {r.employees?.first_name} {r.employees?.last_name}
+                            </span>
+                            {isSelf && (
+                              <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-100 text-blue-700 shrink-0">
+                                You
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-500 truncate">
+                            {r.employees?.role || "Staff"} &bull;{" "}
+                            <span className="font-medium text-gray-600">
+                              {r.employees?.department || "General"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setInspectRequest(r)}
+                        className="w-8 h-8 shrink-0 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer"
+                        title="View details"
+                      >
+                        <i className="ri-eye-line text-sm" />
+                      </button>
+                    </div>
+
+                    {/* Type + Status badges */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${typeCfg.bg} ${typeCfg.text} ${typeCfg.border}`}
+                      >
+                        <i className={`${typeCfg.icon} text-xs`} />
+                        <span>{typeCfg.label}</span>
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${statusCfg.bg}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                        <span>{statusCfg.label}</span>
+                      </span>
+                    </div>
+
+                    {/* Date range + duration */}
+                    <div className="flex items-center justify-between text-[12px]">
+                      <span className="font-medium text-gray-900">
+                        {formatDateShort(r.start_date)} – {formatDateShort(r.end_date)}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-gray-100 text-[11px] font-bold text-gray-800 shrink-0">
+                        {r.days} {r.days === 1 ? "day" : "days"}
+                      </span>
+                    </div>
+
+                    {/* Reason */}
+                    {r.reason ? (
+                      <p
+                        className="text-[12px] text-gray-600 line-clamp-2 cursor-pointer"
+                        onClick={() => setInspectRequest(r)}
+                      >
+                        {r.reason}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-gray-400 italic">No notes provided</p>
+                    )}
+
+                    {/* Actions */}
+                    {((canApproveLeave && r.status === "pending" && !isSelf) ||
+                      (isSelf && r.status === "pending")) && (
+                      <div className="flex items-center gap-2 pt-1">
+                        {canApproveLeave && r.status === "pending" && !isSelf && (
+                          <>
+                            <button
+                              onClick={() => openApproval(r, "approved")}
+                              className="flex-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <i className="ri-check-line" />
+                              <span>Approve</span>
+                            </button>
+                            <button
+                              onClick={() => openApproval(r, "rejected")}
+                              className="flex-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <i className="ri-close-line" />
+                              <span>Reject</span>
+                            </button>
+                          </>
+                        )}
+
+                        {isSelf && r.status === "pending" && (
+                          <button
+                            onClick={() => openCancelModal(r)}
+                            className="flex-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-rose-50 hover:text-rose-700 text-gray-600 text-[11px] font-medium transition-all flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <i className="ri-close-circle-line text-xs" />
+                            <span>Cancel Request</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {filteredRequests.length === 0 && !loading && (
+                <div className="py-16 text-center text-gray-400">
+                  <div className="max-w-xs mx-auto">
+                    <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3 text-gray-400">
+                      <i className="ri-calendar-line text-2xl" />
+                    </div>
+                    <h4 className="text-[14px] font-bold text-gray-700">No leave requests found</h4>
+                    <p className="text-[12px] text-gray-400 mt-1">
+                      {statusFilter !== "all" || searchQuery || leaveTypeFilter !== "all"
+                        ? "Try adjusting your filters or search keywords."
+                        : "Submit a new time-off request to get started."}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Pagination Controls */}
@@ -1871,12 +2065,12 @@ export default function Leave() {
                 </h3>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {/* Department filter */}
                 <select
                   value={calDeptFilter}
                   onChange={(e) => setCalDeptFilter(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-xl border border-gray-200 text-[12px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                  className="flex-1 sm:flex-none min-w-0 px-2.5 py-1.5 rounded-xl border border-gray-200 text-[12px] bg-white text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
                   <option value="all">All Departments</option>
                   {departments.map((d) => (
@@ -2173,7 +2367,7 @@ export default function Leave() {
               {/* Balance Alert Box */}
               {activeEmpForForm && formRemainingDays !== null && (
                 <div
-                  className={`p-3 rounded-xl border flex items-center justify-between text-[12px] ${isOverBalance
+                  className={`p-3 rounded-xl border flex items-center flex-wrap gap-x-3 gap-y-1 justify-between text-[12px] ${isOverBalance
                       ? "bg-rose-50 border-rose-200 text-rose-800"
                       : "bg-emerald-50 border-emerald-200 text-emerald-800"
                     }`}
@@ -2221,7 +2415,7 @@ export default function Leave() {
               </div>
 
               {/* Date Pickers */}
-              <div className="grid grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-[12px] font-bold text-gray-700 mb-1.5">
                     Start Date <span className="text-rose-500">*</span>
@@ -2441,8 +2635,8 @@ export default function Leave() {
       {/* ======================= INSPECT DETAILS DRAWER / MODAL ======================= */}
       {inspectRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden transform animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 overflow-hidden transform animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="w-8 h-8 rounded-xl bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
                   <i className="ri-information-line text-lg" />
@@ -2457,7 +2651,7 @@ export default function Leave() {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto">
               {/* Employee Summary Card */}
               <div className="flex items-center gap-3 p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
                 <div className="w-11 h-11 rounded-full bg-[#253C7D] text-white flex items-center justify-center font-bold text-sm overflow-hidden">
@@ -2546,7 +2740,7 @@ export default function Leave() {
               </div>
 
               {/* Action buttons inside details */}
-              <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+              <div className="pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
                 {canApproveLeave &&
                   inspectRequest.status === "pending" &&
                   inspectRequest.employee_id !== myEmployee?.id && (
@@ -2557,7 +2751,7 @@ export default function Leave() {
                           setInspectRequest(null);
                           openApproval(req, "approved");
                         }}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+                        className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
                       >
                         Approve Request
                       </button>
@@ -2567,7 +2761,7 @@ export default function Leave() {
                           setInspectRequest(null);
                           openApproval(req, "rejected");
                         }}
-                        className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[12px] font-bold rounded-xl transition-colors cursor-pointer"
+                        className="w-full sm:w-auto px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[12px] font-bold rounded-xl transition-colors cursor-pointer"
                       >
                         Reject Request
                       </button>
@@ -2581,7 +2775,7 @@ export default function Leave() {
                       setInspectRequest(null);
                       openCancelModal(req);
                     }}
-                    className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[12px] font-bold rounded-xl transition-colors cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[12px] font-bold rounded-xl transition-colors cursor-pointer"
                   >
                     Cancel Application
                   </button>
@@ -2589,7 +2783,7 @@ export default function Leave() {
 
                 <button
                   onClick={() => setInspectRequest(null)}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[12px] font-semibold rounded-xl transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[12px] font-semibold rounded-xl transition-colors cursor-pointer"
                 >
                   Close
                 </button>

@@ -253,12 +253,12 @@ export default function Hire() {
           .order("posted_at", { ascending: false }),
         supabase
           .from("candidates")
-          .select("*, job_postings(id, title, department)")
+          .select("*, job_postings(id, title, department, branch_id)")
           .is("deleted_at", null)
           .order("applied_at", { ascending: false }),
         supabase
           .from("interviews")
-          .select("*, candidates(id, full_name, job_postings(title, department)), employees(id, first_name, last_name, avatar_url)")
+          .select("*, candidates(id, full_name, job_posting_id, job_postings(title, department)), employees(id, first_name, last_name, avatar_url)")
           .is("deleted_at", null)
           .order("scheduled_at", { ascending: false }),
         supabase.from("branches").select("id, name").order("name"),
@@ -613,6 +613,12 @@ export default function Hire() {
         actorRole: role?.name || "Admin",
         description: `New job posting: ${payload.title}`,
       });
+      notify({
+        source: "hire",
+        type: "info",
+        title: "New Job Posting",
+        message: `A new job posting "${payload.title}" has been created in ${payload.department}.`,
+      });
     }
 
     setJobModal(false);
@@ -660,6 +666,12 @@ export default function Hire() {
       setUploadingResume(false);
       if (error) { toast("Error", "Failed to add candidate", "error"); return; }
       toast("Candidate added", "New candidate added to applicant tracking.", "success");
+      notify({
+        source: "hire",
+        type: "info",
+        title: "New Candidate Applied",
+        message: `${payload.full_name} has applied and been added to the recruitment pipeline.`,
+      });
     }
 
     setCandidateModal(false);
@@ -692,6 +704,13 @@ export default function Hire() {
       setSchedulingInterview(false);
       if (error) { toast("Error", "Failed to schedule interview", "error"); return; }
       toast("Interview scheduled", "Interview added to calendar.", "success");
+      const candName = candidates.find((c) => c.id === payload.candidate_id)?.full_name || "a candidate";
+      notify({
+        source: "hire",
+        type: "info",
+        title: "Interview Scheduled",
+        message: `An interview has been scheduled for ${candName} on ${new Date(newInterview.scheduled_at).toLocaleDateString()}.`,
+      });
     }
 
     setInterviewModal(false);

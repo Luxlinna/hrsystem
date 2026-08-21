@@ -41,6 +41,10 @@ export function getNotificationTarget(
       return { path: entityId ? `/announcements?highlight=${entityId}` : "/announcements", module: "announcements" };
     case "meeting_rooms":
       return { path: `/meeting-rooms${highlight}`, module: "meeting-rooms" };
+    case "password_reset":
+      return { path: "/admin?tab=password-resets", module: "settings" };
+    case "attendance":
+      return { path: `/attendance${highlight}`, module: "attendance" };
     default:
       return null;
   }

@@ -7,3 +7,9 @@ user = "env(SMTP_USER)"
 pass = "env(SMTP_PASS)"
 admin_email = "env(SMTP_USER)"
 sender_name = "HRsystem"
+
+[functions.request-password-reset]
+verify_jwt = false
+
+[functions.approve-password-reset]
+verify_jwt = true

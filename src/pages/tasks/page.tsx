@@ -142,7 +142,7 @@ const formatDueDate = (v: string | null) => {
 const ACTIVITY_ICON: Record<TaskActivity["action"], string> = {
   created: "ri-add-circle-line",
   status_changed: "ri-arrow-left-right-line",
-  assigned: "ri-user-swap-line",
+  assigned: "ri-user-shared-line",
   updated: "ri-edit-line",
 };
 
