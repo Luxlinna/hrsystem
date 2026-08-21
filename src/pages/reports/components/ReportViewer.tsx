@@ -91,6 +91,42 @@ interface DailyLogRow {
   deleted_at_formatted?: string;
 }
 
+interface AttendanceRow {
+  id: string;
+  employee_id: string;
+  employee: string;
+  department: string;
+  branch: string;
+  role: string;
+  date: string;
+  clock_in: string;
+  clock_out: string;
+  hours: number;
+  status: string;
+  late_minutes: number;
+  notes: string;
+  deleted_by?: string;
+  deleted_at?: string | null;
+  deleted_at_formatted?: string;
+}
+
+interface AttendanceSummaryRow {
+  id: string;
+  employee: string;
+  department: string;
+  branch: string;
+  role: string;
+  days_logged: number;
+  present: number;
+  late: number;
+  absent: number;
+  remote: number;
+  total_hours: number;
+  late_minutes: number;
+  attendance_rate: number;
+  last_logged: string;
+}
+
 interface RoomBookingRow {
   id: string;
   room_name: string;
@@ -168,6 +204,8 @@ type ReportRow =
   | ExpenseRow
   | HireRow
   | DailyLogRow
+  | AttendanceRow
+  | AttendanceSummaryRow
   | RoomBookingRow
   | OnboardingRow
   | OnboardingTaskRow
@@ -203,6 +241,38 @@ const formatDateTime = (iso: string | null | undefined) => {
   }
 };
 
+// Attendance clock columns come back from Postgres as "HH:MM:SS"; reports read
+// better with a 12-hour label, matching the Attendance Hub.
+const formatClock = (t: string | null | undefined) => {
+  if (!t) return "—";
+  const [h, m] = t.split(":");
+  const hour = parseInt(h, 10);
+  if (isNaN(hour)) return t;
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}:${m} ${hour >= 12 ? "PM" : "AM"}`;
+};
+
+// Hours between clock-in and clock-out, kept numeric so exports stay summable.
+const workedHours = (clockIn: string | null, clockOut: string | null) => {
+  if (!clockIn || !clockOut) return 0;
+  const [ih, im] = clockIn.split(":").map(Number);
+  const [oh, om] = clockOut.split(":").map(Number);
+  let mins = oh * 60 + om - (ih * 60 + im);
+  if (mins < 0) mins += 24 * 60; // overnight shift
+  return +(mins / 60).toFixed(1);
+};
+
+// The DB stores machine values ('half_day', 'wfh'); reports show human labels.
+const ATTENDANCE_STATUS_LABEL: Record<string, string> = {
+  present: "present",
+  late: "late",
+  absent: "absent",
+  remote: "remote",
+  wfh: "remote",
+  half_day: "half day",
+  holiday: "holiday",
+};
+
 interface Props {
   config: ReportConfig;
   onDataReady: (rows: ReportRow[], columns: string[]) => void;
@@ -227,6 +297,12 @@ const STATUS_COLOR: Record<string, string> = {
   it_setup: "bg-blue-50 text-blue-700 border border-blue-200/70",
   training: "bg-purple-50 text-purple-700 border border-purple-200/70",
   complete: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  present: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  late: "bg-amber-50 text-amber-700 border border-amber-200/70",
+  absent: "bg-rose-50 text-rose-700 border border-rose-200/70",
+  remote: "bg-sky-50 text-sky-700 border border-sky-200/70",
+  "half day": "bg-orange-50 text-orange-700 border border-orange-200/70",
+  holiday: "bg-purple-50 text-purple-700 border border-purple-200/70",
   deleted: "bg-rose-50 text-rose-700 border border-rose-300 font-bold",
 };
 
@@ -556,6 +632,129 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     onDataReady(mapped, cols);
   }, [config, onDataReady]);
 
+  // Shared loader for both attendance reports — the detail table and the
+  // per-employee summary are two views of the same filtered record set.
+  const loadAttendanceRows = useCallback(async (): Promise<AttendanceRow[]> => {
+    let q = supabase
+      .from("attendance_records")
+      .select("id, employee_id, date, clock_in, clock_out, status, late_minutes, notes, deleted_at, deleted_by, employees(first_name, last_name, department, role, branches(name))")
+      .order("date", { ascending: false });
+
+    if (config.dateFrom) q = q.gte("date", config.dateFrom);
+    if (config.dateTo) q = q.lte("date", config.dateTo);
+    const { data, error } = await q;
+    if (error) console.error("loadAttendanceRows error:", error);
+
+    return (data || [])
+      .map((r: any) => ({
+        id: r.id,
+        employee_id: r.employee_id,
+        employee: `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Unknown",
+        department: r.employees?.department || "—",
+        branch: r.employees?.branches?.name || "—",
+        role: r.employees?.role || "—",
+        date: r.date,
+        clock_in: formatClock(r.clock_in),
+        clock_out: formatClock(r.clock_out),
+        hours: workedHours(r.clock_in, r.clock_out),
+        status: ATTENDANCE_STATUS_LABEL[r.status] || r.status,
+        late_minutes: r.late_minutes || 0,
+        notes: r.notes || "",
+        deleted_at: r.deleted_at || null,
+        deleted_by: r.deleted_by || "—",
+        deleted_at_formatted: formatDateTime(r.deleted_at),
+      }))
+      .filter((r) => matchesEmployeeFilters(r, config));
+  }, [config]);
+
+  const fetchAttendance = useCallback(async () => {
+    const mapped = await loadAttendanceRows();
+
+    const cols = ["Employee", "Department", "Branch", "Role", "Date", "Clock In", "Clock Out", "Hours", "Status", "Late (Min)", "Deleted By", "Deleted Date & Time", "Notes"];
+    setRows(mapped);
+    setColumns(cols);
+
+    const present = mapped.filter((r) => r.status === "present" || r.status === "remote").length;
+    const late = mapped.filter((r) => r.status === "late").length;
+    const absent = mapped.filter((r) => r.status === "absent").length;
+    const totalHours = mapped.reduce((sum, r) => sum + r.hours, 0);
+    const deletedCount = mapped.filter((r) => Boolean(r.deleted_at)).length;
+
+    setSummary({
+      "Total Records": mapped.length,
+      "Present / Remote": present,
+      "Late Arrivals": late,
+      Absent: absent,
+      "Hours Logged": +totalHours.toFixed(1),
+      ...(deletedCount > 0 ? { "Deleted Records": deletedCount } : {}),
+    });
+    onDataReady(mapped, cols);
+  }, [loadAttendanceRows, onDataReady]);
+
+  const fetchAttendanceSummary = useCallback(async () => {
+    const records = await loadAttendanceRows();
+
+    const map: Record<string, AttendanceSummaryRow> = {};
+    records.forEach((r) => {
+      const key = r.employee_id || r.employee;
+      if (!map[key]) {
+        map[key] = {
+          id: key,
+          employee: r.employee,
+          department: r.department,
+          branch: r.branch,
+          role: r.role,
+          days_logged: 0,
+          present: 0,
+          late: 0,
+          absent: 0,
+          remote: 0,
+          total_hours: 0,
+          late_minutes: 0,
+          attendance_rate: 0,
+          last_logged: r.date,
+        };
+      }
+      const row = map[key];
+      row.days_logged++;
+      // "Present" counts remote days too, mirroring the Attendance Hub summary.
+      if (r.status === "present" || r.status === "remote") row.present++;
+      if (r.status === "late") row.late++;
+      if (r.status === "absent") row.absent++;
+      if (r.status === "remote") row.remote++;
+      row.total_hours += r.hours;
+      row.late_minutes += r.late_minutes;
+      if (r.date > row.last_logged) row.last_logged = r.date;
+    });
+
+    const mapped: AttendanceSummaryRow[] = Object.values(map)
+      .map((r) => ({
+        ...r,
+        total_hours: +r.total_hours.toFixed(1),
+        attendance_rate: r.days_logged > 0 ? Math.round(((r.present + r.late) / r.days_logged) * 100) : 0,
+      }))
+      .sort((a, b) => b.days_logged - a.days_logged || a.employee.localeCompare(b.employee));
+
+    const cols = ["Employee", "Department", "Branch", "Role", "Days Logged", "Present", "Late", "Absent", "Remote", "Total Hours", "Late Minutes", "Attendance Rate (%)", "Last Logged"];
+    setRows(mapped);
+    setColumns(cols);
+
+    const totalHours = mapped.reduce((sum, r) => sum + r.total_hours, 0);
+    const avgRate = mapped.length
+      ? Math.round(mapped.reduce((sum, r) => sum + r.attendance_rate, 0) / mapped.length)
+      : 0;
+    const lateMinutes = mapped.reduce((sum, r) => sum + r.late_minutes, 0);
+
+    setSummary({
+      "Employees Analyzed": mapped.length,
+      "Days Logged": mapped.reduce((sum, r) => sum + r.days_logged, 0),
+      "Total Hours": +totalHours.toFixed(1),
+      "Avg Attendance Rate": `${avgRate}%`,
+      "Lost Late Time": `${Math.floor(lateMinutes / 60)}h ${lateMinutes % 60}m`,
+    });
+    onDataReady(mapped, cols);
+  }, [loadAttendanceRows, onDataReady]);
+
   const fetchRoomBookings = useCallback(async () => {
     let q = supabase
       .from("room_bookings")
@@ -878,11 +1077,13 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       else if (config.module === "onboarding") await fetchOnboarding();
       else if (config.module === "onboarding-tasks") await fetchOnboardingTasks();
       else if (config.module === "daily-logs") await fetchDailyLogs();
+      else if (config.module === "attendance") await fetchAttendance();
+      else if (config.module === "attendance-summary") await fetchAttendanceSummary();
       else if (config.module === "meeting-rooms") await fetchRoomBookings();
       setLoading(false);
     };
     run();
-  }, [config, fetchLeave, fetchShifts, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchOnboarding, fetchOnboardingTasks, fetchDailyLogs, fetchRoomBookings]);
+  }, [config, fetchLeave, fetchShifts, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchOnboarding, fetchOnboardingTasks, fetchDailyLogs, fetchAttendance, fetchAttendanceSummary, fetchRoomBookings]);
 
   // Real-time live synchronization: re-fetches automatically when database records change
   useEffect(() => {
@@ -896,6 +1097,8 @@ export default function ReportViewer({ config, onDataReady }: Props) {
       onboarding: "onboarding_requests",
       "onboarding-tasks": "onboarding_checklist_tasks",
       "daily-logs": "work_logs",
+      attendance: "attendance_records",
+      "attendance-summary": "attendance_records",
       "meeting-rooms": "room_bookings",
     };
     const target = tableMap[config.module];
@@ -915,6 +1118,8 @@ export default function ReportViewer({ config, onDataReady }: Props) {
           else if (config.module === "onboarding") fetchOnboarding();
           else if (config.module === "onboarding-tasks") fetchOnboardingTasks();
           else if (config.module === "daily-logs") fetchDailyLogs();
+          else if (config.module === "attendance") fetchAttendance();
+          else if (config.module === "attendance-summary") fetchAttendanceSummary();
           else if (config.module === "meeting-rooms") fetchRoomBookings();
         })
         .subscribe();
@@ -923,7 +1128,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     return () => {
       channels.forEach((ch) => supabase.removeChannel(ch));
     };
-  }, [config.module, fetchLeave, fetchShifts, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchOnboarding, fetchOnboardingTasks, fetchDailyLogs, fetchRoomBookings]);
+  }, [config.module, fetchLeave, fetchShifts, fetchPayroll, fetchHeadcount, fetchExpenses, fetchHire, fetchOnboarding, fetchOnboardingTasks, fetchDailyLogs, fetchAttendance, fetchAttendanceSummary, fetchRoomBookings]);
 
   const REPORT_COLUMN_KEY_MAP: Record<string, string> = {
     "Employee": "employee", "Department": "department", "Type": "leave_type", "Start Date": "start_date",
@@ -938,6 +1143,9 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     "Task Name": "task_name", "Priority": "priority", "Assigned To": "assigned_to", "Due Date": "due_date",
     "Verified By": "completed_by", "Verified Date & Time": "verified_at", "Verified At": "verified_at", "Completed Date": "completed_at",
     "Shift Date": "shift_date", "Shift Name": "shift_name", "Hours": "hours", "Capacity": "capacity", "Staffing": "staffing", "Notes": "notes",
+    "Clock In": "clock_in", "Clock Out": "clock_out", "Late (Min)": "late_minutes",
+    "Days Logged": "days_logged", "Present": "present", "Late": "late", "Absent": "absent", "Remote": "remote",
+    "Total Hours": "total_hours", "Late Minutes": "late_minutes", "Attendance Rate (%)": "attendance_rate", "Last Logged": "last_logged",
     "Deleted By": "deleted_by", "Deleted Date & Time": "deleted_at_formatted", "Deleted At": "deleted_at_formatted",
   };
 
@@ -981,6 +1189,28 @@ export default function ReportViewer({ config, onDataReady }: Props) {
           ? "bg-amber-50 text-amber-700 border-amber-200"
           : "bg-emerald-50 text-emerald-700 border-emerald-200";
       return <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${pBg} uppercase whitespace-nowrap`}>{String(val)}</span>;
+    }
+    if (col === "Attendance Rate (%)") {
+      const rate = Number(val) || 0;
+      return (
+        <div className="flex items-center gap-2 min-w-[110px]">
+          <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden shrink-0">
+            <div
+              className={`h-full rounded-full ${rate >= 90 ? "bg-emerald-500" : rate >= 75 ? "bg-amber-500" : "bg-rose-500"}`}
+              style={{ width: `${Math.min(rate, 100)}%` }}
+            />
+          </div>
+          <span className="font-bold text-gray-800 text-[11px]">{rate}%</span>
+        </div>
+      );
+    }
+    if (col === "Late (Min)" || col === "Late Minutes") {
+      const mins = Number(val) || 0;
+      return mins > 0 ? (
+        <span className="font-semibold text-amber-700 whitespace-nowrap">{mins}m</span>
+      ) : (
+        <span className="text-gray-300 font-mono text-xs">—</span>
+      );
     }
     if (col === "Stage" || col === "Category") {
       return <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200/60 whitespace-nowrap">{String(val)}</span>;
