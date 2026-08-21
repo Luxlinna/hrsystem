@@ -721,6 +721,18 @@ export default function AttendancePage() {
             </div>
           </div>
 
+          {/* Full Report in the Reports Center */}
+          <Link
+            to={`/reports?module=${activeTab === "summary" ? "attendance-summary" : "attendance"}${
+              dateRangeBounds ? `&from=${dateRangeBounds.start}&to=${dateRangeBounds.end}` : "&from=&to="
+            }`}
+            title="Open the full Attendance Report in the Reports Center (PDF / CSV / Excel export)"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
+          >
+            <i className="ri-file-chart-line text-[#253C7D] text-sm" />
+            Full Report
+          </Link>
+
           {/* Export CSV */}
           <button
             onClick={handleExportCSV}
