@@ -500,50 +500,32 @@ export default function AttendancePage() {
   }, [matrixMonth]);
 
   // Quick Self Clock In / Out Action
-  const handleQuickClock = async (type: "in" | "out") => {
+  // This card only opens the day; clocking out is done from Self-Service.
+  const handleQuickClockIn = async () => {
     if (!myEmployee) return;
     const nowTime = `${String(currentTime.getHours()).padStart(2, "0")}:${String(currentTime.getMinutes()).padStart(2, "0")}`;
 
-    if (type === "in") {
-      const { error } = await supabase.from("attendance_records").upsert(
-        {
-          employee_id: myEmployee.id,
-          date: todayYMD,
-          clock_in: nowTime,
-          status: "present",
-          late_minutes: 0,
-        },
-        { onConflict: "employee_id,date" }
-      );
-      if (error) {
-        toast("Error", "Failed to clock in", "error");
-        return;
-      }
-      toast("Clocked In Successfully", `Checked in at ${formatTime(nowTime)}`, "success");
-      notifyAttendanceEvent({
-        employeeName: `${myEmployee.first_name} ${myEmployee.last_name}`,
-        employeeId: myEmployee.id,
-        type: "in",
-        isException: false,
-      });
-    } else {
-      const { error } = await supabase
-        .from("attendance_records")
-        .update({ clock_out: nowTime })
-        .eq("employee_id", myEmployee.id)
-        .eq("date", todayYMD);
-      if (error) {
-        toast("Error", "Failed to clock out", "error");
-        return;
-      }
-      toast("Clocked Out Successfully", `Checked out at ${formatTime(nowTime)}`, "success");
-      notifyAttendanceEvent({
-        employeeName: `${myEmployee.first_name} ${myEmployee.last_name}`,
-        employeeId: myEmployee.id,
-        type: "out",
-        isException: false,
-      });
+    const { error } = await supabase.from("attendance_records").upsert(
+      {
+        employee_id: myEmployee.id,
+        date: todayYMD,
+        clock_in: nowTime,
+        status: "present",
+        late_minutes: 0,
+      },
+      { onConflict: "employee_id,date" }
+    );
+    if (error) {
+      toast("Error", "Failed to clock in", "error");
+      return;
     }
+    toast("Clocked In Successfully", `Checked in at ${formatTime(nowTime)}`, "success");
+    notifyAttendanceEvent({
+      employeeName: `${myEmployee.first_name} ${myEmployee.last_name}`,
+      employeeId: myEmployee.id,
+      type: "in",
+      isException: false,
+    });
     fetchData();
   };
 
@@ -785,20 +767,17 @@ export default function AttendancePage() {
           <div className="flex items-center gap-3">
             {!myTodayRecord?.clock_in ? (
               <button
-                onClick={() => handleQuickClock("in")}
+                onClick={handleQuickClockIn}
                 className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer active:scale-98 flex items-center gap-2"
               >
                 <i className="ri-login-circle-line text-base font-bold" />
                 Clock In Now
               </button>
             ) : !myTodayRecord?.clock_out ? (
-              <button
-                onClick={() => handleQuickClock("out")}
-                className="px-5 py-2.5 bg-rose-500 hover:bg-rose-400 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer active:scale-98 flex items-center gap-2"
-              >
-                <i className="ri-logout-circle-line text-base font-bold" />
-                Clock Out Now
-              </button>
+              <div className="px-4 py-2 bg-white/10 rounded-xl border border-white/20 text-xs font-semibold text-sky-100 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Currently Working
+              </div>
             ) : (
               <div className="px-4 py-2 bg-white/10 rounded-xl border border-white/20 text-xs font-semibold text-emerald-200 flex items-center gap-1.5">
                 <i className="ri-checkbox-circle-fill text-emerald-400" />
