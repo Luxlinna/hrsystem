@@ -197,7 +197,7 @@ async function listAuthAccounts(): Promise<AuthAccountsResult> {
     if (!res) return { accounts: [], assignments: null };
     const result = await readFunctionJson(res);
     if (!res.ok || result.error) {
-      console.warn("Notice: Auth accounts list function unavailable", { status: res.status, result });
+      console.warn("Notice: Auth accounts list function unavailable", { status: res.status, error: result.error, detail: result.detail, result });
       return { accounts: [], assignments: null };
     }
     return {
@@ -615,7 +615,9 @@ export default function AdminPortal() {
         }),
       });
       const result = await readFunctionJson(res);
-      if (!res.ok || result.error) throw new Error(result.error || "Failed to update password reset request");
+      if (!res.ok || result.error) {
+        throw new Error([result.error, result.detail].filter(Boolean).join(" — ") || "Failed to update password reset request");
+      }
       showToast(action === "approve" ? "Reset link sent to user" : "Reset request rejected");
       loadData();
     } catch (error: any) {
