@@ -8,7 +8,7 @@ import ReportViewer from "./components/ReportViewer";
 const MODULES = [
   { id: "leave", label: "Leave Summary", icon: "ri-calendar-event-line", color: "bg-amber-50 text-amber-700 border-amber-200", desc: "All leave requests by employee, type, and status" },
   { id: "shifts", label: "Shift Scheduling", icon: "ri-time-line", color: "bg-blue-50 text-blue-700 border-blue-200", desc: "Shift rosters, employee allocations, coverage, and scheduled hours" },
-  { id: "attendance", label: "Attendance Records", icon: "ri-user-follow-line", color: "bg-indigo-50 text-indigo-700 border-indigo-200", desc: "Daily clock-in / clock-out logs, hours worked, tardiness and absences" },
+  { id: "attendance", label: "Attendance Records", icon: "ri-user-follow-line", color: "bg-indigo-50 text-indigo-700 border-indigo-200", desc: "Daily check-in / check-out logs, hours worked, tardiness and absences" },
   { id: "attendance-summary", label: "Attendance Summary", icon: "ri-pie-chart-line", color: "bg-purple-50 text-purple-700 border-purple-200", desc: "Per-employee attendance rate, logged hours and punctuality scores" },
   { id: "payroll", label: "Payroll Report", icon: "ri-money-dollar-circle-line", color: "bg-emerald-50 text-emerald-700 border-emerald-200", desc: "Salary, bonuses, deductions and net pay records" },
   { id: "headcount", label: "Headcount Report", icon: "ri-team-line", color: "bg-sky-50 text-sky-700 border-sky-200", desc: "Employee distribution by branch and department" },
@@ -39,7 +39,7 @@ const COLUMN_KEY_MAP: Record<string, string> = {
   "Verified By": "completed_by", "Verified Date & Time": "verified_at", "Verified At": "verified_at", "Completed Date": "completed_at",
   "Shift Date": "shift_date", "Shift Name": "shift_name", "Hours": "hours", "Capacity": "capacity", "Staffing": "staffing",
   "Deleted By": "deleted_by", "Deleted Date & Time": "deleted_at_formatted", "Deleted At": "deleted_at_formatted",
-  "Clock In": "clock_in", "Clock Out": "clock_out", "Late (Min)": "late_minutes",
+  "Check In": "clock_in", "Check Out": "clock_out", "Late (Min)": "late_minutes",
   "Days Logged": "days_logged", "Present": "present", "Late": "late", "Absent": "absent", "Remote": "remote",
   "Total Hours": "total_hours", "Late Minutes": "late_minutes", "Attendance Rate (%)": "attendance_rate", "Last Logged": "last_logged",
 };

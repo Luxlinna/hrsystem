@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { distanceMeters } from "@/lib/geo";
-import { todayYMD } from "@/lib/date";
+import { todayYMD, zonedParts } from "@/lib/date";
 import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows } from "@/lib/workSchedule";
 import { useAuth } from "@/context/AuthContext";
 
@@ -21,8 +21,7 @@ type Mode = "checkin" | "checkout";
 const CHECKIN_WINDOW = { startMin: 7 * 60, endMin: 11 * 60 + 59 };
 
 const inWindow = (w: { startMin: number; endMin: number }) => {
-  const now = new Date();
-  const mins = now.getHours() * 60 + now.getMinutes();
+  const mins = zonedParts().minutesOfDay;
   return mins >= w.startMin && mins <= w.endMin;
 };
 

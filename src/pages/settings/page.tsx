@@ -186,6 +186,8 @@ const keyLabels: Record<string, string> = {
   work_start_time: "Work Start Time",
   work_end_time: "Work End Time",
   working_days: "Working Days",
+  break_start_time: "Break Start Time",
+  break_end_time: "Break End Time",
   saturday_start_time: "Saturday Start Time",
   saturday_end_time: "Saturday End Time",
   late_grace_minutes: "Late Grace Period",
@@ -212,6 +214,21 @@ const notificationKeys = [
 ];
 
 const timezoneOptions = [
+  "Asia/Phnom_Penh",
+  "Asia/Bangkok",
+  "Asia/Ho_Chi_Minh",
+  "Asia/Vientiane",
+  "Asia/Singapore",
+  "Asia/Kuala_Lumpur",
+  "Asia/Jakarta",
+  "Asia/Manila",
+  "Asia/Kolkata",
+  "Asia/Dubai",
+  "Asia/Tokyo",
+  "Asia/Shanghai",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
   "America/New_York",
   "America/Chicago",
   "America/Los_Angeles",
@@ -219,11 +236,6 @@ const timezoneOptions = [
   "America/Phoenix",
   "America/Anchorage",
   "Pacific/Honolulu",
-  "Europe/London",
-  "Europe/Paris",
-  "Europe/Berlin",
-  "Asia/Tokyo",
-  "Asia/Shanghai",
   "Australia/Sydney",
   "UTC",
 ];
@@ -466,6 +478,7 @@ export default function Settings() {
             <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
               Timezone
             </label>
+            <p className="text-[11px] text-gray-400 mt-0.5">Company time used for all check in/out records, late/early calculations and "today" — independent of each device's own clock. Default: Cambodia (Asia/Phnom_Penh).</p>
             <div className="flex gap-2 mt-1">
               <select
                 value={getVal("timezone")}
@@ -543,7 +556,7 @@ export default function Settings() {
             <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
               Work Start Time
             </label>
-            <p className="text-[11px] text-gray-400 mt-0.5">Used by Clock In to mark arrivals late — e.g. 08:00 for an 8am start, every workday.</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">Used by Check In to mark arrivals late — e.g. 08:00 for an 8am start, every workday.</p>
             <div className="flex gap-2 mt-1">
               <input
                 type="time"
@@ -575,7 +588,7 @@ export default function Settings() {
             </div>
             <div className="p-5 sm:p-6 space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {["work_end_time", "working_days", "saturday_start_time", "saturday_end_time", "late_grace_minutes", "early_leave_grace_minutes", "checkout_reminder_minutes"].map((key) => (
+              {["work_end_time", "break_start_time", "break_end_time", "working_days", "saturday_start_time", "saturday_end_time", "late_grace_minutes", "early_leave_grace_minutes", "checkout_reminder_minutes"].map((key) => (
                 <div key={key} className="min-w-0">
                   <label className="text-[12px] font-semibold text-gray-800">{keyLabels[key]}</label>
                   <div className="flex gap-2 mt-1">
@@ -585,7 +598,7 @@ export default function Settings() {
                 </div>
               ))}
               </div>
-              <p className="text-[11px] text-gray-500 border-t border-gray-200 pt-4">Working days use day numbers: Sunday 0, Monday 1 through Saturday 6. Example: <span className="font-semibold text-gray-700">1,2,3,4,5,6</span>.</p>
+              <p className="text-[11px] text-gray-500 border-t border-gray-200 pt-4">Working days use day numbers: Sunday 0, Monday 1 through Saturday 6. Example: <span className="font-semibold text-gray-700">1,2,3,4,5</span> for Monday–Friday, or <span className="font-semibold text-gray-700">1,2,3,4,5,6</span> to add a Saturday half day (Saturday uses its own start/end times above). The break window (unpaid) is deducted from worked hours — e.g. an 08:00–17:00 weekday with a 12:00–13:00 break logs 8 hours.</p>
             </div>
           </div>
 

@@ -853,7 +853,7 @@ export default function Branches() {
                   </div>
                 </div>
                 <p className="text-[11px] text-gray-400 mt-1.5">
-                  Leave start time blank to use the company default (Settings). Leave end time blank to skip early clock-out detection for this branch.
+                  Leave start time blank to use the company default (Settings). Leave end time blank to skip early check-out detection for this branch.
                 </p>
               </div>
             </div>

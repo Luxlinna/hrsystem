@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { distanceMeters, getCurrentPosition } from "@/lib/geo";
-import { toYMD, todayYMD } from "@/lib/date";
-import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows } from "@/lib/workSchedule";
+import { addDaysYMD, todayYMD, zonedParts, zonedTimeToInstant } from "@/lib/date";
+import { DEFAULT_WORK_SCHEDULE, computeHoursWorked, getScheduleForDate, settingsFromRows } from "@/lib/workSchedule";
+import { zonedDayOfWeek } from "@/lib/date";
 import { notifyAttendanceEvent } from "@/lib/attendanceNotify";
 
 interface AttendanceRecord {
@@ -74,19 +75,19 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   }, []);
 
   // A branch's own schedule (set in Branch Management) wins over the
-  // company-wide default; there's no company-wide default for end time, so
-  // early-leave detection simply doesn't apply unless the branch sets one.
+  // company-wide default on weekdays — but not on Saturday, where the
+  // company half-day hours (saturday_start/end_time) always apply, since
+  // branches have no Saturday fields of their own.
+  const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
   const daySchedule = getScheduleForDate(scheduleSettings);
-  const workStartTime = branch?.work_start_time || daySchedule?.startTime || globalWorkStartTime;
-  const workEndTime = branch?.work_end_time || daySchedule?.endTime || null;
+  const workStartTime = (!isSaturday && branch?.work_start_time) || daySchedule?.startTime || globalWorkStartTime;
+  const workEndTime = (!isSaturday && branch?.work_end_time) || daySchedule?.endTime || null;
 
   const loadRecords = async () => {
     if (!employeeId) return;
     setLoading(true);
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const fromDate = toYMD(thirtyDaysAgo);
+    const fromDate = addDaysYMD(today, -30);
 
     const { data } = await supabase
       .from("attendance_records")
@@ -122,11 +123,11 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   }, [employeeId]);
 
   // Ask the browser for the current GPS position and check it against the
-  // employee's branch geofence before allowing the actual clock-in insert.
+  // employee's branch geofence before allowing the actual check-in insert.
   const handleRequestClockIn = async () => {
     if (branchLoading) return; // branch data isn't in yet — avoid misreading "no geofence" as "not configured"
     if (!branch?.latitude || !branch?.longitude) {
-      // No geofence configured for this branch — clock in without a location check.
+      // No geofence configured for this branch — check in without a location check.
       handleClockIn();
       return;
     }
@@ -142,7 +143,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       setCheckInAccuracy(accuracy);
 
       if (dist <= branch.geofence_radius_m) {
-        setCheckInMessage(`You're ${dist}m from ${branch.name} — within range. Confirm to clock in.`);
+        setCheckInMessage(`You're ${dist}m from ${branch.name} — within range. Confirm to check in.`);
         setCheckInStep("confirm");
       } else {
         const accuracyNote =
@@ -187,10 +188,13 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
   const handleClockIn = async () => {
     if (!daySchedule) { showToast("error", "Today is not configured as a working day."); return; }
+    // All clock times come from the company timezone (Admin → Settings →
+    // Timezone, default Asia/Phnom_Penh), never from the device's own clock.
     const now = new Date();
-    const timeStr = now.toTimeString().split(" ")[0];
+    const nowZ = zonedParts(now, scheduleSettings.timezone);
+    const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
     const [startH, startM] = workStartTime.split(":").map(Number);
-    const lateMinutes = Math.max(0, (now.getHours() * 60 + now.getMinutes()) - (startH * 60 + startM));
+    const lateMinutes = Math.max(0, nowZ.minutesOfDay - (startH * 60 + startM));
     const status = lateMinutes > scheduleSettings.lateGraceMinutes ? "late" : "present";
 
     // Upsert (not insert) on the employee/date unique constraint: a
@@ -208,9 +212,9 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     setProcessing(false);
     resetCheckInFlow();
     if (error) {
-      showToast("error", "Failed to clock in. Please try again.");
+      showToast("error", "Failed to check in. Please try again.");
     } else {
-      showToast("success", `Clocked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > scheduleSettings.lateGraceMinutes ? ` — ${lateMinutes} min late` : " — On time!"}`);
+      showToast("success", `Checked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > scheduleSettings.lateGraceMinutes ? ` — ${lateMinutes} min late` : " — On time!"}`);
       setNotes("");
       setEarlyCheckoutReason("");
       loadRecords();
@@ -227,15 +231,20 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const handleClockOut = async () => {
     if (!todayRecord) return;
     const now = new Date();
-    const timeStr = now.toTimeString().split(" ")[0];
+    const nowZ = zonedParts(now, scheduleSettings.timezone);
+    const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
 
-    const clockInTime = todayRecord.clock_in ? new Date(`${today}T${todayRecord.clock_in}`) : null;
-    const hoursWorked = clockInTime ? parseFloat(((now.getTime() - clockInTime.getTime()) / 3600000).toFixed(2)) : null;
+    // Rebuild the check-in instant in the company timezone so durations are
+    // exact even when the device sits in a different timezone.
+    const [ciH, ciM, ciS] = (todayRecord.clock_in || "00:00:00").split(":").map(Number);
+    const clockInTime = todayRecord.clock_in ? zonedTimeToInstant(today, ciH, ciM, ciS, scheduleSettings.timezone) : null;
+    // Deduct the unpaid break (e.g. 12:00–13:00) so hours reflect actual work time.
+    const hoursWorked = clockInTime ? computeHoursWorked(clockInTime, now, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime) : null;
 
     let earlyLeaveMinutes = 0;
     if (workEndTime) {
       const [endH, endM] = workEndTime.split(":").map(Number);
-      earlyLeaveMinutes = Math.max(0, (endH * 60 + endM) - (now.getHours() * 60 + now.getMinutes()));
+      earlyLeaveMinutes = Math.max(0, (endH * 60 + endM) - nowZ.minutesOfDay);
     }
 
     const requiresReason = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes;
@@ -256,11 +265,11 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
     setProcessing(false);
     if (error) {
-      showToast("error", "Failed to clock out. Please try again.");
+      showToast("error", "Failed to check out. Please try again.");
     } else {
       const hrs = hoursWorked ? `${Math.floor(hoursWorked)}h ${Math.round((hoursWorked % 1) * 60)}m worked` : "";
       const earlyNote = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes ? ` — ${earlyLeaveMinutes} min early` : "";
-      showToast("success", `Clocked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
+      showToast("success", `Checked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
       loadRecords();
       notifyAttendanceEvent({
         employeeName,
@@ -277,7 +286,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const earlyCheckoutMinutesNow = (() => {
     if (!workEndTime || !isCheckedIn || isCheckedOut) return 0;
     const [endH, endM] = workEndTime.split(":").map(Number);
-    return Math.max(0, (endH * 60 + endM) - (currentTime.getHours() * 60 + currentTime.getMinutes()));
+    return Math.max(0, (endH * 60 + endM) - zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay);
   })();
   const isEarlyCheckoutNow = earlyCheckoutMinutesNow > scheduleSettings.earlyLeaveGraceMinutes;
 
@@ -315,11 +324,13 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     return m > 0 ? `${h}h ${m}m` : `${h}h`;
   };
 
-  // Live "worked so far" counter — ticks with the clock while still on shift.
+  // Live "worked so far" counter — ticks with the clock while still on shift,
+  // and stops counting through the unpaid break window.
   const elapsedHours = (() => {
     if (!isCheckedIn || isCheckedOut || !todayRecord?.clock_in) return 0;
-    const start = new Date(`${today}T${todayRecord.clock_in}`).getTime();
-    return Math.max(0, (currentTime.getTime() - start) / 3600000);
+    const [ciH, ciM, ciS] = todayRecord.clock_in.split(":").map(Number);
+    const start = zonedTimeToInstant(today, ciH, ciM, ciS, scheduleSettings.timezone);
+    return computeHoursWorked(start, currentTime, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime);
   })();
 
   // How far through the scheduled shift we currently are.
@@ -330,18 +341,14 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     const start = sh * 60 + sm;
     const end = eh * 60 + em;
     if (end <= start) return null;
-    const now = currentTime.getHours() * 60 + currentTime.getMinutes();
-    return Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
+    const nowMin = zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay;
+    return Math.min(100, Math.max(0, ((nowMin - start) / (end - start)) * 100));
   })();
 
   const fmtClock = (t: string) => new Date(`2000-01-01T${t}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
   // Today first, going backward — mirrors how the rest of this tab reads (most recent first).
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    return toYMD(d);
-  });
+  const last7Days = Array.from({ length: 7 }, (_, i) => addDaysYMD(today, -i));
 
   if (loading) return (
     <div className="flex items-center justify-center h-40">
@@ -364,10 +371,10 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
           <div className="lg:pr-7 lg:border-r lg:border-white/15">
             <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Live Clock</p>
             <p className="text-4xl font-bold font-mono tracking-tight tabular-nums">
-              {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: scheduleSettings.timezone })}
             </p>
             <p className="text-white/70 text-[12px] mt-1">
-              {currentTime.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+              {currentTime.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: scheduleSettings.timezone })}
             </p>
           </div>
 
@@ -380,7 +387,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               </span>
             </div>
 
-            {/* Shift progress track with clock-in / clock-out markers */}
+            {/* Shift progress track with check-in / check-out markers */}
             {shiftProgress !== null && (
               <div className="relative h-2 rounded-full bg-white/15 overflow-hidden mb-3">
                 <div
@@ -449,7 +456,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                   className="w-full flex items-center justify-center gap-2 bg-white text-[#253C7D] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   <i className="ri-map-pin-line text-lg" />
-                  Clock In
+                  Check In
                 </button>
                 {branch?.latitude && (
                   <p className="text-white/60 text-[11px] text-center">
@@ -479,7 +486,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                   className="w-full flex items-center justify-center gap-2 bg-white text-[#253C7D] font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/90 transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   <i className="ri-checkbox-circle-line text-lg" />
-                  {processing ? "Clocking in..." : "Confirm Clock In"}
+                  {processing ? "Checking in..." : "Confirm Check In"}
                 </button>
                 <p className="text-white/60 text-[11px] text-center">
                   Your arrival time will be recorded after you confirm.
@@ -535,7 +542,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                   className="w-full flex items-center justify-center gap-2 bg-white/20 backdrop-blur border border-white/40 text-white font-bold py-3 px-6 rounded-xl text-[14px] hover:bg-white/30 transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   <i className="ri-logout-box-r-line text-lg" />
-                  {processing ? "Clocking out..." : "Clock Out"}
+                  {processing ? "Checking out..." : "Check Out"}
                 </button>
               </div>
             )}
@@ -584,7 +591,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
         </div>
       </div>
 
-      {/* Last 7 Days — at-a-glance clock in/out, not just a status dot */}
+      {/* Last 7 Days — at-a-glance check in/out, not just a status dot */}
       <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
           <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Last 7 Days</p>
@@ -664,7 +671,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
           <div className="text-center py-10 text-gray-400">
             <i className="ri-fingerprint-line text-3xl mb-2 block text-gray-300" />
             <p className="text-[13px] font-semibold text-gray-600">No attendance records yet</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">Your clock-ins for the last 30 days will appear here.</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">Your check-ins for the last 30 days will appear here.</p>
           </div>
         ) : (
           <>
@@ -682,11 +689,11 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-[12px]">
                     <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wide">Clock In</p>
+                      <p className="text-gray-400 text-[10px] uppercase tracking-wide">Check In</p>
                       <p className="text-gray-700 font-medium">{r.clock_in?.slice(0, 5) || "—"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wide">Clock Out</p>
+                      <p className="text-gray-400 text-[10px] uppercase tracking-wide">Check Out</p>
                       <p className="text-gray-700 font-medium">
                         {r.clock_out?.slice(0, 5) || "—"}
                         {r.clock_out && r.early_leave_minutes > scheduleSettings.earlyLeaveGraceMinutes && (
@@ -708,8 +715,8 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               <div className="min-w-[560px]">
                 <div className="grid grid-cols-[1.4fr_1fr_1.3fr_1fr_0.9fr] bg-gray-50/90 backdrop-blur px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider sticky top-0 z-10 border-b border-gray-100">
                   <span>Date</span>
-                  <span>Clock In</span>
-                  <span>Clock Out</span>
+                  <span>Check In</span>
+                  <span>Check Out</span>
                   <span>Hours</span>
                   <span className="text-right">Status</span>
                 </div>

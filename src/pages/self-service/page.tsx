@@ -38,7 +38,7 @@ const TABS = [
   { id: "payslips", label: "My Payslips", icon: "ri-file-list-3-line" },
   { id: "leave", label: "My Leave", icon: "ri-calendar-event-line" },
   { id: "attendance", label: "My Attendance", icon: "ri-time-line" },
-  { id: "checkin", label: "Clock In/Out", icon: "ri-fingerprint-line" },
+  { id: "checkin", label: "Check In/Out", icon: "ri-fingerprint-line" },
   { id: "daily-report", label: "Daily Report", icon: "ri-file-list-2-line" },
   { id: "benefits", label: "My Benefits", icon: "ri-heart-pulse-line" },
 ];
@@ -57,7 +57,7 @@ export default function SelfServicePage() {
   const [managerName, setManagerName] = useState<string>("");
 
   // Overview strip data — lets the employee see today's status and act
-  // (clock in, chase a pending leave, check the latest payslip) without
+  // (check in, chase a pending leave, check the latest payslip) without
   // having to click through every tab first.
   const [todayAttendance, setTodayAttendance] = useState<any | null>(null);
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
@@ -74,7 +74,7 @@ export default function SelfServicePage() {
   }, [searchParams]);
 
   // Self-service is strictly "your own account, your own actions" — actions like
-  // Clock In/Out post as whichever employee is loaded here, so this must always
+  // Check In/Out post as whichever employee is loaded here, so this must always
   // resolve to the signed-in user's own record and never anyone else's.
   useEffect(() => {
     if (permsLoading) return;
@@ -284,11 +284,11 @@ export default function SelfServicePage() {
             {todayAttendance?.clock_in && todayAttendance?.clock_out
               ? "Day Complete"
               : todayAttendance?.clock_in
-              ? `Clocked In · ${todayAttendance.clock_in.slice(0, 5)}`
-              : "Not Clocked In"}
+              ? `Checked In · ${todayAttendance.clock_in.slice(0, 5)}`
+              : "Not Checked In"}
           </p>
           <p className="text-[11px] text-gray-400 mt-0.5">
-            {todayAttendance?.clock_in ? "Tap to view attendance" : "Tap to clock in now"}
+            {todayAttendance?.clock_in ? "Tap to view attendance" : "Tap to check in now"}
           </p>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500" />
         </button>

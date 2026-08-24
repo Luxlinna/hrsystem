@@ -6,11 +6,7 @@ import { toast } from "@/components/Toast";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import { Link } from "react-router-dom";
 import { notifyAttendanceEvent } from "@/lib/attendanceNotify";
-
-// Local YYYY-MM-DD formatter
-function toYMD(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+import { toYMD, todayYMD as todayYMDLib, zonedParts } from "@/lib/date";
 
 interface Employee {
   id: string;
@@ -281,8 +277,8 @@ export default function AttendancePage() {
     setLoading(false);
   }
 
-  // Today's Date String
-  const todayYMD = toYMD(new Date());
+  // Today's date string, in the company timezone (Admin → Settings → Timezone).
+  const todayYMD = todayYMDLib();
 
   // Current user's today attendance status
   const myTodayRecord = useMemo(() => {
@@ -499,11 +495,12 @@ export default function AttendancePage() {
     });
   }, [matrixMonth]);
 
-  // Quick Self Clock In / Out Action
-  // This card only opens the day; clocking out is done from Self-Service.
+  // Quick Self Check-In Action
+  // This card only opens the day; checking out is done from Self-Service.
   const handleQuickClockIn = async () => {
     if (!myEmployee) return;
-    const nowTime = `${String(currentTime.getHours()).padStart(2, "0")}:${String(currentTime.getMinutes()).padStart(2, "0")}`;
+    const nowZ = zonedParts(currentTime);
+    const nowTime = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}`;
 
     const { error } = await supabase.from("attendance_records").upsert(
       {
@@ -516,10 +513,10 @@ export default function AttendancePage() {
       { onConflict: "employee_id,date" }
     );
     if (error) {
-      toast("Error", "Failed to clock in", "error");
+      toast("Error", "Failed to check in", "error");
       return;
     }
-    toast("Clocked In Successfully", `Checked in at ${formatTime(nowTime)}`, "success");
+    toast("Checked In Successfully", `Checked in at ${formatTime(nowTime)}`, "success");
     notifyAttendanceEvent({
       employeeName: `${myEmployee.first_name} ${myEmployee.last_name}`,
       employeeId: myEmployee.id,
@@ -624,7 +621,7 @@ export default function AttendancePage() {
       return;
     }
 
-    const headers = ["Employee", "Department", "Role", "Date", "Clock In", "Clock Out", "Hours", "Status", "Late (Min)", "Notes"];
+    const headers = ["Employee", "Department", "Role", "Date", "Check In", "Check Out", "Hours", "Status", "Late (Min)", "Notes"];
     const rows = filteredRecords.map((r) => [
       `"${r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "Unknown"}"`,
       `"${r.employees?.department || ""}"`,
@@ -682,7 +679,7 @@ export default function AttendancePage() {
             </span>
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Track daily clock-ins, view past dates & monthly timesheet matrix, analyze punctuality, and backdate entries.
+            Track daily check-ins, view past dates & monthly timesheet matrix, analyze punctuality, and backdate entries.
           </p>
         </div>
 
@@ -739,7 +736,7 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* Quick Self Clock-In Banner (For Employees) */}
+      {/* Quick Self Check-In Banner (For Employees) */}
       {myEmployee && (
         <div className="bg-gradient-to-r from-[#253C7D] to-[#17254E] rounded-3xl p-5 sm:p-6 text-white shadow-md mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
@@ -756,10 +753,10 @@ export default function AttendancePage() {
               </h3>
               <p className="text-xs text-white/70 mt-0.5">
                 {myTodayRecord?.clock_in
-                  ? `Clocked in at ${formatTime(myTodayRecord.clock_in)} · ${
-                      myTodayRecord.clock_out ? `Clocked out at ${formatTime(myTodayRecord.clock_out)}` : "Currently Working"
+                  ? `Checked in at ${formatTime(myTodayRecord.clock_in)} · ${
+                      myTodayRecord.clock_out ? `Checked out at ${formatTime(myTodayRecord.clock_out)}` : "Currently Working"
                     }`
-                  : "You haven't clocked in today yet."}
+                  : "You haven't checked in today yet."}
               </p>
             </div>
           </div>
@@ -771,7 +768,7 @@ export default function AttendancePage() {
                 className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer active:scale-98 flex items-center gap-2"
               >
                 <i className="ri-login-circle-line text-base font-bold" />
-                Clock In Now
+                Check In Now
               </button>
             ) : !myTodayRecord?.clock_out ? (
               <div className="px-4 py-2 bg-white/10 rounded-xl border border-white/20 text-xs font-semibold text-sky-100 flex items-center gap-1.5">
@@ -1129,8 +1126,8 @@ export default function AttendancePage() {
                       <th className="px-5 py-3.5">Employee</th>
                       <th className="px-5 py-3.5">Department</th>
                       <th className="px-5 py-3.5">Date</th>
-                      <th className="px-5 py-3.5">Clock In</th>
-                      <th className="px-5 py-3.5">Clock Out</th>
+                      <th className="px-5 py-3.5">Check In</th>
+                      <th className="px-5 py-3.5">Check Out</th>
                       <th className="px-5 py-3.5">Total Hours</th>
                       <th className="px-5 py-3.5">Status</th>
                       <th className="px-5 py-3.5">Notes</th>
@@ -1293,11 +1290,11 @@ export default function AttendancePage() {
 
                       <div className="grid grid-cols-3 gap-2 p-2.5 bg-gray-50 rounded-2xl text-center mb-3">
                         <div>
-                          <span className="text-[9px] font-bold text-gray-400 uppercase block">Clock In</span>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase block">Check In</span>
                           <span className="text-xs font-bold text-gray-800">{formatTime(r.clock_in)}</span>
                         </div>
                         <div>
-                          <span className="text-[9px] font-bold text-gray-400 uppercase block">Clock Out</span>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase block">Check Out</span>
                           <span className="text-xs font-bold text-gray-800">
                             {isWorkingNow ? "Active" : formatTime(r.clock_out)}
                           </span>
@@ -1503,11 +1500,11 @@ export default function AttendancePage() {
                       {rRecord ? (
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-500 text-[11px]">Clock In:</span>
+                            <span className="text-gray-500 text-[11px]">Check In:</span>
                             <span className="font-bold text-gray-900">{formatTime(rRecord.clock_in)}</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-500 text-[11px]">Clock Out:</span>
+                            <span className="text-gray-500 text-[11px]">Check Out:</span>
                             <span className="font-bold text-gray-900">
                               {isWorking ? (
                                 <span className="text-emerald-600 font-bold flex items-center gap-1">
@@ -1863,11 +1860,11 @@ export default function AttendancePage() {
                   </span>
                 </div>
 
-                {/* Clock In / Out Time Matrix */}
+                {/* Check In / Out Time Matrix */}
                 <div className="grid grid-cols-2 gap-3.5">
                   <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                      Clock In
+                      Check In
                     </span>
                     <p className="text-lg font-black text-gray-900 mt-1">
                       {formatTime(selectedRecord.clock_in)}
@@ -1876,7 +1873,7 @@ export default function AttendancePage() {
 
                   <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                      Clock Out
+                      Check Out
                     </span>
                     <p className="text-lg font-black text-gray-900 mt-1">
                       {formatTime(selectedRecord.clock_out)}
@@ -2038,7 +2035,7 @@ export default function AttendancePage() {
                 <div className="grid grid-cols-2 gap-3.5">
                   <div>
                     <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                      Clock In Time
+                      Check In Time
                     </label>
                     <input
                       type="time"
@@ -2049,7 +2046,7 @@ export default function AttendancePage() {
                   </div>
                   <div>
                     <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                      Clock Out Time
+                      Check Out Time
                     </label>
                     <input
                       type="time"
@@ -2170,7 +2167,7 @@ export default function AttendancePage() {
               <div className="grid grid-cols-2 gap-3.5">
                 <div>
                   <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                    Clock In Time
+                    Check In Time
                   </label>
                   <input
                     type="time"
@@ -2181,7 +2178,7 @@ export default function AttendancePage() {
                 </div>
                 <div>
                   <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                    Clock Out Time
+                    Check Out Time
                   </label>
                   <input
                     type="time"
