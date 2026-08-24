@@ -42,6 +42,21 @@ export function getDocumentPublicUrl(key: string): string {
   return `${R2_PUBLIC_URL}/${key}`;
 }
 
+// Uploads any File to Cloudflare R2 under the given folder and returns its
+// public URL. Uses the same presigned-URL flow as the Documents page
+// (Supabase Edge Function "r2-upload" -> direct PUT to R2).
+export async function uploadFileToR2(file: File, folder: string): Promise<string> {
+  const key = `${folder}/${Date.now()}_${file.name}`;
+  const { uploadUrl, publicUrl } = await getDocumentUploadUrl(key);
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+  });
+  if (!res.ok) throw new Error("Failed to upload file to storage");
+  return publicUrl;
+}
+
 export function isCloudflareR2Url(url: string | null): boolean {
   if (!url || !R2_PUBLIC_URL) return false;
   try {

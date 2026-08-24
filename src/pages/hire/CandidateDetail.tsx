@@ -5,7 +5,7 @@ import { toast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
-import { uploadFile } from "@/lib/storage";
+import { uploadFileToR2 } from "@/lib/r2-storage";
 
 interface Candidate {
   id: string;
@@ -177,7 +177,7 @@ export default function CandidateDetail() {
     if (!id) return;
     setUploadingResume(true);
     try {
-      const url = await uploadFile("resumes", `${Date.now()}_${file.name}`, file);
+      const url = await uploadFileToR2(file, "candidates/resumes");
       await supabase
         .from("candidates")
         .update({ resume_url: url, resume_name: file.name })

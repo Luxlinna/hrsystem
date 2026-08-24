@@ -14,7 +14,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { uploadFile } from "@/lib/storage";
+import { uploadFileToR2 } from "@/lib/r2-storage";
 import { Link } from "react-router-dom";
 import { notify } from "@/lib/notify";
 import { startOnboardingForEmployee } from "@/lib/onboarding";
@@ -436,7 +436,7 @@ export default function Hire() {
   const uploadCandidateResume = async (candidateId: string, file: File) => {
     setUploadingResume(true);
     try {
-      const resume_url = await uploadFile("resumes", `${Date.now()}_${file.name}`, file);
+      const resume_url = await uploadFileToR2(file, "candidates/resumes");
       await supabase
         .from("candidates")
         .update({ resume_url, resume_name: file.name })
@@ -636,7 +636,7 @@ export default function Hire() {
 
     if (resumeFile) {
       try {
-        resume_url = await uploadFile("resumes", `${Date.now()}_${resumeFile.name}`, resumeFile);
+        resume_url = await uploadFileToR2(resumeFile, "candidates/resumes");
         resume_name = resumeFile.name;
       } catch (err) {
         toast("Upload failed", err instanceof Error ? err.message : "Could not upload resume", "error");
