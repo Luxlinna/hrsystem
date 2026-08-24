@@ -252,7 +252,7 @@ const formatClock = (t: string | null | undefined) => {
   return `${hour12}:${m} ${hour >= 12 ? "PM" : "AM"}`;
 };
 
-// Hours between clock-in and clock-out, kept numeric so exports stay summable.
+// Hours between check-in and check-out, kept numeric so exports stay summable.
 const workedHours = (clockIn: string | null, clockOut: string | null) => {
   if (!clockIn || !clockOut) return 0;
   const [ih, im] = clockIn.split(":").map(Number);
@@ -670,7 +670,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
   const fetchAttendance = useCallback(async () => {
     const mapped = await loadAttendanceRows();
 
-    const cols = ["Employee", "Department", "Branch", "Role", "Date", "Clock In", "Clock Out", "Hours", "Status", "Late (Min)", "Deleted By", "Deleted Date & Time", "Notes"];
+    const cols = ["Employee", "Department", "Branch", "Role", "Date", "Check In", "Check Out", "Hours", "Status", "Late (Min)", "Deleted By", "Deleted Date & Time", "Notes"];
     setRows(mapped);
     setColumns(cols);
 
@@ -1143,7 +1143,7 @@ export default function ReportViewer({ config, onDataReady }: Props) {
     "Task Name": "task_name", "Priority": "priority", "Assigned To": "assigned_to", "Due Date": "due_date",
     "Verified By": "completed_by", "Verified Date & Time": "verified_at", "Verified At": "verified_at", "Completed Date": "completed_at",
     "Shift Date": "shift_date", "Shift Name": "shift_name", "Hours": "hours", "Capacity": "capacity", "Staffing": "staffing", "Notes": "notes",
-    "Clock In": "clock_in", "Clock Out": "clock_out", "Late (Min)": "late_minutes",
+    "Check In": "clock_in", "Check Out": "clock_out", "Late (Min)": "late_minutes",
     "Days Logged": "days_logged", "Present": "present", "Late": "late", "Absent": "absent", "Remote": "remote",
     "Total Hours": "total_hours", "Late Minutes": "late_minutes", "Attendance Rate (%)": "attendance_rate", "Last Logged": "last_logged",
     "Deleted By": "deleted_by", "Deleted Date & Time": "deleted_at_formatted", "Deleted At": "deleted_at_formatted",

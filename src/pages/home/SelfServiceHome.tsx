@@ -16,7 +16,7 @@ interface MyEmployee {
 }
 
 const QUICK_ACTIONS = [
-  { label: "Log Attendance", icon: "ri-fingerprint-line", note: "Clock in / out", color: "bg-emerald-500", path: "/self-service?tab=checkin" },
+  { label: "Log Attendance", icon: "ri-fingerprint-line", note: "Check in / out", color: "bg-emerald-500", path: "/self-service?tab=checkin" },
   { label: "Submit Leave", icon: "ri-calendar-event-line", note: "Request time off", color: "bg-amber-500", path: "/self-service?tab=leave" },
   { label: "View Payslip", icon: "ri-money-dollar-circle-line", note: "Your payslips", color: "bg-[#253C7D]", path: "/self-service?tab=payslips" },
 ];
@@ -114,7 +114,7 @@ export default function SelfServiceHome() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl p-5 border border-gray-100">
             <i className="ri-fingerprint-line text-[#253C7D] text-xl mb-3 block w-8 h-8 flex items-center justify-center" />
-            <p className="text-lg font-bold text-gray-900 capitalize">{todayAttendance?.status || "Not clocked in"}</p>
+            <p className="text-lg font-bold text-gray-900 capitalize">{todayAttendance?.status || "Not checked in"}</p>
             <p className="text-[11px] text-gray-500 mt-1">Today's Attendance</p>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-gray-100">

@@ -35,7 +35,7 @@ interface LiveStats {
 }
 
 const QUICK_ACTIONS = [
-  { label: "Log Attendance", icon: "ri-fingerprint-line", path: "/self-service?tab=checkin", module: "self-service", color: "bg-emerald-500", note: "Clock in / out" },
+  { label: "Log Attendance", icon: "ri-fingerprint-line", path: "/self-service?tab=checkin", module: "self-service", color: "bg-emerald-500", note: "Check in / out" },
   { label: "Submit Leave", icon: "ri-calendar-event-line", path: "/self-service?tab=leave", module: "self-service", color: "bg-amber-500", note: "Request time off" },
   { label: "View Payslip", icon: "ri-money-dollar-circle-line", path: "/self-service?tab=payslips", module: "self-service", color: "bg-[#253C7D]", note: "Your payslips" },
   { label: "New Employee", icon: "ri-user-add-line", path: "/employees", module: "employees", color: "bg-violet-500", note: "Add to directory" },
