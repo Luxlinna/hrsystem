@@ -67,15 +67,25 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey =
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+      Deno.env.get("SUPABASE_SECRET_KEY");
+
+    if (!supabaseUrl || !serviceKey) {
+      return json({ error: "Approve reset function is missing Supabase environment variables" }, 500);
+    }
+
     const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
-    const { data: authData, error: authError } = await userClient.auth.getUser();
-    if (authError || !authData.user) return json({ error: "Not authenticated" }, 401);
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return json({ error: "Not authenticated" }, 401);
 
     const admin = createClient(supabaseUrl, serviceKey);
+    const { data: authData, error: authError } = await admin.auth.getUser(token);
+    if (authError || !authData?.user) {
+      console.error("approve-password-reset getUser failed:", authError?.message);
+      return json({ error: "Not authenticated", detail: authError?.message }, 401);
+    }
     const { data: assignment } = await admin
       .from("user_role_assignments")
       .select("app_roles(is_admin, allowed_modules)")

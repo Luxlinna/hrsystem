@@ -41,7 +41,10 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
     const { data: currentUser, error: userError } = await admin.auth.getUser(token);
-    if (userError || !currentUser?.user) return json({ error: "Not authenticated" }, 401);
+    if (userError || !currentUser?.user) {
+      console.error("list-auth-users getUser failed:", userError?.message);
+      return json({ error: "Not authenticated", detail: userError?.message }, 401);
+    }
 
     if (!isBootstrapAdminEmail(currentUser.user.email)) {
       const email = currentUser.user.email?.toLowerCase() || "";

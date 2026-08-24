@@ -159,18 +159,42 @@ const BLANK_ROLE = {
   ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, false])) as Record<typeof SCOPE_OVERRIDES[number]["key"], boolean>,
 };
 
-async function listAuthAccounts(): Promise<AuthAccountsResult> {
+// getSession() returns the cached token even when it has already expired
+// (supabase-js only refreshes lazily), and the raw fetch() calls below bypass
+// the retry wrapper in lib/supabase.ts. Always send a token that is valid for
+// at least the next minute, forcing a refresh otherwise.
+async function getFreshAccessToken(): Promise<string | null> {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) return { accounts: [], assignments: null };
+  const expiresAtMs = (session?.expires_at ?? 0) * 1000;
+  if (session?.access_token && expiresAtMs - Date.now() > 60_000) return session.access_token;
+  const { data } = await supabase.auth.refreshSession();
+  return data.session?.access_token ?? null;
+}
 
-  try {
-    const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/list-auth-users`, {
+async function listAuthAccounts(): Promise<AuthAccountsResult> {
+  let accessToken = await getFreshAccessToken();
+  if (!accessToken) return { accounts: [], assignments: null };
+
+  const callFunction = async (token: string | null) => {
+    if (!token) return null;
+    return fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/list-auth-users`, {
       method: "GET",
       headers: {
-        "Authorization": `Bearer ${session.access_token}`,
+        "Authorization": `Bearer ${token}`,
         "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
       },
     });
+  };
+
+  try {
+    let res = await callFunction(accessToken);
+    // A single 401 right after a forced refresh usually means the token went
+    // stale between refresh and request (or the clock drifted) — try once more.
+    if (res?.status === 401) {
+      accessToken = await getFreshAccessToken();
+      res = await callFunction(accessToken);
+    }
+    if (!res) return { accounts: [], assignments: null };
     const result = await readFunctionJson(res);
     if (!res.ok || result.error) {
       console.warn("Notice: Auth accounts list function unavailable", { status: res.status, result });
@@ -193,15 +217,15 @@ async function manageUserRole(
   email?: string | null,
   displayName?: string | null
 ) {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("Not authenticated");
+  const accessToken = await getFreshAccessToken();
+  if (!accessToken) throw new Error("Not authenticated");
 
   try {
     const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/manage-user-role`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${session.access_token}`,
+        "Authorization": `Bearer ${accessToken}`,
         "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
       },
       body: JSON.stringify({
@@ -236,24 +260,26 @@ async function manageUserRole(
         }, { onConflict: "email" });
       if (error) throw new Error(error.message || err.message || "Failed to update user role");
     } else if (action === "delete_assignment" && assignmentId && assignmentId > 0) {
+      const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("user_role_assignments")
         .update({
           deleted_at: new Date().toISOString(),
-          deleted_by: session.user.email || null,
+          deleted_by: user?.email || null,
           role_id: null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", assignmentId);
       if (error) throw new Error(error.message || err.message || "Failed to remove user");
     } else if (action === "delete_assignment" && email) {
+      const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("user_role_assignments")
         .upsert({
           email: email.toLowerCase(),
           display_name: displayName || null,
           deleted_at: new Date().toISOString(),
-          deleted_by: session.user.email || null,
+          deleted_by: user?.email || null,
           role_id: null,
           updated_at: new Date().toISOString(),
         }, { onConflict: "email" });
@@ -459,12 +485,12 @@ export default function AdminPortal() {
     setSavingUser(true);
 
     if (newUser.sendInvite) {
-      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = await getFreshAccessToken();
       const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/invite-user`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token}`,
+          "Authorization": `Bearer ${accessToken}`,
           "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({
@@ -501,12 +527,12 @@ export default function AdminPortal() {
 
   const resendInvite = async (user: UserAssignment) => {
     setInvitingUserId(user.id);
-    const { data: { session } } = await supabase.auth.getSession();
+    const accessToken = await getFreshAccessToken();
     const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/invite-user`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${session?.access_token}`,
+        "Authorization": `Bearer ${accessToken}`,
         "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
       },
       body: JSON.stringify({
@@ -573,17 +599,13 @@ export default function AdminPortal() {
   const handlePasswordResetAction = async (requestId: string, action: "approve" | "reject") => {
     setActingResetId(requestId);
     try {
-      let { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Not authenticated");
-      if ((session.expires_at ?? 0) * 1000 <= Date.now()) {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        session = refreshed.session ?? session;
-      }
+      const accessToken = await getFreshAccessToken();
+      if (!accessToken) throw new Error("Not authenticated");
       const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/approve-password-reset`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
+          "Authorization": `Bearer ${accessToken}`,
           "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({
