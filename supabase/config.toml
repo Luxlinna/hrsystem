@@ -9,7 +9,15 @@ admin_email = "env(SMTP_USER)"
 sender_name = "HRsystem"
 
 [functions.request-password-reset]
+# Public endpoint — anyone may request a reset; no bearer token involved.
+verify_jwt = false
+
+# These two validate the caller's JWT themselves via admin.auth.getUser(token)
+# inside the function (and return a precise error). Skipping the gateway check
+# avoids "works locally, 401 in prod" mismatches between the gateway's JWT
+# verification (signing keys/clock) and GoTrue's.
+[functions.list-auth-users]
 verify_jwt = false
 
 [functions.approve-password-reset]
-verify_jwt = true
+verify_jwt = false
