@@ -171,6 +171,16 @@ async function getFreshAccessToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
+// The OTP login flow can leave tokens for a destroyed session in storage
+// (still unexpired, so getFreshAccessToken would happily reuse them). When an
+// endpoint answers 401, ask the auth server for a genuinely new token rather
+// than trusting the cache. Returns null when the stored session is truly dead.
+async function forceRefreshAccessToken(): Promise<string | null> {
+  const { data, error } = await supabase.auth.refreshSession();
+  if (error) console.warn("Forced session refresh failed:", error.message);
+  return data.session?.access_token ?? null;
+}
+
 async function listAuthAccounts(): Promise<AuthAccountsResult> {
   let accessToken = await getFreshAccessToken();
   if (!accessToken) return { accounts: [], assignments: null };
@@ -188,10 +198,11 @@ async function listAuthAccounts(): Promise<AuthAccountsResult> {
 
   try {
     let res = await callFunction(accessToken);
-    // A single 401 right after a forced refresh usually means the token went
-    // stale between refresh and request (or the clock drifted) — try once more.
+    // A 401 with a token that "looked" valid means the stored session was
+    // destroyed server-side (e.g. stale OTP-login tokens) — force a real
+    // refresh and try once more.
     if (res?.status === 401) {
-      accessToken = await getFreshAccessToken();
+      accessToken = await forceRefreshAccessToken();
       res = await callFunction(accessToken);
     }
     if (!res) return { accounts: [], assignments: null };

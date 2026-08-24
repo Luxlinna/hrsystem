@@ -139,9 +139,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (data?.error) throw new Error(data.error);
 
+    // login() signed out after verifying the password; if anything re-persisted
+    // that dead session's tokens since (auto-refresh timer, another tab), wipe
+    // them so the sign-in below is the only session left in storage.
+    await supabase.auth.signOut().catch(() => {});
+
     // OTP verified — now sign in for real
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) throw signInError;
+    if (signInError) throw new Error(signInError.message);
 
     // Set remember device if requested
     if (rememberDevice) {

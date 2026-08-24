@@ -1,6 +1,6 @@
 // @deno-types="npm:@types/nodemailer"
 import nodemailer from "npm:nodemailer@6";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,15 +81,23 @@ Deno.serve(async (req) => {
     if (!token) return json({ error: "Not authenticated" }, 401);
 
     const admin = createClient(supabaseUrl, serviceKey);
-    const { data: authData, error: authError } = await admin.auth.getUser(token);
-    if (authError || !authData?.user) {
-      console.error("approve-password-reset getUser failed:", authError?.message);
-      return json({ error: "Not authenticated", detail: authError?.message }, 401);
+
+    // Direct GoTrue validation — see list-auth-users for why we avoid
+    // admin.auth.getUser(token) in edge isolates.
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: serviceKey },
+    });
+    if (!authResponse.ok) {
+      const bodyText = await authResponse.text().catch(() => "");
+      console.error("approve-password-reset token validation failed:", authResponse.status, bodyText);
+      return json({ error: "Not authenticated", detail: bodyText.slice(0, 300) || String(authResponse.status) }, 401);
     }
+    const callerUser = await authResponse.json();
+
     const { data: assignment } = await admin
       .from("user_role_assignments")
       .select("app_roles(is_admin, allowed_modules)")
-      .eq("user_id", authData.user.id)
+      .eq("user_id", callerUser.id)
       .is("deleted_at", null)
       .maybeSingle();
     const role = Array.isArray((assignment as any)?.app_roles) ? (assignment as any).app_roles[0] : (assignment as any)?.app_roles;
@@ -113,7 +121,7 @@ Deno.serve(async (req) => {
     if (action === "reject") {
       await admin
         .from("password_reset_requests")
-        .update({ status: "rejected", acted_at: new Date().toISOString(), acted_by: authData.user.id, admin_note: note || null })
+        .update({ status: "rejected", acted_at: new Date().toISOString(), acted_by: callerUser.id, admin_note: note || null })
         .eq("id", request_id);
       await admin.from("notifications").update({ is_read: true }).eq("source", "password_reset").eq("entity_id", request_id);
       return json({ success: true });
@@ -135,7 +143,7 @@ Deno.serve(async (req) => {
       .update({
         status: "approved",
         acted_at: new Date().toISOString(),
-        acted_by: authData.user.id,
+        acted_by: callerUser.id,
         admin_note: note || null,
         reset_link_sent_at: new Date().toISOString(),
       })

@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,15 +52,25 @@ Deno.serve(async (req) => {
     if (!token) return json({ error: "Not authenticated" }, 401);
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
-    const { data: currentUser, error: userError } = await admin.auth.getUser(token);
-    if (userError || !currentUser?.user) return json({ error: "Not authenticated" }, 401);
 
-    if (!isBootstrapAdminEmail(currentUser.user.email)) {
-      const email = currentUser.user.email?.toLowerCase() || "";
+    // Direct GoTrue validation — see list-auth-users for why we avoid
+    // admin.auth.getUser(token) in edge isolates.
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: serviceRoleKey },
+    });
+    if (!authResponse.ok) {
+      const bodyText = await authResponse.text().catch(() => "");
+      console.error("manage-user-role token validation failed:", authResponse.status, bodyText);
+      return json({ error: "Not authenticated", detail: bodyText.slice(0, 300) || String(authResponse.status) }, 401);
+    }
+    const currentUser = await authResponse.json();
+
+    if (!isBootstrapAdminEmail(currentUser.email)) {
+      const email = currentUser.email?.toLowerCase() || "";
       const { data: assignment, error: assignmentError } = await admin
         .from("user_role_assignments")
         .select("app_roles(is_admin)")
-        .or(`user_id.eq.${currentUser.user.id},email.eq.${email}`)
+        .or(`user_id.eq.${currentUser.id},email.eq.${email}`)
         .is("deleted_at", null)
         .limit(1)
         .maybeSingle();
@@ -124,7 +134,7 @@ Deno.serve(async (req) => {
           .from("user_role_assignments")
           .update({
             deleted_at: new Date().toISOString(),
-            deleted_by: currentUser.user.email || currentUser.user.id,
+            deleted_by: currentUser.email || currentUser.id,
             role_id: null,
             updated_at: new Date().toISOString(),
           })
@@ -140,7 +150,7 @@ Deno.serve(async (req) => {
             email: normalizedEmail,
             display_name: display_name ? String(display_name).trim() : null,
             deleted_at: new Date().toISOString(),
-            deleted_by: currentUser.user.email || currentUser.user.id,
+            deleted_by: currentUser.email || currentUser.id,
             role_id: null,
             updated_at: new Date().toISOString(),
           }, { onConflict: "email" });
