@@ -67,6 +67,8 @@ interface PasswordResetRequest {
   acted_at: string | null;
   admin_note: string | null;
   reset_link_sent_at: string | null;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 }
 
 const ALL_MODULES = [
@@ -346,7 +348,7 @@ export default function AdminPortal() {
       supabase.from("user_role_assignments").select("*, app_roles(id, name, color)").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("user_role_assignments").select("email").not("deleted_at", "is", null),
       supabase.from("employees").select("id, email, first_name, last_name, role, department").not("email", "is", null).order("first_name"),
-      supabase.from("password_reset_requests").select("*").order("requested_at", { ascending: false }).limit(50),
+      supabase.from("password_reset_requests").select("*").is("deleted_at", null).order("requested_at", { ascending: false }).limit(50),
       authAccountsPromise,
     ]);
 
@@ -633,6 +635,25 @@ export default function AdminPortal() {
       loadData();
     } catch (error: any) {
       showToast(error.message || "Failed to update password reset request", "err");
+    } finally {
+      setActingResetId(null);
+    }
+  };
+
+  const deleteResetRequest = async (request: PasswordResetRequest) => {
+    if (!confirm(`Move the password reset request for "${request.email}" to the Recycle Bin?`)) return;
+    setActingResetId(request.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("password_reset_requests")
+        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.email || null })
+        .eq("id", request.id);
+      if (error) throw new Error(error.message);
+      showToast("Moved to Recycle Bin");
+      loadData();
+    } catch (error: any) {
+      showToast(error.message || "Failed to delete password reset request", "err");
     } finally {
       setActingResetId(null);
     }
@@ -1233,6 +1254,15 @@ export default function AdminPortal() {
                           </div>
 
                           <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              disabled={isActing}
+                              onClick={() => deleteResetRequest(request)}
+                              title="Move to Recycle Bin"
+                              className="px-3 py-2 rounded-xl border border-gray-200 text-gray-500 text-xs font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                              <i className="ri-delete-bin-line" />
+                            </button>
                             <button
                               type="button"
                               disabled={!isPending || isActing}
