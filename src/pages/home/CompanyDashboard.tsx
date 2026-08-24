@@ -138,7 +138,12 @@ export default function CompanyDashboard() {
     ] = await Promise.all([
       supabase.from("branches").select("*"),
       supabase.from("employees").select("*, branches(name)"),
-      supabase.from("onboarding_requests").select("*, employees(first_name, last_name, role, branch_id)").eq("status", "pending"),
+      supabase
+        .from("onboarding_requests")
+        .select("*, employees(first_name, last_name, role, branch_id)")
+        .is("deleted_at", null)
+        .neq("status", "completed")
+        .order("created_at", { ascending: false }),
       supabase.from("leave_requests").select("*, employees(first_name, last_name, role, department)").order("created_at", { ascending: false }).limit(5),
       supabase.from("payroll_records").select("*").eq("month", currentMonth),
       user?.id
@@ -473,7 +478,7 @@ export default function CompanyDashboard() {
           <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-gray-900">Onboarding Pipeline</h2>
-              <span className="text-[11px] text-gray-500">{onboarding.length} pending</span>
+              <span className="text-[11px] text-gray-500">{onboarding.length} in progress</span>
             </div>
             <div className="flex gap-3.5 overflow-x-auto pb-1 scrollbar-hide">
               {onboarding.length > 0 ? onboarding.map((o) => (
@@ -494,7 +499,7 @@ export default function CompanyDashboard() {
               )) : (
                 <div className="min-w-[210px] rounded-xl p-4 bg-gray-50 border border-gray-100 flex flex-col items-center justify-center text-gray-400 text-center shrink-0">
                   <i className="ri-user-add-line text-xl mb-1.5" />
-                  <p className="text-[12px] font-medium">No pending onboarding</p>
+                  <p className="text-[12px] font-medium">No onboarding in progress</p>
                 </div>
               )}
               <Link
