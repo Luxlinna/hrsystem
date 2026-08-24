@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,15 +31,25 @@ Deno.serve(async (req) => {
     if (!token) return json({ error: "Not authenticated" }, 401);
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
-    const { data: currentUser, error: userError } = await admin.auth.getUser(token);
-    if (userError || !currentUser?.user) return json({ error: "Not authenticated" }, 401);
 
-    const email = currentUser.user.email?.toLowerCase() || "";
+    // Direct GoTrue validation — see list-auth-users for why we avoid
+    // admin.auth.getUser(token) in edge isolates.
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: serviceRoleKey },
+    });
+    if (!authResponse.ok) {
+      const bodyText = await authResponse.text().catch(() => "");
+      console.error("get-my-role token validation failed:", authResponse.status, bodyText);
+      return json({ error: "Not authenticated", detail: bodyText.slice(0, 300) || String(authResponse.status) }, 401);
+    }
+    const callerUser = await authResponse.json();
+
+    const email = callerUser.email?.toLowerCase() || "";
 
     const { data, error } = await admin
       .from("user_role_assignments")
       .select("*, app_roles(*)")
-      .or(`user_id.eq.${currentUser.user.id},email.eq.${email}`)
+      .or(`user_id.eq.${callerUser.id},email.eq.${email}`)
       .order("user_id", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle();

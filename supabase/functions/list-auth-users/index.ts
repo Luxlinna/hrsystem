@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,18 +40,28 @@ Deno.serve(async (req) => {
     if (!token) return json({ error: "Not authenticated" }, 401);
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
-    const { data: currentUser, error: userError } = await admin.auth.getUser(token);
-    if (userError || !currentUser?.user) {
-      console.error("list-auth-users getUser failed:", userError?.message);
-      return json({ error: "Not authenticated", detail: userError?.message }, 401);
-    }
 
-    if (!isBootstrapAdminEmail(currentUser.user.email)) {
-      const email = currentUser.user.email?.toLowerCase() || "";
+    // Validate the caller's JWT with a direct GoTrue REST call instead of
+    // admin.auth.getUser(). getUser(token) has been observed to fall back to
+    // its (nonexistent) session store in edge isolates and throw
+    // "Auth session missing!" even when a token is passed — the floating
+    // esm.sh @2 URL resolves to different library builds per cold-start.
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: serviceRoleKey },
+    });
+    if (!authResponse.ok) {
+      const bodyText = await authResponse.text().catch(() => "");
+      console.error("list-auth-users token validation failed:", authResponse.status, bodyText);
+      return json({ error: "Not authenticated", detail: bodyText.slice(0, 300) || String(authResponse.status) }, 401);
+    }
+    const callerUser = await authResponse.json();
+
+    if (!isBootstrapAdminEmail(callerUser.email)) {
+      const email = callerUser.email?.toLowerCase() || "";
       const { data: assignment, error: assignmentError } = await admin
         .from("user_role_assignments")
         .select("app_roles(is_admin)")
-        .or(`user_id.eq.${currentUser.user.id},email.eq.${email}`)
+        .or(`user_id.eq.${callerUser.id},email.eq.${email}`)
         .is("deleted_at", null)
         .limit(1)
         .maybeSingle();
