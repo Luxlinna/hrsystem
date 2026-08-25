@@ -1,8 +1,18 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
+import CheckInOutModal from "./CheckInOutModal";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+
+const fmtDuration = (from: string, to: string | null) => {
+  const ms = (to ? new Date(to).getTime() : Date.now()) - new Date(from).getTime();
+  if (ms < 0) return "—";
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "<1m";
+  if (mins < 60) return `${mins}m`;
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+};
 
 interface Employee {
   id: string;
@@ -23,6 +33,20 @@ interface Task {
   due_date: string | null;
   completed_at: string | null;
   created_at: string;
+  is_outside_work: boolean;
+  work_status: "checked_in" | "checked_out" | null;
+  work_checked_in_at: string | null;
+  work_checked_out_at: string | null;
+  work_lat: number | null;
+  work_lng: number | null;
+  work_accuracy_m: number | null;
+  work_address: string | null;
+  work_image_url: string | null;
+  work_check_out_lat: number | null;
+  work_check_out_lng: number | null;
+  work_check_out_accuracy_m: number | null;
+  work_check_out_address: string | null;
+  work_check_out_image_url: string | null;
   employees?: { first_name: string; last_name: string; department: string; avatar_url?: string } | null;
 }
 
@@ -45,6 +69,7 @@ interface FormState {
   status: Task["status"];
   priority: Task["priority"];
   due_date: string;
+  is_outside_work: boolean;
 }
 
 const STATUS_CONFIG: Record<
@@ -192,6 +217,7 @@ const emptyForm: FormState = {
   status: "todo",
   priority: "medium",
   due_date: "",
+  is_outside_work: false,
 };
 
 export default function TasksPage() {
@@ -229,9 +255,24 @@ export default function TasksPage() {
   const [activityLoading, setActivityLoading] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<"details" | "activity">("details");
 
+  // Outside work capture state
+  const [owTaskId, setOwTaskId] = useState<string | null>(null);
+  const [owMode, setOwMode] = useState<"check_in" | "check_out">("check_in");
+  const [owTick, setOwTick] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setOwTick((t) => t + 1), 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const showToast = (type: string, message: string) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const openCheckInOut = (taskId: string, mode: "check_in" | "check_out") => {
+    setOwTaskId(taskId);
+    setOwMode(mode);
   };
 
   const loadData = useCallback(async () => {
@@ -346,6 +387,7 @@ export default function TasksPage() {
       status: t.status || "todo",
       priority: t.priority || "medium",
       due_date: t.due_date || "",
+      is_outside_work: !!t.is_outside_work,
     });
     setActiveModalTab("details");
     setShowModal(true);
@@ -363,6 +405,7 @@ export default function TasksPage() {
         priority: form.priority,
         due_date: form.due_date || null,
         completed_at: form.status === "done" ? (editingTask.completed_at || new Date().toISOString()) : null,
+        is_outside_work: form.is_outside_work,
         updated_at: new Date().toISOString(),
       }).eq("id", editingTask.id);
       setSaving(false);
@@ -380,6 +423,7 @@ export default function TasksPage() {
         priority: form.priority,
         due_date: form.due_date || null,
         completed_at: form.status === "done" ? new Date().toISOString() : null,
+        is_outside_work: form.is_outside_work,
       }));
       const { error } = await supabase.from("tasks").insert(payload);
       setSaving(false);
@@ -537,8 +581,8 @@ export default function TasksPage() {
           >
             <i className="ri-add-line text-base font-bold" />
             New Task
-          </button>
-        </div>
+                </button>
+              </div>
       </div>
 
       {/* Executive KPI Summary Cards (Interactive Filters) */}
@@ -900,6 +944,49 @@ export default function TasksPage() {
                             </span>
                           )}
                         </div>
+
+                        {/* Outside Work: Check In / Out + Session */}
+                        {t.is_outside_work && (
+                          <div className="mt-2.5 pt-2.5 border-t border-gray-100">
+                            {t.work_status === "checked_in" ? (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="relative flex h-2 w-2 shrink-0">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                    </span>
+                                    <span className="text-[11px] font-bold text-emerald-700">
+                                      Checked in · {fmtDuration(t.work_checked_in_at!, null)}
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openCheckInOut(t.id, "check_out"); }}
+                                  className="w-full py-1.5 rounded-lg bg-[#253C7D] hover:bg-[#1E3064] text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                >
+                                  <i className="ri-logout-circle-r-line" />
+                                  Check Out
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5">
+                                {t.work_status === "checked_out" && t.work_checked_out_at && (
+                                  <p className="text-[10px] font-semibold text-gray-400">
+                                    Checked out · {formatRelative(t.work_checked_out_at)}
+                                  </p>
+                                )}
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openCheckInOut(t.id, "check_in"); }}
+                                  className="w-full py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                >
+                                  <i className="ri-login-circle-line" />
+                                  Check In
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1112,7 +1199,7 @@ export default function TasksPage() {
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/40 backdrop-blur-xs overflow-y-auto no-scrollbar"
-          onClick={() => !saving && setShowModal(false)}
+          onClick={() => { if (!saving) setShowModal(false); }}
         >
           <div
             className="bg-white rounded-3xl w-full max-w-xl shadow-2xl border border-gray-100/80 overflow-hidden max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-150"
@@ -1410,6 +1497,139 @@ export default function TasksPage() {
                       className="w-full px-4 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-xs text-gray-800 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 resize-none transition-all"
                     />
                   </div>
+
+                  {/* Outside Work Toggle */}
+                  <div className="rounded-2xl border border-gray-200 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, is_outside_work: !form.is_outside_work })}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors cursor-pointer hover:bg-gray-50/60"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${form.is_outside_work ? "bg-[#253C7D]/10 text-[#253C7D]" : "bg-gray-100 text-gray-400"}`}>
+                          <i className="ri-map-pin-user-line text-base" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-gray-900">Outside Work</p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">
+                            {form.is_outside_work
+                              ? editingTask
+                                ? "Check in when you arrive at the work site"
+                                : "You'll check in with location & photo when you arrive on-site"
+                              : "Enable if this task is performed off-site"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className={`relative w-10 h-[22px] rounded-full transition-colors shrink-0 ${form.is_outside_work ? "bg-[#253C7D]" : "bg-gray-300"}`}>
+                        <span className={`absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-xs transition-transform ${form.is_outside_work ? "left-[22px]" : "left-[3px]"}`} />
+                      </div>
+                    </button>
+
+                    {/* Full Session Display when editing an outside-work task */}
+                    {editingTask?.is_outside_work && (
+                      <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50/30 space-y-3">
+                        {/* Session status badge */}
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
+                            editingTask.work_status === "checked_in"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                              : editingTask.work_status === "checked_out"
+                              ? "bg-gray-100 text-gray-600 border border-gray-200"
+                              : "bg-amber-50 text-amber-700 border border-amber-200/60"
+                          }`}>
+                            {editingTask.work_status === "checked_in" && <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" /></span>}
+                            {editingTask.work_status === "checked_in" ? "Active Session" : editingTask.work_status === "checked_out" ? "Session Complete" : "Not Checked In"}
+                          </span>
+                          {editingTask.work_checked_in_at && editingTask.work_checked_out_at && (
+                            <span className="text-[11px] font-bold text-gray-500">
+                              {fmtDuration(editingTask.work_checked_in_at, editingTask.work_checked_out_at)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Check-in details */}
+                        {editingTask.work_image_url && (
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1.5">
+                              <i className="ri-login-circle-line text-emerald-600" />
+                              Check-in
+                              {editingTask.work_checked_in_at && (
+                                <span className="text-gray-400 font-medium normal-case ml-1">
+                                  · {formatExact(editingTask.work_checked_in_at)}
+                                </span>
+                              )}
+                            </label>
+                            <img
+                              src={editingTask.work_image_url}
+                              alt="Check-in proof"
+                              className="w-full h-36 object-cover rounded-xl border border-gray-200"
+                            />
+                            <div className="mt-1.5 space-y-0.5">
+                              {editingTask.work_address && (
+                                <p className="text-[11px] text-gray-600 flex items-center gap-1">
+                                  <i className="ri-map-pin-2-fill text-emerald-600" />
+                                  {editingTask.work_address}
+                                </p>
+                              )}
+                              {!editingTask.work_address && editingTask.work_lat != null && (
+                                <p className="text-[11px] text-gray-600 flex items-center gap-1">
+                                  <i className="ri-map-pin-2-fill text-emerald-600" />
+                                  {editingTask.work_lat}, {editingTask.work_lng}
+                                </p>
+                              )}
+                              {editingTask.work_accuracy_m != null && (
+                                <p className="text-[10px] text-gray-400">±{editingTask.work_accuracy_m}m accuracy</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Check-out details */}
+                        {editingTask.work_check_out_image_url && (
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1.5">
+                              <i className="ri-logout-circle-r-line text-[#253C7D]" />
+                              Check-out
+                              {editingTask.work_checked_out_at && (
+                                <span className="text-gray-400 font-medium normal-case ml-1">
+                                  · {formatExact(editingTask.work_checked_out_at)}
+                                </span>
+                              )}
+                            </label>
+                            <img
+                              src={editingTask.work_check_out_image_url}
+                              alt="Check-out proof"
+                              className="w-full h-36 object-cover rounded-xl border border-gray-200"
+                            />
+                            <div className="mt-1.5 space-y-0.5">
+                              {editingTask.work_check_out_address && (
+                                <p className="text-[11px] text-gray-600 flex items-center gap-1">
+                                  <i className="ri-map-pin-2-fill text-[#253C7D]" />
+                                  {editingTask.work_check_out_address}
+                                </p>
+                              )}
+                              {!editingTask.work_check_out_address && editingTask.work_check_out_lat != null && (
+                                <p className="text-[11px] text-gray-600 flex items-center gap-1">
+                                  <i className="ri-map-pin-2-fill text-[#253C7D]" />
+                                  {editingTask.work_check_out_lat}, {editingTask.work_check_out_lng}
+                                </p>
+                              )}
+                              {editingTask.work_check_out_accuracy_m != null && (
+                                <p className="text-[10px] text-gray-400">±{editingTask.work_check_out_accuracy_m}m accuracy</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* No session yet hint */}
+                        {!editingTask.work_image_url && (
+                          <p className="text-[11px] text-gray-400 text-center py-2">
+                            No check-in data yet — use the Check In button on the task card.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </>
               ) : (
                 /* Activity Feed Tab */
@@ -1497,6 +1717,16 @@ export default function TasksPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {owTaskId && (
+        <CheckInOutModal
+          taskId={owTaskId}
+          mode={owMode}
+          onDone={() => { setOwTaskId(null); loadData(); }}
+          onClose={() => setOwTaskId(null)}
+          showToast={showToast}
+        />
       )}
     </div>
   );
