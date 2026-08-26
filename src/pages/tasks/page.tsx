@@ -25,6 +25,7 @@ interface Employee {
   avatar_url?: string;
   email: string;
   reports_to?: string | null;
+  branch_id?: string | null;
 }
 
 interface Task {
@@ -243,7 +244,7 @@ export default function TasksPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"board" | "list" | "report" | "my_report">("board");
+  const [view, setView] = useState<"board" | "list" | "report" | "my_report" | "admin_report">("board");
   const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
 
   // Filters
@@ -270,6 +271,15 @@ export default function TasksPage() {
   const [reportFilterSearch, setReportFilterSearch] = useState("");
   const reportFilterRef = useRef<HTMLDivElement>(null);
   const [myReportFilterEmpId, setMyReportFilterEmpId] = useState("");
+
+  // Admin Report: per-employee detail view & search
+  const [adminReportSearch, setAdminReportSearch] = useState("");
+  const [adminReportDeptFilter, setAdminReportDeptFilter] = useState<string>("all");
+  const [adminReportExpandedEmpId, setAdminReportExpandedEmpId] = useState<string | null>(null);
+  const [adminReportEmpExportOpen, setAdminReportEmpExportOpen] = useState<string | null>(null);
+  const adminReportEmpExportRef = useRef<HTMLDivElement>(null);
+  // Task activities for working time tracking
+  const [adminTaskActivities, setAdminTaskActivities] = useState<Record<string, TaskActivity[]>>({});
 
   // Modals & Form
   const [showModal, setShowModal] = useState(false);
@@ -317,8 +327,11 @@ export default function TasksPage() {
     if (!me) { setEmployees([]); setTasks([]); setLoading(false); return; }
 
     if (canViewAll) {
+      const empQuery = me.branch_id
+        ? supabase.from("employees").select("id, first_name, last_name, department, branch_id, avatar_url, email, reports_to").eq("status", "active").eq("branch_id", me.branch_id).order("first_name")
+        : supabase.from("employees").select("id, first_name, last_name, department, branch_id, avatar_url, email, reports_to").eq("status", "active").order("first_name");
       const [{ data: emp }, { data: t }] = await Promise.all([
-        supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email, reports_to").eq("status", "active").order("first_name"),
+        empQuery,
         supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").is("deleted_at", null).order("created_at", { ascending: false }),
       ]);
       setEmployees(emp || []);
@@ -328,9 +341,10 @@ export default function TasksPage() {
     }
 
     if (canViewOwnBranch) {
+      // Manager: load only direct reports (subordinates) in their branch
       const empRes = me.branch_id
-        ? await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email, reports_to").eq("status", "active").eq("branch_id", me.branch_id).order("first_name")
-        : await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email, reports_to").eq("status", "active").order("first_name");
+        ? await supabase.from("employees").select("id, first_name, last_name, department, branch_id, avatar_url, email, reports_to").eq("status", "active").eq("branch_id", me.branch_id).eq("reports_to", me.id).order("first_name")
+        : await supabase.from("employees").select("id, first_name, last_name, department, branch_id, avatar_url, email, reports_to").eq("status", "active").eq("reports_to", me.id).order("first_name");
       const team = empRes.data || [];
       setEmployees(team);
       const ids = team.map((e) => e.id);
@@ -352,7 +366,10 @@ export default function TasksPage() {
     setTasks((t as any) || []);
 
     if (canAssign) {
-      const { data: allEmp } = await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email, reports_to").eq("status", "active").order("first_name");
+      const assignEmpQuery = me.branch_id
+        ? supabase.from("employees").select("id, first_name, last_name, department, branch_id, avatar_url, email, reports_to").eq("status", "active").eq("branch_id", me.branch_id).order("first_name")
+        : supabase.from("employees").select("id, first_name, last_name, department, branch_id, avatar_url, email, reports_to").eq("status", "active").order("first_name");
+      const { data: allEmp } = await assignEmpQuery;
       setEmployees(allEmp || []);
     }
 
@@ -402,6 +419,7 @@ export default function TasksPage() {
       if (reportExportRef.current && !reportExportRef.current.contains(e.target as Node)) setReportExportOpen(false);
       if (myReportExportRef.current && !myReportExportRef.current.contains(e.target as Node)) setMyReportExportOpen(false);
       if (reportFilterRef.current && !reportFilterRef.current.contains(e.target as Node)) { setReportFilterOpen(false); setReportFilterSearch(""); }
+      if (!(e.target as HTMLElement).closest('[data-admin-export]')) { setAdminReportEmpExportOpen(null); }
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -670,6 +688,233 @@ export default function TasksPage() {
     const completionRate = mine.length ? Math.round((done / mine.length) * 100) : 0;
     return { total: mine.length, done, inProg, todo, blocked, overdue, completionRate, tasks: mine, subordinateCount: subordinateIds.size, targetEmployee: targetEmp };
   }, [myEmployee, employees, tasks, reportDateRange, myReportFilterEmpId]);
+
+  // ─── ADMIN REPORT: per-employee detailed task lists ───────────────
+  const adminReport = useMemo(() => {
+    const filteredTasks = reportDateRange
+      ? tasks.filter((t) => {
+          const d = t.created_at;
+          return d >= reportDateRange.from && d < reportDateRange.to;
+        })
+      : tasks;
+    const q = adminReportSearch.toLowerCase().trim();
+    const filteredEmployees = employees.filter((e) => {
+      if (adminReportDeptFilter !== "all" && e.department !== adminReportDeptFilter) return false;
+      if (q && !`${e.first_name} ${e.last_name} ${e.department || ""}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    return filteredEmployees
+      .map((e) => {
+        const own = filteredTasks.filter((t) => t.assigned_to === e.id);
+        const done = own.filter((t) => t.status === "done").length;
+        const inProg = own.filter((t) => t.status === "in_progress").length;
+        const blocked = own.filter((t) => t.status === "blocked").length;
+        const todo = own.filter((t) => t.status === "todo").length;
+        const overdue = own.filter(isOverdue).length;
+        const completionRate = own.length ? Math.round((done / own.length) * 100) : 0;
+        return { employee: e, total: own.length, done, inProg, blocked, todo, overdue, completionRate, tasks: own };
+      })
+      .filter((r) => r.total > 0)
+      .sort((a, b) => b.total - a.total);
+  }, [employees, tasks, reportDateRange, adminReportSearch, adminReportDeptFilter]);
+
+  const adminReportDepartments = useMemo(() => {
+    const depts = new Set(employees.map((e) => e.department).filter(Boolean));
+    return Array.from(depts).sort();
+  }, [employees]);
+
+  // Fetch task activities when admin report is visible (for working time tracking)
+  useEffect(() => {
+    if (view !== "admin_report" || !canManage) return;
+    const taskIds = adminReport.flatMap((r) => r.tasks.map((t) => t.id));
+    if (taskIds.length === 0) { setAdminTaskActivities({}); return; }
+    const fetchActivities = async () => {
+      const { data } = await supabase
+        .from("task_activities")
+        .select("task_id, action, old_value, new_value, created_at")
+        .in("task_id", taskIds)
+        .eq("action", "status_changed")
+        .order("created_at", { ascending: true });
+      const grouped: Record<string, TaskActivity[]> = {};
+      (data || []).forEach((a: TaskActivity) => {
+        if (!grouped[a.task_id]) grouped[a.task_id] = [];
+        grouped[a.task_id].push(a);
+      });
+      setAdminTaskActivities(grouped);
+    };
+    fetchActivities();
+  }, [view, canManage, adminReport]);
+
+  // Compute working time from status_changed activities (in_progress → done)
+  const getTaskWorkingTime = useCallback((task: Task) => {
+    const acts = adminTaskActivities[task.id] || [];
+    let startedAt: string | null = null;
+    let endedAt: string | null = null;
+    for (const a of acts) {
+      if (a.new_value === "in_progress" && !startedAt) startedAt = a.created_at;
+      if (a.new_value === "done" && !endedAt) endedAt = a.created_at;
+    }
+    return { startedAt, endedAt, duration: startedAt ? fmtDuration(startedAt, endedAt) : null };
+  }, [adminTaskActivities]);
+
+  // ─── EXPORT: Admin Report – Individual Employee CSV ─────────────────
+  const exportAdminEmpCSV = (emp: Employee, empTasks: Task[]) => {
+    if (empTasks.length === 0) { showToast("export", "No tasks to export", "warning"); return; }
+    const headers = ["Title", "Description", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration"];
+    const rows = empTasks.map((t) => {
+      const wt = getTaskWorkingTime(t);
+      return [
+      `"${t.title.replace(/"/g, '""')}"`,
+      `"${(t.description || "").replace(/"/g, '""')}"`,
+      t.priority, STATUS_CONFIG[t.status]?.label || t.status, t.due_date || "",
+      wt.startedAt || "", wt.endedAt || "", wt.duration || "",
+    ]; });
+    const csv = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const a = document.createElement("a");
+    a.setAttribute("href", encodeURI(csv));
+    a.setAttribute("download", `task_report_${emp.first_name}_${emp.last_name}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    showToast("success", `Exported ${empTasks.length} tasks to CSV`);
+  };
+
+  // ─── EXPORT: Admin Report – Individual Employee XLSX ────────────────
+  const exportAdminEmpXLSX = (emp: Employee, empTasks: Task[]) => {
+    if (empTasks.length === 0) { showToast("export", "No tasks to export", "warning"); return; }
+    const data = empTasks.map((t) => {
+      const wt = getTaskWorkingTime(t);
+      return ({
+      Title: t.title, Description: t.description || "", Priority: t.priority,
+      Status: STATUS_CONFIG[t.status]?.label || t.status,
+      "Due Date": t.due_date || "", "Work Started": wt.startedAt || "", "Work Completed": wt.endedAt || "", Duration: wt.duration || "",
+    }); });
+    const headers = Object.keys(data[0]);
+    const aoa = [headers, ...data.map((r) => headers.map((h) => r[h]))];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = headers.map((c) => ({ wch: Math.max(c.length + 2, 14) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Task Report");
+    XLSX.writeFile(wb, `task_report_${emp.first_name}_${emp.last_name}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast("success", `Exported ${empTasks.length} tasks to Excel`);
+  };
+
+  // ─── EXPORT: Admin Report – Individual Employee PDF ─────────────────
+  const exportAdminEmpPDF = (emp: Employee, empTasks: Task[]) => {
+    if (empTasks.length === 0) { showToast("export", "No tasks to export", "warning"); return; }
+    const headers = ["Title", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration"];
+    const rows = empTasks.map((t) => {
+      const wt = getTaskWorkingTime(t);
+      return `<tr><td>${t.title}</td><td>${t.priority}</td><td>${STATUS_CONFIG[t.status]?.label || t.status}</td><td>${t.due_date || "—"}</td><td>${wt.startedAt ? formatExact(wt.startedAt) : "—"}</td><td>${wt.endedAt ? formatExact(wt.endedAt) : "—"}</td><td>${wt.duration || "—"}</td></tr>`;
+    }).join("");
+    const done = empTasks.filter((t) => t.status === "done").length;
+    const inProg = empTasks.filter((t) => t.status === "in_progress").length;
+    const todo = empTasks.filter((t) => t.status === "todo").length;
+    const overdue = empTasks.filter(isOverdue).length;
+    const rate = empTasks.length ? Math.round((done / empTasks.length) * 100) : 0;
+    const html = `<!DOCTYPE html><html><head><title>Task Report – ${emp.first_name} ${emp.last_name}</title><style>
+      body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111}
+      h1{font-size:20px;margin-bottom:4px}p{font-size:12px;color:#666;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse}
+      th{text-align:left;padding:8px 10px;background:#253C7D;color:#fff;font-size:11px;text-transform:uppercase}
+      td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px}
+      .footer{margin-top:20px;font-size:10px;color:#999;text-align:right}
+      .kpi{display:inline-block;margin-right:20px;padding:8px 16px;border:1px solid #e5e7eb;border-radius:8px;text-align:center}
+      .kpi .num{font-size:22px;font-weight:800;margin-bottom:2px}.kpi .lbl{font-size:10px;color:#999;text-transform:uppercase}
+    </style></head><body>
+      <h1>HRM_OPS — Task Report: ${emp.first_name} ${emp.last_name}</h1>
+      <p>Department: ${emp.department || "—"} · Generated: ${new Date().toLocaleString("en-US")} · ${empTasks.length} tasks</p>
+      <div style="margin-bottom:20px">
+        <div class="kpi"><div class="num">${empTasks.length}</div><div class="lbl">Total</div></div>
+        <div class="kpi"><div class="num">${done}</div><div class="lbl">Done</div></div>
+        <div class="kpi"><div class="num">${inProg}</div><div class="lbl">In Progress</div></div>
+        <div class="kpi"><div class="num">${todo}</div><div class="lbl">To Do</div></div>
+        <div class="kpi"><div class="num">${overdue}</div><div class="lbl">Overdue</div></div>
+        <div class="kpi"><div class="num">${rate}%</div><div class="lbl">Completion</div></div>
+      </div>
+      <table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${rows}</tbody></table>
+      <div class="footer">HRM_OPS HRMS · Confidential</div>
+    </body></html>`;
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400); }
+    showToast("success", "PDF print dialog opened");
+  };
+
+  // ─── EXPORT: Admin Report – All Employees CSV ──────────────────────
+  const exportAdminAllCSV = () => {
+    if (adminReport.length === 0) { showToast("export", "No data to export", "warning"); return; }
+    const headers = ["Employee", "Department", "Task", "Description", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration"];
+    const rows = adminReport.flatMap((r) =>
+      r.tasks.map((t) => {
+        const wt = getTaskWorkingTime(t);
+        return [
+        `"${r.employee.first_name} ${r.employee.last_name}"`,
+        `"${r.employee.department || ""}"`,
+        `"${t.title.replace(/"/g, '""')}"`,
+        `"${(t.description || "").replace(/"/g, '""')}"`,
+        t.priority, STATUS_CONFIG[t.status]?.label || t.status, t.due_date || "",
+        wt.startedAt || "", wt.endedAt || "", wt.duration || "",
+      ]; })
+    );
+    const csv = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const a = document.createElement("a");
+    a.setAttribute("href", encodeURI(csv));
+    a.setAttribute("download", `admin_task_report_all_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    showToast("success", `Exported all tasks to CSV`);
+  };
+
+  // ─── EXPORT: Admin Report – All Employees XLSX ─────────────────────
+  const exportAdminAllXLSX = () => {
+    if (adminReport.length === 0) { showToast("export", "No data to export", "warning"); return; }
+    const data = adminReport.flatMap((r) =>
+      r.tasks.map((t) => {
+        const wt = getTaskWorkingTime(t);
+        return ({
+        Employee: `${r.employee.first_name} ${r.employee.last_name}`,
+        Department: r.employee.department || "",
+        Task: t.title, Description: t.description || "", Priority: t.priority,
+        Status: STATUS_CONFIG[t.status]?.label || t.status,
+        "Due Date": t.due_date || "", "Work Started": wt.startedAt || "", "Work Completed": wt.endedAt || "", Duration: wt.duration || "",
+      }); })
+    );
+    const headers = Object.keys(data[0]);
+    const aoa = [headers, ...data.map((r) => headers.map((h) => r[h]))];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = headers.map((c) => ({ wch: Math.max(c.length + 2, 14) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Admin Task Report");
+    XLSX.writeFile(wb, `admin_task_report_all_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast("success", `Exported all tasks to Excel`);
+  };
+
+  // ─── EXPORT: Admin Report – All Employees PDF ──────────────────────
+  const exportAdminAllPDF = () => {
+    if (adminReport.length === 0) { showToast("export", "No data to export", "warning"); return; }
+    const headers = ["Employee", "Department", "Task", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration"];
+    const rows = adminReport.flatMap((r) =>
+      r.tasks.map((t) => {
+        const wt = getTaskWorkingTime(t);
+        return `<tr><td>${r.employee.first_name} ${r.employee.last_name}</td><td>${r.employee.department || "—"}</td><td>${t.title}</td><td>${t.priority}</td><td>${STATUS_CONFIG[t.status]?.label || t.status}</td><td>${t.due_date || "—"}</td><td>${wt.startedAt ? formatExact(wt.startedAt) : "—"}</td><td>${wt.endedAt ? formatExact(wt.endedAt) : "—"}</td><td>${wt.duration || "—"}</td></tr>`;
+      })
+    ).join("");
+    const html = `<!DOCTYPE html><html><head><title>Admin Task Report</title><style>
+      body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111}
+      h1{font-size:20px;margin-bottom:4px}p{font-size:12px;color:#666;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse}
+      th{text-align:left;padding:8px 10px;background:#253C7D;color:#fff;font-size:11px;text-transform:uppercase}
+      td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px}
+      .footer{margin-top:20px;font-size:10px;color:#999;text-align:right}
+    </style></head><body>
+      <h1>HRM_OPS — Admin Task Report</h1>
+      <p>Generated: ${new Date().toLocaleString("en-US")} · ${adminReport.length} employees · ${adminReport.reduce((s, r) => s + r.tasks.length, 0)} tasks</p>
+      <table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${rows}</tbody></table>
+      <div class="footer">HRM_OPS HRMS · Confidential</div>
+    </body></html>`;
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400); }
+    showToast("success", "PDF print dialog opened");
+  };
 
   // ─── EXPORT: Team Report CSV ───────────────────────────────────────
   const exportTeamReportCSV = () => {
@@ -979,6 +1224,17 @@ export default function TasksPage() {
               >
                 <i className="ri-bar-chart-box-line text-sm" />
                 Team Matrix
+              </button>
+            )}
+            {canManage && (
+              <button
+                onClick={() => setView("admin_report")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  view === "admin_report" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                <i className="ri-file-list-3-line text-sm" />
+                Task Reports
               </button>
             )}
             <button
@@ -1838,6 +2094,247 @@ export default function TasksPage() {
             <i className="ri-user-line text-3xl text-gray-300 mb-3 block" />
             <p className="text-sm font-bold text-gray-500">No employee profile found</p>
             <p className="text-xs text-gray-400 mt-1">Your account is not linked to an employee record. Contact your administrator.</p>
+          </div>
+        </div>
+      )}
+
+      {/* 4. ADMIN TASK REPORTS – view all task reports per employee, search, export */}
+      {view === "admin_report" && canManage && (
+        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-2xs overflow-hidden">
+          <div className="px-5 py-4 bg-slate-50 border-b border-gray-200/80">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider">Admin Task Reports</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {reportDateRange
+                    ? `Showing tasks created ${reportPreset === "today" ? "today" : reportPreset === "week" ? "this week" : reportPreset === "month" ? "this month" : `from ${reportFrom} to ${reportTo}`}`
+                    : "All time — complete task report for every employee"}
+                  {adminReportDeptFilter !== "all" && ` · ${adminReportDeptFilter}`}
+                  {adminReportSearch && ` · \"${adminReportSearch}\"`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold px-3 py-1 bg-white border border-gray-200 rounded-lg text-gray-700">
+                  {adminReport.reduce((s, r) => s + r.total, 0)} Tasks · {adminReport.length} Staff
+                </span>
+                <div className="relative" data-admin-export>
+                  <button onClick={() => setAdminReportEmpExportOpen(adminReportEmpExportOpen === "_all" ? null : "_all")} className="h-8 px-3 bg-[#253C7D] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-[#1c2e61] transition-all">
+                    <i className="ri-download-2-line" /> Export All
+                  </button>
+                  {adminReportEmpExportOpen === "_all" && (
+                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl border border-gray-200 shadow-lg z-50 py-1">
+                      <button onClick={() => { exportAdminAllCSV(); setAdminReportEmpExportOpen(null); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-text-line text-emerald-600" /> CSV Spreadsheet</button>
+                      <button onClick={() => { exportAdminAllXLSX(); setAdminReportEmpExportOpen(null); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-excel-2-line text-green-600" /> Excel Workbook</button>
+                      <button onClick={() => { exportAdminAllPDF(); setAdminReportEmpExportOpen(null); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-pdf-line text-red-500" /> PDF Document</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+
+
+            {/* Search + Department Filter + Date Presets */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 flex-wrap">
+              {/* Employee Search */}
+              <div className="relative w-full sm:w-64">
+                <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                <input
+                  type="text"
+                  value={adminReportSearch}
+                  onChange={(e) => setAdminReportSearch(e.target.value)}
+                  placeholder="Search employee name..."
+                  className="w-full pl-8 pr-7 py-1.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
+                />
+                {adminReportSearch && (
+                  <button
+                    onClick={() => setAdminReportSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    <i className="ri-close-circle-fill text-xs" />
+                  </button>
+                )}
+              </div>
+
+              {/* Department Filter */}
+              <select
+                value={adminReportDeptFilter}
+                onChange={(e) => setAdminReportDeptFilter(e.target.value)}
+                className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              >
+                <option value="all">All Departments</option>
+                {adminReportDepartments.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+
+              <div className="h-5 w-px bg-gray-200 hidden sm:block" />
+
+              {/* Date Filter Presets */}
+              {(["all", "today", "week", "month", "custom"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setReportPreset(p)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    reportPreset === p
+                      ? "bg-[#253C7D] text-white shadow-xs"
+                      : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {p === "all" ? "All Time" : p === "today" ? "Today" : p === "week" ? "This Week" : p === "month" ? "This Month" : "Date to Date"}
+                </button>
+              ))}
+              {reportPreset === "custom" && (
+                <div className="flex items-center gap-2 ml-1">
+                  <input
+                    type="date"
+                    value={reportFrom}
+                    onChange={(e) => setReportFrom(e.target.value)}
+                    className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/30"
+                  />
+                  <span className="text-xs text-gray-400 font-bold">to</span>
+                  <input
+                    type="date"
+                    value={reportTo}
+                    onChange={(e) => setReportTo(e.target.value)}
+                    className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/30"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Employee Cards – each shows employee info + their task titles + export */}
+          <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {adminReport.map(({ employee, tasks: empTasks }) => {
+              return (
+                <div key={employee.id} className="bg-white border border-gray-200/80 rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
+                  {/* Employee Header */}
+                  <div className="px-4 py-3 border-b border-gray-100 bg-slate-50/50 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {employee.avatar_url ? (
+                        <img src={employee.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-[#253C7D]/10 text-[#253C7D] font-black text-[10px] flex items-center justify-center shrink-0">
+                          {initials(`${employee.first_name} ${employee.last_name}`)}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-bold text-gray-900 text-[13px] truncate">{employee.first_name} {employee.last_name}</p>
+                        <p className="text-[11px] text-gray-400 truncate">{employee.department}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                        {empTasks.length} task{empTasks.length !== 1 ? "s" : ""}
+                      </span>
+                      <div className="relative" data-admin-export>
+                        <button onClick={() => setAdminReportEmpExportOpen(adminReportEmpExportOpen === employee.id ? null : employee.id)} className="w-7 h-7 rounded-lg bg-[#253C7D] text-white flex items-center justify-center hover:bg-[#1c2e61] transition-all cursor-pointer" title="Export tasks">
+                          <i className="ri-download-2-line text-xs" />
+                        </button>
+                        {adminReportEmpExportOpen === employee.id && (
+                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl border border-gray-200 shadow-lg z-50 py-1">
+                            <button onClick={() => { exportAdminEmpCSV(employee, empTasks); setAdminReportEmpExportOpen(null); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-text-line text-emerald-600" /> CSV</button>
+                            <button onClick={() => { exportAdminEmpXLSX(employee, empTasks); setAdminReportEmpExportOpen(null); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-excel-2-line text-green-600" /> Excel</button>
+                            <button onClick={() => { exportAdminEmpPDF(employee, empTasks); setAdminReportEmpExportOpen(null); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-pdf-line text-red-500" /> PDF</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Task Titles List */}
+                  <div className="divide-y divide-gray-50">
+                    {empTasks.map((t) => (
+                      <div key={t.id} className="px-4 py-3 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex items-start gap-3">
+                          {/* Status indicator */}
+                          <span className="shrink-0 mt-0.5">
+                            <i className={`${STATUS_CONFIG[t.status]?.icon || "ri-checkbox-blank-circle-line"} text-sm`} style={{ color: STATUS_CONFIG[t.status]?.accent || "#94a3b8" }} />
+                          </span>
+                          {/* Title & details */}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-[13px] font-semibold leading-snug truncate ${t.status === "done" ? "line-through text-gray-400" : "text-gray-900"}`}>{t.title}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${STATUS_CONFIG[t.status]?.badge}`}>
+                                {STATUS_CONFIG[t.status]?.label}
+                              </span>
+                              {t.due_date && (
+                                <span className={`text-[10px] font-semibold ${isOverdue(t) ? "text-rose-600" : "text-gray-400"}`}>
+                                  {formatDueDate(t.due_date)}{isOverdue(t) ? " (Overdue)" : ""}
+                                </span>
+                              )}
+                            </div>
+                            {/* Working Time Info – from status changes */}
+                            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                              {(() => {
+                                const wt = getTaskWorkingTime(t);
+                                return (
+                                  <>
+                                    {/* Start time: when moved to In Progress */}
+                                    {wt.startedAt && (
+                                      <span className="text-[10px] text-sky-600 flex items-center gap-1">
+                                        <i className="ri-play-circle-line text-[10px]" />
+                                        Started {formatExact(wt.startedAt)}
+                                      </span>
+                                    )}
+                                    {/* End time: when moved to Done */}
+                                    {wt.endedAt && (
+                                      <span className="text-[10px] text-emerald-600 flex items-center gap-1">
+                                        <i className="ri-checkbox-circle-line text-[10px]" />
+                                        Completed {formatExact(wt.endedAt)}
+                                      </span>
+                                    )}
+                                    {/* Active timer: in_progress but not yet done */}
+                                    {wt.startedAt && !wt.endedAt && (
+                                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                        <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" /></span>
+                                        Working for {fmtDuration(wt.startedAt, null)}
+                                      </span>
+                                    )}
+                                    {/* Duration badge */}
+                                    {wt.duration && (
+                                      <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                        <i className="ri-time-line text-[10px]" />
+                                        {wt.duration}
+                                      </span>
+                                    )}
+                                    {/* No activity yet hint */}
+                                    {!wt.startedAt && t.status === "todo" && (
+                                      <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                        <i className="ri-hourglass-line text-[10px]" />
+                                        Not started yet
+                                      </span>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                          {/* Priority badge */}
+                          <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border shrink-0 ${PRIORITY_META[t.priority]?.bg} ${PRIORITY_META[t.priority]?.text} ${PRIORITY_META[t.priority]?.border}`}>
+                            {PRIORITY_META[t.priority]?.label}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {empTasks.length === 0 && (
+                      <div className="px-4 py-6 text-center text-gray-400">
+                        <i className="ri-inbox-line text-xl text-gray-300 mb-1 block" />
+                        <p className="text-[11px] font-semibold">No tasks found</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {adminReport.length === 0 && (
+              <div className="col-span-full px-5 py-12 text-center text-gray-400">
+                <i className="ri-file-list-3-line text-2xl text-gray-300 mb-2 block" />
+                No tasks found for the selected filters.
+              </div>
+            )}
           </div>
         </div>
       )}
