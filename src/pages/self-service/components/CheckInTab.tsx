@@ -36,6 +36,13 @@ interface Props {
   autoCheckOut?: boolean;
 }
 
+interface OutsideWorkTask {
+  id: string;
+  title: string;
+  work_checked_in_at: string | null;
+  work_address: string | null;
+}
+
 type CheckInStep = "idle" | "locating" | "confirm" | "denied" | "error";
 
 export default function CheckInTab({ employeeId, employeeName, autoStart, autoCheckOut }: Props) {
@@ -55,6 +62,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const [checkInAccuracy, setCheckInAccuracy] = useState<number | null>(null);
   const [globalWorkStartTime, setGlobalWorkStartTime] = useState("09:00");
   const [scheduleSettings, setScheduleSettings] = useState(DEFAULT_WORK_SCHEDULE);
+  const [activeOutsideWork, setActiveOutsideWork] = useState<OutsideWorkTask | null>(null);
 
   const today = todayYMD();
 
@@ -73,6 +81,44 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       if (data) { const next = settingsFromRows(data); setScheduleSettings(next); setGlobalWorkStartTime(next.workStartTime); }
     });
   }, []);
+
+  // Check for active outside work today — if present, hide check-in button
+  // and sync to attendance_records if not already there
+  useEffect(() => {
+    if (!employeeId) return;
+    supabase
+      .from("tasks")
+      .select("id, title, work_checked_in_at, work_address")
+      .eq("assigned_to", employeeId)
+      .eq("is_outside_work", true)
+      .eq("work_status", "checked_in")
+      .maybeSingle()
+      .then(async ({ data }) => {
+        const task = (data as OutsideWorkTask) || null;
+        setActiveOutsideWork(task);
+        // Sync outside work check-in to attendance if no record exists for today
+        if (task?.work_checked_in_at) {
+          const { data: existing } = await supabase
+            .from("attendance_records")
+            .select("id")
+            .eq("employee_id", employeeId)
+            .eq("date", today)
+            .maybeSingle();
+          if (!existing) {
+            const ci = new Date(task.work_checked_in_at);
+            const timeStr = `${String(ci.getHours()).padStart(2, "0")}:${String(ci.getMinutes()).padStart(2, "0")}:${String(ci.getSeconds()).padStart(2, "0")}`;
+            await supabase.from("attendance_records").upsert({
+              employee_id: employeeId,
+              date: today,
+              clock_in: timeStr,
+              status: "present",
+              notes: `Outside work: ${task.title}`,
+            }, { onConflict: "employee_id,date" });
+            loadRecords();
+          }
+        }
+      });
+  }, [employeeId]);
 
   // A branch's own schedule (set in Branch Management) wins over the
   // company-wide default on weekdays — but not on Saturday, where the
@@ -401,7 +447,12 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               <div className="bg-white/10 backdrop-blur rounded-xl px-3 py-2 border border-white/15">
                 <p className="text-white/55 text-[10px] font-bold uppercase tracking-wider">In</p>
                 <p className="text-[15px] font-bold tabular-nums mt-0.5">
-                  {todayRecord?.clock_in?.slice(0, 5) || "—"}
+                  {activeOutsideWork && !todayRecord?.clock_in
+                    ? activeOutsideWork.work_checked_in_at
+                      ? new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+                      : "—"
+                    : todayRecord?.clock_in?.slice(0, 5) || "—"
+                  }
                 </p>
                 {(todayRecord?.late_minutes || 0) > scheduleSettings.lateGraceMinutes && (
                   <p className="text-amber-200 text-[10px] font-semibold mt-0.5">{todayRecord?.late_minutes}m late</p>
@@ -418,16 +469,18 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl px-3 py-2 border border-white/15">
                 <p className="text-white/55 text-[10px] font-bold uppercase tracking-wider">
-                  {isCheckedIn && !isCheckedOut ? "Working" : "Hours"}
+                  {activeOutsideWork && !todayRecord?.clock_in ? "Status" : isCheckedIn && !isCheckedOut ? "Working" : "Hours"}
                 </p>
                 <p className="text-[15px] font-bold tabular-nums mt-0.5">
-                  {isCheckedIn && !isCheckedOut
+                  {activeOutsideWork && !todayRecord?.clock_in
+                    ? "Outside"
+                    : isCheckedIn && !isCheckedOut
                     ? fmtHM(elapsedHours)
                     : todayRecord?.hours_worked
                     ? fmtHM(todayRecord.hours_worked)
                     : "—"}
                 </p>
-                {isCheckedIn && !isCheckedOut && (
+                {activeOutsideWork && !todayRecord?.clock_in ? (
                   <p className="text-emerald-200 text-[10px] font-semibold mt-0.5 flex items-center gap-1">
                     <span className="relative flex h-1.5 w-1.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
@@ -435,13 +488,45 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                     </span>
                     Live
                   </p>
-                )}
+                ) : isCheckedIn && !isCheckedOut ? (
+                  <p className="text-emerald-200 text-[10px] font-semibold mt-0.5 flex items-center gap-1">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-300" />
+                    </span>
+                    Live
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
 
           <div className="flex flex-col gap-2 lg:w-72">
-            {!isCheckedIn && checkInStep === "idle" && (
+            {activeOutsideWork && !isCheckedIn && (
+              <div className="bg-white/15 border border-white/30 rounded-xl px-4 py-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-300" />
+                  </span>
+                  <p className="text-[13px] font-bold">Working Outside</p>
+                </div>
+                <p className="text-white/80 text-[12px] font-semibold">{activeOutsideWork.title}</p>
+                {activeOutsideWork.work_checked_in_at && (
+                  <p className="text-white/60 text-[11px]">
+                    Checked in at {new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                  </p>
+                )}
+                {activeOutsideWork.work_address && (
+                  <p className="text-white/60 text-[11px] flex items-center gap-1">
+                    <i className="ri-map-pin-2-fill text-emerald-300" />
+                    {activeOutsideWork.work_address}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {!isCheckedIn && !activeOutsideWork && checkInStep === "idle" && (
               <div className="space-y-2">
                 <input
                   type="text"
@@ -467,14 +552,14 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               </div>
             )}
 
-            {!isCheckedIn && checkInStep === "locating" && (
+            {!isCheckedIn && !activeOutsideWork && checkInStep === "locating" && (
               <div className="bg-white/20 rounded-xl px-5 py-4 text-center">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                 <p className="text-[13px] font-semibold">Checking your location...</p>
               </div>
             )}
 
-            {!isCheckedIn && checkInStep === "confirm" && (
+            {!isCheckedIn && !activeOutsideWork && checkInStep === "confirm" && (
               <div className="space-y-2">
                 <div className="bg-white/20 rounded-xl px-4 py-3 flex items-start gap-2">
                   <i className="ri-checkbox-circle-fill text-emerald-300 text-base shrink-0 mt-0.5" />
@@ -501,7 +586,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               </div>
             )}
 
-            {!isCheckedIn && (checkInStep === "denied" || checkInStep === "error") && (
+            {!isCheckedIn && !activeOutsideWork && (checkInStep === "denied" || checkInStep === "error") && (
               <div className="space-y-2">
                 <div className="bg-white/20 rounded-xl px-4 py-3 flex items-start gap-2">
                   <i className={`${checkInStep === "denied" ? "ri-map-pin-off-line text-amber-300" : "ri-error-warning-line text-red-300"} text-base shrink-0 mt-0.5`} />

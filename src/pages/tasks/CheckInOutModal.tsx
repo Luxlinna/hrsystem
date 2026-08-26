@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { getCurrentPosition } from "@/lib/geo";
 import { loadGoogleMaps } from "@/lib/geocode";
 import { uploadMediaToS3, type MediaItem } from "@/lib/s3-storage";
+import { todayYMD } from "@/lib/date";
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 const ACCEPTED = "image/*,video/*";
@@ -30,13 +31,14 @@ async function reverseGeocode(lat: number, lng: number): Promise<string | null> 
 
 interface Props {
   taskId: string;
+  employeeId: string;
   mode: "check_in" | "check_out";
   onDone: () => void;
   onClose: () => void;
   showToast: (type: string, message: string) => void;
 }
 
-export default function CheckInOutModal({ taskId, mode, onDone, onClose, showToast }: Props) {
+export default function CheckInOutModal({ taskId, employeeId, mode, onDone, onClose, showToast }: Props) {
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number | null; address: string | null } | null>(null);
   const [files, setFiles] = useState<PendingFile[]>([]);
   const [locating, setLocating] = useState(false);
@@ -148,6 +150,38 @@ export default function CheckInOutModal({ taskId, mode, onDone, onClose, showToa
 
       const { error: dbError } = await supabase.from("tasks").update(data).eq("id", taskId);
       if (dbError) throw dbError;
+
+      // Sync to attendance_records so attendance history reflects outside work
+      const today = todayYMD();
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+      if (isCheckIn) {
+        await supabase.from("attendance_records").upsert({
+          employee_id: employeeId,
+          date: today,
+          clock_in: timeStr,
+          status: "present",
+          notes: `Outside work: check-in at ${location?.address || "unknown location"}`,
+        }, { onConflict: "employee_id,date" });
+      } else {
+        // Update existing attendance record with clock_out
+        const { data: attRec } = await supabase
+          .from("attendance_records")
+          .select("id, clock_in")
+          .eq("employee_id", employeeId)
+          .eq("date", today)
+          .maybeSingle();
+        if (attRec) {
+          const [ciH, ciM, ciS] = (attRec.clock_in || "00:00:00").split(":").map(Number);
+          const clockInMs = ciH * 3600000 + ciM * 60000 + ciS * 1000;
+          const clockOutMs = now.getHours() * 3600000 + now.getMinutes() * 60000 + now.getSeconds() * 1000;
+          const hoursWorked = Math.round(((clockOutMs - clockInMs) / 3600000) * 100) / 100;
+          await supabase.from("attendance_records").update({
+            clock_out: timeStr,
+            hours_worked: hoursWorked > 0 ? hoursWorked : null,
+          }).eq("id", attRec.id);
+        }
+      }
 
       showToast("success", isCheckIn ? "Checked in — have a productive day!" : "Checked out — great work!");
       onDone();

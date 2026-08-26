@@ -133,11 +133,17 @@ export default function EmployeeProfile() {
       .eq("reports_to", empId);
     setReports(reps || []);
 
-    // Load all employees for manager dropdown
-    const { data: all } = await supabase
-      .from("employees")
-      .select("id, first_name, last_name, role");
-    setAllEmployees((all || []).filter((e: any) => e.id !== empId));
+    // Load all employees for manager dropdown, filtered by system role
+    const [all, roleData] = await Promise.all([
+      supabase.from("employees").select("id, first_name, last_name, role, email"),
+      supabase.from("user_role_assignments").select("email, app_roles(name)").is("deleted_at", null),
+    ]);
+    const managerEmails = new Set<string>();
+    (roleData.data || []).forEach((row: any) => {
+      if (/manager/i.test(row.app_roles?.name || "")) managerEmails.add(row.email?.toLowerCase());
+    });
+    const allEmps = (all.data || []).filter((e: any) => e.id !== empId);
+    setAllEmployees(allEmps.filter((e: any) => managerEmails.has(e.email?.toLowerCase())));
 
     // Load interviews as interviewer
     const { data: ivs } = await supabase

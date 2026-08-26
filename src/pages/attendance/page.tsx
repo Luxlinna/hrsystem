@@ -763,13 +763,10 @@ export default function AttendancePage() {
 
           <div className="flex items-center gap-3">
             {!myTodayRecord?.clock_in ? (
-              <button
-                onClick={handleQuickClockIn}
-                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer active:scale-98 flex items-center gap-2"
-              >
-                <i className="ri-login-circle-line text-base font-bold" />
-                Check In Now
-              </button>
+              <div className="px-4 py-2 bg-white/10 rounded-xl border border-white/20 text-xs font-semibold text-white/70 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                Not Checked In Today
+              </div>
             ) : !myTodayRecord?.clock_out ? (
               <div className="px-4 py-2 bg-white/10 rounded-xl border border-white/20 text-xs font-semibold text-sky-100 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

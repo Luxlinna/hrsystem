@@ -58,6 +58,7 @@ export default function Employees() {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string; color: string }[]>([]);
+  const [managerEmails, setManagerEmails] = useState<Set<string>>(new Set());
   const [accountStatus, setAccountStatus] = useState<Record<string, { invited: boolean; hasAccount: boolean }>>({});
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -96,6 +97,20 @@ export default function Employees() {
     loadEmployees();
     supabase.from("branches").select("id, name").order("name").then(({ data }) => setBranches(data || []));
     supabase.from("app_roles").select("id, name, color").order("name").then(({ data }) => setRoles(data || []));
+    // Fetch employees whose system role contains "Manager" for the Reports To dropdown
+    supabase
+      .from("user_role_assignments")
+      .select("email, app_roles(name)")
+      .is("deleted_at", null)
+      .then(({ data }) => {
+        if (!data) return;
+        const emails = new Set<string>();
+        data.forEach((row: any) => {
+          const roleName = row.app_roles?.name || "";
+          if (/manager/i.test(roleName)) emails.add(row.email?.toLowerCase());
+        });
+        setManagerEmails(emails);
+      });
   }, []);
 
   // Load account status for each employee
@@ -119,9 +134,9 @@ export default function Employees() {
 
   const depts = Array.from(new Set(employees.map((e) => e.department)));
   const branchCount = new Set(employees.map((e) => e.branch_id).filter(Boolean)).size;
-  // Reporting lines can point to any manager in the company. Include the
-  // department in the option label so same-named managers are distinguishable.
-  const managers = employees.filter((employee) => /\bmanager\b/i.test(employee.role || ""));
+  // Reporting lines can point to any manager in the company. Only show
+  // employees whose system role (app_roles) contains "Manager".
+  const managers = employees.filter((employee) => managerEmails.has(employee.email?.toLowerCase()));
 
   // Dashboard statistics
   const stats = {

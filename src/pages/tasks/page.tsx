@@ -6,6 +6,7 @@ import CheckInOutModal from "./CheckInOutModal";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { MediaItem } from "@/lib/s3-storage";
+import * as XLSX from "xlsx";
 
 const fmtDuration = (from: string, to: string | null) => {
   const ms = (to ? new Date(to).getTime() : Date.now()) - new Date(from).getTime();
@@ -23,6 +24,7 @@ interface Employee {
   department: string;
   avatar_url?: string;
   email: string;
+  reports_to?: string | null;
 }
 
 interface Task {
@@ -169,6 +171,9 @@ const formatDueDate = (v: string | null) => {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
+const formatShortDate = (ts: string) =>
+  new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
 const ACTIVITY_ICON: Record<TaskActivity["action"], string> = {
   created: "ri-add-circle-line",
   status_changed: "ri-arrow-left-right-line",
@@ -232,13 +237,13 @@ export default function TasksPage() {
   const canViewAll = isAdmin || !!role?.task_view_all_employees;
   const canViewOwnBranch = !canViewAll && !!role?.task_view_own_branch;
   const canManage = canViewAll || canViewOwnBranch;
-  const canAssign = canManage || (role?.allowed_modules || []).includes("tasks");
+  const canAssign = canManage;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"board" | "list" | "report">("board");
+  const [view, setView] = useState<"board" | "list" | "report" | "my_report">("board");
   const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
 
   // Filters
@@ -247,6 +252,24 @@ export default function TasksPage() {
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [filterQuickState, setFilterQuickState] = useState<"all" | "my_tasks" | "overdue" | "high_priority">("all");
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+
+  // Report date range filter
+  const [reportPreset, setReportPreset] = useState<"all" | "today" | "week" | "month" | "custom">("all");
+  const [reportFrom, setReportFrom] = useState("");
+  const [reportTo, setReportTo] = useState("");
+
+  // Export dropdown state
+  const [reportExportOpen, setReportExportOpen] = useState(false);
+  const [myReportExportOpen, setMyReportExportOpen] = useState(false);
+  const reportExportRef = useRef<HTMLDivElement>(null);
+  const myReportExportRef = useRef<HTMLDivElement>(null);
+
+  // Report employee filter (admin can filter by specific employee)
+  const [reportFilterEmpId, setReportFilterEmpId] = useState("");
+  const [reportFilterOpen, setReportFilterOpen] = useState(false);
+  const [reportFilterSearch, setReportFilterSearch] = useState("");
+  const reportFilterRef = useRef<HTMLDivElement>(null);
+  const [myReportFilterEmpId, setMyReportFilterEmpId] = useState("");
 
   // Modals & Form
   const [showModal, setShowModal] = useState(false);
@@ -295,7 +318,7 @@ export default function TasksPage() {
 
     if (canViewAll) {
       const [{ data: emp }, { data: t }] = await Promise.all([
-        supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email").eq("status", "active").order("first_name"),
+        supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email, reports_to").eq("status", "active").order("first_name"),
         supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").is("deleted_at", null).order("created_at", { ascending: false }),
       ]);
       setEmployees(emp || []);
@@ -306,8 +329,8 @@ export default function TasksPage() {
 
     if (canViewOwnBranch) {
       const empRes = me.branch_id
-        ? await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email").eq("status", "active").eq("branch_id", me.branch_id).order("first_name")
-        : await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email").eq("status", "active").order("first_name");
+        ? await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email, reports_to").eq("status", "active").eq("branch_id", me.branch_id).order("first_name")
+        : await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email, reports_to").eq("status", "active").order("first_name");
       const team = empRes.data || [];
       setEmployees(team);
       const ids = team.map((e) => e.id);
@@ -329,7 +352,7 @@ export default function TasksPage() {
     setTasks((t as any) || []);
 
     if (canAssign) {
-      const { data: allEmp } = await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email").eq("status", "active").order("first_name");
+      const { data: allEmp } = await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email, reports_to").eq("status", "active").order("first_name");
       setEmployees(allEmp || []);
     }
 
@@ -376,6 +399,9 @@ export default function TasksPage() {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (taskRef.current && !taskRef.current.contains(e.target as Node)) setTaskOpen(false);
+      if (reportExportRef.current && !reportExportRef.current.contains(e.target as Node)) setReportExportOpen(false);
+      if (myReportExportRef.current && !myReportExportRef.current.contains(e.target as Node)) setMyReportExportOpen(false);
+      if (reportFilterRef.current && !reportFilterRef.current.contains(e.target as Node)) { setReportFilterOpen(false); setReportFilterSearch(""); }
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -564,17 +590,217 @@ export default function TasksPage() {
   const totalBlocked = tasks.filter((t) => t.status === "blocked").length;
 
   // Per-employee Report Matrix
+  const reportDateRange = useMemo(() => {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (reportPreset === "today") {
+      const end = new Date(startOfDay);
+      end.setDate(end.getDate() + 1);
+      return { from: startOfDay.toISOString(), to: end.toISOString() };
+    }
+    if (reportPreset === "week") {
+      const day = startOfDay.getDay();
+      const start = new Date(startOfDay);
+      start.setDate(start.getDate() - day);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 7);
+      return { from: start.toISOString(), to: end.toISOString() };
+    }
+    if (reportPreset === "month") {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      return { from: start.toISOString(), to: end.toISOString() };
+    }
+    if (reportPreset === "custom" && reportFrom && reportTo) {
+      const from = new Date(reportFrom);
+      const to = new Date(reportTo);
+      to.setDate(to.getDate() + 1);
+      return { from: from.toISOString(), to: to.toISOString() };
+    }
+    return null;
+  }, [reportPreset, reportFrom, reportTo]);
+
   const report = useMemo(() => {
-    return employees.map((e) => {
-      const own = tasks.filter((t) => t.assigned_to === e.id);
+    const filteredTasks = reportDateRange
+      ? tasks.filter((t) => {
+          const d = t.created_at;
+          return d >= reportDateRange.from && d < reportDateRange.to;
+        })
+      : tasks;
+    const filteredEmployees = reportFilterEmpId
+      ? employees.filter((e) => e.id === reportFilterEmpId)
+      : employees;
+    return filteredEmployees.map((e) => {
+      const own = filteredTasks.filter((t) => t.assigned_to === e.id);
       const done = own.filter((t) => t.status === "done").length;
       const inProg = own.filter((t) => t.status === "in_progress").length;
       const blocked = own.filter((t) => t.status === "blocked").length;
       const overdue = own.filter(isOverdue).length;
       const completionRate = own.length ? Math.round((done / own.length) * 100) : 0;
       return { employee: e, total: own.length, done, inProg, blocked, overdue, completionRate };
-    }).sort((a, b) => b.total - a.total);
-  }, [employees, tasks]);
+    }).filter((r) => r.total > 0).sort((a, b) => b.total - a.total);
+  }, [employees, tasks, reportDateRange, reportFilterEmpId]);
+
+  const myReport = useMemo(() => {
+    // If admin filtered to a specific employee, use that employee
+    const targetEmp = myReportFilterEmpId
+      ? employees.find((e) => e.id === myReportFilterEmpId) || myEmployee
+      : myEmployee;
+    if (!targetEmp) return null;
+    const filteredTasks = reportDateRange
+      ? tasks.filter((t) => {
+          const d = t.created_at;
+          return d >= reportDateRange.from && d < reportDateRange.to;
+        })
+      : tasks;
+
+    const subordinateIds = new Set(
+      employees.filter((e) => e.reports_to === targetEmp.id).map((e) => e.id)
+    );
+
+    const mine = filteredTasks.filter((t) =>
+      t.assigned_to === targetEmp.id || subordinateIds.has(t.assigned_to)
+    );
+
+    const done = mine.filter((t) => t.status === "done").length;
+    const inProg = mine.filter((t) => t.status === "in_progress").length;
+    const todo = mine.filter((t) => t.status === "todo").length;
+    const blocked = mine.filter((t) => t.status === "blocked").length;
+    const overdue = mine.filter(isOverdue).length;
+    const completionRate = mine.length ? Math.round((done / mine.length) * 100) : 0;
+    return { total: mine.length, done, inProg, todo, blocked, overdue, completionRate, tasks: mine, subordinateCount: subordinateIds.size, targetEmployee: targetEmp };
+  }, [myEmployee, employees, tasks, reportDateRange, myReportFilterEmpId]);
+
+  // ─── EXPORT: Team Report CSV ───────────────────────────────────────
+  const exportTeamReportCSV = () => {
+    if (report.length === 0) { toast("Export", "No data to export", "warning"); return; }
+    const headers = ["Employee", "Department", "Total", "Done", "In Progress", "Blocked", "Overdue", "Completion %"];
+    const rows = report.map((r) => [
+      `"${r.employee.first_name} ${r.employee.last_name}"`,
+      `"${r.employee.department || ""}"`,
+      r.total, r.done, r.inProg, r.blocked, r.overdue, `${r.completionRate}%`,
+    ]);
+    const csv = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const a = document.createElement("a");
+    a.setAttribute("href", encodeURI(csv));
+    a.setAttribute("download", `team_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    toast("Export Complete", `Exported ${report.length} rows to CSV`, "success");
+  };
+
+  // ─── EXPORT: Team Report XLSX ──────────────────────────────────────
+  const exportTeamReportXLSX = () => {
+    if (report.length === 0) { toast("Export", "No data to export", "warning"); return; }
+    const data = report.map((r) => ({
+      Employee: `${r.employee.first_name} ${r.employee.last_name}`,
+      Department: r.employee.department || "",
+      Total: r.total, Done: r.done, "In Progress": r.inProg, Blocked: r.blocked, Overdue: r.overdue, "Completion %": r.completionRate,
+    }));
+    const headers = Object.keys(data[0]);
+    const aoa = [headers, ...data.map((r) => headers.map((h) => r[h]))];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = headers.map((c) => ({ wch: Math.max(c.length + 2, 12) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Team Report");
+    XLSX.writeFile(wb, `team_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast("Export Complete", `Exported ${report.length} rows to Excel`, "success");
+  };
+
+  // ─── EXPORT: Team Report PDF ───────────────────────────────────────
+  const exportTeamReportPDF = () => {
+    if (report.length === 0) { toast("Export", "No data to export", "warning"); return; }
+    const headers = ["Employee", "Department", "Total", "Done", "In Progress", "Blocked", "Overdue", "Completion"];
+    const rows = report.map((r) =>
+      `<tr><td>${r.employee.first_name} ${r.employee.last_name}</td><td>${r.employee.department || "—"}</td><td>${r.total}</td><td>${r.done}</td><td>${r.inProg}</td><td>${r.blocked}</td><td>${r.overdue}</td><td>${r.completionRate}%</td></tr>`
+    ).join("");
+    const html = `<!DOCTYPE html><html><head><title>Team Report</title><style>
+      body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111}
+      h1{font-size:20px;margin-bottom:4px}p{font-size:12px;color:#666;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse}
+      th{text-align:left;padding:8px 10px;background:#253C7D;color:#fff;font-size:11px;text-transform:uppercase}
+      td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px}
+      .footer{margin-top:20px;font-size:10px;color:#999;text-align:right}
+    </style></head><body>
+      <h1>HRM_OPS — Team Task Report</h1>
+      <p>Generated: ${new Date().toLocaleString("en-US")} · ${report.length} employees</p>
+      <table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${rows}</tbody></table>
+      <div class="footer">HRM_OPS HRMS · Confidential</div>
+    </body></html>`;
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400); }
+    toast("Export Ready", "PDF print dialog opened", "success");
+  };
+
+  // ─── EXPORT: My Report CSV ─────────────────────────────────────────
+  const exportMyReportCSV = () => {
+    if (!myReport || myReport.tasks.length === 0) { toast("Export", "No tasks to export", "warning"); return; }
+    const headers = ["Title", "Description", "Priority", "Status", "Due Date", "Created"];
+    const rows = myReport.tasks.map((t) => [
+      `"${t.title.replace(/"/g, '""')}"`,
+      `"${(t.description || "").replace(/"/g, '""')}"`,
+      t.priority, t.status, t.due_date || "", t.created_at.slice(0, 10),
+    ]);
+    const csv = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const a = document.createElement("a");
+    a.setAttribute("href", encodeURI(csv));
+    a.setAttribute("download", `my_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    toast("Export Complete", `Exported ${myReport.tasks.length} tasks to CSV`, "success");
+  };
+
+  // ─── EXPORT: My Report XLSX ────────────────────────────────────────
+  const exportMyReportXLSX = () => {
+    if (!myReport || myReport.tasks.length === 0) { toast("Export", "No tasks to export", "warning"); return; }
+    const data = myReport.tasks.map((t) => ({
+      Title: t.title, Description: t.description || "", Priority: t.priority, Status: t.status,
+      "Due Date": t.due_date || "", Created: t.created_at.slice(0, 10),
+    }));
+    const headers = Object.keys(data[0]);
+    const aoa = [headers, ...data.map((r) => headers.map((h) => r[h]))];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = headers.map((c) => ({ wch: Math.max(c.length + 2, 14) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "My Report");
+    XLSX.writeFile(wb, `my_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast("Export Complete", `Exported ${myReport.tasks.length} tasks to Excel`, "success");
+  };
+
+  // ─── EXPORT: My Report PDF ─────────────────────────────────────────
+  const exportMyReportPDF = () => {
+    if (!myReport || myReport.tasks.length === 0) { toast("Export", "No tasks to export", "warning"); return; }
+    const headers = ["Title", "Priority", "Status", "Due Date", "Created"];
+    const rows = myReport.tasks.map((t) =>
+      `<tr><td>${t.title}</td><td>${t.priority}</td><td>${t.status}</td><td>${t.due_date || "—"}</td><td>${t.created_at.slice(0, 10)}</td></tr>`
+    ).join("");
+    const html = `<!DOCTYPE html><html><head><title>My Report</title><style>
+      body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111}
+      h1{font-size:20px;margin-bottom:4px}p{font-size:12px;color:#666;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse}
+      th{text-align:left;padding:8px 10px;background:#253C7D;color:#fff;font-size:11px;text-transform:uppercase}
+      td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px}
+      .footer{margin-top:20px;font-size:10px;color:#999;text-align:right}
+      .kpi{display:inline-block;margin-right:20px;padding:8px 16px;border:1px solid #e5e7eb;border-radius:8px;text-align:center}
+      .kpi .num{font-size:22px;font-weight:800;margin-bottom:2px}.kpi .lbl{font-size:10px;color:#999;text-transform:uppercase}
+    </style></head><body>
+      <h1>HRM_OPS — My Task Report</h1>
+      <p>Generated: ${new Date().toLocaleString("en-US")} · ${myReport.tasks.length} tasks</p>
+      <div style="margin-bottom:20px">
+        <div class="kpi"><div class="num">${myReport.total}</div><div class="lbl">Total</div></div>
+        <div class="kpi"><div class="num">${myReport.done}</div><div class="lbl">Done</div></div>
+        <div class="kpi"><div class="num">${myReport.inProg}</div><div class="lbl">In Progress</div></div>
+        <div class="kpi"><div class="num">${myReport.todo}</div><div class="lbl">To Do</div></div>
+        <div class="kpi"><div class="num">${myReport.overdue}</div><div class="lbl">Overdue</div></div>
+        <div class="kpi"><div class="num">${myReport.completionRate}%</div><div class="lbl">Completion</div></div>
+      </div>
+      <table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+      <tbody>${rows}</tbody></table>
+      <div class="footer">HRM_OPS HRMS · Confidential</div>
+    </body></html>`;
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400); }
+    toast("Export Ready", "PDF print dialog opened", "success");
+  };
 
   if (loading) {
     return (
@@ -755,6 +981,15 @@ export default function TasksPage() {
                 Team Matrix
               </button>
             )}
+            <button
+              onClick={() => setView("my_report")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                view === "my_report" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              <i className="ri-pie-chart-line text-sm" />
+              My Report
+            </button>
           </div>
 
           <div className="h-5 w-px bg-gray-200 hidden sm:block" />
@@ -1179,14 +1414,144 @@ export default function TasksPage() {
       {/* 3. TEAM PERFORMANCE REPORT MATRIX */}
       {view === "report" && canManage && (
         <div className="bg-white rounded-2xl border border-gray-200/80 shadow-2xs overflow-hidden">
-          <div className="px-5 py-4 bg-slate-50 border-b border-gray-200/80 flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider">Team Execution & Completion Matrix</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Summary of assigned work, completion rates, and delivery health by employee.</p>
+          <div className="px-5 py-4 bg-slate-50 border-b border-gray-200/80">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider">Team Execution & Completion Matrix</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {reportDateRange
+                    ? `Showing tasks created ${reportPreset === "today" ? "today" : reportPreset === "week" ? "this week" : reportPreset === "month" ? "this month" : `from ${reportFrom} to ${reportTo}`}`
+                    : "All time — showing all tasks"}
+                  {reportFilterEmpId && ` · Filtered by ${employees.find((e) => e.id === reportFilterEmpId)?.first_name || ""} ${employees.find((e) => e.id === reportFilterEmpId)?.last_name || ""}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative" ref={(el) => { reportFilterRef.current = el; }}>
+                  <div className="flex items-center gap-1.5 h-8 px-2.5 bg-white border border-gray-200 rounded-lg text-xs cursor-pointer hover:border-[#253C7D]/40 transition-all" onClick={() => setReportFilterOpen(!reportFilterOpen)}>
+                    <i className="ri-user-search-line text-gray-400" />
+                    <span className={`font-semibold max-w-[120px] truncate ${reportFilterEmpId ? "text-[#253C7D]" : "text-gray-500"}`}>
+                      {reportFilterEmpId ? employees.find((e) => e.id === reportFilterEmpId)?.first_name + " " + employees.find((e) => e.id === reportFilterEmpId)?.last_name : "All Staff"}
+                    </span>
+                    <i className="ri-arrow-down-s-line text-gray-400 ml-auto" />
+                  </div>
+                  {reportFilterOpen && (
+                    <div className="absolute right-0 mt-1 w-64 bg-white rounded-xl border border-gray-200 shadow-lg z-50 py-1 max-h-72 overflow-y-auto">
+                      <input
+                        type="text"
+                        autoFocus
+                        placeholder="Search employee..."
+                        className="w-full px-3 py-2 border-b border-gray-100 text-xs focus:outline-none"
+                        onChange={(e) => setReportFilterSearch(e.target.value)}
+                      />
+                      <button onClick={() => { setReportFilterEmpId(""); setReportFilterOpen(false); }} className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-50 flex items-center gap-2 font-semibold ${!reportFilterEmpId ? "text-[#253C7D] bg-[#253C7D]/5" : "text-gray-600"}`}>
+                        <i className="ri-team-line" /> All Staff
+                      </button>
+                      {employees
+                        .filter((e) => {
+                          const q = reportFilterSearch.toLowerCase();
+                          return !q || `${e.first_name} ${e.last_name} ${e.department || ""}`.toLowerCase().includes(q);
+                        })
+                        .map((e) => (
+                          <button key={e.id} onClick={() => { setReportFilterEmpId(e.id); setReportFilterOpen(false); setReportFilterSearch(""); }} className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-50 flex items-center gap-2 ${reportFilterEmpId === e.id ? "text-[#253C7D] bg-[#253C7D]/5 font-bold" : "text-gray-600"}`}>
+                            <div className="w-6 h-6 rounded-full bg-[#253C7D]/10 text-[#253C7D] font-bold text-[10px] flex items-center justify-center">{e.first_name?.[0]}{e.last_name?.[0]}</div>
+                            <span className="font-semibold">{e.first_name} {e.last_name}</span>
+                            <span className="text-gray-400 ml-auto text-[10px]">{e.department}</span>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs font-bold px-3 py-1 bg-white border border-gray-200 rounded-lg text-gray-700">
+                  {report.reduce((s, r) => s + r.total, 0)} Tasks · {report.length} Staff
+                </span>
+                <div className="relative" ref={(el) => { reportExportRef.current = el; }}>
+                  <button onClick={() => { setReportExportOpen(!reportExportOpen); setMyReportExportOpen(false); }} className="h-8 px-3 bg-[#253C7D] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-[#1c2e61] transition-all">
+                    <i className="ri-download-2-line" /> Export
+                  </button>
+                  {reportExportOpen && (
+                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl border border-gray-200 shadow-lg z-50 py-1">
+                      <button onClick={() => { exportTeamReportCSV(); setReportExportOpen(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-text-line text-emerald-600" /> CSV Spreadsheet</button>
+                      <button onClick={() => { exportTeamReportXLSX(); setReportExportOpen(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-excel-2-line text-green-600" /> Excel Workbook</button>
+                      <button onClick={() => { exportTeamReportPDF(); setReportExportOpen(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-pdf-line text-red-500" /> PDF Document</button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <span className="text-xs font-bold px-3 py-1 bg-white border border-gray-200 rounded-lg text-gray-700">
-              {employees.length} Staff Monitored
-            </span>
+
+            {/* Summary KPIs */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3">
+              <div className="bg-white rounded-xl border border-gray-200/60 px-3 py-2.5 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
+                  <i className="ri-task-line text-sm" />
+                </div>
+                <div>
+                  <p className="text-lg font-black text-gray-900 leading-tight">{report.reduce((s, r) => s + r.total, 0)}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Total</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200/60 px-3 py-2.5 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+                  <i className="ri-loader-4-line text-sm" />
+                </div>
+                <div>
+                  <p className="text-lg font-black text-sky-700 leading-tight">{report.reduce((s, r) => s + r.inProg, 0)}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">In Progress</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200/60 px-3 py-2.5 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <i className="ri-checkbox-circle-line text-sm" />
+                </div>
+                <div>
+                  <p className="text-lg font-black text-emerald-700 leading-tight">{report.reduce((s, r) => s + r.done, 0)}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Done</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200/60 px-3 py-2.5 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <i className="ri-alarm-warning-line text-sm" />
+                </div>
+                <div>
+                  <p className="text-lg font-black text-rose-700 leading-tight">{report.reduce((s, r) => s + r.overdue, 0)}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Overdue</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Date Filter Presets */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {(["all", "today", "week", "month", "custom"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setReportPreset(p)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    reportPreset === p
+                      ? "bg-[#253C7D] text-white shadow-xs"
+                      : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {p === "all" ? "All Time" : p === "today" ? "Today" : p === "week" ? "This Week" : p === "month" ? "This Month" : "Date to Date"}
+                </button>
+              ))}
+              {reportPreset === "custom" && (
+                <div className="flex items-center gap-2 ml-1">
+                  <input
+                    type="date"
+                    value={reportFrom}
+                    onChange={(e) => setReportFrom(e.target.value)}
+                    className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/30"
+                  />
+                  <span className="text-xs text-gray-400 font-bold">to</span>
+                  <input
+                    type="date"
+                    value={reportTo}
+                    onChange={(e) => setReportTo(e.target.value)}
+                    className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/30"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -1247,12 +1612,232 @@ export default function TasksPage() {
                 {report.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-5 py-12 text-center text-gray-400">
-                      No team members found.
+                      <i className="ri-bar-chart-box-line text-2xl text-gray-300 mb-2 block" />
+                      No tasks found for the selected period.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Personal Report View (All Users) */}
+      {view === "my_report" && myReport && (
+        <div className="space-y-5">
+          {/* Header */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 shadow-2xs overflow-hidden">
+            <div className="px-5 py-4 bg-slate-50 border-b border-gray-200/80">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider">My Task Report</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {reportDateRange
+                      ? `Tasks created ${reportPreset === "today" ? "today" : reportPreset === "week" ? "this week" : reportPreset === "month" ? "this month" : `from ${reportFrom} to ${reportTo}`}`
+                      : "All time — your personal task summary"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold px-3 py-1 bg-white border border-gray-200 rounded-lg text-gray-700">
+                    {myReport.total} Tasks {myReport.subordinateCount > 0 && `· ${myReport.subordinateCount} Reports`}
+                  </span>
+                  <div className="relative" ref={(el) => { myReportExportRef.current = el; }}>
+                    <button onClick={() => { setMyReportExportOpen(!myReportExportOpen); setReportExportOpen(false); }} className="h-8 px-3 bg-[#253C7D] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-[#1c2e61] transition-all">
+                      <i className="ri-download-2-line" /> Export
+                    </button>
+                    {myReportExportOpen && (
+                      <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl border border-gray-200 shadow-lg z-50 py-1">
+                        <button onClick={() => { exportMyReportCSV(); setMyReportExportOpen(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-text-line text-emerald-600" /> CSV Spreadsheet</button>
+                        <button onClick={() => { exportMyReportXLSX(); setMyReportExportOpen(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-excel-2-line text-green-600" /> Excel Workbook</button>
+                        <button onClick={() => { exportMyReportPDF(); setMyReportExportOpen(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"><i className="ri-file-pdf-line text-red-500" /> PDF Document</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-3">
+                <div className="bg-white rounded-xl border border-gray-200/60 px-3 py-2.5 flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
+                    <i className="ri-task-line text-sm" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-gray-900 leading-tight">{myReport.total}</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Total</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200/60 px-3 py-2.5 flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center">
+                    <i className="ri-file-list-3-line text-sm" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-gray-700 leading-tight">{myReport.todo}</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">To Do</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200/60 px-3 py-2.5 flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+                    <i className="ri-loader-4-line text-sm" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-sky-700 leading-tight">{myReport.inProg}</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">In Progress</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200/60 px-3 py-2.5 flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i className="ri-checkbox-circle-line text-sm" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-emerald-700 leading-tight">{myReport.done}</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Done</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200/60 px-3 py-2.5 flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                    <i className="ri-alarm-warning-line text-sm" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-rose-700 leading-tight">{myReport.overdue}</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Overdue</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Completion Bar */}
+              <div className="bg-white rounded-xl border border-gray-200/60 px-4 py-3 mb-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-gray-700">Completion Rate</span>
+                  <span className={`text-xs font-black ${myReport.completionRate >= 80 ? "text-emerald-600" : myReport.completionRate >= 40 ? "text-[#253C7D]" : "text-amber-600"}`}>
+                    {myReport.completionRate}%
+                  </span>
+                </div>
+                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      myReport.completionRate >= 80 ? "bg-emerald-500" : myReport.completionRate >= 40 ? "bg-[#253C7D]" : "bg-amber-500"
+                    }`}
+                    style={{ width: `${myReport.completionRate}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Date Filter Presets */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {(["all", "today", "week", "month", "custom"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setReportPreset(p)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      reportPreset === p
+                        ? "bg-[#253C7D] text-white shadow-xs"
+                        : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {p === "all" ? "All Time" : p === "today" ? "Today" : p === "week" ? "This Week" : p === "month" ? "This Month" : "Date to Date"}
+                  </button>
+                ))}
+                {reportPreset === "custom" && (
+                  <div className="flex items-center gap-2 ml-1">
+                    <input
+                      type="date"
+                      value={reportFrom}
+                      onChange={(e) => setReportFrom(e.target.value)}
+                      className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/30"
+                    />
+                    <span className="text-xs text-gray-400 font-bold">to</span>
+                    <input
+                      type="date"
+                      value={reportTo}
+                      onChange={(e) => setReportTo(e.target.value)}
+                      className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/30"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Task List Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-200/80 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50">
+                    <th className="px-5 py-3.5">Task</th>
+                    {myReport.subordinateCount > 0 && <th className="px-5 py-3.5">Assignee</th>}
+                    <th className="px-5 py-3.5 text-center">Priority</th>
+                    <th className="px-5 py-3.5 text-center">Status</th>
+                    <th className="px-5 py-3.5 text-center">Due Date</th>
+                    <th className="px-5 py-3.5 text-center">Created</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {myReport.tasks.map((t) => {
+                    const assignee = employees.find((e) => e.id === t.assigned_to);
+                    return (
+                    <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <p className="font-bold text-gray-900 text-sm">{t.title}</p>
+                        {t.description && <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">{t.description}</p>}
+                      </td>
+                      {myReport.subordinateCount > 0 && (
+                        <td className="px-5 py-3.5">
+                          {assignee ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-[#253C7D]/10 text-[#253C7D] text-[10px] font-black flex items-center justify-center shrink-0">
+                                {initials(`${assignee.first_name} ${assignee.last_name}`)}
+                              </div>
+                              <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">{assignee.first_name}</span>
+                            </div>
+                          ) : <span className="text-xs text-gray-400">—</span>}
+                        </td>
+                      )}
+                      <td className="px-5 py-3.5 text-center">
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                          t.priority === "urgent" ? "bg-rose-50 text-rose-700 border border-rose-200"
+                            : t.priority === "high" ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            : t.priority === "medium" ? "bg-sky-50 text-sky-700 border border-sky-200"
+                            : "bg-gray-50 text-gray-500 border border-gray-200"
+                        }`}>
+                          {t.priority}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-center">
+                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${STATUS_CONFIG[t.status]?.badge}`}>
+                          {STATUS_CONFIG[t.status]?.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-center text-gray-600">
+                        {t.due_date ? formatShortDate(t.due_date) : "—"}
+                      </td>
+                      <td className="px-5 py-3.5 text-center text-gray-600">
+                        {formatShortDate(t.created_at)}
+                      </td>
+                    </tr>
+                    );
+                  })}
+                  {myReport.tasks.length === 0 && (
+                    <tr>
+                      <td colSpan={myReport.subordinateCount > 0 ? 6 : 5} className="px-5 py-12 text-center text-gray-400">
+                        <i className="ri-pie-chart-line text-2xl text-gray-300 mb-2 block" />
+                        No tasks found for the selected period.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {view === "my_report" && !myReport && !loading && (
+        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-2xs overflow-hidden">
+          <div className="px-5 py-12 text-center">
+            <i className="ri-user-line text-3xl text-gray-300 mb-3 block" />
+            <p className="text-sm font-bold text-gray-500">No employee profile found</p>
+            <p className="text-xs text-gray-400 mt-1">Your account is not linked to an employee record. Contact your administrator.</p>
           </div>
         </div>
       )}
@@ -1800,6 +2385,7 @@ export default function TasksPage() {
       {owTaskId && (
         <CheckInOutModal
           taskId={owTaskId}
+          employeeId={myEmployee?.id || ""}
           mode={owMode}
           onDone={() => { setOwTaskId(null); loadData(); }}
           onClose={() => setOwTaskId(null)}
