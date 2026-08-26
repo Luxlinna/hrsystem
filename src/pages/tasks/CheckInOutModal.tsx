@@ -2,34 +2,15 @@ import { useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getCurrentPosition } from "@/lib/geo";
 import { loadGoogleMaps } from "@/lib/geocode";
-import { uploadFile } from "@/lib/storage";
+import { uploadMediaToS3, type MediaItem } from "@/lib/s3-storage";
 
-const BUCKET = "outside-work-images";
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_BYTES = 50 * 1024 * 1024;
+const ACCEPTED = "image/*,video/*";
 
-async function compressImage(file: File): Promise<Blob> {
-  const url = URL.createObjectURL(file);
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error("Couldn't read image."));
-      el.src = url;
-    });
-    const max = 1600;
-    const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-    const w = Math.max(1, Math.round(img.naturalWidth * scale));
-    const h = Math.max(1, Math.round(img.naturalHeight * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
-    return await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Couldn't process image."))), "image/jpeg", 0.85)
-    );
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+interface PendingFile {
+  file: File;
+  preview: string;
+  type: "image" | "video";
 }
 
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
@@ -57,14 +38,15 @@ interface Props {
 
 export default function CheckInOutModal({ taskId, mode, onDone, onClose, showToast }: Props) {
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number | null; address: string | null } | null>(null);
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [files, setFiles] = useState<PendingFile[]>([]);
   const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const photoRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const isCheckIn = mode === "check_in";
-  const canSubmit = !!location && !!photo && !saving;
+  const canSubmit = isCheckIn ? !!location && !saving : files.length > 0 && !saving;
 
   const handleCaptureLocation = async () => {
     setLocating(true);
@@ -91,40 +73,75 @@ export default function CheckInOutModal({ taskId, mode, onDone, onClose, showToa
     }
   };
 
-  const handlePickPhoto = (file: File | undefined) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { showToast("error", "Please choose an image file."); return; }
-    if (file.size > MAX_PHOTO_BYTES) { showToast("error", "Photo must be under 10MB."); return; }
-    setPhoto(file);
+  const handlePickFiles = (inputFiles: FileList | undefined) => {
+    if (!inputFiles) return;
+    const next: PendingFile[] = [];
+    for (let i = 0; i < inputFiles.length; i++) {
+      const f = inputFiles[i];
+      if (!f.type.startsWith("image/") && !f.type.startsWith("video/")) {
+        showToast("error", `"${f.name}" is not an image or video.`);
+        continue;
+      }
+      if (f.size > MAX_FILE_BYTES) {
+        showToast("error", `"${f.name}" is too large (max 50MB).`);
+        continue;
+      }
+      next.push({
+        file: f,
+        preview: URL.createObjectURL(f),
+        type: f.type.startsWith("video/") ? "video" : "image",
+      });
+    }
+    setFiles((prev) => [...prev, ...next]);
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit || !location || !photo) return;
+    if (!canSubmit) return;
     setSaving(true);
     try {
-      const blob = await compressImage(photo);
-      const fileName = isCheckIn ? "check-in.jpg" : "check-out.jpg";
-      const imageUrl = await uploadFile(
-        BUCKET,
-        `${taskId}/${isCheckIn ? "in" : "out"}/${Date.now()}.jpg`,
-        new File([blob], fileName, { type: "image/jpeg" })
-      );
+      const mediaItems: MediaItem[] = [];
+      const folder = `outside-work/${taskId}/${isCheckIn ? "in" : "out"}`;
+
+      for (let i = 0; i < files.length; i++) {
+        setUploadProgress(`Uploading ${i + 1} of ${files.length}…`);
+        const item = await uploadMediaToS3(files[i].file, folder);
+        mediaItems.push(item);
+      }
+
+      setUploadProgress(null);
 
       const data: Record<string, any> = {};
       if (isCheckIn) {
-        data.work_lat = location.lat;
-        data.work_lng = location.lng;
-        data.work_accuracy_m = location.accuracy;
-        data.work_address = location.address;
-        data.work_image_url = imageUrl;
+        if (location) {
+          data.work_lat = location.lat;
+          data.work_lng = location.lng;
+          data.work_accuracy_m = location.accuracy;
+          data.work_address = location.address;
+        }
+        if (mediaItems.length > 0) {
+          data.work_image_url = mediaItems[0].url;
+          data.work_media_urls = mediaItems;
+        }
         data.work_status = "checked_in";
         data.work_checked_in_at = new Date().toISOString();
       } else {
-        data.work_check_out_lat = location.lat;
-        data.work_check_out_lng = location.lng;
-        data.work_check_out_accuracy_m = location.accuracy;
-        data.work_check_out_address = location.address;
-        data.work_check_out_image_url = imageUrl;
+        if (location) {
+          data.work_check_out_lat = location.lat;
+          data.work_check_out_lng = location.lng;
+          data.work_check_out_accuracy_m = location.accuracy;
+          data.work_check_out_address = location.address;
+        }
+        if (mediaItems.length > 0) {
+          data.work_check_out_image_url = mediaItems[0].url;
+          data.work_check_out_media_urls = mediaItems;
+        }
         data.work_status = "checked_out";
         data.work_checked_out_at = new Date().toISOString();
       }
@@ -139,6 +156,7 @@ export default function CheckInOutModal({ taskId, mode, onDone, onClose, showToa
       showToast("error", isCheckIn ? "Couldn't check in. Please try again." : "Couldn't check out. Please try again.");
     } finally {
       setSaving(false);
+      setUploadProgress(null);
     }
   };
 
@@ -148,11 +166,11 @@ export default function CheckInOutModal({ taskId, mode, onDone, onClose, showToa
       onClick={() => !saving && onClose()}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-sm shadow-2xl border border-gray-100/80 overflow-hidden animate-in zoom-in-95 duration-150"
+        className="bg-white rounded-3xl w-full max-w-sm shadow-2xl border border-gray-100/80 overflow-hidden animate-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isCheckIn ? "bg-emerald-100 text-emerald-700" : "bg-[#253C7D]/10 text-[#253C7D]"}`}>
               <i className={`text-base ${isCheckIn ? "ri-login-circle-line" : "ri-logout-circle-r-line"}`} />
@@ -170,11 +188,12 @@ export default function CheckInOutModal({ taskId, mode, onDone, onClose, showToa
         </div>
 
         {/* Body */}
-        <div className="p-5 space-y-3.5">
+        <div className="p-5 space-y-3.5 overflow-y-auto flex-1 min-h-0">
           {/* Location */}
           <div>
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Current Location <span className="text-rose-500">*</span>
+              Current Location {!isCheckIn && <span className="text-gray-400 font-normal normal-case">(optional)</span>}
+              {isCheckIn && <span className="text-rose-500">*</span>}
             </label>
             {!location ? (
               <button
@@ -228,58 +247,61 @@ export default function CheckInOutModal({ taskId, mode, onDone, onClose, showToa
             )}
           </div>
 
-          {/* Photo */}
+          {/* Media */}
           <div>
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Proof Photo <span className="text-rose-500">*</span>
+              Photos & Videos {!isCheckIn && <span className="text-rose-500">*</span>}
+              {isCheckIn && <span className="text-gray-400 font-normal normal-case">(optional)</span>}
             </label>
             <input
-              ref={photoRef}
+              ref={fileRef}
               type="file"
-              accept="image/*"
+              accept={ACCEPTED}
+              multiple
               capture="environment"
               className="hidden"
-              onChange={(e) => { handlePickPhoto(e.target.files?.[0]); e.target.value = ""; }}
+              onChange={(e) => { handlePickFiles(e.target.files); e.target.value = ""; }}
             />
-            {!photo ? (
-              <button
-                type="button"
-                onClick={() => photoRef.current?.click()}
-                className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 text-gray-500 hover:border-[#253C7D]/50 hover:bg-[#253C7D]/5 hover:text-[#253C7D] flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
-              >
-                <i className="ri-camera-line text-xl" />
-                <span className="text-xs font-bold">Take a Photo</span>
-              </button>
-            ) : (
-              <div className="rounded-xl border border-gray-200 overflow-hidden relative group">
-                <img src={URL.createObjectURL(photo)} alt="Proof" className="w-full h-36 object-cover" />
-                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => photoRef.current?.click()}
-                    className="bg-white text-gray-800 px-3 py-1.5 rounded-lg text-xs font-bold shadow-md cursor-pointer"
-                  >
-                    Replace
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPhoto(null)}
-                    className="bg-white text-rose-600 px-3 py-1.5 rounded-lg text-xs font-bold shadow-md cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <span className="absolute bottom-2 left-2 bg-slate-950/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <i className="ri-camera-fill" />
-                  Ready
-                </span>
+
+            {/* File grid */}
+            {files.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                {files.map((f, i) => (
+                  <div key={i} className="relative group rounded-xl border border-gray-200 overflow-hidden aspect-square">
+                    {f.type === "video" ? (
+                      <video src={f.preview} preload="metadata" className="w-full h-full object-cover bg-black" />
+                    ) : (
+                      <img src={f.preview} alt="" className="w-full h-full object-cover" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      disabled={saving}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:opacity-30"
+                    >
+                      <i className="ri-close-line text-[10px]" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={saving}
+              className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 text-gray-500 hover:border-[#253C7D]/50 hover:bg-[#253C7D]/5 hover:text-[#253C7D] flex flex-col items-center justify-center gap-1 transition-all cursor-pointer disabled:opacity-60"
+            >
+              <i className="ri-camera-line text-xl" />
+              <span className="text-xs font-bold">
+                {files.length > 0 ? "Add More" : "Take Photos or Videos"}
+              </span>
+            </button>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50/50 flex items-center justify-end gap-2">
+        <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50/50 flex items-center justify-end gap-2 shrink-0">
           <button
             type="button"
             onClick={onClose}
@@ -301,7 +323,7 @@ export default function CheckInOutModal({ taskId, mode, onDone, onClose, showToa
             {saving ? (
               <>
                 <i className="ri-loader-4-line animate-spin text-sm" />
-                Saving…
+                {uploadProgress || "Saving…"}
               </>
             ) : (
               <>

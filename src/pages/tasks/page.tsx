@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { notify } from "@/lib/notify";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import CheckInOutModal from "./CheckInOutModal";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import type { MediaItem } from "@/lib/s3-storage";
 
 const fmtDuration = (from: string, to: string | null) => {
   const ms = (to ? new Date(to).getTime() : Date.now()) - new Date(from).getTime();
@@ -20,6 +22,7 @@ interface Employee {
   last_name: string;
   department: string;
   avatar_url?: string;
+  email: string;
 }
 
 interface Task {
@@ -47,6 +50,8 @@ interface Task {
   work_check_out_accuracy_m: number | null;
   work_check_out_address: string | null;
   work_check_out_image_url: string | null;
+  work_media_urls: MediaItem[] | null;
+  work_check_out_media_urls: MediaItem[] | null;
   employees?: { first_name: string; last_name: string; department: string; avatar_url?: string } | null;
 }
 
@@ -227,6 +232,7 @@ export default function TasksPage() {
   const canViewAll = isAdmin || !!role?.task_view_all_employees;
   const canViewOwnBranch = !canViewAll && !!role?.task_view_own_branch;
   const canManage = canViewAll || canViewOwnBranch;
+  const canAssign = canManage || (role?.allowed_modules || []).includes("tasks");
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -281,7 +287,7 @@ export default function TasksPage() {
 
     const { data: me } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, department, branch_id, avatar_url")
+      .select("id, first_name, last_name, department, branch_id, avatar_url, email")
       .eq("email", user.email)
       .maybeSingle();
     setMyEmployee(me);
@@ -289,7 +295,7 @@ export default function TasksPage() {
 
     if (canViewAll) {
       const [{ data: emp }, { data: t }] = await Promise.all([
-        supabase.from("employees").select("id, first_name, last_name, department, avatar_url").eq("status", "active").order("first_name"),
+        supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email").eq("status", "active").order("first_name"),
         supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").is("deleted_at", null).order("created_at", { ascending: false }),
       ]);
       setEmployees(emp || []);
@@ -298,10 +304,13 @@ export default function TasksPage() {
       return;
     }
 
-    if (canViewOwnBranch && me.branch_id) {
-      const { data: team } = await supabase.from("employees").select("id, first_name, last_name, department, avatar_url").eq("status", "active").eq("branch_id", me.branch_id).order("first_name");
-      setEmployees(team || []);
-      const ids = (team || []).map((e) => e.id);
+    if (canViewOwnBranch) {
+      const empRes = me.branch_id
+        ? await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email").eq("status", "active").eq("branch_id", me.branch_id).order("first_name")
+        : await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email").eq("status", "active").order("first_name");
+      const team = empRes.data || [];
+      setEmployees(team);
+      const ids = team.map((e) => e.id);
       const { data: t } = ids.length
         ? await supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").in("assigned_to", ids).is("deleted_at", null).order("created_at", { ascending: false })
         : { data: [] };
@@ -318,8 +327,14 @@ export default function TasksPage() {
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
     setTasks((t as any) || []);
+
+    if (canAssign) {
+      const { data: allEmp } = await supabase.from("employees").select("id, first_name, last_name, department, avatar_url, email").eq("status", "active").order("first_name");
+      setEmployees(allEmp || []);
+    }
+
     setLoading(false);
-  }, [user?.email, canViewAll, canViewOwnBranch]);
+  }, [user?.email, canViewAll, canViewOwnBranch, canAssign]);
 
   useEffect(() => {
     if (permsLoading) return;
@@ -394,9 +409,36 @@ export default function TasksPage() {
   };
 
   const handleSave = async () => {
+    const assignerName = myEmployee ? `${myEmployee.first_name} ${myEmployee.last_name}` : "a manager";
+
+    const sendTaskNotifications = async (assignedEmpIds: string[], taskTitle: string, taskId?: string) => {
+      const assignedEmps = employees.filter((e) => assignedEmpIds.includes(e.id));
+      const emails = assignedEmps.map((e) => e.email).filter(Boolean);
+      if (emails.length === 0) return;
+      const { data: assignments } = emails.length > 0
+        ? await supabase.from("user_role_assignments").select("email, user_id").in("email", emails).is("deleted_at", null)
+        : { data: [] };
+      const userIdsByEmail = new Map((assignments || [])
+        .filter((a: any) => a.user_id)
+        .map((a: any) => [a.email.toLowerCase(), a.user_id]));
+      await Promise.all(assignedEmps.map((emp) => {
+        const recipientUserId = userIdsByEmail.get(emp.email.toLowerCase());
+        if (!recipientUserId) return Promise.resolve();
+        return notify({
+          source: "tasks",
+          type: "info",
+          title: "New Task Assigned",
+          message: `${assignerName} assigned you "${taskTitle}".`,
+          entityId: taskId || null,
+          recipientUserId,
+        });
+      }));
+    };
+
     if (editingTask) {
       if (!form.title.trim() || !form.assigned_to || !myEmployee) return;
       setSaving(true);
+      const prevAssignedTo = editingTask.assigned_to;
       const { error } = await supabase.from("tasks").update({
         title: form.title.trim(),
         description: form.description || null,
@@ -410,6 +452,9 @@ export default function TasksPage() {
       }).eq("id", editingTask.id);
       setSaving(false);
       if (error) { showToast("error", "Couldn't update task."); return; }
+      if (form.assigned_to !== prevAssignedTo) {
+        await sendTaskNotifications([form.assigned_to], form.title.trim(), editingTask.id);
+      }
       showToast("success", "Task updated successfully.");
     } else {
       if (!form.title.trim() || assignedToIds.length === 0 || !myEmployee) return;
@@ -425,9 +470,10 @@ export default function TasksPage() {
         completed_at: form.status === "done" ? new Date().toISOString() : null,
         is_outside_work: form.is_outside_work,
       }));
-      const { error } = await supabase.from("tasks").insert(payload);
+      const { data: inserted, error } = await supabase.from("tasks").insert(payload).select("id");
       setSaving(false);
       if (error) { showToast("error", "Couldn't create task."); return; }
+      await sendTaskNotifications(assignedToIds, form.title.trim(), inserted?.[0]?.id);
       showToast("success", `${assignedToIds.length} task${assignedToIds.length === 1 ? "" : "s"} created successfully.`);
     }
     setShowModal(false);
@@ -957,9 +1003,15 @@ export default function TasksPage() {
                                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                                     </span>
                                     <span className="text-[11px] font-bold text-emerald-700">
-                                      Checked in · {fmtDuration(t.work_checked_in_at!, null)}
+                                      Checked in · {t.work_checked_in_at ? formatExact(t.work_checked_in_at) : ""}
                                     </span>
                                   </div>
+                                  {(t.work_media_urls?.length ?? 0) > 0 && (
+                                    <span className="text-[10px] font-bold text-gray-400 flex items-center gap-0.5 shrink-0">
+                                      <i className="ri-image-line" />
+                                      {t.work_media_urls!.length}
+                                    </span>
+                                  )}
                                 </div>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openCheckInOut(t.id, "check_out"); }}
@@ -969,21 +1021,31 @@ export default function TasksPage() {
                                   Check Out
                                 </button>
                               </div>
-                            ) : (
-                              <div className="space-y-1.5">
-                                {t.work_status === "checked_out" && t.work_checked_out_at && (
-                                  <p className="text-[10px] font-semibold text-gray-400">
-                                    Checked out · {formatRelative(t.work_checked_out_at)}
-                                  </p>
-                                )}
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); openCheckInOut(t.id, "check_in"); }}
-                                  className="w-full py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                                >
+                            ) : t.work_status === "checked_out" ? (
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600">
                                   <i className="ri-login-circle-line" />
-                                  Check In
-                                </button>
+                                  In {t.work_checked_in_at ? formatExact(t.work_checked_in_at) : "--"}
+                                  {(t.work_media_urls?.length ?? 0) > 0 && (
+                                    <span className="text-gray-400 font-normal">({t.work_media_urls!.length} file{t.work_media_urls!.length > 1 ? "s" : ""})</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-[#253C7D]">
+                                  <i className="ri-logout-circle-r-line" />
+                                  Out {t.work_checked_out_at ? formatExact(t.work_checked_out_at) : "--"}
+                                  {(t.work_check_out_media_urls?.length ?? 0) > 0 && (
+                                    <span className="text-gray-400 font-normal">({t.work_check_out_media_urls!.length} file{t.work_check_out_media_urls!.length > 1 ? "s" : ""})</span>
+                                  )}
+                                </div>
                               </div>
+                            ) : (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); openCheckInOut(t.id, "check_in"); }}
+                                className="w-full py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                              >
+                                <i className="ri-login-circle-line" />
+                                Check In
+                              </button>
                             )}
                           </div>
                         )}
@@ -1350,7 +1412,7 @@ export default function TasksPage() {
                       <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
                         {editingTask ? "Assignee" : "Assign To"}
                       </label>
-                      {canManage ? (
+                      {canAssign ? (
                         editingTask ? (
                           <EmployeeSearchSelect
                             employees={employees}
@@ -1514,8 +1576,8 @@ export default function TasksPage() {
                           <p className="text-[11px] text-gray-400 mt-0.5">
                             {form.is_outside_work
                               ? editingTask
-                                ? "Check in when you arrive at the work site"
-                                : "You'll check in with location & photo when you arrive on-site"
+                                ? "Check in with location when you arrive; check out with a photo"
+                                : "Check in with location, check out with a photo when done"
                               : "Enable if this task is performed off-site"}
                           </p>
                         </div>
@@ -1548,7 +1610,7 @@ export default function TasksPage() {
                         </div>
 
                         {/* Check-in details */}
-                        {editingTask.work_image_url && (
+                        {(editingTask.work_media_urls?.length || editingTask.work_image_url) && (
                           <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1.5">
                               <i className="ri-login-circle-line text-emerald-600" />
@@ -1559,11 +1621,19 @@ export default function TasksPage() {
                                 </span>
                               )}
                             </label>
-                            <img
-                              src={editingTask.work_image_url}
-                              alt="Check-in proof"
-                              className="w-full h-36 object-cover rounded-xl border border-gray-200"
-                            />
+                            {editingTask.work_media_urls && editingTask.work_media_urls.length > 0 ? (
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {editingTask.work_media_urls.map((m, i) => (
+                                  m.type === "video" ? (
+                                    <video key={i} src={m.url} controls preload="metadata" className="w-full aspect-video object-cover rounded-lg border border-gray-200 bg-black" />
+                                  ) : (
+                                    <img key={i} src={m.url} alt={m.name} className="w-full aspect-video object-cover rounded-lg border border-gray-200" />
+                                  )
+                                ))}
+                              </div>
+                            ) : editingTask.work_image_url ? (
+                              <img src={editingTask.work_image_url} alt="Check-in proof" className="w-full h-36 object-cover rounded-xl border border-gray-200" />
+                            ) : null}
                             <div className="mt-1.5 space-y-0.5">
                               {editingTask.work_address && (
                                 <p className="text-[11px] text-gray-600 flex items-center gap-1">
@@ -1585,7 +1655,7 @@ export default function TasksPage() {
                         )}
 
                         {/* Check-out details */}
-                        {editingTask.work_check_out_image_url && (
+                        {(editingTask.work_check_out_media_urls?.length || editingTask.work_check_out_image_url) && (
                           <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1.5">
                               <i className="ri-logout-circle-r-line text-[#253C7D]" />
@@ -1596,11 +1666,19 @@ export default function TasksPage() {
                                 </span>
                               )}
                             </label>
-                            <img
-                              src={editingTask.work_check_out_image_url}
-                              alt="Check-out proof"
-                              className="w-full h-36 object-cover rounded-xl border border-gray-200"
-                            />
+                            {editingTask.work_check_out_media_urls && editingTask.work_check_out_media_urls.length > 0 ? (
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {editingTask.work_check_out_media_urls.map((m, i) => (
+                                  m.type === "video" ? (
+                                    <video key={i} src={m.url} controls preload="metadata" className="w-full aspect-video object-cover rounded-lg border border-gray-200 bg-black" />
+                                  ) : (
+                                    <img key={i} src={m.url} alt={m.name} className="w-full aspect-video object-cover rounded-lg border border-gray-200" />
+                                  )
+                                ))}
+                              </div>
+                            ) : editingTask.work_check_out_image_url ? (
+                              <img src={editingTask.work_check_out_image_url} alt="Check-out proof" className="w-full h-36 object-cover rounded-xl border border-gray-200" />
+                            ) : null}
                             <div className="mt-1.5 space-y-0.5">
                               {editingTask.work_check_out_address && (
                                 <p className="text-[11px] text-gray-600 flex items-center gap-1">
@@ -1622,7 +1700,7 @@ export default function TasksPage() {
                         )}
 
                         {/* No session yet hint */}
-                        {!editingTask.work_image_url && (
+                        {!editingTask.work_image_url && (!editingTask.work_media_urls || editingTask.work_media_urls.length === 0) && (
                           <p className="text-[11px] text-gray-400 text-center py-2">
                             No check-in data yet — use the Check In button on the task card.
                           </p>
