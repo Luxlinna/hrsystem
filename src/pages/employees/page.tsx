@@ -87,7 +87,7 @@ export default function Employees() {
   };
 
   const loadEmployees = () => {
-    supabase.from("employees").select("*, branches(name)").is("deleted_at", null).order("first_name").then(({ data, error }) => {
+    supabase.from("employees").select("id, first_name, last_name, email, phone, role, department, branch_id, status, join_date, reports_to, avatar_url, branches(name)").is("deleted_at", null).order("first_name").then(({ data, error }) => {
       if (error) { toast("Error", "Failed to load employee directory", "error"); return; }
       setEmployees(data || []);
     });

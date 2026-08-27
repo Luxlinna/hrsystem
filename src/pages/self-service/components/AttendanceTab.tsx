@@ -65,7 +65,7 @@ export default function AttendanceTab({ employeeId }: Props) {
 
     supabase
       .from("attendance_records")
-      .select("*")
+      .select("id, date, clock_in, clock_out, status")
       .eq("employee_id", employeeId)
       .gte("date", startDate)
       .lte("date", endDate)

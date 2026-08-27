@@ -113,7 +113,7 @@ export default function PerformanceReviews() {
     if (canViewAll) {
       const [{ data: r }, { data: g }, { data: e }] = await Promise.all([
         supabase.from("performance_reviews").select(`*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`).order("created_at", { ascending: false }),
-        supabase.from("performance_goals").select("*").order("target_date"),
+        supabase.from("performance_goals").select("id, employee_id, title, description, target_date, progress, status").order("target_date"),
         supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url").order("first_name"),
       ]);
       setReviews(r || []);
@@ -138,7 +138,7 @@ export default function PerformanceReviews() {
       const [{ data: r }, { data: g }] = ids.length
         ? await Promise.all([
             supabase.from("performance_reviews").select(`*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`).in("employee_id", ids).order("created_at", { ascending: false }),
-            supabase.from("performance_goals").select("*").in("employee_id", ids).order("target_date"),
+            supabase.from("performance_goals").select("id, employee_id, title, description, target_date, progress, status").in("employee_id", ids).order("target_date"),
           ])
         : [{ data: [] }, { data: [] }];
       setReviews(r || []);
@@ -150,7 +150,7 @@ export default function PerformanceReviews() {
     setEmployees([me]);
     const [{ data: r }, { data: g }] = await Promise.all([
       supabase.from("performance_reviews").select(`*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`).eq("employee_id", me.id).order("created_at", { ascending: false }),
-      supabase.from("performance_goals").select("*").eq("employee_id", me.id).order("target_date"),
+      supabase.from("performance_goals").select("id, employee_id, title, description, target_date, progress, status").eq("employee_id", me.id).order("target_date"),
     ]);
     setReviews(r || []);
     setGoals(g || []);

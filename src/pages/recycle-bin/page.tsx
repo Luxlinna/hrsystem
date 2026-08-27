@@ -28,6 +28,7 @@ interface ModuleConfig {
 // land here. Ephemeral / config data (notifications, roles, infra tokens)
 // is still hard-deleted and never shows up in the Recycle Bin.
 const MODULES: ModuleConfig[] = [
+  { table: "branches", name: "Branches", icon: "ri-building-2-line", select: "id, name, location, manager_name, status, deleted_at, deleted_by", label: (r) => r.name, detail: (r) => `Branch · ${r.location} · ${r.status}` },
   { table: "disciplinary_records", name: "Disciplinary", icon: "ri-alert-line", select: "id, title, severity, deleted_at, deleted_by, created_by", label: (r) => r.title, detail: (r) => `Disciplinary · severity ${r.severity}` },
   { table: "documents", name: "Documents", icon: "ri-folder-line", select: "id, title, category, file_url, deleted_at, deleted_by", label: (r) => r.title, detail: (r) => `Document · ${r.category}` },
   { table: "announcements", name: "Announcements", icon: "ri-megaphone-line", select: "id, title, category, deleted_at, deleted_by", label: (r) => r.title, detail: (r) => `Announcement · ${r.category}` },

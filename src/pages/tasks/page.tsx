@@ -280,6 +280,7 @@ export default function TasksPage() {
   const adminReportEmpExportRef = useRef<HTMLDivElement>(null);
   // Task activities for working time tracking
   const [adminTaskActivities, setAdminTaskActivities] = useState<Record<string, TaskActivity[]>>({});
+  const [myTaskActivities, setMyTaskActivities] = useState<Record<string, TaskActivity[]>>({});
 
   // Modals & Form
   const [showModal, setShowModal] = useState(false);
@@ -332,7 +333,7 @@ export default function TasksPage() {
         : supabase.from("employees").select("id, first_name, last_name, department, branch_id, avatar_url, email, reports_to").eq("status", "active").order("first_name");
       const [{ data: emp }, { data: t }] = await Promise.all([
         empQuery,
-        supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").is("deleted_at", null).order("created_at", { ascending: false }),
+        supabase.from("tasks").select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").is("deleted_at", null).order("created_at", { ascending: false }),
       ]);
       setEmployees(emp || []);
       setTasks((t as any) || []);
@@ -349,7 +350,7 @@ export default function TasksPage() {
       setEmployees(team);
       const ids = team.map((e) => e.id);
       const { data: t } = ids.length
-        ? await supabase.from("tasks").select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").in("assigned_to", ids).is("deleted_at", null).order("created_at", { ascending: false })
+        ? await supabase.from("tasks").select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").in("assigned_to", ids).is("deleted_at", null).order("created_at", { ascending: false })
         : { data: [] };
       setTasks((t as any) || []);
       setLoading(false);
@@ -359,7 +360,7 @@ export default function TasksPage() {
     setEmployees([me]);
     const { data: t } = await supabase
       .from("tasks")
-      .select("*, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)")
+      .select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)")
       .eq("assigned_to", me.id)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -745,9 +746,31 @@ export default function TasksPage() {
     fetchActivities();
   }, [view, canManage, adminReport]);
 
+  // Fetch task activities when my_report is visible (for working time tracking)
+  useEffect(() => {
+    if (view !== "my_report" || !myReport) return;
+    const taskIds = myReport.tasks.map((t) => t.id);
+    if (taskIds.length === 0) { setMyTaskActivities({}); return; }
+    const fetchActivities = async () => {
+      const { data } = await supabase
+        .from("task_activities")
+        .select("task_id, action, old_value, new_value, created_at")
+        .in("task_id", taskIds)
+        .eq("action", "status_changed")
+        .order("created_at", { ascending: true });
+      const grouped: Record<string, TaskActivity[]> = {};
+      (data || []).forEach((a: TaskActivity) => {
+        if (!grouped[a.task_id]) grouped[a.task_id] = [];
+        grouped[a.task_id].push(a);
+      });
+      setMyTaskActivities(grouped);
+    };
+    fetchActivities();
+  }, [view, myReport]);
+
   // Compute working time from status_changed activities (in_progress → done)
-  const getTaskWorkingTime = useCallback((task: Task) => {
-    const acts = adminTaskActivities[task.id] || [];
+  const getTaskWorkingTime = useCallback((task: Task, activityMap?: Record<string, TaskActivity[]>) => {
+    const acts = (activityMap || adminTaskActivities)[task.id] || [];
     let startedAt: string | null = null;
     let endedAt: string | null = null;
     for (const a of acts) {
@@ -980,12 +1003,14 @@ export default function TasksPage() {
   // ─── EXPORT: My Report CSV ─────────────────────────────────────────
   const exportMyReportCSV = () => {
     if (!myReport || myReport.tasks.length === 0) { toast("Export", "No tasks to export", "warning"); return; }
-    const headers = ["Title", "Description", "Priority", "Status", "Due Date", "Created"];
-    const rows = myReport.tasks.map((t) => [
+    const headers = ["Title", "Description", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration", "Created"];
+    const rows = myReport.tasks.map((t) => {
+      const wt = getTaskWorkingTime(t, myTaskActivities);
+      return [
       `"${t.title.replace(/"/g, '""')}"`,
       `"${(t.description || "").replace(/"/g, '""')}"`,
-      t.priority, t.status, t.due_date || "", t.created_at.slice(0, 10),
-    ]);
+      t.priority, t.status, t.due_date || "", wt.startedAt || "", wt.endedAt || "", wt.duration || "", t.created_at.slice(0, 10),
+    ]; });
     const csv = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
     const a = document.createElement("a");
     a.setAttribute("href", encodeURI(csv));
@@ -997,10 +1022,12 @@ export default function TasksPage() {
   // ─── EXPORT: My Report XLSX ────────────────────────────────────────
   const exportMyReportXLSX = () => {
     if (!myReport || myReport.tasks.length === 0) { toast("Export", "No tasks to export", "warning"); return; }
-    const data = myReport.tasks.map((t) => ({
+    const data = myReport.tasks.map((t) => {
+      const wt = getTaskWorkingTime(t, myTaskActivities);
+      return ({
       Title: t.title, Description: t.description || "", Priority: t.priority, Status: t.status,
-      "Due Date": t.due_date || "", Created: t.created_at.slice(0, 10),
-    }));
+      "Due Date": t.due_date || "", "Work Started": wt.startedAt || "", "Work Completed": wt.endedAt || "", Duration: wt.duration || "", Created: t.created_at.slice(0, 10),
+    }); });
     const headers = Object.keys(data[0]);
     const aoa = [headers, ...data.map((r) => headers.map((h) => r[h]))];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -1014,10 +1041,11 @@ export default function TasksPage() {
   // ─── EXPORT: My Report PDF ─────────────────────────────────────────
   const exportMyReportPDF = () => {
     if (!myReport || myReport.tasks.length === 0) { toast("Export", "No tasks to export", "warning"); return; }
-    const headers = ["Title", "Priority", "Status", "Due Date", "Created"];
-    const rows = myReport.tasks.map((t) =>
-      `<tr><td>${t.title}</td><td>${t.priority}</td><td>${t.status}</td><td>${t.due_date || "—"}</td><td>${t.created_at.slice(0, 10)}</td></tr>`
-    ).join("");
+    const headers = ["Title", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration", "Created"];
+    const rows = myReport.tasks.map((t) => {
+      const wt = getTaskWorkingTime(t, myTaskActivities);
+      return `<tr><td>${t.title}</td><td>${t.priority}</td><td>${t.status}</td><td>${t.due_date || "—"}</td><td>${wt.startedAt ? formatExact(wt.startedAt) : "—"}</td><td>${wt.endedAt ? formatExact(wt.endedAt) : "—"}</td><td>${wt.duration || "—"}</td><td>${t.created_at.slice(0, 10)}</td></tr>`;
+    }).join("");
     const html = `<!DOCTYPE html><html><head><title>My Report</title><style>
       body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111}
       h1{font-size:20px;margin-bottom:4px}p{font-size:12px;color:#666;margin-bottom:20px}
@@ -2025,6 +2053,9 @@ export default function TasksPage() {
                     <th className="px-5 py-3.5 text-center">Priority</th>
                     <th className="px-5 py-3.5 text-center">Status</th>
                     <th className="px-5 py-3.5 text-center">Due Date</th>
+                    <th className="px-5 py-3.5 text-center">Work Started</th>
+                    <th className="px-5 py-3.5 text-center">Work Completed</th>
+                    <th className="px-5 py-3.5 text-center">Duration</th>
                     <th className="px-5 py-3.5 text-center">Created</th>
                   </tr>
                 </thead>
@@ -2068,6 +2099,15 @@ export default function TasksPage() {
                         {t.due_date ? formatShortDate(t.due_date) : "—"}
                       </td>
                       <td className="px-5 py-3.5 text-center text-gray-600">
+                        {(() => { const wt = getTaskWorkingTime(t, myTaskActivities); return wt.startedAt ? formatExact(wt.startedAt) : "—"; })()}
+                      </td>
+                      <td className="px-5 py-3.5 text-center text-gray-600">
+                        {(() => { const wt = getTaskWorkingTime(t, myTaskActivities); return wt.endedAt ? formatExact(wt.endedAt) : "—"; })()}
+                      </td>
+                      <td className="px-5 py-3.5 text-center text-gray-600 font-semibold">
+                        {(() => { const wt = getTaskWorkingTime(t, myTaskActivities); return wt.duration || "—"; })()}
+                      </td>
+                      <td className="px-5 py-3.5 text-center text-gray-600">
                         {formatShortDate(t.created_at)}
                       </td>
                     </tr>
@@ -2075,7 +2115,7 @@ export default function TasksPage() {
                   })}
                   {myReport.tasks.length === 0 && (
                     <tr>
-                      <td colSpan={myReport.subordinateCount > 0 ? 6 : 5} className="px-5 py-12 text-center text-gray-400">
+                      <td colSpan={myReport.subordinateCount > 0 ? 9 : 8} className="px-5 py-12 text-center text-gray-400">
                         <i className="ri-pie-chart-line text-2xl text-gray-300 mb-2 block" />
                         No tasks found for the selected period.
                       </td>

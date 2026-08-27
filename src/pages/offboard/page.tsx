@@ -227,7 +227,7 @@ export default function Offboard() {
     const [{ data: off }, { data: emps }, { data: brs }] = await Promise.all([
       supabase
         .from("offboarding_requests")
-        .select("*, employees(first_name, last_name, role, department, branch_id, avatar_url, branches(id, name))")
+        .select("*, employees(first_name, last_name, role, department, branch_id, avatar_url, branches(id, name)), offboarding_tasks(*)")
         .order("last_day", { ascending: true }),
       supabase
         .from("employees")
@@ -240,20 +240,7 @@ export default function Offboard() {
         .order("name"),
     ]);
 
-    if (off) {
-      const withTasks = await Promise.all(
-        off.map(async (o) => {
-          const { data: t } = await supabase
-            .from("offboarding_tasks")
-            .select("*")
-            .eq("offboarding_id", o.id)
-            .order("created_at");
-          return { ...o, tasks: t || [] };
-        })
-      );
-      setOffboardings(withTasks);
-    }
-
+    setOffboardings(off || []);
     setEmployees(emps || []);
     setBranches(brs || []);
     setLoading(false);

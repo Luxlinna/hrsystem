@@ -165,7 +165,7 @@ export default function Onboarding() {
           .select("*, employees(first_name, last_name, role, department, branch_id, branches(name))")
           .is("deleted_at", null)
           .order("created_at", { ascending: false }),
-        supabase.from("onboarding_documents").select("*").is("deleted_at", null).order("created_at", { ascending: true }),
+        supabase.from("onboarding_documents").select("id, onboarding_request_id, document_name, stage, status, file_url, file_name, notes, due_date, created_at").is("deleted_at", null).order("created_at", { ascending: true }),
         supabase.from("employees").select("id, first_name, last_name, role, department, avatar_url, branches(name)").is("deleted_at", null).order("first_name"),
       ]);
       setRequests((ob as any) || []);

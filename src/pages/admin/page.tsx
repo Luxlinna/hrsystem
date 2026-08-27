@@ -348,7 +348,7 @@ export default function AdminPortal() {
       supabase.from("user_role_assignments").select("*, app_roles(id, name, color)").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("user_role_assignments").select("email").not("deleted_at", "is", null),
       supabase.from("employees").select("id, email, first_name, last_name, role, department").not("email", "is", null).order("first_name"),
-      supabase.from("password_reset_requests").select("*").is("deleted_at", null).order("requested_at", { ascending: false }).limit(50),
+      supabase.from("password_reset_requests").select("id, email, status, requested_at, acted_at").is("deleted_at", null).order("requested_at", { ascending: false }).limit(50),
       authAccountsPromise,
     ]);
 

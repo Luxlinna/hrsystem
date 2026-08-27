@@ -115,7 +115,7 @@ export default function Announcements() {
     setLoading(true);
     let query = supabase
       .from("announcements")
-      .select("*")
+      .select("id, title, content, category, priority, author_name, author_role, pinned, visible_to, published_at, urgent_alert_hours, view_count, created_at")
       .is("deleted_at", null)
       .order("pinned", { ascending: false })
       .order("published_at", { ascending: false });

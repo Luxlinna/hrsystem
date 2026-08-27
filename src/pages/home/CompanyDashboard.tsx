@@ -136,23 +136,23 @@ export default function CompanyDashboard() {
       { data: j },
       { data: c },
     ] = await Promise.all([
-      supabase.from("branches").select("*"),
-      supabase.from("employees").select("*, branches(name)"),
+      supabase.from("branches").select("id, name"),
+      supabase.from("employees").select("id, first_name, last_name, department, status, join_date, branch_id, branches(name)"),
       supabase
         .from("onboarding_requests")
-        .select("*, employees(first_name, last_name, role, branch_id)")
+        .select("id, stage, status, created_at, employees(first_name, last_name, role, branch_id)")
         .is("deleted_at", null)
         .neq("status", "completed")
         .order("created_at", { ascending: false }),
-      supabase.from("leave_requests").select("*, employees(first_name, last_name, role, department)").order("created_at", { ascending: false }).limit(5),
-      supabase.from("payroll_records").select("*").eq("month", currentMonth),
+      supabase.from("leave_requests").select("id, status, created_at, employees(first_name, last_name, role, department)").order("created_at", { ascending: false }).limit(5),
+      supabase.from("payroll_records").select("id, employee_id, month, net_pay, status").eq("month", currentMonth),
       user?.id
-        ? supabase.from("notifications").select("*").or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).eq("is_read", false).limit(3)
+        ? supabase.from("notifications").select("id").or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).eq("is_read", false).limit(3)
         : Promise.resolve({ data: [] }),
-      supabase.from("job_postings").select("*").is("deleted_at", null),
-      supabase.from("candidates").select("*").is("deleted_at", null),
+      supabase.from("job_postings").select("id, title, status, department").is("deleted_at", null),
+      supabase.from("candidates").select("id, stage, full_name, applied_at").is("deleted_at", null),
     ]);
-    const { data: announcementsData } = await supabase.from("announcements").select("*").is("deleted_at", null).order("pinned", { ascending: false }).order("published_at", { ascending: false }).limit(4);
+    const { data: announcementsData } = await supabase.from("announcements").select("id, title, category, pinned, published_at").is("deleted_at", null).order("pinned", { ascending: false }).order("published_at", { ascending: false }).limit(4);
 
     // HR KPIs
     const sevenDaysAgo = new Date();
@@ -264,27 +264,34 @@ export default function CompanyDashboard() {
     setLoading(false);
   };
 
-  // Initial load + real-time subscriptions
+  // Initial load + real-time subscriptions (debounced)
   useEffect(() => {
     loadAllData();
 
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    const debouncedLoad = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadAllData(), 1500);
+    };
+
     // Subscribe to changes across all tables
     const channels = [
-      supabase.channel("dash-employees").on("postgres_changes", { event: "*", schema: "public", table: "employees" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-candidates").on("postgres_changes", { event: "*", schema: "public", table: "candidates" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-jobs").on("postgres_changes", { event: "*", schema: "public", table: "job_postings" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-leave").on("postgres_changes", { event: "*", schema: "public", table: "leave_requests" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-payroll").on("postgres_changes", { event: "*", schema: "public", table: "payroll_records" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-onboarding").on("postgres_changes", { event: "*", schema: "public", table: "onboarding_requests" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-branches").on("postgres_changes", { event: "*", schema: "public", table: "branches" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-notifications").on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-announcements").on("postgres_changes", { event: "*", schema: "public", table: "announcements" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-attendance").on("postgres_changes", { event: "*", schema: "public", table: "attendance_records" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-training").on("postgres_changes", { event: "*", schema: "public", table: "training_enrollments" }, () => loadAllData()).subscribe(),
-      supabase.channel("dash-disciplinary").on("postgres_changes", { event: "*", schema: "public", table: "disciplinary_records" }, () => loadAllData()).subscribe(),
+      supabase.channel("dash-employees").on("postgres_changes", { event: "*", schema: "public", table: "employees" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-candidates").on("postgres_changes", { event: "*", schema: "public", table: "candidates" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-jobs").on("postgres_changes", { event: "*", schema: "public", table: "job_postings" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-leave").on("postgres_changes", { event: "*", schema: "public", table: "leave_requests" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-payroll").on("postgres_changes", { event: "*", schema: "public", table: "payroll_records" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-onboarding").on("postgres_changes", { event: "*", schema: "public", table: "onboarding_requests" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-branches").on("postgres_changes", { event: "*", schema: "public", table: "branches" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-notifications").on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-announcements").on("postgres_changes", { event: "*", schema: "public", table: "announcements" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-attendance").on("postgres_changes", { event: "*", schema: "public", table: "attendance_records" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-training").on("postgres_changes", { event: "*", schema: "public", table: "training_enrollments" }, debouncedLoad).subscribe(),
+      supabase.channel("dash-disciplinary").on("postgres_changes", { event: "*", schema: "public", table: "disciplinary_records" }, debouncedLoad).subscribe(),
     ];
 
     return () => {
+      clearTimeout(debounceTimer);
       channels.forEach((ch) => supabase.removeChannel(ch));
     };
   }, []);

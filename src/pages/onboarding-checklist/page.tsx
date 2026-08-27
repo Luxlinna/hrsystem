@@ -186,7 +186,7 @@ export default function OnboardingChecklist() {
           .order("created_at", { ascending: false }),
         supabase
           .from("onboarding_checklist_tasks")
-          .select("*")
+          .select("id, onboarding_request_id, task_name, description, category, assigned_to, assigned_to_role, due_date, completed, completed_at, completed_by, priority, sort_order")
           .is("deleted_at", null)
           .order("sort_order", { ascending: true }),
         supabase

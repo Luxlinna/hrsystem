@@ -287,7 +287,7 @@ export default function MeetingRoomsPage() {
 
   // Fetch rooms
   const loadRooms = useCallback(async () => {
-    let { data, error } = await supabase.from("meeting_rooms").select("*").order("capacity");
+    let { data, error } = await supabase.from("meeting_rooms").select("id, name, capacity, color, floor").order("capacity");
     if (error) {
       console.error("Failed to load rooms:", error);
       return;
