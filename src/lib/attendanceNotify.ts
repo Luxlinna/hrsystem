@@ -37,13 +37,18 @@ function formatTimeLabel(hms?: string): string | null {
   return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
-// Who receives these (per-role opt-in) and how often they fire (every clock
-// event vs. only late/early exceptions) are both admin-configurable — see
-// migration 20260821000000_attendance_checkin_notifications.sql, the
-// "Receives attendance check-in / check-out notifications" role toggle in
-// Admin Portal, and the scope select in Settings -> Notifications. The same
-// scope also gates the Telegram group post added in
-// 20260827000000_add_telegram_notifications.sql (telegram_notify_enabled).
+// Who receives the in-app notifications (per-role opt-in) and how often
+// they fire (every clock event vs. only late/early exceptions) are both
+// admin-configurable — see migration
+// 20260821000000_attendance_checkin_notifications.sql, the "Receives
+// attendance check-in / check-out notifications" role toggle in Admin
+// Portal, and the scope select in Settings -> Notifications.
+//
+// Telegram (20260827000000_add_telegram_notifications.sql,
+// telegram_notify_enabled) is intentionally NOT tied to that scope setting
+// — it only ever posts for exceptions (late check-in / early checkout),
+// regardless of whether the in-app scope is set to "all". The Telegram
+// group is meant to flag problems, not mirror every routine check-in.
 export async function notifyAttendanceEvent(input: AttendanceNotifyInput) {
   const { data: settingRows } = await supabase
     .from("system_settings")
@@ -51,8 +56,10 @@ export async function notifyAttendanceEvent(input: AttendanceNotifyInput) {
     .in("key", ["attendance_notify_scope", "telegram_notify_enabled"]);
   const settingsMap = Object.fromEntries((settingRows || []).map((r: any) => [r.key, r.value]));
 
-  const scope = settingsMap.attendance_notify_scope === "all" ? "all" : "exceptions";
-  if (scope === "exceptions" && !input.isException) return;
+  const inAppScope = settingsMap.attendance_notify_scope === "all" ? "all" : "exceptions";
+  const wantsInApp = inAppScope === "all" || input.isException;
+  const wantsTelegram = input.isException && settingsMap.telegram_notify_enabled === "true";
+  if (!wantsInApp && !wantsTelegram) return;
 
   const action = input.type === "in" ? "checked in" : "checked out";
   const exceptionNote =
@@ -64,34 +71,36 @@ export async function notifyAttendanceEvent(input: AttendanceNotifyInput) {
   const title = input.type === "in" ? "Employee checked in" : "Employee checked out";
   const message = `${input.employeeName} ${action}${exceptionNote}.`;
 
-  const { data: roles } = await supabase.from("app_roles").select("id").eq("attendance_notify", true);
-  const roleIds = (roles || []).map((r: any) => r.id);
-  if (roleIds.length > 0) {
-    const { data: assignments } = await supabase
-      .from("user_role_assignments")
-      .select("user_id")
-      .in("role_id", roleIds);
-    const userIds = Array.from(new Set((assignments || []).map((a: any) => a.user_id).filter(Boolean)));
+  if (wantsInApp) {
+    const { data: roles } = await supabase.from("app_roles").select("id").eq("attendance_notify", true);
+    const roleIds = (roles || []).map((r: any) => r.id);
+    if (roleIds.length > 0) {
+      const { data: assignments } = await supabase
+        .from("user_role_assignments")
+        .select("user_id")
+        .in("role_id", roleIds);
+      const userIds = Array.from(new Set((assignments || []).map((a: any) => a.user_id).filter(Boolean)));
 
-    await Promise.all(
-      userIds.map((uid) =>
-        notify({
-          source: "attendance",
-          type: input.isException ? "warning" : "info",
-          title,
-          message,
-          entityId: input.employeeId,
-          recipientUserId: uid,
-        })
-      )
-    );
+      await Promise.all(
+        userIds.map((uid) =>
+          notify({
+            source: "attendance",
+            type: input.isException ? "warning" : "info",
+            title,
+            message,
+            entityId: input.employeeId,
+            recipientUserId: uid,
+          })
+        )
+      );
+    }
   }
 
-  if (settingsMap.telegram_notify_enabled === "true") {
-    const label = input.type === "in"
-      ? (input.isException ? "Late Check-in" : "Check-in")
-      : (input.isException ? "Early Checkout" : "Checkout");
-    const emoji = input.type === "in" ? (input.isException ? "⏰" : "✅") : (input.isException ? "⚠️" : "🏁");
+  if (wantsTelegram) {
+    // wantsTelegram implies input.isException — Telegram only ever fires
+    // for late check-ins / early checkouts, never routine on-time events.
+    const label = input.type === "in" ? "Late Check-in" : "Early Checkout";
+    const emoji = input.type === "in" ? "⏰" : "⚠️";
 
     const lines = [`${emoji} <b>${label}</b>`, "", `👤 <b>Employee:</b> ${escapeHtml(input.employeeName)}`];
     const dateLabel = formatDateLabel(input.date);
@@ -101,9 +110,7 @@ export async function notifyAttendanceEvent(input: AttendanceNotifyInput) {
     if (input.department) lines.push(`🗂 <b>Department:</b> ${escapeHtml(input.department)}`);
     if (input.branchName) lines.push(`🏢 <b>Branch:</b> ${escapeHtml(input.branchName)}`);
     lines.push(
-      input.isException && input.exceptionMinutes
-        ? `⚠️ <b>Status:</b> ${input.exceptionMinutes} min ${input.type === "in" ? "late" : "early"}`
-        : `✔️ <b>Status:</b> On time`
+      `⚠️ <b>Status:</b> ${input.exceptionMinutes ?? 0} min ${input.type === "in" ? "late" : "early"}`
     );
 
     const appUrl = (import.meta.env.VITE_APP_URL || "https://hrsystem-quit.onrender.com").replace(/\/$/, "");
