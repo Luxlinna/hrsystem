@@ -238,8 +238,13 @@ export default function Announcements() {
       notify({ source: "announcements", type: notificationType, title, message, entityId: announcement.id });
     }
 
+    // Telegram allows up to 4096 chars per message — send the full
+    // announcement body (not the 140-char preview used for the notification
+    // bell), only truncating in the rare case it'd exceed that limit.
+    const fullContent =
+      announcement.content.length > 3500 ? `${announcement.content.slice(0, 3500)}…` : announcement.content;
     notifyTelegramEvent(
-      `${announcement.priority === "urgent" ? "🚨" : "📢"} <b>${escapeTelegramHtml(title.replace(/^(🚨 Urgent: |📢 )/, ""))}</b>\n\n🏷 <b>Category:</b> ${escapeTelegramHtml(category)}\n✍️ <b>By:</b> ${escapeTelegramHtml(announcement.author_name)}\n\n${escapeTelegramHtml(message)}`,
+      `${announcement.priority === "urgent" ? "🚨" : "📢"} <b>${escapeTelegramHtml(title.replace(/^(🚨 Urgent: |📢 )/, ""))}</b>\n\n🏷 <b>Category:</b> ${escapeTelegramHtml(category)}\n✍️ <b>By:</b> ${escapeTelegramHtml(announcement.author_name)}\n\n${escapeTelegramHtml(fullContent)}`,
       { text: "Open in HR Nexus", url: hrNexusUrl("/announcements") }
     );
   };
