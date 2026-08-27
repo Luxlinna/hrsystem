@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { notify } from "@/lib/notify";
+import { notifyTelegramEvent, escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
@@ -236,6 +237,11 @@ export default function Announcements() {
     if (error) {
       notify({ source: "announcements", type: notificationType, title, message, entityId: announcement.id });
     }
+
+    notifyTelegramEvent(
+      `${announcement.priority === "urgent" ? "🚨" : "📢"} <b>${escapeTelegramHtml(title.replace(/^(🚨 Urgent: |📢 )/, ""))}</b>\n\n🏷 <b>Category:</b> ${escapeTelegramHtml(category)}\n✍️ <b>By:</b> ${escapeTelegramHtml(announcement.author_name)}\n\n${escapeTelegramHtml(message)}`,
+      { text: "Open in HR Nexus", url: hrNexusUrl("/announcements") }
+    );
   };
 
   const handleTogglePin = async (a: Announcement, e?: React.MouseEvent) => {

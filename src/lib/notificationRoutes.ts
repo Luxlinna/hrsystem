@@ -46,7 +46,7 @@ export function getNotificationTarget(
     case "attendance":
       return { path: `/attendance${highlight}`, module: "attendance" };
     case "tasks":
-      return { path: `/tasks${highlight}`, module: "tasks" };
+      return { path: "/tasks", module: "tasks" };
     default:
       return null;
   }

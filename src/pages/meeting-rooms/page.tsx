@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { notify } from "@/lib/notify";
 import { logActivity } from "@/lib/audit";
+import { notifyTelegramEvent, escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
 
 interface MeetingRoom {
   id: string;
@@ -612,6 +613,10 @@ export default function MeetingRoomsPage() {
         )}–${fmtTime(bookingForm.end_time)}) "${bookingForm.title}".`,
         entityId: editingBooking.id,
       });
+      notifyTelegramEvent(
+        `✏️ <b>Room Booking Modified</b>\n\n👤 <b>By:</b> ${escapeTelegramHtml(empName)}\n🏢 <b>Room:</b> ${escapeTelegramHtml(modalRoom.name)} (Floor ${modalRoom.floor || 3})\n📅 <b>When:</b> ${bookingForm.date}, ${fmtTime(bookingForm.start_time)}–${fmtTime(bookingForm.end_time)}\n📌 <b>Title:</b> ${escapeTelegramHtml(bookingForm.title)}`,
+        { text: "Open in HR Nexus", url: hrNexusUrl("/meeting-rooms") }
+      );
 
       logActivity({
         module: "meeting_rooms",
@@ -682,6 +687,10 @@ export default function MeetingRoomsPage() {
       )}–${fmtTime(bookingForm.end_time)}). Refreshments: ${finalRefreshments}. Requirements: ${finalRequirements}. Pending Admin/HR approval.`,
       entityId: data?.id || null,
     });
+    notifyTelegramEvent(
+      `🗓️ <b>New Room Booking Request</b>\n\n👤 <b>Requested by:</b> ${escapeTelegramHtml(empName)}\n🏢 <b>Room:</b> ${escapeTelegramHtml(modalRoom.name)} (Floor ${modalRoom.floor || 3})\n📅 <b>When:</b> ${bookingForm.date}, ${fmtTime(bookingForm.start_time)}–${fmtTime(bookingForm.end_time)}\n📌 <b>Title:</b> ${escapeTelegramHtml(bookingForm.title)}\n👥 <b>Attendees:</b> ${bookingForm.attendees_count}\n⏳ <b>Status:</b> Pending Admin/HR approval`,
+      { text: "Open in HR Nexus", url: hrNexusUrl("/meeting-rooms") }
+    );
 
     logActivity({
       module: "meeting_rooms",
@@ -843,6 +852,10 @@ export default function MeetingRoomsPage() {
       message: notifMsg,
       entityId: booking.id,
     });
+    notifyTelegramEvent(
+      `✅ <b>Room Booking Approved${hasDeclined ? " (With Adjustments)" : ""}</b>\n\n👤 <b>Booked by:</b> ${escapeTelegramHtml(bookerName)}\n🏢 <b>Room:</b> ${escapeTelegramHtml(room?.name || "Room")}\n📅 <b>When:</b> ${booking.date}, ${fmtTime(booking.start_time)}–${fmtTime(booking.end_time)}\n📌 <b>Title:</b> ${escapeTelegramHtml(booking.title)}\n✍️ <b>Approved by:</b> ${escapeTelegramHtml(approverName)}`,
+      { text: "Open in HR Nexus", url: hrNexusUrl("/meeting-rooms") }
+    );
 
     logActivity({
       module: "meeting_rooms",
@@ -963,6 +976,10 @@ export default function MeetingRoomsPage() {
       )}–${fmtTime(booking.end_time)}) "${booking.title}" was ${targetStatus} by ${actorName}. Reason: "${reason.trim()}". The slot has been freed and you may book again.`,
       entityId: booking.id,
     });
+    notifyTelegramEvent(
+      `${action === "reject" ? "❌" : "🚫"} <b>Room Booking ${actionLabel}</b>\n\n👤 <b>Booked by:</b> ${escapeTelegramHtml(bookerName)}\n🏢 <b>Room:</b> ${escapeTelegramHtml(room?.name || "Room")}\n📅 <b>When:</b> ${booking.date}, ${fmtTime(booking.start_time)}–${fmtTime(booking.end_time)}\n📌 <b>Title:</b> ${escapeTelegramHtml(booking.title)}\n✍️ <b>By:</b> ${escapeTelegramHtml(actorName)}\n📝 <b>Reason:</b> ${escapeTelegramHtml(reason.trim())}`,
+      { text: "Open in HR Nexus", url: hrNexusUrl("/meeting-rooms") }
+    );
 
     logActivity({
       module: "meeting_rooms",
@@ -1024,6 +1041,10 @@ export default function MeetingRoomsPage() {
       )}–${fmtTime(booking.end_time)}).`,
       entityId: booking.id,
     });
+    notifyTelegramEvent(
+      `🚫 <b>Room Booking Cancelled</b>\n\n👤 <b>Cancelled by:</b> ${escapeTelegramHtml(empName)}\n🏢 <b>Room:</b> ${escapeTelegramHtml(room?.name || "Room")}\n📅 <b>When:</b> ${booking.date}, ${fmtTime(booking.start_time)}–${fmtTime(booking.end_time)}`,
+      { text: "Open in HR Nexus", url: hrNexusUrl("/meeting-rooms") }
+    );
 
     logActivity({
       module: "meeting_rooms",

@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
+import { notifyTelegramEvent, escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
 
 interface LeaveRequest {
   id: string;
@@ -729,6 +730,10 @@ export default function Leave() {
         title: "New Leave Request Pending",
         message: `${empName} has requested ${LEAVE_TYPE_CONFIG[formData.leave_type]?.label || formData.leave_type} leave from ${formData.start_date} to ${formData.end_date} (${days} day${days !== 1 ? "s" : ""}).`,
       });
+      notifyTelegramEvent(
+        `📝 <b>New Leave Request</b>\n\n👤 <b>Employee:</b> ${escapeTelegramHtml(empName)}\n🏷 <b>Type:</b> ${escapeTelegramHtml(LEAVE_TYPE_CONFIG[formData.leave_type]?.label || formData.leave_type)}\n📅 <b>Dates:</b> ${formData.start_date} to ${formData.end_date} (${days} day${days !== 1 ? "s" : ""})`,
+        { text: "Open in HR Nexus", url: hrNexusUrl("/leave") }
+      );
 
       loadData();
     }
@@ -841,6 +846,10 @@ export default function Leave() {
         message: `${empName}'s ${cancelTargetRequest.leave_type} leave (${cancelTargetRequest.start_date} to ${cancelTargetRequest.end_date}) was cancelled.`,
         entityId: cancelTargetRequest.id,
       });
+      notifyTelegramEvent(
+        `🚫 <b>Leave Request Cancelled</b>\n\n👤 <b>Employee:</b> ${escapeTelegramHtml(empName)}\n🏷 <b>Type:</b> ${escapeTelegramHtml(cancelTargetRequest.leave_type)}\n📅 <b>Dates:</b> ${cancelTargetRequest.start_date} to ${cancelTargetRequest.end_date}`,
+        { text: "Open in HR Nexus", url: hrNexusUrl("/leave") }
+      );
 
       loadData();
       if (inspectRequest?.id === cancelTargetRequest.id) setInspectRequest(null);
@@ -952,6 +961,10 @@ export default function Leave() {
         message: `${empName}'s ${selectedRequest.leave_type} leave (${selectedRequest.start_date} to ${selectedRequest.end_date}) was ${approvalAction}.`,
         entityId: selectedRequest.id,
       });
+      notifyTelegramEvent(
+        `${approvalAction === "approved" ? "✅" : "❌"} <b>Leave ${approvalAction === "approved" ? "Approved" : "Rejected"}</b>\n\n👤 <b>Employee:</b> ${escapeTelegramHtml(empName)}\n🏷 <b>Type:</b> ${escapeTelegramHtml(selectedRequest.leave_type)}\n📅 <b>Dates:</b> ${selectedRequest.start_date} to ${selectedRequest.end_date}${approvalNote ? `\n📝 <b>Note:</b> ${escapeTelegramHtml(approvalNote)}` : ""}`,
+        { text: "Open in HR Nexus", url: hrNexusUrl("/leave") }
+      );
 
       try {
         await supabase.functions.invoke("notify-leave-status", {

@@ -270,6 +270,9 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
         type: "in",
         isException: lateMinutes > scheduleSettings.lateGraceMinutes,
         exceptionMinutes: lateMinutes,
+        date: today,
+        time: timeStr,
+        branchName: branch?.name,
       });
     }
   };
@@ -323,6 +326,9 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
         type: "out",
         isException: earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes,
         exceptionMinutes: earlyLeaveMinutes,
+        date: today,
+        time: timeStr,
+        branchName: branch?.name,
       });
     }
   };

@@ -221,6 +221,11 @@ const activityText = (a: TaskActivity) => {
   }
 };
 
+// Employees still on the payroll and workable — excludes "inactive" (former
+// employee) and "suspended" (pending review). Onboarding and on-leave staff
+// still need tasks assigned to/queued for them, so they're included.
+const WORKABLE_STATUSES = ["active", "on_leave", "onboarding"];
+
 const emptyForm: FormState = {
   title: "",
   description: "",
@@ -230,6 +235,49 @@ const emptyForm: FormState = {
   due_date: "",
   is_outside_work: false,
 };
+
+// Personal "task assigned" notifications. Employee ids -> auth user ids via
+// user_role_assignments (matched by email), same lookup pattern as training
+// enrollment notifications — an employee without an account yet is silently
+// skipped, and the actor never gets notified about their own assignment.
+async function notifyTaskAssignees(params: {
+  employeeIds: string[];
+  employees: Employee[];
+  actorUserId?: string | null;
+  title: string;
+  message: string;
+  entityId?: string | null;
+}) {
+  const targets = params.employees.filter((e) => params.employeeIds.includes(e.id) && e.email);
+  if (targets.length === 0) return;
+
+  const emails = targets.map((e) => e.email as string);
+  const { data: assignments } = await supabase
+    .from("user_role_assignments")
+    .select("email, user_id")
+    .in("email", emails)
+    .is("deleted_at", null);
+  const userIdsByEmail = new Map(
+    (assignments || [])
+      .filter((a: any) => a.user_id)
+      .map((a: any) => [String(a.email).toLowerCase(), a.user_id])
+  );
+
+  await Promise.all(
+    targets.map((emp) => {
+      const recipientUserId = userIdsByEmail.get((emp.email as string).toLowerCase());
+      if (!recipientUserId || recipientUserId === params.actorUserId) return Promise.resolve(true);
+      return notify({
+        source: "tasks",
+        type: "info",
+        title: params.title,
+        message: params.message,
+        entityId: params.entityId,
+        recipientUserId,
+      });
+    })
+  );
+}
 
 export default function TasksPage() {
   const { user } = useAuth();
@@ -242,6 +290,11 @@ export default function TasksPage() {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  // Who this user can pick in "Assign To". Branch managers see every active
+  // employee company-wide here even though `employees` (task visibility,
+  // the assignee filter, and the report matrix) stays scoped to their own
+  // branch — assigning shouldn't be limited by what tasks they can see.
+  const [assignableEmployees, setAssignableEmployees] = useState<Employee[]>([]);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"board" | "list" | "report" | "my_report" | "admin_report">("board");
@@ -325,7 +378,7 @@ export default function TasksPage() {
       .eq("email", user.email)
       .maybeSingle();
     setMyEmployee(me);
-    if (!me) { setEmployees([]); setTasks([]); setLoading(false); return; }
+    if (!me) { setEmployees([]); setAssignableEmployees([]); setTasks([]); setLoading(false); return; }
 
     if (canViewAll) {
       const empQuery = me.branch_id
@@ -336,6 +389,7 @@ export default function TasksPage() {
         supabase.from("tasks").select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").is("deleted_at", null).order("created_at", { ascending: false }),
       ]);
       setEmployees(emp || []);
+      setAssignableEmployees(emp || []);
       setTasks((t as any) || []);
       setLoading(false);
       return;
@@ -358,6 +412,7 @@ export default function TasksPage() {
     }
 
     setEmployees([me]);
+    setAssignableEmployees([me]);
     const { data: t } = await supabase
       .from("tasks")
       .select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)")
@@ -501,6 +556,17 @@ export default function TasksPage() {
         await sendTaskNotifications([form.assigned_to], form.title.trim(), editingTask.id);
       }
       showToast("success", "Task updated successfully.");
+
+      if (form.assigned_to !== editingTask.assigned_to) {
+        notifyTaskAssignees({
+          employeeIds: [form.assigned_to],
+          employees: assignableEmployees,
+          actorUserId: user?.id,
+          title: "Task assigned to you",
+          message: `"${form.title.trim()}" was assigned to you${form.due_date ? ` — due ${formatDueDate(form.due_date)}` : ""}.`,
+          entityId: editingTask.id,
+        });
+      }
     } else {
       if (!form.title.trim() || assignedToIds.length === 0 || !myEmployee) return;
       setSaving(true);
@@ -520,6 +586,14 @@ export default function TasksPage() {
       if (error) { showToast("error", "Couldn't create task."); return; }
       await sendTaskNotifications(assignedToIds, form.title.trim(), inserted?.[0]?.id);
       showToast("success", `${assignedToIds.length} task${assignedToIds.length === 1 ? "" : "s"} created successfully.`);
+
+      notifyTaskAssignees({
+        employeeIds: assignedToIds,
+        employees: assignableEmployees,
+        actorUserId: user?.id,
+        title: "New task assigned",
+        message: `"${form.title.trim()}" was assigned to you${form.due_date ? ` — due ${formatDueDate(form.due_date)}` : ""}.`,
+      });
     }
     setShowModal(false);
     loadData();
@@ -2537,21 +2611,46 @@ export default function TasksPage() {
                       {canAssign ? (
                         editingTask ? (
                           <EmployeeSearchSelect
-                            employees={employees}
+                            employees={assignableEmployees}
                             value={form.assigned_to}
                             onChange={(id) => setForm({ ...form, assigned_to: id })}
                           />
                         ) : (
                           <div className="relative" ref={taskRef}>
-                            <div className="relative">
-                              <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+                            <div
+                              onClick={() => setTaskOpen(true)}
+                              className="relative w-full min-h-[38px] flex flex-wrap items-center gap-1.5 pl-2.5 pr-8 py-1.5 bg-gray-50/70 border border-gray-200 rounded-xl focus-within:bg-white focus-within:border-[#253C7D] transition-all cursor-text"
+                            >
+                              {assignedToIds.map((id) => {
+                                const emp = assignableEmployees.find((e) => e.id === id);
+                                if (!emp) return null;
+                                return (
+                                  <span
+                                    key={id}
+                                    className="inline-flex items-center gap-1 pl-2 pr-1 py-1 rounded-lg bg-[#253C7D]/10 text-[#253C7D] text-[11px] font-bold whitespace-nowrap"
+                                  >
+                                    {emp.first_name} {emp.last_name}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setAssignedToIds((prev) => prev.filter((pid) => pid !== id));
+                                      }}
+                                      title={`Remove ${emp.first_name} ${emp.last_name}`}
+                                      className="w-3.5 h-3.5 rounded-full hover:bg-[#253C7D]/20 flex items-center justify-center cursor-pointer"
+                                    >
+                                      <i className="ri-close-line text-xs" />
+                                    </button>
+                                  </span>
+                                );
+                              })}
                               <input
                                 type="text"
-                                value={taskOpen ? taskSearch : assignedToIds.length > 0 ? `${assignedToIds.length} staff selected` : taskSearch}
+                                value={taskSearch}
                                 onChange={(e) => { setTaskSearch(e.target.value); setTaskOpen(true); }}
                                 onFocus={() => setTaskOpen(true)}
-                                placeholder="Search employees..."
-                                className="w-full pl-9 pr-8 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
+                                placeholder={assignedToIds.length === 0 ? "Search employees..." : "Add more..."}
+                                className="flex-1 min-w-[90px] bg-transparent text-xs font-semibold text-gray-900 focus:outline-none py-0.5"
                               />
                               <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                             </div>
@@ -2561,16 +2660,16 @@ export default function TasksPage() {
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const allIds = employees.map((e) => e.id);
+                                    const allIds = assignableEmployees.map((e) => e.id);
                                     const allSelected = allIds.length > 0 && allIds.every((id) => assignedToIds.includes(id));
                                     setAssignedToIds(allSelected ? [] : allIds);
                                   }}
                                   className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-[#253C7D] hover:bg-slate-50 rounded-lg transition-colors cursor-pointer mb-1 border-b border-gray-100"
                                 >
                                   <i className="ri-checkbox-multiple-line text-sm" />
-                                  {assignedToIds.length === employees.length ? "Deselect All" : `Select All (${employees.length})`}
+                                  {assignedToIds.length === assignableEmployees.length ? "Deselect All" : `Select All (${assignableEmployees.length})`}
                                 </button>
-                                {employees
+                                {assignableEmployees
                                   .filter((e) => `${e.first_name} ${e.last_name} ${e.department}`.toLowerCase().includes(taskSearch.toLowerCase()))
                                   .map((emp) => {
                                     const checked = assignedToIds.includes(emp.id);

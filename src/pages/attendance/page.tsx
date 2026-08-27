@@ -522,6 +522,10 @@ export default function AttendancePage() {
       employeeId: myEmployee.id,
       type: "in",
       isException: false,
+      date: todayYMD,
+      time: nowTime,
+      branchName: myEmployee.branches?.name,
+      department: myEmployee.department,
     });
     fetchData();
   };

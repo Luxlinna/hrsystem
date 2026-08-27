@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
 import { useTheme } from "@/context/ThemeContext";
+import { sendTelegramMessage } from "@/lib/telegramNotify";
 
 interface Branch {
   id: string;
@@ -198,6 +199,7 @@ const keyLabels: Record<string, string> = {
   leave_approval_required: "Leave Approval Required",
   auto_payroll_reminder: "Auto Payroll Reminder",
   attendance_notify_scope: "Attendance Check-in/Check-out Notification Scope",
+  telegram_notify_enabled: "Telegram Group Notifications",
 };
 
 const notificationKeys = [
@@ -252,6 +254,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [edited, setEdited] = useState<Record<string, string>>();
+  const [testingTelegram, setTestingTelegram] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -338,6 +341,18 @@ export default function Settings() {
     setSaving(false);
     loadSettings();
     toast("Saved", "Notification preferences updated.", "success");
+  };
+
+  const handleTestTelegram = async () => {
+    setTestingTelegram(true);
+    try {
+      await sendTelegramMessage("🧪 <b>Test message</b>\nTelegram notifications are connected to HR Nexus.");
+      toast("Sent", "Test message posted to the Telegram group.", "success");
+    } catch (err: any) {
+      toast("Error", err?.message || "Failed to send Telegram test message.", "error");
+    } finally {
+      setTestingTelegram(false);
+    }
   };
 
   const getVal = (key: string) =>
@@ -814,6 +829,45 @@ export default function Settings() {
                   Save
                 </button>
               )}
+            </div>
+          </div>
+
+          <div className="border border-gray-100 rounded-xl p-5">
+            <label className="text-[13px] font-semibold text-gray-700">
+              Telegram group notifications
+            </label>
+            <p className="text-[11px] text-gray-500 mt-0.5 mb-3">
+              Posts HR events to a Telegram group: attendance (check-in, checkout, late check-in, early
+              checkout — same scope as above), leave requests and approvals, meeting room bookings, and
+              new announcements. Requires TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to be set as secrets on
+              the send-telegram-notification Edge Function.
+            </p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className="flex items-center gap-1.5 text-[12px] text-gray-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={getVal("telegram_notify_enabled") === "true"}
+                  onChange={(e) => updateValue("telegram_notify_enabled", String(e.target.checked))}
+                  className="w-4 h-4 rounded border-gray-300 text-[#253C7D]"
+                />
+                Enabled
+              </label>
+              {edited["telegram_notify_enabled"] !== undefined && (
+                <button
+                  onClick={() => saveSetting("telegram_notify_enabled")}
+                  disabled={saving}
+                  className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
+                >
+                  Save
+                </button>
+              )}
+              <button
+                onClick={handleTestTelegram}
+                disabled={testingTelegram}
+                className="ml-auto px-4 py-2 border-2 border-gray-200 text-gray-600 text-[12px] font-semibold rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-40 whitespace-nowrap"
+              >
+                {testingTelegram ? "Sending…" : "Send test message"}
+              </button>
             </div>
           </div>
         </div>
