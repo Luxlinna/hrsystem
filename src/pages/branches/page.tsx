@@ -1,350 +1,49 @@
-import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
-import { usePermissions } from "@/hooks/usePermissions";
-import { useAuth } from "@/context/AuthContext";
-import { logActivity } from "@/lib/audit";
-import { toast } from "@/components/Toast";
-import { getCurrentPosition } from "@/lib/geo";
-import { geocodeAddress, loadGoogleMaps, reverseGeocode } from "@/lib/geocode";
-
-interface Branch {
-  id: string;
-  name: string;
-  location: string;
-  manager_name: string;
-  employee_count: number;
-  status: string;
-  created_at: string;
-  latitude: number | null;
-  longitude: number | null;
-  geofence_radius_m: number | null;
-  work_start_time: string | null;
-  work_end_time: string | null;
-  deleted_at: string | null;
-  deleted_by: string | null;
-}
-
-interface Employee {
-  id: string;
-  first_name: string;
-  last_name: string;
-  role: string;
-  department: string;
-  status: string;
-  email?: string;
-}
-
-const statusColors: Record<string, string> = {
-  active: "bg-emerald-50 text-emerald-700",
-  inactive: "bg-gray-100 text-gray-500",
-  pending: "bg-amber-50 text-amber-700",
-};
-
-const deptColors = [
-  "bg-[#253C7D]/10 text-[#253C7D]",
-  "bg-violet-50 text-violet-700",
-  "bg-amber-50 text-amber-700",
-  "bg-rose-50 text-rose-700",
-  "bg-sky-50 text-sky-700",
-  "bg-emerald-50 text-emerald-700",
-];
+import { BranchesHeader } from "./components/BranchesHeader";
+import { BranchStatsRow } from "./components/BranchStatsRow";
+import { BranchFilters } from "./components/BranchFilters";
+import { BranchGrid } from "./components/BranchGrid";
+import { BranchDetailDrawer } from "./components/BranchDetailDrawer";
+import { BranchModal } from "./components/BranchModal";
+import { useBranches } from "./hooks/useBranches";
 
 export default function Branches() {
-  const { user } = useAuth();
-  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
-  const { role, isAdmin } = usePermissions();
-  // Every role with the "branches" module manages it, except Chairman —
-  // an explicitly read-only, board-level oversight role.
-  const canManage = isAdmin || (!!role && role.name !== "Chairman");
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
-  const [branchEmployees, setBranchEmployees] = useState<Employee[]>([]);
-  const [empLoading, setEmpLoading] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [submitting, setSubmitting] = useState(false);
-  const [locating, setLocating] = useState(false);
-  const [geocoding, setGeocoding] = useState(false);
-  const [addressLookup, setAddressLookup] = useState("");
-  const addressInputRef = useRef<HTMLInputElement | null>(null);
-  const placesAutocompleteRef = useRef<any>(null);
-  const emptyForm = {
-    name: "",
-    location: "",
-    manager_name: "",
-    status: "active",
-    latitude: "",
-    longitude: "",
-    geofence_radius_m: "100",
-    work_start_time: "",
-    work_end_time: "",
-  };
-  const [form, setForm] = useState(emptyForm);
-
-  const loadBranches = async () => {
-    const { data } = await supabase.from("branches").select("id, name, location, manager_name, employee_count, status, created_at, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, deleted_at, deleted_by").is("deleted_at", null).order("employee_count", { ascending: false });
-    setBranches(data || []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadBranches();
-    const channel = supabase.channel("branches-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "branches" }, () => loadBranches())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  useEffect(() => {
-    if (!showAddModal || !addressInputRef.current) return;
-    let cancelled = false;
-
-    loadGoogleMaps()
-      .then(() => {
-        if (cancelled || !addressInputRef.current || placesAutocompleteRef.current) return;
-        const autocomplete = new (window as any).google.maps.places.Autocomplete(addressInputRef.current, {
-          fields: ["formatted_address", "geometry", "name"],
-          types: ["geocode", "establishment"],
-        });
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-          const loc = place?.geometry?.location;
-          if (!loc) {
-            toast("Error", "That place doesn't include coordinates. Try a more specific address.", "error");
-            return;
-          }
-          const formattedAddress = place.formatted_address || place.name || addressInputRef.current?.value || "";
-          setAddressLookup(formattedAddress);
-          setForm((f) => ({
-            ...f,
-            location: f.location || formattedAddress,
-            latitude: loc.lat().toFixed(6),
-            longitude: loc.lng().toFixed(6),
-          }));
-          toast("Location selected", "Coordinates added to the branch form.", "success");
-        });
-        placesAutocompleteRef.current = autocomplete;
-      })
-      .catch(() => {
-        // Manual lookup will surface a user-facing configuration/load error.
-      });
-
-    return () => {
-      cancelled = true;
-      if (placesAutocompleteRef.current) {
-        (window as any).google?.maps?.event?.clearInstanceListeners(placesAutocompleteRef.current);
-        placesAutocompleteRef.current = null;
-      }
-    };
-  }, [showAddModal]);
-
-  const detailRequestId = useRef(0);
-
-  const openDetail = async (branch: Branch) => {
-    setSelectedBranch(branch);
-    setEmpLoading(true);
-    const requestId = ++detailRequestId.current;
-    const { data } = await supabase
-      .from("employees")
-      .select("id, first_name, last_name, role, department, status, email")
-      .eq("branch_id", branch.id)
-      .order("department");
-    // Discard this response if the user has since clicked into another
-    // branch — an out-of-order network response would otherwise show the
-    // wrong branch's employee list under the currently-open panel.
-    if (requestId !== detailRequestId.current) return;
-    setBranchEmployees(data || []);
-    setEmpLoading(false);
-  };
-
-  const handleAddBranch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name || !form.location || !form.manager_name || !canManage) return;
-    setSubmitting(true);
-    const latitude = form.latitude.trim() ? Number(form.latitude) : null;
-    const longitude = form.longitude.trim() ? Number(form.longitude) : null;
-    if ((latitude != null && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) ||
-      (longitude != null && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180))) {
-      setSubmitting(false);
-      toast("Error", "Enter valid latitude and longitude values before saving.", "error");
-      return;
-    }
-    const geofence_radius_m = form.geofence_radius_m.trim() ? Number(form.geofence_radius_m) : 100;
-    const work_start_time = form.work_start_time.trim() || null;
-    const work_end_time = form.work_end_time.trim() || null;
-    let entityId: string | null = editingBranchId;
-    if (editingBranchId) {
-      const { error } = await supabase.from("branches").update({
-        name: form.name,
-        location: form.location,
-        manager_name: form.manager_name,
-        status: form.status,
-        latitude,
-        longitude,
-        geofence_radius_m,
-        work_start_time,
-        work_end_time,
-      }).eq("id", editingBranchId);
-      if (error) { setSubmitting(false); toast("Error", "Failed to save branch", "error"); return; }
-      if (selectedBranch?.id === editingBranchId) {
-        setSelectedBranch({ ...selectedBranch, name: form.name, location: form.location, manager_name: form.manager_name, status: form.status, latitude, longitude, geofence_radius_m, work_start_time, work_end_time });
-      }
-    } else {
-      const { data, error } = await supabase.from("branches").insert({
-        name: form.name,
-        location: form.location,
-        manager_name: form.manager_name,
-        status: form.status,
-        employee_count: 0,
-        latitude,
-        longitude,
-        geofence_radius_m,
-        work_start_time,
-        work_end_time,
-      }).select().single();
-      if (error) { setSubmitting(false); toast("Error", "Failed to create branch", "error"); return; }
-      entityId = data?.id ?? null;
-    }
-    logActivity({
-      module: "branches",
-      action: editingBranchId ? "updated" : "created",
-      entityType: "branch",
-      entityId,
-      actorName,
-      actorRole: role?.name || "Unknown",
-      description: editingBranchId ? `Branch "${form.name}" details updated` : `New branch "${form.name}" created`,
-    });
-    setForm(emptyForm);
-    setAddressLookup("");
-    setEditingBranchId(null);
-    setShowAddModal(false);
-    setSubmitting(false);
-    loadBranches();
-  };
-
-  const openEditModal = (branch: Branch) => {
-    if (!canManage) return;
-    setForm({
-      name: branch.name,
-      location: branch.location,
-      manager_name: branch.manager_name,
-      status: branch.status,
-      latitude: branch.latitude != null ? String(branch.latitude) : "",
-      longitude: branch.longitude != null ? String(branch.longitude) : "",
-      geofence_radius_m: branch.geofence_radius_m != null ? String(branch.geofence_radius_m) : "100",
-      work_start_time: branch.work_start_time ? branch.work_start_time.slice(0, 5) : "",
-      work_end_time: branch.work_end_time ? branch.work_end_time.slice(0, 5) : "",
-    });
-    setAddressLookup(branch.location || "");
-    setEditingBranchId(branch.id);
-    setShowAddModal(true);
-  };
-
-  // Lets an admin capture accurate geofence coordinates by physically
-  // standing at the branch, instead of guessing/typing decimal degrees by
-  // hand — which is exactly how a branch pin can end up hundreds of
-  // meters off and cause valid check-ins to be rejected as "too far".
-  const useCurrentLocation = async () => {
-    setLocating(true);
-    try {
-      const pos = await getCurrentPosition();
-      const latitude = pos.coords.latitude;
-      const longitude = pos.coords.longitude;
-      let location = "";
-      try {
-        const result = await reverseGeocode(latitude, longitude);
-        location = result.formattedAddress;
-        setAddressLookup(result.formattedAddress);
-      } catch {
-        setAddressLookup("");
-      }
-      setForm((f) => ({
-        ...f,
-        location: location || f.location,
-        latitude: latitude.toFixed(6),
-        longitude: longitude.toFixed(6),
-      }));
-      toast("Location captured", `Accurate to about ±${Math.round(pos.coords.accuracy)}m`, "success");
-    } catch (err: any) {
-      toast(
-        "Error",
-        err?.code === 1
-          ? "Location access was denied for this site — check your browser's site permissions."
-          : "Couldn't get your location. On a laptop/desktop this is usually the OS-level Location Services toggle, not the browser — check your system settings and try again.",
-        "error"
-      );
-    }
-    setLocating(false);
-  };
-
-  // Alternative to standing at the branch: type its address and look up
-  // coordinates via Google's geocoder — useful when setting up a branch
-  // remotely, before anyone's physically there to tap "use my location".
-  const handleGeocodeAddress = async () => {
-    if (!addressLookup.trim()) return;
-    setGeocoding(true);
-    try {
-      const result = await geocodeAddress(addressLookup.trim());
-      setAddressLookup(result.formattedAddress);
-      setForm((f) => ({
-        ...f,
-        location: f.location || result.formattedAddress,
-        latitude: result.lat.toFixed(6),
-        longitude: result.lng.toFixed(6),
-      }));
-      toast(
-        result.precise ? "Exact match found" : "Approximate match — please verify",
-        result.formattedAddress,
-        result.precise ? "success" : "warning"
-      );
-    } catch (err: any) {
-      toast("Error", err?.message || "Couldn't look up that address.", "error");
-    }
-    setGeocoding(false);
-  };
-
-  const toggleBranchStatus = async (branch: Branch) => {
-    if (!canManage) return;
-    const newStatus = branch.status === "active" ? "inactive" : "active";
-    const { error } = await supabase.from("branches").update({ status: newStatus }).eq("id", branch.id);
-    if (error) { toast("Error", "Failed to update branch status", "error"); return; }
-    setSelectedBranch((prev) => (prev && prev.id === branch.id ? { ...prev, status: newStatus } : prev));
-    logActivity({ module: "branches", action: "updated", entityType: "branch", entityId: branch.id, actorName, actorRole: role?.name || "Unknown", description: `Branch "${branch.name}" ${newStatus === "active" ? "reactivated" : "deactivated"}` });
-    loadBranches();
-  };
-
-  const handleDeleteBranch = async (branch: Branch) => {
-    if (!isAdmin) return;
-    if (!confirm(`Move "${branch.name}" to the Recycle Bin? The branch can be restored later.`)) return;
-    const { error } = await supabase.from("branches").update({ deleted_at: new Date().toISOString(), deleted_by: actorName }).eq("id", branch.id);
-    if (error) { toast("Error", "Failed to delete branch", "error"); return; }
-    logActivity({ module: "branches", action: "deleted", entityType: "branch", entityId: branch.id, actorName, actorRole: role?.name || "Unknown", description: `Branch "${branch.name}" moved to the Recycle Bin` });
-    toast("Branch deleted", `"${branch.name}" moved to the Recycle Bin.`, "success");
-    setSelectedBranch(null);
-    setBranchEmployees([]);
-    loadBranches();
-  };
-
-  const filtered = branches.filter((b) => {
-    const matchSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.manager_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = filterStatus === "all" || b.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
-
-  const totalEmployees = branches.reduce((s, b) => s + (b.employee_count || 0), 0);
-  const activeBranches = branches.filter((b) => b.status === "active").length;
-
-  const deptGroups = branchEmployees.reduce((acc: Record<string, Employee[]>, emp) => {
-    const d = emp.department || "Other";
-    if (!acc[d]) acc[d] = [];
-    acc[d].push(emp);
-    return acc;
-  }, {});
+  const {
+    canManage,
+    isAdmin,
+    branches,
+    loading,
+    selectedBranch,
+    branchEmployees,
+    empLoading,
+    showAddModal,
+    editingBranchId,
+    searchTerm,
+    setSearchTerm,
+    filterStatus,
+    setFilterStatus,
+    submitting,
+    locating,
+    geocoding,
+    addressLookup,
+    setAddressLookup,
+    addressInputRef,
+    form,
+    setForm,
+    filtered,
+    totalEmployees,
+    activeBranches,
+    deptGroups,
+    openDetail,
+    closeDetail,
+    openAddModal,
+    openEditModal,
+    closeModal,
+    handleAddBranch,
+    useCurrentLocation,
+    handleGeocodeAddress,
+    toggleBranchStatus,
+    handleDeleteBranch,
+  } = useBranches();
 
   if (loading) {
     return (
@@ -356,561 +55,74 @@ export default function Branches() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex font-sans">
-      {/* Main */}
+      {/* Main Content */}
       <div className={`flex-1 min-w-0 transition-all duration-300 ${selectedBranch ? "sm:mr-[420px]" : ""}`}>
         <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                <span>Workspace</span>
-                <i className="ri-arrow-right-s-line text-xs" />
-                <span className="text-[#253C7D] font-bold">Branch Management</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-                Branch Management
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                {activeBranches} active branches &middot; {totalEmployees.toLocaleString()} total employees
-              </p>
-            </div>
-            {canManage && (
-              <button
-                onClick={() => { setForm(emptyForm); setAddressLookup(""); setEditingBranchId(null); setShowAddModal(true); }}
-                className="inline-flex items-center gap-2 bg-[#253C7D] text-white px-4 py-2.5 rounded-xl text-[13px] font-semibold hover:bg-[#1E3066] transition-all shadow-md shadow-[#253C7D]/20 whitespace-nowrap cursor-pointer"
-              >
-                <i className="ri-add-line" />
-                Add Branch
-              </button>
-            )}
-          </div>
+          <BranchesHeader
+            canManage={canManage}
+            activeBranches={activeBranches}
+            totalEmployees={totalEmployees}
+            onOpenAddModal={openAddModal}
+          />
 
           {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-6">
-            {[
-              { label: "Total Branches", value: branches.length, icon: "ri-building-2-line", color: "#253C7D" },
-              { label: "Active", value: activeBranches, icon: "ri-checkbox-circle-line", color: "#059669" },
-              { label: "Total Employees", value: totalEmployees.toLocaleString(), icon: "ri-user-3-line", color: "#7C3AED" },
-              { label: "Avg per Branch", value: Math.round(totalEmployees / Math.max(branches.length, 1)), icon: "ri-group-line", color: "#D97706" },
-            ].map((s) => (
-              <div key={s.label} className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate pr-2">{s.label}</span>
-                  <div className="w-7 h-7 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${s.color}14`, color: s.color }}>
-                    <i className={`${s.icon} text-sm`} />
-                  </div>
-                </div>
-                <p className="text-xl font-black text-gray-900 mt-2">{s.value}</p>
-              </div>
-            ))}
-          </div>
+          <BranchStatsRow
+            totalBranches={branches.length}
+            activeBranches={activeBranches}
+            totalEmployees={totalEmployees}
+          />
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <div className="relative flex-1">
-              <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-              <input
-                type="text"
-                placeholder="Search branch, location, manager..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] bg-white"
-              />
-            </div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
+          <BranchFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+          />
 
           {/* Branch Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filtered.map((b) => (
-              <div
-                key={b.id}
-                className={`bg-white border rounded-2xl shadow-2xs hover:shadow-xs p-5 transition-all cursor-pointer hover:border-[#253C7D]/30 ${
-                  selectedBranch?.id === b.id ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-200/80"
-                }`}
-                onClick={() => openDetail(b)}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#253C7D]/10 flex items-center justify-center">
-                      <i className="ri-building-2-line text-[#253C7D] text-lg" />
-                    </div>
-                    <div>
-                      <p className="text-[14px] font-semibold text-gray-900 leading-tight">{b.name}</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">
-                        <i className="ri-map-pin-line" />
-                        {b.location}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${statusColors[b.status] || "bg-gray-50 text-gray-500"}`}>
-                      {b.status}
-                    </span>
-                    {isAdmin && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDeleteBranch(b); }}
-                        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
-                        title="Delete branch"
-                      >
-                        <i className="ri-delete-bin-line text-xs" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-50 pt-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] text-gray-500 flex items-center gap-1.5">
-                      <i className="ri-user-star-line" /> Manager
-                    </span>
-                    <span className="text-[12px] font-medium text-gray-700">{b.manager_name}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] text-gray-500 flex items-center gap-1.5">
-                      <i className="ri-team-line" /> Employees
-                    </span>
-                    <span className="text-[13px] font-bold text-[#253C7D]">{b.employee_count}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] text-gray-500 flex items-center gap-1.5">
-                      <i className="ri-calendar-line" /> Since
-                    </span>
-                    <span className="text-[12px] text-gray-600">
-                      {new Date(b.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={(e) => { e.stopPropagation(); openDetail(b); }}
-                  className="mt-4 w-full py-2 border border-gray-200 text-gray-600 text-[12px] font-medium rounded-lg hover:bg-[#253C7D] hover:text-white hover:border-[#253C7D] transition-all cursor-pointer"
-                >
-                  View Details <i className="ri-arrow-right-line ml-1" />
-                </button>
-              </div>
-            ))}
-
-            {filtered.length === 0 && (
-              <div className="sm:col-span-2 xl:col-span-3 text-center py-20 bg-white border border-gray-200/80 rounded-2xl shadow-2xs">
-                <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-3">
-                  <i className="ri-building-2-line text-2xl text-gray-300" />
-                </div>
-                <p className="text-sm font-bold text-gray-700">No branches match your search</p>
-                <p className="text-xs text-gray-400 mt-1">Try adjusting your search or status filter.</p>
-              </div>
-            )}
-          </div>
+          <BranchGrid
+            branches={filtered}
+            selectedBranchId={selectedBranch?.id ?? null}
+            isAdmin={isAdmin}
+            onSelectBranch={openDetail}
+            onDeleteBranch={handleDeleteBranch}
+          />
         </div>
       </div>
 
       {/* Detail Panel */}
-      {selectedBranch && (
-        <div className="fixed right-0 top-0 h-full w-full sm:w-[420px] bg-white border-l border-gray-100 overflow-y-auto z-40 flex flex-col">
-          {/* Panel Header */}
-          <div className="bg-gradient-to-br from-[#253C7D] to-[#29ABE2] p-6 text-white">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/20 capitalize`}>
-                  {selectedBranch.status}
-                </span>
-                <h2 className="text-lg font-bold mt-2 leading-tight">{selectedBranch.name}</h2>
-                <p className="text-white/70 text-[13px] mt-1 flex items-center gap-1.5">
-                  <i className="ri-map-pin-line" />
-                  {selectedBranch.location}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {canManage && (
-                  <button
-                    onClick={() => openEditModal(selectedBranch)}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
-                    title="Edit branch"
-                  >
-                    <i className="ri-edit-line text-white text-sm" />
-                  </button>
-                )}
-                {isAdmin && (
-                  <button
-                    onClick={() => handleDeleteBranch(selectedBranch)}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-red-500/80 transition-colors cursor-pointer"
-                    title="Delete branch"
-                  >
-                    <i className="ri-delete-bin-line text-white text-sm" />
-                  </button>
-                )}
-                <button
-                  onClick={() => { setSelectedBranch(null); setBranchEmployees([]); }}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
-                >
-                  <i className="ri-close-line text-white" />
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3 mt-5">
-              <div className="bg-white/10 rounded-lg p-3 text-center">
-                <p className="text-xl font-bold">{selectedBranch.employee_count}</p>
-                <p className="text-[10px] text-white/70 mt-0.5">Employees</p>
-              </div>
-              <div className="bg-white/10 rounded-lg p-3 text-center">
-                <p className="text-xl font-bold">{Object.keys(deptGroups).length}</p>
-                <p className="text-[10px] text-white/70 mt-0.5">Departments</p>
-              </div>
-              <div className="bg-white/10 rounded-lg p-3 text-center">
-                <p className="text-[13px] font-bold leading-tight">{new Date(selectedBranch.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</p>
-                <p className="text-[10px] text-white/70 mt-0.5">Est.</p>
-              </div>
-            </div>
-          </div>
+      <BranchDetailDrawer
+        branch={selectedBranch}
+        employees={branchEmployees}
+        deptGroups={deptGroups}
+        empLoading={empLoading}
+        canManage={canManage}
+        isAdmin={isAdmin}
+        onClose={closeDetail}
+        onOpenEditModal={openEditModal}
+        onDeleteBranch={handleDeleteBranch}
+        onToggleStatus={toggleBranchStatus}
+      />
 
-          {/* Branch Info */}
-          <div className="p-5 border-b border-gray-100">
-            <h3 className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Branch Info</h3>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#253C7D]/10">
-                  <i className="ri-user-star-line text-[#253C7D] text-sm" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-gray-400">Branch Manager</p>
-                  <p className="text-[13px] font-semibold text-gray-800">{selectedBranch.manager_name}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-50">
-                  <i className="ri-map-pin-2-line text-amber-600 text-sm" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-gray-400">Location</p>
-                  <p className="text-[13px] font-semibold text-gray-800">{selectedBranch.location}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-violet-50">
-                  <i className="ri-checkbox-circle-line text-violet-600 text-sm" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-gray-400">Status</p>
-                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize ${statusColors[selectedBranch.status] || ""}`}>
-                    {selectedBranch.status}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-sky-50">
-                  <i className="ri-fingerprint-line text-sky-600 text-sm" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-gray-400">Check-In Geofence</p>
-                  {selectedBranch.latitude != null && selectedBranch.longitude != null ? (
-                    <p className="text-[13px] font-semibold text-gray-800">
-                      {selectedBranch.geofence_radius_m || 100}m radius
-                      <span className="text-[11px] font-normal text-gray-400 ml-1">
-                        ({selectedBranch.latitude.toFixed(5)}, {selectedBranch.longitude.toFixed(5)})
-                      </span>
-                    </p>
-                  ) : (
-                    <p className="text-[13px] font-semibold text-gray-400">Not set — check-in allowed from anywhere</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50">
-                  <i className="ri-time-line text-emerald-600 text-sm" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-gray-400">Work Schedule</p>
-                  {selectedBranch.work_start_time || selectedBranch.work_end_time ? (
-                    <p className="text-[13px] font-semibold text-gray-800">
-                      {selectedBranch.work_start_time
-                        ? new Date(`2000-01-01T${selectedBranch.work_start_time}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-                        : "Company default"}
-                      {" – "}
-                      {selectedBranch.work_end_time
-                        ? new Date(`2000-01-01T${selectedBranch.work_end_time}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-                        : "no end time set"}
-                    </p>
-                  ) : (
-                    <p className="text-[13px] font-semibold text-gray-400">Using company default start time, no early-leave check</p>
-                  )}
-                </div>
-              </div>
-            </div>
-            {canManage && (
-              <button
-                onClick={() => toggleBranchStatus(selectedBranch)}
-                className={`w-full mt-4 py-2 rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${
-                  selectedBranch.status === "active"
-                    ? "bg-rose-50 text-rose-600 hover:bg-rose-100"
-                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                }`}
-              >
-                <i className={selectedBranch.status === "active" ? "ri-close-circle-line mr-1" : "ri-checkbox-circle-line mr-1"} />
-                {selectedBranch.status === "active" ? "Deactivate Branch" : "Reactivate Branch"}
-              </button>
-            )}
-          </div>
-
-          {/* Department Breakdown */}
-          {Object.keys(deptGroups).length > 0 && (
-            <div className="p-5 border-b border-gray-100">
-              <h3 className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Departments</h3>
-              <div className="space-y-2">
-                {Object.entries(deptGroups).map(([dept, emps], i) => (
-                  <div key={dept} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${deptColors[i % deptColors.length]}`}>
-                        {dept}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#253C7D] rounded-full"
-                          style={{ width: `${Math.min((emps.length / branchEmployees.length) * 100, 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-[12px] text-gray-600 font-medium w-6 text-right">{emps.length}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Employee List */}
-          <div className="p-5 flex-1">
-            <h3 className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              Employees {branchEmployees.length > 0 && `(${branchEmployees.length})`}
-            </h3>
-            {empLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="w-6 h-6 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : branchEmployees.length === 0 ? (
-              <div className="text-center py-10">
-                <i className="ri-user-3-line text-3xl text-gray-200" />
-                <p className="text-[13px] text-gray-400 mt-2">No employees assigned to this branch</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {branchEmployees.map((emp) => (
-                  <div key={emp.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] font-bold text-xs shrink-0">
-                      {emp.first_name[0]}{emp.last_name[0]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-gray-900 truncate">{emp.first_name} {emp.last_name}</p>
-                      <p className="text-[11px] text-gray-500 truncate">{emp.role} &middot; {emp.department}</p>
-                    </div>
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full capitalize ${
-                      emp.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
-                    }`}>
-                      {emp.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Add Branch Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
-          <form
-            onSubmit={handleAddBranch}
-            className="bg-white rounded-2xl w-full max-w-2xl my-8 sm:my-0 max-h-[calc(100vh-4rem)] flex flex-col shadow-2xl border border-gray-100"
-          >
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
-              <div>
-                <h2 className="text-[16px] font-bold text-gray-900">{editingBranchId ? "Edit Branch" : "Add New Branch"}</h2>
-                <p className="text-[12px] text-gray-500 mt-0.5">{editingBranchId ? "Update this branch's details" : "Create a new office or branch location"}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setShowAddModal(false); setEditingBranchId(null); }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
-              >
-                <i className="ri-close-line text-gray-500" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-5 overflow-y-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="e.g., West Branch - Los Angeles"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Location / City *</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.location}
-                    onChange={(e) => setForm({ ...form, location: e.target.value })}
-                    placeholder="e.g., Los Angeles, CA"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch Manager *</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.manager_name}
-                    onChange={(e) => setForm({ ...form, manager_name: e.target.value })}
-                    placeholder="e.g., John Smith"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Status</label>
-                  <select
-                    value={form.status}
-                    onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="pending">Pending</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-100 pt-5">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[12px] font-semibold text-gray-700">Check-In Geofence (optional)</label>
-                  <button
-                    type="button"
-                    onClick={useCurrentLocation}
-                    disabled={locating}
-                    className="text-[11px] font-semibold text-[#253C7D] hover:underline disabled:opacity-60 cursor-pointer"
-                  >
-                    <i className="ri-map-pin-user-line mr-1" />
-                    {locating ? "Locating..." : "Use my current location"}
-                  </button>
-                </div>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    ref={addressInputRef}
-                    type="text"
-                    value={addressLookup}
-                    onChange={(e) => setAddressLookup(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleGeocodeAddress(); } }}
-                    placeholder="Or type an address to look up..."
-                    className="flex-1 min-w-0 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleGeocodeAddress}
-                    disabled={geocoding || !addressLookup.trim()}
-                    className="px-3 py-2.5 border border-gray-200 rounded-lg text-[12px] font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60 cursor-pointer whitespace-nowrap"
-                  >
-                    {geocoding ? "Looking up..." : "Look up"}
-                  </button>
-                </div>
-                <p className="text-[11px] text-gray-400 mb-2">
-                  <i className="ri-information-line mr-1" />
-                  Usually building-accurate, but always double-check the result — if it comes back "approximate," prefer "current location" while standing at the branch instead.
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <input
-                    type="number"
-                    step="any"
-                    value={form.latitude}
-                    onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-                    placeholder="Latitude"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <input
-                    type="number"
-                    step="any"
-                    value={form.longitude}
-                    onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-                    placeholder="Longitude"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <div className="col-span-2 sm:col-span-1 flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="10"
-                      value={form.geofence_radius_m}
-                      onChange={(e) => setForm({ ...form, geofence_radius_m: e.target.value })}
-                      placeholder="100"
-                      className="w-20 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                    />
-                    <span className="text-[11px] text-gray-500">meters radius</span>
-                  </div>
-                </div>
-                <p className="text-[11px] text-gray-400 mt-1.5">
-                  Leave latitude/longitude blank to skip location checks for this branch — employees can check in from anywhere.
-                </p>
-              </div>
-
-              <div className="border-t border-gray-100 pt-5">
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Work Schedule (optional)</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <input
-                      type="time"
-                      value={form.work_start_time}
-                      onChange={(e) => setForm({ ...form, work_start_time: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                    />
-                    <p className="text-[11px] text-gray-400 mt-1">Start time — check-ins after this count as late</p>
-                  </div>
-                  <div>
-                    <input
-                      type="time"
-                      value={form.work_end_time}
-                      onChange={(e) => setForm({ ...form, work_end_time: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-                    />
-                    <p className="text-[11px] text-gray-400 mt-1">End time — check-outs before this count as early</p>
-                  </div>
-                </div>
-                <p className="text-[11px] text-gray-400 mt-1.5">
-                  Leave start time blank to use the company default (Settings). Leave end time blank to skip early check-out detection for this branch.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3 p-6 border-t border-gray-100 shrink-0">
-              <button
-                type="button"
-                onClick={() => { setShowAddModal(false); setEditingBranchId(null); }}
-                className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-60 cursor-pointer"
-              >
-                {submitting ? "Saving..." : editingBranchId ? "Save Changes" : "Create Branch"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      {/* Add / Edit Branch Modal */}
+      <BranchModal
+        isOpen={showAddModal}
+        editingBranchId={editingBranchId}
+        form={form}
+        setForm={setForm}
+        addressLookup={addressLookup}
+        setAddressLookup={setAddressLookup}
+        addressInputRef={addressInputRef}
+        locating={locating}
+        geocoding={geocoding}
+        submitting={submitting}
+        onClose={closeModal}
+        onSubmit={handleAddBranch}
+        onUseCurrentLocation={useCurrentLocation}
+        onGeocodeAddress={handleGeocodeAddress}
+      />
     </div>
   );
 }
