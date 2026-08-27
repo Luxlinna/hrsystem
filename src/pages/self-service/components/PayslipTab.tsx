@@ -32,7 +32,7 @@ export default function PayslipTab({ employeeId, employeeName }: Props) {
     setLoading(true);
     supabase
       .from("payroll_records")
-      .select("*")
+      .select("id, month, base_salary, bonus, deductions, net_pay, status")
       .eq("employee_id", employeeId)
       .order("month", { ascending: false })
       .then(({ data }) => {

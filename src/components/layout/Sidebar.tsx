@@ -60,7 +60,6 @@ const navGroups = [
   {
     label: "System",
     items: [
-      { path: "/unity-apps", label: "Unity", icon: "ri-apps-line", module: "unity-apps" },
       { path: "/settings", label: "Settings", icon: "ri-settings-3-line", module: "settings" },
     ],
   },

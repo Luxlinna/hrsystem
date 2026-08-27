@@ -10,6 +10,7 @@ import BenefitsTab from "./components/BenefitsTab";
 import CheckInTab from "./components/CheckInTab";
 import AttendanceTab from "./components/AttendanceTab";
 import DailyReportTab from "./components/DailyReportTab";
+import WorkOutsideTab from "./components/WorkOutsideTab";
 
 interface Employee {
   id: string;
@@ -39,6 +40,7 @@ const TABS = [
   { id: "leave", label: "My Leave", icon: "ri-calendar-event-line" },
   { id: "attendance", label: "My Attendance", icon: "ri-time-line" },
   { id: "checkin", label: "Check In/Out", icon: "ri-fingerprint-line" },
+  { id: "work-outside", label: "Work Outside", icon: "ri-map-pin-user-line" },
   { id: "daily-report", label: "Daily Report", icon: "ri-file-list-2-line" },
   { id: "benefits", label: "My Benefits", icon: "ri-heart-pulse-line" },
 ];
@@ -63,6 +65,7 @@ export default function SelfServicePage() {
   const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
   const [latestPayslip, setLatestPayslip] = useState<any | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [activeOutsideWork, setActiveOutsideWork] = useState<{ title: string; work_checked_in_at: string } | null>(null);
 
   // The router keeps this page mounted across search-param-only navigations
   // (e.g. a Quick Action link or the geofence alert sending the user back to
@@ -115,18 +118,20 @@ export default function SelfServicePage() {
     if (!selectedEmployee || !user) return;
     (async () => {
       const today = todayYMD();
-      const [attRes, leaveRes, payRes, notifRes] = await Promise.all([
+      const [attRes, leaveRes, payRes, notifRes, outsideRes] = await Promise.all([
         supabase.from("attendance_records").select("*").eq("employee_id", selectedEmployee.id).eq("date", today).maybeSingle(),
         supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("employee_id", selectedEmployee.id).eq("status", "pending"),
         supabase.from("payroll_records").select("*").eq("employee_id", selectedEmployee.id).order("month", { ascending: false }).limit(1).maybeSingle(),
         can("notifications")
           ? supabase.from("notifications").select("id", { count: "exact", head: true }).or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).eq("is_read", false)
           : Promise.resolve({ count: 0 }),
+        supabase.from("tasks").select("title, work_checked_in_at").eq("assigned_to", selectedEmployee.id).eq("is_outside_work", true).eq("work_status", "checked_in").maybeSingle(),
       ]);
       setTodayAttendance((attRes as any).data || null);
       setPendingLeaveCount((leaveRes as any).count || 0);
       setLatestPayslip((payRes as any).data || null);
       setUnreadCount((notifRes as any).count || 0);
+      setActiveOutsideWork((outsideRes as any).data || null);
     })();
   }, [selectedEmployee, user, can, activeTab]);
 
@@ -281,16 +286,20 @@ export default function SelfServicePage() {
             </div>
           </div>
           <p className="text-base font-black text-gray-900 mt-2 truncate">
-            {todayAttendance?.clock_in && todayAttendance?.clock_out
+            {activeOutsideWork
+              ? "Working Outside"
+              : todayAttendance?.clock_in && todayAttendance?.clock_out
               ? "Day Complete"
               : todayAttendance?.clock_in
               ? `Checked In · ${todayAttendance.clock_in.slice(0, 5)}`
               : "Not Checked In"}
           </p>
           <p className="text-[11px] text-gray-400 mt-0.5">
-            {todayAttendance?.clock_in ? "Tap to view attendance" : "Tap to check in now"}
+            {activeOutsideWork
+              ? activeOutsideWork.title
+              : todayAttendance?.clock_in ? "Tap to view attendance" : "Tap to check in now"}
           </p>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500" />
+          <div className={`absolute bottom-0 left-0 right-0 h-1 ${activeOutsideWork ? "bg-teal-500" : "bg-emerald-500"}`} />
         </button>
 
         <button
@@ -394,6 +403,9 @@ export default function SelfServicePage() {
                 autoStart={quickCheckIn}
                 autoCheckOut={quickCheckOut}
               />
+            )}
+            {activeTab === "work-outside" && (
+              <WorkOutsideTab employeeId={selectedEmployee.id} />
             )}
             {activeTab === "daily-report" && (
               <DailyReportTab employeeId={selectedEmployee.id} />

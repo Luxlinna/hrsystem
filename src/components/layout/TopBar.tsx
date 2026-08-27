@@ -51,7 +51,6 @@ const moduleResults: SearchResult[] = [
   { id: "m-reports", label: "Reports & Export", sublabel: "CSV / PDF reports", icon: "ri-file-chart-line", path: "/reports", category: "Module" },
   { id: "m-audit", label: "Audit Log", sublabel: "Activity history", icon: "ri-shield-check-line", path: "/audit-log", category: "Module" },
   { id: "m-selfservice", label: "Self-Service Portal", sublabel: "Employee view", icon: "ri-user-settings-line", path: "/self-service", category: "Module" },
-  { id: "m-unity", label: "Unity Apps", sublabel: "Integrations hub", icon: "ri-apps-line", path: "/unity-apps", category: "Module" },
   { id: "m-settings", label: "Settings", sublabel: "System configuration", icon: "ri-settings-3-line", path: "/settings", category: "Module" },
   { id: "m-notifications", label: "Notifications", sublabel: "Alerts & updates", icon: "ri-notification-3-line", path: "/notifications", category: "Module" },
   { id: "m-meeting-rooms", label: "Meeting Rooms", sublabel: "Book a room", icon: "ri-door-open-line", path: "/meeting-rooms", category: "Module" },
@@ -175,7 +174,6 @@ function MobileDrawer({
       label: "System",
       items: [
         { path: "/notifications", label: "Notifications", icon: "ri-notification-3-line", module: "notifications" },
-        { path: "/unity-apps", label: "Unity", icon: "ri-apps-line", module: "unity-apps" },
         { path: "/settings", label: "Settings", icon: "ri-settings-3-line", module: "settings" },
       ],
     },

@@ -43,6 +43,8 @@ interface AuthAccount {
   id: string;
   email: string | null;
   display_name: string | null;
+  email_confirmed_at: string | null;
+  confirmed_at: string | null;
 }
 
 interface AuthAccountsResult {
@@ -124,7 +126,9 @@ async function readFunctionJson(res: Response) {
 }
 
 function getInviteError(result: any) {
-  return result?.error || result?.message || "Failed to send invite";
+  const base = result?.error || result?.message || "Failed to send invite";
+  const emailErr = result?.email_error;
+  return emailErr ? `${base} — ${emailErr}` : base;
 }
 
 // Per-role overrides, split by what they actually grant:
@@ -329,6 +333,9 @@ export default function AdminPortal() {
   const [savingUser, setSavingUser] = useState(false);
   const [invitingUserId, setInvitingUserId] = useState<number | null>(null);
   const [employees, setEmployees] = useState<DirectoryEmployee[]>([]);
+  // Emails of auth users who exist but have NOT confirmed their account yet
+  // (invited but never clicked the link / link expired).
+  const [unconfirmedEmails, setUnconfirmedEmails] = useState<Set<string>>(new Set());
 
   const showToast = (msg: string, type: "ok" | "err" = "ok") => {
     setToast({ msg, type });
@@ -348,7 +355,7 @@ export default function AdminPortal() {
       supabase.from("user_role_assignments").select("*, app_roles(id, name, color)").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("user_role_assignments").select("email").not("deleted_at", "is", null),
       supabase.from("employees").select("id, email, first_name, last_name, role, department").not("email", "is", null).order("first_name"),
-      supabase.from("password_reset_requests").select("*").is("deleted_at", null).order("requested_at", { ascending: false }).limit(50),
+      supabase.from("password_reset_requests").select("id, email, status, requested_at, acted_at").is("deleted_at", null).order("requested_at", { ascending: false }).limit(50),
       authAccountsPromise,
     ]);
 
@@ -373,8 +380,17 @@ export default function AdminPortal() {
         };
       });
 
+    // Build the set of unconfirmed emails: auth users whose email_confirmed_at
+    // is null/undefined — they were invited but never finished setting up.
+    const unconfirmed = new Set<string>(
+      (authAccountsResult.accounts || [])
+        .filter((a) => a.email && !a.email_confirmed_at && !a.confirmed_at)
+        .map((a) => a.email!.toLowerCase())
+    );
+
     setRoles(rolesRes.data || []);
     setUsers([...activeAssignments, ...unassignedAuthUsers]);
+    setUnconfirmedEmails(unconfirmed);
     setEmployees(employeesRes.data || []);
     setPasswordResetRequests((resetRequestsRes.data || []) as PasswordResetRequest[]);
     setLoading(false);
@@ -1165,11 +1181,18 @@ export default function AdminPortal() {
                               {user.app_roles.name}
                             </span>
                           )}
-                          {!user.user_id && (
+                          {/* Pending badge — invited but email not yet confirmed */}
+                          {user.user_id && unconfirmedEmails.has(user.email?.toLowerCase() ?? "") && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0 whitespace-nowrap">
+                              Pending
+                            </span>
+                          )}
+                          {/* Resend invite — show for: (a) no user_id yet, or (b) user_id set but email unconfirmed */}
+                          {(!user.user_id || unconfirmedEmails.has(user.email?.toLowerCase() ?? "")) && (
                             <button
                               onClick={() => resendInvite(user)}
                               disabled={invitingUserId === user.id}
-                              title="Send invite email"
+                              title={unconfirmedEmails.has(user.email?.toLowerCase() ?? "") ? "Resend invite — previous link may have expired" : "Send invite email"}
                               className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-400 cursor-pointer shrink-0 disabled:opacity-60"
                             >
                               {invitingUserId === user.id

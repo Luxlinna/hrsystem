@@ -89,6 +89,8 @@ Deno.serve(async (req) => {
             user.user_metadata?.full_name ||
             null,
           created_at: user.created_at,
+          email_confirmed_at: user.email_confirmed_at ?? null,
+          confirmed_at: (user as any).confirmed_at ?? null,
         }))
       );
 

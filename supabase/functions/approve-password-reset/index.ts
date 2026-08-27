@@ -1,6 +1,5 @@
-// @deno-types="npm:@types/nodemailer"
-import nodemailer from "npm:nodemailer@6";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import nodemailer from "npm:nodemailer@6";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,52 +13,15 @@ function json(body: unknown, status = 200) {
   });
 }
 
-async function sendEmail(to: string, resetLink: string) {
-  const smtpHost = Deno.env.get("SMTP_HOST") || "smtp.gmail.com";
-  const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
-  const smtpUser = Deno.env.get("SMTP_USER");
-  const smtpPass = Deno.env.get("SMTP_PASS")?.replace(/\s+/g, "");
-  const emailFrom = Deno.env.get("EMAIL_FROM") || `HRSystem <${smtpUser}>`;
-
-  if (!smtpUser || !smtpPass) throw new Error("SMTP credentials not configured");
-
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
+function getTransporter() {
+  return nodemailer.createTransport({
+    host: Deno.env.get("SMTP_HOST") || "smtp.gmail.com",
+    port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
     secure: Deno.env.get("SMTP_SECURE") === "true",
     auth: {
-      user: smtpUser,
-      pass: smtpPass,
+      user: Deno.env.get("SMTP_USER"),
+      pass: Deno.env.get("SMTP_PASS"),
     },
-  });
-
-  await transporter.sendMail({
-    from: emailFrom,
-    to,
-    subject: "Password Reset Approved — HR System",
-    html: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 22px;">Password Reset Approved</h1>
-  </div>
-  <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
-    <p style="font-size: 16px; margin-top: 0;">Hello,</p>
-    <p style="font-size: 15px; color: #475569;">An administrator has approved your request to reset your HR System password. Click the button below to set a new password:</p>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${resetLink}" style="display:inline-block;background:#253C7D;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;">Set New Password</a>
-    </div>
-    <p style="font-size: 13px; color: #94a3b8; text-align: center;">This link will expire in 1 hour for security purposes.</p>
-    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-    <p style="font-size: 12px; color: #94a3b8; margin: 0;">If you didn't request this, please ignore this email or contact your administrator.</p>
-    <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">— The HR System Team</p>
-  </div>
-</body>
-</html>`,
   });
 }
 
@@ -82,8 +44,6 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Direct GoTrue validation — see list-auth-users for why we avoid
-    // admin.auth.getUser(token) in edge isolates.
     const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: { Authorization: `Bearer ${token}`, apikey: serviceKey },
     });
@@ -137,7 +97,38 @@ Deno.serve(async (req) => {
       return json({ error: linkError?.message || "Could not generate reset link" }, 500);
     }
 
-    await sendEmail(resetRequest.email, linkData.properties.action_link);
+    const resetHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 22px;">Password Reset Approved</h1>
+  </div>
+  <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+    <p style="font-size: 16px; margin-top: 0;">Hello,</p>
+    <p style="font-size: 15px; color: #475569;">An administrator has approved your request to reset your HR System password. Click the button below to set a new password:</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${linkData.properties.action_link}" style="display:inline-block;background:#253C7D;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;">Set New Password</a>
+    </div>
+    <p style="font-size: 13px; color: #94a3b8; text-align: center;">This link will expire in 1 hour for security purposes.</p>
+    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+    <p style="font-size: 12px; color: #94a3b8; margin: 0;">If you didn't request this, please ignore this email or contact your administrator.</p>
+    <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">— The HR System Team</p>
+  </div>
+</body>
+</html>`;
+
+    const transporter = getTransporter();
+    await transporter.sendMail({
+      from: Deno.env.get("EMAIL_FROM") || "HRSystem <hrmsystem.ops@gmail.com>",
+      to: resetRequest.email,
+      subject: "Password Reset Approved — HR System",
+      html: resetHtml,
+    });
+
     await admin
       .from("password_reset_requests")
       .update({

@@ -248,12 +248,12 @@ export default function ITManagement() {
     const [{ data: a }, { data: t }, { data: e }, { data: b }] = await Promise.all([
       supabase
         .from("it_assets")
-        .select("*, employees(id, first_name, last_name, department, avatar_url), branches(id, name)")
+        .select("id, name, asset_tag, type, employee_id, branch_id, status, serial_number, created_at, employees(id, first_name, last_name, department, avatar_url), branches(id, name)")
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
       supabase
         .from("it_tickets")
-        .select("*")
+        .select("id, title, requester_name, priority, status, category, description, created_at, resolved_at")
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
       supabase

@@ -41,7 +41,7 @@ export default function LeaveTab({ employeeId }: Props) {
     setLoading(true);
     const { data } = await supabase
       .from("leave_requests")
-      .select("*")
+      .select("id, leave_type, start_date, end_date, days, status, reason, created_at")
       .eq("employee_id", employeeId)
       .order("created_at", { ascending: false });
     setRequests(data || []);

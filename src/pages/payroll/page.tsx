@@ -133,7 +133,7 @@ export default function Payroll() {
       const [{ data: recordsData }, { data: empsData }] = await Promise.all([
         supabase
           .from("payroll_records")
-          .select("*, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(id, name))")
+          .select("id, employee_id, month, base_salary, bonus, deductions, net_pay, status, notes, created_at, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(id, name))")
           .order("month", { ascending: false })
           .order("created_at", { ascending: false }),
         supabase
@@ -185,7 +185,7 @@ export default function Payroll() {
     setEmployees([me as Employee]);
     const { data: myRecords } = await supabase
       .from("payroll_records")
-      .select("*, employees(id, first_name, last_name, role, department, avatar_url)")
+      .select("id, employee_id, month, base_salary, bonus, deductions, net_pay, status, notes, created_at, employees(id, first_name, last_name, role, department, avatar_url)")
       .eq("employee_id", me.id)
       .order("month", { ascending: false });
 

@@ -20,6 +20,8 @@ interface Branch {
   geofence_radius_m: number | null;
   work_start_time: string | null;
   work_end_time: string | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
 }
 
 interface Employee {
@@ -83,7 +85,7 @@ export default function Branches() {
   const [form, setForm] = useState(emptyForm);
 
   const loadBranches = async () => {
-    const { data } = await supabase.from("branches").select("*").order("employee_count", { ascending: false });
+    const { data } = await supabase.from("branches").select("id, name, location, manager_name, employee_count, status, created_at, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, deleted_at, deleted_by").is("deleted_at", null).order("employee_count", { ascending: false });
     setBranches(data || []);
     setLoading(false);
   };
@@ -314,6 +316,18 @@ export default function Branches() {
     loadBranches();
   };
 
+  const handleDeleteBranch = async (branch: Branch) => {
+    if (!isAdmin) return;
+    if (!confirm(`Move "${branch.name}" to the Recycle Bin? The branch can be restored later.`)) return;
+    const { error } = await supabase.from("branches").update({ deleted_at: new Date().toISOString(), deleted_by: actorName }).eq("id", branch.id);
+    if (error) { toast("Error", "Failed to delete branch", "error"); return; }
+    logActivity({ module: "branches", action: "deleted", entityType: "branch", entityId: branch.id, actorName, actorRole: role?.name || "Unknown", description: `Branch "${branch.name}" moved to the Recycle Bin` });
+    toast("Branch deleted", `"${branch.name}" moved to the Recycle Bin.`, "success");
+    setSelectedBranch(null);
+    setBranchEmployees([]);
+    loadBranches();
+  };
+
   const filtered = branches.filter((b) => {
     const matchSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -437,9 +451,20 @@ export default function Branches() {
                       </p>
                     </div>
                   </div>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${statusColors[b.status] || "bg-gray-50 text-gray-500"}`}>
-                    {b.status}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${statusColors[b.status] || "bg-gray-50 text-gray-500"}`}>
+                      {b.status}
+                    </span>
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteBranch(b); }}
+                        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                        title="Delete branch"
+                      >
+                        <i className="ri-delete-bin-line text-xs" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="border-t border-gray-50 pt-3 space-y-2">
@@ -511,6 +536,15 @@ export default function Branches() {
                     title="Edit branch"
                   >
                     <i className="ri-edit-line text-white text-sm" />
+                  </button>
+                )}
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDeleteBranch(selectedBranch)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-red-500/80 transition-colors cursor-pointer"
+                    title="Delete branch"
+                  >
+                    <i className="ri-delete-bin-line text-white text-sm" />
                   </button>
                 )}
                 <button

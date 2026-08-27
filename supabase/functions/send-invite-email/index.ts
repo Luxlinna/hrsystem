@@ -13,6 +13,18 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function getTransporter() {
+  return nodemailer.createTransport({
+    host: Deno.env.get("SMTP_HOST") || "smtp.gmail.com",
+    port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
+    secure: Deno.env.get("SMTP_SECURE") === "true",
+    auth: {
+      user: Deno.env.get("SMTP_USER"),
+      pass: Deno.env.get("SMTP_PASS"),
+    },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -30,7 +42,6 @@ Deno.serve(async (req) => {
       return json({ error: "Email is required" }, 400);
     }
 
-    // Check if user already exists in user_role_assignments
     const { data: existing } = await supabaseAdmin
       .from("user_role_assignments")
       .select("id, user_id, email")
@@ -41,14 +52,12 @@ Deno.serve(async (req) => {
       if (existing.user_id) {
         return json({ error: "User already has an account" }, 400);
       }
-      // Update existing pre-provisioned record
       const { error: updateError } = await supabaseAdmin
         .from("user_role_assignments")
         .update({ display_name, role_id: role_id ? parseInt(role_id) : null })
         .eq("id", existing.id);
       if (updateError) throw updateError;
     } else {
-      // Create pre-provisioned user assignment
       const { error: insertError } = await supabaseAdmin
         .from("user_role_assignments")
         .insert({
@@ -59,7 +68,6 @@ Deno.serve(async (req) => {
       if (insertError) throw insertError;
     }
 
-    // Create the user in Supabase Auth (without sending Supabase's own email)
     let userData = null;
     let createUserError = null;
 
@@ -82,10 +90,7 @@ Deno.serve(async (req) => {
     if (createUserError) {
       const errMsg = createUserError.message || String(createUserError);
       if (errMsg.includes("already been registered") || errMsg.includes("already exists")) {
-        // Retrieve the existing user's ID by listing users
-        const listResult = await supabaseAdmin.auth.admin.listUsers({
-          perPage: 1000,
-        });
+        const listResult = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
         if (listResult.error) {
           console.error("List users error:", listResult.error);
           return json({ error: listResult.error.message }, 500);
@@ -109,7 +114,6 @@ Deno.serve(async (req) => {
       return json({ error: "Failed to determine user ID" }, 500);
     }
 
-    // Update/link the user_id in user_role_assignments immediately
     const { error: linkError } = await supabaseAdmin
       .from("user_role_assignments")
       .update({ user_id: userId })
@@ -119,8 +123,7 @@ Deno.serve(async (req) => {
       console.error("Failed to link user_id in user_role_assignments:", linkError);
     }
 
-    // Generate password reset link (user will set password via this link)
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    const { data: linkData, error: linkGenError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email,
       options: {
@@ -128,26 +131,13 @@ Deno.serve(async (req) => {
       },
     });
 
-    if (linkError || !linkData?.properties?.action_link) {
-      console.error("Generate link error:", linkError);
+    if (linkGenError || !linkData?.properties?.action_link) {
+      console.error("Generate link error:", linkGenError);
       return json({ error: "Failed to generate invite link" }, 500);
     }
 
     const inviteLink = linkData.properties.action_link;
 
-    // SMTP config from environment variables (declared once)
-    const smtpHost = Deno.env.get("SMTP_HOST") || "smtp.gmail.com";
-    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
-    const smtpUser = Deno.env.get("SMTP_USER");
-    const smtpPass = Deno.env.get("SMTP_PASS")?.replace(/\s+/g, "");
-    const emailFrom = Deno.env.get("EMAIL_FROM") || `HR System <${smtpUser}>`;
-
-    if (!smtpUser || !smtpPass) {
-      console.error("SMTP credentials not configured");
-      return json({ error: "Email service not configured" }, 500);
-    }
-
-    // Create email content — link is only in the button href, not shown as visible text
     const emailHtml = `
 <!DOCTYPE html>
 <html>
@@ -173,30 +163,18 @@ Deno.serve(async (req) => {
 </html>
     `.trim();
 
-    // Create SMTP client
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
-
-    // Send email
+    const transporter = getTransporter();
     await transporter.sendMail({
-      from: emailFrom,
+      from: Deno.env.get("EMAIL_FROM") || "HRSystem <hrmsystem.ops@gmail.com>",
       to: email,
-      subject: "You're invited to HR System - Set up your account",
-      text: "Please enable HTML to view this email.",
+      subject: "You're invited to HR System — Set up your account",
       html: emailHtml,
     });
 
     return json({
       success: true,
-      message: "Invitation sent successfully via Gmail SMTP",
-      user: userData.user,
+      message: "Invitation sent successfully",
+      user: userData?.user ?? { id: userId, email },
     });
   } catch (err: any) {
     console.error("Function error:", err);

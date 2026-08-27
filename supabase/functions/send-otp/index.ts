@@ -1,6 +1,5 @@
-// @deno-types="npm:@types/nodemailer"
-import nodemailer from "npm:nodemailer@6";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@6";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,6 +30,18 @@ async function hashOTP(otp: string): Promise<string> {
 
 const OTP_EXPIRY_MINUTES = 5;
 
+function getTransporter() {
+  return nodemailer.createTransport({
+    host: Deno.env.get("SMTP_HOST") || "smtp.gmail.com",
+    port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
+    secure: Deno.env.get("SMTP_SECURE") === "true",
+    auth: {
+      user: Deno.env.get("SMTP_USER"),
+      pass: Deno.env.get("SMTP_PASS"),
+    },
+  });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -39,18 +50,6 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
-    // SMTP config (same as invite-user)
-    const smtpHost = Deno.env.get("SMTP_HOST") || "smtp.gmail.com";
-    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
-    const smtpUser = Deno.env.get("SMTP_USER");
-    const smtpPass = Deno.env.get("SMTP_PASS")?.replace(/\s+/g, "");
-    const emailFrom = Deno.env.get("EMAIL_FROM") || `HRSystem <${smtpUser}>`;
-
-    if (!smtpUser || !smtpPass) {
-      console.error("SMTP credentials not configured");
-      return json({ error: "Email service not configured" }, 500);
-    }
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
@@ -63,7 +62,6 @@ Deno.serve(async (req: Request) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Look up user by email via GoTrue admin API
     const userRes = await fetch(
       `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(normalizedEmail)}`,
       {
@@ -81,15 +79,12 @@ Deno.serve(async (req: Request) => {
       return json({ error: "No account found with this email" }, 404);
     }
 
-    // Delete any existing unverified OTPs for this email
     await admin.from("email_otps").delete().eq("email", normalizedEmail).eq("verified", false);
 
-    // Generate and hash OTP
     const otp = generateOTP();
     const otpHash = await hashOTP(otp);
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
-    // Store OTP in database
     const { error: insertError } = await admin.from("email_otps").insert({
       user_id: user.id,
       email: normalizedEmail,
@@ -102,10 +97,8 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Failed to generate OTP" }, 500);
     }
 
-    // Clean up expired OTPs as side effect
     await admin.rpc("cleanup_expired_otps");
 
-    // Build email HTML
     const emailHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -130,19 +123,9 @@ Deno.serve(async (req: Request) => {
 </body>
 </html>`;
 
-    // Send via Gmail SMTP using nodemailer
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: Deno.env.get("SMTP_SECURE") === "true",
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
-
+    const transporter = getTransporter();
     await transporter.sendMail({
-      from: emailFrom,
+      from: Deno.env.get("EMAIL_FROM") || "HRSystem <hrmsystem.ops@gmail.com>",
       to: normalizedEmail,
       subject: "Your Verification Code — HR System",
       html: emailHtml,

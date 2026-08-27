@@ -1,6 +1,7 @@
 {
   "imports": {
     "std/http/server.ts": "https://deno.land/std@0.168.0/http/server.ts",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "npm:nodemailer@6": "npm:nodemailer@6"
   }
 }

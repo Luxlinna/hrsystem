@@ -61,17 +61,17 @@ export default function Analytics() {
 
   const loadData = async () => {
     const results = await Promise.all([
-      supabase.from("employees").select("*"),
-      supabase.from("leave_requests").select("*"),
-      supabase.from("payroll_records").select("*"),
-      supabase.from("job_postings").select("*").is("deleted_at", null),
-      supabase.from("candidates").select("*").is("deleted_at", null),
-      supabase.from("offboarding_requests").select("*"),
-      supabase.from("expense_records").select("*").is("deleted_at", null),
-      supabase.from("it_assets").select("*").is("deleted_at", null),
-      supabase.from("it_tickets").select("*").is("deleted_at", null),
-      supabase.from("benefit_enrollments").select("*"),
-      supabase.from("benefit_plans").select("*"),
+      supabase.from("employees").select("id, first_name, last_name, department, role, status, join_date"),
+      supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status"),
+      supabase.from("payroll_records").select("employee_id, month, base_salary, bonus, deductions, net_pay, status"),
+      supabase.from("job_postings").select("id, title, department, status, location, salary_min, salary_max").is("deleted_at", null),
+      supabase.from("candidates").select("id, stage, department, applied_at").is("deleted_at", null),
+      supabase.from("offboarding_requests").select("id, employee_id, reason, status, last_day"),
+      supabase.from("expense_records").select("id, employee_id, category, amount, status, submitted_at, branch_id").is("deleted_at", null),
+      supabase.from("it_assets").select("id, type, status, assigned_to").is("deleted_at", null),
+      supabase.from("it_tickets").select("id, priority, status, category, created_at").is("deleted_at", null),
+      supabase.from("benefit_enrollments").select("id, employee_id, plan_id, status"),
+      supabase.from("benefit_plans").select("id, name, type"),
     ]);
     setEmployees(results[0].data || []);
     setLeaveRequests(results[1].data || []);
@@ -98,6 +98,7 @@ export default function Analytics() {
 
   const departments = useMemo(() => Array.from(new Set(employees.map((e) => e.department))).sort(), [employees]);
   const filteredEmps = department === "all" ? employees : employees.filter((e) => e.department === department);
+  const empMap = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
 
   const totalEmployees = employees.length;
   const activeEmployees = employees.filter((e) => e.status === "active").length;
@@ -128,16 +129,16 @@ export default function Analytics() {
   const leaveByDept = useMemo(() => {
     const d: Record<string, number> = {};
     leaveRequests.forEach((l) => {
-      const emp = employees.find((e) => e.id === l.employee_id);
+      const emp = empMap.get(l.employee_id);
       if (emp) d[emp.department] = (d[emp.department] || 0) + (l.days || 0);
     });
     return Object.entries(d).map(([name, days]) => ({ name, days }));
-  }, [leaveRequests, employees]);
+  }, [leaveRequests, empMap]);
 
   const salaryByDept = useMemo(() => {
     const d: Record<string, { total: number; count: number }> = {};
     payroll.forEach((p) => {
-      const emp = employees.find((e) => e.id === p.employee_id);
+      const emp = empMap.get(p.employee_id);
       if (emp) {
         if (!d[emp.department]) d[emp.department] = { total: 0, count: 0 };
         d[emp.department].total += Number(p.net_pay || 0);
@@ -147,7 +148,7 @@ export default function Analytics() {
     return Object.entries(d).map(([name, data]) => ({
       name, total: Math.round(data.total / 1000), avg: Math.round((data.total / data.count) / 1000), count: data.count,
     }));
-  }, [payroll, employees]);
+  }, [payroll, empMap]);
 
   const hiringByDept = useMemo(() => {
     const d: Record<string, { open: number; candidates: number }> = {};
@@ -495,9 +496,9 @@ export default function Analytics() {
                 </tr></thead>
                 <tbody>
                   {leaveRequests
-                    .filter((l) => department === "all" || employees.find((e) => e.id === l.employee_id)?.department === department)
+                    .filter((l) => department === "all" || empMap.get(l.employee_id)?.department === department)
                     .map((l) => {
-                      const emp = employees.find((e) => e.id === l.employee_id);
+                      const emp = empMap.get(l.employee_id);
                       return (
                         <tr key={l.id} className="border-t border-gray-50 hover:bg-gray-50">
                           <td className="px-5 py-3 text-[13px] text-gray-900">{emp ? `${emp.first_name} ${emp.last_name}` : "—"}</td>
@@ -565,9 +566,9 @@ export default function Analytics() {
                 </tr></thead>
                 <tbody>
                   {payroll
-                    .filter((p) => department === "all" || employees.find((e) => e.id === p.employee_id)?.department === department)
+                    .filter((p) => department === "all" || empMap.get(p.employee_id)?.department === department)
                     .map((p, i) => {
-                      const emp = employees.find((e) => e.id === p.employee_id);
+                      const emp = empMap.get(p.employee_id);
                       return (
                         <tr key={i} className="border-t border-gray-50 hover:bg-gray-50">
                           <td className="px-5 py-3 text-[13px] text-gray-900">{emp ? `${emp.first_name} ${emp.last_name}` : "—"}</td>

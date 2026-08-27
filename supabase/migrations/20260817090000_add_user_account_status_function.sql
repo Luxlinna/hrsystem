@@ -1,4 +1,6 @@
 -- Function to get account status for a list of emails
+-- invited = row exists in user_role_assignments (invited or pending)
+-- has_account = auth user has been created (user_id is linked)
 create or replace function get_user_account_status(emails text[])
 returns table (
   email text,
@@ -13,7 +15,7 @@ begin
   return query
   select
     ura.email,
-    (ura.user_id is not null) as invited,
+    true as invited,
     (ura.user_id is not null) as has_account
   from user_role_assignments ura
   where ura.email = any(emails);

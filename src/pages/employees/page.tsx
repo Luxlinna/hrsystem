@@ -58,6 +58,7 @@ export default function Employees() {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string; color: string }[]>([]);
+  const [managerEmails, setManagerEmails] = useState<Set<string>>(new Set());
   const [accountStatus, setAccountStatus] = useState<Record<string, { invited: boolean; hasAccount: boolean }>>({});
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -86,7 +87,7 @@ export default function Employees() {
   };
 
   const loadEmployees = () => {
-    supabase.from("employees").select("*, branches(name)").is("deleted_at", null).order("first_name").then(({ data, error }) => {
+    supabase.from("employees").select("id, first_name, last_name, email, phone, role, department, branch_id, status, join_date, reports_to, avatar_url, branches(name)").is("deleted_at", null).order("first_name").then(({ data, error }) => {
       if (error) { toast("Error", "Failed to load employee directory", "error"); return; }
       setEmployees(data || []);
     });
@@ -96,6 +97,20 @@ export default function Employees() {
     loadEmployees();
     supabase.from("branches").select("id, name").order("name").then(({ data }) => setBranches(data || []));
     supabase.from("app_roles").select("id, name, color").order("name").then(({ data }) => setRoles(data || []));
+    // Fetch employees whose system role contains "Manager" for the Reports To dropdown
+    supabase
+      .from("user_role_assignments")
+      .select("email, app_roles(name)")
+      .is("deleted_at", null)
+      .then(({ data }) => {
+        if (!data) return;
+        const emails = new Set<string>();
+        data.forEach((row: any) => {
+          const roleName = row.app_roles?.name || "";
+          if (/manager/i.test(roleName)) emails.add(row.email?.toLowerCase());
+        });
+        setManagerEmails(emails);
+      });
   }, []);
 
   // Load account status for each employee
@@ -119,9 +134,9 @@ export default function Employees() {
 
   const depts = Array.from(new Set(employees.map((e) => e.department)));
   const branchCount = new Set(employees.map((e) => e.branch_id).filter(Boolean)).size;
-  // Reporting lines can point to any manager in the company. Include the
-  // department in the option label so same-named managers are distinguishable.
-  const managers = employees.filter((employee) => /\bmanager\b/i.test(employee.role || ""));
+  // Reporting lines can point to any manager in the company. Only show
+  // employees whose system role (app_roles) contains "Manager".
+  const managers = employees.filter((employee) => managerEmails.has(employee.email?.toLowerCase()));
 
   // Dashboard statistics
   const stats = {
@@ -231,7 +246,7 @@ export default function Employees() {
       if (acc?.hasAccount || acc?.invited) continue;
       
       try {
-        const { error } = await supabase.functions.invoke("invite-user", {
+        const { data, error } = await supabase.functions.invoke("invite-user", {
           body: {
             email: employee.email,
             display_name: `${employee.first_name} ${employee.last_name}`,
@@ -239,7 +254,10 @@ export default function Employees() {
             redirect_to: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
           },
         });
-        if (!error) {
+        const fnError = error || data?.error;
+        if (fnError) {
+          console.error(`Failed to invite ${employee.email}:`, fnError);
+        } else {
           successCount++;
           setAccountStatus((prev) => ({ ...prev, [employee.email]: { invited: true, hasAccount: false } }));
         }
@@ -397,7 +415,7 @@ export default function Employees() {
     if (!canManage) return;
     setInvitingId(e.id);
     try {
-      const { error } = await supabase.functions.invoke("invite-user", {
+      const { data, error } = await supabase.functions.invoke("invite-user", {
         body: {
           email: e.email,
           display_name: `${e.first_name} ${e.last_name}`,
@@ -405,7 +423,8 @@ export default function Employees() {
           redirect_to: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
         },
       });
-      if (error) throw error;
+      const fnError = error || data?.error;
+      if (fnError) throw new Error(typeof fnError === 'string' ? fnError : fnError.message || 'Invite failed');
       toast("Invitation sent", `An invite link was sent to ${e.email}`, "success");
       setAccountStatus((prev) => ({ ...prev, [e.email]: { invited: true, hasAccount: false } }));
     } catch (err: any) {
