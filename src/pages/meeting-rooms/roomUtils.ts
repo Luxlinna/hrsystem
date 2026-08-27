@@ -26,6 +26,23 @@ export const toYMD = (d: Date): string => {
   return `${y}-${m}-${day}`;
 };
 
+export const formatDateDisplay = (dateStr: string): string => {
+  if (!dateStr) return "";
+  try {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    if (!y || !m || !d) return dateStr;
+    const date = new Date(y, m - 1, d);
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+};
+
 export const addMinutesToTime = (timeStr: string, minutesToAdd: number): string => {
   const [hStr, mStr] = timeStr.split(":");
   let totalMins = parseInt(hStr, 10) * 60 + parseInt(mStr, 10) + minutesToAdd;

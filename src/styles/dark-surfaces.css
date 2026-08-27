@@ -1,0 +1,184 @@
+@layer utilities {
+  html.dark .bg-transparent {
+    background-color: transparent !important;
+  }
+
+  html.dark .bg-white,
+  html.dark .bg-white\/60,
+  html.dark .bg-white\/80,
+  html.dark .bg-white\/90,
+  html.dark .bg-\[\#FAFAFA\],
+  html.dark .bg-\[\#FAFAF8\],
+  html.dark .bg-\[\#F5F5F0\],
+  html.dark .bg-\[\#F8F8F6\],
+  html.dark .bg-\[\#F8F8F7\],
+  html.dark .bg-gray-50,
+  html.dark .bg-gray-50\/30,
+  html.dark .bg-gray-50\/50,
+  html.dark .bg-gray-100,
+  html.dark [class*="bg-white"],
+  html.dark [class*="bg-white/"],
+  html.dark [class*="bg-[#FAFAFA]"],
+  html.dark [class*="bg-[#FAFAF8]"],
+  html.dark [class*="bg-[#F8FAFC]"],
+  html.dark [class*="bg-[#F5F5F0]"],
+  html.dark [class*="bg-[#F8F8F6]"],
+  html.dark [class*="bg-[#F8F8F7]"],
+  html.dark [class*="bg-gray-50"],
+  html.dark [class*="bg-gray-50/"],
+  html.dark [class*="bg-gray-100"],
+  html.dark [class*="bg-gray-100/"],
+  html.dark [class*="bg-slate-50"],
+  html.dark [class*="bg-slate-100"] {
+    background-color: #111827 !important;
+  }
+
+  html.dark .bg-gray-200,
+  html.dark [class*="bg-gray-200"],
+  html.dark [class*="bg-slate-200"] {
+    background-color: #1f2937 !important;
+  }
+
+  html.dark .bg-black\/40 {
+    background-color: rgb(0 0 0 / 0.68) !important;
+  }
+
+  /* Page-level surfaces for the Time & Attendance and Training hubs. */
+  html.dark .attendance-hub,
+  html.dark .training-hub {
+    background-color: #0f172a !important;
+  }
+
+  /* Page-level background override for all hub pages that use bg-[#F8F9FB]. */
+  html.dark [class*="bg-[#F8F9FB]"],
+  html.dark [class*="bg-[#F8F9FA]"],
+  html.dark [class*="bg-[#F8FAFC]"],
+  html.dark [class*="bg-[#FAFAFA]"],
+  html.dark [class*="bg-[#FAFAF8]"],
+  html.dark [class*="bg-[#F5F5F0]"],
+  html.dark [class*="bg-[#F8F8F6]"],
+  html.dark [class*="bg-[#F8F8F7]"] {
+    background-color: #0f172a !important;
+  }
+
+  /* Modal and drawer gradient header backgrounds */
+  html.dark [class*="from-slate-50"],
+  html.dark [class*="from-gray-50"],
+  html.dark [class*="from-white"] {
+    --tw-gradient-from: #1e293b !important;
+  }
+  html.dark [class*="via-gray-50"],
+  html.dark [class*="via-slate-50"] {
+    --tw-gradient-via: #1e293b !important;
+  }
+  html.dark [class*="to-white"],
+  html.dark [class*="to-gray-50"],
+  html.dark [class*="to-slate-50"] {
+    --tw-gradient-to: #111827 !important;
+  }
+
+  /* Text color for [#0F172A] and similar dark-text-on-light defaults */
+  html.dark [class*="text-[#0F172A]"] {
+    color: #f8fafc !important;
+  }
+
+  html.dark .border-gray-50,
+  html.dark .border-gray-100,
+  html.dark .border-gray-200,
+  html.dark .border-gray-300,
+  html.dark [class*="border-gray-"],
+  html.dark [class*="border-slate-"] {
+    border-color: #263244 !important;
+  }
+
+  html.dark .text-\[\#1A1A1A\],
+  html.dark .text-gray-900,
+  html.dark .text-gray-800,
+  html.dark .text-gray-700,
+  html.dark [class*="text-gray-900"],
+  html.dark [class*="text-gray-800"],
+  html.dark [class*="text-gray-700"],
+  html.dark [class*="text-slate-900"],
+  html.dark [class*="text-slate-800"],
+  html.dark [class*="text-[#1A1A1A]"],
+  html.dark [class*="text-[#0F172A]"] {
+    color: #f8fafc !important;
+  }
+
+  html.dark .text-\[\#253C7D\],
+  html.dark .text-\[\#253C7D\]\/70,
+  html.dark .group-hover\:text-\[\#253C7D\]:hover,
+  html.dark .group:hover .group-hover\:text-\[\#253C7D\] {
+    color: #7dd3fc !important;
+  }
+
+  html.dark .border-\[\#253C7D\],
+  html.dark .border-\[\#253C7D\]\/20,
+  html.dark .border-\[\#253C7D\]\/30,
+  html.dark .hover\:border-\[\#253C7D\]\/20:hover {
+    border-color: rgb(125 211 252 / 0.35) !important;
+  }
+
+  html.dark .hover\:border-\[\#253C7D\]\/30:hover,
+  html.dark .focus\:border-\[\#253C7D\]:focus,
+  html.dark .focus\:border-\[\#253C7D\]\/30:focus {
+    border-color: rgb(125 211 252 / 0.55) !important;
+  }
+
+  html.dark .ring-\[\#253C7D\]\/20,
+  html.dark .focus\:ring-\[\#253C7D\]\/20:focus,
+  html.dark .focus\:ring-\[\#253C7D\]\/30:focus {
+    --tw-ring-color: rgb(125 211 252 / 0.3) !important;
+  }
+
+  html.dark .text-gray-600,
+  html.dark .text-gray-500,
+  html.dark [class*="text-gray-600"],
+  html.dark [class*="text-gray-500"],
+  html.dark [class*="text-slate-600"],
+  html.dark [class*="text-slate-500"] {
+    color: #cbd5e1 !important;
+  }
+
+  html.dark .text-gray-400,
+  html.dark [class*="text-gray-400"],
+  html.dark [class*="text-slate-400"] {
+    color: #94a3b8 !important;
+  }
+
+  html.dark [class*="hover:bg-gray-50"]:hover,
+  html.dark [class*="hover:bg-gray-100"]:hover,
+  html.dark [class*="hover:bg-gray-200"]:hover,
+  html.dark [class*="hover:bg-black/5"]:hover,
+  html.dark .hover\:bg-gray-50:hover,
+  html.dark .hover\:bg-gray-50\/50:hover,
+  html.dark .hover\:bg-gray-100:hover,
+  html.dark .hover\:bg-gray-200:hover,
+  html.dark .hover\:bg-black\/5:hover,
+  html.dark .hover\:bg-slate-50\/80:hover,
+  html.dark [class*="hover:bg-slate-50"]:hover {
+    background-color: #1e293b !important;
+  }
+
+  html.dark .hover\:text-gray-900:hover,
+  html.dark .hover\:text-gray-700:hover,
+  html.dark .hover\:text-gray-600:hover {
+    color: #ffffff !important;
+  }
+
+  html.dark .shadow-xl,
+  html.dark .shadow-2xl,
+  html.dark .shadow-md {
+    box-shadow: 0 18px 50px rgb(0 0 0 / 0.45) !important;
+  }
+
+  html.dark .ring-\[\#253C7D\]\/10 {
+    --tw-ring-color: rgb(41 171 226 / 0.2) !important;
+  }
+
+  html.dark .bg-\[\#253C7D\]\/5,
+  html.dark .bg-\[\#253C7D\]\/10,
+  html.dark .bg-\[\#29ABE2\]\/20 {
+    background-color: rgb(41 171 226 / 0.16) !important;
+  }
+}

@@ -71,7 +71,7 @@ export default function MeetingRoomsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
+    <div className="w-full min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Toast Alert */}
       {toast && (
         <div
@@ -165,7 +165,7 @@ export default function MeetingRoomsPage() {
         />
       )}
 
-      {/* Booking Form Modal (New & Edit Pending) */}
+      {/* Booking Form Modal */}
       <BookingModal
         isOpen={Boolean(modalRoom)}
         onClose={() => setModalRoom(null)}
@@ -179,7 +179,7 @@ export default function MeetingRoomsPage() {
         onSubmit={handleBook}
       />
 
-      {/* Booking Inspect / Action Drawer Modal */}
+      {/* Booking Drawer Modal */}
       <BookingDetailModal
         booking={selectedBooking}
         rooms={rooms}
@@ -189,24 +189,23 @@ export default function MeetingRoomsPage() {
         canApprove={canApprove}
         onOpenEditModal={openEditModal}
         onCancelOwnBooking={handleCancelOwnBooking}
-        onOpenApprovalModal={(b) => setApprovalModal({
-          isOpen: true,
-          booking: b,
-          approvedReqs: [],
-          declinedReqs: [],
-          approvedRef: [],
-          declinedRef: [],
-          notes: "",
-        })}
-        onOpenReasonModal={(b, action) => setReasonModal({
-          isOpen: true,
-          booking: b,
-          action,
-          reason: "",
-        })}
+        onOpenApprovalModal={(b) =>
+          setApprovalModal({
+            isOpen: true,
+            booking: b,
+            approvedReqs: [],
+            declinedReqs: [],
+            approvedRef: [],
+            declinedRef: [],
+            notes: "",
+          })
+        }
+        onOpenReasonModal={(b, action) =>
+          setReasonModal({ isOpen: true, booking: b, action, reason: "" })
+        }
       />
 
-      {/* Manager Approval Review Modal */}
+      {/* Manager Approval Modal */}
       <ApprovalReviewModal
         approvalModal={approvalModal}
         onClose={() => setApprovalModal((prev) => ({ ...prev, isOpen: false, booking: null }))}
