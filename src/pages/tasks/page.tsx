@@ -5,8 +5,13 @@ import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import CheckInOutModal from "./CheckInOutModal";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import type { MediaItem } from "@/lib/s3-storage";
-import * as XLSX from "xlsx";
+import { uploadMediaToS3, type MediaItem } from "@/lib/s3-storage";
+import { getCurrentPosition } from "@/lib/geo";
+import { loadGoogleMaps } from "@/lib/geocode";
+
+// XLSX is lazy-loaded on demand (export only) to avoid adding ~900KB to the
+// initial JS bundle, which was the primary cause of the 21s LCP.
+const getXLSX = () => import("xlsx");
 
 const fmtDuration = (from: string, to: string | null) => {
   const ms = (to ? new Date(to).getTime() : Date.now()) - new Date(from).getTime();
@@ -221,9 +226,6 @@ const activityText = (a: TaskActivity) => {
   }
 };
 
-// Employees still on the payroll and workable — excludes "inactive" (former
-// employee) and "suspended" (pending review). Onboarding and on-leave staff
-// still need tasks assigned to/queued for them, so they're included.
 const WORKABLE_STATUSES = ["active", "on_leave", "onboarding"];
 
 const emptyForm: FormState = {
@@ -236,10 +238,6 @@ const emptyForm: FormState = {
   is_outside_work: false,
 };
 
-// Personal "task assigned" notifications. Employee ids -> auth user ids via
-// user_role_assignments (matched by email), same lookup pattern as training
-// enrollment notifications — an employee without an account yet is silently
-// skipped, and the actor never gets notified about their own assignment.
 async function notifyTaskAssignees(params: {
   employeeIds: string[];
   employees: Employee[];
@@ -290,52 +288,41 @@ export default function TasksPage() {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  // Who this user can pick in "Assign To". Branch managers see every active
-  // employee company-wide here even though `employees` (task visibility,
-  // the assignee filter, and the report matrix) stays scoped to their own
-  // branch — assigning shouldn't be limited by what tasks they can see.
   const [assignableEmployees, setAssignableEmployees] = useState<Employee[]>([]);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"board" | "list" | "report" | "my_report" | "admin_report">("board");
   const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
 
-  // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [filterQuickState, setFilterQuickState] = useState<"all" | "my_tasks" | "overdue" | "high_priority">("all");
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
 
-  // Report date range filter
   const [reportPreset, setReportPreset] = useState<"all" | "today" | "week" | "month" | "custom">("all");
   const [reportFrom, setReportFrom] = useState("");
   const [reportTo, setReportTo] = useState("");
 
-  // Export dropdown state
   const [reportExportOpen, setReportExportOpen] = useState(false);
   const [myReportExportOpen, setMyReportExportOpen] = useState(false);
   const reportExportRef = useRef<HTMLDivElement>(null);
   const myReportExportRef = useRef<HTMLDivElement>(null);
 
-  // Report employee filter (admin can filter by specific employee)
   const [reportFilterEmpId, setReportFilterEmpId] = useState("");
   const [reportFilterOpen, setReportFilterOpen] = useState(false);
   const [reportFilterSearch, setReportFilterSearch] = useState("");
   const reportFilterRef = useRef<HTMLDivElement>(null);
   const [myReportFilterEmpId, setMyReportFilterEmpId] = useState("");
 
-  // Admin Report: per-employee detail view & search
   const [adminReportSearch, setAdminReportSearch] = useState("");
   const [adminReportDeptFilter, setAdminReportDeptFilter] = useState<string>("all");
   const [adminReportExpandedEmpId, setAdminReportExpandedEmpId] = useState<string | null>(null);
   const [adminReportEmpExportOpen, setAdminReportEmpExportOpen] = useState<string | null>(null);
   const adminReportEmpExportRef = useRef<HTMLDivElement>(null);
-  // Task activities for working time tracking
   const [adminTaskActivities, setAdminTaskActivities] = useState<Record<string, TaskActivity[]>>({});
   const [myTaskActivities, setMyTaskActivities] = useState<Record<string, TaskActivity[]>>({});
 
-  // Modals & Form
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -348,10 +335,14 @@ export default function TasksPage() {
   const [activityLoading, setActivityLoading] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<"details" | "activity">("details");
 
-  // Outside work capture state
   const [owTaskId, setOwTaskId] = useState<string | null>(null);
   const [owMode, setOwMode] = useState<"check_in" | "check_out">("check_in");
   const [owTick, setOwTick] = useState(0);
+
+  const [owLocation, setOwLocation] = useState<{ lat: number; lng: number; accuracy: number | null; address: string | null } | null>(null);
+  const [owFiles, setOwFiles] = useState<{ file: File; preview: string; type: "image" | "video" }[]>([]);
+  const [owLocating, setOwLocating] = useState(false);
+  const owFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setOwTick((t) => t + 1), 10000);
@@ -363,9 +354,56 @@ export default function TasksPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  const closeModal = () => {
+    setShowModal(false);
+    setOwLocation(null);
+    setOwFiles([]);
+  };
+
   const openCheckInOut = (taskId: string, mode: "check_in" | "check_out") => {
     setOwTaskId(taskId);
     setOwMode(mode);
+  };
+
+  const handleOwCaptureLocation = async () => {
+    setOwLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      const loc = {
+        lat: Number(pos.coords.latitude.toFixed(6)),
+        lng: Number(pos.coords.longitude.toFixed(6)),
+        accuracy: Math.round(pos.coords.accuracy),
+        address: null as string | null,
+      };
+      setOwLocation(loc);
+      try {
+        await loadGoogleMaps();
+        const geocoder = new (window as any).google.maps.Geocoder();
+        const address = await new Promise<string>((resolve, reject) => {
+          geocoder.geocode({ location: { lat: loc.lat, lng: loc.lng } }, (results: any[], status: string) => {
+            if (status === "OK" && results?.[0]) resolve(results[0].formatted_address);
+            else reject(new Error(status));
+          });
+        });
+        setOwLocation((prev) => (prev ? { ...prev, address } : prev));
+      } catch {}
+    } catch (err: any) {
+      showToast("error", err?.code === 1 ? "Location access denied." : "Couldn't get your location.");
+    } finally {
+      setOwLocating(false);
+    }
+  };
+
+  const handleOwPickFiles = (inputFiles: FileList | undefined) => {
+    if (!inputFiles) return;
+    const next: { file: File; preview: string; type: "image" | "video" }[] = [];
+    for (let i = 0; i < inputFiles.length; i++) {
+      const f = inputFiles[i];
+      if (!f.type.startsWith("image/") && !f.type.startsWith("video/")) continue;
+      if (f.size > 50 * 1024 * 1024) { showToast("error", `"${f.name}" is too large (max 50MB).`); continue; }
+      next.push({ file: f, preview: URL.createObjectURL(f), type: f.type.startsWith("video/") ? "video" : "image" });
+    }
+    setOwFiles((prev) => [...prev, ...next]);
   };
 
   const loadData = useCallback(async () => {
@@ -386,7 +424,7 @@ export default function TasksPage() {
         : supabase.from("employees").select("id, first_name, last_name, department, branch_id, avatar_url, email, reports_to").eq("status", "active").order("first_name");
       const [{ data: emp }, { data: t }] = await Promise.all([
         empQuery,
-        supabase.from("tasks").select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").is("deleted_at", null).order("created_at", { ascending: false }),
+        supabase.from("tasks").select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").is("deleted_at", null).order("created_at", { ascending: false }).limit(300),
       ]);
       setEmployees(emp || []);
       setAssignableEmployees(emp || []);
@@ -396,7 +434,6 @@ export default function TasksPage() {
     }
 
     if (canViewOwnBranch) {
-      // Manager: load only direct reports (subordinates) in their branch
       const empRes = me.branch_id
         ? await supabase.from("employees").select("id, first_name, last_name, department, branch_id, avatar_url, email, reports_to").eq("status", "active").eq("branch_id", me.branch_id).eq("reports_to", me.id).order("first_name")
         : await supabase.from("employees").select("id, first_name, last_name, department, branch_id, avatar_url, email, reports_to").eq("status", "active").eq("reports_to", me.id).order("first_name");
@@ -404,7 +441,7 @@ export default function TasksPage() {
       setEmployees(team);
       const ids = team.map((e) => e.id);
       const { data: t } = ids.length
-        ? await supabase.from("tasks").select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").in("assigned_to", ids).is("deleted_at", null).order("created_at", { ascending: false })
+        ? await supabase.from("tasks").select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)").in("assigned_to", ids).is("deleted_at", null).order("created_at", { ascending: false }).limit(300)
         : { data: [] };
       setTasks((t as any) || []);
       setLoading(false);
@@ -418,7 +455,7 @@ export default function TasksPage() {
       .select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)")
       .eq("assigned_to", me.id)
       .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }).limit(300);
     setTasks((t as any) || []);
 
     if (canAssign) {
@@ -437,7 +474,30 @@ export default function TasksPage() {
     loadData();
     const ch = supabase
       .channel("tasks-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => loadData())
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "tasks" },
+        (payload) => {
+          const updated = payload.new as Task;
+          if (updated?.deleted_at) {
+            setTasks((prev) => prev.filter((t) => t.id !== updated.id));
+          } else {
+            setTasks((prev) => {
+              const idx = prev.findIndex((t) => t.id === updated.id);
+              if (idx === -1) return prev;
+              const merged = { ...prev[idx], ...updated };
+              const next = [...prev];
+              next[idx] = merged;
+              return next;
+            });
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "tasks" },
+        () => loadData()
+      )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [permsLoading, loadData]);
@@ -453,7 +513,6 @@ export default function TasksPage() {
     setActivityLoading(false);
   }, []);
 
-  // Keep modal activity feed live
   useEffect(() => {
     if (!showModal || !editingTask) { setActivities([]); return; }
     loadActivities(editingTask.id);
@@ -468,7 +527,6 @@ export default function TasksPage() {
     return () => { supabase.removeChannel(ch); };
   }, [showModal, editingTask, loadActivities]);
 
-  // Close task dropdown when clicking outside
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (taskRef.current && !taskRef.current.contains(e.target as Node)) setTaskOpen(false);
@@ -584,6 +642,44 @@ export default function TasksPage() {
       const { data: inserted, error } = await supabase.from("tasks").insert(payload).select("id");
       setSaving(false);
       if (error) { showToast("error", "Couldn't create task."); return; }
+
+      if (form.is_outside_work && inserted?.[0]?.id && (owLocation || owFiles.length > 0)) {
+        const taskId = inserted[0].id;
+        const mediaItems: MediaItem[] = [];
+        for (let i = 0; i < owFiles.length; i++) {
+          const item = await uploadMediaToS3(owFiles[i].file, `outside-work/${taskId}/in`);
+          mediaItems.push(item);
+        }
+        const checkInData: Record<string, any> = {};
+        if (owLocation) {
+          checkInData.work_lat = owLocation.lat;
+          checkInData.work_lng = owLocation.lng;
+          checkInData.work_accuracy_m = owLocation.accuracy;
+          checkInData.work_address = owLocation.address;
+        }
+        if (mediaItems.length > 0) {
+          checkInData.work_image_url = mediaItems[0].url;
+          checkInData.work_media_urls = mediaItems;
+        }
+        checkInData.work_status = "checked_in";
+        checkInData.work_checked_in_at = new Date().toISOString();
+        await supabase.from("tasks").update(checkInData).eq("id", taskId);
+
+        const todayStr = today();
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+        await supabase.from("attendance_records").upsert({
+          employee_id: myEmployee.id,
+          date: todayStr,
+          clock_in: timeStr,
+          status: "present",
+          notes: `Outside work: check-in at ${owLocation?.address || "unknown location"}`,
+        }, { onConflict: "employee_id,date" });
+
+        setOwLocation(null);
+        setOwFiles([]);
+      }
+
       await sendTaskNotifications(assignedToIds, form.title.trim(), inserted?.[0]?.id);
       showToast("success", `${assignedToIds.length} task${assignedToIds.length === 1 ? "" : "s"} created successfully.`);
 
@@ -595,7 +691,7 @@ export default function TasksPage() {
         message: `"${form.title.trim()}" was assigned to you${form.due_date ? ` — due ${formatDueDate(form.due_date)}` : ""}.`,
       });
     }
-    setShowModal(false);
+    closeModal();
     loadData();
   };
 
@@ -622,12 +718,11 @@ export default function TasksPage() {
     if (error) showToast("error", "Couldn't delete task.");
     else {
       showToast("success", "Task moved to Recycle Bin.");
-      setShowModal(false);
+      closeModal();
       loadData();
     }
   };
 
-  // Drag and Drop Handling
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData("text/plain", taskId);
     setDraggedTaskId(taskId);
@@ -647,21 +742,16 @@ export default function TasksPage() {
     handleStatusChange(task, targetStatus);
   };
 
-  // Filtered Task Collection
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
-      // Quick State Filter
       if (filterQuickState === "my_tasks" && myEmployee && t.assigned_to !== myEmployee.id) return false;
       if (filterQuickState === "overdue" && !isOverdue(t)) return false;
       if (filterQuickState === "high_priority" && !["high", "urgent"].includes(t.priority)) return false;
 
-      // Priority Filter
       if (filterPriority !== "all" && t.priority !== filterPriority) return false;
 
-      // Assignee Filter
       if (filterAssignee !== "all" && t.assigned_to !== filterAssignee) return false;
 
-      // Text Search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const empName = t.employees ? `${t.employees.first_name} ${t.employees.last_name}`.toLowerCase() : "";
@@ -676,13 +766,18 @@ export default function TasksPage() {
     });
   }, [tasks, filterQuickState, filterPriority, filterAssignee, searchQuery, myEmployee]);
 
-  const tasksFor = (status: Task["status"]) => filteredTasks.filter((t) => t.status === status);
+  const tasksByStatus = useMemo(() => {
+    const map: Record<Task["status"], Task[]> = { todo: [], in_progress: [], blocked: [], done: [] };
+    for (const t of filteredTasks) map[t.status]?.push(t);
+    return map;
+  }, [filteredTasks]);
+  const tasksFor = (status: Task["status"]) => tasksByStatus[status];
+
   const totalOverdue = tasks.filter(isOverdue).length;
   const totalDone = tasks.filter((t) => t.status === "done").length;
   const totalInProgress = tasks.filter((t) => t.status === "in_progress").length;
   const totalBlocked = tasks.filter((t) => t.status === "blocked").length;
 
-  // Per-employee Report Matrix
   const reportDateRange = useMemo(() => {
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -875,8 +970,8 @@ export default function TasksPage() {
   };
 
   // ─── EXPORT: Admin Report – Individual Employee XLSX ────────────────
-  const exportAdminEmpXLSX = (emp: Employee, empTasks: Task[]) => {
-    if (empTasks.length === 0) { showToast("export", "No tasks to export", "warning"); return; }
+  const exportAdminEmpXLSX = async (emp: Employee, empTasks: Task[]) => {
+    if (empTasks.length === 0) { showToast("export", "No tasks to export"); return; }
     const data = empTasks.map((t) => {
       const wt = getTaskWorkingTime(t);
       return ({
@@ -885,7 +980,8 @@ export default function TasksPage() {
       "Due Date": t.due_date || "", "Work Started": wt.startedAt || "", "Work Completed": wt.endedAt || "", Duration: wt.duration || "",
     }); });
     const headers = Object.keys(data[0]);
-    const aoa = [headers, ...data.map((r) => headers.map((h) => r[h]))];
+    const aoa = [headers, ...data.map((r) => headers.map((h) => r[h as keyof typeof r]))];
+    const XLSX = await getXLSX();
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = headers.map((c) => ({ wch: Math.max(c.length + 2, 14) }));
     const wb = XLSX.utils.book_new();
@@ -897,10 +993,10 @@ export default function TasksPage() {
   // ─── EXPORT: Admin Report – Individual Employee PDF ─────────────────
   const exportAdminEmpPDF = (emp: Employee, empTasks: Task[]) => {
     if (empTasks.length === 0) { showToast("export", "No tasks to export", "warning"); return; }
-    const headers = ["Title", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration"];
+    const headers = ["Title", "Description", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration"];
     const rows = empTasks.map((t) => {
       const wt = getTaskWorkingTime(t);
-      return `<tr><td>${t.title}</td><td>${t.priority}</td><td>${STATUS_CONFIG[t.status]?.label || t.status}</td><td>${t.due_date || "—"}</td><td>${wt.startedAt ? formatExact(wt.startedAt) : "—"}</td><td>${wt.endedAt ? formatExact(wt.endedAt) : "—"}</td><td>${wt.duration || "—"}</td></tr>`;
+      return `<tr><td>${t.title}</td><td>${t.description || "—"}</td><td>${t.priority}</td><td>${STATUS_CONFIG[t.status]?.label || t.status}</td><td>${t.due_date || "—"}</td><td>${wt.startedAt ? formatExact(wt.startedAt) : "—"}</td><td>${wt.endedAt ? formatExact(wt.endedAt) : "—"}</td><td>${wt.duration || "—"}</td></tr>`;
     }).join("");
     const done = empTasks.filter((t) => t.status === "done").length;
     const inProg = empTasks.filter((t) => t.status === "in_progress").length;
@@ -961,8 +1057,8 @@ export default function TasksPage() {
   };
 
   // ─── EXPORT: Admin Report – All Employees XLSX ─────────────────────
-  const exportAdminAllXLSX = () => {
-    if (adminReport.length === 0) { showToast("export", "No data to export", "warning"); return; }
+  const exportAdminAllXLSX = async () => {
+    if (adminReport.length === 0) { showToast("export", "No data to export"); return; }
     const data = adminReport.flatMap((r) =>
       r.tasks.map((t) => {
         const wt = getTaskWorkingTime(t);
@@ -975,7 +1071,8 @@ export default function TasksPage() {
       }); })
     );
     const headers = Object.keys(data[0]);
-    const aoa = [headers, ...data.map((r) => headers.map((h) => r[h]))];
+    const aoa = [headers, ...data.map((r) => headers.map((h) => r[h as keyof typeof r]))];
+    const XLSX = await getXLSX();
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = headers.map((c) => ({ wch: Math.max(c.length + 2, 14) }));
     const wb = XLSX.utils.book_new();
@@ -987,11 +1084,11 @@ export default function TasksPage() {
   // ─── EXPORT: Admin Report – All Employees PDF ──────────────────────
   const exportAdminAllPDF = () => {
     if (adminReport.length === 0) { showToast("export", "No data to export", "warning"); return; }
-    const headers = ["Employee", "Department", "Task", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration"];
+    const headers = ["Employee", "Department", "Task", "Description", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration"];
     const rows = adminReport.flatMap((r) =>
       r.tasks.map((t) => {
         const wt = getTaskWorkingTime(t);
-        return `<tr><td>${r.employee.first_name} ${r.employee.last_name}</td><td>${r.employee.department || "—"}</td><td>${t.title}</td><td>${t.priority}</td><td>${STATUS_CONFIG[t.status]?.label || t.status}</td><td>${t.due_date || "—"}</td><td>${wt.startedAt ? formatExact(wt.startedAt) : "—"}</td><td>${wt.endedAt ? formatExact(wt.endedAt) : "—"}</td><td>${wt.duration || "—"}</td></tr>`;
+        return `<tr><td>${r.employee.first_name} ${r.employee.last_name}</td><td>${r.employee.department || "—"}</td><td>${t.title}</td><td>${t.description || "—"}</td><td>${t.priority}</td><td>${STATUS_CONFIG[t.status]?.label || t.status}</td><td>${t.due_date || "—"}</td><td>${wt.startedAt ? formatExact(wt.startedAt) : "—"}</td><td>${wt.endedAt ? formatExact(wt.endedAt) : "—"}</td><td>${wt.duration || "—"}</td></tr>`;
       })
     ).join("");
     const html = `<!DOCTYPE html><html><head><title>Admin Task Report</title><style>
@@ -1094,7 +1191,7 @@ export default function TasksPage() {
   };
 
   // ─── EXPORT: My Report XLSX ────────────────────────────────────────
-  const exportMyReportXLSX = () => {
+  const exportMyReportXLSX = async () => {
     if (!myReport || myReport.tasks.length === 0) { toast("Export", "No tasks to export", "warning"); return; }
     const data = myReport.tasks.map((t) => {
       const wt = getTaskWorkingTime(t, myTaskActivities);
@@ -1103,7 +1200,8 @@ export default function TasksPage() {
       "Due Date": t.due_date || "", "Work Started": wt.startedAt || "", "Work Completed": wt.endedAt || "", Duration: wt.duration || "", Created: t.created_at.slice(0, 10),
     }); });
     const headers = Object.keys(data[0]);
-    const aoa = [headers, ...data.map((r) => headers.map((h) => r[h]))];
+    const aoa = [headers, ...data.map((r) => headers.map((h) => r[h as keyof typeof r]))];
+    const XLSX = await getXLSX();
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = headers.map((c) => ({ wch: Math.max(c.length + 2, 14) }));
     const wb = XLSX.utils.book_new();
@@ -1115,10 +1213,10 @@ export default function TasksPage() {
   // ─── EXPORT: My Report PDF ─────────────────────────────────────────
   const exportMyReportPDF = () => {
     if (!myReport || myReport.tasks.length === 0) { toast("Export", "No tasks to export", "warning"); return; }
-    const headers = ["Title", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration", "Created"];
+    const headers = ["Title", "Description", "Priority", "Status", "Due Date", "Work Started", "Work Completed", "Duration", "Created"];
     const rows = myReport.tasks.map((t) => {
       const wt = getTaskWorkingTime(t, myTaskActivities);
-      return `<tr><td>${t.title}</td><td>${t.priority}</td><td>${t.status}</td><td>${t.due_date || "—"}</td><td>${wt.startedAt ? formatExact(wt.startedAt) : "—"}</td><td>${wt.endedAt ? formatExact(wt.endedAt) : "—"}</td><td>${wt.duration || "—"}</td><td>${t.created_at.slice(0, 10)}</td></tr>`;
+      return `<tr><td>${t.title}</td><td>${t.description || "—"}</td><td>${t.priority}</td><td>${t.status}</td><td>${t.due_date || "—"}</td><td>${wt.startedAt ? formatExact(wt.startedAt) : "—"}</td><td>${wt.endedAt ? formatExact(wt.endedAt) : "—"}</td><td>${wt.duration || "—"}</td><td>${t.created_at.slice(0, 10)}</td></tr>`;
     }).join("");
     const html = `<!DOCTYPE html><html><head><title>My Report</title><style>
       body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#111}
@@ -1584,62 +1682,30 @@ export default function TasksPage() {
                           )}
                         </div>
 
-                        {/* Outside Work: Check In / Out + Session */}
+                        {/* Outside Work: compact status indicator */}
                         {t.is_outside_work && (
                           <div className="mt-2.5 pt-2.5 border-t border-gray-100">
-                            {t.work_status === "checked_in" ? (
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-1.5 min-w-0">
-                                    <span className="relative flex h-2 w-2 shrink-0">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                                    </span>
-                                    <span className="text-[11px] font-bold text-emerald-700">
-                                      Checked in · {t.work_checked_in_at ? formatExact(t.work_checked_in_at) : ""}
-                                    </span>
-                                  </div>
-                                  {(t.work_media_urls?.length ?? 0) > 0 && (
-                                    <span className="text-[10px] font-bold text-gray-400 flex items-center gap-0.5 shrink-0">
-                                      <i className="ri-image-line" />
-                                      {t.work_media_urls!.length}
-                                    </span>
-                                  )}
-                                </div>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); openCheckInOut(t.id, "check_out"); }}
-                                  className="w-full py-1.5 rounded-lg bg-[#253C7D] hover:bg-[#1E3064] text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                                >
-                                  <i className="ri-logout-circle-r-line" />
-                                  Check Out
-                                </button>
-                              </div>
-                            ) : t.work_status === "checked_out" ? (
-                              <div className="space-y-0.5">
-                                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600">
-                                  <i className="ri-login-circle-line" />
-                                  In {t.work_checked_in_at ? formatExact(t.work_checked_in_at) : "--"}
-                                  {(t.work_media_urls?.length ?? 0) > 0 && (
-                                    <span className="text-gray-400 font-normal">({t.work_media_urls!.length} file{t.work_media_urls!.length > 1 ? "s" : ""})</span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-[#253C7D]">
-                                  <i className="ri-logout-circle-r-line" />
-                                  Out {t.work_checked_out_at ? formatExact(t.work_checked_out_at) : "--"}
-                                  {(t.work_check_out_media_urls?.length ?? 0) > 0 && (
-                                    <span className="text-gray-400 font-normal">({t.work_check_out_media_urls!.length} file{t.work_check_out_media_urls!.length > 1 ? "s" : ""})</span>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); openCheckInOut(t.id, "check_in"); }}
-                                className="w-full py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                              >
-                                <i className="ri-login-circle-line" />
-                                Check In
-                              </button>
-                            )}
+                            <div className="flex items-center gap-1.5 text-[10px] font-semibold">
+                              {t.work_status === "checked_in" ? (
+                                <>
+                                  <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                                  </span>
+                                  <span className="text-emerald-700">Checked in · {formatExact(t.work_checked_in_at!)}</span>
+                                </>
+                              ) : t.work_status === "checked_out" ? (
+                                <>
+                                  <i className="ri-check-double-line text-emerald-600" />
+                                  <span className="text-gray-500">Session complete</span>
+                                </>
+                              ) : (
+                                <>
+                                  <i className="ri-map-pin-line text-amber-500" />
+                                  <span className="text-amber-600">Outside work</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2457,7 +2523,7 @@ export default function TasksPage() {
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/40 backdrop-blur-xs overflow-y-auto no-scrollbar"
-          onClick={() => { if (!saving) setShowModal(false); }}
+          onClick={() => { if (!saving) closeModal(); }}
         >
           <div
             className="bg-white rounded-3xl w-full max-w-xl shadow-2xl border border-gray-100/80 overflow-hidden max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-150"
@@ -2519,7 +2585,7 @@ export default function TasksPage() {
                 <div className="h-5 w-px bg-gray-200 hidden sm:block" />
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => closeModal()}
                   className="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-colors cursor-pointer"
                 >
                   <i className="ri-close-line text-lg" />
@@ -2545,60 +2611,36 @@ export default function TasksPage() {
                     />
                   </div>
 
-                  {/* Status Selection Pill Buttons */}
+                  {/* Status Selection */}
                   <div>
                     <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
                       Status Stage
                     </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {STATUS_COLUMNS.map((s) => {
-                        const cfg = STATUS_CONFIG[s.key];
-                        const isSelected = form.status === s.key;
-                        return (
-                          <button
-                            key={s.key}
-                            type="button"
-                            onClick={() => setForm({ ...form, status: s.key })}
-                            className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                              isSelected
-                                ? `${cfg.badge} border-current shadow-xs ring-2 ring-current/15`
-                                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300"
-                            }`}
-                          >
-                            <i className={cfg.icon} />
-                            {s.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <select
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value as Task["status"] })}
+                      className="w-full px-3 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                    >
+                      {STATUS_COLUMNS.map((s) => (
+                        <option key={s.key} value={s.key}>{STATUS_CONFIG[s.key].label}</option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* Priority Level Pill Buttons */}
+                  {/* Priority Level */}
                   <div>
                     <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
                       Priority Level
                     </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {(["low", "medium", "high", "urgent"] as Task["priority"][]).map((p) => {
-                        const meta = PRIORITY_META[p];
-                        const isSelected = form.priority === p;
-                        return (
-                          <button
-                            key={p}
-                            type="button"
-                            onClick={() => setForm({ ...form, priority: p })}
-                            className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                              isSelected
-                                ? `${meta.bg} ${meta.text} border-current shadow-xs ring-2 ring-current/15`
-                                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300"
-                            }`}
-                          >
-                            <i className={meta.icon} />
-                            {meta.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <select
+                      value={form.priority}
+                      onChange={(e) => setForm({ ...form, priority: e.target.value as Task["priority"] })}
+                      className="w-full px-3 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                    >
+                      {(["low", "medium", "high", "urgent"] as Task["priority"][]).map((p) => (
+                        <option key={p} value={p}>{PRIORITY_META[p].label}</option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Assignee & Due Date Row */}
@@ -2808,6 +2850,105 @@ export default function TasksPage() {
                       </div>
                     </button>
 
+                    {/* Check-in capture for NEW tasks with outside work */}
+                    {form.is_outside_work && !editingTask && (
+                      <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50/30 space-y-3">
+                        {/* Location Capture */}
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1.5">
+                            <i className="ri-map-pin-2-fill text-emerald-600" />
+                            Current Location
+                          </label>
+                          {owLocation ? (
+                            <div className="p-2.5 bg-emerald-50 border border-emerald-200/60 rounded-xl space-y-1">
+                              <p className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                                <i className="ri-check-line" /> Location captured
+                              </p>
+                              {owLocation.address && (
+                                <p className="text-[11px] text-emerald-600">{owLocation.address}</p>
+                              )}
+                              {!owLocation.address && (
+                                <p className="text-[11px] text-emerald-600">{owLocation.lat}, {owLocation.lng}</p>
+                              )}
+                              {owLocation.accuracy != null && (
+                                <p className="text-[10px] text-emerald-500">±{owLocation.accuracy}m accuracy</p>
+                              )}
+                              <button type="button" onClick={() => setOwLocation(null)} className="text-[10px] font-bold text-emerald-700 hover:underline cursor-pointer">
+                                Recapture
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleOwCaptureLocation}
+                              disabled={owLocating}
+                              className="w-full py-2.5 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-600 text-[11px] font-bold hover:bg-emerald-50 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                            >
+                              {owLocating ? (
+                                <>
+                                  <div className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                                  Getting location...
+                                </>
+                              ) : (
+                                <>
+                                  <i className="ri-map-pin-user-line text-sm" />
+                                  Capture Current Location
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Media Capture */}
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1.5">
+                            <i className="ri-camera-line text-[#253C7D]" />
+                            Photos / Videos
+                            <span className="text-gray-300 font-normal normal-case">(optional)</span>
+                          </label>
+                          <input
+                            ref={owFileRef}
+                            type="file"
+                            accept="image/*,video/*"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => handleOwPickFiles(e.target.files)}
+                          />
+                          {owFiles.length > 0 && (
+                            <div className="grid grid-cols-3 gap-1.5 mb-2">
+                              {owFiles.map((f, i) => (
+                                <div key={i} className="relative group">
+                                  {f.type === "video" ? (
+                                    <video src={f.preview} preload="metadata" className="w-full aspect-video object-cover rounded-lg border border-gray-200 bg-black" />
+                                  ) : (
+                                    <img src={f.preview} alt="" className="w-full aspect-video object-cover rounded-lg border border-gray-200" />
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      URL.revokeObjectURL(f.preview);
+                                      setOwFiles((prev) => prev.filter((_, idx) => idx !== i));
+                                    }}
+                                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                  >
+                                    <i className="ri-close-line" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => owFileRef.current?.click()}
+                            className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 text-[11px] font-bold hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <i className="ri-camera-line text-sm" />
+                            {owFiles.length > 0 ? "Add More" : "Add Photos / Videos"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Full Session Display when editing an outside-work task */}
                     {editingTask?.is_outside_work && (
                       <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50/30 space-y-3">
@@ -2998,16 +3139,16 @@ export default function TasksPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  disabled={saving}
-                  className="px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 text-xs font-bold hover:bg-gray-50 cursor-pointer disabled:opacity-50 transition-colors"
+                   onClick={() => closeModal()}
+                   disabled={saving}
+                   className="px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 text-xs font-bold hover:bg-gray-50 cursor-pointer disabled:opacity-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={saving || !form.title.trim()}
+                  disabled={saving || !form.title.trim() || (!editingTask && form.is_outside_work && !owLocation)}
                   className="px-5 py-2 rounded-xl bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold transition-all shadow-xs hover:shadow-md cursor-pointer disabled:opacity-50"
                 >
                   {saving ? "Saving..." : editingTask ? "Save Changes" : assignedToIds.length > 1 ? `Create ${assignedToIds.length} Tasks` : "Create Task"}

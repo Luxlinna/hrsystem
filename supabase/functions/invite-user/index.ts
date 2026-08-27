@@ -25,6 +25,37 @@ function getTransporter() {
   });
 }
 
+function buildInviteEmail(name: string, inviteLink: string): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to HR System</h1>
+  </div>
+  <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+    <p style="font-size: 16px; margin-top: 0;">Hello <strong>${name}</strong>,</p>
+    <p style="font-size: 16px;">You have been invited to join <strong>HR System</strong>. Click the button below to set up your account and create your password.</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${inviteLink}" style="display: inline-block; background: #1e40af; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Set Up Account</a>
+    </div>
+    <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px;">
+      <p style="font-size: 13px; color: #92400e; margin: 0;">
+        ⏰ <strong>This link expires in 24 hours.</strong> If you don't set up your account before then, ask your administrator to resend the invitation.
+      </p>
+    </div>
+    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+    <p style="font-size: 12px; color: #94a3b8; margin: 0;">If you didn't expect this invitation, you can safely ignore this email.</p>
+    <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">— The HR System Team</p>
+  </div>
+</body>
+</html>`.trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -48,10 +79,93 @@ Deno.serve(async (req) => {
       .eq("email", email)
       .maybeSingle();
 
-    if (existing) {
-      if (existing.user_id) {
-        return json({ error: "User already has an account" }, 400);
+    // If a user_id is already linked, check whether they have actually confirmed
+    // their account (i.e. set a password). If they have, block the invite.
+    // If they haven't (invite expired / never clicked the link), allow a resend.
+    if (existing?.user_id) {
+      const { data: authUserData, error: authLookupError } =
+        await supabaseAdmin.auth.admin.getUserById(existing.user_id);
+
+      if (authLookupError) {
+        console.error("Auth user lookup error:", authLookupError);
+        return json({ error: "Could not verify account status" }, 500);
       }
+
+      const isConfirmed =
+        !!authUserData?.user?.email_confirmed_at ||
+        !!authUserData?.user?.confirmed_at;
+
+      if (isConfirmed) {
+        return json({ error: "User already has an active account" }, 400);
+      }
+
+      // Unconfirmed — this is a resend for an expired invite. Update metadata
+      // if supplied but keep the existing row and user_id intact.
+      if (display_name || role_id) {
+        await supabaseAdmin
+          .from("user_role_assignments")
+          .update({ display_name, role_id: role_id ? parseInt(role_id) : null })
+          .eq("id", existing.id);
+      }
+
+      // Skip auth user creation; jump straight to generating a fresh link.
+      const userId = existing.user_id;
+
+      const { data: linkData, error: generateLinkError } =
+        await supabaseAdmin.auth.admin.generateLink({
+          type: "recovery",
+          email,
+          options: {
+            redirectTo:
+              redirect_to ||
+              `${new URL(req.url).origin}/auth/reset-password`,
+          },
+        });
+
+      if (generateLinkError || !linkData?.properties?.action_link) {
+        console.error("Generate link error:", generateLinkError);
+        return json({ error: "Failed to generate invite link" }, 500);
+      }
+
+      const inviteLink = linkData.properties.action_link;
+      const resolvedName = display_name || authUserData?.user?.user_metadata?.display_name || email.split("@")[0];
+
+      const emailHtml = buildInviteEmail(resolvedName, inviteLink);
+
+      let emailSent = false;
+      let emailError: string | null = null;
+      try {
+        const transporter = getTransporter();
+        await transporter.sendMail({
+          from: Deno.env.get("EMAIL_FROM") || "HRSystem <hrmsystem.ops@gmail.com>",
+          to: email,
+          subject: "Your HR System invitation — new setup link",
+          html: emailHtml,
+        });
+        emailSent = true;
+      } catch (mailErr: any) {
+        console.error("SMTP send failed:", mailErr);
+        emailError = mailErr.message || String(mailErr);
+      }
+
+      if (!emailSent) {
+        return json({
+          success: false,
+          error: "Invite link regenerated but the email failed to send",
+          email_error: emailError,
+          user_id: userId,
+        }, 500);
+      }
+
+      return json({
+        success: true,
+        message: "Invitation resent successfully",
+        user: { id: userId, email },
+      });
+    }
+
+    if (existing) {
+      // Row exists but no user_id yet — update metadata if supplied.
       const { error: updateError } = await supabaseAdmin
         .from("user_role_assignments")
         .update({ display_name, role_id: role_id ? parseInt(role_id) : null })
@@ -137,30 +251,7 @@ Deno.serve(async (req) => {
     }
 
     const inviteLink = linkData.properties.action_link;
-
-    const emailHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to HR System</h1>
-  </div>
-  <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
-    <p style="font-size: 16px; margin-top: 0;">Hello <strong>${display_name || email.split("@")[0]}</strong>,</p>
-    <p style="font-size: 16px;">You have been invited to join <strong>HR System</strong>. Click the button below to set up your account and create your password.</p>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${inviteLink}" style="display: inline-block; background: #1e40af; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Set Up Account</a>
-    </div>
-    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-    <p style="font-size: 12px; color: #94a3b8; margin: 0;">This link expires in 24 hours. If you didn't expect this invitation, please ignore this email.</p>
-    <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">— The HR System Team</p>
-  </div>
-</body>
-</html>`.trim();
+    const emailHtml = buildInviteEmail(display_name || email.split("@")[0], inviteLink);
 
     let emailSent = false;
     let emailError: string | null = null;
@@ -170,7 +261,7 @@ Deno.serve(async (req) => {
       await transporter.sendMail({
         from: Deno.env.get("EMAIL_FROM") || "HRSystem <hrmsystem.ops@gmail.com>",
         to: email,
-        subject: "You're invited to HR System — Set up your account",
+        subject: "You're invited to HR System — Set up your account (link valid 24 hrs)",
         html: emailHtml,
       });
       emailSent = true;
