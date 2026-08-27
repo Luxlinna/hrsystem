@@ -22,7 +22,7 @@ This custom function handles user invitations by:
 2. Use this function to create users and send invitations:
    ```ts
    // Example usage in your API route
-   const { success, message, user } = await supabaseAdmin.functions.invoke('send-invite-email', {
+    const { success, message, user } = await supabaseAdmin.functions.invoke('invite-user', {
      email: 'user@example.com',
      display_name: 'Test User',
      role_id: 1,

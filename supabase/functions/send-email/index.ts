@@ -1,4 +1,3 @@
-// @deno-types="npm:@types/nodemailer"
 import nodemailer from "npm:nodemailer@6";
 
 const corsHeaders = {
@@ -13,19 +12,23 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function getTransporter() {
+  return nodemailer.createTransport({
+    host: Deno.env.get("SMTP_HOST") || "smtp.gmail.com",
+    port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
+    secure: Deno.env.get("SMTP_SECURE") === "true",
+    auth: {
+      user: Deno.env.get("SMTP_USER"),
+      pass: Deno.env.get("SMTP_PASS"),
+    },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const smtpHost = Deno.env.get("SMTP_HOST") || "smtp.gmail.com";
-    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
-    const smtpUser = Deno.env.get("SMTP_USER");
-    const smtpPass = Deno.env.get("SMTP_PASS")?.replace(/\s+/g, "");
-    const emailFrom = Deno.env.get("EMAIL_FROM") || `HRSystem <${smtpUser}>`;
-
-    if (!smtpUser || !smtpPass) {
-      return json({ error: "SMTP credentials not configured" }, 500);
-    }
+    const from = Deno.env.get("EMAIL_FROM") || "HR System <hrmsystem.ops@gmail.com>";
 
     const { to, subject, html } = await req.json();
 
@@ -34,25 +37,16 @@ Deno.serve(async (req) => {
     }
 
     const recipients = Array.isArray(to) ? to : [to];
+    const transporter = getTransporter();
 
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: Deno.env.get("SMTP_SECURE") === "true",
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
-
-    const info = await transporter.sendMail({
-      from: emailFrom,
+    const result = await transporter.sendMail({
+      from,
       to: recipients.join(", "),
       subject,
       html,
     });
 
-    return json({ success: true, id: info.messageId });
+    return json({ success: true, id: result.messageId });
   } catch (err: any) {
     console.error("Send email error:", err);
     return json({ error: err.message || "Internal server error" }, 500);

@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-// @deno-types="npm:@types/nodemailer"
 import nodemailer from "npm:nodemailer@6";
 
 const corsHeaders = {
@@ -11,6 +10,18 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function getTransporter() {
+  return nodemailer.createTransport({
+    host: Deno.env.get("SMTP_HOST") || "smtp.gmail.com",
+    port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
+    secure: Deno.env.get("SMTP_SECURE") === "true",
+    auth: {
+      user: Deno.env.get("SMTP_USER"),
+      pass: Deno.env.get("SMTP_PASS"),
+    },
   });
 }
 
@@ -31,7 +42,6 @@ Deno.serve(async (req) => {
       return json({ error: "Email is required" }, 400);
     }
 
-    // Check if user already exists in user_role_assignments
     const { data: existing } = await supabaseAdmin
       .from("user_role_assignments")
       .select("id, user_id, email")
@@ -42,14 +52,12 @@ Deno.serve(async (req) => {
       if (existing.user_id) {
         return json({ error: "User already has an account" }, 400);
       }
-      // Update existing pre-provisioned record
       const { error: updateError } = await supabaseAdmin
         .from("user_role_assignments")
         .update({ display_name, role_id: role_id ? parseInt(role_id) : null })
         .eq("id", existing.id);
       if (updateError) throw updateError;
     } else {
-      // Create pre-provisioned user assignment
       const { error: insertError } = await supabaseAdmin
         .from("user_role_assignments")
         .insert({
@@ -60,7 +68,6 @@ Deno.serve(async (req) => {
       if (insertError) throw insertError;
     }
 
-    // Create the user in Supabase Auth (without sending Supabase's own email)
     let userData = null;
     let createUserError = null;
 
@@ -83,10 +90,7 @@ Deno.serve(async (req) => {
     if (createUserError) {
       const errMsg = createUserError.message || String(createUserError);
       if (errMsg.includes("already been registered") || errMsg.includes("already exists")) {
-        // Retrieve the existing user's ID by listing users
-        const listResult = await supabaseAdmin.auth.admin.listUsers({
-          perPage: 1000,
-        });
+        const listResult = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
         if (listResult.error) {
           console.error("List users error:", listResult.error);
           return json({ error: listResult.error.message }, 500);
@@ -110,7 +114,6 @@ Deno.serve(async (req) => {
       return json({ error: "Failed to determine user ID" }, 500);
     }
 
-    // Update/link the user_id in user_role_assignments immediately
     const { error: linkError } = await supabaseAdmin
       .from("user_role_assignments")
       .update({ user_id: userId })
@@ -120,8 +123,7 @@ Deno.serve(async (req) => {
       console.error("Failed to link user_id in user_role_assignments:", linkError);
     }
 
-    // Generate password reset link (user will set password via this link)
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    const { data: linkData, error: generateLinkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email,
       options: {
@@ -129,26 +131,13 @@ Deno.serve(async (req) => {
       },
     });
 
-    if (linkError || !linkData?.properties?.action_link) {
-      console.error("Generate link error:", linkError);
+    if (generateLinkError || !linkData?.properties?.action_link) {
+      console.error("Generate link error:", generateLinkError);
       return json({ error: "Failed to generate invite link" }, 500);
     }
 
     const inviteLink = linkData.properties.action_link;
 
-    // SMTP config from environment variables
-    const smtpHost = Deno.env.get("SMTP_HOST") || "smtp.gmail.com";
-    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
-    const smtpUser = Deno.env.get("SMTP_USER");
-    const smtpPass = Deno.env.get("SMTP_PASS")?.replace(/\s+/g, "");
-    const emailFrom = Deno.env.get("EMAIL_FROM") || `HR System <${smtpUser}>`;
-
-    if (!smtpUser || !smtpPass) {
-      console.error("SMTP credentials not configured");
-      return json({ error: "Email service not configured" }, 500);
-    }
-
-    // Create email content
     const emailHtml = `
 <!DOCTYPE html>
 <html>
@@ -171,31 +160,38 @@ Deno.serve(async (req) => {
     <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">— The HR System Team</p>
   </div>
 </body>
-</html>
-    `.trim();
+</html>`.trim();
 
-    // Send email via Gmail SMTP using nodemailer (fetch cannot speak SMTP)
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: Deno.env.get("SMTP_SECURE") === "true",
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
+    let emailSent = false;
+    let emailError: string | null = null;
 
-    await transporter.sendMail({
-      from: emailFrom,
-      to: email,
-      subject: "You're invited to HR System — Set up your account",
-      html: emailHtml,
-    });
+    try {
+      const transporter = getTransporter();
+      await transporter.sendMail({
+        from: Deno.env.get("EMAIL_FROM") || "HRSystem <hrmsystem.ops@gmail.com>",
+        to: email,
+        subject: "You're invited to HR System — Set up your account",
+        html: emailHtml,
+      });
+      emailSent = true;
+    } catch (mailErr: any) {
+      console.error("SMTP send failed:", mailErr);
+      emailError = mailErr.message || String(mailErr);
+    }
+
+    if (!emailSent) {
+      return json({
+        success: false,
+        error: "User was created but the invitation email failed to send",
+        email_error: emailError,
+        user_id: userId,
+      }, 500);
+    }
 
     return json({
       success: true,
-      message: "Invitation sent successfully via Gmail SMTP",
-      user: userData.user,
+      message: "Invitation sent successfully",
+      user: userData?.user ?? { id: userId, email },
     });
   } catch (err: any) {
     console.error("Function error:", err);

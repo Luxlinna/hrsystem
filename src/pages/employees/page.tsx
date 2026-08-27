@@ -246,7 +246,7 @@ export default function Employees() {
       if (acc?.hasAccount || acc?.invited) continue;
       
       try {
-        const { error } = await supabase.functions.invoke("invite-user", {
+        const { data, error } = await supabase.functions.invoke("invite-user", {
           body: {
             email: employee.email,
             display_name: `${employee.first_name} ${employee.last_name}`,
@@ -254,7 +254,10 @@ export default function Employees() {
             redirect_to: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
           },
         });
-        if (!error) {
+        const fnError = error || data?.error;
+        if (fnError) {
+          console.error(`Failed to invite ${employee.email}:`, fnError);
+        } else {
           successCount++;
           setAccountStatus((prev) => ({ ...prev, [employee.email]: { invited: true, hasAccount: false } }));
         }
@@ -412,7 +415,7 @@ export default function Employees() {
     if (!canManage) return;
     setInvitingId(e.id);
     try {
-      const { error } = await supabase.functions.invoke("invite-user", {
+      const { data, error } = await supabase.functions.invoke("invite-user", {
         body: {
           email: e.email,
           display_name: `${e.first_name} ${e.last_name}`,
@@ -420,7 +423,8 @@ export default function Employees() {
           redirect_to: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
         },
       });
-      if (error) throw error;
+      const fnError = error || data?.error;
+      if (fnError) throw new Error(typeof fnError === 'string' ? fnError : fnError.message || 'Invite failed');
       toast("Invitation sent", `An invite link was sent to ${e.email}`, "success");
       setAccountStatus((prev) => ({ ...prev, [e.email]: { invited: true, hasAccount: false } }));
     } catch (err: any) {

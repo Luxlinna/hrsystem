@@ -124,7 +124,9 @@ async function readFunctionJson(res: Response) {
 }
 
 function getInviteError(result: any) {
-  return result?.error || result?.message || "Failed to send invite";
+  const base = result?.error || result?.message || "Failed to send invite";
+  const emailErr = result?.email_error;
+  return emailErr ? `${base} — ${emailErr}` : base;
 }
 
 // Per-role overrides, split by what they actually grant:
