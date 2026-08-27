@@ -1,33 +1,14 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { getCurrentPosition } from "@/lib/geo";
-import { loadGoogleMaps } from "@/lib/geocode";
 import { uploadMediaToS3, type MediaItem } from "@/lib/s3-storage";
 import { todayYMD } from "@/lib/date";
-
-const MAX_FILE_BYTES = 50 * 1024 * 1024;
-const ACCEPTED = "image/*,video/*";
-
-interface PendingFile {
-  file: File;
-  preview: string;
-  type: "image" | "video";
-}
-
-async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
-  try {
-    await loadGoogleMaps();
-    const geocoder = new (window as any).google.maps.Geocoder();
-    return await new Promise<string>((resolve, reject) => {
-      geocoder.geocode({ location: { lat, lng } }, (results: any[], status: string) => {
-        if (status === "OK" && results?.[0]) resolve(results[0].formatted_address);
-        else reject(new Error(status));
-      });
-    });
-  } catch {
-    return null;
-  }
-}
+import { reverseGeocode, MAX_FILE_BYTES } from "./geoUtils";
+import { LocationCaptureCard } from "./components/modals/check-in/LocationCaptureCard";
+import {
+  MediaUploadDropzone,
+  type PendingFile,
+} from "./components/modals/check-in/MediaUploadDropzone";
 
 interface Props {
   taskId: string;
@@ -38,14 +19,25 @@ interface Props {
   showToast: (type: string, message: string) => void;
 }
 
-export default function CheckInOutModal({ taskId, employeeId, mode, onDone, onClose, showToast }: Props) {
-  const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number | null; address: string | null } | null>(null);
+export default function CheckInOutModal({
+  taskId,
+  employeeId,
+  mode,
+  onDone,
+  onClose,
+  showToast,
+}: Props) {
+  const [location, setLocation] = useState<{
+    lat: number;
+    lng: number;
+    accuracy: number | null;
+    address: string | null;
+  } | null>(null);
   const [files, setFiles] = useState<PendingFile[]>([]);
   const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const isCheckIn = mode === "check_in";
   const canSubmit = isCheckIn ? !!location && !saving : files.length > 0 && !saving;
@@ -151,20 +143,22 @@ export default function CheckInOutModal({ taskId, employeeId, mode, onDone, onCl
       const { error: dbError } = await supabase.from("tasks").update(data).eq("id", taskId);
       if (dbError) throw dbError;
 
-      // Sync to attendance_records so attendance history reflects outside work
+      // Sync to attendance_records
       const today = todayYMD();
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
       if (isCheckIn) {
-        await supabase.from("attendance_records").upsert({
-          employee_id: employeeId,
-          date: today,
-          clock_in: timeStr,
-          status: "present",
-          notes: `Outside work: check-in at ${location?.address || "unknown location"}`,
-        }, { onConflict: "employee_id,date" });
+        await supabase.from("attendance_records").upsert(
+          {
+            employee_id: employeeId,
+            date: today,
+            clock_in: timeStr,
+            status: "present",
+            notes: `Outside work: check-in at ${location?.address || "unknown location"}`,
+          },
+          { onConflict: "employee_id,date" }
+        );
       } else {
-        // Update existing attendance record with clock_out
         const { data: attRec } = await supabase
           .from("attendance_records")
           .select("id, clock_in")
@@ -174,20 +168,30 @@ export default function CheckInOutModal({ taskId, employeeId, mode, onDone, onCl
         if (attRec) {
           const [ciH, ciM, ciS] = (attRec.clock_in || "00:00:00").split(":").map(Number);
           const clockInMs = ciH * 3600000 + ciM * 60000 + ciS * 1000;
-          const clockOutMs = now.getHours() * 3600000 + now.getMinutes() * 60000 + now.getSeconds() * 1000;
+          const clockOutMs =
+            now.getHours() * 3600000 + now.getMinutes() * 60000 + now.getSeconds() * 1000;
           const hoursWorked = Math.round(((clockOutMs - clockInMs) / 3600000) * 100) / 100;
-          await supabase.from("attendance_records").update({
-            clock_out: timeStr,
-            hours_worked: hoursWorked > 0 ? hoursWorked : null,
-          }).eq("id", attRec.id);
+          await supabase
+            .from("attendance_records")
+            .update({
+              clock_out: timeStr,
+              hours_worked: hoursWorked > 0 ? hoursWorked : null,
+            })
+            .eq("id", attRec.id);
         }
       }
 
-      showToast("success", isCheckIn ? "Checked in — have a productive day!" : "Checked out — great work!");
+      showToast(
+        "success",
+        isCheckIn ? "Checked in — have a productive day!" : "Checked out — great work!"
+      );
       onDone();
       onClose();
     } catch {
-      showToast("error", isCheckIn ? "Couldn't check in. Please try again." : "Couldn't check out. Please try again.");
+      showToast(
+        "error",
+        isCheckIn ? "Couldn't check in. Please try again." : "Couldn't check out. Please try again."
+      );
     } finally {
       setSaving(false);
       setUploadProgress(null);
@@ -200,147 +204,65 @@ export default function CheckInOutModal({ taskId, employeeId, mode, onDone, onCl
       onClick={() => !saving && onClose()}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-sm shadow-2xl border border-gray-100/80 overflow-hidden animate-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col"
+        className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isCheckIn ? "bg-emerald-100 text-emerald-700" : "bg-[#253C7D]/10 text-[#253C7D]"}`}>
-              <i className={`text-base ${isCheckIn ? "ri-login-circle-line" : "ri-logout-circle-r-line"}`} />
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-xl text-white ${
+                isCheckIn ? "bg-emerald-600" : "bg-indigo-600"
+              }`}
+            >
+              <i className={isCheckIn ? "ri-login-box-line" : "ri-logout-box-line"} />
+            </span>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">
+                {isCheckIn ? "Check In to Outside Work" : "Check Out of Outside Work"}
+              </h3>
+              <p className="text-[11px] text-slate-500">Record GPS location &amp; photo evidence</p>
             </div>
-            <h3 className="text-sm font-bold text-gray-900">{isCheckIn ? "Check In" : "Check Out"}</h3>
           </div>
           <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="w-7 h-7 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-colors cursor-pointer"
+            onClick={() => !saving && onClose()}
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
           >
-            <i className="ri-close-line text-base" />
+            <i className="ri-close-line text-lg" />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-5 space-y-3.5 overflow-y-auto flex-1 min-h-0">
-          {/* Location */}
-          <div>
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Current Location {!isCheckIn && <span className="text-gray-400 font-normal normal-case">(optional)</span>}
-              {isCheckIn && <span className="text-rose-500">*</span>}
-            </label>
-            {!location ? (
-              <button
-                type="button"
-                onClick={handleCaptureLocation}
-                disabled={locating}
-                className={`w-full py-3 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all cursor-pointer disabled:opacity-60 ${
-                  locating
-                    ? "border-[#253C7D]/40 bg-[#253C7D]/5 text-[#253C7D]"
-                    : "border-gray-300 bg-gray-50/50 text-gray-500 hover:border-[#253C7D]/50 hover:bg-[#253C7D]/5 hover:text-[#253C7D]"
-                }`}
-              >
-                {locating ? (
-                  <>
-                    <i className="ri-loader-4-line text-xl animate-spin" />
-                    <span className="text-xs font-bold">Locating you…</span>
-                  </>
-                ) : (
-                  <>
-                    <i className="ri-map-pin-2-line text-xl" />
-                    <span className="text-xs font-bold">Capture Current Location</span>
-                  </>
-                )}
-              </button>
-            ) : (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-                    <i className="ri-map-pin-2-fill" />
-                    {location.address || `${location.lat}, ${location.lng}`}
-                  </p>
-                  <p className="text-[11px] text-emerald-700/80 mt-0.5">
-                    ±{location.accuracy ?? "?"}m accuracy
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCaptureLocation}
-                  disabled={locating}
-                  className="text-[11px] font-bold text-[#253C7D] hover:underline shrink-0 cursor-pointer disabled:opacity-50"
-                >
-                  Re-capture
-                </button>
-              </div>
-            )}
-            {error && (
-              <p className="text-[11px] font-semibold text-rose-600 mt-1.5 flex items-start gap-1">
-                <i className="ri-error-warning-line mt-px" />
-                {error}
-              </p>
-            )}
+        {error && (
+          <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs flex items-center gap-2">
+            <i className="ri-error-warning-line shrink-0" />
+            <span>{error}</span>
           </div>
+        )}
 
-          {/* Media */}
-          <div>
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Photos & Videos {!isCheckIn && <span className="text-rose-500">*</span>}
-              {isCheckIn && <span className="text-gray-400 font-normal normal-case">(optional)</span>}
-            </label>
-            <input
-              ref={fileRef}
-              type="file"
-              accept={ACCEPTED}
-              multiple
-              capture="environment"
-              className="hidden"
-              onChange={(e) => { handlePickFiles(e.target.files); e.target.value = ""; }}
-            />
+        <LocationCaptureCard
+          location={location}
+          locating={locating}
+          onCaptureLocation={handleCaptureLocation}
+          isCheckIn={isCheckIn}
+        />
 
-            {/* File grid */}
-            {files.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                {files.map((f, i) => (
-                  <div key={i} className="relative group rounded-xl border border-gray-200 overflow-hidden aspect-square">
-                    {f.type === "video" ? (
-                      <video src={f.preview} preload="metadata" className="w-full h-full object-cover bg-black" />
-                    ) : (
-                      <img src={f.preview} alt="" className="w-full h-full object-cover" />
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeFile(i)}
-                      disabled={saving}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:opacity-30"
-                    >
-                      <i className="ri-close-line text-[10px]" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+        <MediaUploadDropzone
+          files={files}
+          onPickFiles={handlePickFiles}
+          onRemoveFile={removeFile}
+          isCheckIn={isCheckIn}
+          disabled={saving}
+        />
 
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={saving}
-              className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 text-gray-500 hover:border-[#253C7D]/50 hover:bg-[#253C7D]/5 hover:text-[#253C7D] flex flex-col items-center justify-center gap-1 transition-all cursor-pointer disabled:opacity-60"
-            >
-              <i className="ri-camera-line text-xl" />
-              <span className="text-xs font-bold">
-                {files.length > 0 ? "Add More" : "Take Photos or Videos"}
-              </span>
-            </button>
-          </div>
-        </div>
+        {uploadProgress && (
+          <p className="text-xs text-indigo-600 font-semibold animate-pulse">{uploadProgress}</p>
+        )}
 
-        {/* Footer */}
-        <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50/50 flex items-center justify-end gap-2 shrink-0">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
           <button
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="px-3.5 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 text-xs font-bold hover:bg-gray-50 cursor-pointer disabled:opacity-50 transition-colors"
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
@@ -348,23 +270,10 @@ export default function CheckInOutModal({ taskId, employeeId, mode, onDone, onCl
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className={`px-4 py-2 rounded-xl text-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 ${
-              isCheckIn
-                ? "bg-emerald-600 hover:bg-emerald-700"
-                : "bg-[#253C7D] hover:bg-[#1E3064]"
-            }`}
+            className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-[#253C7D] hover:bg-[#1F336A] disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5"
           >
-            {saving ? (
-              <>
-                <i className="ri-loader-4-line animate-spin text-sm" />
-                {uploadProgress || "Saving…"}
-              </>
-            ) : (
-              <>
-                <i className={`text-sm ${isCheckIn ? "ri-login-circle-line" : "ri-logout-circle-r-line"}`} />
-                {isCheckIn ? "Check In" : "Check Out"}
-              </>
-            )}
+            {saving && <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+            {isCheckIn ? "Confirm Check In" : "Confirm Check Out"}
           </button>
         </div>
       </div>
