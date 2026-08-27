@@ -74,7 +74,8 @@ export async function uploadMediaToS3(
 
   let uploadFile: File;
   if (isImage) {
-    uploadFile = await compressImage(file);
+    const compressedBlob = await compressImage(file);
+    uploadFile = new File([compressedBlob], file.name, { type: file.type });
   } else {
     uploadFile = file;
   }

@@ -105,13 +105,12 @@ export async function notifyTaskAssignees(params: {
   await Promise.allSettled(
     targets.map((emp) =>
       notify({
-        user_id: emp.id,
-        actor_id: params.actorUserId || null,
-        type: "task_assigned",
+        recipientUserId: emp.id,
+        type: "info",
+        source: "tasks",
         title: params.title,
         message: params.message,
-        link: "/tasks",
-        entity_id: params.entityId || null,
+        entityId: params.entityId || null,
       })
     )
   );

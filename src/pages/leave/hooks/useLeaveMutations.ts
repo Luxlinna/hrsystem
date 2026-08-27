@@ -194,18 +194,18 @@ export function useLeaveMutations({
       });
 
       // Telegram notification
-      notifyTelegramEvent({
-        event: isApprove ? "leave_approved" : "leave_rejected",
-        title: isApprove ? "✅ Leave Request Approved" : "❌ Leave Request Rejected",
-        lines: [
-          `<b>Employee:</b> ${escapeTelegramHtml(empName)}`,
-          `<b>Type:</b> ${escapeTelegramHtml(LEAVE_TYPE_CONFIG[selectedRequest.leave_type]?.label || selectedRequest.leave_type)}`,
-          `<b>Duration:</b> ${selectedRequest.days} day(s) (${selectedRequest.start_date} → ${selectedRequest.end_date})`,
-          `<b>Decided By:</b> ${escapeTelegramHtml(actorName)}`,
-          ...(approvalNote ? [`<b>Note:</b> ${escapeTelegramHtml(approvalNote)}`] : []),
-        ],
-        url: hrNexusUrl(`/leave?highlight=${selectedRequest.id}`),
-      });
+      notifyTelegramEvent(
+        `<b>${isApprove ? "✅ Leave Request Approved" : "❌ Leave Request Rejected"}</b>\n\n` +
+          `<b>Employee:</b> ${escapeTelegramHtml(empName)}\n` +
+          `<b>Type:</b> ${escapeTelegramHtml(LEAVE_TYPE_CONFIG[selectedRequest.leave_type]?.label || selectedRequest.leave_type)}\n` +
+          `<b>Duration:</b> ${selectedRequest.days} day(s) (${selectedRequest.start_date} → ${selectedRequest.end_date})\n` +
+          `<b>Decided By:</b> ${escapeTelegramHtml(actorName)}\n` +
+          (approvalNote ? `<b>Note:</b> ${escapeTelegramHtml(approvalNote)}\n` : ""),
+        {
+          text: "View Leave",
+          url: hrNexusUrl(`/leave?highlight=${selectedRequest.id}`),
+        }
+      );
 
       await loadData();
     } catch (err: any) {

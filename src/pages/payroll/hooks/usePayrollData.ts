@@ -33,7 +33,11 @@ export function usePayrollData(
           .order("first_name"),
       ]);
 
-      setAllRecords((recordsData as PayrollRecord[]) || []);
+      const formatted = (recordsData || []).map((x: any) => ({
+        ...x,
+        employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null
+      })) as PayrollRecord[];
+      setAllRecords(formatted);
       setEmployees((empsData as unknown as Employee[]) || []);
 
       if (recordsData && recordsData.length > 0) {
@@ -72,7 +76,11 @@ export function usePayrollData(
       .eq("employee_id", me.id)
       .order("month", { ascending: false });
 
-    setAllRecords((myRecords as PayrollRecord[]) || []);
+    const formattedMy = (myRecords || []).map((x: any) => ({
+      ...x,
+      employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null
+    })) as PayrollRecord[];
+    setAllRecords(formattedMy);
     if (myRecords && myRecords.length > 0) {
       const hasCurrent = myRecords.some((r) => r.month === currentMonthStr);
       if (!hasCurrent) {

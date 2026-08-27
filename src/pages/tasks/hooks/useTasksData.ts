@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, isBootstrapAdminEmail } from "@/hooks/usePermissions";
 import { WORKABLE_STATUSES } from "../constants";
 import type { Task, Employee } from "../types";
 
 export function useTasksData() {
   const { user } = useAuth();
-  const { isSuperAdmin, isManager } = usePermissions();
+  const { role, isAdmin } = usePermissions();
+  const isSuper = isAdmin || isBootstrapAdminEmail(user?.email) || role?.allowed_modules.includes("*");
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -56,13 +57,42 @@ export function useTasksData() {
     fetchTasks();
   }, [fetchCurrentEmployee, fetchEmployees, fetchTasks]);
 
+  // Role-based assignable employees filtering
+  const assignableEmployees = useMemo(() => {
+    if (!currentEmployeeId || employees.length === 0) return employees;
+    if (isSuper || role?.task_view_all_employees) {
+      return employees; // Super Admin can assign all
+    }
+
+    const isMgr =
+      role?.name?.toLowerCase().includes("manager") ||
+      role?.name?.toLowerCase().includes("lead") ||
+      Boolean(role?.task_view_own_branch);
+
+    if (isMgr) {
+      // Manager can assign to subordinates reporting to them, their department team, or themselves
+      const myEmp = employees.find((e) => e.id === currentEmployeeId);
+      return employees.filter(
+        (e) =>
+          e.id === currentEmployeeId ||
+          e.reports_to === currentEmployeeId ||
+          (myEmp?.department && e.department === myEmp.department)
+      );
+    }
+
+    // Regular employee default: themselves
+    const myEmp = employees.find((e) => e.id === currentEmployeeId);
+    return myEmp ? [myEmp] : employees;
+  }, [employees, currentEmployeeId, isSuper, role]);
+
   return {
     user,
-    isSuperAdmin,
-    isManager,
+    role,
+    isAdmin: isSuper,
     tasks,
     setTasks,
     employees,
+    assignableEmployees,
     loading,
     currentEmployeeId,
     fetchTasks,

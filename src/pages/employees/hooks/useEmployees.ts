@@ -66,7 +66,11 @@ export function useEmployees() {
           toast("Error", "Failed to load employee directory", "error");
           return;
         }
-        setEmployees(data || []);
+        const formatted = (data || []).map((x: any) => ({
+          ...x,
+          branches: Array.isArray(x.branches) ? x.branches[0] : x.branches || null
+        })) as Employee[];
+        setEmployees(formatted);
       });
   }, []);
 

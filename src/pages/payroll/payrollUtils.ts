@@ -28,8 +28,8 @@ export const printPayslip = (p: PayrollRecord): void => {
 <head>
   <title>Payslip - ${empName} - ${p.month}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-    body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; padding: 40px; max-width: 650px; margin: 0 auto; color: #1e293b; }
+    @import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,100..700;1,100..700&display=swap');
+    body { font-family: 'Kantumruy Pro', Arial, sans-serif; padding: 40px; max-width: 650px; margin: 0 auto; color: #1e293b; }
     .header { border-bottom: 2px solid #253C7D; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; }
     .title { font-size: 22px; font-weight: 800; color: #253C7D; margin: 0; }
     .subtitle { color: #64748b; font-size: 12px; margin-top: 4px; }

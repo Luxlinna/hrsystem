@@ -24,7 +24,6 @@ export const ToolsHeader = memo(function ToolsHeader({
       <div>
         <h1
           className="text-2xl font-bold text-gray-900"
-          style={{ fontFamily: "'Playfair Display', serif" }}
         >
           Tools &amp; Workspace Integrations
         </h1>

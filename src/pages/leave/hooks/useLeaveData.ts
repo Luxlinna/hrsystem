@@ -62,7 +62,10 @@ export function useLeaveData() {
           .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email)")
           .is("deleted_at", null)
           .order("created_at", { ascending: false });
-        const allReqs = (lr || []).map(normalizeLeaveRequest);
+        const allReqs = (lr || []).map((x: any) => normalizeLeaveRequest({
+          ...x,
+          employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null
+        }));
         setRequests(allReqs);
         setCalendarRequests(allReqs.filter((r) => r.status === "approved"));
 
@@ -101,7 +104,10 @@ export function useLeaveData() {
               .is("deleted_at", null)
               .order("created_at", { ascending: false })
           : { data: [] };
-        const allReqs = (lr || []).map(normalizeLeaveRequest);
+        const allReqs = (lr || []).map((x: any) => normalizeLeaveRequest({
+          ...x,
+          employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null
+        }));
         setRequests(allReqs);
         setCalendarRequests(allReqs.filter((r) => r.status === "approved"));
         setLoading(false);
@@ -115,7 +121,10 @@ export function useLeaveData() {
         .eq("employee_id", me.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
-      const allReqs = (lr || []).map(normalizeLeaveRequest);
+      const allReqs = (lr || []).map((x: any) => normalizeLeaveRequest({
+        ...x,
+        employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null
+      }));
       setRequests(allReqs);
       setCalendarRequests(allReqs.filter((r) => r.status === "approved"));
     } catch (err) {

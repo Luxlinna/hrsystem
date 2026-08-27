@@ -121,7 +121,7 @@ export default function Sidebar() {
             className="w-8 h-8 object-contain shrink-0"
           />
           {isExpanded && (
-            <span className={`text-[13px] font-serif font-semibold tracking-wide whitespace-nowrap ${isDark ? "text-white" : "text-gray-900"}`}>
+            <span className={`text-[13px] font-semibold tracking-wide whitespace-nowrap ${isDark ? "text-white" : "text-gray-900"}`}>
               HRM_OPS
             </span>
           )}

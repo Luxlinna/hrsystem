@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import type { Employee } from "../types";
 
 interface Props {
-  employee: Employee;
   activeTab: string;
   onTabChange: (tab: string) => void;
   todayAttendance: any;

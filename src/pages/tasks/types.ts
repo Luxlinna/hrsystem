@@ -63,6 +63,6 @@ export interface FormState {
   is_outside_work: boolean;
 }
 
-export type TaskViewMode = "board" | "list" | "calendar";
+export type TaskViewMode = "board" | "list" | "calendar" | "report";
 export type TaskSortField = "due_date" | "priority" | "created_at" | "title";
 export type TaskSortOrder = "asc" | "desc";

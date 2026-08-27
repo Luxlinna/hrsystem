@@ -32,7 +32,12 @@ export function useITData() {
       supabase.from("branches").select("id, name").order("name"),
     ]);
 
-    setAssets((a as ITAsset[]) || []);
+    const formattedAssets = (a || []).map((x: any) => ({
+      ...x,
+      employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null,
+      branches: Array.isArray(x.branches) ? x.branches[0] : x.branches || null
+    })) as ITAsset[];
+    setAssets(formattedAssets);
     setTickets((t as ITTicket[]) || []);
     setEmployees((e as Employee[]) || []);
     setBranches((b as Branch[]) || []);

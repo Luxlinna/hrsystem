@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logActivity } from "@/lib/audit";
 import { uploadFileToR2 } from "@/lib/r2-storage";
-import type { Candidate, Interview } from "../types";
+import type { Candidate, Interview, NewInterviewFormState } from "../types";
 import { STAGE_CONFIG } from "../constants";
 
 export function useCandidateDetail(id: string | undefined) {
@@ -34,7 +34,8 @@ export function useCandidateDetail(id: string | undefined) {
   // Schedule Interview Modal
   const [scheduleModal, setScheduleModal] = useState(false);
   const [schedulingInterview, setSchedulingInterview] = useState(false);
-  const [newInterview, setNewInterview] = useState({
+  const [newInterview, setNewInterview] = useState<NewInterviewFormState>({
+    candidate_id: "",
     scheduled_at: "",
     duration_minutes: "60",
     type: "video",
@@ -196,7 +197,7 @@ export function useCandidateDetail(id: string | undefined) {
         return;
       }
       setScheduleModal(false);
-      setNewInterview({ scheduled_at: "", duration_minutes: "60", type: "video", notes: "" });
+      setNewInterview({ candidate_id: "", scheduled_at: "", duration_minutes: "60", type: "video", notes: "" });
       toast("Interview Booked", "Session scheduled successfully.", "success");
       loadCandidate(id);
     },

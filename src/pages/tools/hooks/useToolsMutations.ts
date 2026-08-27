@@ -59,12 +59,14 @@ export function useToolsMutations({
       toast("Error", "Failed to grant tool permissions", "error");
     } else {
       toast("Access Granted", `Granted access to ${newIds.length} employee(s).`, "success");
-      logActivity(
-        "Granted Access",
-        "Tools",
-        `Granted access to ${assignTargetTool.name} for ${newIds.length} employee(s)`,
-        actorName
-      );
+      logActivity({
+        module: "tools",
+        action: "created",
+        entityType: "tool_assignment",
+        actorName,
+        actorRole: "HR",
+        description: `Granted access to ${assignTargetTool.name} for ${newIds.length} employee(s)`,
+      });
       setAssignModalOpen(false);
       setAssignEmployeeIds([]);
       await loadData();
@@ -84,12 +86,14 @@ export function useToolsMutations({
         toast("Error", "Failed to revoke tool permissions", "error");
       } else {
         toast("Access Revoked", `Revoked access from ${empName}.`, "success");
-        logActivity(
-          "Revoked Access",
-          "Tools",
-          `Revoked access to ${toolName} from ${empName}`,
-          actorName
-        );
+        logActivity({
+          module: "tools",
+          action: "updated",
+          entityType: "tool_assignment",
+          actorName,
+          actorRole: "HR",
+          description: `Revoked access to ${toolName} from ${empName}`,
+        });
         await loadData();
       }
     },
@@ -113,12 +117,15 @@ export function useToolsMutations({
           `${tool.name} is now ${newStatus.toUpperCase()}`,
           "success"
         );
-        logActivity(
-          "Updated Tool",
-          "Tools",
-          `Changed status of ${tool.name} to ${newStatus}`,
-          actorName
-        );
+        logActivity({
+          module: "tools",
+          action: "updated",
+          entityType: "tool",
+          entityId: tool.id.toString(),
+          actorName,
+          actorRole: "HR",
+          description: `Changed status of ${tool.name} to ${newStatus}`,
+        });
         await loadData();
       }
     },

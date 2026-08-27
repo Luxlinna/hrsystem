@@ -53,7 +53,7 @@ export function GeneralSettings({
 
       <SettingField
         label="Timezone"
-        description='Company time used for all check in/out records, late/early calculations and "today" — independent of each device\'s own clock. Default: Cambodia (Asia/Phnom_Penh).'
+        description={`Company time used for all check in/out records, late/early calculations and "today" — independent of each device's own clock. Default: Cambodia (Asia/Phnom_Penh).`}
         inputType="select"
         options={timezoneOptions}
         settingKey="timezone"

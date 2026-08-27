@@ -106,7 +106,7 @@ export default function GeofenceCheckInAlert() {
 
           if (!hasClockedIn && !alertedModesRef.current.has("checkin") && inWindow(CHECKIN_WINDOW)) {
             fire("checkin");
-          } else if (hasClockedIn && !hasClockedOut && !alertedModesRef.current.has("checkout") && inWindow({ startMin: daySchedule.endMin - scheduleSettings.checkoutReminderMinutes, endMin: daySchedule.endMin })) {
+          } else if (hasClockedIn && !hasClockedOut && !alertedModesRef.current.has("checkout") && inWindow({ startMin: daySchedule.endMin, endMin: daySchedule.endMin + 60 })) {
             fire("checkout");
           }
         },

@@ -10,6 +10,7 @@ interface TaskBoardViewProps {
   onDelete: (t: Task) => void;
   onStatusChange: (task: Task, newStatus: Task["status"]) => void;
   onCheckInOut?: (task: Task, mode: "check_in" | "check_out") => void;
+  onQuickCreate?: (status: Task["status"]) => void;
 }
 
 export const TaskBoardView = memo(function TaskBoardView({
@@ -19,9 +20,10 @@ export const TaskBoardView = memo(function TaskBoardView({
   onDelete,
   onStatusChange,
   onCheckInOut,
+  onQuickCreate,
 }: TaskBoardViewProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
       {STATUS_COLUMNS.map((col) => {
         const colTasks = tasks.filter((t) => t.status === col.key);
         return (
@@ -34,6 +36,7 @@ export const TaskBoardView = memo(function TaskBoardView({
             onDelete={onDelete}
             onStatusChange={onStatusChange}
             onCheckInOut={onCheckInOut}
+            onQuickCreate={onQuickCreate}
           />
         );
       })}

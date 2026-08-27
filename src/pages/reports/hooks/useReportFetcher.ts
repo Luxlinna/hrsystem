@@ -1,14 +1,20 @@
 import { useState, useCallback, useEffect } from "react";
 import type { ReportConfig, ReportRow } from "../types";
-import { fetchAttendanceReport, fetchAttendanceSummaryReport } from "./fetchers/fetchAttendanceReports";
-import { fetchLeaveReport, fetchPayrollReport, fetchHeadcountReport } from "./fetchers/fetchHRReports";
-import { fetchShiftsReport, fetchDailyLogsReport, fetchMeetingRoomsReport } from "./fetchers/fetchOpsReports";
 import {
+  fetchAttendanceReport,
+  fetchAttendanceSummaryReport,
+  fetchLeaveReport,
+  fetchPayrollReport,
+  fetchHeadcountReport,
+  fetchShiftsReport,
+  fetchDailyLogsReport,
+  fetchMeetingRoomsReport,
   fetchExpensesReport,
   fetchHireReport,
   fetchOnboardingReport,
   fetchOnboardingTasksReport,
-} from "./fetchers/fetchPipelineReports";
+  type ReportResult,
+} from "../fetchers";
 
 interface UseReportFetcherProps {
   config: ReportConfig;
@@ -24,7 +30,7 @@ export function useReportFetcher({ config, onDataReady }: UseReportFetcherProps)
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      let res: { mapped: ReportRow[]; cols: string[]; summary: Record<string, string | number> };
+      let res: ReportResult;
       switch (config.module) {
         case "leave":
           res = await fetchLeaveReport(config);
@@ -64,10 +70,10 @@ export function useReportFetcher({ config, onDataReady }: UseReportFetcherProps)
           res = await fetchShiftsReport(config);
           break;
       }
-      setRows(res.mapped);
-      setColumns(res.cols);
+      setRows(res.rows);
+      setColumns(res.columns);
       setSummary(res.summary);
-      onDataReady(res.mapped, res.cols);
+      onDataReady(res.rows, res.columns);
     } catch (err) {
       console.error("fetchData error:", err);
     } finally {

@@ -36,7 +36,7 @@ export const AuditHeader = memo(function AuditHeader({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: "'Playfair Display', serif" }}>
+        <h1 className="text-2xl font-bold text-gray-900">
           Activity Audit Log
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">Real-time tracking of all HR system changes</p>

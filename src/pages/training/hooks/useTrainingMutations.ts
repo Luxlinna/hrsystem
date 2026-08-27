@@ -136,12 +136,12 @@ export function useTrainingMutations({
     await Promise.allSettled(
       enrolledEmployees.map((employee) =>
         notify({
-          user_id: employee.id,
-          type: "training_enrolled",
+          recipientUserId: employee.id,
+          type: "info",
+          source: "training",
           title: "New Training Course Assigned",
           message: `You have been enrolled in "${course?.title || "a new course"}".`,
-          link: "/training",
-          entity_id: enrollCourseId,
+          entityId: enrollCourseId,
         })
       )
     );

@@ -36,7 +36,6 @@ export const ReportsHeader = memo(function ReportsHeader({
         <div className="flex items-center gap-2.5">
           <h1
             className="text-2xl font-bold text-gray-900"
-            style={{ fontFamily: "'Playfair Display', serif" }}
           >
             Reports &amp; Export Center
           </h1>

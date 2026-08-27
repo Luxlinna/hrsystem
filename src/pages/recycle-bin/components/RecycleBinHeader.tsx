@@ -14,7 +14,6 @@ export const RecycleBinHeader = memo(function RecycleBinHeader({
       <div>
         <h1
           className="text-2xl font-semibold text-gray-900"
-          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
         >
           Recycle Bin
         </h1>

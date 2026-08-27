@@ -1,10 +1,12 @@
 import { toast } from "@/components/Toast";
 import { useTasks } from "./hooks/useTasks";
 import { TasksHeader } from "./components/TasksHeader";
+import { TasksStatsCards } from "./components/TasksStatsCards";
 import { TasksFilterBar } from "./components/TasksFilterBar";
 import { TaskBoardView } from "./components/views/TaskBoardView";
 import { TaskTableView } from "./components/views/TaskTableView";
 import { TaskCalendarView } from "./components/views/TaskCalendarView";
+import { TaskReportsView } from "./components/views/TaskReportsView";
 import { TaskFormModal } from "./components/modals/TaskFormModal";
 import { TaskDetailDrawer } from "./components/modals/TaskDetailDrawer";
 import { TaskDeleteModal } from "./components/modals/TaskDeleteModal";
@@ -14,6 +16,7 @@ export default function TasksPage() {
   const {
     tasks,
     employees,
+    assignableEmployees,
     loading,
     currentEmployeeId,
     fetchTasks,
@@ -28,14 +31,8 @@ export default function TasksPage() {
     setAssigneeFilter,
     priorityFilter,
     setPriorityFilter,
-    outsideWorkOnly,
-    setOutsideWorkOnly,
-    overdueOnly,
-    setOverdueOnly,
-    sortField,
-    setSortField,
-    sortOrder,
-    setSortOrder,
+    quickTab,
+    setQuickTab,
     filteredTasks,
     stats,
     saving,
@@ -55,35 +52,29 @@ export default function TasksPage() {
   } = useTasks();
 
   return (
-    <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">
-      {/* Top Header */}
-      <TasksHeader
-        stats={stats}
+    <div className="w-full min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-5 font-sans">
+      {/* Top Header with Breadcrumbs & Action */}
+      <TasksHeader onNewTask={() => setShowCreateModal(true)} />
+
+      {/* 5 KPI Stats Cards Row */}
+      <TasksStatsCards stats={stats} />
+
+      {/* View Switcher, Search, Assignee & Quick Filter Pills Toolbar */}
+      <TasksFilterBar
         viewMode={viewMode}
         setViewMode={setViewMode}
-        onNewTask={() => setShowCreateModal(true)}
-      />
-
-      {/* Filter and Search Bar */}
-      <TasksFilterBar
         search={search}
         setSearch={setSearch}
         assigneeFilter={assigneeFilter}
         setAssigneeFilter={setAssigneeFilter}
         priorityFilter={priorityFilter}
         setPriorityFilter={setPriorityFilter}
-        outsideWorkOnly={outsideWorkOnly}
-        setOutsideWorkOnly={setOutsideWorkOnly}
-        overdueOnly={overdueOnly}
-        setOverdueOnly={setOverdueOnly}
-        sortField={sortField}
-        setSortField={setSortField}
-        sortOrder={sortOrder}
-        setSortOrder={setSortOrder}
+        quickTab={quickTab}
+        setQuickTab={setQuickTab}
         employees={employees}
       />
 
-      {/* Main Content Area */}
+      {/* Main Content Views */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
@@ -97,6 +88,7 @@ export default function TasksPage() {
           onDelete={setDeletingTask}
           onStatusChange={handleStatusChange}
           onCheckInOut={(task, mode) => setCheckInOutTask({ task, mode })}
+          onQuickCreate={() => setShowCreateModal(true)}
         />
       ) : viewMode === "list" ? (
         <TaskTableView
@@ -106,10 +98,16 @@ export default function TasksPage() {
           onDelete={setDeletingTask}
           onStatusChange={handleStatusChange}
         />
-      ) : (
+      ) : viewMode === "calendar" ? (
         <TaskCalendarView
           tasks={filteredTasks}
           onSelect={setSelectedTask}
+        />
+      ) : (
+        <TaskReportsView
+          tasks={tasks}
+          employees={employees}
+          onSelectTask={setSelectedTask}
         />
       )}
 
@@ -117,7 +115,8 @@ export default function TasksPage() {
       {(showCreateModal || editingTask) && (
         <TaskFormModal
           editingTask={editingTask}
-          employees={employees}
+          employees={assignableEmployees || employees}
+          currentEmployeeId={currentEmployeeId}
           saving={saving}
           onSave={handleSaveTask}
           onClose={() => {
@@ -147,7 +146,7 @@ export default function TasksPage() {
         onCancel={() => setDeletingTask(null)}
       />
 
-      {/* Check In / Out Modal */}
+      {/* Check In / Out Modal for Outside Work */}
       {checkInOutTask && (
         <CheckInOutModal
           taskId={checkInOutTask.task.id}

@@ -47,7 +47,7 @@ export const OffboardAnalyticsTabContent = memo(function OffboardAnalyticsTabCon
                   outerRadius={85}
                   paddingAngle={3}
                   dataKey="value"
-                  label={(entry: PieLabelRenderProps) =>
+                  label={(entry: any) =>
                     `${entry.name || ""}: ${entry.value || 0}`
                   }
                   labelLine={false}

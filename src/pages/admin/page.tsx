@@ -365,7 +365,7 @@ export default function AdminPortal() {
             <i className="ri-admin-line text-white text-lg" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <h1 className="text-2xl font-bold text-gray-900">
               Admin Portal
             </h1>
             <p className="text-sm text-gray-500">Manage user roles and module access permissions</p>

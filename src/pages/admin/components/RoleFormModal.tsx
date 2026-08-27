@@ -33,7 +33,7 @@ export const RoleFormModal = memo(function RoleFormModal({
   };
 
   const toggleAllInGroup = (group: string) => {
-    const groupKeys = ALL_MODULES.filter((m) => m.group === group).map((m) => m.key);
+    const groupKeys = ALL_MODULES.filter((m) => m.group === group).map((m) => m.key) as string[];
     const allSelected = groupKeys.every((k) => roleForm.allowed_modules.includes(k));
     if (allSelected) {
       setRoleForm((p) => ({ ...p, allowed_modules: p.allowed_modules.filter((m) => !groupKeys.includes(m)) }));
