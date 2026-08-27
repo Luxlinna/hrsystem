@@ -837,10 +837,11 @@ export default function Settings() {
               Telegram group notifications
             </label>
             <p className="text-[11px] text-gray-500 mt-0.5 mb-3">
-              Posts HR events to a Telegram group: attendance (check-in, checkout, late check-in, early
-              checkout — same scope as above), leave requests and approvals, meeting room bookings, and
-              new announcements. Requires TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to be set as secrets on
-              the send-telegram-notification Edge Function.
+              Posts HR events to a Telegram group: attendance exceptions only (late check-in, early
+              checkout — never routine on-time events, regardless of the scope setting above), leave
+              requests and approvals, meeting room bookings, and new announcements. Requires
+              TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to be set as secrets on the
+              send-telegram-notification Edge Function.
             </p>
             <div className="flex items-center gap-3 flex-wrap">
               <label className="flex items-center gap-1.5 text-[12px] text-gray-600 cursor-pointer">
