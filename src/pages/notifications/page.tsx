@@ -66,6 +66,7 @@ const sourceLabels: Record<string, string> = {
   announcements: "Announcements",
   meeting_rooms: "Meeting Rooms",
   password_reset: "Password Reset",
+  tasks: "Tasks",
 };
 
 function isToday(date: Date, ref: Date): boolean {

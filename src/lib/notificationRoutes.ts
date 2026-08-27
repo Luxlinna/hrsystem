@@ -45,6 +45,8 @@ export function getNotificationTarget(
       return { path: "/admin?tab=password-resets", module: "settings" };
     case "attendance":
       return { path: `/attendance${highlight}`, module: "attendance" };
+    case "tasks":
+      return { path: "/tasks", module: "tasks" };
     default:
       return null;
   }
