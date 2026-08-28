@@ -29,22 +29,49 @@ export interface NotifyInput {
   source: NotificationSource;
   entityId?: string | null;
   recipientUserId?: string | null;
+  branchId?: string | null;
+  branch_id?: string | null;
 }
 
-// Company-wide notifications:
+// Notifications:
+// Scoped to specific partner branch or company-wide (branch_id: null for Super Admin broadcast).
 // Inserts into notifications table, with automatic fallback to "system"
 // if a database check constraint has not yet been migrated for new sources.
 export async function notify(entry: NotifyInput): Promise<boolean> {
   try {
-    // Primary attempt
-    const { error } = await supabase.from("notifications").insert({
+    let branchId = entry.branchId !== undefined ? entry.branchId : (entry.branch_id !== undefined ? entry.branch_id : undefined);
+
+    // If branchId is not explicitly provided (undefined), try to look up from session
+    if (branchId === undefined) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: emp } = await supabase
+            .from("employees")
+            .select("branch_id")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+          if (emp?.branch_id) {
+            branchId = emp.branch_id;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    const payload = {
       title: entry.title,
       message: entry.message,
       type: entry.type ?? "info",
       source: entry.source,
       entity_id: entry.entityId ?? null,
       recipient_user_id: entry.recipientUserId ?? null,
-    });
+      branch_id: branchId ?? null,
+    };
+
+    // Primary attempt
+    const { error } = await supabase.from("notifications").insert(payload);
 
     if (!error) {
       return true;
@@ -54,12 +81,8 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
 
     // If check constraint failed or source rejected, fallback to "system" (always allowed)
     const fallbackRes = await supabase.from("notifications").insert({
-      title: entry.title,
-      message: entry.message,
-      type: entry.type ?? "info",
+      ...payload,
       source: "system",
-      entity_id: entry.entityId ?? null,
-      recipient_user_id: entry.recipientUserId ?? null,
     });
 
     if (fallbackRes.error) {

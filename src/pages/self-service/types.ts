@@ -10,6 +10,7 @@ export interface Employee {
   phone: string | null;
   avatar_url: string | null;
   reports_to: string | null;
+  branch_id?: string | null;
   branches: { name: string } | null;
 }
 

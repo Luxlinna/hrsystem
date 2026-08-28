@@ -1,28 +1,47 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { useBranchScope } from "@/context/BranchContext";
 import type { Notification } from "../types";
 
 export function useNotificationsData() {
   const { user } = useAuth();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' notifications.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
   const [notifs, setNotifs] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [realtimeEnabled, setRealtimeEnabled] = useState(true);
 
   const loadNotifications = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id || isPartnerBranchBlocked || !targetBranch) {
+      setNotifs([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data } = await supabase
       .from("notifications")
       .select("*")
       .or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`)
+      .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
       .order("created_at", { ascending: false });
     setNotifs((data || []) as Notification[]);
     setLoading(false);
-  }, [user?.id]);
+  }, [user?.id, isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || isPartnerBranchBlocked || !targetBranch) {
+      setNotifs([]);
+      setLoading(false);
+      return;
+    }
     loadNotifications();
 
     const channel = supabase
@@ -33,6 +52,7 @@ export function useNotificationsData() {
         (payload) => {
           const newNotif = payload.new as Notification;
           if (newNotif.recipient_user_id && newNotif.recipient_user_id !== user.id) return;
+          if (newNotif.branch_id !== null && newNotif.branch_id !== targetBranch) return;
           setNotifs((prev) => [newNotif, ...prev]);
         }
       )
@@ -42,6 +62,7 @@ export function useNotificationsData() {
         (payload) => {
           const updated = payload.new as Notification;
           if (updated.recipient_user_id && updated.recipient_user_id !== user.id) return;
+          if (updated.branch_id !== null && updated.branch_id !== targetBranch) return;
           setNotifs((prev) =>
             prev.map((n) => (n.id === updated.id ? updated : n))
           );
@@ -63,7 +84,7 @@ export function useNotificationsData() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, loadNotifications]);
+  }, [user?.id, isPartnerBranchBlocked, targetBranch, loadNotifications]);
 
   return {
     user,
@@ -71,6 +92,10 @@ export function useNotificationsData() {
     setNotifs,
     loading,
     realtimeEnabled,
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
+    targetBranch,
     loadNotifications,
   };
 }

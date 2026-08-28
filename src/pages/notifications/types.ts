@@ -8,6 +8,7 @@ export interface Notification {
   source: string;
   entity_id: string | null;
   recipient_user_id: string | null;
+  branch_id?: string | null;
   is_read: boolean;
   created_at: string;
 }

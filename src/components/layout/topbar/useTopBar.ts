@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { getNotificationTarget, canSeeNotification } from "@/lib/notificationRoutes";
@@ -20,6 +21,7 @@ export function useTopBar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { can, isAdmin, role } = usePermissions();
+  const { userBranchId } = useBranchScope();
   const { employee: myEmployee } = useMyEmployee();
   const { unreadCount, dismissUnread } = useUnreadNotifications();
 
@@ -55,13 +57,20 @@ export function useTopBar() {
   useEffect(() => {
     if (!user?.id) return;
 
-    supabase
+    let q = supabase
       .from("notifications")
       .select("*")
       .or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`)
       .order("created_at", { ascending: false })
-      .limit(40)
-      .then(({ data }) => setNotifs(data ?? []));
+      .limit(40);
+
+    if (userBranchId) {
+      q = q.or(`branch_id.is.null,branch_id.eq.${userBranchId}`);
+    } else {
+      q = q.is("branch_id", null);
+    }
+
+    q.then(({ data }) => setNotifs(data ?? []));
 
     const channel = supabase
       .channel("topbar-notifs")
@@ -69,6 +78,7 @@ export function useTopBar() {
         (payload) => {
           const row = payload.new as NotificationRow;
           if (row.recipient_user_id && row.recipient_user_id !== user.id) return;
+          if (row.branch_id !== null && row.branch_id !== userBranchId) return;
           setNotifs((prev) => [row, ...prev].slice(0, 40));
           if (row.recipient_user_id === user.id || canSeeNotification(row.source, canRef.current)) {
             toast(row.title, row.message, row.type);
@@ -92,7 +102,7 @@ export function useTopBar() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user?.id]);
+  }, [user?.id, userBranchId]);
 
   const visibleNotifs = useMemo(
     () => notifs.filter((n) => n.recipient_user_id === user?.id || canSeeNotification(n.source, can)),

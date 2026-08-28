@@ -3,6 +3,7 @@ import { NotificationsKpiRow } from "./components/NotificationsKpiRow";
 import { NotificationsFilterBar } from "./components/NotificationsFilterBar";
 import { NotificationsGroupList } from "./components/NotificationsGroupList";
 import { NotificationsEmptyState } from "./components/NotificationsEmptyState";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useNotifications } from "./hooks/useNotifications";
 
 export default function Notifications() {
@@ -32,6 +33,9 @@ export default function Notifications() {
     deleteNotification,
     openNotification,
     isNavigable,
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
   } = useNotifications();
 
   if (loading || permLoading) {
@@ -39,6 +43,24 @@ export default function Notifications() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading notifications...</p>
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+        <NotificationsHeader
+          realtimeEnabled={false}
+          unreadCount={0}
+          onRefresh={() => {}}
+          onMarkAllRead={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Notifications & Alerts"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

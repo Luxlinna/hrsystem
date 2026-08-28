@@ -38,7 +38,7 @@ export function useSelfServiceData() {
     (async () => {
       const { data } = await supabase
         .from("employees")
-        .select("id, first_name, last_name, role, department, status, join_date, email, phone, avatar_url, reports_to, branches(name)")
+        .select("id, first_name, last_name, role, department, status, join_date, email, phone, avatar_url, reports_to, branch_id, branches(name)")
         .eq("email", user.email)
         .maybeSingle();
 
@@ -69,7 +69,7 @@ export function useSelfServiceData() {
         supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("employee_id", selectedEmployee.id).eq("status", "pending"),
         supabase.from("payroll_records").select("*").eq("employee_id", selectedEmployee.id).order("month", { ascending: false }).limit(1).maybeSingle(),
         can("notifications")
-          ? supabase.from("notifications").select("id", { count: "exact", head: true }).or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).eq("is_read", false)
+          ? supabase.from("notifications").select("id", { count: "exact", head: true }).or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).or(`branch_id.is.null,branch_id.eq.${selectedEmployee.branch_id}`).eq("is_read", false)
           : Promise.resolve({ count: 0 }),
         supabase.from("tasks").select("id, title, due_date, work_status, work_checked_in_at, created_at").eq("assigned_to", selectedEmployee.id).eq("is_outside_work", true),
       ]);

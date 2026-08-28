@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
 import { canSeeNotification } from "@/lib/notificationRoutes";
 
 /** Only what the badge needs — the full row is fetched by whoever renders a list. */
@@ -9,6 +10,7 @@ interface UnreadRow {
   id: string;
   source: string;
   recipient_user_id: string | null;
+  branch_id: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -18,6 +20,7 @@ interface UnreadRow {
 // ---------------------------------------------------------------------------
 let sharedRows: UnreadRow[] = [];
 let sharedUserId: string | null = null;
+let sharedBranchId: string | null = null;
 let channel: ReturnType<typeof supabase.channel> | null = null;
 let subscriberCount = 0;
 const listeners = new Set<(rows: UnreadRow[]) => void>();
@@ -31,12 +34,20 @@ function publish(next: UnreadRow[]) {
  * Fetches only unread rows, so the count covers the whole backlog rather than
  * whatever fits in a capped page of recent notifications.
  */
-async function loadUnread(userId: string) {
-  const { data, error } = await supabase
+async function loadUnread(userId: string, branchId: string | null) {
+  let q = supabase
     .from("notifications")
-    .select("id, source, recipient_user_id")
+    .select("id, source, recipient_user_id, branch_id")
     .or(`recipient_user_id.is.null,recipient_user_id.eq.${userId}`)
     .eq("is_read", false);
+
+  if (branchId) {
+    q = q.or(`branch_id.is.null,branch_id.eq.${branchId}`);
+  } else {
+    q = q.is("branch_id", null);
+  }
+
+  const { data, error } = await q;
   if (error) {
     console.error("loadUnread error:", error);
     return;
@@ -48,7 +59,7 @@ async function loadUnread(userId: string) {
 // Realtime can drop frames while the tab is backgrounded; re-sync on return so
 // the badge never sits on a stale number.
 function handleVisibility() {
-  if (document.visibilityState === "visible" && sharedUserId) loadUnread(sharedUserId);
+  if (document.visibilityState === "visible" && sharedUserId) loadUnread(sharedUserId, sharedBranchId);
 }
 
 function disconnect() {
@@ -58,13 +69,15 @@ function disconnect() {
   }
   document.removeEventListener("visibilitychange", handleVisibility);
   sharedUserId = null;
+  sharedBranchId = null;
   publish([]);
 }
 
-function connect(userId: string) {
-  if (sharedUserId === userId && channel) return;
+function connect(userId: string, branchId: string | null) {
+  if (sharedUserId === userId && sharedBranchId === branchId && channel) return;
   disconnect();
   sharedUserId = userId;
+  sharedBranchId = branchId;
 
   const upsert = (row: UnreadRow) =>
     publish([row, ...sharedRows.filter((n) => n.id !== row.id)]);
@@ -78,6 +91,7 @@ function connect(userId: string) {
       (payload) => {
         const row = payload.new as UnreadRow & { is_read: boolean };
         if (row.recipient_user_id && row.recipient_user_id !== userId) return;
+        if (row.branch_id !== null && row.branch_id !== branchId) return;
         if (!row.is_read) upsert(row);
       }
     )
@@ -87,6 +101,7 @@ function connect(userId: string) {
       (payload) => {
         const row = payload.new as UnreadRow & { is_read: boolean };
         if (row.recipient_user_id && row.recipient_user_id !== userId) return;
+        if (row.branch_id !== null && row.branch_id !== branchId) return;
         // Handles both directions: marking read drops it, marking unread
         // brings it back.
         if (row.is_read) remove(row.id);
@@ -104,7 +119,7 @@ function connect(userId: string) {
     .subscribe();
 
   document.addEventListener("visibilitychange", handleVisibility);
-  loadUnread(userId);
+  loadUnread(userId, branchId);
 }
 
 /**
@@ -120,6 +135,7 @@ function connect(userId: string) {
 export function useUnreadNotifications() {
   const { user } = useAuth();
   const { can, loading: permsLoading } = usePermissions();
+  const { userBranchId } = useBranchScope();
   const [rows, setRows] = useState<UnreadRow[]>(sharedRows);
 
   useEffect(() => {
@@ -131,7 +147,7 @@ export function useUnreadNotifications() {
 
     listeners.add(setRows);
     subscriberCount++;
-    connect(userId);
+    connect(userId, userBranchId);
     setRows(sharedRows);
 
     return () => {
@@ -139,7 +155,7 @@ export function useUnreadNotifications() {
       subscriberCount--;
       if (subscriberCount === 0) disconnect();
     };
-  }, [user?.id]);
+  }, [user?.id, userBranchId]);
 
   const unreadCount = useMemo(() => {
     // Until permissions resolve, `can` denies everything — showing 0 briefly

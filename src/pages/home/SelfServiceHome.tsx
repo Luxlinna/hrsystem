@@ -50,7 +50,7 @@ export default function SelfServiceHome() {
         myEmp ? supabase.from("attendance_records").select("status").eq("employee_id", myEmp.id).eq("date", today).maybeSingle() : Promise.resolve({ data: null }),
         myEmp ? supabase.from("payroll_records").select("net_pay, month").eq("employee_id", myEmp.id).order("month", { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
         can("announcements") ? supabase.from("announcements").select("id, title, content").is("deleted_at", null).order("pinned", { ascending: false }).order("published_at", { ascending: false }).limit(3) : Promise.resolve({ data: [] }),
-        can("notifications") ? supabase.from("notifications").select("id", { count: "exact", head: true }).or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).eq("is_read", false) : Promise.resolve({ count: 0 }),
+        can("notifications") ? supabase.from("notifications").select("id", { count: "exact", head: true }).or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).or(`branch_id.is.null,branch_id.eq.${(myEmp as any)?.branch_id}`).eq("is_read", false) : Promise.resolve({ count: 0 }),
       ]);
 
       setMyLeave((leaveRes as any).data || []);

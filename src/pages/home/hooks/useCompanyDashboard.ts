@@ -126,7 +126,7 @@ export function useCompanyDashboard() {
       obQuery,
       lrQuery,
       prQuery,
-      user?.id ? supabase.from("notifications").select("id").or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).eq("is_read", false).limit(3) : Promise.resolve({ data: [] }),
+      user?.id ? supabase.from("notifications").select("id").or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).or(`branch_id.is.null,branch_id.eq.${branchId}`).eq("is_read", false).limit(3) : Promise.resolve({ data: [] }),
       supabase.from("job_postings").select("id, title, status, department, location, salary_min").is("deleted_at", null).eq("branch_id", branchId),
       supabase.from("candidates").select("id, stage, full_name, applied_at").is("deleted_at", null),
       supabase.from("announcements").select("id, title, content, category, pinned, published_at, author_name").is("deleted_at", null).order("pinned", { ascending: false }).order("published_at", { ascending: false }).limit(4),
