@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import type {
@@ -26,8 +27,16 @@ import { exportEmployeesCSV } from "../exportUtils";
 export function useEmployees() {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
+  const {
+    isSuperAdmin,
+    isBranchAdmin,
+    effectiveBranchId,
+    userBranchId,
+    userBranchName,
+    branches: scopeBranches,
+  } = useBranchScope();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
-  const canManage = isAdmin || !!role?.employees_manage;
+  const canManage = isAdmin || isBranchAdmin || !!role?.employees_manage;
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -143,7 +152,8 @@ export function useEmployees() {
           .includes(search.toLowerCase());
         const matchesDept = !filterDept || e.department === filterDept;
         const matchesStatus = !filterStatus || e.status === filterStatus;
-        const matchesBranch = !filterBranch || e.branch_id === filterBranch;
+        const targetBranch = filterBranch || effectiveBranchId;
+        const matchesBranch = !targetBranch || e.branch_id === targetBranch;
         const acc = accountStatus[e.email];
         const matchesAccount =
           !filterAccount ||
@@ -305,6 +315,7 @@ export function useEmployees() {
       e.preventDefault();
       if (!form.first_name.trim() || !form.last_name.trim() || !form.email.trim() || !canManage) return;
       setSubmitting(true);
+      const assignedBranch = (!isSuperAdmin && userBranchId) ? userBranchId : (form.branch_id || effectiveBranchId || null);
       const { data, error } = await supabase
         .from("employees")
         .insert({
@@ -314,7 +325,7 @@ export function useEmployees() {
           phone: form.phone.trim() || null,
           role: form.role.trim() || null,
           department: form.department || null,
-          branch_id: form.branch_id || null,
+          branch_id: assignedBranch,
           status: form.status,
           join_date: form.join_date,
           reports_to: form.reports_to || null,
@@ -450,6 +461,11 @@ export function useEmployees() {
 
   return {
     canManage,
+    isSuperAdmin,
+    isBranchAdmin,
+    effectiveBranchId,
+    userBranchId,
+    userBranchName,
     employees,
     branches,
     search,

@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useBranchScope } from "@/context/BranchContext";
 import type { OnboardingRequest, OnboardingDoc, EmployeeOption } from "../types";
 
 export function useOnboardingData(
   onHighlight: (id: string) => void
 ) {
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
@@ -29,7 +31,7 @@ export function useOnboardingData(
           .order("created_at", { ascending: true }),
         supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, avatar_url, branches(name)")
+          .select("id, first_name, last_name, role, department, avatar_url, branch_id, branches(name)")
           .is("deleted_at", null)
           .order("first_name"),
       ]);
@@ -60,10 +62,24 @@ export function useOnboardingData(
     };
   }, [loadData]);
 
+  // Scoped requests
+  const scopedRequests = useMemo(() => {
+    const targetBranch = effectiveBranchId || (isBranchAdmin ? userBranchId : null);
+    if (!targetBranch) return requests;
+    return requests.filter((r) => (r.employees as any)?.branch_id === targetBranch);
+  }, [requests, effectiveBranchId, isBranchAdmin, userBranchId]);
+
+  // Scoped employees
+  const scopedEmployees = useMemo(() => {
+    const targetBranch = effectiveBranchId || (isBranchAdmin ? userBranchId : null);
+    if (!targetBranch) return employees;
+    return employees.filter((e: any) => e.branch_id === targetBranch);
+  }, [employees, effectiveBranchId, isBranchAdmin, userBranchId]);
+
   // Handle URL highlight param
   useEffect(() => {
-    if (!highlightId || requests.length === 0) return;
-    if (!requests.some((r) => r.id === highlightId)) return;
+    if (!highlightId || scopedRequests.length === 0) return;
+    if (!scopedRequests.some((r) => r.id === highlightId)) return;
     onHighlight(highlightId);
     const t = setTimeout(() => {
       const el = document.getElementById(`onboarding-request-${highlightId}`);
@@ -71,13 +87,14 @@ export function useOnboardingData(
       el?.focus({ preventScroll: true });
     }, 150);
     return () => clearTimeout(t);
-  }, [highlightId, requests, onHighlight]);
+  }, [highlightId, scopedRequests, onHighlight]);
 
   return {
-    requests,
+    requests: scopedRequests,
+    allRequests: requests,
     setRequests,
     documents,
-    employees,
+    employees: scopedEmployees,
     loading,
     loadData,
   };

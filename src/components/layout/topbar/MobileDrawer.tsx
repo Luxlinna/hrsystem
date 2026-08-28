@@ -1,6 +1,7 @@
 import React, { memo, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/context/ThemeContext";
+import { useBranchScope } from "@/context/BranchContext";
 import { DRAWER_GROUPS } from "./constants";
 
 interface MobileDrawerProps {
@@ -38,6 +39,13 @@ const MobileDrawer = memo(function MobileDrawer({
 }: MobileDrawerProps) {
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
+  const {
+    branches,
+    selectedBranchId,
+    setSelectedBranchId,
+    userBranchName,
+    isSuperAdmin,
+  } = useBranchScope();
   const touchStartX = useRef<number>(0);
   const touchCurrentX = useRef<number>(0);
   const isDragging = useRef(false);
@@ -118,6 +126,32 @@ const MobileDrawer = memo(function MobileDrawer({
               <i className="ri-close-line text-lg" />
             </button>
           </div>
+        </div>
+
+        {/* Mobile Branch Switcher / Indicator */}
+        <div className="px-5 py-2.5 border-b border-white/10 bg-white/5">
+          {isSuperAdmin ? (
+            <div className="flex items-center gap-2">
+              <i className="ri-building-line text-[#60A5FA] text-sm shrink-0" />
+              <select
+                value={selectedBranchId}
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+                className="w-full bg-[#262626] text-white border border-white/15 rounded-xl px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-blue-500 cursor-pointer"
+              >
+                <option value="all">🌐 All Branches</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : userBranchName ? (
+            <div className="flex items-center gap-2 text-xs text-gray-300 font-semibold">
+              <i className="ri-map-pin-2-fill text-[#60A5FA] text-sm shrink-0" />
+              <span className="truncate">Branch: {userBranchName}</span>
+            </div>
+          ) : null}
         </div>
 
         {/* Swipe hint */}

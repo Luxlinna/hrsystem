@@ -15,6 +15,7 @@
 import { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/context/ThemeContext";
+import { useBranchScope } from "@/context/BranchContext";
 import { useTopBar } from "./topbar/useTopBar";
 import MobileDrawer        from "./topbar/MobileDrawer";
 import GlobalSearch        from "./topbar/GlobalSearch";
@@ -25,6 +26,13 @@ export default function TopBar() {
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const {
+    branches,
+    selectedBranchId,
+    setSelectedBranchId,
+    userBranchName,
+    isSuperAdmin,
+  } = useBranchScope();
 
   const {
     user,
@@ -123,8 +131,36 @@ export default function TopBar() {
             />
           </div>
 
-          {/* Right — theme toggle, notifications, profile */}
+          {/* Right — branch switcher/indicator, theme toggle, notifications, profile */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Super Admin Global Branch Switcher */}
+            {isSuperAdmin && (
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors shadow-2xs">
+                <i className="ri-building-line text-[#253C7D] text-sm" />
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer max-w-[150px] truncate"
+                  title="Filter system by branch"
+                >
+                  <option value="all">🌐 All Branches</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Branch Admin / Employee Branch Badge */}
+            {!isSuperAdmin && userBranchName && (
+              <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 rounded-xl text-[11px] font-bold">
+                <i className="ri-map-pin-2-fill text-xs text-[#253C7D]" />
+                <span className="max-w-[130px] truncate" title={`Branch: ${userBranchName}`}>{userBranchName}</span>
+              </div>
+            )}
+
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}

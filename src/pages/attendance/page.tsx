@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
 import { toast } from "@/components/Toast";
 import { toYMD, todayYMD as todayYMDLib } from "@/lib/date";
 import type {
@@ -31,8 +32,9 @@ export default function AttendancePage() {
   const { user } = useAuth();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin, loading: permsLoading } = usePermissions();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
   const canViewAll = isAdmin || !!role?.attendance_view_all_employees;
-  const canViewOwnBranch = !canViewAll && !!role?.attendance_view_own_branch;
+  const canViewOwnBranch = !canViewAll && (isBranchAdmin || !!role?.attendance_view_own_branch);
   const canManage = canViewAll || canViewOwnBranch;
 
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -89,7 +91,7 @@ export default function AttendancePage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
 
-    if (canViewAll) {
+    if (canViewAll && isSuperAdmin && !effectiveBranchId) {
       const [recRes, empRes] = await Promise.all([
         supabase
           .from("attendance_records")
@@ -105,6 +107,31 @@ export default function AttendancePage() {
       ]);
       if (recRes.data) setRecords(recRes.data as unknown as AttendanceRecord[]);
       if (empRes.data) setEmployees(empRes.data as unknown as Employee[]);
+      setLoading(false);
+      return;
+    }
+
+    const targetBranch = effectiveBranchId || userBranchId;
+    if ((canViewAll || canViewOwnBranch) && targetBranch) {
+      const { data: team } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name)")
+        .eq("status", "active")
+        .eq("branch_id", targetBranch)
+        .order("first_name");
+      setEmployees((team as unknown as Employee[]) || []);
+
+      const ids = (team || []).map((e) => e.id);
+      const { data: recData } = ids.length
+        ? await supabase
+            .from("attendance_records")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
+            .is("deleted_at", null)
+            .in("employee_id", ids)
+            .order("date", { ascending: false })
+            .limit(2000)
+        : { data: [] };
+      setRecords((recData as unknown as AttendanceRecord[]) || []);
       setLoading(false);
       return;
     }
@@ -129,30 +156,6 @@ export default function AttendancePage() {
       return;
     }
 
-    if (canViewOwnBranch && me.branch_id) {
-      const { data: team } = await supabase
-        .from("employees")
-        .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name)")
-        .eq("status", "active")
-        .eq("branch_id", me.branch_id)
-        .order("first_name");
-      setEmployees((team as unknown as Employee[]) || []);
-
-      const ids = (team || []).map((e) => e.id);
-      const { data: recData } = ids.length
-        ? await supabase
-            .from("attendance_records")
-            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
-            .is("deleted_at", null)
-            .in("employee_id", ids)
-            .order("date", { ascending: false })
-            .limit(2000)
-        : { data: [] };
-      setRecords((recData as unknown as AttendanceRecord[]) || []);
-      setLoading(false);
-      return;
-    }
-
     setEmployees([me as unknown as Employee]);
     const { data: recData } = await supabase
       .from("attendance_records")
@@ -163,12 +166,12 @@ export default function AttendancePage() {
       .limit(1000);
     setRecords((recData as unknown as AttendanceRecord[]) || []);
     setLoading(false);
-  }, [canViewAll, canViewOwnBranch, user?.email]);
+  }, [canViewAll, canViewOwnBranch, isSuperAdmin, effectiveBranchId, userBranchId, user?.email]);
 
   useEffect(() => {
     if (permsLoading) return;
     fetchData();
-  }, [permsLoading, fetchData]);
+  }, [permsLoading, effectiveBranchId, fetchData]);
 
   // Today's date string in company timezone
   const todayYMD = todayYMDLib();

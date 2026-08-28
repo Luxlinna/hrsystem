@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions, isBootstrapAdminEmail } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
 import { WORKABLE_STATUSES } from "../constants";
 import type { Task, Employee } from "../types";
 
 export function useTasksData() {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
-  const isSuper = isAdmin || isBootstrapAdminEmail(user?.email) || role?.allowed_modules.includes("*");
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const isSuper = isSuperAdmin || isAdmin || isBootstrapAdminEmail(user?.email) || role?.allowed_modules.includes("*");
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -19,7 +21,7 @@ export function useTasksData() {
     if (!user?.email) return;
     const { data } = await supabase
       .from("employees")
-      .select("id")
+      .select("id, branch_id")
       .eq("email", user.email)
       .maybeSingle();
     if (data) setCurrentEmployeeId(data.id);
@@ -40,7 +42,7 @@ export function useTasksData() {
     const { data, error } = await supabase
       .from("tasks")
       .select(
-        "id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url)"
+        "id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url, branch_id)"
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -67,7 +69,7 @@ export function useTasksData() {
   }, [employees, currentEmployeeId]);
 
   const isManager = useMemo(() => {
-    if (isSuper) return true;
+    if (isSuper || isBranchAdmin) return true;
     if (directSubordinates.length > 0) return true;
     const roleName = (role?.name || currentEmployee?.role || "").toLowerCase();
     return (
@@ -77,13 +79,18 @@ export function useTasksData() {
       roleName.includes("supervisor") ||
       Boolean(role?.task_view_own_branch)
     );
-  }, [isSuper, directSubordinates.length, role, currentEmployee]);
+  }, [isSuper, isBranchAdmin, directSubordinates.length, role, currentEmployee]);
 
-  // Managed employees: For Super Admin = all, For Manager = self + subordinates + department team, For regular employee = self
+  // Managed employees: For Super Admin = all, For Branch Admin = their branch employees, For Manager = self + subordinates + department team, For regular employee = self
   const managedEmployees = useMemo(() => {
     if (!currentEmployeeId || employees.length === 0) return employees;
-    if (isSuper || role?.task_view_all_employees) {
+    if (isSuper && !effectiveBranchId) {
       return employees;
+    }
+
+    const targetBranch = effectiveBranchId || userBranchId || currentEmployee?.branch_id;
+    if (isBranchAdmin && targetBranch) {
+      return employees.filter((e) => e.branch_id === targetBranch);
     }
 
     if (isManager) {
@@ -92,13 +99,14 @@ export function useTasksData() {
         (e) =>
           e.id === currentEmployeeId ||
           e.reports_to === currentEmployeeId ||
-          (myEmp?.department && e.department === myEmp.department)
+          (myEmp?.department && e.department === myEmp.department) ||
+          (targetBranch && e.branch_id === targetBranch)
       );
     }
 
     const myEmp = currentEmployee;
     return myEmp ? [myEmp] : employees;
-  }, [employees, currentEmployeeId, currentEmployee, isSuper, role, isManager]);
+  }, [employees, currentEmployeeId, currentEmployee, isSuper, effectiveBranchId, userBranchId, isBranchAdmin, isManager]);
 
   const managedEmployeeIds = useMemo(() => {
     return new Set(managedEmployees.map((e) => e.id));
@@ -106,8 +114,14 @@ export function useTasksData() {
 
   // Scoped tasks visible to this user
   const scopedTasks = useMemo(() => {
-    if (isSuper || role?.task_view_all_employees) {
+    if (isSuper && !effectiveBranchId) {
       return tasks;
+    }
+    if (isSuper && effectiveBranchId) {
+      return tasks.filter((t) => managedEmployeeIds.has(t.assigned_to) || managedEmployeeIds.has(t.assigned_by));
+    }
+    if (isBranchAdmin) {
+      return tasks.filter((t) => managedEmployeeIds.has(t.assigned_to) || managedEmployeeIds.has(t.assigned_by));
     }
     if (isManager) {
       return tasks.filter(
@@ -118,7 +132,7 @@ export function useTasksData() {
       );
     }
     return tasks.filter((t) => t.assigned_to === currentEmployeeId || t.assigned_by === currentEmployeeId);
-  }, [tasks, isSuper, role, isManager, currentEmployeeId, managedEmployeeIds]);
+  }, [tasks, isSuper, effectiveBranchId, isBranchAdmin, isManager, currentEmployeeId, managedEmployeeIds]);
 
   return {
     user,

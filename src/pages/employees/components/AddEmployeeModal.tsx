@@ -9,6 +9,7 @@ interface AddEmployeeModalProps {
   branches: Branch[];
   managers: Employee[];
   submitting: boolean;
+  isSuperAdmin?: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -20,6 +21,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
   branches,
   managers,
   submitting,
+  isSuperAdmin = true,
   onClose,
   onSubmit,
 }: AddEmployeeModalProps) {
@@ -121,8 +123,9 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
               <label className="block text-sm font-semibold text-gray-700 mb-2">Branch</label>
               <select
                 value={form.branch_id}
+                disabled={isSuperAdmin === false}
                 onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:border-transparent bg-white cursor-pointer"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:border-transparent bg-white cursor-pointer disabled:bg-gray-100 disabled:text-gray-600 disabled:cursor-not-allowed"
               >
                 <option value="">Headquarters / Unassigned</option>
                 {branches.map((b) => (
@@ -131,6 +134,11 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
                   </option>
                 ))}
               </select>
+              {isSuperAdmin === false && (
+                <p className="text-[11px] text-[#253C7D] font-bold mt-1.5 flex items-center gap-1">
+                  <i className="ri-lock-line" /> Auto-assigned to your branch
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Reports To</label>

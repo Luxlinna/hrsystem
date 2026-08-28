@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useBranchScope } from "@/context/BranchContext";
 import { MODULES, EMPLOYEE_SCOPED_MODULES } from "../constants";
 import type { ReportConfig, ReportRow } from "../types";
 
 export function useReportsData() {
+  const { isSuperAdmin, effectiveBranchName } = useBranchScope();
   const [searchParams, setSearchParams] = useSearchParams();
   const paramMod = searchParams.get("module");
   const [activeModule, setActiveModuleState] = useState(
@@ -43,7 +45,15 @@ export function useReportsData() {
   const [recordStatus, setRecordStatus] = useState<"all" | "active" | "deleted">("all");
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
-  const [branchFilter, setBranchFilter] = useState("");
+  const [branchFilter, setBranchFilter] = useState(() => {
+    return (!isSuperAdmin && effectiveBranchName && effectiveBranchName !== "All Branches") ? effectiveBranchName : "";
+  });
+
+  useEffect(() => {
+    if (!isSuperAdmin && effectiveBranchName && effectiveBranchName !== "All Branches") {
+      setBranchFilter(effectiveBranchName);
+    }
+  }, [isSuperAdmin, effectiveBranchName]);
   const [departments, setDepartments] = useState<string[]>([]);
   const [branches, setBranches] = useState<string[]>([]);
   const [reportData, setReportData] = useState<ReportRow[]>([]);

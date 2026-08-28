@@ -29,11 +29,12 @@ export interface UserRole {
   attendance_notify: boolean;
 }
 
-interface UsePermissionsReturn {
+export interface UsePermissionsReturn {
   role: UserRole | null;
   loading: boolean;
   can: (module: string) => boolean;
   isAdmin: boolean;
+  isBranchAdmin: boolean;
 }
 
 let cachedRole: UserRole | null = null;
@@ -229,6 +230,14 @@ export function usePermissions(): UsePermissionsReturn {
     };
   }, [user, authLoading, resolveRole]);
 
+  const isBranchAdmin =
+    !loading &&
+    !!role &&
+    !role.is_admin &&
+    (role.name === "Branch Admin" ||
+      role.name?.toLowerCase().includes("branch admin") ||
+      Boolean(role.employees_manage && role.attendance_view_own_branch));
+
   // Memoized so its identity only changes when the underlying permissions
   // actually do — components legitimately put `can` in effect/callback
   // dependency arrays, and a fresh function on every render there turns
@@ -240,6 +249,10 @@ export function usePermissions(): UsePermissionsReturn {
       if (!role) return false; // unassigned = no access
       if (role.is_admin) return true;
       if (role.allowed_modules.includes("*")) return true;
+      if (role.name === "Branch Admin") {
+        // Branch Admin has full access to all standard modules (except global tenant user roles admin)
+        return module !== "admin";
+      }
       return role.allowed_modules.includes(module);
     },
     [loading, role]
@@ -247,7 +260,7 @@ export function usePermissions(): UsePermissionsReturn {
 
   const isAdmin = !loading && !!role && (role.is_admin || role.allowed_modules.includes("*"));
 
-  return { role, loading, can, isAdmin };
+  return { role, loading, can, isAdmin, isBranchAdmin };
 }
 
 // Invalidate cache on role change

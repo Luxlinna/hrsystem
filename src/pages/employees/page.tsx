@@ -13,6 +13,10 @@ import { INITIAL_EMPLOYEE_FORM } from "./constants";
 export default function EmployeesPage() {
   const {
     canManage,
+    isSuperAdmin,
+    isBranchAdmin,
+    effectiveBranchId,
+    userBranchId,
     branches,
     search,
     setSearch,
@@ -70,9 +74,12 @@ export default function EmployeesPage() {
   } = useEmployees();
 
   const handleOpenAddModal = useCallback(() => {
-    setForm(INITIAL_EMPLOYEE_FORM);
+    setForm({
+      ...INITIAL_EMPLOYEE_FORM,
+      branch_id: (!isSuperAdmin && userBranchId) ? userBranchId : (effectiveBranchId || ""),
+    });
     setShowAddModal(true);
-  }, [setForm, setShowAddModal]);
+  }, [setForm, setShowAddModal, isSuperAdmin, userBranchId, effectiveBranchId]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 sm:p-6 lg:p-8 font-sans">
@@ -185,6 +192,7 @@ export default function EmployeesPage() {
         branches={branches}
         managers={managers}
         submitting={submitting}
+        isSuperAdmin={isSuperAdmin}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddEmployee}
       />

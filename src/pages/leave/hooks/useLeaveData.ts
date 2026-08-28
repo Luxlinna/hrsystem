@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
 import type { LeaveRequest, Employee, LeaveTypePolicy } from "../types";
 
 export function normalizeLeaveRequest(r: LeaveRequest): LeaveRequest {
@@ -17,10 +18,11 @@ export function normalizeLeaveRequest(r: LeaveRequest): LeaveRequest {
 export function useLeaveData() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
   const canViewAll = isAdmin || !!role?.leave_view_all_employees;
-  const canViewOwnBranch = !canViewAll && !!role?.leave_view_own_branch;
+  const canViewOwnBranch = !canViewAll && (isBranchAdmin || !!role?.leave_view_own_branch);
   const canManage = canViewAll || canViewOwnBranch;
-  const canApproveLeave = isAdmin || !!role?.leave_approve;
+  const canApproveLeave = isAdmin || isBranchAdmin || !!role?.leave_approve;
 
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [calendarRequests, setCalendarRequests] = useState<LeaveRequest[]>([]);
@@ -56,10 +58,10 @@ export function useLeaveData() {
         setMyApproverName("");
       }
 
-      if (canViewAll) {
+      if (canViewAll && isSuperAdmin && !effectiveBranchId) {
         const { data: lr } = await supabase
           .from("leave_requests")
-          .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email)")
+          .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email, branch_id)")
           .is("deleted_at", null)
           .order("created_at", { ascending: false });
         const allReqs = (lr || []).map((x: any) => normalizeLeaveRequest({
@@ -71,7 +73,7 @@ export function useLeaveData() {
 
         const { data: emp } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email")
+          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id")
           .eq("status", "active")
           .order("first_name");
         setEmployees(emp || []);
@@ -79,19 +81,13 @@ export function useLeaveData() {
         return;
       }
 
-      if (!me) {
-        setEmployees([]);
-        setRequests([]);
-        setLoading(false);
-        return;
-      }
-
-      if (canViewOwnBranch && me.branch_id) {
+      const targetBranch = effectiveBranchId || userBranchId || me?.branch_id;
+      if ((canViewAll || canViewOwnBranch) && targetBranch) {
         const { data: team } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email")
+          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id")
           .eq("status", "active")
-          .eq("branch_id", me.branch_id)
+          .eq("branch_id", targetBranch)
           .order("first_name");
         setEmployees(team || []);
 
@@ -99,7 +95,7 @@ export function useLeaveData() {
         const { data: lr } = ids.length
           ? await supabase
               .from("leave_requests")
-              .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email)")
+              .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email, branch_id)")
               .in("employee_id", ids)
               .is("deleted_at", null)
               .order("created_at", { ascending: false })
@@ -114,10 +110,17 @@ export function useLeaveData() {
         return;
       }
 
+      if (!me) {
+        setEmployees([]);
+        setRequests([]);
+        setLoading(false);
+        return;
+      }
+
       setEmployees([me]);
       const { data: lr } = await supabase
         .from("leave_requests")
-        .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email)")
+        .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email, branch_id)")
         .eq("employee_id", me.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
@@ -132,7 +135,7 @@ export function useLeaveData() {
     } finally {
       setLoading(false);
     }
-  }, [user?.email, canViewAll, canViewOwnBranch]);
+  }, [user?.email, canViewAll, canViewOwnBranch, isSuperAdmin, effectiveBranchId, userBranchId]);
 
   useEffect(() => {
     supabase

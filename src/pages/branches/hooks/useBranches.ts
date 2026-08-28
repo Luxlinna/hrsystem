@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
+import { useBranchScope } from "@/context/BranchContext";
 import { logActivity } from "@/lib/audit";
 import { toast } from "@/components/Toast";
 import { getCurrentPosition } from "@/lib/geo";
@@ -13,7 +14,9 @@ export function useBranches() {
   const { user } = useAuth();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
-  const canManage = isAdmin || (!!role && role.name !== "Chairman");
+  const { isSuperAdmin, isBranchAdmin, userBranchId } = useBranchScope();
+  const canCreateBranch = isSuperAdmin || isAdmin;
+  const canManage = isSuperAdmin || isAdmin || isBranchAdmin;
 
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,7 +124,15 @@ export function useBranches() {
   const handleAddBranch = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!form.name || !form.location || !form.manager_name || !canManage) return;
+      if (!form.name || !form.location || !form.manager_name) return;
+      if (!editingBranchId && !canCreateBranch) {
+        toast("Access Denied", "Only Super Admin can create new branches.", "error");
+        return;
+      }
+      if (editingBranchId && isBranchAdmin && userBranchId && editingBranchId !== userBranchId) {
+        toast("Access Denied", "You can only manage your own branch.", "error");
+        return;
+      }
       setSubmitting(true);
       const latitude = form.latitude.trim() ? Number(form.latitude) : null;
       const longitude = form.longitude.trim() ? Number(form.longitude) : null;
@@ -215,11 +226,15 @@ export function useBranches() {
       setSubmitting(false);
       loadBranches();
     },
-    [form, canManage, editingBranchId, selectedBranch, actorName, role?.name, loadBranches]
+    [form, canCreateBranch, isBranchAdmin, userBranchId, editingBranchId, selectedBranch, actorName, role?.name, loadBranches]
   );
 
   const openEditModal = useCallback(
     (branch: Branch) => {
+      if (isBranchAdmin && userBranchId && branch.id !== userBranchId) {
+        toast("Access Denied", "You can only manage your own assigned branch.", "error");
+        return;
+      }
       if (!canManage) return;
       setForm({
         name: branch.name,
@@ -236,15 +251,19 @@ export function useBranches() {
       setEditingBranchId(branch.id);
       setShowAddModal(true);
     },
-    [canManage]
+    [canManage, isBranchAdmin, userBranchId]
   );
 
   const openAddModal = useCallback(() => {
+    if (!canCreateBranch) {
+      toast("Access Denied", "Only Super Admin can create new branches.", "error");
+      return;
+    }
     setForm(INITIAL_BRANCH_FORM);
     setAddressLookup("");
     setEditingBranchId(null);
     setShowAddModal(true);
-  }, []);
+  }, [canCreateBranch]);
 
   const closeModal = useCallback(() => {
     setShowAddModal(false);
@@ -333,7 +352,10 @@ export function useBranches() {
 
   const handleDeleteBranch = useCallback(
     async (branch: Branch) => {
-      if (!isAdmin) return;
+      if (!canCreateBranch) {
+        toast("Access Denied", "Only Super Admin can delete branches.", "error");
+        return;
+      }
       if (!confirm(`Move "${branch.name}" to the Recycle Bin? The branch can be restored later.`)) return;
       const { error } = await supabase
         .from("branches")
