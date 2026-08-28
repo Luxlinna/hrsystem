@@ -2,10 +2,10 @@ import { memo } from "react";
 import type { BinItem } from "../types";
 
 interface RecycleBinConfirmModalProps {
-  confirming: BinItem | null;
+  confirming: BinItem | BinItem[] | null;
   working: boolean;
   onCancel: () => void;
-  onConfirm: (item: BinItem) => void;
+  onConfirm: (item: BinItem | BinItem[]) => void;
 }
 
 export const RecycleBinConfirmModal = memo(function RecycleBinConfirmModal({
@@ -15,6 +15,10 @@ export const RecycleBinConfirmModal = memo(function RecycleBinConfirmModal({
   onConfirm,
 }: RecycleBinConfirmModalProps) {
   if (!confirming) return null;
+
+  const isBulk = Array.isArray(confirming);
+  const count = isBulk ? confirming.length : 1;
+  const label = isBulk ? `${count} items` : `"${confirming.label}"`;
 
   return (
     <div
@@ -32,11 +36,11 @@ export const RecycleBinConfirmModal = memo(function RecycleBinConfirmModal({
           <i className="ri-alert-line text-xl" />
         </div>
         <h2 id="permanent-delete-title" className="text-lg font-semibold text-gray-900">
-          Delete forever?
+          {isBulk ? `Delete ${count} items forever?` : "Delete forever?"}
         </h2>
         <p className="mt-2 text-sm leading-6 text-gray-600">
           Are you sure you want to permanently delete{" "}
-          <span className="font-semibold text-gray-900">&ldquo;{confirming.label}&rdquo;</span>? This action cannot be undone.
+          <span className="font-semibold text-gray-900">{label}</span>? This action cannot be undone.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -54,7 +58,7 @@ export const RecycleBinConfirmModal = memo(function RecycleBinConfirmModal({
             className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 cursor-pointer transition-colors"
           >
             <i className="ri-delete-bin-2-line" />
-            {working ? "Deleting..." : "Delete forever"}
+            {working ? "Deleting..." : isBulk ? `Delete ${count} forever` : "Delete forever"}
           </button>
         </div>
       </div>

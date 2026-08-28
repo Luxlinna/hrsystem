@@ -6,6 +6,8 @@ interface RecycleBinItemRowProps {
   item: BinItem;
   isAdmin: boolean;
   working: boolean;
+  selected: boolean;
+  onToggleSelect: (item: BinItem) => void;
   onRestore: (item: BinItem) => void;
   onConfirmDelete: (item: BinItem) => void;
 }
@@ -14,15 +16,33 @@ export const RecycleBinItemRow = memo(function RecycleBinItemRow({
   item,
   isAdmin,
   working,
+  selected,
+  onToggleSelect,
   onRestore,
   onConfirmDelete,
 }: RecycleBinItemRowProps) {
   const cfg = getModuleConfig(item.table);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-center gap-3 shadow-2xs">
-      <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-        <i className="ri-delete-bin-line text-lg" />
+    <div
+      className={`rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center gap-3 transition-all duration-150 ${
+        selected
+          ? "bg-blue-50/40 border-blue-200 shadow-xs ring-1 ring-blue-200"
+          : "bg-white border-gray-100 shadow-2xs hover:border-gray-200"
+      }`}
+    >
+      <div className="flex items-center gap-3 shrink-0">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onToggleSelect(item)}
+          disabled={working}
+          className="w-4 h-4 rounded text-[#253C7D] border-gray-300 focus:ring-[#253C7D] cursor-pointer"
+          aria-label={`Select ${item.label}`}
+        />
+        <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+          <i className="ri-delete-bin-line text-lg" />
+        </div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-0.5">

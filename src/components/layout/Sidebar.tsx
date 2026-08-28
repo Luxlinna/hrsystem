@@ -72,7 +72,7 @@ export default function Sidebar() {
   const { can, isAdmin, isBranchAdmin, role } = usePermissions();
   const { employee: myEmployee } = useMyEmployee();
   const canOpenAdminPortal = isAdmin || isBranchAdmin || isBootstrapAdminEmail(user?.email);
-  const canOpenRecycleBin = canOpenAdminPortal || /manager/i.test(role?.name || "");
+  const canOpenRecycleBin = Boolean(user);
   const [hovered, setHovered] = useState(false);
   const { unreadCount } = useUnreadNotifications();
 

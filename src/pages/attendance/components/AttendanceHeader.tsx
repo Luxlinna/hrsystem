@@ -4,7 +4,7 @@ import type { AttendanceTabKey } from "../types";
 
 interface AttendanceHeaderProps {
   currentTime: Date;
-  activeTab: AttendanceTabKey;
+  activeTab?: AttendanceTabKey;
   dateRangeBounds: { start: string; end: string } | null;
   canViewAll: boolean;
   hasEmployee: boolean;
@@ -14,7 +14,7 @@ interface AttendanceHeaderProps {
 
 export const AttendanceHeader = memo(function AttendanceHeader({
   currentTime,
-  activeTab,
+  activeTab = "records",
   dateRangeBounds,
   canViewAll,
   hasEmployee,
@@ -32,11 +32,11 @@ export const AttendanceHeader = memo(function AttendanceHeader({
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
           Time & Attendance Hub
           <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D]">
-            Complete Historical Logs
+            Historical Logs
           </span>
         </h1>
         <p className="text-xs sm:text-sm text-gray-500 mt-1">
-          Track daily check-ins, view past dates & monthly timesheet matrix, analyze punctuality, and backdate entries.
+          Track daily employee check-ins, work hours, attendance history, and log manual entries.
         </p>
       </div>
 

@@ -234,7 +234,7 @@ export function usePermissions(): UsePermissionsReturn {
     !loading &&
     !!role &&
     !role.is_admin &&
-    role.name?.trim().toLowerCase() === "branch admin";
+    /branch\s*admin/i.test(role.name?.trim() || "");
 
   // Memoized so its identity only changes when the underlying permissions
   // actually do — components legitimately put `can` in effect/callback
@@ -248,9 +248,9 @@ export function usePermissions(): UsePermissionsReturn {
       if (role.is_admin) return true;
       if (role.allowed_modules.includes("*")) return true;
       const roleName = (role.name || "").trim().toLowerCase();
-      if (roleName === "branch admin") {
-        // Branch Admin has access to their own branch's modules, but cannot manage other branches or global tenant admin
-        return module !== "admin" && module !== "branches";
+      if (/branch\s*admin/i.test(roleName)) {
+        // Branch Admin has access to all operational and reporting modules for their branch
+        return module !== "admin";
       }
       return role.allowed_modules.includes(module);
     },

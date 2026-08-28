@@ -47,7 +47,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const isBranchAdmin = useMemo(() => {
     if (isSuperAdmin) return false;
     const roleName = (role?.name || "").trim().toLowerCase();
-    return roleName === "branch admin";
+    return /branch\s*admin/i.test(roleName);
   }, [isSuperAdmin, role]);
 
   const fetchBranches = useCallback(async () => {

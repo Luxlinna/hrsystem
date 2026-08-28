@@ -15,6 +15,7 @@ export interface ModuleConfig {
   select: string;
   label: (r: any) => string;
   detail: (r: any) => string;
+  applyBranchFilter?: (query: any, branchId: string) => any;
 }
 
 export interface ModuleCount extends ModuleConfig {

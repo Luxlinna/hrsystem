@@ -3,6 +3,7 @@ import { RecycleBinStatsRow } from "./components/RecycleBinStatsRow";
 import { RecycleBinFilterChips } from "./components/RecycleBinFilterChips";
 import { RecycleBinListView } from "./components/RecycleBinListView";
 import { RecycleBinConfirmModal } from "./components/RecycleBinConfirmModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useRecycleBin } from "./hooks/useRecycleBin";
 
 export default function RecycleBinPage() {
@@ -19,8 +20,31 @@ export default function RecycleBinPage() {
     setConfirming,
     working,
     restore,
-    deleteForever,
+    selectedIds,
+    toggleSelectItem,
+    toggleSelectAll,
+    clearSelection,
+    handleBulkRestore,
+    handleConfirmBulkDelete,
+    handleConfirmDeleteSingle,
+    handleExecuteDelete,
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
   } = useRecycleBin();
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F8F6] p-6 font-sans">
+        <RecycleBinHeader working={false} onRefresh={() => {}} />
+        <PartnerBranchPrivacyShield
+          moduleName="Recycle Bin"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F8F6] p-6 font-sans">
@@ -50,16 +74,22 @@ export default function RecycleBinPage() {
         items={filteredItems}
         isAdmin={isAdmin}
         working={working}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelectItem}
+        onToggleSelectAll={toggleSelectAll}
+        onClearSelection={clearSelection}
         onRestore={restore}
-        onConfirmDelete={setConfirming}
+        onBulkRestore={handleBulkRestore}
+        onConfirmDelete={handleConfirmDeleteSingle}
+        onConfirmBulkDelete={handleConfirmBulkDelete}
       />
 
-      {/* Delete forever dialog */}
+      {/* Delete forever dialog (Single & Bulk) */}
       <RecycleBinConfirmModal
         confirming={confirming}
         working={working}
         onCancel={() => setConfirming(null)}
-        onConfirm={deleteForever}
+        onConfirm={handleExecuteDelete}
       />
 
       <p className="text-xs text-gray-400 mt-6">

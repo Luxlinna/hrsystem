@@ -14,7 +14,6 @@ import type {
   ViewMode,
   DatePreset,
   EmployeeSummaryItem,
-  MatrixDay,
 } from "./types";
 import { calcHours, calcHoursNum } from "./constants";
 import { AttendanceHeader } from "./components/AttendanceHeader";
@@ -25,9 +24,6 @@ import { RecordDetailsDrawer } from "./components/RecordDetailsDrawer";
 import { LogAttendanceModal } from "./components/LogAttendanceModal";
 import { EditAttendanceModal } from "./components/EditAttendanceModal";
 import { RecordsTab } from "./tabs/RecordsTab";
-import { DayRosterTab } from "./tabs/DayRosterTab";
-import { MonthlyMatrixTab } from "./tabs/MonthlyMatrixTab";
-import { ScorecardTab } from "./tabs/ScorecardTab";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 
 export default function AttendancePage() {
@@ -614,8 +610,6 @@ export default function AttendancePage() {
         filterDatePreset={filterDatePreset}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
         presentCount={presentCount}
         workingNow={workingNow}
         lateCount={lateCount}
@@ -623,10 +617,8 @@ export default function AttendancePage() {
         absentCount={absentCount}
       />
 
-      {/* Control Bar: Tabs, View Switcher & Filters */}
+      {/* Control Bar: Search, Date Picker, Department, Status Filters & View Mode */}
       <AttendanceControlBar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
         canManage={canManage}
         filteredRecordsCount={filteredRecords.length}
         searchQuery={searchQuery}
@@ -649,54 +641,22 @@ export default function AttendancePage() {
         todayYMD={todayYMD}
       />
 
-      {/* Tab 1: Attendance Records Tab */}
-      {activeTab === "records" && (
-        <RecordsTab
-          filteredRecords={filteredRecords}
-          pagedRecords={pagedRecords}
-          viewMode={viewMode}
-          todayYMD={todayYMD}
-          canManage={canManage}
-          pageSize={pageSize}
-          setPageSize={setPageSize}
-          page={page}
-          setPage={setPage}
-          totalPages={totalPages}
-          onSelectRecord={setSelectedRecord}
-          onEditRecord={setEditingRecord}
-          onDeleteRecord={handleDeleteRecord}
-        />
-      )}
-
-      {/* Tab 2: Day Roster & Presence Tab */}
-      {activeTab === "live" && (
-        <DayRosterTab
-          rosterDate={rosterDate}
-          setRosterDate={setRosterDate}
-          todayYMD={todayYMD}
-          filteredSummary={filteredSummary}
-          onChangeRosterDate={changeRosterDate}
-        />
-      )}
-
-      {/* Tab 3: Monthly Timesheet Matrix Tab */}
-      {activeTab === "matrix" && (
-        <MonthlyMatrixTab
-          matrixMonth={matrixMonth}
-          setMatrixMonth={setMatrixMonth}
-          matrixDays={matrixDays}
-          filteredSummary={filteredSummary}
-          records={records}
-          onSelectRecord={setSelectedRecord}
-        />
-      )}
-
-      {/* Tab 4: Employee Punctuality & Scorecard Tab */}
-      {activeTab === "summary" && (
-        <ScorecardTab
-          filteredSummary={filteredSummary}
-        />
-      )}
+      {/* Attendance Records List / Cards View */}
+      <RecordsTab
+        filteredRecords={filteredRecords}
+        pagedRecords={pagedRecords}
+        viewMode={viewMode}
+        todayYMD={todayYMD}
+        canManage={canManage}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        page={page}
+        setPage={setPage}
+        totalPages={totalPages}
+        onSelectRecord={setSelectedRecord}
+        onEditRecord={setEditingRecord}
+        onDeleteRecord={handleDeleteRecord}
+      />
 
       {/* Side Drawer: Record Details */}
       <RecordDetailsDrawer

@@ -20,13 +20,13 @@ import { MODULE_SEARCH_RESULTS, pathToModule } from "./constants";
 export function useTopBar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { can, isAdmin, role } = usePermissions();
+  const { can, isAdmin, isBranchAdmin, role } = usePermissions();
   const { userBranchId } = useBranchScope();
   const { employee: myEmployee } = useMyEmployee();
   const { unreadCount, dismissUnread } = useUnreadNotifications();
 
   // ── Derived identity ────────────────────────────────────────────────────────
-  const canOpenRecycleBin = isAdmin || /manager/i.test(role?.name ?? "");
+  const canOpenRecycleBin = Boolean(user);
 
   // Prefer the HR employee record (source of truth) over Supabase Auth metadata,
   // which can drift (e.g. invite flow setting display_name to a role title).

@@ -1,12 +1,10 @@
 import { memo } from "react";
-import type { AttendanceTabKey, DatePreset } from "../types";
+import type { DatePreset } from "../types";
 
 interface AttendanceKpiBarProps {
   filterDatePreset: DatePreset;
   filterStatus: string;
   setFilterStatus: (status: string) => void;
-  activeTab: AttendanceTabKey;
-  setActiveTab: (tab: AttendanceTabKey) => void;
   presentCount: number;
   workingNow: number;
   lateCount: number;
@@ -18,8 +16,6 @@ export const AttendanceKpiBar = memo(function AttendanceKpiBar({
   filterDatePreset,
   filterStatus,
   setFilterStatus,
-  activeTab,
-  setActiveTab,
   presentCount,
   workingNow,
   lateCount,
@@ -30,7 +26,7 @@ export const AttendanceKpiBar = memo(function AttendanceKpiBar({
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5 mb-6">
       {/* On Time */}
       <div
-        onClick={() => setFilterStatus("ontime")}
+        onClick={() => setFilterStatus(filterStatus === "ontime" ? "all" : "ontime")}
         className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
           filterStatus === "ontime" || filterStatus === "present" ? "border-emerald-500 ring-2 ring-emerald-500/15" : "border-gray-200/80"
         }`}
@@ -50,10 +46,7 @@ export const AttendanceKpiBar = memo(function AttendanceKpiBar({
 
       {/* Working Now */}
       <div
-        onClick={() => setActiveTab("live")}
-        className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-          activeTab === "live" ? "border-sky-500 ring-2 ring-sky-500/15" : "border-gray-200/80"
-        }`}
+        className="bg-white border border-gray-200/80 rounded-2xl p-4 transition-all shadow-2xs relative overflow-hidden group"
       >
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold text-sky-600 uppercase tracking-wider">Working Now</span>
@@ -68,7 +61,7 @@ export const AttendanceKpiBar = memo(function AttendanceKpiBar({
 
       {/* Late Arrivals */}
       <div
-        onClick={() => setFilterStatus("late")}
+        onClick={() => setFilterStatus(filterStatus === "late" ? "all" : "late")}
         className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
           filterStatus === "late" ? "border-amber-500 ring-2 ring-amber-500/15" : "border-gray-200/80"
         }`}
@@ -86,7 +79,7 @@ export const AttendanceKpiBar = memo(function AttendanceKpiBar({
 
       {/* Remote / WFH */}
       <div
-        onClick={() => setFilterStatus("remote")}
+        onClick={() => setFilterStatus(filterStatus === "remote" ? "all" : "remote")}
         className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
           filterStatus === "remote" ? "border-indigo-500 ring-2 ring-indigo-500/15" : "border-gray-200/80"
         }`}
@@ -104,7 +97,7 @@ export const AttendanceKpiBar = memo(function AttendanceKpiBar({
 
       {/* Absent */}
       <div
-        onClick={() => setFilterStatus("absent")}
+        onClick={() => setFilterStatus(filterStatus === "absent" ? "all" : "absent")}
         className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
           filterStatus === "absent" ? "border-rose-500 ring-2 ring-rose-500/15" : "border-gray-200/80"
         }`}
