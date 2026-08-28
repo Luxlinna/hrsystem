@@ -29,7 +29,12 @@ create index if not exists idx_hiring_requests_status on hiring_requests(status)
 -- Enable RLS
 alter table hiring_requests enable row level security;
 
--- Policies
+-- Drop existing policies if they already exist to allow safe re-execution
+drop policy if exists "Allow read hiring_requests for authenticated users" on hiring_requests;
+drop policy if exists "Allow insert hiring_requests for authenticated users" on hiring_requests;
+drop policy if exists "Allow update hiring_requests for authenticated users" on hiring_requests;
+
+-- Recreate policies
 create policy "Allow read hiring_requests for authenticated users"
   on hiring_requests for select
   to authenticated
@@ -45,5 +50,13 @@ create policy "Allow update hiring_requests for authenticated users"
   to authenticated
   using (true);
 
--- Enable realtime
-alter publication supabase_realtime add table hiring_requests;
+-- Enable realtime safely
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'hiring_requests'
+  ) then
+    alter publication supabase_realtime add table hiring_requests;
+  end if;
+end $$;
