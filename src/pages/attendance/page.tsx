@@ -27,20 +27,29 @@ import { RecordsTab } from "./tabs/RecordsTab";
 import { DayRosterTab } from "./tabs/DayRosterTab";
 import { MonthlyMatrixTab } from "./tabs/MonthlyMatrixTab";
 import { ScorecardTab } from "./tabs/ScorecardTab";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 
 export default function AttendancePage() {
   const { user } = useAuth();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' attendance records.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
   const roleName = (role?.name || "").toLowerCase();
   const isLeader =
-    isSuperAdmin ||
+    (isSuperAdmin ||
     isBranchAdmin ||
     isAdmin ||
     /manager|lead|head|admin|ceo|director|chief|president|officer/i.test(roleName) ||
     !!role?.attendance_view_all_employees ||
-    !!role?.attendance_view_own_branch;
+    !!role?.attendance_view_own_branch) && !isPartnerBranchBlocked;
   const canManage = isLeader;
   const canViewAll = isLeader;
 
@@ -96,21 +105,23 @@ export default function AttendancePage() {
   });
 
   const fetchData = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setRecords([]);
+      setEmployees([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
-
       if (isLeader) {
-        let empQuery = supabase
+        const empQuery = supabase
           .from("employees")
           .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name)")
           .is("deleted_at", null)
           .eq("status", "active")
+          .eq("branch_id", targetBranch)
           .order("first_name");
-
-        if (targetBranch) {
-          empQuery = empQuery.eq("branch_id", targetBranch);
-        }
 
         const { data: team, error: empErr } = await empQuery;
         if (empErr) console.warn("Error fetching attendance employees:", empErr);
@@ -121,25 +132,16 @@ export default function AttendancePage() {
         const ids = empList.map((e) => e.id);
 
         let recPromise: PromiseLike<any>;
-        if (targetBranch) {
-          if (ids.length > 0) {
-            recPromise = supabase
-              .from("attendance_records")
-              .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
-              .is("deleted_at", null)
-              .in("employee_id", ids)
-              .order("date", { ascending: false })
-              .limit(2000);
-          } else {
-            recPromise = Promise.resolve({ data: [] });
-          }
-        } else {
+        if (ids.length > 0) {
           recPromise = supabase
             .from("attendance_records")
             .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
             .is("deleted_at", null)
+            .in("employee_id", ids)
             .order("date", { ascending: false })
             .limit(2000);
+        } else {
+          recPromise = Promise.resolve({ data: [] });
         }
 
         const { data: recData, error: recErr } = await recPromise;
@@ -153,6 +155,7 @@ export default function AttendancePage() {
             .from("employees")
             .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name)")
             .eq("email", user.email)
+            .eq("branch_id", targetBranch)
             .is("deleted_at", null)
             .maybeSingle();
           if (me) {
@@ -161,7 +164,7 @@ export default function AttendancePage() {
           }
         }
 
-        if (empRecord) {
+        if (empRecord && (empRecord as any).branch_id === targetBranch) {
           setEmployees([empRecord]);
           const { data: recData } = await supabase
             .from("attendance_records")
@@ -182,12 +185,12 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
-  }, [effectiveBranchId, isSuperAdmin, userBranchId, isLeader, myEmployee, user?.email]);
+  }, [isPartnerBranchBlocked, targetBranch, isLeader, myEmployee, user?.email]);
 
   useEffect(() => {
     if (permsLoading) return;
     fetchData();
-  }, [permsLoading, effectiveBranchId, fetchData]);
+  }, [permsLoading, fetchData]);
 
   // Today's date string in company timezone
   const todayYMD = todayYMDLib();
@@ -532,6 +535,27 @@ export default function AttendancePage() {
       <div className="attendance-hub min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading attendance control center...</p>
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="attendance-hub min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+        <AttendanceHeader
+          currentTime={currentTime}
+          activeTab={activeTab}
+          dateRangeBounds={dateRangeBounds}
+          canViewAll={false}
+          hasEmployee={false}
+          onExportCSV={() => {}}
+          onOpenLogModal={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Attendance & Time Tracking"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

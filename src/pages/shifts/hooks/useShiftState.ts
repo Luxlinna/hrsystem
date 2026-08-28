@@ -18,9 +18,16 @@ import type {
 
 export function useShiftState() {
   const { user } = useAuth();
-  const { isSuperAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
   const actorName =
     (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' shift schedule.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
 
   // Core data
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -54,7 +61,7 @@ export function useShiftState() {
   // Forms
   const [shiftForm, setShiftForm] = useState<ShiftForm>({
     name: "",
-    branch_id: "",
+    branch_id: targetBranch || "",
     department: "",
     start_time: "09:00",
     end_time: "17:00",
@@ -69,34 +76,32 @@ export function useShiftState() {
   const [assignDeptFilter, setAssignDeptFilter] = useState("all");
 
   const loadData = useCallback(async () => {
-    try {
-      const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setShifts([]);
+      setAssignments([]);
+      setBranches([]);
+      setEmployees([]);
+      setLoading(false);
+      return;
+    }
 
-      let shiftQuery = supabase
+    try {
+      const shiftQuery = supabase
         .from("shifts")
         .select("*, branches(name, location)")
         .is("deleted_at", null)
+        .eq("branch_id", targetBranch)
         .order("shift_date")
         .order("start_time");
 
-      if (targetBranch) {
-        shiftQuery = shiftQuery.eq("branch_id", targetBranch);
-      }
-
-      let empQuery = supabase
+      const empQuery = supabase
         .from("employees")
         .select("id, first_name, last_name, department, role, avatar_url, branch_id")
         .is("deleted_at", null)
+        .eq("branch_id", targetBranch)
         .order("first_name");
 
-      if (targetBranch) {
-        empQuery = empQuery.eq("branch_id", targetBranch);
-      }
-
-      let branchQuery = supabase.from("branches").select("id, name, location").order("name");
-      if (targetBranch) {
-        branchQuery = branchQuery.eq("id", targetBranch);
-      }
+      const branchQuery = supabase.from("branches").select("id, name, location").eq("id", targetBranch).order("name");
 
       const [{ data: s, error: sErr }, { data: a, error: aErr }, { data: b }, { data: e }] =
         await Promise.all([
@@ -111,9 +116,7 @@ export function useShiftState() {
 
       const rawShifts = s || [];
       const shiftIds = new Set(rawShifts.map((sh) => sh.id));
-      const filteredAssignments = targetBranch
-        ? (a || []).filter((x: any) => shiftIds.has(x.shift_id) || x.employee?.branch_id === targetBranch)
-        : (a || []);
+      const filteredAssignments = (a || []).filter((x: any) => shiftIds.has(x.shift_id) || x.employee?.branch_id === targetBranch);
 
       const shiftList = rawShifts.map((sh) => ({
         ...sh,
@@ -135,10 +138,11 @@ export function useShiftState() {
     } finally {
       setLoading(false);
     }
-  }, [effectiveBranchId, isSuperAdmin, userBranchId, selectedShift]);
+  }, [isPartnerBranchBlocked, targetBranch, selectedShift]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadData(); }, [effectiveBranchId]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Derived: departments
   const departments = useMemo(() => {
@@ -277,6 +281,10 @@ export function useShiftState() {
 
   return {
     actorName,
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     // Data
     shifts, assignments, branches, employees, loading, departments,
     // Navigation & View

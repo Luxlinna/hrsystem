@@ -7,10 +7,14 @@ import { ChecklistCategoryView } from "./components/views/ChecklistCategoryView"
 import { ChecklistListView } from "./components/views/ChecklistListView";
 import { ChecklistUrgencyView } from "./components/views/ChecklistUrgencyView";
 import { ChecklistModalsContainer } from "./components/ChecklistModalsContainer";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useOnboardingChecklist } from "./hooks/useOnboardingChecklist";
 
 export default function OnboardingChecklist() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     tasks,
     staff,
     selectedHire,
@@ -72,6 +76,18 @@ export default function OnboardingChecklist() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading checklist hub...</p>
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+        <PartnerBranchPrivacyShield
+          moduleName="Onboarding Checklist"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

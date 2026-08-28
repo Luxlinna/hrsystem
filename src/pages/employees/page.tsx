@@ -7,6 +7,7 @@ import { EmployeesTableView } from "./components/EmployeesTableView";
 import { EmployeesGridView } from "./components/EmployeesGridView";
 import { Pagination } from "./components/Pagination";
 import { AddEmployeeModal } from "./components/AddEmployeeModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useEmployees } from "./hooks/useEmployees";
 import { INITIAL_EMPLOYEE_FORM } from "./constants";
 
@@ -15,8 +16,11 @@ export default function EmployeesPage() {
     canManage,
     isSuperAdmin,
     isBranchAdmin,
+    isPartnerBranchBlocked,
     effectiveBranchId,
     userBranchId,
+    userBranchName,
+    targetBranch,
     branches,
     search,
     setSearch,
@@ -76,10 +80,27 @@ export default function EmployeesPage() {
   const handleOpenAddModal = useCallback(() => {
     setForm({
       ...INITIAL_EMPLOYEE_FORM,
-      branch_id: (!isSuperAdmin && userBranchId) ? userBranchId : (effectiveBranchId || ""),
+      branch_id: targetBranch || userBranchId || "",
     });
     setShowAddModal(true);
-  }, [setForm, setShowAddModal, isSuperAdmin, userBranchId, effectiveBranchId]);
+  }, [targetBranch, userBranchId, setForm, setShowAddModal]);
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+        <EmployeesHeader
+          branchCount={branchCount}
+          canManage={false}
+          onOpenAddModal={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Employee Directory"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 sm:p-6 lg:p-8 font-sans">

@@ -64,16 +64,25 @@ export function useEmployees() {
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>(INITIAL_VISIBLE_COLUMNS);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' employee roster.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
   const loadEmployees = useCallback(() => {
-    let query = supabase
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setEmployees([]);
+      return;
+    }
+
+    const query = supabase
       .from("employees")
       .select("id, first_name, last_name, email, phone, role, department, branch_id, status, join_date, reports_to, avatar_url, branches(name)")
       .is("deleted_at", null)
+      .eq("branch_id", targetBranch)
       .order("first_name");
-
-    if (effectiveBranchId) {
-      query = query.eq("branch_id", effectiveBranchId);
-    }
 
     query.then(({ data, error }) => {
       if (error) {
@@ -86,14 +95,16 @@ export function useEmployees() {
       })) as Employee[];
       setEmployees(formatted);
     });
-  }, [effectiveBranchId]);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadEmployees();
-    let branchQuery = supabase.from("branches").select("id, name").order("name");
-    if (effectiveBranchId) {
-      branchQuery = branchQuery.eq("id", effectiveBranchId);
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setBranches([]);
+      return;
     }
+
+    const branchQuery = supabase.from("branches").select("id, name").eq("id", targetBranch).order("name");
     branchQuery.then(({ data }) => setBranches(data || []));
     supabase.from("app_roles").select("id, name, color").order("name").then(({ data }) => setRoles(data || []));
     supabase
@@ -109,7 +120,7 @@ export function useEmployees() {
         });
         setManagerEmails(emails);
       });
-  }, [loadEmployees, effectiveBranchId]);
+  }, [loadEmployees, isPartnerBranchBlocked, targetBranch]);
 
   // Load account status for each employee
   useEffect(() => {
@@ -471,12 +482,14 @@ export function useEmployees() {
   }, [page, empTotalPages]);
 
   return {
-    canManage,
+    canManage: canManage && !isPartnerBranchBlocked,
     isSuperAdmin,
     isBranchAdmin,
     effectiveBranchId,
     userBranchId,
     userBranchName,
+    targetBranch,
+    isPartnerBranchBlocked,
     employees,
     branches,
     search,

@@ -9,8 +9,16 @@ import type { Task, Employee } from "../types";
 export function useTasksData() {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
-  const isSuper = isSuperAdmin || isAdmin || isBootstrapAdminEmail(user?.email) || role?.allowed_modules.includes("*");
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' tasks.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
+  const isSuper = (isSuperAdmin || isAdmin || isBootstrapAdminEmail(user?.email) || role?.allowed_modules.includes("*")) && !isPartnerBranchBlocked;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -18,26 +26,41 @@ export function useTasksData() {
   const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null);
 
   const fetchCurrentEmployee = useCallback(async () => {
-    if (!user?.email) return;
+    if (!user?.email || isPartnerBranchBlocked || !targetBranch) {
+      setCurrentEmployeeId(null);
+      return;
+    }
     const { data } = await supabase
       .from("employees")
       .select("id, branch_id")
       .eq("email", user.email)
+      .eq("branch_id", targetBranch)
       .maybeSingle();
     if (data) setCurrentEmployeeId(data.id);
-  }, [user?.email]);
+  }, [user?.email, isPartnerBranchBlocked, targetBranch]);
 
   const fetchEmployees = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setEmployees([]);
+      return;
+    }
     const { data } = await supabase
       .from("employees")
       .select("id, first_name, last_name, department, avatar_url, email, role, reports_to, branch_id")
+      .eq("branch_id", targetBranch)
       .in("status", WORKABLE_STATUSES)
       .is("deleted_at", null)
       .order("first_name");
     if (data) setEmployees(data);
-  }, []);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   const fetchTasks = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const { data, error } = await supabase
       .from("tasks")
@@ -48,10 +71,13 @@ export function useTasksData() {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setTasks(data as unknown as Task[]);
+      const filtered = (data as unknown as Task[]).filter(
+        (t: any) => !t.employees || t.employees.branch_id === targetBranch
+      );
+      setTasks(filtered);
     }
     setLoading(false);
-  }, []);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     fetchCurrentEmployee();
@@ -81,16 +107,11 @@ export function useTasksData() {
     );
   }, [isSuper, isBranchAdmin, directSubordinates.length, role, currentEmployee]);
 
-  // Managed employees: For Super Admin = all, For Branch Admin = their branch employees, For Manager = self + subordinates + department team, For regular employee = self
+  // Managed employees: For Super Admin/Branch Admin = all in branch, For Manager = self + subordinates + department team, For regular employee = self
   const managedEmployees = useMemo(() => {
     if (!currentEmployeeId || employees.length === 0) return employees;
-    if (isSuper && !effectiveBranchId) {
+    if (isSuper || isBranchAdmin) {
       return employees;
-    }
-
-    const targetBranch = effectiveBranchId || userBranchId || currentEmployee?.branch_id;
-    if (isBranchAdmin && targetBranch) {
-      return employees.filter((e) => e.branch_id === targetBranch);
     }
 
     if (isManager) {
@@ -99,14 +120,13 @@ export function useTasksData() {
         (e) =>
           e.id === currentEmployeeId ||
           e.reports_to === currentEmployeeId ||
-          (myEmp?.department && e.department === myEmp.department) ||
-          (targetBranch && e.branch_id === targetBranch)
+          (myEmp?.department && e.department === myEmp.department)
       );
     }
 
     const myEmp = currentEmployee;
     return myEmp ? [myEmp] : employees;
-  }, [employees, currentEmployeeId, currentEmployee, isSuper, effectiveBranchId, userBranchId, isBranchAdmin, isManager]);
+  }, [employees, currentEmployeeId, currentEmployee, isSuper, isBranchAdmin, isManager]);
 
   const managedEmployeeIds = useMemo(() => {
     return new Set(managedEmployees.map((e) => e.id));
@@ -114,14 +134,9 @@ export function useTasksData() {
 
   // Scoped tasks visible to this user
   const scopedTasks = useMemo(() => {
-    if (isSuper && !effectiveBranchId) {
+    if (isPartnerBranchBlocked) return [];
+    if (isSuper || isBranchAdmin) {
       return tasks;
-    }
-    if (isSuper && effectiveBranchId) {
-      return tasks.filter((t) => managedEmployeeIds.has(t.assigned_to) || managedEmployeeIds.has(t.assigned_by));
-    }
-    if (isBranchAdmin) {
-      return tasks.filter((t) => managedEmployeeIds.has(t.assigned_to) || managedEmployeeIds.has(t.assigned_by));
     }
     if (isManager) {
       return tasks.filter(
@@ -132,12 +147,17 @@ export function useTasksData() {
       );
     }
     return tasks.filter((t) => t.assigned_to === currentEmployeeId || t.assigned_by === currentEmployeeId);
-  }, [tasks, isSuper, effectiveBranchId, isBranchAdmin, isManager, currentEmployeeId, managedEmployeeIds]);
+  }, [tasks, isPartnerBranchBlocked, isSuper, isBranchAdmin, isManager, currentEmployeeId, managedEmployeeIds]);
 
   return {
     user,
     role,
     isAdmin: isSuper,
+    isSuperAdmin,
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     isManager,
     hasSubordinates: directSubordinates.length > 0,
     directSubordinates,

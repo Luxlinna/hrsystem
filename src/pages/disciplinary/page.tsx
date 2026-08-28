@@ -9,6 +9,7 @@ import { DisciplinaryTableView } from "./components/DisciplinaryTableView";
 import { Pagination } from "./components/Pagination";
 import { DisciplinaryDrawer } from "./components/DisciplinaryDrawer";
 import { DisciplinaryModal } from "./components/DisciplinaryModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useDisciplinary } from "./hooks/useDisciplinary";
 
 export default function DisciplinaryPage() {
@@ -18,6 +19,9 @@ export default function DisciplinaryPage() {
     isBranchAdmin,
     effectiveBranchId,
     userBranchId,
+    userBranchName,
+    targetBranch,
+    isPartnerBranchBlocked,
     branches,
     records,
     employees,
@@ -82,6 +86,24 @@ export default function DisciplinaryPage() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading disciplinary & compliance records...</p>
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
+        <DisciplinaryHeader
+          recordsCount={0}
+          canManage={false}
+          onExportCSV={() => {}}
+          onOpenCreateModal={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Disciplinary & Compliance"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

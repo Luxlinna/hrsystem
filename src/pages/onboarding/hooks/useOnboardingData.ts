@@ -7,7 +7,15 @@ import type { OnboardingRequest, OnboardingDoc, EmployeeOption } from "../types"
 export function useOnboardingData(
   onHighlight: (id: string) => void
 ) {
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' onboarding pipeline.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
@@ -17,8 +25,22 @@ export function useOnboardingData(
   const highlightId = searchParams.get("highlight");
 
   const loadData = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setRequests([]);
+      setDocuments([]);
+      setEmployees([]);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const [{ data: ob }, { data: docs }, { data: emps }] = await Promise.all([
+      const [{ data: emps }, { data: ob }, { data: docs }] = await Promise.all([
+        supabase
+          .from("employees")
+          .select("id, first_name, last_name, role, department, avatar_url, branch_id, branches(name)")
+          .eq("branch_id", targetBranch)
+          .is("deleted_at", null)
+          .order("first_name"),
         supabase
           .from("onboarding_requests")
           .select("*, employees(first_name, last_name, role, department, branch_id, branches(name))")
@@ -29,25 +51,30 @@ export function useOnboardingData(
           .select("id, onboarding_request_id, document_name, stage, status, file_url, file_name, notes, due_date, created_at")
           .is("deleted_at", null)
           .order("created_at", { ascending: true }),
-        supabase
-          .from("employees")
-          .select("id, first_name, last_name, role, department, avatar_url, branch_id, branches(name)")
-          .is("deleted_at", null)
-          .order("first_name"),
       ]);
-      setRequests((ob as unknown as OnboardingRequest[]) || []);
-      setDocuments(docs || []);
+
       const formattedEmps = (emps || []).map((e: any) => ({
         ...e,
         branches: Array.isArray(e.branches) ? e.branches[0] || null : e.branches || null,
       }));
+      const empIds = new Set(formattedEmps.map((e: any) => e.id));
+
+      const filteredRequests = ((ob || []) as unknown as OnboardingRequest[]).filter(
+        (r) => empIds.has(r.employee_id) || (r.employees as any)?.branch_id === targetBranch
+      );
+
+      const requestIds = new Set(filteredRequests.map((r) => r.id));
+      const filteredDocs = (docs || []).filter((d) => requestIds.has(d.onboarding_request_id));
+
+      setRequests(filteredRequests);
+      setDocuments(filteredDocs);
       setEmployees(formattedEmps);
     } catch (err) {
       console.error("Failed to load onboarding data:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadData();
@@ -90,6 +117,10 @@ export function useOnboardingData(
   }, [highlightId, scopedRequests, onHighlight]);
 
   return {
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     requests: scopedRequests,
     allRequests: requests,
     setRequests,

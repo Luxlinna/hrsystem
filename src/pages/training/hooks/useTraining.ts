@@ -24,7 +24,7 @@ export function useTraining() {
   });
   const mutations = useTrainingMutations({
     actorName,
-    canManage,
+    canManage: canManage && !data.isPartnerBranchBlocked,
     isSuperAdmin,
     effectiveBranchId,
     userBranchId,
@@ -35,7 +35,7 @@ export function useTraining() {
   });
 
   return {
-    canManage,
+    canManage: canManage && !data.isPartnerBranchBlocked,
     isSuperAdmin,
     isBranchAdmin,
     effectiveBranchId,

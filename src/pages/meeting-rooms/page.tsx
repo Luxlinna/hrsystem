@@ -8,10 +8,14 @@ import { BookingModal } from "./components/modals/BookingModal";
 import { BookingDetailModal } from "./components/modals/BookingDetailModal";
 import { ApprovalReviewModal } from "./components/modals/ApprovalReviewModal";
 import { CancellationReasonModal } from "./components/modals/CancellationReasonModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useMeetingRooms } from "./hooks/useMeetingRooms";
 
 export default function MeetingRoomsPage() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     canApprove,
     rooms,
     bookings,
@@ -66,6 +70,18 @@ export default function MeetingRoomsPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="w-full min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-6">
+        <PartnerBranchPrivacyShield
+          moduleName="Meeting Rooms & Reservations"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

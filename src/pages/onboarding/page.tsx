@@ -6,10 +6,14 @@ import { OnboardingKanbanView } from "./components/kanban/OnboardingKanbanView";
 import { OnboardingTableView } from "./components/table/OnboardingTableView";
 import { StartOnboardingModal } from "./components/modals/StartOnboardingModal";
 import { OnboardingDocModal } from "./components/modals/OnboardingDocModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useOnboarding } from "./hooks/useOnboarding";
 
 export default function Onboarding() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     documents,
     loading,
     viewMode,
@@ -73,6 +77,19 @@ export default function Onboarding() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading onboarding operations...</p>
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+        <OnboardingHeader onStartOnboarding={() => {}} />
+        <PartnerBranchPrivacyShield
+          moduleName="Onboarding"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

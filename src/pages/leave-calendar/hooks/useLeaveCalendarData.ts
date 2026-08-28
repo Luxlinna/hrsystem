@@ -18,36 +18,49 @@ export function normalizeLeave(l: LeaveRequest): LeaveRequest {
 export function useLeaveCalendarData() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' leave calendar.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
 
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const canViewAll = isAdmin || (!isBranchAdmin && !!role?.leave_view_all_employees);
-  const canViewOwnBranch = !canViewAll && (isBranchAdmin || !!role?.leave_view_own_branch);
+  const canViewAll = (isAdmin || (!isBranchAdmin && !!role?.leave_view_all_employees)) && !isPartnerBranchBlocked;
+  const canViewOwnBranch = !canViewAll && (isBranchAdmin || !!role?.leave_view_own_branch) && !isPartnerBranchBlocked;
   const canManage = canViewAll || canViewOwnBranch;
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      let myEmp: Employee | null = null;
-      if (user?.email) {
-        const { data: me } = await supabase
-          .from("employees")
-          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email")
-          .eq("email", user.email)
-          .maybeSingle();
-        myEmp = me;
-        setMyEmployee(me);
+      if (!user?.email || isPartnerBranchBlocked || !targetBranch) {
+        setLeaves([]);
+        setEmployees([]);
+        setLoading(false);
+        return;
       }
 
-      if (canViewAll && isSuperAdmin && !effectiveBranchId) {
+      let myEmp: Employee | null = null;
+      const { data: me } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email")
+        .eq("email", user.email)
+        .maybeSingle();
+      myEmp = me;
+      setMyEmployee(me);
+
+      if (canViewAll || canViewOwnBranch) {
         const [empRes, leaveRes] = await Promise.all([
           supabase
             .from("employees")
             .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id")
+            .eq("branch_id", targetBranch)
             .is("deleted_at", null)
             .order("first_name"),
           supabase
@@ -57,38 +70,18 @@ export function useLeaveCalendarData() {
             .order("start_date", { ascending: true }),
         ]);
 
-        setEmployees(empRes.data || []);
-        setLeaves((leaveRes.data || []).map(normalizeLeave));
-        return;
-      }
+        const empList = empRes.data || [];
+        const empIds = new Set(empList.map((e: any) => e.id));
+        const filteredLeaves = (leaveRes.data || []).filter(
+          (l: any) => empIds.has(l.employee_id) || l.employees?.branch_id === targetBranch
+        );
 
-      const targetBranch = effectiveBranchId || userBranchId || myEmp?.branch_id;
-      if ((canViewAll || canViewOwnBranch) && targetBranch) {
-        const { data: empList } = await supabase
-          .from("employees")
-          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id")
-          .eq("branch_id", targetBranch)
-          .is("deleted_at", null)
-          .order("first_name");
-
-        const emps = empList || [];
-        setEmployees(emps);
-        const empIds = emps.map((e) => e.id);
-
-        const { data: rawLeaves } = empIds.length
-          ? await supabase
-              .from("leave_requests")
-              .select("*, employees(id, first_name, last_name, role, department, avatar_url, email, branch_id)")
-              .in("employee_id", empIds)
-              .is("deleted_at", null)
-              .order("start_date", { ascending: true })
-          : { data: [] };
-
-        setLeaves((rawLeaves || []).map(normalizeLeave));
-        return;
-      }
-
-      if (myEmp) {
+        setEmployees(empList);
+        setLeaves(filteredLeaves.map((x: any) => normalizeLeave({
+          ...x,
+          employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null
+        })));
+      } else if (myEmp && myEmp.branch_id === targetBranch) {
         setEmployees([myEmp]);
         const { data: rawLeaves } = await supabase
           .from("leave_requests")
@@ -96,7 +89,10 @@ export function useLeaveCalendarData() {
           .eq("employee_id", myEmp.id)
           .is("deleted_at", null)
           .order("start_date", { ascending: true });
-        setLeaves((rawLeaves || []).map(normalizeLeave));
+        setLeaves((rawLeaves || []).map((x: any) => normalizeLeave({
+          ...x,
+          employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null
+        })));
       } else {
         setEmployees([]);
         setLeaves([]);
@@ -106,7 +102,7 @@ export function useLeaveCalendarData() {
     } finally {
       setLoading(false);
     }
-  }, [user?.email, canViewAll, canViewOwnBranch, isSuperAdmin, effectiveBranchId, userBranchId]);
+  }, [user?.email, canViewAll, canViewOwnBranch, isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     if (!permsLoading) {
@@ -129,6 +125,11 @@ export function useLeaveCalendarData() {
     user,
     role,
     isAdmin,
+    isSuperAdmin,
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     canViewAll,
     canViewOwnBranch,
     canManage,

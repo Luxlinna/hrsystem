@@ -21,15 +21,22 @@ export function useDisciplinary() {
   const { user } = useAuth();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
   const { employee: myEmployee } = useMyEmployee();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' disciplinary records.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
 
   const roleName = (role?.name || "").toLowerCase();
   const isLeader =
-    isSuperAdmin ||
+    (isSuperAdmin ||
     isBranchAdmin ||
     isAdmin ||
-    /manager|lead|head|admin|ceo|director|chief|president|officer/i.test(roleName);
+    /manager|lead|head|admin|ceo|director|chief|president|officer/i.test(roleName)) && !isPartnerBranchBlocked;
 
   const canManage = isLeader;
 
@@ -56,28 +63,28 @@ export function useDisciplinary() {
 
   const [newRecord, setNewRecord] = useState<NewRecord>(INITIAL_NEW_RECORD);
 
-  const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
-
   const fetchData = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setRecords([]);
+      setEmployees([]);
+      setBranches([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       // 1. Fetch branches
-      let branchQuery = supabase.from("branches").select("id, name").is("deleted_at", null).order("name");
-      if (targetBranch) {
-        branchQuery = branchQuery.eq("id", targetBranch);
-      }
+      const branchQuery = supabase.from("branches").select("id, name").is("deleted_at", null).eq("id", targetBranch).order("name");
 
       // 2. Fetch employees
-      let empQuery = supabase
+      const empQuery = supabase
         .from("employees")
         .select("id, first_name, last_name, department, role, avatar_url, branch_id")
         .eq("status", "active")
+        .eq("branch_id", targetBranch)
         .is("deleted_at", null)
         .order("first_name");
-
-      if (targetBranch) {
-        empQuery = empQuery.eq("branch_id", targetBranch);
-      }
 
       const [bRes, empRes] = await Promise.all([branchQuery, empQuery]);
       const empList = (empRes.data || []) as Employee[];
@@ -86,31 +93,22 @@ export function useDisciplinary() {
       // 3. Fetch disciplinary records
       let recordPromise: PromiseLike<any>;
 
-      if (targetBranch) {
-        if (isLeader) {
-          // Company-wide disciplinary cases (branch_id is null) OR branch-specific cases
-          recordPromise = supabase
-            .from("disciplinary_records")
-            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), branches(id, name)")
-            .is("deleted_at", null)
-            .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
-            .order("created_at", { ascending: false });
-        } else {
-          // Staff sees only their own record
-          const staffId = myEmployee?.id || empIds[0];
-          recordPromise = supabase
-            .from("disciplinary_records")
-            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), branches(id, name)")
-            .is("deleted_at", null)
-            .eq("employee_id", staffId || "")
-            .order("created_at", { ascending: false });
-        }
-      } else {
-        // Super Admin viewing all branches
+      if (isLeader) {
+        // Company-wide disciplinary cases (branch_id is null) OR branch-specific cases
         recordPromise = supabase
           .from("disciplinary_records")
           .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), branches(id, name)")
           .is("deleted_at", null)
+          .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
+          .order("created_at", { ascending: false });
+      } else {
+        // Staff sees only their own record
+        const staffId = myEmployee?.id || empIds[0];
+        recordPromise = supabase
+          .from("disciplinary_records")
+          .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), branches(id, name)")
+          .is("deleted_at", null)
+          .eq("employee_id", staffId || "")
           .order("created_at", { ascending: false });
       }
 
@@ -124,7 +122,7 @@ export function useDisciplinary() {
     } finally {
       setLoading(false);
     }
-  }, [targetBranch, isLeader, myEmployee]);
+  }, [isPartnerBranchBlocked, targetBranch, isLeader, myEmployee]);
 
   useEffect(() => {
     if (permsLoading) return;
@@ -373,6 +371,9 @@ export function useDisciplinary() {
     isBranchAdmin,
     effectiveBranchId,
     userBranchId,
+    userBranchName,
+    targetBranch,
+    isPartnerBranchBlocked,
     branches,
     records,
     employees,

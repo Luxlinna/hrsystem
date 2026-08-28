@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
 import type { MeetingRoom, Booking, BookingEmployee } from "../types";
 import { ROOM_FLOORS, ROOM_AMENITIES, DEFAULT_AMENITIES } from "../constants";
 import { toYMD } from "../roomUtils";
@@ -9,12 +10,20 @@ import { toYMD } from "../roomUtils";
 export function useMeetingRoomsData(selectedDate: string) {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' meeting rooms & bookings.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
 
   const canApprove = Boolean(
-    isAdmin ||
+    (isAdmin ||
     role?.name === "Super Admin" ||
     role?.name === "HR Manager" ||
-    role?.meeting_rooms_approve
+    role?.meeting_rooms_approve) && !isPartnerBranchBlocked
   );
 
   const [rooms, setRooms] = useState<MeetingRoom[]>([]);
@@ -25,6 +34,11 @@ export function useMeetingRoomsData(selectedDate: string) {
 
   // Fetch rooms
   const loadRooms = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setRooms([]);
+      return;
+    }
+
     let { data, error } = await supabase.from("meeting_rooms").select("id, name, capacity, color, floor").order("capacity");
     if (error) {
       console.error("Failed to load rooms:", error);
@@ -68,7 +82,7 @@ export function useMeetingRoomsData(selectedDate: string) {
       };
     });
     setRooms(enrichedRooms);
-  }, []);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadRooms();
@@ -76,11 +90,16 @@ export function useMeetingRoomsData(selectedDate: string) {
 
   // Fetch current user employee profile
   useEffect(() => {
-    if (!user?.email) return;
+    if (!user?.email || isPartnerBranchBlocked || !targetBranch) {
+      setCurrentEmployee(null);
+      setEmployeeId("");
+      return;
+    }
     supabase
       .from("employees")
-      .select("id, first_name, last_name, department, role, avatar_url, email")
+      .select("id, first_name, last_name, department, role, avatar_url, email, branch_id")
       .eq("email", user.email)
+      .eq("branch_id", targetBranch)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
@@ -96,10 +115,16 @@ export function useMeetingRoomsData(selectedDate: string) {
           });
         }
       });
-  }, [user?.email]);
+  }, [user?.email, isPartnerBranchBlocked, targetBranch]);
 
   // Load Bookings
   const loadBookings = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setBookings([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const d = new Date(`${selectedDate}T00:00:00`);
     const from = toYMD(new Date(d.getFullYear(), d.getMonth() - 1, 1));
@@ -107,7 +132,7 @@ export function useMeetingRoomsData(selectedDate: string) {
 
     const { data, error } = await supabase
       .from("room_bookings")
-      .select("*, employees:booked_by(id, first_name, last_name, department, role, avatar_url, email)")
+      .select("*, employees:booked_by(id, first_name, last_name, department, role, avatar_url, email, branch_id)")
       .gte("date", from)
       .lte("date", to)
       .order("start_time");
@@ -115,7 +140,10 @@ export function useMeetingRoomsData(selectedDate: string) {
     if (error) {
       console.error("Failed to load bookings:", error);
     } else {
-      const normalized = (data || []).map((b: any) => ({
+      const filtered = (data || []).filter(
+        (b: any) => !b.employees || b.employees.branch_id === targetBranch
+      );
+      const normalized = filtered.map((b: any) => ({
         ...b,
         status: b.status || "approved",
         attendees_count: b.attendees_count || 1,
@@ -125,7 +153,7 @@ export function useMeetingRoomsData(selectedDate: string) {
       setBookings(normalized);
     }
     setLoading(false);
-  }, [selectedDate]);
+  }, [selectedDate, isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadBookings();
@@ -149,6 +177,11 @@ export function useMeetingRoomsData(selectedDate: string) {
     user,
     role,
     isAdmin,
+    isSuperAdmin,
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     canApprove,
     rooms,
     bookings,

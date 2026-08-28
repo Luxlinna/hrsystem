@@ -1,9 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useBranchScope } from "@/context/BranchContext";
 import type { Offboarding, EmployeeOption, Branch } from "../types";
 
 export function useOffboardData(setTab: (t: "active" | "completed" | "tasks" | "analytics") => void) {
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' offboarding operations.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
   const [offboardings, setOffboardings] = useState<Offboarding[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -13,6 +23,14 @@ export function useOffboardData(setTab: (t: "active" | "completed" | "tasks" | "
   const highlightId = searchParams.get("highlight");
 
   const loadData = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setOffboardings([]);
+      setEmployees([]);
+      setBranches([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const [{ data: off }, { data: emps }, { data: brs }] = await Promise.all([
       supabase
@@ -21,20 +39,26 @@ export function useOffboardData(setTab: (t: "active" | "completed" | "tasks" | "
         .order("last_day", { ascending: true }),
       supabase
         .from("employees")
-        .select("id, first_name, last_name, role, department, avatar_url")
+        .select("id, first_name, last_name, role, department, avatar_url, branch_id")
         .eq("status", "active")
+        .eq("branch_id", targetBranch)
         .order("first_name"),
       supabase
         .from("branches")
         .select("id, name")
+        .eq("id", targetBranch)
         .order("name"),
     ]);
 
-    setOffboardings(off || []);
-    setEmployees(emps || []);
+    const filteredOff = (off || []).filter(
+      (o: any) => !o.employees || o.employees.branch_id === targetBranch
+    );
+
+    setOffboardings(filteredOff);
+    setEmployees((emps || []) as unknown as EmployeeOption[]);
     setBranches(brs || []);
     setLoading(false);
-  }, []);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadData();
@@ -54,6 +78,10 @@ export function useOffboardData(setTab: (t: "active" | "completed" | "tasks" | "
   }, [highlightId, offboardings, setTab]);
 
   return {
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     offboardings,
     employees,
     branches,

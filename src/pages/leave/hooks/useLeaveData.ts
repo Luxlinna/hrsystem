@@ -18,11 +18,19 @@ export function normalizeLeaveRequest(r: LeaveRequest): LeaveRequest {
 export function useLeaveData() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
-  const canViewAll = isAdmin || (!isBranchAdmin && !!role?.leave_view_all_employees);
-  const canViewOwnBranch = !canViewAll && (isBranchAdmin || !!role?.leave_view_own_branch);
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' leave data.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
+  const canViewAll = (isAdmin || (!isBranchAdmin && !!role?.leave_view_all_employees)) && !isPartnerBranchBlocked;
+  const canViewOwnBranch = !canViewAll && (isBranchAdmin || !!role?.leave_view_own_branch) && !isPartnerBranchBlocked;
   const canManage = canViewAll || canViewOwnBranch;
-  const canApproveLeave = isAdmin || isBranchAdmin || !!role?.leave_approve;
+  const canApproveLeave = (isAdmin || isBranchAdmin || !!role?.leave_approve) && !isPartnerBranchBlocked;
 
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [calendarRequests, setCalendarRequests] = useState<LeaveRequest[]>([]);
@@ -35,7 +43,10 @@ export function useLeaveData() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      if (!user?.email) {
+      if (!user?.email || isPartnerBranchBlocked || !targetBranch) {
+        setEmployees([]);
+        setRequests([]);
+        setCalendarRequests([]);
         setLoading(false);
         return;
       }
@@ -58,31 +69,7 @@ export function useLeaveData() {
         setMyApproverName("");
       }
 
-      if (canViewAll && isSuperAdmin && !effectiveBranchId) {
-        const { data: lr } = await supabase
-          .from("leave_requests")
-          .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email, branch_id)")
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false });
-        const allReqs = (lr || []).map((x: any) => normalizeLeaveRequest({
-          ...x,
-          employees: Array.isArray(x.employees) ? x.employees[0] : x.employees || null
-        }));
-        setRequests(allReqs);
-        setCalendarRequests(allReqs.filter((r) => r.status === "approved"));
-
-        const { data: emp } = await supabase
-          .from("employees")
-          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id")
-          .is("deleted_at", null)
-          .order("first_name");
-        setEmployees(emp || []);
-        setLoading(false);
-        return;
-      }
-
-      const targetBranch = effectiveBranchId || userBranchId || me?.branch_id;
-      if ((canViewAll || canViewOwnBranch) && targetBranch) {
+      if (canViewAll || canViewOwnBranch) {
         const { data: team } = await supabase
           .from("employees")
           .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id")
@@ -135,7 +122,7 @@ export function useLeaveData() {
     } finally {
       setLoading(false);
     }
-  }, [user?.email, canViewAll, canViewOwnBranch, isSuperAdmin, effectiveBranchId, userBranchId]);
+  }, [user?.email, canViewAll, canViewOwnBranch, isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     supabase
@@ -168,6 +155,11 @@ export function useLeaveData() {
     user,
     role,
     isAdmin,
+    isSuperAdmin,
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     canViewAll,
     canViewOwnBranch,
     canManage,

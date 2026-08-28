@@ -1,10 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useBranchScope } from "@/context/BranchContext";
 import { toast } from "@/components/Toast";
 import type { OnboardingHire, ChecklistTask, StaffMember } from "../types";
 
 export function useChecklistData() {
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' checklist.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
   const [searchParams, setSearchParams] = useSearchParams();
   const targetHireParam = searchParams.get("hire") || searchParams.get("request_id") || searchParams.get("highlight");
 
@@ -15,11 +25,20 @@ export function useChecklistData() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setHires([]);
+      setTasks([]);
+      setStaff([]);
+      setSelectedHire(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       const [{ data: hr }, { data: tk }, { data: st }] = await Promise.all([
         supabase
           .from("onboarding_requests")
-          .select("*, employees(id, first_name, last_name, role, department, avatar_url, branches(name))")
+          .select("*, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(name))")
           .is("deleted_at", null)
           .order("created_at", { ascending: false }),
         supabase
@@ -29,25 +48,32 @@ export function useChecklistData() {
           .order("sort_order", { ascending: true }),
         supabase
           .from("employees")
-          .select("id, first_name, last_name, department, role, avatar_url")
+          .select("id, first_name, last_name, department, role, avatar_url, branch_id")
           .eq("status", "active")
+          .eq("branch_id", targetBranch)
+          .is("deleted_at", null)
           .order("first_name"),
       ]);
 
-      const formattedHires = (hr || []).map((h: any) => ({
-        ...h,
-        employees: h.employees
-          ? {
-              ...h.employees,
-              branches: Array.isArray(h.employees.branches)
-                ? h.employees.branches[0] || null
-                : h.employees.branches || null,
-            }
-          : null,
-      })) as OnboardingHire[];
+      const formattedHires = (hr || [])
+        .map((h: any) => ({
+          ...h,
+          employees: h.employees
+            ? {
+                ...h.employees,
+                branches: Array.isArray(h.employees.branches)
+                  ? h.employees.branches[0] || null
+                  : h.employees.branches || null,
+              }
+            : null,
+        }))
+        .filter((h: any) => h.employees?.branch_id === targetBranch) as OnboardingHire[];
+
+      const hireIds = new Set(formattedHires.map((h) => h.id));
+      const filteredTasks = (tk || []).filter((t: any) => hireIds.has(t.onboarding_request_id)) as ChecklistTask[];
 
       setHires(formattedHires);
-      setTasks((tk || []) as ChecklistTask[]);
+      setTasks(filteredTasks);
       setStaff((st || []) as StaffMember[]);
 
       if (targetHireParam) {
@@ -102,6 +128,10 @@ export function useChecklistData() {
   }, [setSearchParams]);
 
   return {
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     hires,
     setHires,
     tasks,

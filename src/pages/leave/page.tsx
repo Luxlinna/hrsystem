@@ -8,12 +8,16 @@ import { LeaveRequestModal } from "./components/modals/LeaveRequestModal";
 import { LeaveApprovalModal } from "./components/modals/LeaveApprovalModal";
 import { LeaveCancelModal } from "./components/modals/LeaveCancelModal";
 import { LeaveInspectModal } from "./components/modals/LeaveInspectModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useLeave } from "./hooks/useLeave";
 import { exportLeaveToCSV } from "./exportUtils";
 import { INITIAL_LEAVE_FORM } from "./constants";
 
 export default function Leave() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     canViewAll,
     canViewOwnBranch,
     canManage,
@@ -96,6 +100,23 @@ export default function Leave() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+        <LeaveHeader
+          onLeaveTodayCount={0}
+          onExportCSV={() => {}}
+          onRequestLeave={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Leave Management"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

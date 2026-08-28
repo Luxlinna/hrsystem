@@ -9,10 +9,14 @@ import { OffboardAnalyticsTabContent } from "./components/analytics/OffboardAnal
 import { CreateOffboardingModal } from "./components/modals/CreateOffboardingModal";
 import { AddTaskModal } from "./components/modals/AddTaskModal";
 import { EditOffboardingModal } from "./components/modals/EditOffboardingModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useOffboard } from "./hooks/useOffboard";
 
 export default function Offboard() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     employees,
     branches,
     loading,
@@ -71,6 +75,19 @@ export default function Offboard() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading offboarding dashboard...</p>
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+        <OffboardHeader onStartOffboarding={() => {}} />
+        <PartnerBranchPrivacyShield
+          moduleName="Offboarding Operations"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

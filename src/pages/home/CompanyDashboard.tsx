@@ -9,12 +9,16 @@ import { HrAnalyticsKpiSection } from "./components/HrAnalyticsKpiSection";
 import { AnalyticsChartsSection } from "./components/AnalyticsChartsSection";
 import { AdminActionsSection } from "./components/AdminActionsSection";
 import { MobileFabQuickActions } from "./components/MobileFabQuickActions";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useCompanyDashboard } from "./hooks/useCompanyDashboard";
 
 export default function CompanyDashboard() {
   const {
     user,
     can,
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     stats,
     onboarding,
     leaveRequests,
@@ -45,6 +49,18 @@ export default function CompanyDashboard() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto min-h-[70vh] flex flex-col items-center justify-center">
+        <PartnerBranchPrivacyShield
+          moduleName="Company Dashboard"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

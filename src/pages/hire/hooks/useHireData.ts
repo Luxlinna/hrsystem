@@ -5,7 +5,15 @@ import { useBranchScope } from "@/context/BranchContext";
 import type { Job, Candidate, Interview, Branch, HiringRequest } from "../types";
 
 export function useHireData() {
-  const { isSuperAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' recruitment pipeline.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [interviews, setInterviews] = useState<Interview[]>([]);
@@ -14,34 +22,33 @@ export function useHireData() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setJobs([]);
+      setCandidates([]);
+      setInterviews([]);
+      setBranches([]);
+      setHiringRequests([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
-
-      let jobQuery = supabase
+      const jobQuery = supabase
         .from("job_postings")
         .select("*, branches(id, name)")
         .is("deleted_at", null)
+        .eq("branch_id", targetBranch)
         .order("posted_at", { ascending: false });
 
-      if (targetBranch) {
-        jobQuery = jobQuery.eq("branch_id", targetBranch);
-      }
+      const branchQuery = supabase.from("branches").select("id, name").eq("id", targetBranch).order("name");
 
-      let branchQuery = supabase.from("branches").select("id, name").order("name");
-      if (targetBranch) {
-        branchQuery = branchQuery.eq("id", targetBranch);
-      }
-
-      let reqQuery = supabase
+      const reqQuery = supabase
         .from("hiring_requests")
         .select("*, branches(id, name)")
         .is("deleted_at", null)
+        .eq("branch_id", targetBranch)
         .order("created_at", { ascending: false });
-
-      if (targetBranch) {
-        reqQuery = reqQuery.eq("branch_id", targetBranch);
-      }
 
       const [{ data: j }, { data: c }, { data: i }, { data: b }, { data: hr }] = await Promise.all([
         jobQuery,
@@ -64,15 +71,15 @@ export function useHireData() {
       const rawJobs = (j as unknown as Job[]) || [];
       const jobIds = new Set(rawJobs.map((x) => x.id));
 
-      const filteredCandidates = targetBranch
-        ? ((c as unknown as Candidate[]) || []).filter((cand) => cand.job_posting_id && jobIds.has(cand.job_posting_id))
-        : ((c as unknown as Candidate[]) || []);
+      const filteredCandidates = ((c as unknown as Candidate[]) || []).filter(
+        (cand) => cand.job_posting_id && jobIds.has(cand.job_posting_id)
+      );
 
       const candIds = new Set(filteredCandidates.map((x) => x.id));
 
-      const filteredInterviews = targetBranch
-        ? ((i as unknown as Interview[]) || []).filter((iv) => candIds.has(iv.candidate_id))
-        : ((i as unknown as Interview[]) || []);
+      const filteredInterviews = ((i as unknown as Interview[]) || []).filter(
+        (iv) => candIds.has(iv.candidate_id)
+      );
 
       setJobs(rawJobs);
       setCandidates(filteredCandidates);
@@ -85,13 +92,17 @@ export function useHireData() {
     } finally {
       setLoading(false);
     }
-  }, [effectiveBranchId, isSuperAdmin, userBranchId]);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   return {
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     jobs,
     setJobs,
     candidates,

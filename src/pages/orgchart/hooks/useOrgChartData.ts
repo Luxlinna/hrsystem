@@ -8,32 +8,40 @@ export function useOrgChartData(
   setExpandedIds: React.Dispatch<React.SetStateAction<Set<string>>>
 ) {
   const { role, isAdmin } = usePermissions();
-  const { isSuperAdmin, effectiveBranchId, userBranchId } = useBranchScope();
-  const canEditManager = isAdmin || Boolean(role?.employees_manage);
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' org chart.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
+  const canEditManager = (isAdmin || Boolean(role?.employees_manage)) && !isPartnerBranchBlocked;
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadEmployees = useCallback(async () => {
-    setLoading(true);
-    const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setEmployees([]);
+      setBranches([]);
+      setLoading(false);
+      return;
+    }
 
-    let query = supabase
+    setLoading(true);
+
+    const query = supabase
       .from("employees")
       .select("id, first_name, last_name, role, department, avatar_url, reports_to, status, branch_id, email, phone, branches(id, name)")
       .is("deleted_at", null)
+      .eq("branch_id", targetBranch)
       .order("department")
       .order("first_name");
 
-    if (targetBranch) {
-      query = query.eq("branch_id", targetBranch);
-    }
-
-    let branchQuery = supabase.from("branches").select("id, name").order("name");
-    if (targetBranch) {
-      branchQuery = branchQuery.eq("id", targetBranch);
-    }
+    const branchQuery = supabase.from("branches").select("id, name").eq("id", targetBranch).order("name");
 
     const [{ data: empData }, { data: branchData }] = await Promise.all([
       query,
@@ -49,20 +57,20 @@ export function useOrgChartData(
     const topLevel = list.filter((e) => !e.reports_to || !empIds.has(e.reports_to));
     setExpandedIds(new Set(topLevel.map((e) => e.id)));
     setLoading(false);
-  }, [setExpandedIds, effectiveBranchId, isSuperAdmin, userBranchId]);
+  }, [setExpandedIds, isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadEmployees();
   }, [loadEmployees]);
 
   return {
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     canEditManager,
     employees,
     branches,
-    isSuperAdmin,
-    effectiveBranchId,
-    userBranchId,
-    setEmployees,
     loading,
     loadEmployees,
   };

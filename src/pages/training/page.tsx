@@ -7,9 +7,13 @@ import { CertificatesGridView } from "./components/views/CertificatesGridView";
 import { CourseModal } from "./components/modals/CourseModal";
 import { EnrollModal } from "./components/modals/EnrollModal";
 import { CourseDetailDrawer } from "./components/modals/CourseDetailDrawer";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 
 export default function TrainingPage() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     canManage,
     courses,
     enrollments,
@@ -66,11 +70,33 @@ export default function TrainingPage() {
     deleteEnrollment,
     isSuperAdmin,
     effectiveBranchId,
-    userBranchId,
   } = useTraining();
 
   const activeBranch = branches.find((b) => b.id === (effectiveBranchId || userBranchId));
   const activeBranchName = activeBranch?.name;
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">
+        <TrainingHeader
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          totalEnrolled={0}
+          totalCompleted={0}
+          totalCerts={0}
+          avgProgress={0}
+          canManage={false}
+          onNewCourse={() => {}}
+          onOpenEnroll={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Training & Certifications"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">

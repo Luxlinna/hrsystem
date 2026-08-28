@@ -9,11 +9,15 @@ import { UpcomingLeavesWidget } from "./components/widgets/UpcomingLeavesWidget"
 import { QuickRequestModal } from "./components/modals/QuickRequestModal";
 import { LeaveInspectModal } from "./components/modals/LeaveInspectModal";
 import { DayLeavesModal } from "./components/modals/DayLeavesModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useLeaveCalendar } from "./hooks/useLeaveCalendar";
 import { exportCalendarCSV } from "./exportUtils";
 
 export default function LeaveCalendar() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     canManage,
     employees,
     myEmployee,
@@ -70,6 +74,24 @@ export default function LeaveCalendar() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+        <CalendarHeader
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          onExportCSV={() => {}}
+          onOpenQuickRequest={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Leave Schedule Calendar"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

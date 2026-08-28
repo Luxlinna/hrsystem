@@ -6,10 +6,14 @@ import { OrgChartDepartmentsView } from "./components/departments/OrgChartDepart
 import { OrgChartListView } from "./components/list/OrgChartListView";
 import { EmployeeQuickDrawer } from "./components/modals/EmployeeQuickDrawer";
 import { EditManagerModal } from "./components/modals/EditManagerModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useOrgChart } from "./hooks/useOrgChart";
 
 export default function OrgChart() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     canEditManager,
     employees,
     branches,
@@ -53,6 +57,26 @@ export default function OrgChart() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="p-6 lg:p-10 min-h-screen bg-[#F8F9FB] dark:bg-slate-900 font-sans">
+        <OrgChartHeader
+          employeeCount={0}
+          deptCount={0}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          onExpandAll={() => {}}
+          onCollapseAll={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Organization Chart"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }
