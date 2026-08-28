@@ -17,11 +17,13 @@ interface Props {
 }
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; icon: string }> = {
-  present: { label: "Present", bg: "bg-emerald-50", text: "text-emerald-700", icon: "ri-checkbox-circle-line" },
+  ontime: { label: "On Time", bg: "bg-emerald-50", text: "text-emerald-700", icon: "ri-checkbox-circle-line" },
+  present: { label: "On Time", bg: "bg-emerald-50", text: "text-emerald-700", icon: "ri-checkbox-circle-line" },
   late: { label: "Late", bg: "bg-amber-50", text: "text-amber-700", icon: "ri-time-line" },
   absent: { label: "Absent", bg: "bg-red-50", text: "text-red-700", icon: "ri-close-circle-line" },
   half_day: { label: "Half Day", bg: "bg-sky-50", text: "text-sky-700", icon: "ri-sun-line" },
   wfh: { label: "WFH", bg: "bg-violet-50", text: "text-violet-700", icon: "ri-home-office-line" },
+  remote: { label: "Remote", bg: "bg-sky-50", text: "text-sky-700", icon: "ri-home-office-line" },
 };
 
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -77,7 +79,7 @@ export default function AttendanceTab({ employeeId }: Props) {
   }, [employeeId, filterMonth]);
 
   const stats = {
-    present: records.filter((r) => r.status === "present").length,
+    ontime: records.filter((r) => r.status === "ontime" || r.status === "present").length,
     late: records.filter((r) => r.status === "late").length,
     absent: records.filter((r) => r.status === "absent").length,
     totalHours: records.reduce((sum, r) => {
@@ -132,7 +134,7 @@ export default function AttendanceTab({ employeeId }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Present", value: stats.present, icon: "ri-checkbox-circle-line", color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "On Time", value: stats.ontime, icon: "ri-checkbox-circle-line", color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Late", value: stats.late, icon: "ri-time-line", color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Absent", value: stats.absent, icon: "ri-close-circle-line", color: "text-red-500", bg: "bg-red-50" },
           { label: "Total Hours", value: totalHoursFormatted, icon: "ri-timer-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },

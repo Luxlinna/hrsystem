@@ -28,16 +28,16 @@ export const AttendanceKpiBar = memo(function AttendanceKpiBar({
 }: AttendanceKpiBarProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5 mb-6">
-      {/* Present */}
+      {/* On Time */}
       <div
-        onClick={() => setFilterStatus("present")}
+        onClick={() => setFilterStatus("ontime")}
         className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-          filterStatus === "present" ? "border-emerald-500 ring-2 ring-emerald-500/15" : "border-gray-200/80"
+          filterStatus === "ontime" || filterStatus === "present" ? "border-emerald-500 ring-2 ring-emerald-500/15" : "border-gray-200/80"
         }`}
       >
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
-            {filterDatePreset === "today" ? "Present Today" : "Present (Period)"}
+            {filterDatePreset === "today" ? "On Time Today" : "On Time (Period)"}
           </span>
           <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
             <i className="ri-user-follow-line text-sm" />

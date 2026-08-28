@@ -70,7 +70,7 @@ export const RecordsTab = memo(function RecordsTab({
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {pagedRecords.map((r) => {
-                  const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.present;
+                  const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.ontime || STATUS_CONFIG.present;
                   const emp = r.employees;
                   const isWorkingNow = r.clock_in && !r.clock_out && r.date === todayYMD;
 
@@ -187,7 +187,7 @@ export const RecordsTab = memo(function RecordsTab({
         /* Cards View */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {pagedRecords.map((r) => {
-            const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.present;
+            const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.ontime || STATUS_CONFIG.present;
             const emp = r.employees;
             const isWorkingNow = r.clock_in && !r.clock_out && r.date === todayYMD;
 

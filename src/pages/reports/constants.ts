@@ -67,6 +67,7 @@ export const STATUS_COLOR: Record<string, string> = {
   it_setup: "bg-blue-50 text-blue-700 border border-blue-200/70",
   training: "bg-purple-50 text-purple-700 border border-purple-200/70",
   complete: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  ontime: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
   present: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
   late: "bg-amber-50 text-amber-700 border border-amber-200/70",
   absent: "bg-rose-50 text-rose-700 border border-rose-200/70",
@@ -77,7 +78,8 @@ export const STATUS_COLOR: Record<string, string> = {
 };
 
 export const ATTENDANCE_STATUS_LABEL: Record<string, string> = {
-  present: "present",
+  ontime: "on time",
+  present: "on time",
   late: "late",
   absent: "absent",
   remote: "remote",

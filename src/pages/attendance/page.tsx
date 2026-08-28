@@ -79,9 +79,9 @@ export default function AttendancePage() {
   const [newRecord, setNewRecord] = useState<NewRecordForm>({
     employee_id: "",
     date: toYMD(new Date()),
-    clock_in: "09:00",
-    clock_out: "18:00",
-    status: "present",
+    clock_in: "08:00",
+    clock_out: "17:00",
+    status: "ontime",
     late_minutes: 0,
     notes: "",
   });
@@ -299,7 +299,7 @@ export default function AttendancePage() {
   }, [records, dateRangeBounds]);
 
   const presentCount = useMemo(
-    () => activeScopeRecords.filter((r) => r.status === "present" || r.status === "remote").length,
+    () => activeScopeRecords.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "remote").length,
     [activeScopeRecords]
   );
   const lateCount = useMemo(() => activeScopeRecords.filter((r) => r.status === "late").length, [activeScopeRecords]);
@@ -316,7 +316,7 @@ export default function AttendancePage() {
   const employeeSummary: EmployeeSummaryItem[] = useMemo(() => {
     return employees.map((emp) => {
       const empRecords = activeScopeRecords.filter((r) => r.employee_id === emp.id);
-      const present = empRecords.filter((r) => r.status === "present" || r.status === "remote").length;
+      const present = empRecords.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "remote").length;
       const late = empRecords.filter((r) => r.status === "late").length;
       const absent = empRecords.filter((r) => r.status === "absent").length;
       const remote = empRecords.filter((r) => r.status === "remote").length;
@@ -408,9 +408,9 @@ export default function AttendancePage() {
     setNewRecord({
       employee_id: "",
       date: todayYMD,
-      clock_in: "09:00",
-      clock_out: "18:00",
-      status: "present",
+      clock_in: "08:00",
+      clock_out: "17:00",
+      status: "ontime",
       late_minutes: 0,
       notes: "",
     });

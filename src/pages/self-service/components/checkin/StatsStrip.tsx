@@ -16,9 +16,9 @@ export function StatsStrip(props: Props) {
   const { recordCount, presentCount, lateCount, earlyLeaveCount, absentCount, totalHours, daysWithHours, avgHours, punctuality, lateGrace, earlyLeaveGrace } = props;
   const absentSub = absentCount === 0 ? "Perfect record" : "Needs review";
   const items = [
-    { label: "Days Present", value: presentCount, sub: `${daysWithHours} with hours`, icon: "ri-user-follow-line", color: "text-emerald-600 bg-emerald-50" },
+    { label: "Days Logged", value: presentCount, sub: `${daysWithHours} with hours`, icon: "ri-user-follow-line", color: "text-emerald-600 bg-emerald-50" },
     { label: "Punctuality", value: `${punctuality}%`, sub: `${presentCount - lateCount} on time`, icon: "ri-shield-check-line", color: "text-teal-600 bg-teal-50" },
-    { label: "Late Arrivals", value: lateCount, sub: `${lateGrace}m grace`, icon: "ri-time-line", color: "text-amber-600 bg-amber-50" },
+    { label: "Late Arrivals", value: lateCount, sub: "After 8:00 AM", icon: "ri-time-line", color: "text-amber-600 bg-amber-50" },
     { label: "Early Leaves", value: earlyLeaveCount, sub: `${earlyLeaveGrace}m grace`, icon: "ri-logout-circle-line", color: "text-orange-600 bg-orange-50" },
     { label: "Absences", value: absentCount, sub: absentSub, icon: "ri-user-unfollow-line", color: "text-rose-500 bg-rose-50" },
     { label: "Total Hours", value: `${totalHours.toFixed(0)}h`, sub: `avg ${avgHours.toFixed(1)}h/day`, icon: "ri-timer-line", color: "text-[#253C7D] bg-[#253C7D]/10" },

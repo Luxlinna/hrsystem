@@ -62,7 +62,7 @@ export const MonthlyMatrixTab = memo(function MonthlyMatrixTab({
                   <span className="font-bold">{d.dayNum}</span>
                 </th>
               ))}
-              <th className="px-3 py-3 text-center min-w-[60px]">Present</th>
+              <th className="px-3 py-3 text-center min-w-[60px]">Days Logged</th>
               <th className="px-3 py-3 text-center min-w-[60px]">Hours</th>
             </tr>
           </thead>
@@ -72,7 +72,7 @@ export const MonthlyMatrixTab = memo(function MonthlyMatrixTab({
                 (r) => r.employee_id === emp.id && r.date.startsWith(matrixMonth)
               );
               const monthPresent = empMonthRecords.filter(
-                (r) => r.status === "present" || r.status === "remote" || r.status === "late"
+                (r) => r.status === "ontime" || r.status === "present" || r.status === "remote" || r.status === "late"
               ).length;
               const monthHours = empMonthRecords
                 .reduce((acc, r) => acc + calcHoursNum(r.clock_in, r.clock_out), 0)

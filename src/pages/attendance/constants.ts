@@ -2,9 +2,18 @@ export const STATUS_CONFIG: Record<
   string,
   { label: string; short: string; bg: string; text: string; border: string; icon: string; dot: string }
 > = {
+  ontime: {
+    label: "On Time",
+    short: "OT",
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "border-emerald-200",
+    icon: "ri-checkbox-circle-line",
+    dot: "bg-emerald-500",
+  },
   present: {
-    label: "Present",
-    short: "P",
+    label: "On Time",
+    short: "OT",
     bg: "bg-emerald-50",
     text: "text-emerald-700",
     border: "border-emerald-200",

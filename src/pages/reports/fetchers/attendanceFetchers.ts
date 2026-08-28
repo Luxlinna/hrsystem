@@ -47,7 +47,7 @@ export const fetchAttendanceReport = async (config: ReportConfig): Promise<Repor
 
   const cols = ["Employee", "Department", "Branch", "Role", "Date", "Check In", "Check Out", "Hours", "Status", "Late (Min)", "Deleted By", "Deleted Date & Time", "Notes"];
 
-  const present = mapped.filter((r) => r.status === "present" || r.status === "remote").length;
+  const present = mapped.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "remote").length;
   const late = mapped.filter((r) => r.status === "late").length;
   const absent = mapped.filter((r) => r.status === "absent").length;
   const totalHours = mapped.reduce((sum, r) => sum + r.hours, 0);
@@ -55,7 +55,7 @@ export const fetchAttendanceReport = async (config: ReportConfig): Promise<Repor
 
   const summary: Record<string, string | number> = {
     "Total Records": mapped.length,
-    "Present / Remote": present,
+    "On Time / Remote": present,
     "Late Arrivals": late,
     Absent: absent,
     "Hours Logged": +totalHours.toFixed(1),
@@ -91,7 +91,7 @@ export const fetchAttendanceSummaryReport = async (config: ReportConfig): Promis
     }
     const row = map[key];
     row.days_logged++;
-    if (r.status === "present" || r.status === "remote") row.present++;
+    if (r.status === "ontime" || r.status === "present" || r.status === "remote") row.present++;
     if (r.status === "late") row.late++;
     if (r.status === "absent") row.absent++;
     if (r.status === "remote") row.remote++;
@@ -108,7 +108,7 @@ export const fetchAttendanceSummaryReport = async (config: ReportConfig): Promis
     }))
     .sort((a, b) => b.days_logged - a.days_logged || a.employee.localeCompare(b.employee));
 
-  const cols = ["Employee", "Department", "Branch", "Role", "Days Logged", "Present", "Late", "Absent", "Remote", "Total Hours", "Late Minutes", "Attendance Rate (%)", "Last Logged"];
+  const cols = ["Employee", "Department", "Branch", "Role", "Days Logged", "On Time", "Late", "Absent", "Remote", "Total Hours", "Late Minutes", "Attendance Rate (%)", "Last Logged"];
 
   const totalHours = mapped.reduce((sum, r) => sum + r.total_hours, 0);
   const avgRate = mapped.length

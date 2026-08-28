@@ -64,7 +64,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const [checkInMessage, setCheckInMessage] = useState("");
   const [checkInDistance, setCheckInDistance] = useState<number | null>(null);
   const [checkInAccuracy, setCheckInAccuracy] = useState<number | null>(null);
-  const [globalWorkStartTime, setGlobalWorkStartTime] = useState("09:00");
+  const [globalWorkStartTime, setGlobalWorkStartTime] = useState("08:00");
   const [scheduleSettings, setScheduleSettings] = useState(DEFAULT_WORK_SCHEDULE);
   const [activeOutsideWork, setActiveOutsideWork] = useState<OutsideWorkTask | null>(null);
   const [todayOutsideWork, setTodayOutsideWork] = useState<OutsideWorkTask | null>(null);
@@ -121,7 +121,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               employee_id: employeeId,
               date: today,
               clock_in: timeStr,
-              status: "present",
+              status: "ontime",
               notes: `Outside work: ${task.title}`,
             }, { onConflict: "employee_id,date" });
             loadRecords();
@@ -259,7 +259,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
     const [startH, startM] = workStartTime.split(":").map(Number);
     const lateMinutes = Math.max(0, nowZ.minutesOfDay - (startH * 60 + startM));
-    const status = lateMinutes > scheduleSettings.lateGraceMinutes ? "late" : "present";
+    const status = lateMinutes > 0 ? "late" : "ontime";
 
     // Upsert (not insert) on the employee/date unique constraint: a
     // double-tap, or the geofence auto-prompt racing a manual tap, then
@@ -278,7 +278,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     if (error) {
       showToast("error", "Failed to check in. Please try again.");
     } else {
-      showToast("success", `Checked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > scheduleSettings.lateGraceMinutes ? ` — ${lateMinutes} min late` : " — On time!"}`);
+      showToast("success", `Checked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > 0 ? ` — ${lateMinutes} min late` : " — On time!"}`);
       setNotes("");
       setEarlyCheckoutReason("");
       loadRecords();
@@ -286,7 +286,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
         employeeName,
         employeeId,
         type: "in",
-        isException: lateMinutes > scheduleSettings.lateGraceMinutes,
+        isException: lateMinutes > 0,
         exceptionMinutes: lateMinutes,
         date: today,
         time: timeStr,
@@ -374,15 +374,18 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
   const getStatusColor = (status: string) => {
     const map: Record<string, string> = {
+      ontime: "bg-emerald-50 text-emerald-700",
       present: "bg-emerald-50 text-emerald-700",
       late: "bg-amber-50 text-amber-700",
       absent: "bg-red-50 text-red-700",
       holiday: "bg-sky-50 text-sky-700",
+      remote: "bg-sky-50 text-sky-700",
     };
     return map[status] || "bg-gray-100 text-gray-600";
   };
 
-  const presentCount = records.filter((r) => r.status === "present" || r.status === "late").length;
+  const onTimeCount = records.filter((r) => r.status === "ontime" || r.status === "present").length;
+  const presentCount = records.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "late").length;
   const lateCount = records.filter((r) => r.status === "late").length;
   const earlyLeaveCount = records.filter((r) => (r.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes).length;
   const absentCount = records.filter((r) => r.status === "absent").length;
@@ -693,9 +696,9 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-gray-100">
           {[
-            { label: "Days Present", value: presentCount, sub: `${daysWithHours} with hours`, icon: "ri-user-follow-line", color: "text-emerald-600 bg-emerald-50" },
-            { label: "Punctuality", value: `${punctuality}%`, sub: `${presentCount - lateCount} on time`, icon: "ri-shield-check-line", color: "text-teal-600 bg-teal-50" },
-            { label: "Late Arrivals", value: lateCount, sub: `${scheduleSettings.lateGraceMinutes}m grace`, icon: "ri-time-line", color: "text-amber-600 bg-amber-50" },
+            { label: "Days Logged", value: presentCount, sub: `${daysWithHours} with hours`, icon: "ri-user-follow-line", color: "text-emerald-600 bg-emerald-50" },
+            { label: "Punctuality", value: `${punctuality}%`, sub: `${onTimeCount} on time`, icon: "ri-shield-check-line", color: "text-teal-600 bg-teal-50" },
+            { label: "Late Arrivals", value: lateCount, sub: "After 8:00 AM", icon: "ri-time-line", color: "text-amber-600 bg-amber-50" },
             { label: "Early Leaves", value: earlyLeaveCount, sub: `${scheduleSettings.earlyLeaveGraceMinutes}m grace`, icon: "ri-logout-circle-line", color: "text-orange-600 bg-orange-50" },
             { label: "Absences", value: absentCount, sub: absentCount === 0 ? "Perfect record" : "Needs review", icon: "ri-user-unfollow-line", color: "text-rose-500 bg-rose-50" },
             { label: "Total Hours", value: `${totalHours.toFixed(0)}h`, sub: `avg ${avgHours.toFixed(1)}h/day`, icon: "ri-timer-line", color: "text-[#253C7D] bg-[#253C7D]/10" },

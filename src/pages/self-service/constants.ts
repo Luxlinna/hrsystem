@@ -29,8 +29,11 @@ export const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "A
 export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export const ATTENDANCE_STATUS_COLOR: Record<string, string> = {
+  ontime: "bg-emerald-50 text-emerald-700",
   present: "bg-emerald-50 text-emerald-700",
   late: "bg-amber-50 text-amber-700",
   absent: "bg-red-50 text-red-700",
   holiday: "bg-sky-50 text-sky-700",
+  remote: "bg-sky-50 text-sky-700",
+  half_day: "bg-orange-50 text-orange-700",
 };

@@ -6,7 +6,7 @@ export function computeHrKpis(
   discRecords: any[]
 ): HrKpiState {
   const totalAtt = attRecords.length;
-  const presentAtt = attRecords.filter((r: any) => r.status === "present" || r.status === "late").length;
+  const presentAtt = attRecords.filter((r: any) => r.status === "ontime" || r.status === "present" || r.status === "late").length;
   const lateAtt = attRecords.filter((r: any) => r.status === "late").length;
   const attRate = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 0;
   const lateRate = totalAtt > 0 ? Math.round((lateAtt / totalAtt) * 100) : 0;

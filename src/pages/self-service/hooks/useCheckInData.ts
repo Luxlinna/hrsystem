@@ -28,7 +28,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
   const [checkInMessage, setCheckInMessage] = useState("");
   const [checkInDistance, setCheckInDistance] = useState<number | null>(null);
   const [checkInAccuracy, setCheckInAccuracy] = useState<number | null>(null);
-  const [globalWorkStartTime, setGlobalWorkStartTime] = useState("09:00");
+  const [globalWorkStartTime, setGlobalWorkStartTime] = useState("08:00");
   const [scheduleSettings, setScheduleSettings] = useState(DEFAULT_WORK_SCHEDULE);
   const [activeOutsideWork, setActiveOutsideWork] = useState<OutsideWorkTask | null>(null);
   const [todayOutsideWork, setTodayOutsideWork] = useState<OutsideWorkTask | null>(null);
@@ -82,7 +82,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
               employee_id: employeeId,
               date: today,
               clock_in: timeStr,
-              status: "present",
+              status: "ontime",
               notes: `Outside work: ${task.title}`,
             }, { onConflict: "employee_id,date" });
             loadRecords();
@@ -208,7 +208,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
     const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
     const [startH, startM] = workStartTime.split(":").map(Number);
     const lateMinutes = Math.max(0, nowZ.minutesOfDay - (startH * 60 + startM));
-    const status = lateMinutes > scheduleSettings.lateGraceMinutes ? "late" : "present";
+    const status = lateMinutes > 0 ? "late" : "ontime";
 
     const { error } = await supabase.from("attendance_records").upsert({
       employee_id: employeeId,
@@ -224,7 +224,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
     if (error) {
       showToast("error", "Failed to check in. Please try again.");
     } else {
-      showToast("success", `Checked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > scheduleSettings.lateGraceMinutes ? ` — ${lateMinutes} min late` : " — On time!"}`);
+      showToast("success", `Checked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > 0 ? ` — ${lateMinutes} min late` : " — On time!"}`);
       setNotes("");
       setEarlyCheckoutReason("");
       loadRecords();
@@ -232,7 +232,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
         employeeName,
         employeeId,
         type: "in",
-        isException: lateMinutes > scheduleSettings.lateGraceMinutes,
+        isException: lateMinutes > 0,
         exceptionMinutes: lateMinutes,
         date: today,
         time: timeStr,
@@ -315,7 +315,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
     handleClockOut();
   }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork]);
 
-  const presentCount = records.filter((r) => r.status === "present" || r.status === "late").length;
+  const presentCount = records.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "late").length;
   const lateCount = records.filter((r) => r.status === "late").length;
   const earlyLeaveCount = records.filter((r) => (r.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes).length;
   const absentCount = records.filter((r) => r.status === "absent").length;

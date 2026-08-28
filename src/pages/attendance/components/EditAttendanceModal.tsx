@@ -65,7 +65,7 @@ export const EditAttendanceModal = memo(function EditAttendanceModal({
               }
               className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
             >
-              {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+              {Object.entries(STATUS_CONFIG).filter(([k]) => k !== "present").map(([k, v]) => (
                 <option key={k} value={k}>
                   {v.label}
                 </option>

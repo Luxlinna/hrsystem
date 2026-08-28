@@ -148,12 +148,15 @@ export default function CheckInOutModal({
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
       if (isCheckIn) {
+        const lateMinutes = Math.max(0, now.getHours() * 60 + now.getMinutes() - 8 * 60);
+        const status = lateMinutes > 0 ? "late" : "ontime";
         await supabase.from("attendance_records").upsert(
           {
             employee_id: employeeId,
             date: today,
             clock_in: timeStr,
-            status: "present",
+            status,
+            late_minutes: lateMinutes,
             notes: `Outside work: check-in at ${location?.address || "unknown location"}`,
           },
           { onConflict: "employee_id,date" }
