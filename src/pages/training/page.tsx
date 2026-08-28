@@ -14,6 +14,7 @@ export default function TrainingPage() {
     courses,
     enrollments,
     employees,
+    branches,
     loading,
     activeTab,
     setActiveTab,
@@ -21,6 +22,8 @@ export default function TrainingPage() {
     setFilterCategory,
     filterStatus,
     setFilterStatus,
+    filterScope,
+    setFilterScope,
     searchQuery,
     setSearchQuery,
     page,
@@ -61,7 +64,13 @@ export default function TrainingPage() {
     saveEnrollment,
     updateEnrollment,
     deleteEnrollment,
+    isSuperAdmin,
+    effectiveBranchId,
+    userBranchId,
   } = useTraining();
+
+  const activeBranch = branches.find((b) => b.id === (effectiveBranchId || userBranchId));
+  const activeBranchName = activeBranch?.name;
 
   return (
     <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">
@@ -87,6 +96,8 @@ export default function TrainingPage() {
           setFilterCategory={setFilterCategory}
           filterStatus={filterStatus}
           setFilterStatus={setFilterStatus}
+          filterScope={filterScope}
+          setFilterScope={setFilterScope}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
         />
@@ -131,6 +142,9 @@ export default function TrainingPage() {
         editingId={editingCourseId}
         form={newCourse}
         setForm={setNewCourse}
+        branches={branches}
+        isSuperAdmin={isSuperAdmin}
+        activeBranchName={activeBranchName}
         saving={saving}
         onSave={saveCourse}
         onClose={() => setShowCourseModal(false)}

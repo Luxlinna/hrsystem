@@ -1,5 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
 import { useTrainingData } from "./useTrainingData";
 import { useTrainingFilters } from "./useTrainingFilters";
 import { useTrainingMutations } from "./useTrainingMutations";
@@ -8,7 +9,13 @@ export function useTraining() {
   const { user } = useAuth();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
-  const canManage = isAdmin || (Boolean(role) && !["Employee", "Staff"].includes(role.name));
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const roleName = (role?.name || "").toLowerCase();
+  const canManage =
+    isSuperAdmin ||
+    isBranchAdmin ||
+    isAdmin ||
+    /manager|lead|head|admin|ceo|director|chief|president|officer/i.test(roleName);
 
   const data = useTrainingData();
   const filters = useTrainingFilters({
@@ -18,6 +25,10 @@ export function useTraining() {
   const mutations = useTrainingMutations({
     actorName,
     canManage,
+    isSuperAdmin,
+    effectiveBranchId,
+    userBranchId,
+    branches: data.branches,
     courses: data.courses,
     employees: data.employees,
     fetchData: data.fetchData,
@@ -25,6 +36,10 @@ export function useTraining() {
 
   return {
     canManage,
+    isSuperAdmin,
+    isBranchAdmin,
+    effectiveBranchId,
+    userBranchId,
     ...data,
     ...filters,
     ...mutations,

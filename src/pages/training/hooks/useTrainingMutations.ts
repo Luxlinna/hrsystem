@@ -2,12 +2,16 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { notify } from "@/lib/notify";
-import type { Course, CourseFormState, Enrollment, Employee } from "../types";
+import type { Course, CourseFormState, Enrollment, Employee, Branch } from "../types";
 import { emptyCourseForm } from "../constants";
 
 interface UseTrainingMutationsProps {
   actorName: string;
   canManage: boolean;
+  isSuperAdmin: boolean;
+  effectiveBranchId: string | null;
+  userBranchId: string | null;
+  branches: Branch[];
   courses: Course[];
   employees: Employee[];
   fetchData: () => Promise<void>;
@@ -16,6 +20,10 @@ interface UseTrainingMutationsProps {
 export function useTrainingMutations({
   actorName,
   canManage,
+  isSuperAdmin,
+  effectiveBranchId,
+  userBranchId,
+  branches,
   courses,
   employees,
   fetchData,
@@ -31,9 +39,19 @@ export function useTrainingMutations({
   const [enrollEmployeeIds, setEnrollEmployeeIds] = useState<string[]>([]);
   const [enrollDueDate, setEnrollDueDate] = useState("");
 
+  const targetBranch = effectiveBranchId || userBranchId || "";
+
   const openNewCourse = () => {
+    if (!canManage) {
+      toast("Permission Denied", "Only administrators and managers can create training courses.", "error");
+      return;
+    }
     setEditingCourseId(null);
-    setNewCourse(emptyCourseForm);
+    setNewCourse({
+      ...emptyCourseForm,
+      is_admin_course: isSuperAdmin && !effectiveBranchId,
+      branch_id: targetBranch,
+    });
     setShowCourseModal(true);
   };
 
@@ -47,6 +65,8 @@ export function useTrainingMutations({
       instructor: course.instructor || "",
       format: course.format,
       status: course.status,
+      branch_id: course.branch_id || targetBranch,
+      is_admin_course: !course.branch_id,
     });
     setEditingCourseId(course.id);
     setSelectedCourse(null);
@@ -54,6 +74,10 @@ export function useTrainingMutations({
   };
 
   const openEnroll = (courseId?: string) => {
+    if (!canManage) {
+      toast("Permission Denied", "Only administrators and managers can enroll employees.", "error");
+      return;
+    }
     setEnrollCourseId(courseId || courses[0]?.id || null);
     setEnrollEmployeeIds([]);
     setEnrollDueDate("");
@@ -63,6 +87,9 @@ export function useTrainingMutations({
   const saveCourse = useCallback(async () => {
     if (!newCourse.title.trim() || !canManage) return;
     setSaving(true);
+
+    const resolvedBranchId = newCourse.is_admin_course ? null : (newCourse.branch_id || targetBranch || null);
+
     const payload = {
       title: newCourse.title.trim(),
       description: newCourse.description || null,
@@ -71,10 +98,13 @@ export function useTrainingMutations({
       instructor: newCourse.instructor || null,
       format: newCourse.format,
       status: newCourse.status,
+      branch_id: resolvedBranchId,
     };
+
     const { error } = editingCourseId
       ? await supabase.from("training_courses").update(payload).eq("id", editingCourseId)
       : await supabase.from("training_courses").insert(payload);
+
     setSaving(false);
     if (error) {
       toast("Error", "Failed to save course", "error");
@@ -85,7 +115,7 @@ export function useTrainingMutations({
     setEditingCourseId(null);
     setNewCourse(emptyCourseForm);
     await fetchData();
-  }, [newCourse, canManage, editingCourseId, fetchData]);
+  }, [newCourse, canManage, targetBranch, editingCourseId, fetchData]);
 
   const deleteCourse = useCallback(
     async (course: Course) => {
@@ -104,7 +134,7 @@ export function useTrainingMutations({
         toast("Error", "Failed to delete course", "error");
         return;
       }
-      toast("Deleted", `"${course.title}" moved to Recycle Bin.`, "success");
+      toast("Success", "Course moved to recycle bin", "success");
       setSelectedCourse(null);
       await fetchData();
     },
@@ -112,49 +142,50 @@ export function useTrainingMutations({
   );
 
   const saveEnrollment = useCallback(async () => {
-    if (!enrollCourseId || enrollEmployeeIds.length === 0) return;
+    if (!enrollCourseId || enrollEmployeeIds.length === 0 || !canManage) return;
     setSaving(true);
-    const payload = enrollEmployeeIds.map((empId) => ({
+
+    const records = enrollEmployeeIds.map((empId) => ({
       course_id: enrollCourseId,
       employee_id: empId,
-      due_date: enrollDueDate || null,
       status: "enrolled",
       progress: 0,
+      due_date: enrollDueDate || null,
     }));
-    const { error } = await supabase.from("training_enrollments").insert(payload);
+
+    const { error } = await supabase.from("training_enrollments").insert(records);
     setSaving(false);
     if (error) {
       toast("Error", "Failed to enroll employees", "error");
       return;
     }
 
-    const course = courses.find((item) => item.id === enrollCourseId);
-    const enrolledEmployees = employees.filter((employee) =>
-      enrollEmployeeIds.includes(employee.id)
-    );
-
-    await Promise.allSettled(
-      enrolledEmployees.map((employee) =>
-        notify({
-          recipientUserId: employee.id,
-          type: "info",
-          source: "training",
-          title: "New Training Course Assigned",
-          message: `You have been enrolled in "${course?.title || "a new course"}".`,
-          entityId: enrollCourseId,
-        })
-      )
-    );
+    const courseName = courses.find((c) => c.id === enrollCourseId)?.title || "a training course";
+    notify({
+      title: `Enrolled in: ${courseName}`,
+      message: `Enrolled in training course "${courseName}"${
+        enrollDueDate ? ` with due date ${enrollDueDate}` : ""
+      }.`,
+      type: "info",
+      source: "training",
+      entityId: enrollCourseId,
+    });
 
     toast("Success", `Enrolled ${enrollEmployeeIds.length} employee(s)`, "success");
     setShowEnrollModal(false);
+    setEnrollCourseId(null);
     setEnrollEmployeeIds([]);
+    setEnrollDueDate("");
     await fetchData();
-  }, [enrollCourseId, enrollEmployeeIds, enrollDueDate, courses, employees, fetchData]);
+  }, [enrollCourseId, enrollEmployeeIds, canManage, enrollDueDate, courses, fetchData]);
 
   const updateEnrollment = useCallback(
     async (id: string, updates: Partial<Enrollment>) => {
-      const { error } = await supabase.from("training_enrollments").update(updates).eq("id", id);
+      if (!canManage) return;
+      const { error } = await supabase
+        .from("training_enrollments")
+        .update(updates)
+        .eq("id", id);
       if (error) {
         toast("Error", "Failed to update enrollment", "error");
         return;
@@ -162,30 +193,25 @@ export function useTrainingMutations({
       toast("Success", "Enrollment updated", "success");
       await fetchData();
     },
-    [fetchData]
+    [canManage, fetchData]
   );
 
   const deleteEnrollment = useCallback(
     async (enrollment: Enrollment) => {
       if (!canManage) return;
-      if (
-        !confirm(
-          "Remove this enrollment record? It will be moved to the Recycle Bin and can be restored later."
-        )
-      )
-        return;
+      if (!confirm("Remove this enrollment? It will be moved to the Recycle Bin.")) return;
       const { error } = await supabase
         .from("training_enrollments")
-        .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", enrollment.id);
       if (error) {
         toast("Error", "Failed to remove enrollment", "error");
         return;
       }
-      toast("Removed", "Enrollment moved to Recycle Bin.", "success");
+      toast("Success", "Enrollment removed", "success");
       await fetchData();
     },
-    [canManage, actorName, fetchData]
+    [canManage, fetchData]
   );
 
   return {

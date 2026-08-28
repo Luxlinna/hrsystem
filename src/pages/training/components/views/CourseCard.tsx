@@ -28,8 +28,8 @@ export const CourseCard = memo(function CourseCard({
   return (
     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs hover:shadow-md hover:border-gray-200 transition-all flex flex-col justify-between group">
       <div>
-        {/* Top: Category & Format Badge */}
-        <div className="flex items-center justify-between gap-2 mb-3">
+        {/* Top: Category, Scope & Format Badge */}
+        <div className="flex items-center justify-between gap-2 mb-2">
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
             {course.category}
           </span>
@@ -39,6 +39,19 @@ export const CourseCard = memo(function CourseCard({
             <i className={format.icon} />
             {format.label}
           </span>
+        </div>
+
+        {/* Course Scope Pill */}
+        <div className="mb-2.5">
+          {!course.branch_id ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60">
+              <i className="ri-global-line text-[10px]" /> Company-Wide (Admin)
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">
+              <i className="ri-building-line text-[10px]" /> {course.branches?.name || "Branch Course"}
+            </span>
+          )}
         </div>
 
         {/* Title & Description */}

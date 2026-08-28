@@ -10,6 +10,7 @@ export function useTrainingFilters({ courses, enrollments }: UseTrainingFiltersP
   const [activeTab, setActiveTab] = useState<TrainingTab>("courses");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterScope, setFilterScope] = useState<"all" | "admin" | "branch">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
@@ -21,11 +22,13 @@ export function useTrainingFilters({ courses, enrollments }: UseTrainingFiltersP
   const filteredCourses = useMemo(() => {
     return courses.filter((c) => {
       if (filterCategory && c.category !== filterCategory) return false;
+      if (filterScope === "admin" && c.branch_id) return false;
+      if (filterScope === "branch" && !c.branch_id) return false;
       if (searchQuery && !c.title.toLowerCase().includes(searchQuery.toLowerCase()))
         return false;
       return true;
     });
-  }, [courses, filterCategory, searchQuery]);
+  }, [courses, filterCategory, filterScope, searchQuery]);
 
   const filteredEnrollments = useMemo(() => {
     return enrollments.filter((e) => {
@@ -91,6 +94,8 @@ export function useTrainingFilters({ courses, enrollments }: UseTrainingFiltersP
     setFilterCategory,
     filterStatus,
     setFilterStatus,
+    filterScope,
+    setFilterScope,
     searchQuery,
     setSearchQuery,
     pageSize,

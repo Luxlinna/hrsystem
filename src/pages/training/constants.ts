@@ -23,4 +23,6 @@ export const emptyCourseForm: CourseFormState = {
   instructor: "",
   format: "online",
   status: "active",
+  branch_id: "",
+  is_admin_course: false,
 };

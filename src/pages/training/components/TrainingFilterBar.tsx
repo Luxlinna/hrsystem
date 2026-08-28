@@ -8,6 +8,8 @@ interface TrainingFilterBarProps {
   setFilterCategory: (cat: string) => void;
   filterStatus: string;
   setFilterStatus: (st: string) => void;
+  filterScope?: "all" | "admin" | "branch";
+  setFilterScope?: (s: "all" | "admin" | "branch") => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
 }
@@ -19,6 +21,8 @@ export const TrainingFilterBar = memo(function TrainingFilterBar({
   setFilterCategory,
   filterStatus,
   setFilterStatus,
+  filterScope = "all",
+  setFilterScope,
   searchQuery,
   setSearchQuery,
 }: TrainingFilterBarProps) {
@@ -50,6 +54,18 @@ export const TrainingFilterBar = memo(function TrainingFilterBar({
 
       {/* Filters */}
       <div className="flex items-center gap-2">
+        {activeTab === "courses" && setFilterScope && (
+          <select
+            value={filterScope}
+            onChange={(e) => setFilterScope(e.target.value as "all" | "admin" | "branch")}
+            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer"
+          >
+            <option value="all">🌐 All Scopes</option>
+            <option value="admin">🌐 Company-Wide (Admin)</option>
+            <option value="branch">🏢 Branch Only</option>
+          </select>
+        )}
+
         {activeTab === "courses" && (
           <select
             value={filterCategory}

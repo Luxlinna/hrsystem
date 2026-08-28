@@ -1,3 +1,8 @@
+export interface Branch {
+  id: string;
+  name: string;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -7,7 +12,9 @@ export interface Course {
   instructor: string | null;
   format: "online" | "in_person" | "hybrid" | "self_paced";
   status: "active" | "draft" | "archived";
+  branch_id?: string | null;
   created_at: string;
+  branches?: { id?: string; name: string } | null;
 }
 
 export interface Enrollment {
@@ -28,6 +35,7 @@ export interface Enrollment {
     last_name: string;
     department: string;
     avatar_url: string | null;
+    branch_id?: string | null;
   };
   training_courses?: Course;
 }
@@ -39,6 +47,7 @@ export interface Employee {
   email: string;
   department: string;
   avatar_url: string | null;
+  branch_id?: string | null;
 }
 
 export interface CourseFormState {
@@ -49,6 +58,8 @@ export interface CourseFormState {
   instructor: string;
   format: "online" | "in_person" | "hybrid" | "self_paced";
   status: "active" | "draft" | "archived";
+  branch_id: string;
+  is_admin_course: boolean;
 }
 
 export type TrainingTab = "courses" | "enrollments" | "certificates";
