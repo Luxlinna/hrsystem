@@ -234,9 +234,7 @@ export function usePermissions(): UsePermissionsReturn {
     !loading &&
     !!role &&
     !role.is_admin &&
-    (role.name === "Branch Admin" ||
-      role.name?.toLowerCase().includes("branch admin") ||
-      Boolean(role.employees_manage && role.attendance_view_own_branch));
+    role.name?.trim().toLowerCase() === "branch admin";
 
   // Memoized so its identity only changes when the underlying permissions
   // actually do — components legitimately put `can` in effect/callback

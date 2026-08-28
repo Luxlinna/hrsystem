@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       const email = callerUser.email?.toLowerCase() || "";
       const { data: assignment, error: assignmentError } = await admin
         .from("user_role_assignments")
-        .select("app_roles(is_admin)")
+        .select("app_roles(name, is_admin)")
         .or(`user_id.eq.${callerUser.id},email.eq.${email}`)
         .is("deleted_at", null)
         .limit(1)
@@ -68,8 +68,8 @@ Deno.serve(async (req) => {
 
       if (assignmentError) throw assignmentError;
 
-      const role = assignment?.app_roles as { is_admin?: boolean } | null;
-      if (!role?.is_admin) return json({ error: "Not authorized" }, 403);
+      const role = assignment?.app_roles as { name?: string; is_admin?: boolean } | null;
+      if (!role?.is_admin && role?.name !== "Branch Admin") return json({ error: "Not authorized" }, 403);
     }
 
     const users = [];

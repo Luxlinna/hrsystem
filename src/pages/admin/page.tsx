@@ -73,8 +73,18 @@ export default function AdminPortal() {
       return { accounts: [], assignments: null } as AuthAccountsResult;
     });
 
-    const empQuery = !isSuperAdmin && userBranchId
-      ? supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id").eq("branch_id", userBranchId).not("email", "is", null).is("deleted_at", null).order("first_name")
+    let targetBranchId = userBranchId;
+    if (!isSuperAdmin && !targetBranchId && user?.email) {
+      const { data: myEmp } = await supabase
+        .from("employees")
+        .select("branch_id")
+        .ilike("email", user.email)
+        .maybeSingle();
+      if (myEmp?.branch_id) targetBranchId = myEmp.branch_id;
+    }
+
+    const empQuery = !isSuperAdmin && targetBranchId
+      ? supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id").eq("branch_id", targetBranchId).not("email", "is", null).is("deleted_at", null).order("first_name")
       : supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id").not("email", "is", null).is("deleted_at", null).order("first_name");
 
     const [rolesRes, usersRes, deletedRes, employeesRes, resetRequestsRes, authAccountsResult] = await Promise.all([
@@ -90,7 +100,38 @@ export default function AdminPortal() {
     const activeEmails = new Set(activeAssignments.map((u) => u.email?.toLowerCase()).filter(Boolean));
     const deletedEmails = new Set((deletedRes.data || []).map((u: any) => u.email?.toLowerCase()).filter(Boolean));
 
+    const employeeMap = new Map((employeesRes.data || []).map((e: any) => [e.email?.toLowerCase(), e]));
+
+    // Enrich existing assignments with names from employee directory if missing
+    const enrichedAssignments = activeAssignments.map((assignmentUser) => {
+      const emp = assignmentUser.email ? employeeMap.get(assignmentUser.email.toLowerCase()) : null;
+      return {
+        ...assignmentUser,
+        display_name: assignmentUser.display_name || (emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : null),
+      };
+    });
+
     let virtualIdCounter = -1;
+
+    // Ensure all employees in the branch directory are included in the User Management list
+    const directoryUsers: UserAssignment[] = (employeesRes.data || [])
+      .filter((emp: any) => emp.email && !activeEmails.has(emp.email.toLowerCase()) && !deletedEmails.has(emp.email.toLowerCase()))
+      .map((emp: any) => {
+        activeEmails.add(emp.email.toLowerCase());
+        const matchingRole = (rolesRes.data || []).find(
+          (r: any) => (r.name || "").trim().toLowerCase() === (emp.role || "").trim().toLowerCase()
+        );
+        return {
+          id: virtualIdCounter--,
+          user_id: null,
+          email: emp.email.toLowerCase(),
+          display_name: `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || emp.email,
+          role_id: matchingRole ? matchingRole.id : null,
+          created_at: new Date().toISOString(),
+          app_roles: matchingRole ? { id: matchingRole.id, name: matchingRole.name, color: matchingRole.color, is_admin: matchingRole.is_admin } : null,
+        };
+      });
+
     const unassignedAuthUsers: UserAssignment[] = (authAccountsResult.accounts || [])
       .filter((account) => account.email && !activeEmails.has(account.email.toLowerCase()) && !deletedEmails.has(account.email.toLowerCase()))
       .map((account) => {
@@ -115,13 +156,13 @@ export default function AdminPortal() {
     const branchEmployeeEmails = new Set((employeesRes.data || []).map((e: any) => e.email?.toLowerCase()).filter(Boolean));
     if (user?.email) branchEmployeeEmails.add(user.email.toLowerCase());
 
-    const allCombinedUsers = [...activeAssignments, ...unassignedAuthUsers];
-    const filteredUsers = (!isSuperAdmin && userBranchId)
+    const allCombinedUsers = [...enrichedAssignments, ...directoryUsers, ...unassignedAuthUsers];
+    const filteredUsers = (!isSuperAdmin && targetBranchId)
       ? allCombinedUsers.filter((u) => branchEmployeeEmails.has(u.email?.toLowerCase()))
       : allCombinedUsers;
 
     const allResets = (resetRequestsRes.data || []) as PasswordResetRequest[];
-    const filteredResets = (!isSuperAdmin && userBranchId)
+    const filteredResets = (!isSuperAdmin && targetBranchId)
       ? allResets.filter((r) => branchEmployeeEmails.has(r.email?.toLowerCase()))
       : allResets;
 
