@@ -2,11 +2,13 @@ import { memo } from "react";
 
 interface PayrollApprovalHeaderProps {
   canManage: boolean;
+  branchName?: string;
   onOpenCreate: () => void;
 }
 
 export const PayrollApprovalHeader = memo(function PayrollApprovalHeader({
   canManage,
+  branchName,
   onOpenCreate,
 }: PayrollApprovalHeaderProps) {
   return (
@@ -15,12 +17,20 @@ export const PayrollApprovalHeader = memo(function PayrollApprovalHeader({
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
           <span>Financial Governance</span>
           <i className="ri-arrow-right-s-line text-xs" />
-          <span className="text-[#253C7D] font-bold">Payroll Approval & Disbursement</span>
+          <span className="text-[#253C7D] font-bold">Payroll Approval &amp; Disbursement</span>
+          {branchName && (
+            <>
+              <i className="ri-arrow-right-s-line text-xs" />
+              <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 font-bold text-[10px] flex items-center gap-1">
+                <i className="ri-building-line text-[10px]" /> {branchName}
+              </span>
+            </>
+          )}
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
           <span>Payroll Approval Queue</span>
           <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D]">
-            Complete Historical Logs
+            Branch Authorization
           </span>
         </h1>
         <p className="text-xs sm:text-sm text-gray-500 mt-1">

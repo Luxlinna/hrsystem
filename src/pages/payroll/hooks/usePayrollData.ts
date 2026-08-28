@@ -38,16 +38,24 @@ export function usePayrollData(
     setLoading(true);
     try {
       // 1. Fetch branch list
-      let branchQuery = supabase.from("branches").select("id, name").is("deleted_at", null).order("name");
-      if (targetBranch) {
-        branchQuery = branchQuery.eq("id", targetBranch);
-      }
-
-      const { data: bData } = await branchQuery;
+      const { data: bData } = await supabase
+        .from("branches")
+        .select("id, name")
+        .is("deleted_at", null)
+        .order("name");
       const branchList = (bData || []) as Branch[];
       setBranches(branchList);
 
-      // 2. Fetch Branch-Specific Payroll Policy if branch is selected
+      // 2. Strict Branch Isolation: If Super Admin has no branch selected, do NOT load any branch payroll records
+      if (isSuperAdmin && !targetBranch) {
+        setBranchPolicy(null);
+        setAllRecords([]);
+        setEmployees([]);
+        setLoading(false);
+        return;
+      }
+
+      // 3. Fetch Branch-Specific Payroll Policy if branch is selected
       if (targetBranch) {
         const { data: policyData } = await supabase
           .from("branch_payroll_policies")
@@ -64,11 +72,10 @@ export function usePayrollData(
           } as BranchPayrollPolicy);
         }
       } else {
-        // In global overview (no specific branch selected), branch policies are locked/protected
         setBranchPolicy(null);
       }
 
-      // 3. Leader / Admin View: Scoped strictly to target branch
+      // 4. Leader / Admin View: Scoped strictly to target branch
       if (isLeader) {
         let empQuery = supabase
           .from("employees")
@@ -86,30 +93,19 @@ export function usePayrollData(
         setEmployees(empList);
         const empIds = empList.map((e) => e.id);
 
-        let recordsPromise: PromiseLike<any>;
-        if (targetBranch) {
-          if (empIds.length > 0) {
-            recordsPromise = supabase
-              .from("payroll_records")
-              .select("id, employee_id, branch_id, month, base_salary, bonus, deductions, net_pay, status, notes, created_at, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(id, name))")
-              .is("deleted_at", null)
-              .in("employee_id", empIds)
-              .order("month", { ascending: false })
-              .order("created_at", { ascending: false });
-          } else {
-            recordsPromise = Promise.resolve({ data: [] });
-          }
-        } else {
-          // Super Admin global overview (aggregate)
-          recordsPromise = supabase
-            .from("payroll_records")
-            .select("id, employee_id, branch_id, month, base_salary, bonus, deductions, net_pay, status, notes, created_at, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(id, name))")
-            .is("deleted_at", null)
-            .order("month", { ascending: false })
-            .order("created_at", { ascending: false });
+        if (empIds.length === 0) {
+          setAllRecords([]);
+          setLoading(false);
+          return;
         }
 
-        const { data: recordsData } = await recordsPromise;
+        const { data: recordsData } = await supabase
+          .from("payroll_records")
+          .select("id, employee_id, branch_id, month, base_salary, bonus, deductions, net_pay, status, notes, created_at, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(id, name))")
+          .is("deleted_at", null)
+          .in("employee_id", empIds)
+          .order("month", { ascending: false })
+          .order("created_at", { ascending: false });
 
         const formatted = (recordsData || []).map((x: any) => ({
           ...x,
@@ -167,7 +163,7 @@ export function usePayrollData(
     } finally {
       setLoading(false);
     }
-  }, [targetBranch, isLeader, myEmployee, user?.email, currentMonthStr, setSelectedMonth]);
+  }, [targetBranch, isSuperAdmin, isLeader, myEmployee, user?.email, currentMonthStr, setSelectedMonth]);
 
   useEffect(() => {
     loadData();

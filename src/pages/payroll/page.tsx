@@ -71,6 +71,36 @@ export default function Payroll() {
     );
   }
 
+  if (isSuperAdmin && !targetBranch) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-950 p-5 sm:p-7 lg:p-8 font-sans">
+        <PayrollHeader
+          periodMode={periodMode}
+          selectedMonth={selectedMonth}
+          canViewAll={false}
+          isSuperAdmin={isSuperAdmin}
+          onExportCSV={() => {}}
+          onOpenAddModal={() => {}}
+        />
+        <div className="max-w-xl mx-auto my-12 p-8 bg-white dark:bg-slate-900 rounded-3xl border border-gray-200/80 dark:border-slate-800 shadow-sm text-center">
+          <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-3xl">
+            <i className="ri-shield-keyhole-line" />
+          </div>
+          <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">
+            Branch Payroll Confidentiality &amp; Isolation
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed mb-4">
+            Each branch operates its own isolated payroll policies, salary disbursements, and employee compensation records. Global overview access is restricted for security and tenant privacy.
+          </p>
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-2xl text-amber-800 dark:text-amber-300 text-xs font-semibold">
+            <i className="ri-information-line mr-1" />
+            Please select a specific branch from the header branch switcher to view or manage that branch's payroll operations.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-950 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}

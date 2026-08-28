@@ -6,6 +6,7 @@ interface CreatePayrollRunViewProps {
   form: CreatePayrollRunForm;
   setForm: React.Dispatch<React.SetStateAction<CreatePayrollRunForm>>;
   creating: boolean;
+  branchDepartments?: string[];
   onSubmit: (e: React.FormEvent) => Promise<void>;
   onCancel: () => void;
 }
@@ -14,6 +15,7 @@ export const CreatePayrollRunView = memo(function CreatePayrollRunView({
   form,
   setForm,
   creating,
+  branchDepartments,
   onSubmit,
   onCancel,
 }: CreatePayrollRunViewProps) {
@@ -21,6 +23,11 @@ export const CreatePayrollRunView = memo(function CreatePayrollRunView({
   const bonus = Number(form.total_bonus || 0);
   const deductions = Number(form.total_deductions || 0);
   const calculatedNet = base + bonus - deductions;
+
+  const availableDepts =
+    branchDepartments && branchDepartments.length > 0
+      ? branchDepartments
+      : DEPARTMENTS.filter((d) => d !== "All Departments");
 
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 p-6 sm:p-8 shadow-2xs max-w-2xl mx-auto">
@@ -61,7 +68,7 @@ export const CreatePayrollRunView = memo(function CreatePayrollRunView({
               onChange={(e) => setForm({ ...form, department: e.target.value })}
               className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-bold focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
             >
-              {DEPARTMENTS.filter((d) => d !== "All Departments").map((d) => (
+              {availableDepts.map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
