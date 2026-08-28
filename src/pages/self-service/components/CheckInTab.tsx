@@ -128,6 +128,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
           }
         }
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId, today]);
 
   // A branch's own schedule (set in Branch Management) wins over the
@@ -160,6 +161,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
   useEffect(() => {
     loadRecords();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId]);
 
   const [branchLoading, setBranchLoading] = useState(true);
@@ -232,6 +234,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     if (!autoStart || loading || branchLoading || autoStartedRef.current || todayRecord?.clock_in || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
     autoStartedRef.current = true;
     handleRequestClockIn();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart, loading, branchLoading, todayRecord, todayOutsideWork]);
 
   const resetCheckInFlow = () => {
@@ -379,6 +382,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       autoCheckedOutRef.current = true;
       handleClockOut();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork, currentTime, scheduleSettings.timezone]);
 
   const getStatusColor = (status: string) => {

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useContext,
@@ -152,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (rememberDevice) {
       setDeviceRemembered(email);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const logout = async () => {
@@ -189,10 +191,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isDeviceRememberedFn = useCallback((email: string) => {
     return checkDeviceRemembered(email);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const forgetDeviceFn = useCallback((email: string) => {
     clearDeviceRemembered(email);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

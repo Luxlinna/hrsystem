@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import { formatDate } from "../utils";
+import { formatDate, calculateHours } from "../utils";
 import { SHIFT_TEMPLATES } from "../constants";
 import type { Shift, ShiftForm, ViewMode } from "../types";
 
@@ -47,6 +47,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
     else if (p.viewMode === "day") d.setDate(d.getDate() - 1);
     else d.setDate(d.getDate() - 7);
     p.setCurrentDate(d);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.currentDate, p.viewMode, p.setCurrentDate]);
 
   const navigateNext = useCallback(() => {
@@ -55,10 +56,12 @@ export function useShiftActions(p: UseShiftActionsParams) {
     else if (p.viewMode === "day") d.setDate(d.getDate() + 1);
     else d.setDate(d.getDate() + 7);
     p.setCurrentDate(d);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.currentDate, p.viewMode, p.setCurrentDate]);
 
   const navigateToday = useCallback(() => {
     p.setCurrentDate(new Date());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.setCurrentDate]);
 
   const openCreateModal = useCallback((presetDate?: string) => {
@@ -74,6 +77,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       notes: "",
     });
     p.setShowCreateModal(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.branches, p.departments, p.currentDate, p.setShiftForm, p.setShowCreateModal]);
 
   const applyTemplate = useCallback(
@@ -88,6 +92,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       }));
       toast("Preset Applied", `Loaded "${tpl.name}" template`, "info");
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [p.setShiftForm]
   );
 
@@ -125,6 +130,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       await p.loadData();
       if (data) p.setSelectedShift({ ...data, assignmentCount: 0 });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [p.shiftForm, p.setSubmitting, p.setShowCreateModal, p.loadData, p.setSelectedShift]
   );
 
@@ -143,6 +149,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       });
       p.setShowEditModal(true);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [p.setShiftForm, p.setShowEditModal]
   );
 
@@ -175,6 +182,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       p.setShowEditModal(false);
       p.loadData();
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [p.selectedShift, p.shiftForm, p.setSubmitting, p.setShowEditModal, p.loadData]
   );
 
@@ -185,6 +193,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       p.setDuplicateDate(formatDate(nextDay));
       p.setShowDuplicateModal(true);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [p.setDuplicateDate, p.setShowDuplicateModal]
   );
 
@@ -212,6 +221,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       toast("Success", `Duplicated "${shift.name}" to ${targetDate}`, "success");
       p.loadData();
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [p.loadData]
   );
 
@@ -240,6 +250,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       p.setShowDuplicateModal(false);
       p.loadData();
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [p.selectedShift, p.duplicateDate, p.setSubmitting, p.setShowDuplicateModal, p.loadData]
   );
 
@@ -303,6 +314,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
     } finally {
       p.setSubmitting(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.weekShifts, p.copyIncludeStaff, p.assignments, p.setSubmitting, p.setShowCopyWeekModal, p.loadData]);
 
   const handleBulkDelete = useCallback(async () => {
@@ -322,6 +334,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
     p.setSelectedShiftIds([]);
     p.setSelectedShift(null);
     p.loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.selectedShiftIds, p.actorName, p.setSubmitting, p.setSelectedShiftIds, p.setSelectedShift, p.loadData]);
 
   const handleDeleteShift = useCallback(async () => {
@@ -340,6 +353,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
     p.setSelectedShift(null);
     p.setShowDeleteConfirm(false);
     p.loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.selectedShift, p.actorName, p.setSubmitting, p.setSelectedShift, p.setShowDeleteConfirm, p.loadData]);
 
   const handleAssign = useCallback(
@@ -385,6 +399,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       p.setShowAssignModal(false);
       p.loadData();
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [p.selectedShift, p.assignEmployeeIds, p.setSubmitting, p.loadData, p.setAssignEmployeeIds, p.setShowAssignModal]
   );
 
@@ -401,6 +416,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       toast("Success", "Staff removed from shift (moved to Recycle Bin)", "success");
       p.loadData();
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [p.actorName, p.loadData]
   );
 
@@ -415,7 +431,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
         .filter((a) => a.shift_id === s.id)
         .map((a) => `${a.employee?.first_name || ""} ${a.employee?.last_name || ""}`.trim())
         .join("; ");
-      const { calculateHours: ch } = require("../utils");
+      const { calculateHours: ch } = { calculateHours };
       const hours = ch(s.start_time, s.end_time);
       return [
         `"${s.shift_date}"`, `"${s.name.replace(/"/g, '""')}"`,

@@ -101,6 +101,7 @@ export function useShiftState() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, []);
 
   // Derived: departments

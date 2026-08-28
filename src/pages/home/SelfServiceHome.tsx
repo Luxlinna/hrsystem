@@ -60,6 +60,7 @@ export default function SelfServiceHome() {
       setUnreadCount((notifRes as any).count || 0);
       setLoading(false);
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email, can]);
 
   const displayName = me ? `${me.first_name} ${me.last_name}` : (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";

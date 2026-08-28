@@ -15,17 +15,20 @@ export const BatchItemizedDrilldownModal = memo(function BatchItemizedDrilldownM
   run,
   itemizedRecords,
 }: BatchItemizedDrilldownModalProps) {
-  if (!isOpen || !run) return null;
-
+  // All hooks must be called before early returns
   const batchRecords = useMemo(
     () =>
-      itemizedRecords.filter(
-        (r) =>
-          r.month === run.period &&
-          (run.department === "All Departments" || r.employees?.department === run.department)
-      ),
+      run
+        ? itemizedRecords.filter(
+            (r) =>
+              r.month === run.period &&
+              (run.department === "All Departments" || r.employees?.department === run.department)
+          )
+        : [],
     [itemizedRecords, run]
   );
+
+  if (!isOpen || !run) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs">

@@ -56,7 +56,7 @@ export const OnboardingCard = memo(function OnboardingCard({
       const isComplete = isStageComplete(request.id, stage.key);
       return { stage, idx, stageDocs, stageProgress, isComplete };
     });
-  }, [request.id, request.stage, getDocsForRequestAndStage, getStageProgress, isStageComplete]);
+  }, [request.id, getDocsForRequestAndStage, getStageProgress, isStageComplete]);
 
   const totalVerified = useMemo(() => {
     const totalDocs = documents.filter((d) => d.onboarding_request_id === request.id);

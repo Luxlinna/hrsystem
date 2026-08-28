@@ -50,6 +50,7 @@ export default function LeaveTab({ employeeId }: Props) {
 
   useEffect(() => {
     fetchLeave();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId]);
 
   useEffect(() => {

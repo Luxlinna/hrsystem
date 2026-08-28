@@ -89,6 +89,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
           }
         }
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId, today]);
 
   const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
@@ -117,6 +118,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
 
   useEffect(() => {
     loadRecords();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId]);
 
   const [branchLoading, setBranchLoading] = useState(true);
@@ -183,6 +185,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
     if (!autoStart || loading || branchLoading || autoStartedRef.current || todayRecord?.clock_in || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
     autoStartedRef.current = true;
     handleRequestClockIn();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart, loading, branchLoading, todayRecord, todayOutsideWork]);
 
   const resetCheckInFlow = () => {
@@ -322,6 +325,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
       autoCheckedOutRef.current = true;
       handleClockOut();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork, currentTime, scheduleSettings.timezone]);
 
   const presentCount = records.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "late").length;

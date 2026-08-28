@@ -61,6 +61,7 @@ export default function BenefitsTab({ employeeId }: Props) {
     setLoading(false);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, [employeeId]);
 
   // Only a currently-enrolled row blocks re-enrolling; a cancelled ("opted

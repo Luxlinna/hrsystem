@@ -32,11 +32,7 @@ export const BookingModal = memo(function BookingModal({
   saving,
   onSubmit,
 }: BookingModalProps) {
-  if (!isOpen || !modalRoom) return null;
-
-  const roomFloor = getRoomFloor(modalRoom);
-  const isVIP = roomFloor === 5;
-
+  // All hooks must be called unconditionally before any early return
   const toggleReq = useCallback((label: string) => {
     setBookingForm((prev) => {
       const exists = prev.selected_requirements.includes(label);
@@ -73,6 +69,11 @@ export const BookingModal = memo(function BookingModal({
     const newEnd = addMinutesToTime(bookingForm.start_time, mins);
     setBookingForm((prev) => ({ ...prev, end_time: newEnd }));
   };
+
+  if (!isOpen || !modalRoom) return null;
+
+  const roomFloor = getRoomFloor(modalRoom);
+  const isVIP = roomFloor === 5;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

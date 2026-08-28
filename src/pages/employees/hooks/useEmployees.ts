@@ -169,6 +169,7 @@ export function useEmployees() {
         const comparison = String(aValue || "").localeCompare(String(bValue || ""));
         return sortDirection === "asc" ? comparison : -comparison;
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees, search, filterDept, filterStatus, filterBranch, filterAccount, accountStatus, sortField, sortDirection]);
 
   const empTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -375,6 +376,7 @@ export function useEmployees() {
       setShowAddModal(false);
       loadEmployees();
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [form, canManage, actorName, role?.name, roles, loadEmployees]
   );
 

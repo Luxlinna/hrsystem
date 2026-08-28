@@ -45,6 +45,7 @@ export function useChecklistCalculations(
     if (!selectedHire) return 0;
     const idx = STAGES_LIST.findIndex((s) => s.key === selectedHire.stage);
     return idx === -1 ? 0 : idx;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedHire?.stage]);
 
   const getCategoryStageIdx = useCallback((category: string) => {

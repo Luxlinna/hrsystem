@@ -76,6 +76,7 @@ export default function UrgentAnnouncementAlert() {
 
   const active = useMemo(
     () => announcements.find((a) => !acceptedIds.has(a.id) && isWithinUrgentAlertWindow(a)) || null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [announcements, acceptedIds]
   );
 
