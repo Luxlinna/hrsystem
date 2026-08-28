@@ -7,6 +7,7 @@ export interface Employee {
   department: string;
   avatar_url?: string;
   email: string;
+  role?: string;
   reports_to?: string | null;
   branch_id?: string | null;
 }

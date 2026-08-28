@@ -9,7 +9,7 @@ export function useTaskFilters(tasks: Task[], currentEmployeeId?: string | null)
   const [assigneeFilter, setAssigneeFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [quickTab, setQuickTab] = useState<"all" | "my" | "urgent">("all");
+  const [quickTab, setQuickTab] = useState<"all" | "team" | "my" | "urgent">("all");
   const [outsideWorkOnly, setOutsideWorkOnly] = useState(false);
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [sortField, setSortField] = useState<TaskSortField>("created_at");
@@ -19,6 +19,7 @@ export function useTaskFilters(tasks: Task[], currentEmployeeId?: string | null)
     return tasks
       .filter((t) => {
         if (quickTab === "my" && currentEmployeeId && t.assigned_to !== currentEmployeeId) return false;
+        if (quickTab === "team" && currentEmployeeId && t.assigned_to === currentEmployeeId) return false;
         if (quickTab === "urgent" && t.priority !== "high" && t.priority !== "urgent") return false;
         if (assigneeFilter !== "all" && t.assigned_to !== assigneeFilter) return false;
         if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;

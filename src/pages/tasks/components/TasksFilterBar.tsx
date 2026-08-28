@@ -10,9 +10,11 @@ interface TasksFilterBarProps {
   setAssigneeFilter: (a: string) => void;
   priorityFilter: string;
   setPriorityFilter: (p: string) => void;
-  quickTab: "all" | "my" | "urgent";
-  setQuickTab: (t: "all" | "my" | "urgent") => void;
+  quickTab: "all" | "team" | "my" | "urgent";
+  setQuickTab: (t: "all" | "team" | "my" | "urgent") => void;
   employees: Employee[];
+  isManager?: boolean;
+  hasSubordinates?: boolean;
 }
 
 export const TasksFilterBar = memo(function TasksFilterBar({
@@ -27,6 +29,8 @@ export const TasksFilterBar = memo(function TasksFilterBar({
   quickTab,
   setQuickTab,
   employees,
+  isManager,
+  hasSubordinates,
 }: TasksFilterBarProps) {
   return (
     <div className="space-y-3 mb-6">
@@ -106,7 +110,7 @@ export const TasksFilterBar = memo(function TasksFilterBar({
       </div>
 
       {/* Quick Filter Pills Row */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={() => setQuickTab("all")}
           className={`px-3 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
@@ -117,6 +121,20 @@ export const TasksFilterBar = memo(function TasksFilterBar({
         >
           All Tasks
         </button>
+
+        {isManager && (
+          <button
+            onClick={() => setQuickTab("team")}
+            className={`px-3 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 ${
+              quickTab === "team"
+                ? "bg-[#253C7D] text-white shadow-2xs"
+                : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            <i className="ri-team-line text-xs" />
+            <span>My Direct Team</span>
+          </button>
+        )}
 
         <button
           onClick={() => setQuickTab("my")}

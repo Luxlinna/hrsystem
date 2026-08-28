@@ -28,7 +28,7 @@ export function useTasksData() {
   const fetchEmployees = useCallback(async () => {
     const { data } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, department, avatar_url, email, reports_to, branch_id")
+      .select("id, first_name, last_name, department, avatar_url, email, role, reports_to, branch_id")
       .in("status", WORKABLE_STATUSES)
       .is("deleted_at", null)
       .order("first_name");
@@ -57,21 +57,37 @@ export function useTasksData() {
     fetchTasks();
   }, [fetchCurrentEmployee, fetchEmployees, fetchTasks]);
 
-  // Role-based assignable employees filtering
-  const assignableEmployees = useMemo(() => {
+  const currentEmployee = useMemo(() => {
+    return employees.find((e) => e.id === currentEmployeeId) || null;
+  }, [employees, currentEmployeeId]);
+
+  const directSubordinates = useMemo(() => {
+    if (!currentEmployeeId) return [];
+    return employees.filter((e) => e.reports_to === currentEmployeeId);
+  }, [employees, currentEmployeeId]);
+
+  const isManager = useMemo(() => {
+    if (isSuper) return true;
+    if (directSubordinates.length > 0) return true;
+    const roleName = (role?.name || currentEmployee?.role || "").toLowerCase();
+    return (
+      roleName.includes("manager") ||
+      roleName.includes("lead") ||
+      roleName.includes("head") ||
+      roleName.includes("supervisor") ||
+      Boolean(role?.task_view_own_branch)
+    );
+  }, [isSuper, directSubordinates.length, role, currentEmployee]);
+
+  // Managed employees: For Super Admin = all, For Manager = self + subordinates + department team, For regular employee = self
+  const managedEmployees = useMemo(() => {
     if (!currentEmployeeId || employees.length === 0) return employees;
     if (isSuper || role?.task_view_all_employees) {
-      return employees; // Super Admin can assign all
+      return employees;
     }
 
-    const isMgr =
-      role?.name?.toLowerCase().includes("manager") ||
-      role?.name?.toLowerCase().includes("lead") ||
-      Boolean(role?.task_view_own_branch);
-
-    if (isMgr) {
-      // Manager can assign to subordinates reporting to them, their department team, or themselves
-      const myEmp = employees.find((e) => e.id === currentEmployeeId);
+    if (isManager) {
+      const myEmp = currentEmployee;
       return employees.filter(
         (e) =>
           e.id === currentEmployeeId ||
@@ -80,21 +96,46 @@ export function useTasksData() {
       );
     }
 
-    // Regular employee default: themselves
-    const myEmp = employees.find((e) => e.id === currentEmployeeId);
+    const myEmp = currentEmployee;
     return myEmp ? [myEmp] : employees;
-  }, [employees, currentEmployeeId, isSuper, role]);
+  }, [employees, currentEmployeeId, currentEmployee, isSuper, role, isManager]);
+
+  const managedEmployeeIds = useMemo(() => {
+    return new Set(managedEmployees.map((e) => e.id));
+  }, [managedEmployees]);
+
+  // Scoped tasks visible to this user
+  const scopedTasks = useMemo(() => {
+    if (isSuper || role?.task_view_all_employees) {
+      return tasks;
+    }
+    if (isManager) {
+      return tasks.filter(
+        (t) =>
+          t.assigned_to === currentEmployeeId ||
+          t.assigned_by === currentEmployeeId ||
+          managedEmployeeIds.has(t.assigned_to)
+      );
+    }
+    return tasks.filter((t) => t.assigned_to === currentEmployeeId || t.assigned_by === currentEmployeeId);
+  }, [tasks, isSuper, role, isManager, currentEmployeeId, managedEmployeeIds]);
 
   return {
     user,
     role,
     isAdmin: isSuper,
-    tasks,
+    isManager,
+    hasSubordinates: directSubordinates.length > 0,
+    directSubordinates,
+    tasks: scopedTasks,
+    allRawTasks: tasks,
     setTasks,
     employees,
-    assignableEmployees,
+    managedEmployees,
+    assignableEmployees: managedEmployees,
     loading,
     currentEmployeeId,
+    currentEmployee,
     fetchTasks,
   };
 }

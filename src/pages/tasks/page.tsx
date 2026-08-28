@@ -16,7 +16,10 @@ export default function TasksPage() {
   const {
     tasks,
     employees,
+    managedEmployees,
     assignableEmployees,
+    isManager,
+    hasSubordinates,
     loading,
     currentEmployeeId,
     fetchTasks,
@@ -71,7 +74,9 @@ export default function TasksPage() {
         setPriorityFilter={setPriorityFilter}
         quickTab={quickTab}
         setQuickTab={setQuickTab}
-        employees={employees}
+        employees={managedEmployees || employees}
+        isManager={isManager}
+        hasSubordinates={hasSubordinates}
       />
 
       {/* Main Content Views */}
@@ -106,7 +111,7 @@ export default function TasksPage() {
       ) : (
         <TaskReportsView
           tasks={tasks}
-          employees={employees}
+          employees={managedEmployees || employees}
           onSelectTask={setSelectedTask}
         />
       )}

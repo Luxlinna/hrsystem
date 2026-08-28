@@ -181,47 +181,65 @@ export const OnboardingCard = memo(function OnboardingCard({
                 }`}
               >
                 {/* Column Header */}
-                <div className="flex items-start justify-between gap-1 mb-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-6 h-6 rounded-lg font-black text-xs flex items-center justify-center ${
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className={`w-6 h-6 rounded-lg font-black text-xs flex items-center justify-center shrink-0 ${
                       isCompleted ? "bg-emerald-500 text-white" : isActive ? "bg-[#253C7D] text-white" : "bg-gray-200 text-gray-400"
                     }`}>
                       {isCompleted ? <i className="ri-check-line" /> : idx + 1}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h4 className="text-[11px] font-black uppercase text-gray-900 truncate leading-tight">{stage.label}</h4>
                       <p className="text-[9px] text-gray-400 truncate mt-0.5">{stage.description}</p>
                     </div>
                   </div>
 
                   {isActive && (
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <select
-                        onChange={(e) => onBulkSetDeadline(request, stage.key, Number(e.target.value))}
-                        defaultValue=""
-                        className="text-[9px] font-bold bg-white border border-gray-200 rounded px-1 py-0.5 text-gray-600 focus:outline-none focus:border-[#253C7D] cursor-pointer"
-                      >
-                        <option value="" disabled>Deadline</option>
-                        {DEADLINE_PRESETS.map((p) => <option key={p.days} value={p.days}>{p.label}</option>)}
-                      </select>
-                      <button
-                        onClick={() => onOpenDocModal(request, stage.key)}
-                        className="w-5 h-5 rounded hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 cursor-pointer font-bold text-xs"
-                      >
-                        <i className="ri-add-line" />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => onOpenDocModal(request, stage.key)}
+                      title="Add checklist item"
+                      className="w-6 h-6 rounded-lg bg-gray-100 hover:bg-[#253C7D] hover:text-white flex items-center justify-center text-gray-500 transition-colors cursor-pointer text-xs shrink-0"
+                    >
+                      <i className="ri-add-line" />
+                    </button>
                   )}
                 </div>
 
                 {/* Sub progress line */}
-                <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 mb-2">
+                <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 mb-1.5">
                   <span>{stageDocs.filter((d) => d.status === "complete").length}/{stageDocs.length} verified</span>
                   <span>{stageProgress}%</span>
                 </div>
-                <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden mb-3 shrink-0">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${stageProgress}%` }} />
+                <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden mb-2.5 shrink-0">
+                  <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${stageProgress}%` }} />
                 </div>
+
+                {/* Quick Deadline Selector for Active Stage */}
+                {isActive && stageDocs.length > 0 && (
+                  <div className="mb-2.5 flex items-center justify-between gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-gray-200/80 rounded-xl text-[10px]">
+                    <span className="font-semibold text-gray-500 flex items-center gap-1 shrink-0">
+                      <i className="ri-calendar-event-line text-xs text-[#253C7D]" />
+                      Set Deadline:
+                    </span>
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          onBulkSetDeadline(request, stage.key, Number(e.target.value));
+                          e.target.value = "";
+                        }
+                      }}
+                      defaultValue=""
+                      className="text-[10px] font-bold bg-white border border-gray-200 rounded-lg px-2 py-0.5 text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer shadow-2xs shrink-0"
+                    >
+                      <option value="" disabled>Choose...</option>
+                      {DEADLINE_PRESETS.map((p) => (
+                        <option key={p.days} value={p.days}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Tasks List */}
                 <div className={`flex-1 space-y-2 overflow-y-auto max-h-[220px] pr-0.5 ${isLocked ? "opacity-40 pointer-events-none" : ""}`}>
