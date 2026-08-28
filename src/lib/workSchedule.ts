@@ -32,7 +32,19 @@ export const settingsFromRows = (rows: { key: string; value: string }[]): WorkSc
   return { workingDays: workingDays.length ? workingDays : DEFAULT_WORK_SCHEDULE.workingDays, workStartTime: values.work_start_time || "08:00", workEndTime: values.work_end_time || "17:00", saturdayStartTime: values.saturday_start_time || "08:00", saturdayEndTime: values.saturday_end_time || "12:00", breakStartTime: values.break_start_time || "12:00", breakEndTime: values.break_end_time || "13:00", lateGraceMinutes: Number(values.late_grace_minutes ?? 15), earlyLeaveGraceMinutes: Number(values.early_leave_grace_minutes ?? 15), checkoutReminderMinutes: Number(values.checkout_reminder_minutes ?? 15), timezone: values.timezone || DEFAULT_TIMEZONE };
 };
 
-export const getCheckoutReminderWindow = (date = new Date()) => {
-  const endMin = date.getDay() === 6 ? 12 * 60 : 17 * 60;
-  return { startMin: endMin - 15, endMin };
+export const getCheckoutReminderWindow = (date = new Date(), timezone = DEFAULT_TIMEZONE) => {
+  const dow = zonedDayOfWeek(date, timezone);
+  const startMin = dow === 6 ? 12 * 60 : 17 * 60;
+  const endMin = dow === 6 ? 13 * 60 : 18 * 60;
+  return { startMin, endMin };
+};
+
+export const getAutoCheckoutThresholdMinutes = (date = new Date(), timezone = DEFAULT_TIMEZONE) => {
+  const dow = zonedDayOfWeek(date, timezone);
+  return dow === 6 ? 13 * 60 : 18 * 60;
+};
+
+export const getShiftEndLabel = (date = new Date(), timezone = DEFAULT_TIMEZONE) => {
+  const dow = zonedDayOfWeek(date, timezone);
+  return dow === 6 ? "12:00 PM" : "5:00 PM";
 };

@@ -309,11 +309,20 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
 
   const autoCheckedOutRef = useRef(false);
   useEffect(() => {
-    if (!autoCheckOut || loading || autoCheckedOutRef.current || isEarlyCheckoutNow || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
-    if (!isCheckedIn || isCheckedOut) return;
-    autoCheckedOutRef.current = true;
-    handleClockOut();
-  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork]);
+    if (loading || autoCheckedOutRef.current || !isCheckedIn || isCheckedOut || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
+
+    const isSat = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
+    const autoCheckoutThreshold = isSat ? 13 * 60 : 18 * 60; // 1:00 PM Sat, 6:00 PM Mon-Fri
+    const nowMin = zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay;
+
+    const shouldAutoCheckoutByTime = nowMin >= autoCheckoutThreshold;
+    const shouldAutoCheckoutByParam = !!autoCheckOut && !isEarlyCheckoutNow;
+
+    if (shouldAutoCheckoutByTime || shouldAutoCheckoutByParam) {
+      autoCheckedOutRef.current = true;
+      handleClockOut();
+    }
+  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork, currentTime, scheduleSettings.timezone]);
 
   const presentCount = records.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "late").length;
   const lateCount = records.filter((r) => r.status === "late").length;

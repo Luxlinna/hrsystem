@@ -366,11 +366,20 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
   const autoCheckedOutRef = useRef(false);
   useEffect(() => {
-    if (!autoCheckOut || loading || autoCheckedOutRef.current || isEarlyCheckoutNow || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
-    if (!isCheckedIn || isCheckedOut) return;
-    autoCheckedOutRef.current = true;
-    handleClockOut();
-  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork]);
+    if (loading || autoCheckedOutRef.current || !isCheckedIn || isCheckedOut || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
+
+    const isSat = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
+    const autoCheckoutThreshold = isSat ? 13 * 60 : 18 * 60; // 1:00 PM Sat, 6:00 PM Mon-Fri
+    const nowMin = zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay;
+
+    const shouldAutoCheckoutByTime = nowMin >= autoCheckoutThreshold;
+    const shouldAutoCheckoutByParam = !!autoCheckOut && !isEarlyCheckoutNow;
+
+    if (shouldAutoCheckoutByTime || shouldAutoCheckoutByParam) {
+      autoCheckedOutRef.current = true;
+      handleClockOut();
+    }
+  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork, currentTime, scheduleSettings.timezone]);
 
   const getStatusColor = (status: string) => {
     const map: Record<string, string> = {
