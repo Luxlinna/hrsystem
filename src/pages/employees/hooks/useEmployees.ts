@@ -65,27 +65,36 @@ export function useEmployees() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
   const loadEmployees = useCallback(() => {
-    supabase
+    let query = supabase
       .from("employees")
       .select("id, first_name, last_name, email, phone, role, department, branch_id, status, join_date, reports_to, avatar_url, branches(name)")
       .is("deleted_at", null)
-      .order("first_name")
-      .then(({ data, error }) => {
-        if (error) {
-          toast("Error", "Failed to load employee directory", "error");
-          return;
-        }
-        const formatted = (data || []).map((x: any) => ({
-          ...x,
-          branches: Array.isArray(x.branches) ? x.branches[0] : x.branches || null
-        })) as Employee[];
-        setEmployees(formatted);
-      });
-  }, []);
+      .order("first_name");
+
+    if (effectiveBranchId) {
+      query = query.eq("branch_id", effectiveBranchId);
+    }
+
+    query.then(({ data, error }) => {
+      if (error) {
+        toast("Error", "Failed to load employee directory", "error");
+        return;
+      }
+      const formatted = (data || []).map((x: any) => ({
+        ...x,
+        branches: Array.isArray(x.branches) ? x.branches[0] : x.branches || null,
+      })) as Employee[];
+      setEmployees(formatted);
+    });
+  }, [effectiveBranchId]);
 
   useEffect(() => {
     loadEmployees();
-    supabase.from("branches").select("id, name").order("name").then(({ data }) => setBranches(data || []));
+    let branchQuery = supabase.from("branches").select("id, name").order("name");
+    if (effectiveBranchId) {
+      branchQuery = branchQuery.eq("id", effectiveBranchId);
+    }
+    branchQuery.then(({ data }) => setBranches(data || []));
     supabase.from("app_roles").select("id, name, color").order("name").then(({ data }) => setRoles(data || []));
     supabase
       .from("user_role_assignments")
@@ -100,7 +109,7 @@ export function useEmployees() {
         });
         setManagerEmails(emails);
       });
-  }, [loadEmployees]);
+  }, [loadEmployees, effectiveBranchId]);
 
   // Load account status for each employee
   useEffect(() => {

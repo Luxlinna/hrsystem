@@ -1,3 +1,4 @@
+import { usePermissions } from "@/hooks/usePermissions";
 import { useSettings } from "./hooks/useSettings";
 import { SettingsNav } from "./components/SettingsNav";
 import { AppearanceSettings } from "./components/AppearanceSettings";
@@ -8,6 +9,7 @@ import { BranchesSection } from "./components/BranchesSection";
 import { IntegrationsSection } from "./components/IntegrationsSection";
 
 export default function Settings() {
+  const { isAdmin, can } = usePermissions();
   const {
     section,
     setSection,
@@ -70,9 +72,9 @@ export default function Settings() {
         />
       )}
 
-      {section === "permissions" && <PermissionsSection />}
+      {section === "permissions" && isAdmin && <PermissionsSection />}
 
-      {section === "branches" && <BranchesSection />}
+      {section === "branches" && can("branches") && <BranchesSection />}
 
       {section === "integrations" && <IntegrationsSection />}
     </div>

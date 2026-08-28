@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, type CSSProperties } from "react";
+import { useState, useEffect, useMemo, useCallback, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { useBranchScope } from "@/context/BranchContext";
 import { toast } from "@/components/Toast";
 
 interface Shift {
@@ -164,25 +165,61 @@ export default function Shifts() {
 
   const weekDates = useMemo(() => getWeekDates(currentDate), [currentDate]);
 
-  const loadData = async () => {
+  const { isSuperAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+
+  const loadData = useCallback(async () => {
     try {
+      const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
+
+      let shiftQuery = supabase
+        .from("shifts")
+        .select("*, branches(name, location)")
+        .is("deleted_at", null)
+        .order("shift_date")
+        .order("start_time");
+
+      if (targetBranch) {
+        shiftQuery = shiftQuery.eq("branch_id", targetBranch);
+      }
+
+      let empQuery = supabase
+        .from("employees")
+        .select("id, first_name, last_name, department, role, avatar_url, branch_id")
+        .is("deleted_at", null)
+        .order("first_name");
+
+      if (targetBranch) {
+        empQuery = empQuery.eq("branch_id", targetBranch);
+      }
+
+      let branchQuery = supabase.from("branches").select("id, name, location").order("name");
+      if (targetBranch) {
+        branchQuery = branchQuery.eq("id", targetBranch);
+      }
+
       const [{ data: s, error: sErr }, { data: a, error: aErr }, { data: b }, { data: e }] = await Promise.all([
-        supabase.from("shifts").select("*, branches(name, location)").is("deleted_at", null).order("shift_date").order("start_time"),
-        supabase.from("shift_assignments").select("*, employee:employees(first_name, last_name, role, department, avatar_url)").is("deleted_at", null),
-        supabase.from("branches").select("id, name, location").order("name"),
-        supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url").order("first_name"),
+        shiftQuery,
+        supabase.from("shift_assignments").select("*, employee:employees(first_name, last_name, role, department, avatar_url, branch_id)").is("deleted_at", null),
+        branchQuery,
+        empQuery,
       ]);
 
       if (sErr) throw sErr;
       if (aErr) throw aErr;
 
-      const shiftList = (s || []).map((sh) => ({
+      const rawShifts = s || [];
+      const shiftIds = new Set(rawShifts.map((sh) => sh.id));
+      const filteredAssignments = targetBranch
+        ? (a || []).filter((x: any) => shiftIds.has(x.shift_id) || x.employee?.branch_id === targetBranch)
+        : (a || []);
+
+      const shiftList = rawShifts.map((sh) => ({
         ...sh,
-        assignmentCount: (a || []).filter((x) => x.shift_id === sh.id).length,
+        assignmentCount: filteredAssignments.filter((x: any) => x.shift_id === sh.id).length,
       }));
 
       setShifts(shiftList);
-      setAssignments(a || []);
+      setAssignments(filteredAssignments);
       setBranches(b || []);
       setEmployees(e || []);
 
@@ -196,7 +233,7 @@ export default function Shifts() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [effectiveBranchId, isSuperAdmin, userBranchId, selectedShift]);
 
   const departments = useMemo(() => {
     const fromShifts = shifts.map((s) => s.department).filter(Boolean);
@@ -207,7 +244,7 @@ export default function Shifts() {
   useEffect(() => {
     loadData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [effectiveBranchId]);
 
   // Keyboard Shortcuts for Rapid HR Management
   useEffect(() => {
@@ -371,9 +408,10 @@ export default function Shifts() {
   };
 
   const openCreateModal = (presetDate?: string) => {
+    const targetBranch = (!isSuperAdmin && userBranchId) ? userBranchId : (effectiveBranchId || branches[0]?.id || "");
     setShiftForm({
       name: "Morning Shift",
-      branch_id: branches[0]?.id || "",
+      branch_id: targetBranch,
       department: departments[0] || "Operations",
       start_time: "09:00",
       end_time: "17:00",
@@ -392,11 +430,12 @@ export default function Shifts() {
       return;
     }
     setSubmitting(true);
+    const assignedBranch = (!isSuperAdmin && userBranchId) ? userBranchId : (shiftForm.branch_id || effectiveBranchId || null);
     const { data, error } = await supabase
       .from("shifts")
       .insert({
         name: shiftForm.name.trim(),
-        branch_id: shiftForm.branch_id || null,
+        branch_id: assignedBranch,
         department: shiftForm.department.trim() || null,
         start_time: shiftForm.start_time,
         end_time: shiftForm.end_time,

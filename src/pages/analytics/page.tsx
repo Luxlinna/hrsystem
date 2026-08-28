@@ -27,10 +27,13 @@ import { ITTab } from "./tabs/ITTab";
 import { FinanceTab } from "./tabs/FinanceTab";
 import { BenefitsTab } from "./tabs/BenefitsTab";
 
+import { useBranchScope } from "@/context/BranchContext";
+
 // Lazy-loaded to avoid bundling ~900KB of XLSX on initial page load
 const getXLSX = () => import("xlsx");
 
 export default function Analytics() {
+  const { effectiveBranchId } = useBranchScope();
   const [activeTab, setActiveTab] = useState<AnalyticsTabKey>("overview");
   const [department, setDepartment] = useState("all");
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -48,32 +51,57 @@ export default function Analytics() {
   const [exportOpen, setExportOpen] = useState(false);
 
   const loadData = useCallback(async () => {
+    let empQuery = supabase.from("employees").select("id, first_name, last_name, department, role, status, join_date, branch_id");
+    if (effectiveBranchId) {
+      empQuery = empQuery.eq("branch_id", effectiveBranchId);
+    }
+
+    let expQuery = supabase.from("expense_records").select("id, employee_id, category, amount, status, submitted_at, branch_id").is("deleted_at", null);
+    if (effectiveBranchId) {
+      expQuery = expQuery.eq("branch_id", effectiveBranchId);
+    }
+
     const results = await Promise.all([
-      supabase.from("employees").select("id, first_name, last_name, department, role, status, join_date"),
-      supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status"),
-      supabase.from("payroll_records").select("employee_id, month, base_salary, bonus, deductions, net_pay, status"),
+      empQuery,
+      supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, employees(branch_id)"),
+      supabase.from("payroll_records").select("employee_id, month, base_salary, bonus, deductions, net_pay, status, employees(branch_id)"),
       supabase.from("job_postings").select("id, title, department, status, location, salary_min, salary_max").is("deleted_at", null),
       supabase.from("candidates").select("id, stage, department, applied_at").is("deleted_at", null),
-      supabase.from("offboarding_requests").select("id, employee_id, reason, status, last_day"),
-      supabase.from("expense_records").select("id, employee_id, category, amount, status, submitted_at, branch_id").is("deleted_at", null),
-      supabase.from("it_assets").select("id, type, status, assigned_to").is("deleted_at", null),
+      supabase.from("offboarding_requests").select("id, employee_id, reason, status, last_day, employees(branch_id)"),
+      expQuery,
+      supabase.from("it_assets").select("id, type, status, assigned_to, employees(branch_id)").is("deleted_at", null),
       supabase.from("it_tickets").select("id, priority, status, category, created_at").is("deleted_at", null),
-      supabase.from("benefit_enrollments").select("id, employee_id, plan_id, status"),
+      supabase.from("benefit_enrollments").select("id, employee_id, plan_id, status, employees(branch_id)"),
       supabase.from("benefit_plans").select("id, name, type"),
     ]);
 
-    setEmployees(results[0].data || []);
-    setLeaveRequests(results[1].data || []);
-    setPayroll(results[2].data || []);
+    const empList = results[0].data || [];
+    const empIds = new Set(empList.map((e: any) => e.id));
+
+    const rawLeaves = results[1].data || [];
+    const rawPayroll = results[2].data || [];
+    const rawOffboarding = results[5].data || [];
+    const rawItAssets = results[7].data || [];
+    const rawBenefits = results[9].data || [];
+
+    const filteredLeaves = effectiveBranchId ? rawLeaves.filter((l: any) => empIds.has(l.employee_id) || l.employees?.branch_id === effectiveBranchId) : rawLeaves;
+    const filteredPayroll = effectiveBranchId ? rawPayroll.filter((p: any) => empIds.has(p.employee_id) || p.employees?.branch_id === effectiveBranchId) : rawPayroll;
+    const filteredOffboarding = effectiveBranchId ? rawOffboarding.filter((o: any) => empIds.has(o.employee_id) || o.employees?.branch_id === effectiveBranchId) : rawOffboarding;
+    const filteredItAssets = effectiveBranchId ? rawItAssets.filter((a: any) => !a.assigned_to || empIds.has(a.assigned_to) || a.employees?.branch_id === effectiveBranchId) : rawItAssets;
+    const filteredBenefits = effectiveBranchId ? rawBenefits.filter((b: any) => empIds.has(b.employee_id) || b.employees?.branch_id === effectiveBranchId) : rawBenefits;
+
+    setEmployees(empList);
+    setLeaveRequests(filteredLeaves);
+    setPayroll(filteredPayroll);
     setJobs(results[3].data || []);
     setCandidates(results[4].data || []);
-    setOffboarding(results[5].data || []);
+    setOffboarding(filteredOffboarding);
     setExpenses(results[6].data || []);
-    setItAssets(results[7].data || []);
+    setItAssets(filteredItAssets);
     setItTickets(results[8].data || []);
-    setBenefitEnrollments(results[9].data || []);
+    setBenefitEnrollments(filteredBenefits);
     setBenefitPlans(results[10].data || []);
-  }, []);
+  }, [effectiveBranchId]);
 
   useEffect(() => {
     loadData();

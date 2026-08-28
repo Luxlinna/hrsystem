@@ -247,9 +247,10 @@ export function usePermissions(): UsePermissionsReturn {
       if (!role) return false; // unassigned = no access
       if (role.is_admin) return true;
       if (role.allowed_modules.includes("*")) return true;
-      if (role.name === "Branch Admin") {
-        // Branch Admin has full access to all standard modules (except global tenant user roles admin)
-        return module !== "admin";
+      const roleName = (role.name || "").trim().toLowerCase();
+      if (roleName === "branch admin") {
+        // Branch Admin has access to their own branch's modules, but cannot manage other branches or global tenant admin
+        return module !== "admin" && module !== "branches";
       }
       return role.allowed_modules.includes(module);
     },

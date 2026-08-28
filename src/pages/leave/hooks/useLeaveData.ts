@@ -19,7 +19,7 @@ export function useLeaveData() {
   const { user } = useAuth();
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
-  const canViewAll = isAdmin || !!role?.leave_view_all_employees;
+  const canViewAll = isAdmin || (!isBranchAdmin && !!role?.leave_view_all_employees);
   const canViewOwnBranch = !canViewAll && (isBranchAdmin || !!role?.leave_view_own_branch);
   const canManage = canViewAll || canViewOwnBranch;
   const canApproveLeave = isAdmin || isBranchAdmin || !!role?.leave_approve;
@@ -74,7 +74,7 @@ export function useLeaveData() {
         const { data: emp } = await supabase
           .from("employees")
           .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id")
-          .eq("status", "active")
+          .is("deleted_at", null)
           .order("first_name");
         setEmployees(emp || []);
         setLoading(false);
@@ -86,8 +86,8 @@ export function useLeaveData() {
         const { data: team } = await supabase
           .from("employees")
           .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id")
-          .eq("status", "active")
           .eq("branch_id", targetBranch)
+          .is("deleted_at", null)
           .order("first_name");
         setEmployees(team || []);
 

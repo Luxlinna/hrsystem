@@ -1,4 +1,5 @@
 import { SETTINGS_SECTIONS } from "../constants";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface SettingsNavProps {
   active: string;
@@ -6,9 +7,17 @@ interface SettingsNavProps {
 }
 
 export function SettingsNav({ active, onChange }: SettingsNavProps) {
+  const { isAdmin, can } = usePermissions();
+
+  const visibleSections = SETTINGS_SECTIONS.filter((s) => {
+    if (s.key === "branches") return can("branches");
+    if (s.key === "permissions") return isAdmin;
+    return true;
+  });
+
   return (
     <div className="flex gap-2 mb-6 flex-wrap">
-      {SETTINGS_SECTIONS.map((s) => (
+      {visibleSections.map((s) => (
         <button
           key={s.key}
           onClick={() => onChange(s.key)}
