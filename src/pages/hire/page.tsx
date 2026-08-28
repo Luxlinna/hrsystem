@@ -7,11 +7,14 @@ import { CandidatesTabContent } from "./components/candidates/CandidatesTabConte
 import { InterviewsTabContent } from "./components/interviews/InterviewsTabContent";
 import { PipelineKanbanView } from "./components/pipeline/PipelineKanbanView";
 import { PipelineMetricsChart } from "./components/pipeline/PipelineMetricsChart";
+import { HiringRequestsTab } from "./components/requests/HiringRequestsTab";
 import { JobModal } from "./components/modals/JobModal";
 import { CandidateModal } from "./components/modals/CandidateModal";
 import { InterviewModal } from "./components/modals/InterviewModal";
 import { MoveToOnboardingModal } from "./components/modals/MoveToOnboardingModal";
 import { FeedbackModal } from "./components/modals/FeedbackModal";
+import { CreateHiringRequestModal } from "./components/modals/CreateHiringRequestModal";
+import { DecisionHiringRequestModal } from "./components/modals/DecisionHiringRequestModal";
 import { useHire } from "./hooks/useHire";
 
 export default function HirePage() {
@@ -20,9 +23,14 @@ export default function HirePage() {
     candidates,
     interviews,
     branches,
+    hiringRequests,
     loading,
     tab,
     setTab,
+    canRequest,
+    canApprove,
+    isChairman,
+    isSuperAdmin,
     jobViewMode,
     setJobViewMode,
     candidateViewMode,
@@ -82,6 +90,22 @@ export default function HirePage() {
     setFeedbackNotes,
     savingFeedback,
     postingJob,
+    showRequestModal,
+    setShowRequestModal,
+    requestForm,
+    setRequestForm,
+    submittingRequest,
+    decisionModal,
+    setDecisionModal,
+    targetRequest,
+    decisionAction,
+    rejectionReason,
+    setRejectionReason,
+    processingDecision,
+    openCreateRequest,
+    openDecisionModal,
+    handleCreateRequest,
+    handleDecision,
     openCreateJob,
     openEditJob,
     openCreateCandidate,
@@ -116,6 +140,7 @@ export default function HirePage() {
 
   const activeJobsCount = jobs.filter((j) => j.status === "active").length;
   const hiredCount = candidates.filter((c) => c.stage === "hired").length;
+  const pendingRequestsCount = hiringRequests.filter((r) => r.status === "pending").length;
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
@@ -145,35 +170,49 @@ export default function HirePage() {
         jobsCount={jobs.length}
         candidatesCount={candidates.length}
         interviewsCount={interviews.length}
+        pendingRequestsCount={pendingRequestsCount}
       />
 
       {/* Contextual Filter & Search Bar */}
-      <HireFilterBar
-        activeTab={tab}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        filterJobStatus={filterJobStatus}
-        setFilterJobStatus={setFilterJobStatus}
-        filterDepartment={filterDepartment}
-        setFilterDepartment={setFilterDepartment}
-        filterBranch={filterBranch}
-        setFilterBranch={setFilterBranch}
-        filterCandidateStage={filterCandidateStage}
-        setFilterCandidateStage={setFilterCandidateStage}
-        filterCandidateJob={filterCandidateJob}
-        setFilterCandidateJob={setFilterCandidateJob}
-        filterInterviewStatus={filterInterviewStatus}
-        setFilterInterviewStatus={setFilterInterviewStatus}
-        jobViewMode={jobViewMode}
-        setJobViewMode={setJobViewMode}
-        candidateViewMode={candidateViewMode}
-        setCandidateViewMode={setCandidateViewMode}
-        departments={departments}
-        branches={branches}
-        jobs={jobs}
-      />
+      {tab !== "requests" && (
+        <HireFilterBar
+          activeTab={tab}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          filterJobStatus={filterJobStatus}
+          setFilterJobStatus={setFilterJobStatus}
+          filterDepartment={filterDepartment}
+          setFilterDepartment={setFilterDepartment}
+          filterBranch={filterBranch}
+          setFilterBranch={setFilterBranch}
+          filterCandidateStage={filterCandidateStage}
+          setFilterCandidateStage={setFilterCandidateStage}
+          filterCandidateJob={filterCandidateJob}
+          setFilterCandidateJob={setFilterCandidateJob}
+          filterInterviewStatus={filterInterviewStatus}
+          setFilterInterviewStatus={setFilterInterviewStatus}
+          jobViewMode={jobViewMode}
+          setJobViewMode={setJobViewMode}
+          candidateViewMode={candidateViewMode}
+          setCandidateViewMode={setCandidateViewMode}
+          departments={departments}
+          branches={branches}
+          jobs={jobs}
+        />
+      )}
 
       {/* Tab Body Content */}
+      {tab === "requests" && (
+        <HiringRequestsTab
+          requests={hiringRequests}
+          canRequest={canRequest}
+          canApprove={canApprove}
+          isChairman={isChairman}
+          onOpenCreate={() => openCreateRequest()}
+          onOpenDecision={openDecisionModal}
+        />
+      )}
+
       {tab === "jobs" && (
         <JobsTabContent
           jobs={filteredJobs}
@@ -224,6 +263,29 @@ export default function HirePage() {
       )}
 
       {/* Modals */}
+      <CreateHiringRequestModal
+        isOpen={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
+        form={requestForm}
+        setForm={setRequestForm}
+        branches={branches}
+        departments={departments}
+        submitting={submittingRequest}
+        onSubmit={handleCreateRequest}
+        isSuperAdmin={isSuperAdmin}
+      />
+
+      <DecisionHiringRequestModal
+        isOpen={decisionModal}
+        onClose={() => setDecisionModal(false)}
+        request={targetRequest}
+        action={decisionAction}
+        reason={rejectionReason}
+        setReason={setRejectionReason}
+        processing={processingDecision}
+        onSubmit={handleDecision}
+      />
+
       <JobModal
         isOpen={jobModal}
         editingJob={editingJob}

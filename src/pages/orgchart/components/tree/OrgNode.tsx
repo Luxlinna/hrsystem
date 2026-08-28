@@ -19,9 +19,13 @@ export const OrgNode = memo(function OrgNode({
   deptFilter,
   onSelectEmployee,
 }: OrgNodeProps) {
-  const hasChildren = node.children.length > 0;
+  const directReportsCount = node.children.length;
+  const hasChildren = directReportsCount > 0;
   const isMatch = nodeMatchesFilters(node, searchTerm, deptFilter);
-  const deptColor = DEPT_COLORS[node.department] || "bg-gray-500";
+  const deptColor = DEPT_COLORS[node.department] || "bg-[#253C7D]";
+
+  const isExecutive = /ceo|chairman|chairwoman|president|director|founder/i.test(node.role);
+  const isManager = /manager|lead|head|supervisor/i.test(node.role);
 
   if ((searchTerm || deptFilter) && !subtreeMatchesFilters(node, searchTerm, deptFilter)) {
     return null;
@@ -29,88 +33,129 @@ export const OrgNode = memo(function OrgNode({
 
   return (
     <div className="flex flex-col items-center">
-      {node.depth > 0 && <div className="w-px h-6 bg-gray-200" />}
+      {/* Connector line coming from above */}
+      {node.depth > 0 && <div className="w-0.5 h-6 bg-gray-300 dark:bg-gray-700" />}
 
       {/* Node Card */}
       <div
-        className={`relative flex flex-col items-center p-4 rounded-xl border-2 transition-all cursor-pointer min-w-[180px] max-w-[220px] ${
-          isMatch && searchTerm
-            ? "border-[#253C7D] bg-[#253C7D]/5 scale-105"
-            : "border-gray-200 bg-white hover:border-gray-300"
-        }`}
         onClick={() => {
           onSelectEmployee(node);
-          if (hasChildren) onToggle(node.id);
         }}
+        className={`group relative flex flex-col items-center p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer min-w-[210px] max-w-[230px] shadow-sm hover:shadow-lg ${
+          isMatch && searchTerm
+            ? "border-[#253C7D] bg-blue-50/70 ring-4 ring-blue-500/10 scale-105"
+            : isExecutive
+            ? "border-[#253C7D] bg-white hover:border-[#1E3066]"
+            : isManager
+            ? "border-amber-300 bg-white hover:border-amber-400"
+            : "border-gray-200/90 bg-white hover:border-gray-300"
+        }`}
       >
-        <div className={`absolute top-0 left-0 right-0 h-1 ${deptColor} rounded-t-xl`} />
+        {/* Top Department Accent Bar */}
+        <div className={`absolute top-0 left-0 right-0 h-1.5 ${deptColor} rounded-t-2xl`} />
 
+        {/* Level Tag (Executive / Manager) */}
+        {isExecutive ? (
+          <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-blue-100 text-blue-800">
+            Executive
+          </span>
+        ) : isManager ? (
+          <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
+            Lead
+          </span>
+        ) : null}
+
+        {/* Avatar & Info */}
         <Link
           to={`/employees/${node.id}`}
-          className="flex flex-col items-center w-full"
+          className="flex flex-col items-center w-full mt-1"
           onClick={(e) => e.stopPropagation()}
         >
           {node.avatar_url ? (
             <img
               src={node.avatar_url}
               alt=""
-              className="w-12 h-12 rounded-full object-cover border-2 border-white mt-1 mb-2"
+              className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-xs mb-2 group-hover:scale-105 transition-transform"
             />
           ) : (
-            <div className={`w-12 h-12 rounded-full ${deptColor} flex items-center justify-center text-white font-bold text-sm mt-1 mb-2`}>
+            <div
+              className={`w-12 h-12 rounded-full ${deptColor} flex items-center justify-center text-white font-black text-sm shadow-xs mb-2 group-hover:scale-105 transition-transform`}
+            >
               {node.first_name?.[0]}
               {node.last_name?.[0]}
             </div>
           )}
-          <p className="text-[13px] font-bold text-gray-900 text-center leading-tight hover:text-[#253C7D] transition-colors">
+
+          <p className="text-xs font-bold text-gray-900 text-center leading-tight hover:text-[#253C7D] transition-colors truncate w-full">
             {node.first_name} {node.last_name}
           </p>
         </Link>
 
-        <p className="text-[11px] text-gray-500 text-center mt-0.5">{node.role}</p>
+        {/* Role */}
+        <p className="text-[11px] text-gray-500 font-medium text-center mt-0.5 line-clamp-1">
+          {node.role}
+        </p>
 
-        <span className={`mt-2 text-[10px] font-semibold px-2 py-0.5 rounded-full text-white ${deptColor}`}>
-          {node.department}
-        </span>
-
-        {node.branches?.name && (
-          <p className="text-[10px] text-gray-400 mt-1">{node.branches.name}</p>
-        )}
-
-        <div className="flex items-center gap-1 mt-1.5">
-          <span className={`w-1.5 h-1.5 rounded-full ${node.status === "active" ? "bg-green-500" : "bg-amber-500"}`} />
-          <span className="text-[10px] text-gray-400 capitalize">{node.status}</span>
+        {/* Department Badge */}
+        <div className="flex items-center gap-1.5 mt-2 flex-wrap justify-center">
+          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full text-white ${deptColor} shadow-2xs`}>
+            {node.department}
+          </span>
         </div>
 
-        {/* Expand / Collapse Chevron */}
+        {/* Branch / Status Row */}
+        <div className="flex items-center justify-between w-full mt-2.5 pt-2 border-t border-gray-100 text-[10px] text-gray-400">
+          <span className="truncate max-w-[110px] font-medium text-gray-500">
+            {node.branches?.name || "Branch Staff"}
+          </span>
+          <div className="flex items-center gap-1">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                node.status === "active" ? "bg-emerald-500" : "bg-amber-500"
+              }`}
+            />
+            <span className="capitalize">{node.status}</span>
+          </div>
+        </div>
+
+        {/* Expand / Collapse Subordinates Button */}
         {hasChildren && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onToggle(node.id);
             }}
-            className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer"
+            className={`absolute -bottom-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 transition-all cursor-pointer shadow-xs ${
+              node.expanded
+                ? "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                : "bg-[#253C7D] text-white border-[#253C7D] hover:bg-[#1E3066]"
+            }`}
+            title={node.expanded ? "Collapse team" : `Expand ${directReportsCount} direct reports`}
           >
             <i
-              className={`ri-arrow-down-s-line text-gray-500 text-sm transition-transform ${
+              className={`ri-arrow-down-s-line text-xs transition-transform ${
                 node.expanded ? "rotate-180" : ""
               }`}
             />
+            <span>{node.expanded ? directReportsCount : `+${directReportsCount}`}</span>
           </button>
         )}
       </div>
 
-      {/* Children Subtree */}
+      {/* Children Subtree with branch lines */}
       {node.expanded && hasChildren && (
-        <div className="mt-6">
-          <div className="w-px h-4 bg-gray-200 mx-auto" />
-          {node.children.length > 1 && (
-            <div className="relative flex gap-6">
+        <div className="mt-7 flex flex-col items-center">
+          {/* Vertical stem from parent */}
+          <div className="w-0.5 h-5 bg-gray-300 dark:bg-gray-700" />
+
+          {directReportsCount > 1 ? (
+            <div className="relative flex gap-8 pt-0">
+              {/* Horizontal Connecting Crossbar */}
               <div
-                className="absolute top-0 left-1/2 h-px bg-gray-200"
+                className="absolute top-0 left-4 right-4 h-0.5 bg-gray-300 dark:bg-gray-700"
                 style={{
-                  width: `${(node.children.length - 1) * 224}px`,
-                  transform: "translateX(-50%)",
+                  left: "calc(110px)",
+                  right: "calc(110px)",
                 }}
               />
               {node.children.map((child) => (
@@ -124,15 +169,16 @@ export const OrgNode = memo(function OrgNode({
                 />
               ))}
             </div>
-          )}
-          {node.children.length === 1 && (
-            <OrgNode
-              node={node.children[0]}
-              onToggle={onToggle}
-              searchTerm={searchTerm}
-              deptFilter={deptFilter}
-              onSelectEmployee={onSelectEmployee}
-            />
+          ) : (
+            <div className="pt-0">
+              <OrgNode
+                node={node.children[0]}
+                onToggle={onToggle}
+                searchTerm={searchTerm}
+                deptFilter={deptFilter}
+                onSelectEmployee={onSelectEmployee}
+              />
+            </div>
           )}
         </div>
       )}

@@ -2,14 +2,26 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import type { Review, Goal, Employee } from "../types";
 
 export function usePerformanceData() {
   const { user } = useAuth();
-  const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const canViewAll = isAdmin || Boolean(role?.performance_view_all_employees);
-  const canViewOwnBranch = !canViewAll && Boolean(role?.performance_view_own_branch);
-  const canManage = canViewAll || canViewOwnBranch;
+  const { role, isAdmin } = usePermissions();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { employee: myEmployee } = useMyEmployee();
+
+  const roleName = (role?.name || "").toLowerCase();
+  const isLeader =
+    isSuperAdmin ||
+    isBranchAdmin ||
+    isAdmin ||
+    Boolean(role?.performance_view_all_employees) ||
+    Boolean(role?.performance_view_own_branch) ||
+    /manager|lead|head|admin|ceo|director|chief|president|officer/i.test(roleName);
+
+  const canManage = isLeader;
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -17,106 +29,121 @@ export function usePerformanceData() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    if (canViewAll) {
-      const [{ data: r }, { data: g }, { data: e }] = await Promise.all([
-        supabase
-          .from("performance_reviews")
-          .select(
-            `*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`
-          )
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("performance_goals")
-          .select("id, employee_id, title, description, target_date, progress, status")
-          .order("target_date"),
-        supabase
+    setLoading(true);
+    try {
+      const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
+
+      if (isLeader) {
+        // Load branch-scoped or global employees
+        let empQuery = supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, avatar_url")
-          .order("first_name"),
-      ]);
-      setReviews((r as Review[]) || []);
-      setGoals((g as Goal[]) || []);
-      setEmployees((e as Employee[]) || []);
-      setLoading(false);
-      return;
-    }
+          .select("id, first_name, last_name, role, department, avatar_url, branch_id")
+          .is("deleted_at", null)
+          .order("first_name");
 
-    if (!user?.email) {
-      setLoading(false);
-      return;
-    }
+        if (targetBranch) {
+          empQuery = empQuery.eq("branch_id", targetBranch);
+        }
 
-    const { data: me } = await supabase
-      .from("employees")
-      .select("id, first_name, last_name, role, department, branch_id")
-      .eq("email", user.email)
-      .maybeSingle();
+        const { data: eData, error: eErr } = await empQuery;
+        if (eErr) console.warn("Error loading performance employees:", eErr);
+        const empList = (eData || []) as Employee[];
+        const empIds = empList.map((e) => e.id);
 
-    if (!me) {
-      setReviews([]);
-      setGoals([]);
-      setEmployees([]);
-      setLoading(false);
-      return;
-    }
+        let reviewsPromise: PromiseLike<any>;
+        let goalsPromise: PromiseLike<any>;
 
-    if (canViewOwnBranch && me.branch_id) {
-      const { data: team } = await supabase
-        .from("employees")
-        .select("id, first_name, last_name, role, department, avatar_url")
-        .eq("status", "active")
-        .eq("branch_id", me.branch_id)
-        .order("first_name");
+        if (targetBranch) {
+          if (empIds.length > 0) {
+            reviewsPromise = supabase
+              .from("performance_reviews")
+              .select(
+                `*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`
+              )
+              .in("employee_id", empIds)
+              .order("created_at", { ascending: false });
 
-      setEmployees((team as Employee[]) || []);
-      const ids = (team || []).map((e) => e.id);
-      const [{ data: r }, { data: g }] = ids.length
-        ? await Promise.all([
+            goalsPromise = supabase
+              .from("performance_goals")
+              .select("id, employee_id, title, description, target_date, progress, status")
+              .in("employee_id", empIds)
+              .order("target_date");
+          } else {
+            reviewsPromise = Promise.resolve({ data: [] });
+            goalsPromise = Promise.resolve({ data: [] });
+          }
+        } else {
+          // Super Admin viewing all branches
+          reviewsPromise = supabase
+            .from("performance_reviews")
+            .select(
+              `*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`
+            )
+            .order("created_at", { ascending: false });
+
+          goalsPromise = supabase
+            .from("performance_goals")
+            .select("id, employee_id, title, description, target_date, progress, status")
+            .order("target_date");
+        }
+
+        const [{ data: rData, error: rErr }, { data: gData, error: gErr }] = await Promise.all([
+          reviewsPromise,
+          goalsPromise,
+        ]);
+
+        if (rErr) console.warn("Error loading reviews:", rErr);
+        if (gErr) console.warn("Error loading goals:", gErr);
+
+        setEmployees(empList);
+        setReviews((rData || []) as Review[]);
+        setGoals((gData || []) as Goal[]);
+      } else {
+        // Individual staff view
+        let empRecord = myEmployee;
+        if (!empRecord && user?.email) {
+          const { data: me } = await supabase
+            .from("employees")
+            .select("id, first_name, last_name, role, department, avatar_url, branch_id")
+            .eq("email", user.email)
+            .maybeSingle();
+          if (me) empRecord = me as any;
+        }
+
+        if (empRecord) {
+          setEmployees([empRecord as Employee]);
+          const [{ data: rData }, { data: gData }] = await Promise.all([
             supabase
               .from("performance_reviews")
               .select(
                 `*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`
               )
-              .in("employee_id", ids)
+              .eq("employee_id", empRecord.id)
               .order("created_at", { ascending: false }),
             supabase
               .from("performance_goals")
               .select("id, employee_id, title, description, target_date, progress, status")
-              .in("employee_id", ids)
+              .eq("employee_id", empRecord.id)
               .order("target_date"),
-          ])
-        : [{ data: [] }, { data: [] }];
-
-      setReviews((r as Review[]) || []);
-      setGoals((g as Goal[]) || []);
+          ]);
+          setReviews((rData || []) as Review[]);
+          setGoals((gData || []) as Goal[]);
+        } else {
+          setEmployees([]);
+          setReviews([]);
+          setGoals([]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load performance data:", err);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setEmployees([me as Employee]);
-    const [{ data: r }, { data: g }] = await Promise.all([
-      supabase
-        .from("performance_reviews")
-        .select(
-          `*, employee:employees!performance_reviews_employee_id_fkey(first_name, last_name, role, department), reviewer:employees!performance_reviews_reviewer_id_fkey(first_name, last_name)`
-        )
-        .eq("employee_id", me.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("performance_goals")
-        .select("id, employee_id, title, description, target_date, progress, status")
-        .eq("employee_id", me.id)
-        .order("target_date"),
-    ]);
-    setReviews((r as Review[]) || []);
-    setGoals((g as Goal[]) || []);
-    setLoading(false);
-  }, [canViewAll, canViewOwnBranch, user?.email]);
+  }, [isLeader, effectiveBranchId, isSuperAdmin, userBranchId, myEmployee, user?.email]);
 
   useEffect(() => {
-    if (permsLoading) return;
     loadData();
-  }, [permsLoading, loadData]);
+  }, [loadData]);
 
   return {
     canManage,

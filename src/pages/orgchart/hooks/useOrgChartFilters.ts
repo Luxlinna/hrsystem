@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
-import type { Employee } from "../types";
+import type { Employee, OrgChartViewMode } from "../types";
 
 export function useOrgChartFilters(employees: Employee[]) {
   const [searchTerm, setSearchTerm] = useState("");
   const [deptFilter, setDeptFilter] = useState("");
-  const [viewMode, setViewMode] = useState<"tree" | "list">("tree");
+  const [viewMode, setViewMode] = useState<OrgChartViewMode>("tree");
 
   const departments = useMemo(
     () => Array.from(new Set(employees.map((e) => e.department))).sort(),

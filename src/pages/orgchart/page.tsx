@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { OrgChartHeader } from "./components/OrgChartHeader";
 import { OrgChartFilterBar } from "./components/OrgChartFilterBar";
 import { OrgChartView } from "./components/tree/OrgChartView";
+import { OrgChartDepartmentsView } from "./components/departments/OrgChartDepartmentsView";
 import { OrgChartListView } from "./components/list/OrgChartListView";
 import { EmployeeQuickDrawer } from "./components/modals/EmployeeQuickDrawer";
 import { EditManagerModal } from "./components/modals/EditManagerModal";
@@ -11,6 +12,7 @@ export default function OrgChart() {
   const {
     canEditManager,
     employees,
+    branches,
     loading,
     tree,
     toggleNode,
@@ -45,6 +47,8 @@ export default function OrgChart() {
     [employees]
   );
 
+  const activeBranchName = branches.length === 1 ? branches[0]?.name : (employees[0]?.branches?.name || undefined);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -54,11 +58,12 @@ export default function OrgChart() {
   }
 
   return (
-    <div className="p-6 lg:p-10 min-h-screen bg-white font-sans">
+    <div className="p-6 lg:p-10 min-h-screen bg-[#F8F9FB] dark:bg-slate-900 font-sans">
       {/* Header */}
       <OrgChartHeader
         employeeCount={employees.length}
         deptCount={departments.length}
+        branchName={activeBranchName}
         viewMode={viewMode}
         setViewMode={setViewMode}
         onExpandAll={expandAll}
@@ -77,16 +82,27 @@ export default function OrgChart() {
 
       {/* View 1: Tree View */}
       {viewMode === "tree" && (
-        <OrgChartView
-          tree={tree}
+        <div className="bg-white rounded-3xl border border-gray-200/80 p-6 sm:p-8 shadow-2xs">
+          <OrgChartView
+            tree={tree}
+            searchTerm={searchTerm}
+            deptFilter={deptFilter}
+            onToggleNode={toggleNode}
+            onSelectEmployee={setSelectedEmployee}
+          />
+        </div>
+      )}
+
+      {/* View 2: Departments / Teams Grid View */}
+      {viewMode === "departments" && (
+        <OrgChartDepartmentsView
+          employees={filteredList}
           searchTerm={searchTerm}
-          deptFilter={deptFilter}
-          onToggleNode={toggleNode}
           onSelectEmployee={setSelectedEmployee}
         />
       )}
 
-      {/* View 2: Table List View */}
+      {/* View 3: Table List View */}
       {viewMode === "list" && (
         <OrgChartListView
           employees={filteredList}

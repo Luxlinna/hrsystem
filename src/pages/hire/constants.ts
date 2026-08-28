@@ -1,4 +1,4 @@
-import type { StageConfigItem, NewJobFormState, NewCandidateFormState, NewInterviewFormState } from "./types";
+import type { StageConfigItem, NewJobFormState, NewCandidateFormState, NewInterviewFormState, NewHiringRequestFormState } from "./types";
 
 export const STAGE_CONFIG: Record<string, StageConfigItem> = {
   applied: {
@@ -64,6 +64,18 @@ export const INITIAL_JOB_FORM: NewJobFormState = {
   salary_max: "",
   type: "full-time",
   closing_date: "",
+};
+
+export const INITIAL_HIRING_REQUEST_FORM: NewHiringRequestFormState = {
+  title: "",
+  department: "",
+  branch_id: "",
+  headcount: 1,
+  employment_type: "full-time",
+  salary_min: "",
+  salary_max: "",
+  justification: "",
+  urgency: "medium",
 };
 
 export const INITIAL_CANDIDATE_FORM: NewCandidateFormState = {

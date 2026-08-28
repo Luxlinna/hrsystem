@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
@@ -11,17 +13,33 @@ import { INITIAL_JOB_FORM, INITIAL_CANDIDATE_FORM, INITIAL_INTERVIEW_FORM } from
 import { useHireData } from "./useHireData";
 import { useHireFilters } from "./useHireFilters";
 import { useHireMutations } from "./useHireMutations";
+import { useHiringRequests } from "./useHiringRequests";
 
 export function useHire() {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { employee: myEmployee } = useMyEmployee();
+
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const actorRole = role?.name || "Admin";
+
+  const roleNameLower = (role?.name || "").toLowerCase();
+  const canRequest = /manager/i.test(roleNameLower) || isBranchAdmin || isAdmin;
+  const canApprove = /ceo/i.test(roleNameLower) || (isAdmin && !isBranchAdmin) || isSuperAdmin;
+  const isChairman = /chair/i.test(roleNameLower);
 
   // Data & Filters
   const data = useHireData();
   const filters = useHireFilters(data.jobs, data.candidates, data.interviews);
   const mutations = useHireMutations({ actorName, actorRole, loadData: data.loadData });
+  const requests = useHiringRequests({
+    actorName,
+    actorRole,
+    actorEmail: user?.email,
+    myEmployeeId: myEmployee?.id,
+    loadData: data.loadData,
+  });
 
   // Modal States
   const [jobModal, setJobModal] = useState(false);
@@ -49,13 +67,14 @@ export function useHire() {
 
   // Modal Openers
   const openCreateJob = useCallback(() => {
+    const targetBranch = (!isSuperAdmin && userBranchId) ? userBranchId : (effectiveBranchId || data.branches[0]?.id || "");
     setEditingJob(null);
     setNewJob({
       ...INITIAL_JOB_FORM,
-      branch_id: data.branches[0]?.id || "",
+      branch_id: targetBranch,
     });
     setJobModal(true);
-  }, [data.branches]);
+  }, [data.branches, isSuperAdmin, userBranchId, effectiveBranchId]);
 
   const openEditJob = useCallback((job: Job) => {
     setEditingJob(job);
@@ -276,9 +295,14 @@ export function useHire() {
     actorName,
     actorRole,
     isAdmin,
+    canRequest,
+    canApprove,
+    isChairman,
+    isSuperAdmin,
     ...data,
     ...filters,
     ...mutations,
+    ...requests,
     jobModal,
     setJobModal,
     editingJob,

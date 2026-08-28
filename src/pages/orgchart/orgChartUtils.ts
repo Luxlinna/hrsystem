@@ -6,13 +6,23 @@ export function buildTree(
   depth = 0,
   visited: Set<string> = new Set()
 ): TreeNode[] {
+  const empIds = new Set(employees.map((e) => e.id));
+
+  // If top level (parentId === null), include employees with no reports_to OR whose manager is not in this employee list
+  const matchesParent = (e: Employee) => {
+    if (parentId === null) {
+      return !e.reports_to || !empIds.has(e.reports_to);
+    }
+    return e.reports_to === parentId;
+  };
+
   return employees
-    .filter((e) => e.reports_to === parentId && !visited.has(e.id))
+    .filter((e) => matchesParent(e) && !visited.has(e.id))
     .map((e) => ({
       ...e,
       children: buildTree(employees, e.id, depth + 1, new Set(visited).add(e.id)),
       depth,
-      expanded: depth < 1,
+      expanded: depth < 2,
     }));
 }
 

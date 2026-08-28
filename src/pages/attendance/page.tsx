@@ -33,9 +33,16 @@ export default function AttendancePage() {
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
-  const canViewAll = isAdmin || !!role?.attendance_view_all_employees;
-  const canViewOwnBranch = !canViewAll && (isBranchAdmin || !!role?.attendance_view_own_branch);
-  const canManage = canViewAll || canViewOwnBranch;
+  const roleName = (role?.name || "").toLowerCase();
+  const isLeader =
+    isSuperAdmin ||
+    isBranchAdmin ||
+    isAdmin ||
+    /manager|lead|head|admin|ceo|director|chief|president|officer/i.test(roleName) ||
+    !!role?.attendance_view_all_employees ||
+    !!role?.attendance_view_own_branch;
+  const canManage = isLeader;
+  const canViewAll = isLeader;
 
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -90,83 +97,92 @@ export default function AttendancePage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    try {
+      const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
 
-    if (canViewAll && isSuperAdmin && !effectiveBranchId) {
-      const [recRes, empRes] = await Promise.all([
-        supabase
-          .from("attendance_records")
-          .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
-          .is("deleted_at", null)
-          .order("date", { ascending: false })
-          .limit(2000),
-        supabase
+      if (isLeader) {
+        let empQuery = supabase
           .from("employees")
           .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name)")
+          .is("deleted_at", null)
           .eq("status", "active")
-          .order("first_name"),
-      ]);
-      if (recRes.data) setRecords(recRes.data as unknown as AttendanceRecord[]);
-      if (empRes.data) setEmployees(empRes.data as unknown as Employee[]);
-      setLoading(false);
-      return;
-    }
+          .order("first_name");
 
-    const targetBranch = effectiveBranchId || userBranchId;
-    if ((canViewAll || canViewOwnBranch) && targetBranch) {
-      const { data: team } = await supabase
-        .from("employees")
-        .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name)")
-        .eq("status", "active")
-        .eq("branch_id", targetBranch)
-        .order("first_name");
-      setEmployees((team as unknown as Employee[]) || []);
+        if (targetBranch) {
+          empQuery = empQuery.eq("branch_id", targetBranch);
+        }
 
-      const ids = (team || []).map((e) => e.id);
-      const { data: recData } = ids.length
-        ? await supabase
+        const { data: team, error: empErr } = await empQuery;
+        if (empErr) console.warn("Error fetching attendance employees:", empErr);
+
+        const empList = (team as unknown as Employee[]) || [];
+        setEmployees(empList);
+
+        const ids = empList.map((e) => e.id);
+
+        let recPromise: PromiseLike<any>;
+        if (targetBranch) {
+          if (ids.length > 0) {
+            recPromise = supabase
+              .from("attendance_records")
+              .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
+              .is("deleted_at", null)
+              .in("employee_id", ids)
+              .order("date", { ascending: false })
+              .limit(2000);
+          } else {
+            recPromise = Promise.resolve({ data: [] });
+          }
+        } else {
+          recPromise = supabase
             .from("attendance_records")
             .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
             .is("deleted_at", null)
-            .in("employee_id", ids)
             .order("date", { ascending: false })
-            .limit(2000)
-        : { data: [] };
-      setRecords((recData as unknown as AttendanceRecord[]) || []);
+            .limit(2000);
+        }
+
+        const { data: recData, error: recErr } = await recPromise;
+        if (recErr) console.warn("Error fetching attendance records:", recErr);
+        setRecords((recData as unknown as AttendanceRecord[]) || []);
+      } else {
+        // Individual employee view
+        let empRecord = myEmployee;
+        if (!empRecord && user?.email) {
+          const { data: me } = await supabase
+            .from("employees")
+            .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name)")
+            .eq("email", user.email)
+            .is("deleted_at", null)
+            .maybeSingle();
+          if (me) {
+            empRecord = me as unknown as Employee;
+            setMyEmployee(empRecord);
+          }
+        }
+
+        if (empRecord) {
+          setEmployees([empRecord]);
+          const { data: recData } = await supabase
+            .from("attendance_records")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
+            .eq("employee_id", empRecord.id)
+            .is("deleted_at", null)
+            .order("date", { ascending: false })
+            .limit(1000);
+          setRecords((recData as unknown as AttendanceRecord[]) || []);
+        } else {
+          setEmployees([]);
+          setRecords([]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load attendance data:", err);
+      toast("Error", "Could not load attendance data", "error");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (!user?.email) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: me } = await supabase
-      .from("employees")
-      .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name)")
-      .eq("email", user.email)
-      .maybeSingle();
-
-    setMyEmployee(me as unknown as Employee | null);
-
-    if (!me) {
-      setEmployees([]);
-      setRecords([]);
-      setLoading(false);
-      return;
-    }
-
-    setEmployees([me as unknown as Employee]);
-    const { data: recData } = await supabase
-      .from("attendance_records")
-      .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
-      .eq("employee_id", me.id)
-      .is("deleted_at", null)
-      .order("date", { ascending: false })
-      .limit(1000);
-    setRecords((recData as unknown as AttendanceRecord[]) || []);
-    setLoading(false);
-  }, [canViewAll, canViewOwnBranch, isSuperAdmin, effectiveBranchId, userBranchId, user?.email]);
+  }, [effectiveBranchId, isSuperAdmin, userBranchId, isLeader, myEmployee, user?.email]);
 
   useEffect(() => {
     if (permsLoading) return;

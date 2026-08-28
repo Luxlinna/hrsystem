@@ -51,7 +51,42 @@ export interface Interview {
   employees?: { id?: string; first_name: string; last_name: string; avatar_url?: string } | null;
 }
 
-export type HireTab = "jobs" | "candidates" | "interviews" | "pipeline";
+export type HireTab = "requests" | "jobs" | "candidates" | "interviews" | "pipeline";
+
+export interface HiringRequest {
+  id: string;
+  title: string;
+  department: string;
+  branch_id: string | null;
+  requested_by_id?: string | null;
+  requested_by_name: string;
+  requested_by_email?: string | null;
+  headcount: number;
+  employment_type: string;
+  salary_min?: number | null;
+  salary_max?: number | null;
+  justification?: string | null;
+  urgency: "low" | "medium" | "high" | "urgent";
+  status: "pending" | "approved" | "rejected" | "fulfilled";
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  rejection_reason?: string | null;
+  job_posting_id?: string | null;
+  created_at: string;
+  branches?: { id: string; name: string } | null;
+}
+
+export interface NewHiringRequestFormState {
+  title: string;
+  department: string;
+  branch_id: string;
+  headcount: number;
+  employment_type: string;
+  salary_min: string;
+  salary_max: string;
+  justification: string;
+  urgency: "low" | "medium" | "high" | "urgent";
+}
 
 export interface StageConfigItem {
   label: string;
