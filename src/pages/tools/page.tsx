@@ -7,9 +7,13 @@ import { ToolsAccessMatrixView } from "./components/views/ToolsAccessMatrixView"
 import { ToolsActivityAuditView } from "./components/views/ToolsActivityAuditView";
 import { ToolDetailDrawer } from "./components/drawers/ToolDetailDrawer";
 import { GrantAccessModal } from "./components/modals/GrantAccessModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 
 export default function ToolsPage() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     canManage,
     tools,
     assignments,
@@ -48,6 +52,26 @@ export default function ToolsPage() {
     handleRevokeAccess,
     handleToggleStatus,
   } = useTools();
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">
+        <ToolsHeader
+          tab={tab}
+          setTab={setTab}
+          activeTools={0}
+          totalAssignments={0}
+          totalUsages={0}
+          avgUsagePerTool={0}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="System Tools & Utilities"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">

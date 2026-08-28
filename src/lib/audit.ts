@@ -34,6 +34,8 @@ interface LogActivityInput {
   actorRole: string;
   description: string;
   metadata?: Record<string, unknown>;
+  branchId?: string | null;
+  branch_id?: string | null;
 }
 
 // Fire-and-forget: an audit trail entry should never block or fail the
@@ -48,6 +50,7 @@ export function logActivity(entry: LogActivityInput) {
     actor_role: entry.actorRole,
     description: entry.description,
     metadata: entry.metadata ?? {},
+    branch_id: entry.branchId ?? entry.branch_id ?? null,
   }).then(({ error }) => {
     if (error) console.error("audit log failed:", error.message);
   });

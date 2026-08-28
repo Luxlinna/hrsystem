@@ -12,6 +12,9 @@ interface AnnouncementComposerModalProps {
   composerMode: ComposerMode;
   setComposerMode: (mode: ComposerMode) => void;
   onSubmit: (e: React.FormEvent) => void;
+  isSuperAdmin?: boolean;
+  userBranchName?: string;
+  userBranchId?: string | null;
 }
 
 export const AnnouncementComposerModal = memo(function AnnouncementComposerModal({
@@ -24,6 +27,9 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
   composerMode,
   setComposerMode,
   onSubmit,
+  isSuperAdmin = false,
+  userBranchName = "Main Branch",
+  userBranchId = null,
 }: AnnouncementComposerModalProps) {
   const contentInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -100,18 +106,94 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
             </div>
 
             <button
+              type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
             >
               <i className="ri-close-line text-lg" />
             </button>
           </div>
         </div>
 
-        {/* Modal Body Form */}
+        {/* Modal Body / Tab Content */}
         <form onSubmit={onSubmit} className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1">
           {composerMode === "write" ? (
             <>
+              {/* Branch Scope Banner */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <i className="ri-building-line text-[#253C7D]" />
+                    Branch Distribution Scope
+                  </span>
+                  {isSuperAdmin ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                      Super Admin Authority
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1">
+                      <i className="ri-lock-line text-xs" />
+                      Branch Locked
+                    </span>
+                  )}
+                </div>
+
+                {isSuperAdmin ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, branch_id: null }))}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        form.branch_id === null
+                          ? "bg-white border-[#253C7D] ring-2 ring-[#253C7D]/20 shadow-xs"
+                          : "bg-white/60 border-gray-200 text-gray-500 hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${form.branch_id === null ? "border-[#253C7D] bg-[#253C7D]" : "border-gray-300"}`}>
+                          {form.branch_id === null && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <span className="text-xs font-bold text-gray-900">All Branches (Global)</span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-1 ml-5.5">Visible to all partner branches across the company</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, branch_id: userBranchId }))}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        form.branch_id !== null
+                          ? "bg-white border-[#253C7D] ring-2 ring-[#253C7D]/20 shadow-xs"
+                          : "bg-white/60 border-gray-200 text-gray-500 hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${form.branch_id !== null ? "border-[#253C7D] bg-[#253C7D]" : "border-gray-300"}`}>
+                          {form.branch_id !== null && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <span className="text-xs font-bold text-gray-900 truncate">{userBranchName || "Current Branch"}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-1 ml-5.5">Restricted strictly to users in this branch</p>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#253C7D] flex items-center justify-center font-bold text-xs">
+                        <i className="ri-community-line" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-gray-900">{userBranchName || "Your Home Branch"}</p>
+                        <p className="text-[10px] text-gray-400">Only users in your branch can view this announcement</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                      Branch Isolated
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Category Selection Grid */}
               <div>
                 <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-2">

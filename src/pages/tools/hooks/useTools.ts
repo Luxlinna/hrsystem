@@ -6,9 +6,10 @@ import { useToolsMutations } from "./useToolsMutations";
 
 export function useTools() {
   const { user } = useAuth();
-  const { role, isAdmin } = usePermissions();
+  const { role, isAdmin, isBranchAdmin } = usePermissions();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
-  const canManage = isAdmin || (Boolean(role) && role.name !== "Chairman");
+  const canManage =
+    isAdmin || isBranchAdmin || (Boolean(role) && !["Employee", "Staff", "Chairman"].includes(role.name));
 
   const data = useToolsData();
   const filters = useToolsFilters({
@@ -19,13 +20,13 @@ export function useTools() {
   });
   const mutations = useToolsMutations({
     actorName,
-    canManage,
+    canManage: canManage && !data.isPartnerBranchBlocked,
     loadData: data.loadData,
     assignments: data.assignments,
   });
 
   return {
-    canManage,
+    canManage: canManage && !data.isPartnerBranchBlocked,
     ...data,
     ...filters,
     ...mutations,

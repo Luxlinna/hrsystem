@@ -6,7 +6,15 @@ import { MODULES, EMPLOYEE_SCOPED_MODULES } from "../constants";
 import type { ReportConfig, ReportRow } from "../types";
 
 export function useReportsData() {
-  const { isSuperAdmin, effectiveBranchName } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' reports.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
   const [searchParams, setSearchParams] = useSearchParams();
   const paramMod = searchParams.get("module");
   const [activeModule, setActiveModuleState] = useState(
@@ -45,38 +53,39 @@ export function useReportsData() {
   const [recordStatus, setRecordStatus] = useState<"all" | "active" | "deleted">("all");
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
-  const [branchFilter, setBranchFilter] = useState(() => {
-    return (!isSuperAdmin && effectiveBranchName && effectiveBranchName !== "All Branches") ? effectiveBranchName : "";
-  });
+  const [branchFilter, setBranchFilter] = useState(() => userBranchName || "");
 
   useEffect(() => {
-    if (!isSuperAdmin && effectiveBranchName && effectiveBranchName !== "All Branches") {
-      setBranchFilter(effectiveBranchName);
-    }
-  }, [isSuperAdmin, effectiveBranchName]);
+    setBranchFilter(userBranchName || "");
+  }, [userBranchName]);
+
   const [departments, setDepartments] = useState<string[]>([]);
   const [branches, setBranches] = useState<string[]>([]);
   const [reportData, setReportData] = useState<ReportRow[]>([]);
   const [reportColumns, setReportColumns] = useState<string[]>([]);
 
   useEffect(() => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setDepartments([]);
+      setBranches([]);
+      return;
+    }
+
     supabase
       .from("employees")
       .select("department")
+      .eq("branch_id", targetBranch)
       .eq("status", "active")
       .then(({ data }) => {
         setDepartments(
           [...new Set((data || []).map((r) => r.department).filter(Boolean))].sort()
         );
       });
-    supabase
-      .from("branches")
-      .select("name")
-      .order("name")
-      .then(({ data }) => {
-        setBranches((data || []).map((r) => r.name));
-      });
-  }, []);
+
+    if (userBranchName) {
+      setBranches([userBranchName]);
+    }
+  }, [isPartnerBranchBlocked, targetBranch, userBranchName]);
 
   const isEmployeeScoped = EMPLOYEE_SCOPED_MODULES.has(activeModule);
   const isNameScoped = isEmployeeScoped && activeModule !== "headcount";
@@ -109,6 +118,10 @@ export function useReportsData() {
   }, []);
 
   return {
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     activeModule,
     setActiveModule,
     dateFrom,

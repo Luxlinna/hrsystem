@@ -23,6 +23,8 @@ import { AnnouncementTableView } from "./components/AnnouncementTableView";
 import { Pagination } from "./components/Pagination";
 import { AnnouncementDrawer } from "./components/AnnouncementDrawer";
 import { AnnouncementComposerModal } from "./components/AnnouncementComposerModal";
+import { useBranchScope } from "@/context/BranchContext";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 
 const INITIAL_FORM: AnnouncementFormState = {
   title: "",
@@ -34,13 +36,25 @@ const INITIAL_FORM: AnnouncementFormState = {
   pinned: false,
   visible_to: "all",
   urgent_alert_hours: 24,
+  branch_id: null,
 };
 
 export default function Announcements() {
   const { user } = useAuth();
-  const { role, isAdmin } = usePermissions();
-  const canManage = isAdmin || (!!role && !["Employee", "Staff"].includes(role.name));
-  const mustAcceptUrgentAnnouncements = !canManage;
+  const { role, isAdmin, isBranchAdmin } = usePermissions();
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' announcements/bulletins.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
+  const canManage =
+    (isAdmin || isBranchAdmin || (!!role && !["Employee", "Staff", "Chairman"].includes(role.name))) &&
+    !isPartnerBranchBlocked;
+  const mustAcceptUrgentAnnouncements = !canManage && !isPartnerBranchBlocked;
   const authorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -86,11 +100,18 @@ export default function Announcements() {
   );
 
   const loadAnnouncements = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setAnnouncements([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     let query = supabase
       .from("announcements")
-      .select("id, title, content, category, priority, author_name, author_role, pinned, visible_to, published_at, urgent_alert_hours, view_count, created_at")
+      .select("id, title, content, category, priority, author_name, author_role, pinned, visible_to, published_at, urgent_alert_hours, view_count, created_at, branch_id")
       .is("deleted_at", null)
+      .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
       .order("pinned", { ascending: false })
       .order("published_at", { ascending: false });
 
@@ -103,7 +124,7 @@ export default function Announcements() {
       setAnnouncements(data);
     }
     setLoading(false);
-  }, [canManage]);
+  }, [isPartnerBranchBlocked, targetBranch, canManage]);
 
   const loadAcceptedUrgent = useCallback(async () => {
     if (!user?.id || !mustAcceptUrgentAnnouncements) {
@@ -265,6 +286,7 @@ export default function Announcements() {
           urgent_alert_hours: form.urgent_alert_hours,
           pinned: form.pinned,
           visible_to: form.visible_to,
+          branch_id: isSuperAdmin ? form.branch_id : targetBranch,
         })
         .eq("id", editingId);
 
@@ -293,6 +315,7 @@ export default function Announcements() {
           content: form.content.trim(),
           published_at: new Date().toISOString(),
           view_count: 0,
+          branch_id: isSuperAdmin ? form.branch_id : targetBranch,
         })
         .select()
         .single();
@@ -320,12 +343,13 @@ export default function Announcements() {
       ...INITIAL_FORM,
       author_name: authorName,
       author_role: role?.name || "Corporate Operations",
+      branch_id: isSuperAdmin ? null : userBranchId,
     });
     setEditingId(null);
     setShowCreateModal(false);
     setComposerMode("write");
     loadAnnouncements();
-  }, [canManage, submitting, form, editingId, authorName, role?.name, alertEmployeesAboutAnnouncement, loadAnnouncements]);
+  }, [canManage, submitting, form, editingId, isSuperAdmin, targetBranch, userBranchId, authorName, role?.name, alertEmployeesAboutAnnouncement, loadAnnouncements]);
 
   const openEditModal = useCallback((a: Announcement, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -340,6 +364,7 @@ export default function Announcements() {
       pinned: a.pinned,
       visible_to: a.visible_to,
       urgent_alert_hours: a.urgent_alert_hours || 24,
+      branch_id: a.branch_id,
     });
     setEditingId(a.id);
     setComposerMode("write");
@@ -459,17 +484,36 @@ export default function Announcements() {
       ...INITIAL_FORM,
       author_name: authorName,
       author_role: role?.name || "Corporate Operations",
+      branch_id: isSuperAdmin ? null : userBranchId,
     });
     setEditingId(null);
     setComposerMode("write");
     setShowCreateModal(true);
-  }, [authorName, role?.name]);
+  }, [authorName, role?.name, isSuperAdmin, userBranchId]);
 
   if (loading && announcements.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading company announcements...</p>
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
+        <AnnouncementHeader
+          publishedCount={0}
+          canManage={false}
+          onExportCSV={() => {}}
+          onOpenCreateModal={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Announcements & Bulletins"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }
@@ -601,6 +645,9 @@ export default function Announcements() {
         composerMode={composerMode}
         setComposerMode={setComposerMode}
         onSubmit={handleCreate}
+        isSuperAdmin={isSuperAdmin}
+        userBranchName={userBranchName}
+        userBranchId={userBranchId}
       />
     </div>
   );

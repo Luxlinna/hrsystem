@@ -10,10 +10,14 @@ import { Pagination } from "./components/Pagination";
 import { DocumentDrawer } from "./components/DocumentDrawer";
 import { FolderModal } from "./components/FolderModal";
 import { DocumentUploadModal } from "./components/DocumentUploadModal";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useDocuments } from "./hooks/useDocuments";
 
 export default function DocumentsPage() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     canManageDocs,
     documents,
     folders,
@@ -128,6 +132,25 @@ export default function DocumentsPage() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading document repository...</p>
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
+        <DocumentsHeader
+          totalFiles={0}
+          canManageDocs={false}
+          onExportCSV={() => {}}
+          onOpenUploadModal={() => {}}
+          onOpenNewFolder={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Documents & Policies Repository"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

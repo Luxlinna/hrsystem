@@ -186,7 +186,7 @@ export function useCompanyDashboard() {
     setDeptData(depts);
     setLastUpdated(new Date());
     setLoading(false);
-  }, [user?.id, effectiveBranchId]);
+  }, [user?.id, isPartnerBranchBlocked, targetBranch]);
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;

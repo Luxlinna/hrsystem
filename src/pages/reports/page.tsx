@@ -2,11 +2,15 @@ import { useState } from "react";
 import { ReportsHeader } from "./components/ReportsHeader";
 import { ReportsSidebarFilters } from "./components/filters/ReportsSidebarFilters";
 import ReportViewer from "./components/ReportViewer";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useReportsData } from "./hooks/useReportsData";
 import { exportToCSV, exportToExcel, exportToPDF } from "./exportUtils";
 
 export default function ReportsPage() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     activeModule,
     setActiveModule,
     dateFrom,
@@ -51,6 +55,25 @@ export default function ReportsPage() {
     exportToPDF(activeModule, reportColumns, reportData, dateFrom, dateTo, isDateScoped);
     setTimeout(() => setExporting(null), 800);
   };
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">
+        <ReportsHeader
+          reportDataLength={0}
+          exporting={null}
+          onExportPDF={() => {}}
+          onExportCSV={() => {}}
+          onExportExcel={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Executive Reports & Analytics"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">

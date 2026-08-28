@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
 import { logActivity } from "@/lib/audit";
 import { getDocumentUploadUrl } from "@/lib/r2-storage";
 import type {
@@ -27,8 +28,19 @@ import { exportDocumentsCSV } from "../exportUtils";
 export function useDocuments() {
   const { user } = useAuth();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
-  const { role, isAdmin } = usePermissions();
-  const canManageDocs = isAdmin || (!!role && role.name !== "Staff");
+  const { role, isAdmin, isBranchAdmin } = usePermissions();
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' documents/policies.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
+  const canManageDocs =
+    (isAdmin || isBranchAdmin || (!!role && !["Employee", "Staff", "Chairman"].includes(role.name))) &&
+    !isPartnerBranchBlocked;
 
   const [documents, setDocuments] = useState<Document[]>([]);
   const [folders, setFolders] = useState<DocumentFolder[]>(DEFAULT_FOLDERS);
@@ -70,24 +82,34 @@ export function useDocuments() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setDocuments([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     let docQuery = supabase
       .from("documents")
       .select("*")
       .is("deleted_at", null)
+      .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
       .order("created_at", { ascending: false });
 
     if (!canManageDocs) {
       docQuery = docQuery.eq("visibility", "all");
     }
 
+    const folderQuery = supabase
+      .from("document_folders")
+      .select("*")
+      .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
     const [docRes, folderRes] = await Promise.all([
       docQuery,
-      supabase
-        .from("document_folders")
-        .select("*")
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: true }),
+      folderQuery,
     ]);
 
     setDocuments((docRes.data as Document[]) || []);
@@ -97,7 +119,7 @@ export function useDocuments() {
       setFolders(DEFAULT_FOLDERS);
     }
     setLoading(false);
-  }, [canManageDocs]);
+  }, [isPartnerBranchBlocked, targetBranch, canManageDocs]);
 
   useEffect(() => {
     loadData();
@@ -225,7 +247,7 @@ export function useDocuments() {
       if (editingDoc) {
         ({ error } = await supabase.from("documents").update(payload).eq("id", editingDoc.id));
       } else {
-        ({ error } = await supabase.from("documents").insert({ ...payload, status: "active" }));
+        ({ error } = await supabase.from("documents").insert({ ...payload, status: "active", branch_id: targetBranch }));
       }
 
       setSubmitting(false);
@@ -251,7 +273,7 @@ export function useDocuments() {
         loadData();
       }
     },
-    [form, canManageDocs, submitting, fileUpload, fileLink, editingDoc, actorName, role?.name, loadData]
+    [form, canManageDocs, submitting, fileUpload, fileLink, editingDoc, actorName, role?.name, targetBranch, loadData]
   );
 
   const handleArchive = useCallback(
@@ -427,6 +449,7 @@ export function useDocuments() {
           description: folderForm.description.trim() || null,
           is_system: false,
           sort_order: folders.length + 1,
+          branch_id: targetBranch,
         };
 
         const { error } = await supabase.from("document_folders").insert(newFolderPayload);
@@ -461,7 +484,7 @@ export function useDocuments() {
       setShowFolderModal(false);
       loadData();
     },
-    [folderForm, canManageDocs, folderSubmitting, editingFolder, folders.length, actorName, role?.name, loadData]
+    [folderForm, canManageDocs, folderSubmitting, editingFolder, folders.length, actorName, role?.name, targetBranch, loadData]
   );
 
   const handleDeleteFolder = useCallback(
@@ -611,6 +634,10 @@ export function useDocuments() {
   }, [page, docTotalPages]);
 
   return {
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     canManageDocs,
     documents,
     folders,

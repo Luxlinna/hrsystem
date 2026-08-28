@@ -12,6 +12,7 @@ export interface Announcement {
   urgent_alert_hours: number | null;
   view_count: number;
   created_at: string;
+  branch_id: string | null;
 }
 
 export type AnnouncementTabKey = "all" | "urgent" | "pinned" | "policies" | "management";
@@ -28,4 +29,5 @@ export interface AnnouncementFormState {
   pinned: boolean;
   visible_to: string;
   urgent_alert_hours: number;
+  branch_id: string | null;
 }

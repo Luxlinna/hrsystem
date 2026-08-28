@@ -7,10 +7,14 @@ import { PlanFormModal } from "./components/PlanFormModal";
 import { PlansTab } from "./tabs/PlansTab";
 import { EnrollmentTab } from "./tabs/EnrollmentTab";
 import { ProvidersTab } from "./tabs/ProvidersTab";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useBenefits } from "./hooks/useBenefits";
 
 export default function Benefits() {
   const {
+    isPartnerBranchBlocked,
+    userBranchName,
+    userBranchId,
     canManage,
     tab,
     setTab,
@@ -74,6 +78,24 @@ export default function Benefits() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-xs font-semibold text-gray-500">Loading benefits administration...</p>
+      </div>
+    );
+  }
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
+        <BenefitsHeader
+          canManage={false}
+          onExportCSV={() => {}}
+          onOpenNewPlanModal={() => {}}
+          onOpenEnrollModal={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="Benefits & Compensation"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
       </div>
     );
   }

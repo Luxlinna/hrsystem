@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { useBranchScope } from "@/context/BranchContext";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import type { AuditLog, ExportFormat } from "./types";
 import { MODULES } from "./constants";
 import { downloadCSV, exportExcel, exportPDF } from "./exportUtils";
@@ -10,6 +12,15 @@ import { AuditLogItem } from "./components/AuditLogItem";
 import { Pagination } from "./components/Pagination";
 
 export default function AuditLogPage() {
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' audit logs.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [moduleFilter, setModuleFilter] = useState("all");
@@ -25,8 +36,20 @@ export default function AuditLogPage() {
   const [newCount, setNewCount] = useState(0);
 
   const fetchLogs = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setLogs([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    let q = supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(200);
+    let q = supabase
+      .from("audit_logs")
+      .select("*")
+      .eq("branch_id", targetBranch)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
     if (moduleFilter !== "all") q = q.eq("module", moduleFilter);
     if (actionFilter !== "all") q = q.eq("action", actionFilter);
     if (dateFrom) q = q.gte("created_at", dateFrom);
@@ -34,20 +57,24 @@ export default function AuditLogPage() {
     const { data } = await q;
     setLogs(data || []);
     setLoading(false);
-  }, [moduleFilter, actionFilter, dateFrom, dateTo]);
+  }, [isPartnerBranchBlocked, targetBranch, moduleFilter, actionFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
 
   useEffect(() => {
+    if (isPartnerBranchBlocked || !targetBranch) return;
+
     const channel = supabase
       .channel("audit-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_logs" }, (payload) => {
         const newLog = payload.new as AuditLog;
-        setLogs((prev) => [newLog, ...prev]);
-        setNewCount((c) => c + 1);
-        setTimeout(() => setNewCount((c) => Math.max(0, c - 1)), 5000);
+        if (newLog.branch_id === targetBranch) {
+          setLogs((prev) => [newLog, ...prev]);
+          setNewCount((c) => c + 1);
+          setTimeout(() => setNewCount((c) => Math.max(0, c - 1)), 5000);
+        }
       })
       .subscribe((status) => {
         setIsLive(status === "SUBSCRIBED");
@@ -56,7 +83,7 @@ export default function AuditLogPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   const filtered = useMemo(() => {
     if (!search) return logs;
@@ -120,6 +147,24 @@ export default function AuditLogPage() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5) as [string, number][];
   }, [statsByModule]);
+
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">
+        <AuditHeader
+          isLive={false}
+          newCount={0}
+          exporting={null}
+          onExport={() => {}}
+        />
+        <PartnerBranchPrivacyShield
+          moduleName="System Audit & Security Logs"
+          userBranchName={userBranchName}
+          hasNoBranch={!userBranchId}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F8F7] p-6">

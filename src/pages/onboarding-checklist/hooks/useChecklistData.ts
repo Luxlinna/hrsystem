@@ -98,7 +98,7 @@ export function useChecklistData() {
     } finally {
       setLoading(false);
     }
-  }, [targetHireParam]);
+  }, [targetHireParam, isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadData();

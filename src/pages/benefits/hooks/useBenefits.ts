@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
 import { logActivity } from "@/lib/audit";
 import type {
   Employee,
@@ -29,8 +30,19 @@ export const INITIAL_PLAN_FORM: PlanFormState = {
 export function useBenefits() {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' benefit plans.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
-  const canManage = isAdmin || (!!role && role.name !== "Chairman");
+  const canManage =
+    (isAdmin || isBranchAdmin || (!!role && !["Employee", "Staff", "Chairman"].includes(role.name))) &&
+    !isPartnerBranchBlocked;
 
   const [tab, setTab] = useState<BenefitTabKey>("plans");
   const [plans, setPlans] = useState<BenefitPlan[]>([]);
@@ -67,25 +79,44 @@ export function useBenefits() {
   const [planForm, setPlanForm] = useState<PlanFormState>(INITIAL_PLAN_FORM);
 
   const loadData = useCallback(async () => {
+    if (isPartnerBranchBlocked || !targetBranch) {
+      setPlans([]);
+      setEnrollments([]);
+      setEmployees([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const [{ data: p }, { data: e }, { data: emps }] = await Promise.all([
-      supabase.from("benefit_plans").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("benefit_plans")
+        .select("*")
+        .eq("branch_id", targetBranch)
+        .order("created_at", { ascending: false }),
       supabase
         .from("benefit_enrollments")
-        .select("*, employees(id, first_name, last_name, department, role, avatar_url), benefit_plans(id, name, type, provider, coverage_amount, employee_contribution)")
+        .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), benefit_plans(id, name, type, provider, coverage_amount, employee_contribution)")
         .order("created_at", { ascending: false }),
       supabase
         .from("employees")
-        .select("id, first_name, last_name, department, role, avatar_url")
+        .select("id, first_name, last_name, department, role, avatar_url, branch_id")
+        .eq("branch_id", targetBranch)
         .is("deleted_at", null)
         .order("first_name"),
     ]);
 
+    const empList = (emps as Employee[]) || [];
+    const empIds = new Set(empList.map((x) => x.id));
+    const filteredEnrollments = ((e as unknown as Enrollment[]) || []).filter(
+      (en: any) => empIds.has(en.employee_id) || en.employees?.branch_id === targetBranch
+    );
+
     setPlans((p as BenefitPlan[]) || []);
-    setEnrollments((e as unknown as Enrollment[]) || []);
-    setEmployees((emps as Employee[]) || []);
+    setEnrollments(filteredEnrollments);
+    setEmployees(empList);
     setLoading(false);
-  }, []);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadData();
@@ -110,13 +141,12 @@ export function useBenefits() {
     return plans.filter((p) => {
       if (planTypeFilter !== "all" && p.type !== planTypeFilter) return false;
       if (planStatusFilter !== "all" && p.status !== planStatusFilter) return false;
-      if (planSearchQuery.trim()) {
-        const q = planSearchQuery.toLowerCase().trim();
-        const name = (p.name || "").toLowerCase();
-        const provider = (p.provider || "").toLowerCase();
-        const desc = (p.description || "").toLowerCase();
-        if (!name.includes(q) && !provider.includes(q) && !desc.includes(q)) return false;
-      }
+      if (
+        planSearchQuery &&
+        !p.name.toLowerCase().includes(planSearchQuery.toLowerCase()) &&
+        !p.provider.toLowerCase().includes(planSearchQuery.toLowerCase())
+      )
+        return false;
       return true;
     });
   }, [plans, planTypeFilter, planStatusFilter, planSearchQuery]);
@@ -126,14 +156,17 @@ export function useBenefits() {
     return enrollments.filter((e) => {
       if (enrollPlanFilter !== "all" && e.plan_id !== enrollPlanFilter) return false;
       if (enrollStatusFilter !== "all" && e.status !== enrollStatusFilter) return false;
-      if (enrollDeptFilter !== "all" && e.employees?.department !== enrollDeptFilter) return false;
-      if (enrollSearchQuery.trim()) {
-        const q = enrollSearchQuery.toLowerCase().trim();
-        const name = `${e.employees?.first_name || ""} ${e.employees?.last_name || ""}`.toLowerCase();
-        const empRole = (e.employees?.role || "").toLowerCase();
-        const plan = (e.benefit_plans?.name || "").toLowerCase();
-        const provider = (e.benefit_plans?.provider || "").toLowerCase();
-        if (!name.includes(q) && !empRole.includes(q) && !plan.includes(q) && !provider.includes(q)) return false;
+      if (
+        enrollDeptFilter !== "all" &&
+        e.employees &&
+        e.employees.department !== enrollDeptFilter
+      )
+        return false;
+      if (enrollSearchQuery) {
+        const q = enrollSearchQuery.toLowerCase();
+        const empName = `${e.employees?.first_name || ""} ${e.employees?.last_name || ""}`.toLowerCase();
+        const planName = (e.benefit_plans?.name || "").toLowerCase();
+        if (!empName.includes(q) && !planName.includes(q)) return false;
       }
       return true;
     });
@@ -160,7 +193,7 @@ export function useBenefits() {
     }));
   }, [plans, enrollments]);
 
-  // --- Actions ---
+  // Mutations
   const toggleEnrollmentStatus = useCallback(
     async (enrollment: Enrollment) => {
       if (!canManage) return;
@@ -175,82 +208,57 @@ export function useBenefits() {
         return;
       }
 
-      toast(
-        nextStatus === "enrolled" ? "Re-Enrolled" : "Opted Out",
-        `${enrollment.employees?.first_name ?? "Employee"} is now ${nextStatus.replace("_", " ")}.`,
-        "success"
-      );
-
-      logActivity({
-        module: "benefits",
-        action: "updated",
-        entityType: "benefit_enrollment",
-        entityId: enrollment.id,
-        actorName,
-        actorRole: role?.name || "Unknown",
-        description: `${enrollment.employees?.first_name ?? "Employee"} ${
-          enrollment.employees?.last_name ?? ""
-        } is now ${nextStatus.replace("_", " ")} in ${enrollment.benefit_plans?.name ?? "benefit plan"}`,
-      });
-
-      setEnrollments((prev) =>
-        prev.map((e) => (e.id === enrollment.id ? { ...e, status: nextStatus } : e))
-      );
+      toast("Status Updated", `Enrollment updated to ${nextStatus.replace("_", " ")}`, "success");
+      loadData();
     },
-    [canManage, actorName, role?.name]
+    [canManage, loadData]
   );
 
   const handleBatchEnroll = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (enrollEmployeeIds.length === 0 || !enrollForm.plan_id || saving) return;
+      if (!enrollForm.plan_id || enrollEmployeeIds.length === 0 || !canManage || saving) return;
       setSaving(true);
 
-      const plan = plans.find((p) => p.id === enrollForm.plan_id);
-      const payload = enrollEmployeeIds.map((empId) => ({
-        employee_id: empId,
+      const rows = enrollEmployeeIds.map((empId) => ({
         plan_id: enrollForm.plan_id,
+        employee_id: empId,
         status: "enrolled",
       }));
 
-      const { error } = await supabase.from("benefit_enrollments").insert(payload);
-      setSaving(false);
+      const { error } = await supabase.from("benefit_enrollments").upsert(rows, {
+        onConflict: "plan_id,employee_id",
+      });
 
+      setSaving(false);
       if (error) {
-        toast("Error", "Failed to save enrollment batch", "error");
+        toast("Error", "Failed to enroll employees", "error");
         return;
       }
 
-      setEnrollModal(false);
-      setEnrollForm({ plan_id: "" });
-      setEnrollEmployeeIds([]);
-      toast(
-        "Enrollment Saved",
-        `${enrollEmployeeIds.length} employee${
-          enrollEmployeeIds.length === 1 ? "" : "s"
-        } enrolled in ${plan?.name ?? "benefit plan"}`,
-        "success"
-      );
-
+      const planName = plans.find((p) => p.id === enrollForm.plan_id)?.name || "Plan";
+      toast("Enrolled Successfully", `Added ${enrollEmployeeIds.length} members to "${planName}"`, "success");
       logActivity({
         module: "benefits",
         action: "created",
         entityType: "benefit_enrollment",
         actorName,
         actorRole: role?.name || "Unknown",
-        description: `${enrollEmployeeIds.length} employee${
-          enrollEmployeeIds.length === 1 ? "" : "s"
-        } enrolled in ${plan?.name ?? "a benefit plan"}`,
+        description: `Enrolled ${enrollEmployeeIds.length} employees into benefit plan "${planName}"`,
       });
+
+      setEnrollModal(false);
+      setEnrollEmployeeIds([]);
+      setEnrollForm({ plan_id: "" });
       loadData();
     },
-    [enrollEmployeeIds, enrollForm.plan_id, saving, plans, actorName, role?.name, loadData]
+    [enrollEmployeeIds, enrollForm.plan_id, saving, plans, canManage, actorName, role?.name, loadData]
   );
 
   const handleCreatePlan = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!planForm.name || !planForm.provider || !canManage || saving) return;
+      if (!planForm.name || !planForm.provider || !canManage || saving || !targetBranch) return;
       setSaving(true);
 
       const { error } = await supabase.from("benefit_plans").insert([
@@ -263,6 +271,7 @@ export function useBenefits() {
           eligible_count: Number(planForm.eligible_count || 50),
           description: planForm.description || null,
           status: planForm.status || "active",
+          branch_id: targetBranch,
         },
       ]);
 
@@ -285,7 +294,7 @@ export function useBenefits() {
       });
       loadData();
     },
-    [planForm, canManage, saving, actorName, role?.name, loadData]
+    [planForm, canManage, saving, targetBranch, actorName, role?.name, loadData]
   );
 
   const openEditPlan = useCallback(
@@ -421,6 +430,10 @@ export function useBenefits() {
   }, []);
 
   return {
+    isPartnerBranchBlocked,
+    userBranchId,
+    userBranchName,
+    targetBranch,
     canManage,
     tab,
     setTab,
