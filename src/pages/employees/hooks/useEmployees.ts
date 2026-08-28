@@ -33,6 +33,8 @@ export function useEmployees() {
     effectiveBranchId,
     userBranchId,
     userBranchName,
+    targetBranch,
+    isPartnerBranchBlocked,
     branches: scopeBranches,
   } = useBranchScope();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
@@ -64,13 +66,6 @@ export function useEmployees() {
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>(INITIAL_VISIBLE_COLUMNS);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' employee roster.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
-
   const loadEmployees = useCallback(() => {
     if (isPartnerBranchBlocked || !targetBranch) {
       setEmployees([]);
@@ -79,7 +74,7 @@ export function useEmployees() {
 
     const query = supabase
       .from("employees")
-      .select("id, first_name, last_name, email, phone, role, department, branch_id, status, join_date, reports_to, avatar_url, branches(name)")
+      .select("id, first_name, last_name, email, phone, role, department, branch_id, status, join_date, reports_to, avatar_url, default_work_location_id, branches(name)")
       .is("deleted_at", null)
       .eq("branch_id", targetBranch)
       .order("first_name");
@@ -350,6 +345,7 @@ export function useEmployees() {
           status: form.status,
           join_date: form.join_date,
           reports_to: form.reports_to || null,
+          default_work_location_id: form.default_work_location_id || null,
         })
         .select()
         .single();

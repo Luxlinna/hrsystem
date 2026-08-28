@@ -7,6 +7,15 @@ export interface Employee {
   avatar_url: string | null;
   branch_id?: string | null;
   branches?: { id: string; name: string } | null;
+  default_work_location_id?: string | null;
+}
+
+export interface WorkLocation {
+  id: string;
+  branch_id: string;
+  name: string;
+  description?: string | null;
+  is_default: boolean;
 }
 
 export interface AttendanceRecord {
@@ -19,6 +28,8 @@ export interface AttendanceRecord {
   late_minutes: number;
   early_leave_minutes?: number | null;
   notes: string | null;
+  work_location_id?: string | null;
+  work_location?: { id: string; name: string } | null;
   employees?: Employee;
 }
 
@@ -30,6 +41,7 @@ export interface NewRecordForm {
   status: string;
   late_minutes: number;
   notes: string;
+  work_location_id: string;
 }
 
 export type AttendanceTabKey = "records" | "live" | "matrix" | "summary";

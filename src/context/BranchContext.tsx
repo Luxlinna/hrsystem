@@ -16,10 +16,12 @@ export interface BranchContextType {
   loading: boolean;
   userBranchId: string | null;
   userBranchName: string | null;
-  selectedBranchId: string; // "all" | branch UUID
+  selectedBranchId: string;
   setSelectedBranchId: (id: string) => void;
-  effectiveBranchId: string | null; // null if "all", or specific UUID
+  effectiveBranchId: string | null;
   effectiveBranchName: string | null;
+  targetBranch: string | null;
+  isPartnerBranchBlocked: boolean;
   isSuperAdmin: boolean;
   isBranchAdmin: boolean;
   isBranchScoped: boolean;
@@ -37,7 +39,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const [userBranchId, setUserBranchId] = useState<string | null>(null);
   const [userBranchName, setUserBranchName] = useState<string | null>(null);
   const [storedBranchId, setStoredBranchId] = useState<string>(() => {
-    return localStorage.getItem("hrm_selected_branch_id") || "all";
+    const saved = localStorage.getItem("hrm_selected_branch_id");
+    return saved && saved !== "all" ? saved : "";
   });
 
   const isSuperAdmin = useMemo(() => {
@@ -91,14 +94,22 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const selectedBranchId = useMemo(() => {
     // Non-Super-Admin is strictly locked to their own assigned branch
     if (!isSuperAdmin) {
-      return userBranchId || "all";
+      return userBranchId || (branches[0]?.id ?? "");
     }
-    return storedBranchId;
-  }, [isSuperAdmin, userBranchId, storedBranchId]);
+    // Super Admin: check if stored branch exists in branches list
+    if (storedBranchId && branches.some((b) => b.id === storedBranchId)) {
+      return storedBranchId;
+    }
+    // Default to user's assigned branch or first branch in list
+    if (userBranchId && branches.some((b) => b.id === userBranchId)) {
+      return userBranchId;
+    }
+    return branches[0]?.id || "";
+  }, [isSuperAdmin, userBranchId, storedBranchId, branches]);
 
   const setSelectedBranchId = useCallback(
     (id: string) => {
-      if (!isSuperAdmin) return; // Disallow non-super-admins from changing branch
+      if (!isSuperAdmin) return;
       setStoredBranchId(id);
       localStorage.setItem("hrm_selected_branch_id", id);
     },
@@ -106,12 +117,25 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   );
 
   const effectiveBranchId = useMemo(() => {
-    if (selectedBranchId === "all") return null;
-    return selectedBranchId;
+    return selectedBranchId || null;
   }, [selectedBranchId]);
 
+  const targetBranch = useMemo(() => {
+    if (isSuperAdmin) {
+      return effectiveBranchId;
+    }
+    return userBranchId;
+  }, [isSuperAdmin, effectiveBranchId, userBranchId]);
+
+  const isPartnerBranchBlocked = useMemo(() => {
+    // Super Admin can access any branch selected
+    if (isSuperAdmin) return false;
+    // Regular employee / Branch Admin is blocked only if they have no branch assigned
+    return !userBranchId;
+  }, [isSuperAdmin, userBranchId]);
+
   const effectiveBranchName = useMemo(() => {
-    if (!effectiveBranchId) return "All Branches";
+    if (!effectiveBranchId) return "Select Branch";
     const found = branches.find((b) => b.id === effectiveBranchId);
     return found?.name || userBranchName || "Selected Branch";
   }, [effectiveBranchId, branches, userBranchName]);
@@ -128,6 +152,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       setSelectedBranchId,
       effectiveBranchId,
       effectiveBranchName,
+      targetBranch,
+      isPartnerBranchBlocked,
       isSuperAdmin,
       isBranchAdmin,
       isBranchScoped,
@@ -142,6 +168,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       setSelectedBranchId,
       effectiveBranchId,
       effectiveBranchName,
+      targetBranch,
+      isPartnerBranchBlocked,
       isSuperAdmin,
       isBranchAdmin,
       isBranchScoped,
@@ -159,3 +187,4 @@ export function useBranchScope() {
   }
   return context;
 }
+

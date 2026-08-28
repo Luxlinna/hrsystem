@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { DatePreset, ViewMode } from "../types";
+import type { DatePreset, ViewMode, WorkLocation } from "../types";
 import { STATUS_CONFIG } from "../constants";
 
 interface AttendanceControlBarProps {
@@ -20,6 +20,9 @@ interface AttendanceControlBarProps {
   setFilterDepartment: (dept: string) => void;
   filterStatus: string;
   setFilterStatus: (status: string) => void;
+  workLocations: WorkLocation[];
+  filterWorkLocation: string;
+  setFilterWorkLocation: (id: string) => void;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   todayYMD: string;
@@ -43,6 +46,9 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   setFilterDepartment,
   filterStatus,
   setFilterStatus,
+  workLocations,
+  filterWorkLocation,
+  setFilterWorkLocation,
   viewMode,
   setViewMode,
   todayYMD,
@@ -51,12 +57,14 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
     searchQuery ||
     filterDepartment !== "all" ||
     filterStatus !== "all" ||
+    filterWorkLocation !== "all" ||
     filterDatePreset !== "all";
 
   const handleResetFilters = () => {
     setSearchQuery("");
     setFilterDepartment("all");
     setFilterStatus("all");
+    setFilterWorkLocation("all");
     setFilterDatePreset("all");
     setFromDate("");
     setToDate("");
@@ -177,6 +185,22 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
             </option>
           ))}
         </select>
+
+        {/* Work Site Filter */}
+        {workLocations.length > 0 && (
+          <select
+            value={filterWorkLocation}
+            onChange={(e) => setFilterWorkLocation(e.target.value)}
+            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer max-w-[130px] truncate font-medium"
+          >
+            <option value="all">🏢 All Sites</option>
+            {workLocations.map((wl) => (
+              <option key={wl.id} value={wl.id}>
+                {wl.name}
+              </option>
+            ))}
+          </select>
+        )}
 
         {/* View Mode Toggle */}
         <div className="flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200/60">

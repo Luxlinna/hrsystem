@@ -1,5 +1,5 @@
-import React, { memo } from "react";
-import type { Employee, NewRecordForm } from "../types";
+import React, { memo, useEffect } from "react";
+import type { Employee, NewRecordForm, WorkLocation } from "../types";
 import { STATUS_CONFIG } from "../constants";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 
@@ -8,6 +8,7 @@ interface LogAttendanceModalProps {
   onClose: () => void;
   canManage: boolean;
   employees: Employee[];
+  workLocations: WorkLocation[];
   myEmployee: Employee | null;
   newRecord: NewRecordForm;
   setNewRecord: React.Dispatch<React.SetStateAction<NewRecordForm>>;
@@ -20,6 +21,7 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
   onClose,
   canManage,
   employees,
+  workLocations,
   myEmployee,
   newRecord,
   setNewRecord,
@@ -27,6 +29,17 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
   onSubmit,
 }: LogAttendanceModalProps) {
   if (!isOpen) return null;
+
+  // Auto-set work_location_id to the selected employee's default work location
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!newRecord.employee_id) return;
+    const emp = employees.find((e) => e.id === newRecord.employee_id);
+    if (emp?.default_work_location_id && !newRecord.work_location_id) {
+      setNewRecord((p) => ({ ...p, work_location_id: emp.default_work_location_id! }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newRecord.employee_id]);
 
   return (
     <div
@@ -106,6 +119,31 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
               </select>
             </div>
           </div>
+
+          {/* Work Site */}
+          {workLocations.length > 0 && (
+            <div>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                <i className="ri-building-2-line mr-1" />
+                Work Site
+              </label>
+              <select
+                value={newRecord.work_location_id}
+                onChange={(e) => setNewRecord({ ...newRecord, work_location_id: e.target.value })}
+                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              >
+                <option value="">— Select work site —</option>
+                {workLocations.map((wl) => (
+                  <option key={wl.id} value={wl.id}>
+                    {wl.name}{wl.is_default ? " (Default)" : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-gray-400 mt-1">
+                Which site did this employee work at? Defaults to their assigned site.
+              </p>
+            </div>
+          )}
 
           {newRecord.status !== "absent" && newRecord.status !== "holiday" && (
             <div className="grid grid-cols-2 gap-3.5">

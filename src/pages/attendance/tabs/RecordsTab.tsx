@@ -105,6 +105,21 @@ export const RecordsTab = memo(function RecordsTab({
                         {emp?.branches?.name && (
                           <span className="text-gray-400 block text-[10px] mt-0.5">{emp.branches.name}</span>
                         )}
+                        {r.work_location?.name && (
+                          <span
+                            className={`flex items-center gap-1 text-[10px] font-semibold mt-0.5 ${
+                              r.work_location_id !== emp?.default_work_location_id
+                                ? "text-amber-600"
+                                : "text-emerald-600"
+                            }`}
+                          >
+                            <i className="ri-building-2-line" />
+                            {r.work_location.name}
+                            {r.work_location_id !== emp?.default_work_location_id && emp?.default_work_location_id && (
+                              <span className="ml-0.5 px-1 py-px bg-amber-100 text-amber-700 rounded text-[9px] font-bold">Visiting</span>
+                            )}
+                          </span>
+                        )}
                       </td>
 
                       <td className="px-5 py-3.5 whitespace-nowrap font-bold text-gray-900">
@@ -256,7 +271,24 @@ export const RecordsTab = memo(function RecordsTab({
                       year: "numeric",
                     })}
                   </span>
-                  <span className="font-semibold text-gray-600">{emp?.department || "General"}</span>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="font-semibold text-gray-600">{emp?.department || "General"}</span>
+                    {r.work_location?.name && (
+                      <span
+                        className={`flex items-center gap-1 text-[10px] font-semibold ${
+                          r.work_location_id !== emp?.default_work_location_id
+                            ? "text-amber-600"
+                            : "text-emerald-600"
+                        }`}
+                      >
+                        <i className="ri-building-2-line" />
+                        {r.work_location.name}
+                        {r.work_location_id !== emp?.default_work_location_id && emp?.default_work_location_id && (
+                          <span className="ml-0.5 px-1 py-px bg-amber-100 text-amber-700 rounded text-[9px] font-bold">Visiting</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );

@@ -1,6 +1,13 @@
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
 import type { Branch, Employee, EmployeeFormState } from "../types";
 import { DEPARTMENTS } from "../constants";
+import { supabase } from "@/lib/supabase";
+
+interface WorkLocation {
+  id: string;
+  name: string;
+  is_default: boolean;
+}
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
@@ -26,6 +33,31 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
   onSubmit,
 }: AddEmployeeModalProps) {
   if (!isOpen) return null;
+
+  // Fetch work sites whenever selected branch changes
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [workSites, setWorkSites] = useState<WorkLocation[]>([]);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!form.branch_id) { setWorkSites([]); return; }
+    supabase
+      .from("work_locations")
+      .select("id, name, is_default")
+      .eq("branch_id", form.branch_id)
+      .is("deleted_at", null)
+      .order("is_default", { ascending: false })
+      .order("name")
+      .then(({ data }) => {
+        const sites = (data as WorkLocation[]) || [];
+        setWorkSites(sites);
+        // Auto-select the default site if none chosen yet
+        if (!form.default_work_location_id) {
+          const def = sites.find((s) => s.is_default);
+          if (def) setForm((p) => ({ ...p, default_work_location_id: def.id }));
+        }
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.branch_id]);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4">
@@ -140,6 +172,32 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
                 </p>
               )}
             </div>
+
+            {/* Default Work Site — only shown when branch has work_locations */}
+            {workSites.length > 0 && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <i className="ri-building-2-line mr-1 text-[#253C7D]" />
+                  Default Work Site
+                </label>
+                <select
+                  value={form.default_work_location_id}
+                  onChange={(e) => setForm({ ...form, default_work_location_id: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:border-transparent bg-white cursor-pointer"
+                >
+                  <option value="">— Not assigned —</option>
+                  {workSites.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}{s.is_default ? " (Default)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Which site does this employee normally work at? Used to auto-fill attendance records.
+                </p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Reports To</label>
               <select

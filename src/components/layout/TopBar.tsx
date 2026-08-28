@@ -141,9 +141,9 @@ export default function TopBar() {
                   value={selectedBranchId}
                   onChange={(e) => setSelectedBranchId(e.target.value)}
                   className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer max-w-[150px] truncate"
-                  title="Filter system by branch"
+                  title="Select branch"
                 >
-                  <option value="all">🌐 All Branches</option>
+                  {branches.length === 0 && <option value="">No Branches</option>}
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}

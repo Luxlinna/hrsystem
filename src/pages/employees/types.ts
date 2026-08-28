@@ -12,6 +12,7 @@ export interface Employee {
   avatar_url?: string | null;
   reports_to?: string | null;
   branches?: { name: string } | null;
+  default_work_location_id?: string | null;
 }
 
 export interface Branch {
@@ -41,6 +42,7 @@ export interface EmployeeFormState {
   status: string;
   join_date: string;
   reports_to: string;
+  default_work_location_id: string;
 }
 
 export interface ReportEntry {

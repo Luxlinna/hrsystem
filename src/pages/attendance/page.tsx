@@ -14,6 +14,7 @@ import type {
   ViewMode,
   DatePreset,
   EmployeeSummaryItem,
+  WorkLocation,
 } from "./types";
 import { calcHours, calcHoursNum } from "./constants";
 import { AttendanceHeader } from "./components/AttendanceHeader";
@@ -30,14 +31,7 @@ export default function AttendancePage() {
   const { user } = useAuth();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' attendance records.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const roleName = (role?.name || "").toLowerCase();
   const isLeader =
@@ -53,6 +47,7 @@ export default function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
+  const [workLocations, setWorkLocations] = useState<WorkLocation[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Tabs & Views
@@ -63,6 +58,7 @@ export default function AttendancePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterWorkLocation, setFilterWorkLocation] = useState("all");
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [filterDatePreset, setFilterDatePreset] = useState<DatePreset>("all");
@@ -99,22 +95,34 @@ export default function AttendancePage() {
     status: "ontime",
     late_minutes: 0,
     notes: "",
+    work_location_id: "",
   });
 
   const fetchData = useCallback(async () => {
     if (isPartnerBranchBlocked || !targetBranch) {
       setRecords([]);
       setEmployees([]);
+      setWorkLocations([]);
       setLoading(false);
       return;
     }
+
+    // Fetch work locations for this branch (for dropdown + filter)
+    const { data: wlData } = await supabase
+      .from("work_locations")
+      .select("id, branch_id, name, description, is_default")
+      .eq("branch_id", targetBranch)
+      .is("deleted_at", null)
+      .order("is_default", { ascending: false })
+      .order("name");
+    setWorkLocations((wlData as WorkLocation[]) || []);
 
     setLoading(true);
     try {
       if (isLeader) {
         const empQuery = supabase
           .from("employees")
-          .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name)")
+          .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id")
           .is("deleted_at", null)
           .eq("status", "active")
           .eq("branch_id", targetBranch)
@@ -132,7 +140,7 @@ export default function AttendancePage() {
         if (ids.length > 0) {
           recPromise = supabase
             .from("attendance_records")
-            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id), work_location:work_locations(id, name)")
             .is("deleted_at", null)
             .in("employee_id", ids)
             .order("date", { ascending: false })
@@ -150,7 +158,7 @@ export default function AttendancePage() {
         if (!empRecord && user?.email) {
           const { data: me } = await supabase
             .from("employees")
-            .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name)")
+            .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id")
             .eq("email", user.email)
             .eq("branch_id", targetBranch)
             .is("deleted_at", null)
@@ -165,7 +173,7 @@ export default function AttendancePage() {
           setEmployees([empRecord]);
           const { data: recData } = await supabase
             .from("attendance_records")
-            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name))")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id), work_location:work_locations(id, name)")
             .eq("employee_id", empRecord.id)
             .is("deleted_at", null)
             .order("date", { ascending: false })
@@ -274,6 +282,7 @@ export default function AttendancePage() {
     return records.filter((r) => {
       if (filterStatus !== "all" && r.status !== filterStatus) return false;
       if (filterDepartment !== "all" && r.employees?.department !== filterDepartment) return false;
+      if (filterWorkLocation !== "all" && r.work_location_id !== filterWorkLocation) return false;
 
       if (dateRangeBounds) {
         if (r.date < dateRangeBounds.start || r.date > dateRangeBounds.end) return false;
@@ -286,13 +295,14 @@ export default function AttendancePage() {
         const dept = (r.employees?.department || "").toLowerCase();
         const notes = (r.notes || "").toLowerCase();
         const dateStr = r.date.toLowerCase();
-        if (!empName.includes(q) && !empRole.includes(q) && !dept.includes(q) && !notes.includes(q) && !dateStr.includes(q)) {
+        const site = (r.work_location?.name || "").toLowerCase();
+        if (!empName.includes(q) && !empRole.includes(q) && !dept.includes(q) && !notes.includes(q) && !dateStr.includes(q) && !site.includes(q)) {
           return false;
         }
       }
       return true;
     });
-  }, [records, filterStatus, filterDepartment, dateRangeBounds, searchQuery]);
+  }, [records, filterStatus, filterDepartment, filterWorkLocation, dateRangeBounds, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -303,7 +313,7 @@ export default function AttendancePage() {
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, filterDepartment, filterStatus, filterDatePreset, fromDate, toDate, singleDate, pageSize]);
+  }, [searchQuery, filterDepartment, filterStatus, filterWorkLocation, filterDatePreset, fromDate, toDate, singleDate, pageSize]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -328,6 +338,18 @@ export default function AttendancePage() {
     () => records.filter((r) => r.date === todayYMD && r.clock_in && !r.clock_out).length,
     [records, todayYMD]
   );
+
+  // Today's attendance grouped by work site (for the site summary strip)
+  const todayByWorkSite = useMemo(() => {
+    if (workLocations.length === 0) return [];
+    const todayRecs = records.filter((r) => r.date === todayYMD);
+    return workLocations.map((wl) => {
+      const siteRecs = todayRecs.filter((r) => r.work_location_id === wl.id);
+      const present = siteRecs.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "late" || r.status === "remote").length;
+      const workingNowHere = siteRecs.filter((r) => r.clock_in && !r.clock_out).length;
+      return { ...wl, present, workingNowHere, total: siteRecs.length };
+    });
+  }, [workLocations, records, todayYMD]);
 
   const rosterRecords = useMemo(() => records.filter((r) => r.date === rosterDate), [records, rosterDate]);
 
@@ -402,6 +424,10 @@ export default function AttendancePage() {
     if (!newRecord.employee_id || !newRecord.date || saving) return;
     setSaving(true);
 
+    // Resolve work_location_id: use selected site, or fall back to employee's default
+    const selectedEmp = employees.find((e) => e.id === newRecord.employee_id);
+    const workLocationId = newRecord.work_location_id || selectedEmp?.default_work_location_id || null;
+
     const { error } = await supabase.from("attendance_records").insert({
       employee_id: newRecord.employee_id,
       date: newRecord.date,
@@ -410,6 +436,7 @@ export default function AttendancePage() {
       status: newRecord.status,
       late_minutes: newRecord.status === "late" ? newRecord.late_minutes : 0,
       notes: newRecord.notes ? newRecord.notes.trim() : null,
+      work_location_id: workLocationId,
     });
 
     setSaving(false);
@@ -441,6 +468,7 @@ export default function AttendancePage() {
       status: "ontime",
       late_minutes: 0,
       notes: "",
+      work_location_id: "",
     });
     fetchData();
   }, [newRecord, saving, todayYMD, actorName, role?.name, targetBranch, fetchData]);
@@ -459,6 +487,7 @@ export default function AttendancePage() {
         status: editingRecord.status,
         late_minutes: editingRecord.status === "late" ? editingRecord.late_minutes : 0,
         notes: editingRecord.notes ? editingRecord.notes.trim() : null,
+        work_location_id: editingRecord.work_location_id || null,
       })
       .eq("id", editingRecord.id);
 
@@ -520,11 +549,12 @@ export default function AttendancePage() {
       return;
     }
 
-    const headers = ["Employee", "Department", "Role", "Date", "Check In", "Check Out", "Hours", "Status", "Late (Min)", "Notes"];
+    const headers = ["Employee", "Department", "Role", "Work Site", "Date", "Check In", "Check Out", "Hours", "Status", "Late (Min)", "Notes"];
     const rows = filteredRecords.map((r) => [
       `"${r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "Unknown"}"`,
       `"${r.employees?.department || ""}"`,
       `"${r.employees?.role || ""}"`,
+      `"${r.work_location?.name || ""}"`,
       r.date,
       r.clock_in || "",
       r.clock_out || "",
@@ -617,6 +647,64 @@ export default function AttendancePage() {
         absentCount={absentCount}
       />
 
+      {/* Work Site Summary Strip — shows today's headcount per site */}
+      {canManage && todayByWorkSite.length > 0 && (
+        <div className="mb-6">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <i className="ri-building-2-line" /> Today's Headcount by Work Site
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {todayByWorkSite.map((site) => (
+              <button
+                key={site.id}
+                onClick={() => setFilterWorkLocation(filterWorkLocation === site.id ? "all" : site.id)}
+                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                  filterWorkLocation === site.id
+                    ? "bg-[#253C7D] border-[#253C7D] text-white shadow-lg shadow-[#253C7D]/20"
+                    : "bg-white border-gray-200 hover:border-[#253C7D]/40 hover:shadow-sm"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                    filterWorkLocation === site.id ? "bg-white/20" : "bg-[#253C7D]/8"
+                  }`}>
+                    <i className={`ri-building-2-line text-sm ${
+                      filterWorkLocation === site.id ? "text-white" : "text-[#253C7D]"
+                    }`} />
+                  </div>
+                  {site.workingNowHere > 0 && (
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                      filterWorkLocation === site.id
+                        ? "bg-white/20 text-white"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}>
+                      {site.workingNowHere} active
+                    </span>
+                  )}
+                </div>
+                <p className={`text-[12px] font-extrabold truncate ${
+                  filterWorkLocation === site.id ? "text-white" : "text-gray-800"
+                }`}>
+                  {site.name}
+                </p>
+                <p className={`text-[10px] mt-0.5 ${
+                  filterWorkLocation === site.id ? "text-white/70" : "text-gray-400"
+                }`}>
+                  {site.present} checked in today
+                </p>
+                {site.is_default && (
+                  <span className={`text-[9px] font-bold mt-1 inline-block ${
+                    filterWorkLocation === site.id ? "text-white/60" : "text-emerald-600"
+                  }`}>
+                    ★ Default
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Control Bar: Search, Date Picker, Department, Status Filters & View Mode */}
       <AttendanceControlBar
         canManage={canManage}
@@ -636,6 +724,9 @@ export default function AttendancePage() {
         setFilterDepartment={setFilterDepartment}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
+        workLocations={workLocations}
+        filterWorkLocation={filterWorkLocation}
+        setFilterWorkLocation={setFilterWorkLocation}
         viewMode={viewMode}
         setViewMode={setViewMode}
         todayYMD={todayYMD}
@@ -673,6 +764,7 @@ export default function AttendancePage() {
         onClose={() => setShowLogModal(false)}
         canManage={canManage}
         employees={employees}
+        workLocations={workLocations}
         myEmployee={myEmployee}
         newRecord={newRecord}
         setNewRecord={setNewRecord}
@@ -684,6 +776,7 @@ export default function AttendancePage() {
       <EditAttendanceModal
         editingRecord={editingRecord}
         setEditingRecord={setEditingRecord}
+        workLocations={workLocations}
         saving={saving}
         onClose={() => setEditingRecord(null)}
         onSubmit={handleUpdateRecord}

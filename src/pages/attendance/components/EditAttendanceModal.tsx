@@ -1,10 +1,11 @@
 import React, { memo } from "react";
-import type { AttendanceRecord } from "../types";
+import type { AttendanceRecord, WorkLocation } from "../types";
 import { STATUS_CONFIG } from "../constants";
 
 interface EditAttendanceModalProps {
   editingRecord: AttendanceRecord | null;
   setEditingRecord: React.Dispatch<React.SetStateAction<AttendanceRecord | null>>;
+  workLocations: WorkLocation[];
   saving: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -13,6 +14,7 @@ interface EditAttendanceModalProps {
 export const EditAttendanceModal = memo(function EditAttendanceModal({
   editingRecord,
   setEditingRecord,
+  workLocations,
   saving,
   onClose,
   onSubmit,
@@ -112,6 +114,30 @@ export const EditAttendanceModal = memo(function EditAttendanceModal({
                 }
                 className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
               />
+            </div>
+          )}
+
+          {/* Work Site */}
+          {workLocations.length > 0 && (
+            <div>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                <i className="ri-building-2-line mr-1" />
+                Work Site
+              </label>
+              <select
+                value={editingRecord.work_location_id || ""}
+                onChange={(e) =>
+                  setEditingRecord({ ...editingRecord, work_location_id: e.target.value || null })
+                }
+                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              >
+                <option value="">— Not specified —</option>
+                {workLocations.map((wl) => (
+                  <option key={wl.id} value={wl.id}>
+                    {wl.name}{wl.is_default ? " (Default)" : ""}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 

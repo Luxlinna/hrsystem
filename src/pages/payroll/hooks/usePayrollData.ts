@@ -13,7 +13,7 @@ export function usePayrollData(
 ) {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, targetBranch, isPartnerBranchBlocked } = useBranchScope();
   const { employee: myEmployee } = useMyEmployee();
 
   const roleName = (role?.name || "").toLowerCase();
@@ -31,13 +31,6 @@ export function usePayrollData(
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchPolicy, setBranchPolicy] = useState<BranchPayrollPolicy | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' payroll data.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
 
   const loadData = useCallback(async () => {
     setLoading(true);

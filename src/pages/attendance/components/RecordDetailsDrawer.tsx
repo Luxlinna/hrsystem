@@ -123,6 +123,42 @@ export const RecordDetailsDrawer = memo(function RecordDetailsDrawer({
               </div>
             </div>
 
+            {/* Work Site Card */}
+            {selectedRecord.work_location?.name && (() => {
+              const isVisiting = selectedRecord.work_location_id !== selectedRecord.employees?.default_work_location_id
+                && !!selectedRecord.employees?.default_work_location_id;
+              return (
+                <div className={`p-4 rounded-2xl border flex items-center gap-3 ${
+                  isVisiting
+                    ? "bg-amber-50 border-amber-200"
+                    : "bg-emerald-50 border-emerald-200"
+                }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    isVisiting ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600"
+                  }`}>
+                    <i className="ri-building-2-line text-base" />
+                  </div>
+                  <div>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                      isVisiting ? "text-amber-500" : "text-emerald-600"
+                    }`}>
+                      {isVisiting ? "Visiting Site" : "Work Site"}
+                    </span>
+                    <p className={`text-sm font-extrabold ${
+                      isVisiting ? "text-amber-800" : "text-emerald-800"
+                    }`}>
+                      {selectedRecord.work_location.name}
+                    </p>
+                    {isVisiting && (
+                      <p className="text-[10px] text-amber-500 mt-0.5">
+                        Not their default work site
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Late arrival box */}
             {selectedRecord.status === "late" && selectedRecord.late_minutes > 0 && (
               <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl">
