@@ -9,6 +9,7 @@ interface UseAssetMutationsProps {
   canManage: boolean;
   actorName: string;
   actorRole: string;
+  targetBranch?: string | null;
   loadData: () => Promise<void>;
 }
 
@@ -16,6 +17,7 @@ export function useAssetMutations({
   canManage,
   actorName,
   actorRole,
+  targetBranch,
   loadData,
 }: UseAssetMutationsProps) {
   const [assetModal, setAssetModal] = useState(false);
@@ -29,13 +31,15 @@ export function useAssetMutations({
       if (!assetForm.name || !assetForm.asset_tag || !canManage || savingAsset) return;
       setSavingAsset(true);
 
+      const resolvedBranch = targetBranch || assetForm.branch_id || null;
+
       const { error } = await supabase.from("it_assets").insert([
         {
           name: assetForm.name,
           asset_tag: assetForm.asset_tag,
           type: assetForm.type,
           serial_number: assetForm.serial_number || null,
-          branch_id: assetForm.branch_id || null,
+          branch_id: resolvedBranch,
           employee_id: assetForm.employee_id || null,
           status: assetForm.employee_id ? "active" : assetForm.status || "inventory",
         },
@@ -60,7 +64,7 @@ export function useAssetMutations({
       });
       loadData();
     },
-    [assetForm, canManage, savingAsset, actorName, actorRole, loadData]
+    [assetForm, canManage, savingAsset, targetBranch, actorName, actorRole, loadData]
   );
 
   const openEditAsset = useCallback(
@@ -71,14 +75,14 @@ export function useAssetMutations({
         asset_tag: asset.asset_tag,
         type: asset.type,
         serial_number: asset.serial_number || "",
-        branch_id: asset.branch_id || "",
+        branch_id: asset.branch_id || targetBranch || "",
         employee_id: asset.employee_id || "",
         status: asset.status || "active",
       });
       setEditingAsset(asset);
       setAssetModal(true);
     },
-    [canManage]
+    [canManage, targetBranch]
   );
 
   const handleSaveAssetEdit = useCallback(
@@ -87,6 +91,8 @@ export function useAssetMutations({
       if (!editingAsset || !canManage || savingAsset) return;
       setSavingAsset(true);
 
+      const resolvedBranch = targetBranch || assetForm.branch_id || null;
+
       const { error } = await supabase
         .from("it_assets")
         .update({
@@ -94,7 +100,7 @@ export function useAssetMutations({
           asset_tag: assetForm.asset_tag,
           type: assetForm.type,
           serial_number: assetForm.serial_number || null,
-          branch_id: assetForm.branch_id || null,
+          branch_id: resolvedBranch,
           employee_id: assetForm.employee_id || null,
           status: assetForm.status,
         })
@@ -120,7 +126,7 @@ export function useAssetMutations({
       });
       loadData();
     },
-    [editingAsset, canManage, savingAsset, assetForm, actorName, actorRole, loadData]
+    [editingAsset, canManage, savingAsset, assetForm, targetBranch, actorName, actorRole, loadData]
   );
 
   const handleDeleteAsset = useCallback(

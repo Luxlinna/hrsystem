@@ -13,6 +13,7 @@ interface UseTicketMutationsProps {
   setSelectedTicket: React.Dispatch<React.SetStateAction<ITTicket | null>>;
   actorName: string;
   actorRole: string;
+  targetBranch?: string | null;
   loadData: () => Promise<void>;
 }
 
@@ -23,6 +24,7 @@ export function useTicketMutations({
   setSelectedTicket,
   actorName,
   actorRole,
+  targetBranch,
   loadData,
 }: UseTicketMutationsProps) {
   const [ticketModal, setTicketModal] = useState(false);
@@ -35,6 +37,8 @@ export function useTicketMutations({
       if (!ticketForm.title || !ticketForm.requester_name || savingTicket) return;
       setSavingTicket(true);
 
+      const resolvedBranch = targetBranch || ticketForm.branch_id || null;
+
       const { data, error } = await supabase
         .from("it_tickets")
         .insert([
@@ -44,6 +48,7 @@ export function useTicketMutations({
             priority: ticketForm.priority,
             category: ticketForm.category,
             description: ticketForm.description || null,
+            branch_id: resolvedBranch,
             status: "open",
           },
         ])
@@ -82,7 +87,7 @@ export function useTicketMutations({
       });
       loadData();
     },
-    [ticketForm, savingTicket, actorName, actorRole, loadData]
+    [ticketForm, savingTicket, targetBranch, actorName, actorRole, loadData]
   );
 
   const updateTicketStatus = useCallback(

@@ -40,8 +40,10 @@ export interface ITTicket {
   status: "open" | "in_progress" | "resolved" | "closed" | string;
   category: string;
   description: string | null;
+  branch_id?: string | null;
   created_at: string;
   resolved_at: string | null;
+  branches?: { id?: string; name: string } | null;
 }
 
 export interface AssetFormState {
@@ -60,4 +62,5 @@ export interface TicketFormState {
   priority: string;
   category: string;
   description: string;
+  branch_id?: string;
 }

@@ -2,6 +2,7 @@ import { memo } from "react";
 
 interface ITHeaderProps {
   canManage: boolean;
+  branchName?: string;
   activeAssetsCount: number;
   openTicketsCount: number;
   onOpenAssetModal: () => void;
@@ -10,6 +11,7 @@ interface ITHeaderProps {
 
 export const ITHeader = memo(function ITHeader({
   canManage,
+  branchName,
   activeAssetsCount,
   openTicketsCount,
   onOpenAssetModal,
@@ -19,12 +21,20 @@ export const ITHeader = memo(function ITHeader({
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-          <span>Infrastructure & Operations</span>
+          <span>Infrastructure &amp; Operations</span>
           <i className="ri-arrow-right-s-line text-xs" />
-          <span className="text-[#253C7D] font-bold">IT Helpdesk & Assets</span>
+          <span className="text-[#253C7D] font-bold">IT Helpdesk &amp; Assets</span>
+          {branchName && (
+            <>
+              <i className="ri-arrow-right-s-line text-xs" />
+              <span className="px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/80 text-teal-800 font-bold text-[10px] flex items-center gap-1">
+                <i className="ri-building-line text-[10px]" /> {branchName}
+              </span>
+            </>
+          )}
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
-          IT Management & Assets
+          IT Management &amp; Assets
           <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D]">
             {activeAssetsCount} Deployed Assets
           </span>

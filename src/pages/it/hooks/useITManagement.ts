@@ -24,9 +24,10 @@ export function useITManagement() {
 
   // 3. Asset mutations
   const assetMutations = useAssetMutations({
-    canManage,
+    canManage: canManage && !data.isPartnerBranchBlocked,
     actorName,
     actorRole,
+    targetBranch: data.targetBranch,
     loadData: data.loadData,
   });
 
@@ -38,6 +39,7 @@ export function useITManagement() {
     setSelectedTicket,
     actorName,
     actorRole,
+    targetBranch: data.targetBranch,
     loadData: data.loadData,
   });
 
@@ -45,7 +47,7 @@ export function useITManagement() {
     user,
     role,
     isAdmin,
-    canManage,
+    canManage: canManage && !data.isPartnerBranchBlocked,
     actorName,
     selectedTicket,
     setSelectedTicket,
