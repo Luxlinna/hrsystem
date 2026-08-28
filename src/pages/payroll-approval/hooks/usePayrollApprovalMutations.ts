@@ -9,6 +9,7 @@ interface UsePayrollApprovalMutationsProps {
   canManage: boolean;
   submitterName: string;
   roleName?: string;
+  targetBranch?: string | null;
   getRunApprovals: (runId: string) => PayrollApproval[];
   loadData: () => Promise<void>;
   setTab: (tab: "pending" | "approved" | "history" | "itemized" | "create") => void;
@@ -18,6 +19,7 @@ export function usePayrollApprovalMutations({
   canManage,
   submitterName,
   roleName = "Unknown",
+  targetBranch,
   getRunApprovals,
   loadData,
   setTab,
@@ -169,6 +171,7 @@ export function usePayrollApprovalMutations({
           submitted_by: submitterName,
           submitted_at: new Date().toISOString(),
           notes: createForm.notes ? createForm.notes.trim() : null,
+          branch_id: targetBranch || null,
         })
         .select()
         .single();
@@ -190,7 +193,7 @@ export function usePayrollApprovalMutations({
       setTab("pending");
       await loadData();
     },
-    [createForm, canManage, creating, submitterName, setTab, loadData]
+    [createForm, canManage, creating, submitterName, targetBranch, setTab, loadData]
   );
 
   return {

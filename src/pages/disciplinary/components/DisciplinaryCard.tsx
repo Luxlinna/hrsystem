@@ -47,7 +47,7 @@ export const DisciplinaryCard = memo(function DisciplinaryCard({
 
       <div>
         {/* Top Bar: Badges + Overdue Flag */}
-        <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span
               className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${typeCfg.bg} ${typeCfg.color} flex items-center gap-1`}
@@ -64,6 +64,19 @@ export const DisciplinaryCard = memo(function DisciplinaryCard({
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${statusCfg.bg} ${statusCfg.color}`}>
             {statusCfg.label}
           </span>
+        </div>
+
+        {/* Scope Pill */}
+        <div className="mb-2.5">
+          {!r.branch_id ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60">
+              <i className="ri-global-line text-[10px]" /> Company-Wide (Admin)
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">
+              <i className="ri-building-line text-[10px]" /> {r.branches?.name || "Branch Case"}
+            </span>
+          )}
         </div>
 
         {/* Incident Title */}

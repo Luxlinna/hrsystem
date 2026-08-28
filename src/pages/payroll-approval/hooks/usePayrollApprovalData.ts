@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useBranchScope } from "@/context/BranchContext";
 import type { PayrollRun, PayrollApproval, EmployeeItemRecord } from "../types";
 
 export function usePayrollApprovalData(
@@ -8,6 +9,9 @@ export function usePayrollApprovalData(
   setPeriodFilter: (p: string) => void,
   setExpandedRun: (id: string | null) => void
 ) {
+  const { isSuperAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
+
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [approvals, setApprovals] = useState<PayrollApproval[]>([]);
   const [itemizedRecords, setItemizedRecords] = useState<EmployeeItemRecord[]>([]);
@@ -18,20 +22,28 @@ export function usePayrollApprovalData(
 
   const loadData = useCallback(async () => {
     setLoading(true);
+
+    let runsQuery = supabase.from("payroll_runs").select("*").order("created_at", { ascending: false });
+    if (targetBranch) {
+      runsQuery = runsQuery.or(`branch_id.eq.${targetBranch},branch_id.is.null`);
+    }
+
+    let recordsQuery = supabase
+      .from("payroll_records")
+      .select("id, employee_id, month, base_salary, bonus, deductions, net_pay, status, employees(first_name, last_name, role, department, avatar_url, branch_id)")
+      .order("month", { ascending: false });
+
     const [{ data: r }, { data: a }, { data: recs }] = await Promise.all([
-      supabase.from("payroll_runs").select("*").order("created_at", { ascending: false }),
+      runsQuery,
       supabase.from("payroll_approvals").select("*").order("created_at", { ascending: true }),
-      supabase
-        .from("payroll_records")
-        .select("id, employee_id, month, base_salary, bonus, deductions, net_pay, status, employees(first_name, last_name, role, department, avatar_url)")
-        .order("month", { ascending: false }),
+      recordsQuery,
     ]);
 
     setRuns((r as PayrollRun[]) || []);
     setApprovals((a as PayrollApproval[]) || []);
     setItemizedRecords((recs as unknown as EmployeeItemRecord[]) || []);
     setLoading(false);
-  }, []);
+  }, [targetBranch]);
 
   useEffect(() => {
     loadData();
@@ -68,6 +80,7 @@ export function usePayrollApprovalData(
   );
 
   return {
+    targetBranch,
     runs,
     setRuns,
     approvals,

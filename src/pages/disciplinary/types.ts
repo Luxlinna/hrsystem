@@ -1,3 +1,8 @@
+export interface Branch {
+  id: string;
+  name: string;
+}
+
 export interface Employee {
   id: string;
   first_name: string;
@@ -5,6 +10,7 @@ export interface Employee {
   department: string;
   role: string;
   avatar_url: string | null;
+  branch_id?: string | null;
 }
 
 export interface DisciplinaryRecord {
@@ -24,8 +30,10 @@ export interface DisciplinaryRecord {
   pip_start_date: string | null;
   pip_end_date: string | null;
   pip_goals: string | null;
+  branch_id?: string | null;
   created_at: string;
   employees?: Employee;
+  branches?: { id?: string; name: string } | null;
 }
 
 export interface NewRecord {
@@ -42,6 +50,8 @@ export interface NewRecord {
   pip_start_date: string;
   pip_end_date: string;
   pip_goals: string;
+  branch_id?: string;
+  is_admin_scope?: boolean;
 }
 
 export type DisciplinaryTabKey = "all" | "open" | "pip" | "critical" | "resolved";

@@ -1,3 +1,30 @@
+export interface Branch {
+  id: string;
+  name: string;
+}
+
+export interface BranchPayrollPolicy {
+  id?: string;
+  branch_id: string;
+  pay_cycle: "monthly" | "bi-weekly" | "semi-monthly" | "weekly";
+  pay_day: number;
+  cutoff_day: number;
+  overtime_rate: number;
+  tax_rate: number;
+  social_security_rate: number;
+  health_insurance_rate: number;
+  currency: string;
+  disbursement_method: "bank_transfer" | "cash" | "cheque" | "direct_deposit";
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  requires_two_tier_approval: boolean;
+  auto_calculate_overtime: boolean;
+  auto_deduct_late_penalties: boolean;
+  policy_notes?: string | null;
+  updated_by?: string | null;
+  updated_at?: string;
+}
+
 export interface Employee {
   id: string;
   first_name: string;
@@ -12,6 +39,7 @@ export interface Employee {
 export interface PayrollRecord {
   id: string;
   employee_id: string;
+  branch_id?: string | null;
   month: string;
   base_salary: number;
   bonus: number;
@@ -21,6 +49,7 @@ export interface PayrollRecord {
   created_at?: string;
   notes?: string | null;
   employees?: Employee | null;
+  branches?: { id: string; name: string } | null;
 }
 
 export interface PayrollForm {

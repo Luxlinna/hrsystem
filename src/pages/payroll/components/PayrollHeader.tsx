@@ -5,16 +5,22 @@ interface PayrollHeaderProps {
   periodMode: "month" | "all";
   selectedMonth: string;
   canViewAll: boolean;
+  branchName?: string;
+  isSuperAdmin: boolean;
   onExportCSV: () => void;
   onOpenAddModal: () => void;
+  onOpenPolicyModal?: () => void;
 }
 
 export const PayrollHeader = memo(function PayrollHeader({
   periodMode,
   selectedMonth,
   canViewAll,
+  branchName,
+  isSuperAdmin,
   onExportCSV,
   onOpenAddModal,
+  onOpenPolicyModal,
 }: PayrollHeaderProps) {
   const selectedMonthLabel = formatMonthLabel(selectedMonth);
 
@@ -24,23 +30,42 @@ export const PayrollHeader = memo(function PayrollHeader({
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">
           <span>Financial Operations</span>
           <i className="ri-arrow-right-s-line text-xs" />
-          <span className="text-[#253C7D] dark:text-sky-400 font-bold">Compensation & Payroll</span>
+          <span className="text-[#253C7D] dark:text-sky-400 font-bold">Compensation &amp; Payroll</span>
+          {branchName && (
+            <>
+              <i className="ri-arrow-right-s-line text-xs" />
+              <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 font-bold text-[10px] flex items-center gap-1">
+                <i className="ri-building-line text-[10px]" /> {branchName}
+              </span>
+            </>
+          )}
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2.5">
-          <span>Payroll Overview</span>
+          <span>Payroll Management</span>
           <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 dark:bg-sky-400/15 text-[#253C7D] dark:text-sky-300">
             {periodMode === "month" ? selectedMonthLabel : "All Historical Periods"}
           </span>
         </h1>
         <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
           {canViewAll
-            ? "Manage employee compensations, bonuses, deductions, and generate payslips across all branches."
+            ? "Manage employee compensations, bonuses, statutory deductions, and branch payroll policies."
             : "View your payslips, salary breakdowns, and compensation history."}
         </p>
       </div>
 
       {/* Top Actions */}
       <div className="flex items-center gap-2.5 flex-wrap">
+        {onOpenPolicyModal && canViewAll && (
+          <button
+            onClick={onOpenPolicyModal}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-amber-300/80 hover:bg-amber-50/50 text-amber-900 dark:text-amber-300 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
+            title="Configure branch-isolated payroll policies"
+          >
+            <i className="ri-shield-keyhole-line text-amber-600 text-sm" />
+            Branch Policy
+          </button>
+        )}
+
         <button
           onClick={onExportCSV}
           className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"

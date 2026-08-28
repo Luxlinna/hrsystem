@@ -14,6 +14,11 @@ import { useDisciplinary } from "./hooks/useDisciplinary";
 export default function DisciplinaryPage() {
   const {
     canManage,
+    isSuperAdmin,
+    isBranchAdmin,
+    effectiveBranchId,
+    userBranchId,
+    branches,
     records,
     employees,
     loading,
@@ -30,6 +35,8 @@ export default function DisciplinaryPage() {
     setFilterStatus,
     filterSeverity,
     setFilterSeverity,
+    filterScope,
+    setFilterScope,
     searchQuery,
     setSearchQuery,
     viewMode,
@@ -54,6 +61,9 @@ export default function DisciplinaryPage() {
     handleExportCSV,
     openCreateModal,
   } = useDisciplinary();
+
+  const activeBranch = branches.find((b) => b.id === (effectiveBranchId || userBranchId));
+  const activeBranchName = activeBranch?.name;
 
   const handleSelectTab = useCallback(
     (tab: typeof activeTab) => {
@@ -124,6 +134,8 @@ export default function DisciplinaryPage() {
         setFilterSeverity={setFilterSeverity}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
+        filterScope={filterScope}
+        setFilterScope={setFilterScope}
         viewMode={viewMode}
         setViewMode={setViewMode}
         onFilterChangeResetPage={handleFilterChangeResetPage}
@@ -169,6 +181,9 @@ export default function DisciplinaryPage() {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         employees={employees}
+        branches={branches}
+        isSuperAdmin={isSuperAdmin}
+        activeBranchName={activeBranchName}
         newRecord={newRecord}
         setNewRecord={setNewRecord}
         saving={saving}

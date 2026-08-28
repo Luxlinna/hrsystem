@@ -6,12 +6,17 @@ import { PayrollTableView } from "./components/views/PayrollTableView";
 import { PayrollCardsView } from "./components/views/PayrollCardsView";
 import { PayslipModal } from "./components/modals/PayslipModal";
 import { RecordModal } from "./components/modals/RecordModal";
+import { BranchPayrollPolicyModal } from "./components/modals/BranchPayrollPolicyModal";
 import { usePayroll } from "./hooks/usePayroll";
 import { exportToCSV } from "./payrollUtils";
 
 export default function Payroll() {
   const {
     canViewAll,
+    isSuperAdmin,
+    branches,
+    targetBranch,
+    branchPolicy,
     allRecords,
     employees,
     loading,
@@ -38,15 +43,22 @@ export default function Payroll() {
     setPayslipModal,
     recordModal,
     setRecordModal,
+    policyModalOpen,
+    setPolicyModalOpen,
     savingRecord,
+    savingPolicy,
     recordForm,
     setRecordForm,
     handleUpdateStatus,
     openRecordModal,
     handleSaveRecord,
     handleDeleteRecord,
+    handleSavePolicy,
     isDark,
   } = usePayroll();
+
+  const activeBranch = branches.find((b) => b.id === targetBranch);
+  const activeBranchName = activeBranch?.name;
 
   if (loading && allRecords.length === 0) {
     return (
@@ -66,8 +78,11 @@ export default function Payroll() {
         periodMode={periodMode}
         selectedMonth={selectedMonth}
         canViewAll={canViewAll}
+        branchName={activeBranchName}
+        isSuperAdmin={isSuperAdmin}
         onExportCSV={() => exportToCSV(filteredRecords, periodMode, selectedMonth)}
         onOpenAddModal={() => openRecordModal(null)}
+        onOpenPolicyModal={targetBranch ? () => setPolicyModalOpen(true) : undefined}
       />
 
       {/* KPI Stats Row */}
@@ -142,6 +157,17 @@ export default function Payroll() {
         employees={employees}
         saving={savingRecord}
         onSubmit={handleSaveRecord}
+      />
+
+      <BranchPayrollPolicyModal
+        isOpen={policyModalOpen}
+        onClose={() => setPolicyModalOpen(false)}
+        policy={branchPolicy}
+        branchName={activeBranchName}
+        isSuperAdmin={isSuperAdmin}
+        canManage={canViewAll}
+        saving={savingPolicy}
+        onSave={handleSavePolicy}
       />
     </div>
   );

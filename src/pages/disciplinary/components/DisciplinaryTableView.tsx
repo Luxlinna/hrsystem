@@ -19,6 +19,7 @@ export const DisciplinaryTableView = memo(function DisciplinaryTableView({
             <tr className="border-b border-gray-100 bg-gray-50/70 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
               <th className="px-5 py-3.5">Employee</th>
               <th className="px-5 py-3.5">Case Title</th>
+              <th className="px-5 py-3.5">Scope</th>
               <th className="px-5 py-3.5">Incident Type</th>
               <th className="px-5 py-3.5">Severity</th>
               <th className="px-5 py-3.5">Status</th>
@@ -65,6 +66,18 @@ export const DisciplinaryTableView = memo(function DisciplinaryTableView({
 
                   <td className="px-5 py-3.5">
                     <p className="font-bold text-gray-900 line-clamp-1 max-w-xs">{r.title}</p>
+                  </td>
+
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    {!r.branch_id ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/60">
+                        <i className="ri-global-line text-[10px]" /> Company-Wide
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/60">
+                        <i className="ri-building-line text-[10px]" /> {r.branches?.name || "Branch Case"}
+                      </span>
+                    )}
                   </td>
 
                   <td className="px-5 py-3.5 whitespace-nowrap">

@@ -1,28 +1,37 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import type { PayrollRecord, PayrollForm, Employee } from "../types";
+import type { PayrollRecord, PayrollForm, Employee, BranchPayrollPolicy } from "../types";
 import { STATUS_CONFIG } from "../constants";
 
 interface UsePayrollMutationsProps {
   employees: Employee[];
   selectedMonth: string;
+  targetBranch: string | null;
+  actorName: string;
   loadData: () => Promise<void>;
   setAllRecords: React.Dispatch<React.SetStateAction<PayrollRecord[]>>;
+  setBranchPolicy: React.Dispatch<React.SetStateAction<BranchPayrollPolicy | null>>;
 }
 
 export function usePayrollMutations({
   employees,
   selectedMonth,
+  targetBranch,
+  actorName,
   loadData,
   setAllRecords,
+  setBranchPolicy,
 }: UsePayrollMutationsProps) {
   const [payslipModal, setPayslipModal] = useState<PayrollRecord | null>(null);
   const [recordModal, setRecordModal] = useState<{ open: boolean; record: PayrollRecord | null }>({
     open: false,
     record: null,
   });
+  const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [savingRecord, setSavingRecord] = useState(false);
+  const [savingPolicy, setSavingPolicy] = useState(false);
+
   const [recordForm, setRecordForm] = useState<PayrollForm>({
     employee_id: "",
     month: selectedMonth,
@@ -93,6 +102,9 @@ export function usePayrollMutations({
         Number(recordForm.bonus || 0) -
         Number(recordForm.deductions || 0);
 
+      const empObj = employees.find((e) => e.id === recordForm.employee_id);
+      const branchId = targetBranch || empObj?.branch_id || null;
+
       if (recordModal.record) {
         // Edit existing
         const { error } = await supabase
@@ -105,6 +117,7 @@ export function usePayrollMutations({
             net_pay: calculatedNet,
             status: recordForm.status,
             notes: recordForm.notes ? recordForm.notes.trim() : null,
+            branch_id: branchId,
           })
           .eq("id", recordModal.record.id);
 
@@ -125,6 +138,7 @@ export function usePayrollMutations({
           net_pay: calculatedNet,
           status: recordForm.status,
           notes: recordForm.notes ? recordForm.notes.trim() : null,
+          branch_id: branchId,
         });
 
         setSavingRecord(false);
@@ -138,7 +152,7 @@ export function usePayrollMutations({
       setRecordModal({ open: false, record: null });
       loadData();
     },
-    [recordForm, savingRecord, recordModal.record, loadData]
+    [recordForm, savingRecord, recordModal.record, employees, targetBranch, loadData]
   );
 
   const handleDeleteRecord = useCallback(
@@ -155,17 +169,55 @@ export function usePayrollMutations({
     [setAllRecords]
   );
 
+  const handleSavePolicy = useCallback(
+    async (policyUpdates: Partial<BranchPayrollPolicy>) => {
+      if (!targetBranch) {
+        toast("Error", "Please select a branch to configure its payroll policy.", "error");
+        return;
+      }
+
+      setSavingPolicy(true);
+      const payload = {
+        branch_id: targetBranch,
+        ...policyUpdates,
+        updated_by: actorName,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("branch_payroll_policies")
+        .upsert(payload, { onConflict: "branch_id" });
+
+      setSavingPolicy(false);
+
+      if (error) {
+        toast("Error", "Failed to update branch payroll policy: " + error.message, "error");
+        return;
+      }
+
+      toast("Policy Saved", "Branch payroll policy updated successfully.", "success");
+      setBranchPolicy((prev) => (prev ? { ...prev, ...payload } : (payload as BranchPayrollPolicy)));
+      setPolicyModalOpen(false);
+      loadData();
+    },
+    [targetBranch, actorName, setBranchPolicy, loadData]
+  );
+
   return {
     payslipModal,
     setPayslipModal,
     recordModal,
     setRecordModal,
+    policyModalOpen,
+    setPolicyModalOpen,
     savingRecord,
+    savingPolicy,
     recordForm,
     setRecordForm,
     handleUpdateStatus,
     openRecordModal,
     handleSaveRecord,
     handleDeleteRecord,
+    handleSavePolicy,
   };
 }

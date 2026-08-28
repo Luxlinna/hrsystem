@@ -24,3 +24,21 @@ export const STATUS_CONFIG: Record<
     icon: "ri-time-line",
   },
 };
+
+export const DEFAULT_BRANCH_PAYROLL_POLICY = {
+  pay_cycle: "monthly" as const,
+  pay_day: 28,
+  cutoff_day: 25,
+  overtime_rate: 1.5,
+  tax_rate: 5.0,
+  social_security_rate: 4.0,
+  health_insurance_rate: 2.0,
+  currency: "USD",
+  disbursement_method: "bank_transfer" as const,
+  bank_name: "",
+  bank_account_number: "",
+  requires_two_tier_approval: true,
+  auto_calculate_overtime: true,
+  auto_deduct_late_penalties: false,
+  policy_notes: "",
+};

@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import type {
@@ -10,6 +12,7 @@ import type {
   NewRecord,
   DisciplinaryTabKey,
   ViewMode,
+  Branch,
 } from "../types";
 import { STATUS_CONFIG, INITIAL_NEW_RECORD, isOverdueRecord } from "../constants";
 import { exportDisciplinaryCSV } from "../exportUtils";
@@ -18,12 +21,21 @@ export function useDisciplinary() {
   const { user } = useAuth();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const canViewAll = isAdmin || !!role?.disciplinary_view_all_employees;
-  const canViewOwnBranch = !canViewAll && !!role?.disciplinary_view_own_branch;
-  const canManage = canViewAll || canViewOwnBranch;
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { employee: myEmployee } = useMyEmployee();
+
+  const roleName = (role?.name || "").toLowerCase();
+  const isLeader =
+    isSuperAdmin ||
+    isBranchAdmin ||
+    isAdmin ||
+    /manager|lead|head|admin|ceo|director|chief|president|officer/i.test(roleName);
+
+  const canManage = isLeader;
 
   const [records, setRecords] = useState<DisciplinaryRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRecord, setSelectedRecord] = useState<DisciplinaryRecord | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -34,6 +46,7 @@ export function useDisciplinary() {
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("");
+  const [filterScope, setFilterScope] = useState<"all" | "admin" | "branch">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
 
@@ -43,127 +56,84 @@ export function useDisciplinary() {
 
   const [newRecord, setNewRecord] = useState<NewRecord>(INITIAL_NEW_RECORD);
 
+  const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
+    try {
+      // 1. Fetch branches
+      let branchQuery = supabase.from("branches").select("id, name").is("deleted_at", null).order("name");
+      if (targetBranch) {
+        branchQuery = branchQuery.eq("id", targetBranch);
+      }
 
-    if (canViewAll) {
-      const [rRes, eRes] = await Promise.all([
-        supabase
-          .from("disciplinary_records")
-          .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("employees")
-          .select("id, first_name, last_name, department, role, avatar_url")
-          .eq("status", "active")
-          .order("first_name"),
-      ]);
-      if (rRes.data) setRecords(rRes.data as DisciplinaryRecord[]);
-      if (eRes.data) setEmployees(eRes.data);
-      setLoading(false);
-      return;
-    }
-
-    if (!user?.email) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: me } = await supabase
-      .from("employees")
-      .select("id, first_name, last_name, department, role, avatar_url, branch_id")
-      .eq("email", user.email)
-      .maybeSingle();
-
-    if (!me) {
-      setEmployees([]);
-      setRecords([]);
-      setLoading(false);
-      return;
-    }
-
-    if (canViewOwnBranch && me.branch_id) {
-      const { data: team } = await supabase
+      // 2. Fetch employees
+      let empQuery = supabase
         .from("employees")
-        .select("id, first_name, last_name, department, role, avatar_url")
+        .select("id, first_name, last_name, department, role, avatar_url, branch_id")
         .eq("status", "active")
-        .eq("branch_id", me.branch_id)
+        .is("deleted_at", null)
         .order("first_name");
-      setEmployees(team || []);
-      const ids = (team || []).map((e) => e.id);
-      const { data: rData } = ids.length
-        ? await supabase
-            .from("disciplinary_records")
-            .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
-            .in("employee_id", ids)
-            .is("deleted_at", null)
-            .order("created_at", { ascending: false })
-        : { data: [] };
-      setRecords((rData as DisciplinaryRecord[]) || []);
-      setLoading(false);
-      return;
-    }
 
-    setEmployees([me]);
-    const { data: rData } = await supabase
-      .from("disciplinary_records")
-      .select("*, employees(id, first_name, last_name, department, role, avatar_url)")
-      .eq("employee_id", me.id)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-    setRecords((rData as DisciplinaryRecord[]) || []);
-    setLoading(false);
-  }, [canViewAll, canViewOwnBranch, user?.email]);
+      if (targetBranch) {
+        empQuery = empQuery.eq("branch_id", targetBranch);
+      }
+
+      const [bRes, empRes] = await Promise.all([branchQuery, empQuery]);
+      const empList = (empRes.data || []) as Employee[];
+      const empIds = empList.map((e) => e.id);
+
+      // 3. Fetch disciplinary records
+      let recordPromise: PromiseLike<any>;
+
+      if (targetBranch) {
+        if (isLeader) {
+          // Company-wide disciplinary cases (branch_id is null) OR branch-specific cases
+          recordPromise = supabase
+            .from("disciplinary_records")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), branches(id, name)")
+            .is("deleted_at", null)
+            .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
+            .order("created_at", { ascending: false });
+        } else {
+          // Staff sees only their own record
+          const staffId = myEmployee?.id || empIds[0];
+          recordPromise = supabase
+            .from("disciplinary_records")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), branches(id, name)")
+            .is("deleted_at", null)
+            .eq("employee_id", staffId || "")
+            .order("created_at", { ascending: false });
+        }
+      } else {
+        // Super Admin viewing all branches
+        recordPromise = supabase
+          .from("disciplinary_records")
+          .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), branches(id, name)")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false });
+      }
+
+      const rRes = await recordPromise;
+
+      if (bRes.data) setBranches(bRes.data as Branch[]);
+      if (rRes.data) setRecords((rRes.data as unknown) as DisciplinaryRecord[]);
+      setEmployees(empList);
+    } catch (err) {
+      console.error("Failed to load disciplinary data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [targetBranch, isLeader, myEmployee]);
 
   useEffect(() => {
     if (permsLoading) return;
     fetchData();
   }, [permsLoading, fetchData]);
 
-  // Filter calculation
-  const filtered = useMemo(() => {
-    return records.filter((r) => {
-      // Tab Filtering
-      if (
-        activeTab === "open" &&
-        r.status !== "open" &&
-        r.status !== "in_progress" &&
-        r.status !== "escalated"
-      )
-        return false;
-      if (activeTab === "pip" && r.type !== "pip") return false;
-      if (activeTab === "critical" && r.severity !== "critical" && r.severity !== "high")
-        return false;
-      if (activeTab === "resolved" && r.status !== "resolved" && r.status !== "closed")
-        return false;
-
-      // Dropdown Filters
-      if (filterType && r.type !== filterType) return false;
-      if (filterStatus && r.status !== filterStatus) return false;
-      if (filterSeverity && r.severity !== filterSeverity) return false;
-
-      // Search Query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const emp = r.employees;
-        const name = emp ? `${emp.first_name} ${emp.last_name}`.toLowerCase() : "";
-        const title = (r.title || "").toLowerCase();
-        const desc = (r.description || "").toLowerCase();
-        const dept = emp ? (emp.department || "").toLowerCase() : "";
-        if (!name.includes(q) && !title.includes(q) && !desc.includes(q) && !dept.includes(q))
-          return false;
-      }
-      return true;
-    });
-  }, [records, activeTab, filterType, filterStatus, filterSeverity, searchQuery]);
-
-  // Aggregate Metrics
+  // Tab Filtering & Counts
   const openCount = useMemo(
-    () =>
-      records.filter(
-        (r) => r.status === "open" || r.status === "in_progress" || r.status === "escalated"
-      ).length,
+    () => records.filter((r) => r.status === "open" || r.status === "in_progress").length,
     [records]
   );
   const pipCount = useMemo(() => records.filter((r) => r.type === "pip").length, [records]);
@@ -175,9 +145,52 @@ export function useDisciplinary() {
     () => records.filter((r) => r.status === "resolved" || r.status === "closed").length,
     [records]
   );
-  const overdueCount = useMemo(() => records.filter(isOverdueRecord).length, [records]);
+  const overdueCount = useMemo(
+    () => records.filter((r) => isOverdueRecord(r)).length,
+    [records]
+  );
 
-  // Pagination calculation
+  const filtered = useMemo(() => {
+    return records.filter((r) => {
+      // Tab Filter
+      if (activeTab === "open" && r.status !== "open" && r.status !== "in_progress") return false;
+      if (activeTab === "pip" && r.type !== "pip") return false;
+      if (activeTab === "critical" && r.severity !== "critical" && r.severity !== "high")
+        return false;
+      if (activeTab === "resolved" && r.status !== "resolved" && r.status !== "closed")
+        return false;
+
+      // Dropdown Filters
+      if (filterType && r.type !== filterType) return false;
+      if (filterStatus && r.status !== filterStatus) return false;
+      if (filterSeverity && r.severity !== filterSeverity) return false;
+
+      // Scope Filter (Company-Wide vs Branch Only)
+      if (filterScope === "admin" && r.branch_id) return false;
+      if (filterScope === "branch" && !r.branch_id) return false;
+
+      // Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const empName = r.employees
+          ? `${r.employees.first_name} ${r.employees.last_name}`.toLowerCase()
+          : "";
+        const dept = r.employees?.department?.toLowerCase() || "";
+        const title = r.title.toLowerCase();
+        const desc = (r.description || "").toLowerCase();
+        if (
+          !empName.includes(q) &&
+          !dept.includes(q) &&
+          !title.includes(q) &&
+          !desc.includes(q)
+        )
+          return false;
+      }
+      return true;
+    });
+  }, [records, activeTab, filterType, filterStatus, filterSeverity, filterScope, searchQuery]);
+
+  // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
   const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
@@ -188,17 +201,33 @@ export function useDisciplinary() {
   );
 
   useEffect(() => {
+    setPage(1);
+  }, [activeTab, filterType, filterStatus, filterSeverity, filterScope, searchQuery, pageSize]);
+
+  useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  // Actions
   const handleSave = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!newRecord.employee_id || !newRecord.title.trim() || saving) return;
-      setSaving(true);
+      if (!newRecord.employee_id || !newRecord.title.trim()) {
+        toast("Missing Information", "Please select an employee and provide a title.", "error");
+        return;
+      }
+      if (!canManage) {
+        toast("Permission Denied", "Only administrators and managers can file disciplinary records.", "error");
+        return;
+      }
 
+      setSaving(true);
       const empObj = employees.find((e) => e.id === newRecord.employee_id);
       const empName = empObj ? `${empObj.first_name} ${empObj.last_name}` : newRecord.employee_id;
+
+      const resolvedBranchId = newRecord.is_admin_scope
+        ? null
+        : (newRecord.branch_id || targetBranch || empObj?.branch_id || null);
 
       const { error } = await supabase.from("disciplinary_records").insert({
         employee_id: newRecord.employee_id,
@@ -217,6 +246,7 @@ export function useDisciplinary() {
         pip_end_date:
           newRecord.type === "pip" && newRecord.pip_end_date ? newRecord.pip_end_date : null,
         pip_goals: newRecord.type === "pip" && newRecord.pip_goals ? newRecord.pip_goals : null,
+        branch_id: resolvedBranchId,
       });
 
       setSaving(false);
@@ -239,7 +269,7 @@ export function useDisciplinary() {
       setNewRecord(INITIAL_NEW_RECORD);
       fetchData();
     },
-    [newRecord, saving, employees, actorName, role?.name, fetchData]
+    [newRecord, canManage, employees, targetBranch, actorName, role?.name, fetchData]
   );
 
   const updateStatus = useCallback(
@@ -325,12 +355,25 @@ export function useDisciplinary() {
   }, [filtered]);
 
   const openCreateModal = useCallback(() => {
-    setNewRecord(INITIAL_NEW_RECORD);
+    if (!canManage) {
+      toast("Permission Denied", "Only administrators and managers can log disciplinary records.", "error");
+      return;
+    }
+    setNewRecord({
+      ...INITIAL_NEW_RECORD,
+      is_admin_scope: isSuperAdmin && !effectiveBranchId,
+      branch_id: targetBranch || "",
+    });
     setShowModal(true);
-  }, []);
+  }, [canManage, isSuperAdmin, effectiveBranchId, targetBranch]);
 
   return {
     canManage,
+    isSuperAdmin,
+    isBranchAdmin,
+    effectiveBranchId,
+    userBranchId,
+    branches,
     records,
     employees,
     loading,
@@ -347,6 +390,8 @@ export function useDisciplinary() {
     setFilterStatus,
     filterSeverity,
     setFilterSeverity,
+    filterScope,
+    setFilterScope,
     searchQuery,
     setSearchQuery,
     viewMode,

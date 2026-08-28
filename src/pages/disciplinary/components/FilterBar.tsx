@@ -11,6 +11,8 @@ interface FilterBarProps {
   setFilterSeverity: (sev: string) => void;
   filterStatus: string;
   setFilterStatus: (status: string) => void;
+  filterScope?: "all" | "admin" | "branch";
+  setFilterScope?: (s: "all" | "admin" | "branch") => void;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   onFilterChangeResetPage: () => void;
@@ -25,6 +27,8 @@ export const FilterBar = memo(function FilterBar({
   setFilterSeverity,
   filterStatus,
   setFilterStatus,
+  filterScope = "all",
+  setFilterScope,
   viewMode,
   setViewMode,
   onFilterChangeResetPage,
@@ -54,6 +58,22 @@ export const FilterBar = memo(function FilterBar({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
+        {/* Scope Filter */}
+        {setFilterScope && (
+          <select
+            value={filterScope}
+            onChange={(e) => {
+              setFilterScope(e.target.value as "all" | "admin" | "branch");
+              onFilterChangeResetPage();
+            }}
+            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-bold cursor-pointer"
+          >
+            <option value="all">🌐 All Scopes</option>
+            <option value="admin">🌐 Company-Wide (Admin)</option>
+            <option value="branch">🏢 Branch Only</option>
+          </select>
+        )}
+
         {/* Type Filter */}
         <select
           value={filterType}

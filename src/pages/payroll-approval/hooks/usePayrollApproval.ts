@@ -47,6 +47,7 @@ export function usePayrollApproval() {
     canManage,
     submitterName,
     roleName: role?.name,
+    targetBranch: data.targetBranch,
     getRunApprovals: data.getRunApprovals,
     loadData: data.loadData,
     setTab: dynamicFilters.setTab,
