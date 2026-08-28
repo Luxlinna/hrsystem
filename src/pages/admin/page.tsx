@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { invalidatePermissionsCache } from "@/hooks/usePermissions";
+import { invalidatePermissionsCache, usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
+import { useAuth } from "@/context/AuthContext";
 import { useSearchParams } from "react-router-dom";
 import type {
   AdminTab,
@@ -26,10 +28,15 @@ import { UsersTab } from "./components/UsersTab";
 import { PasswordResetsTab } from "./components/PasswordResetsTab";
 
 export default function AdminPortal() {
+  const { user } = useAuth();
+  const { isSuperAdmin, isBranchAdmin, userBranchId, userBranchName } = useBranchScope();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<AdminTab>(
-    searchParams.get("tab") === "password-resets" ? "password-resets" : "roles"
-  );
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "password-resets") return "password-resets";
+    if (tabParam === "users" || (!isSuperAdmin && isBranchAdmin)) return "users";
+    return "roles";
+  });
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [users, setUsers] = useState<UserAssignment[]>([]);
   const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>([]);
@@ -66,11 +73,15 @@ export default function AdminPortal() {
       return { accounts: [], assignments: null } as AuthAccountsResult;
     });
 
+    const empQuery = !isSuperAdmin && userBranchId
+      ? supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id").eq("branch_id", userBranchId).not("email", "is", null).is("deleted_at", null).order("first_name")
+      : supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id").not("email", "is", null).is("deleted_at", null).order("first_name");
+
     const [rolesRes, usersRes, deletedRes, employeesRes, resetRequestsRes, authAccountsResult] = await Promise.all([
       supabase.from("app_roles").select("*").order("id"),
-      supabase.from("user_role_assignments").select("*, app_roles(id, name, color)").is("deleted_at", null).order("created_at", { ascending: false }),
+      supabase.from("user_role_assignments").select("*, app_roles(id, name, color, is_admin)").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("user_role_assignments").select("email").not("deleted_at", "is", null),
-      supabase.from("employees").select("id, email, first_name, last_name, role, department").not("email", "is", null).order("first_name"),
+      empQuery,
       supabase.from("password_reset_requests").select("id, email, status, requested_at, acted_at").is("deleted_at", null).order("requested_at", { ascending: false }).limit(50),
       authAccountsPromise,
     ]);
@@ -101,13 +112,26 @@ export default function AdminPortal() {
         .map((a) => a.email!.toLowerCase())
     );
 
+    const branchEmployeeEmails = new Set((employeesRes.data || []).map((e: any) => e.email?.toLowerCase()).filter(Boolean));
+    if (user?.email) branchEmployeeEmails.add(user.email.toLowerCase());
+
+    const allCombinedUsers = [...activeAssignments, ...unassignedAuthUsers];
+    const filteredUsers = (!isSuperAdmin && userBranchId)
+      ? allCombinedUsers.filter((u) => branchEmployeeEmails.has(u.email?.toLowerCase()))
+      : allCombinedUsers;
+
+    const allResets = (resetRequestsRes.data || []) as PasswordResetRequest[];
+    const filteredResets = (!isSuperAdmin && userBranchId)
+      ? allResets.filter((r) => branchEmployeeEmails.has(r.email?.toLowerCase()))
+      : allResets;
+
     setRoles(rolesRes.data || []);
-    setUsers([...activeAssignments, ...unassignedAuthUsers]);
+    setUsers(filteredUsers);
     setUnconfirmedEmails(unconfirmed);
     setEmployees(employeesRes.data || []);
-    setPasswordResetRequests((resetRequestsRes.data || []) as PasswordResetRequest[]);
+    setPasswordResetRequests(filteredResets);
     setLoading(false);
-  }, []);
+  }, [isSuperAdmin, userBranchId, user?.email]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -155,13 +179,17 @@ export default function AdminPortal() {
 
   const saveRole = useCallback(async () => {
     if (!roleForm.name.trim()) { showToast("Role name is required", "err"); return; }
+    if (!isSuperAdmin && editingRole && (editingRole.is_admin || editingRole.name === "Super Admin")) {
+      showToast("Only Super Admin can modify the Super Admin role", "err");
+      return;
+    }
     setSavingRole(true);
     const payload = {
       name: roleForm.name.trim(),
       description: roleForm.description.trim(),
       color: roleForm.color,
-      is_admin: roleForm.is_admin,
-      allowed_modules: roleForm.is_admin ? ["*"] : roleForm.allowed_modules,
+      is_admin: isSuperAdmin ? roleForm.is_admin : false,
+      allowed_modules: (isSuperAdmin && roleForm.is_admin) ? ["*"] : roleForm.allowed_modules,
       ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, roleForm[o.key]])),
       updated_at: new Date().toISOString(),
     };
@@ -179,15 +207,20 @@ export default function AdminPortal() {
     setShowRoleForm(false);
     invalidatePermissionsCache();
     loadData();
-  }, [roleForm, editingRole, showToast, loadData]);
+  }, [roleForm, editingRole, isSuperAdmin, showToast, loadData]);
 
   const deleteRole = useCallback(async (id: number) => {
+    const targetRole = roles.find((r) => r.id === id);
+    if (targetRole && (targetRole.is_admin || targetRole.name === "Super Admin")) {
+      showToast("The Super Admin role cannot be deleted", "err");
+      return;
+    }
     const { error } = await supabase.from("app_roles").delete().eq("id", id);
     if (error) { showToast("Failed to delete role", "err"); return; }
     showToast("Role deleted");
     invalidatePermissionsCache();
     loadData();
-  }, [showToast, loadData]);
+  }, [roles, showToast, loadData]);
 
   // ── User Management Actions ──
   const addCurrentUser = useCallback(async () => {
@@ -268,13 +301,23 @@ export default function AdminPortal() {
   }, [showToast]);
 
   const updateUserRole = useCallback(async (targetUser: UserAssignment, roleId: number | null) => {
-    const previousUsers = users;
+    const targetIsSuper = targetUser.app_roles?.is_admin || targetUser.app_roles?.name === "Super Admin";
+    if (!isSuperAdmin && targetIsSuper) {
+      showToast("Only Super Admin can modify Super Admin accounts", "err");
+      return;
+    }
     const nextRole = roles.find((role) => role.id === roleId) || null;
+    if (!isSuperAdmin && nextRole && (nextRole.is_admin || nextRole.name === "Super Admin")) {
+      showToast("Branch Admin cannot assign Super Admin role", "err");
+      return;
+    }
+
+    const previousUsers = users;
     setUsers((current) => current.map((user) => user.id === targetUser.id
       ? {
           ...user,
           role_id: roleId,
-          app_roles: nextRole ? { id: nextRole.id, name: nextRole.name, color: nextRole.color } : null,
+          app_roles: nextRole ? { id: nextRole.id, name: nextRole.name, color: nextRole.color, is_admin: nextRole.is_admin } : null,
         }
       : user
     ));
@@ -290,9 +333,14 @@ export default function AdminPortal() {
       setUsers(previousUsers);
       showToast(error.message || "Failed to update role", "err");
     }
-  }, [users, roles, showToast, loadData]);
+  }, [users, roles, isSuperAdmin, showToast, loadData]);
 
   const removeUser = useCallback(async (targetUser: UserAssignment) => {
+    const targetIsSuper = targetUser.app_roles?.is_admin || targetUser.app_roles?.name === "Super Admin";
+    if (!isSuperAdmin && targetIsSuper) {
+      showToast("Only Super Admin can remove Super Admin accounts", "err");
+      return;
+    }
     const previousUsers = users;
     setUsers((current) => current.filter((user) => user.id !== targetUser.id));
 
@@ -309,7 +357,7 @@ export default function AdminPortal() {
       setUsers(previousUsers);
       showToast(error.message || "Failed to remove user", "err");
     }
-  }, [users, showToast]);
+  }, [users, isSuperAdmin, showToast]);
 
   // ── Password Reset Actions ──
   const handlePasswordResetAction = useCallback(async (requestId: string, action: "approve" | "reject") => {
@@ -359,16 +407,28 @@ export default function AdminPortal() {
       )}
 
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-10 h-10 bg-[#253C7D] rounded-xl flex items-center justify-center shrink-0">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#253C7D] rounded-xl flex items-center justify-center shrink-0 shadow-xs">
             <i className="ri-admin-line text-white text-lg" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Admin Portal
-            </h1>
-            <p className="text-sm text-gray-500">Manage user roles and module access permissions</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {isSuperAdmin ? "Super Admin Portal" : "Branch Admin Portal"}
+              </h1>
+              {!isSuperAdmin && userBranchName && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 flex items-center gap-1">
+                  <i className="ri-map-pin-2-fill text-xs" />
+                  {userBranchName}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-500">
+              {isSuperAdmin
+                ? "Manage organizational roles, system permissions, and user accounts across all branches"
+                : `Manage and invite staff accounts, assign roles, and review password resets for ${userBranchName || "your branch"}`}
+            </p>
           </div>
         </div>
       </div>
@@ -413,6 +473,7 @@ export default function AdminPortal() {
             <RolesTab
               roles={roles}
               users={users}
+              isSuperAdmin={isSuperAdmin}
               onOpenNewRole={openNewRole}
               onOpenEditRole={openEditRole}
               onDeleteRole={deleteRole}
@@ -434,6 +495,7 @@ export default function AdminPortal() {
               selectedEmployeeEmail={selectedEmployeeEmail}
               setSelectedEmployeeEmail={setSelectedEmployeeEmail}
               savingUser={savingUser}
+              isSuperAdmin={isSuperAdmin}
               onAddCurrentUser={addCurrentUser}
               onSaveNewUser={saveNewUser}
               onResendInvite={resendInvite}
@@ -460,6 +522,7 @@ export default function AdminPortal() {
             roleForm={roleForm}
             setRoleForm={setRoleForm}
             savingRole={savingRole}
+            isSuperAdmin={isSuperAdmin}
             onSaveRole={saveRole}
           />
         </>

@@ -69,9 +69,9 @@ export default function Sidebar() {
   const location = useLocation();
   const { collapsed, setCollapsed } = useSidebar();
   const { user } = useAuth();
-  const { can, isAdmin, role } = usePermissions();
+  const { can, isAdmin, isBranchAdmin, role } = usePermissions();
   const { employee: myEmployee } = useMyEmployee();
-  const canOpenAdminPortal = isAdmin || isBootstrapAdminEmail(user?.email);
+  const canOpenAdminPortal = isAdmin || isBranchAdmin || isBootstrapAdminEmail(user?.email);
   const canOpenRecycleBin = canOpenAdminPortal || /manager/i.test(role?.name || "");
   const [hovered, setHovered] = useState(false);
   const { unreadCount } = useUnreadNotifications();

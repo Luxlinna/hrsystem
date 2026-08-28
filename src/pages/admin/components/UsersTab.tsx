@@ -16,6 +16,7 @@ interface UsersTabProps {
   selectedEmployeeEmail: string;
   setSelectedEmployeeEmail: (email: string) => void;
   savingUser: boolean;
+  isSuperAdmin?: boolean;
   onAddCurrentUser: () => void;
   onSaveNewUser: () => void;
   onResendInvite: (user: UserAssignment) => void;
@@ -37,12 +38,16 @@ export const UsersTab = memo(function UsersTab({
   selectedEmployeeEmail,
   setSelectedEmployeeEmail,
   savingUser,
+  isSuperAdmin = true,
   onAddCurrentUser,
   onSaveNewUser,
   onResendInvite,
   onUpdateUserRole,
   onRemoveUser,
 }: UsersTabProps) {
+  const assignableRoles = React.useMemo(() => {
+    return isSuperAdmin ? roles : roles.filter((r) => !r.is_admin && r.name !== "Super Admin");
+  }, [roles, isSuperAdmin]);
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -88,7 +93,7 @@ export const UsersTab = memo(function UsersTab({
         selectedEmployeeEmail={selectedEmployeeEmail}
         setSelectedEmployeeEmail={setSelectedEmployeeEmail}
         employees={employees}
-        roles={roles}
+        roles={assignableRoles}
         savingUser={savingUser}
         onSaveUser={onSaveNewUser}
       />
@@ -104,26 +109,42 @@ export const UsersTab = memo(function UsersTab({
           <div className="divide-y divide-gray-50">
             {users.map((user) => {
               const isUnconfirmed = unconfirmedEmails.has(user.email?.toLowerCase() ?? "");
+              const isSuperUser = user.app_roles?.is_admin || user.app_roles?.name === "Super Admin";
+              const canModifyUser = isSuperAdmin || !isSuperUser;
+
               return (
                 <div key={user.id} className="flex flex-wrap items-center gap-4 px-5 py-4">
                   <div className="w-10 h-10 rounded-xl bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-[12px] font-bold shrink-0">
                     {(user.display_name || user.email).slice(0, 2).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{user.display_name || user.email}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{user.display_name || user.email}</p>
+                      {isSuperUser && (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded-full">
+                          Super Admin
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400 truncate">{user.email}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <select
-                      value={user.role_id || ""}
-                      onChange={(e) => onUpdateUserRole(user, e.target.value ? parseInt(e.target.value) : null)}
-                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
-                    >
-                      <option value="">No role (no access until assigned)</option>
-                      {roles.map((r) => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                    </select>
+                    {canModifyUser ? (
+                      <select
+                        value={user.role_id || ""}
+                        onChange={(e) => onUpdateUserRole(user, e.target.value ? parseInt(e.target.value) : null)}
+                        className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
+                      >
+                        <option value="">No role (no access until assigned)</option>
+                        {assignableRoles.map((r) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-xs text-gray-500 font-medium px-2 py-1 bg-gray-50 rounded-lg border border-gray-200">
+                        {user.app_roles?.name || "Super Admin"}
+                      </span>
+                    )}
                     {user.app_roles && (
                       <span
                         className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white shrink-0"
@@ -139,7 +160,7 @@ export const UsersTab = memo(function UsersTab({
                       </span>
                     )}
                     {/* Resend invite — show for: (a) no user_id yet, or (b) user_id set but email unconfirmed */}
-                    {(!user.user_id || isUnconfirmed) && (
+                    {(!user.user_id || isUnconfirmed) && canModifyUser && (
                       <button
                         onClick={() => onResendInvite(user)}
                         disabled={invitingUserId === user.id}
@@ -153,12 +174,14 @@ export const UsersTab = memo(function UsersTab({
                         )}
                       </button>
                     )}
-                    <button
-                      onClick={() => onRemoveUser(user)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-400 cursor-pointer shrink-0"
-                    >
-                      <i className="ri-delete-bin-line text-sm" />
-                    </button>
+                    {canModifyUser && (
+                      <button
+                        onClick={() => onRemoveUser(user)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-400 cursor-pointer shrink-0"
+                      >
+                        <i className="ri-delete-bin-line text-sm" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );

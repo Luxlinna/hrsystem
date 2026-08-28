@@ -25,11 +25,13 @@ function AccessDenied({ message }: { message: string }) {
 }
 
 export function RequireAdmin({ children }: { children: ReactNode }) {
-  const { isAdmin, loading } = usePermissions();
+  const { isAdmin, isBranchAdmin, loading } = usePermissions();
   const { user } = useAuth();
 
   if (loading && !isBootstrapAdminEmail(user?.email)) return <LoadingScreen />;
-  if (!isAdmin && !isBootstrapAdminEmail(user?.email)) return <AccessDenied message="You don't have permission to access the admin portal." />;
+  if (!isAdmin && !isBranchAdmin && !isBootstrapAdminEmail(user?.email)) {
+    return <AccessDenied message="You don't have permission to access the admin portal." />;
+  }
   return <>{children}</>;
 }
 

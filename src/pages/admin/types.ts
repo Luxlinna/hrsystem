@@ -31,7 +31,7 @@ export interface UserAssignment {
   display_name: string | null;
   role_id: number | null;
   created_at: string;
-  app_roles?: { id: number; name: string; color: string } | null;
+  app_roles?: { id: number; name: string; color: string; is_admin?: boolean } | null;
 }
 
 export interface AuthAccount {

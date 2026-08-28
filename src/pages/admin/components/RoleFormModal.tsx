@@ -9,6 +9,7 @@ interface RoleFormModalProps {
   roleForm: RoleFormState;
   setRoleForm: React.Dispatch<React.SetStateAction<RoleFormState>>;
   savingRole: boolean;
+  isSuperAdmin?: boolean;
   onSaveRole: () => void;
 }
 
@@ -19,6 +20,7 @@ export const RoleFormModal = memo(function RoleFormModal({
   roleForm,
   setRoleForm,
   savingRole,
+  isSuperAdmin = true,
   onSaveRole,
 }: RoleFormModalProps) {
   if (!isOpen) return null;
@@ -88,18 +90,20 @@ export const RoleFormModal = memo(function RoleFormModal({
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
               />
             </div>
-            <div className="flex items-center gap-3 p-3 bg-[#253C7D]/5 rounded-xl">
-              <input
-                type="checkbox"
-                id="is_admin"
-                checked={roleForm.is_admin}
-                onChange={(e) => setRoleForm((p) => ({ ...p, is_admin: e.target.checked }))}
-                className="w-4 h-4 rounded cursor-pointer accent-[#253C7D]"
-              />
-              <label htmlFor="is_admin" className="text-sm font-medium text-gray-800 cursor-pointer">
-                Super Admin — grant full access to ALL modules
-              </label>
-            </div>
+            {isSuperAdmin && (
+              <div className="flex items-center gap-3 p-3 bg-[#253C7D]/5 rounded-xl">
+                <input
+                  type="checkbox"
+                  id="is_admin"
+                  checked={roleForm.is_admin}
+                  onChange={(e) => setRoleForm((p) => ({ ...p, is_admin: e.target.checked }))}
+                  className="w-4 h-4 rounded cursor-pointer accent-[#253C7D]"
+                />
+                <label htmlFor="is_admin" className="text-sm font-medium text-gray-800 cursor-pointer">
+                  Super Admin — grant full access to ALL modules across all branches
+                </label>
+              </div>
+            )}
 
             {!roleForm.is_admin && (
               <div className="space-y-4">
