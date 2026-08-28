@@ -48,6 +48,14 @@ export default function AdminPortal() {
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
   const [userLoadError, setUserLoadError] = useState<string | null>(null);
 
+  // Sync activeTab when URL query changes
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "password-resets") setActiveTab("password-resets");
+    else if (tabParam === "users" || (!isSuperAdmin && isBranchAdmin)) setActiveTab("users");
+    else if (tabParam === "roles") setActiveTab("roles");
+  }, [searchParams, isSuperAdmin, isBranchAdmin]);
+
   // Sync filterBranch when header branch switches
   useEffect(() => {
     if (effectiveBranchId) {

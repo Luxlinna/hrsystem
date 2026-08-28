@@ -60,6 +60,7 @@ const navGroups = [
   {
     label: "System",
     items: [
+      { path: "/admin?tab=users", label: "User Management", icon: "ri-user-settings-line", module: "admin" },
       { path: "/settings", label: "Settings", icon: "ri-settings-3-line", module: "settings" },
     ],
   },
@@ -139,7 +140,8 @@ export default function Sidebar() {
             )}
             <div className="space-y-0.5">
               {group.items.map((item) => {
-                const isActive = location.pathname === item.path;
+                const itemBasePath = item.path.split("?")[0];
+                const isActive = itemBasePath === "/admin" ? location.pathname === "/admin" : location.pathname === itemBasePath;
                 return (
                   <Link
                     key={item.path}
@@ -179,22 +181,6 @@ export default function Sidebar() {
               </div>
               {isExpanded && <span className="text-[13px] whitespace-nowrap">Notifications</span>}
               {!isExpanded && <span className={tooltipClass}>Notifications</span>}
-            </Link>
-          </div>
-        )}
-
-        {/* Admin Portal — Super Admins only */}
-        {canOpenAdminPortal && (
-          <div className={`${isExpanded ? "mx-3" : "mx-2"}`}>
-            <Link
-              to="/admin"
-              className={`flex items-center rounded-lg transition-all duration-200 group relative ${
-                isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
-              } ${location.pathname === "/admin" ? activeClass : inactiveClass}`}
-            >
-              <i className="ri-admin-line text-lg w-5 h-5 flex items-center justify-center shrink-0" />
-              {isExpanded && <span className="text-[13px] whitespace-nowrap">Admin Portal</span>}
-              {!isExpanded && <span className={tooltipClass}>Admin Portal</span>}
             </Link>
           </div>
         )}
