@@ -5,14 +5,7 @@ import { useBranchScope } from "@/context/BranchContext";
 import type { Job, Candidate, Interview, Branch, HiringRequest } from "../types";
 
 export function useHireData() {
-  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' recruitment pipeline.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);

@@ -6,14 +6,7 @@ import { toast } from "@/components/Toast";
 import type { OnboardingHire, ChecklistTask, StaffMember } from "../types";
 
 export function useChecklistData() {
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' checklist.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const targetHireParam = searchParams.get("hire") || searchParams.get("request_id") || searchParams.get("highlight");

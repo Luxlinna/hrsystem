@@ -9,14 +9,7 @@ import type { BinItem, ModuleCount } from "../types";
 export function useRecycleBinData() {
   const { user } = useAuth();
   const { employee: myEmployee } = useMyEmployee();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' deleted data.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
   const isPrivileged = isSuperAdmin || isBranchAdmin;
 
   const [items, setItems] = useState<BinItem[]>([]);

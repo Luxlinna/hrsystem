@@ -8,14 +8,7 @@ export function useOrgChartData(
   setExpandedIds: React.Dispatch<React.SetStateAction<Set<string>>>
 ) {
   const { role, isAdmin } = usePermissions();
-  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' org chart.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const canEditManager = (isAdmin || Boolean(role?.employees_manage)) && !isPartnerBranchBlocked;
 

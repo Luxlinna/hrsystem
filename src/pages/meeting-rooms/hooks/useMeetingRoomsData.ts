@@ -10,14 +10,7 @@ import { toYMD } from "../roomUtils";
 export function useMeetingRoomsData(selectedDate: string) {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
-  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' meeting rooms & bookings.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const canApprove = Boolean(
     (isAdmin ||

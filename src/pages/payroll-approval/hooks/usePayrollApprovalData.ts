@@ -14,14 +14,7 @@ export function usePayrollApprovalData(
   setPeriodFilter: (p: string) => void,
   setExpandedRun: (id: string | null) => void
 ) {
-  const { isSuperAdmin, effectiveBranchId, userBranchId } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' approval process.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, effectiveBranchId, userBranchId, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [approvals, setApprovals] = useState<PayrollApproval[]>([]);

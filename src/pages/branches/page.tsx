@@ -10,6 +10,9 @@ export default function Branches() {
   const {
     canManage,
     isAdmin,
+    isSuperAdmin,
+    isBranchAdmin,
+    userBranchId,
     branches,
     loading,
     selectedBranch,
@@ -100,6 +103,8 @@ export default function Branches() {
         empLoading={empLoading}
         canManage={canManage}
         isAdmin={isAdmin}
+        isSuperAdmin={isSuperAdmin}
+        userBranchId={userBranchId}
         onClose={closeDetail}
         onOpenEditModal={openEditModal}
         onDeleteBranch={handleDeleteBranch}

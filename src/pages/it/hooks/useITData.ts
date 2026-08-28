@@ -4,14 +4,7 @@ import { useBranchScope } from "@/context/BranchContext";
 import type { ITAsset, ITTicket, Employee, Branch } from "../types";
 
 export function useITData() {
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' IT assets or tickets.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const [assets, setAssets] = useState<ITAsset[]>([]);
   const [tickets, setTickets] = useState<ITTicket[]>([]);

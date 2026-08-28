@@ -4,14 +4,7 @@ import { useBranchScope } from "@/context/BranchContext";
 import type { Tool, Employee, ToolAssignment, ToolUsage } from "../types";
 
 export function useToolsData() {
-  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' tools/activity.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const [tools, setTools] = useState<Tool[]>([]);
   const [assignments, setAssignments] = useState<ToolAssignment[]>([]);

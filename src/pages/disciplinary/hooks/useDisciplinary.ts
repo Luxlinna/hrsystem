@@ -21,15 +21,8 @@ export function useDisciplinary() {
   const { user } = useAuth();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
   const { employee: myEmployee } = useMyEmployee();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' disciplinary records.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
 
   const roleName = (role?.name || "").toLowerCase();
   const isLeader =
@@ -74,11 +67,17 @@ export function useDisciplinary() {
 
     setLoading(true);
     try {
-      // 1. Fetch branches
-      const branchQuery = supabase.from("branches").select("id, name").is("deleted_at", null).eq("id", targetBranch).order("name");
+      // 1. Fetch all active branches for modals/labels
+      const { data: bData } = await supabase
+        .from("branches")
+        .select("id, name")
+        .is("deleted_at", null)
+        .order("name");
 
-      // 2. Fetch employees
-      const empQuery = supabase
+      setBranches((bData as Branch[]) || []);
+
+      // 2. Fetch employees for active branch
+      const { data: empData, error: empErr } = await supabase
         .from("employees")
         .select("id, first_name, last_name, department, role, avatar_url, branch_id")
         .eq("status", "active")
@@ -86,37 +85,43 @@ export function useDisciplinary() {
         .is("deleted_at", null)
         .order("first_name");
 
-      const [bRes, empRes] = await Promise.all([branchQuery, empQuery]);
-      const empList = (empRes.data || []) as Employee[];
+      if (empErr) console.error("Disciplinary employees query error:", empErr);
+      const empList = (empData || []) as Employee[];
       const empIds = empList.map((e) => e.id);
+      setEmployees(empList);
 
       // 3. Fetch disciplinary records
-      let recordPromise: PromiseLike<any>;
+      let recordList: DisciplinaryRecord[] = [];
+      const query = supabase
+        .from("disciplinary_records")
+        .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id)")
+        .is("deleted_at", null);
 
+      let scopedQuery = query;
       if (isLeader) {
-        // Company-wide disciplinary cases (branch_id is null) OR branch-specific cases
-        recordPromise = supabase
-          .from("disciplinary_records")
-          .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), branches(id, name)")
-          .is("deleted_at", null)
-          .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
-          .order("created_at", { ascending: false });
+        scopedQuery = scopedQuery.or(`branch_id.is.null,branch_id.eq.${targetBranch}`);
       } else {
-        // Staff sees only their own record
         const staffId = myEmployee?.id || empIds[0];
-        recordPromise = supabase
-          .from("disciplinary_records")
-          .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), branches(id, name)")
-          .is("deleted_at", null)
-          .eq("employee_id", staffId || "")
-          .order("created_at", { ascending: false });
+        scopedQuery = scopedQuery.eq("employee_id", staffId || "");
       }
 
-      const rRes = await recordPromise;
+      const { data: rData, error: rErr } = await scopedQuery.order("created_at", { ascending: false });
+      if (rErr) {
+        console.warn("Scoped disciplinary query error, using fallback:", rErr);
+        const { data: fallbackData } = await supabase
+          .from("disciplinary_records")
+          .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id)")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false });
 
-      if (bRes.data) setBranches(bRes.data as Branch[]);
-      if (rRes.data) setRecords((rRes.data as unknown) as DisciplinaryRecord[]);
-      setEmployees(empList);
+        const rawList = (fallbackData as unknown as DisciplinaryRecord[]) || [];
+        const empIdSet = new Set(empIds);
+        recordList = rawList.filter((r: any) => !r.employee_id || empIdSet.has(r.employee_id) || r.employees?.branch_id === targetBranch);
+      } else {
+        recordList = (rData as unknown as DisciplinaryRecord[]) || [];
+      }
+
+      setRecords(recordList);
     } catch (err) {
       console.error("Failed to load disciplinary data:", err);
     } finally {
@@ -125,9 +130,8 @@ export function useDisciplinary() {
   }, [isPartnerBranchBlocked, targetBranch, isLeader, myEmployee]);
 
   useEffect(() => {
-    if (permsLoading) return;
     fetchData();
-  }, [permsLoading, fetchData]);
+  }, [fetchData]);
 
   // Tab Filtering & Counts
   const openCount = useMemo(

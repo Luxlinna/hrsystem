@@ -5,14 +5,7 @@ import { useBranchScope } from "@/context/BranchContext";
 import type { Offboarding, EmployeeOption, Branch } from "../types";
 
 export function useOffboardData(setTab: (t: "active" | "completed" | "tasks" | "analytics") => void) {
-  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' offboarding operations.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const [offboardings, setOffboardings] = useState<Offboarding[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);

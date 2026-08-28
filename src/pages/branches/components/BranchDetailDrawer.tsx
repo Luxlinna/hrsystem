@@ -18,6 +18,8 @@ interface BranchDetailDrawerProps {
   empLoading: boolean;
   canManage: boolean;
   isAdmin: boolean;
+  isSuperAdmin?: boolean;
+  userBranchId?: string | null;
   onClose: () => void;
   onOpenEditModal: (branch: Branch) => void;
   onDeleteBranch: (branch: Branch) => void;
@@ -38,11 +40,16 @@ function BranchDetailDrawerInner({
   empLoading,
   canManage,
   isAdmin,
+  isSuperAdmin = false,
+  userBranchId = null,
   onClose,
   onOpenEditModal,
   onDeleteBranch,
   onToggleStatus,
 }: BranchDetailDrawerProps & { branch: Branch }) {
+  // Branch Admins can only manage work sites and branch details for their own branch.
+  // Super Admins / full Admins can manage all branches.
+  const canManageThisBranch = isSuperAdmin || isAdmin || (canManage && (!userBranchId || branch.id === userBranchId));
   // ── Work Sites state ────────────────────────────────────────────────────
   const [sites, setSites] = useState<WorkSite[]>([]);
   const [sitesLoading, setSitesLoading] = useState(false);
@@ -201,7 +208,7 @@ function BranchDetailDrawerInner({
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {canManage && (
+            {canManageThisBranch && (
               <button
                 onClick={() => onOpenEditModal(branch)}
                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
@@ -318,7 +325,7 @@ function BranchDetailDrawerInner({
             </div>
           </div>
         </div>
-        {canManage && (
+        {canManageThisBranch && (
           <button
             onClick={() => onToggleStatus(branch)}
             className={`w-full mt-4 py-2 rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${
@@ -344,7 +351,7 @@ function BranchDetailDrawerInner({
               </span>
             )}
           </h3>
-          {canManage && !addingMode && (
+          {canManageThisBranch && !addingMode && (
             <button
               onClick={() => setAddingMode(true)}
               className="flex items-center gap-1 text-[11px] font-semibold text-[#253C7D] hover:bg-[#253C7D]/10 px-2 py-1 rounded-lg transition-colors cursor-pointer"
@@ -364,7 +371,7 @@ function BranchDetailDrawerInner({
               <div className="text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                 <i className="ri-building-2-line text-2xl text-gray-300" />
                 <p className="text-[12px] text-gray-400 mt-1">No work sites yet</p>
-                {canManage && (
+                {canManageThisBranch && (
                   <button
                     onClick={() => setAddingMode(true)}
                     className="mt-2 text-[11px] font-semibold text-[#253C7D] hover:underline cursor-pointer"
@@ -445,7 +452,7 @@ function BranchDetailDrawerInner({
                   </div>
                 )}
 
-                {canManage && (
+                {canManageThisBranch && (
                   <div className="flex items-center gap-1 shrink-0">
                     {editingSiteId === site.id ? (
                       <>

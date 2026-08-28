@@ -6,14 +6,7 @@ import { MODULES, EMPLOYEE_SCOPED_MODULES } from "../constants";
 import type { ReportConfig, ReportRow } from "../types";
 
 export function useReportsData() {
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' reports.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const paramMod = searchParams.get("module");

@@ -415,6 +415,9 @@ export function useBranches() {
   return {
     canManage,
     isAdmin,
+    isSuperAdmin,
+    isBranchAdmin,
+    userBranchId,
     branches,
     loading,
     selectedBranch,

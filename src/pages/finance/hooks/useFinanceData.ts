@@ -5,14 +5,7 @@ import type { Expense, Branch, BranchFinancePolicy } from "../types";
 import { DEFAULT_BRANCH_FINANCE_POLICY } from "../constants";
 
 export function useFinanceData() {
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' financial data.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);

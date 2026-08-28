@@ -34,14 +34,7 @@ import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShi
 const getXLSX = () => import("xlsx");
 
 export default function Analytics() {
-  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName } = useBranchScope();
-
-  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' analytics.
-  // Access is strictly confined to the user's home branch (userBranchId).
-  const isPartnerBranchBlocked = Boolean(
-    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
-  );
-  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
+  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   const [activeTab, setActiveTab] = useState<AnalyticsTabKey>("overview");
   const [department, setDepartment] = useState("all");
@@ -84,7 +77,7 @@ export default function Analytics() {
       supabase.from("leave_requests").select("id, employee_id, leave_type, start_date, end_date, days, status, employees(branch_id)"),
       supabase.from("payroll_records").select("employee_id, month, base_salary, bonus, deductions, net_pay, status, employees(branch_id)"),
       supabase.from("job_postings").select("id, title, department, status, location, salary_min, salary_max").is("deleted_at", null).eq("branch_id", targetBranch),
-      supabase.from("candidates").select("id, stage, department, applied_at").is("deleted_at", null),
+      supabase.from("candidates").select("id, stage, department, applied_at, job_id").is("deleted_at", null),
       supabase.from("offboarding_requests").select("id, employee_id, reason, status, last_day, employees(branch_id)"),
       expQuery,
       supabase.from("it_assets").select("id, type, status, assigned_to, branch_id, employees(branch_id)").is("deleted_at", null).or(`branch_id.eq.${targetBranch},branch_id.is.null`),
@@ -98,10 +91,14 @@ export default function Analytics() {
 
     const rawLeaves = results[1].data || [];
     const rawPayroll = results[2].data || [];
+    const rawJobs = results[3].data || [];
+    const rawCandidates = results[4].data || [];
     const rawOffboarding = results[5].data || [];
     const rawItAssets = results[7].data || [];
     const rawBenefits = results[9].data || [];
 
+    const jobIds = new Set(rawJobs.map((j: any) => j.id));
+    const filteredCandidates = rawCandidates.filter((c: any) => !c.job_id || jobIds.has(c.job_id));
     const filteredLeaves = rawLeaves.filter((l: any) => empIds.has(l.employee_id) || l.employees?.branch_id === targetBranch);
     const filteredPayroll = rawPayroll.filter((p: any) => empIds.has(p.employee_id) || p.employees?.branch_id === targetBranch);
     const filteredOffboarding = rawOffboarding.filter((o: any) => empIds.has(o.employee_id) || o.employees?.branch_id === targetBranch);
@@ -111,8 +108,8 @@ export default function Analytics() {
     setEmployees(empList);
     setLeaveRequests(filteredLeaves);
     setPayroll(filteredPayroll);
-    setJobs(results[3].data || []);
-    setCandidates(results[4].data || []);
+    setJobs(rawJobs);
+    setCandidates(filteredCandidates);
     setOffboarding(filteredOffboarding);
     setExpenses(results[6].data || []);
     setItAssets(filteredItAssets);
