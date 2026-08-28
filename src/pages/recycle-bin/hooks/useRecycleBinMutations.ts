@@ -62,6 +62,41 @@ export function useRecycleBinMutations({
           .eq("onboarding_request_id", item.id),
       ]);
       error = dbErr;
+    } else if (item.table === "branches") {
+      const { error: bErr } = await supabase
+        .from("branches")
+        .update({ deleted_at: null, deleted_by: null, status: "active" })
+        .eq("id", item.id);
+
+      if (!bErr) {
+        const { data: emps } = await supabase
+          .from("employees")
+          .select("id, email")
+          .eq("branch_id", item.id);
+
+        if (emps && emps.length > 0) {
+          const empIds = emps.map((e) => e.id);
+          const empEmails = emps.map((e) => e.email?.toLowerCase()).filter(Boolean);
+
+          await supabase
+            .from("employees")
+            .update({ deleted_at: null, deleted_by: null, status: "active" })
+            .in("id", empIds);
+
+          if (empEmails.length > 0) {
+            await supabase
+              .from("user_role_assignments")
+              .update({ deleted_at: null, deleted_by: null })
+              .in("email", empEmails);
+          }
+        }
+
+        await supabase
+          .from("work_locations")
+          .update({ deleted_at: null })
+          .eq("branch_id", item.id);
+      }
+      error = bErr;
     } else {
       const { error: dbErr } = await supabase
         .from(item.table)

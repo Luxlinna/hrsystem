@@ -140,10 +140,40 @@ export function usePermissions(): UsePermissionsReturn {
     // silently drop the user to the edge-function fallback. Order and take
     // the first instead so a duplicate row degrades to "use the linked one"
     // rather than "no role at all".
+    // If user is a bootstrap Super Admin, grant immediate access
+    if (isBootstrapAdminEmail(currentUser.email)) {
+      const fallbackRole = bootstrapAdminRole();
+      cachedRole = fallbackRole;
+      cachedUid = currentUser.id;
+      setRole(fallbackRole);
+      setLoading(false);
+      return;
+    }
+
+    // Check if the employee or their assigned branch is deleted/inactive
+    const { data: empCheck } = await supabase
+      .from("employees")
+      .select("id, status, deleted_at, branch_id, branches(id, status, deleted_at)")
+      .eq("email", currentUser.email?.toLowerCase() || "")
+      .maybeSingle();
+
+    if (empCheck) {
+      const isEmpDeleted = empCheck.deleted_at !== null || empCheck.status === "inactive" || empCheck.status === "terminated";
+      const isBranchDeleted = (empCheck.branches as any)?.deleted_at !== null || (empCheck.branches as any)?.status === "inactive";
+      if (isEmpDeleted || isBranchDeleted) {
+        cachedRole = null;
+        cachedUid = currentUser.id;
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+    }
+
     const { data, error } = await supabase
       .from("user_role_assignments")
       .select("*, app_roles(*)")
       .or(`user_id.eq.${currentUser.id},email.eq.${currentUser.email?.toLowerCase() || ""}`)
+      .is("deleted_at", null)
       .order("user_id", { nullsFirst: false })
       .limit(1);
 
@@ -155,14 +185,8 @@ export function usePermissions(): UsePermissionsReturn {
       cachedRole = userRole;
       cachedUid = currentUser.id;
       setRole(userRole);
-    } else if (isBootstrapAdminEmail(currentUser.email)) {
-      const fallbackRole = bootstrapAdminRole();
-      cachedRole = fallbackRole;
-      cachedUid = currentUser.id;
-      setRole(fallbackRole);
     } else {
-      // No assignment (or the read failed) = no access until an admin
-      // assigns a role via the Admin Portal. Never fail open.
+      // No active assignment = no access until an admin assigns a role via the Admin Portal
       cachedRole = null;
       cachedUid = currentUser.id;
       setRole(null);
@@ -234,7 +258,7 @@ export function usePermissions(): UsePermissionsReturn {
     !loading &&
     !!role &&
     !role.is_admin &&
-    /branch\s*admin/i.test(role.name?.trim() || "");
+    (/branch\s*admin/i.test(role.name?.trim() || "") || role.allowed_modules.includes("admin"));
 
   // Memoized so its identity only changes when the underlying permissions
   // actually do — components legitimately put `can` in effect/callback
@@ -249,8 +273,8 @@ export function usePermissions(): UsePermissionsReturn {
       if (role.allowed_modules.includes("*")) return true;
       const roleName = (role.name || "").trim().toLowerCase();
       if (/branch\s*admin/i.test(roleName)) {
-        // Branch Admin has access to all operational and reporting modules for their branch
-        return module !== "admin";
+        // Branch Admin has access to all operational, reporting, and admin user management for their branch
+        return true;
       }
       return role.allowed_modules.includes(module);
     },

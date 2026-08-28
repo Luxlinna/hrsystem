@@ -10,6 +10,7 @@ interface ProfileDropdownProps {
   userEmail?: string;
   can: (module: string) => boolean;
   isAdmin: boolean;
+  isBranchAdmin?: boolean;
   canOpenRecycleBin: boolean;
   handleLogout: () => void;
 }
@@ -28,6 +29,7 @@ const ProfileDropdown = memo(function ProfileDropdown({
   userEmail,
   can,
   isAdmin,
+  isBranchAdmin,
   canOpenRecycleBin,
   handleLogout,
 }: ProfileDropdownProps) {
@@ -83,7 +85,7 @@ const ProfileDropdown = memo(function ProfileDropdown({
               </Link>
             )}
 
-            {isAdmin && (
+            {(isAdmin || isBranchAdmin) && (
               <Link
                 to="/admin"
                 onClick={close}

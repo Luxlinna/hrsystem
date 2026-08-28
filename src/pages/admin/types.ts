@@ -32,6 +32,8 @@ export interface UserAssignment {
   role_id: number | null;
   created_at: string;
   app_roles?: { id: number; name: string; color: string; is_admin?: boolean } | null;
+  branch_id?: string | null;
+  branch_name?: string | null;
 }
 
 export interface AuthAccount {
@@ -54,6 +56,8 @@ export interface DirectoryEmployee {
   last_name: string | null;
   role: string | null;
   department: string | null;
+  branch_id?: string | null;
+  branch_name?: string | null;
 }
 
 export interface PasswordResetRequest {

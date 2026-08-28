@@ -356,15 +356,54 @@ export function useBranches() {
         toast("Access Denied", "Only Super Admin can delete branches.", "error");
         return;
       }
-      if (!confirm(`Move "${branch.name}" to the Recycle Bin? The branch can be restored later.`)) return;
+      if (!confirm(`Move "${branch.name}" to the Recycle Bin? All user accounts and employee records in this branch will also be deactivated and moved to the Recycle Bin.`)) return;
+
+      const now = new Date().toISOString();
+
+      // 1. Soft-delete the branch
       const { error } = await supabase
         .from("branches")
-        .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+        .update({ deleted_at: now, deleted_by: actorName, status: "inactive" })
         .eq("id", branch.id);
+
       if (error) {
         toast("Error", "Failed to delete branch", "error");
         return;
       }
+
+      // 2. Find and deactivate all employees in this branch
+      const { data: branchEmps } = await supabase
+        .from("employees")
+        .select("id, email")
+        .eq("branch_id", branch.id)
+        .is("deleted_at", null);
+
+      if (branchEmps && branchEmps.length > 0) {
+        const empIds = branchEmps.map((e) => e.id);
+        const empEmails = branchEmps.map((e) => e.email?.toLowerCase()).filter(Boolean);
+
+        // Soft-delete employees
+        await supabase
+          .from("employees")
+          .update({ deleted_at: now, deleted_by: actorName, status: "inactive" })
+          .in("id", empIds);
+
+        // Soft-delete user role assignments so they lose login rights
+        if (empEmails.length > 0) {
+          await supabase
+            .from("user_role_assignments")
+            .update({ deleted_at: now, deleted_by: actorName })
+            .in("email", empEmails);
+        }
+      }
+
+      // 3. Soft-delete work locations for this branch
+      await supabase
+        .from("work_locations")
+        .update({ deleted_at: now })
+        .eq("branch_id", branch.id)
+        .is("deleted_at", null);
+
       logActivity({
         module: "branches",
         action: "deleted",
@@ -372,15 +411,16 @@ export function useBranches() {
         entityId: branch.id,
         actorName,
         actorRole: role?.name || "Unknown",
-        description: `Branch "${branch.name}" moved to the Recycle Bin`,
+        description: `Branch "${branch.name}" and its employees moved to the Recycle Bin`,
       });
-      toast("Branch deleted", `"${branch.name}" moved to the Recycle Bin.`, "success");
+
+      toast("Branch deleted", `"${branch.name}" and its users moved to the Recycle Bin.`, "success");
       setSelectedBranch(null);
       setBranchEmployees([]);
       loadBranches();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isAdmin, actorName, role?.name, loadBranches]
+    [canCreateBranch, actorName, role?.name, loadBranches]
   );
 
   const filtered = useMemo(() => {

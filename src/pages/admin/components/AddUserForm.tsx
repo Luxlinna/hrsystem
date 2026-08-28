@@ -68,7 +68,7 @@ export const AddUserForm = memo(function AddUserForm({
             <option value="">-- Quick autofill from Employee --</option>
             {employees.map((emp) => (
               <option key={emp.email} value={emp.email}>
-                {`${emp.first_name || ""} ${emp.last_name || ""}`.trim()} — {emp.role || "No directory role"} ({emp.email})
+                {`${emp.first_name || ""} ${emp.last_name || ""}`.trim()} — {emp.role || "Staff"} [${emp.branch_name || "Headquarters"}] ({emp.email})
               </option>
             ))}
           </select>

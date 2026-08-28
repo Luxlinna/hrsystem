@@ -29,7 +29,7 @@ import { PasswordResetsTab } from "./components/PasswordResetsTab";
 
 export default function AdminPortal() {
   const { user } = useAuth();
-  const { isSuperAdmin, isBranchAdmin, userBranchId, userBranchName } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, userBranchId, userBranchName, targetBranch, effectiveBranchId } = useBranchScope();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     const tabParam = searchParams.get("tab");
@@ -39,11 +39,21 @@ export default function AdminPortal() {
   });
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [users, setUsers] = useState<UserAssignment[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [filterBranch, setFilterBranch] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>([]);
   const [actingResetId, setActingResetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
   const [userLoadError, setUserLoadError] = useState<string | null>(null);
+
+  // Sync filterBranch when header branch switches
+  useEffect(() => {
+    if (effectiveBranchId) {
+      setFilterBranch(effectiveBranchId);
+    }
+  }, [effectiveBranchId]);
 
   // Role editor state
   const [editingRole, setEditingRole] = useState<AppRole | null>(null);
@@ -84,17 +94,21 @@ export default function AdminPortal() {
     }
 
     const empQuery = !isSuperAdmin && targetBranchId
-      ? supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id").eq("branch_id", targetBranchId).not("email", "is", null).is("deleted_at", null).order("first_name")
-      : supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id").not("email", "is", null).is("deleted_at", null).order("first_name");
+      ? supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id, branches(id, name)").eq("branch_id", targetBranchId).not("email", "is", null).is("deleted_at", null).order("first_name")
+      : supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id, branches(id, name)").not("email", "is", null).is("deleted_at", null).order("first_name");
 
-    const [rolesRes, usersRes, deletedRes, employeesRes, resetRequestsRes, authAccountsResult] = await Promise.all([
+    const [rolesRes, usersRes, deletedRes, employeesRes, resetRequestsRes, authAccountsResult, branchesRes] = await Promise.all([
       supabase.from("app_roles").select("*").order("id"),
       supabase.from("user_role_assignments").select("*, app_roles(id, name, color, is_admin)").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("user_role_assignments").select("email").not("deleted_at", "is", null),
       empQuery,
       supabase.from("password_reset_requests").select("id, email, status, requested_at, acted_at").is("deleted_at", null).order("requested_at", { ascending: false }).limit(50),
       authAccountsPromise,
+      supabase.from("branches").select("id, name").is("deleted_at", null).order("name"),
     ]);
+
+    const branchList = (branchesRes.data || []) as { id: string; name: string }[];
+    setBranches(branchList);
 
     const activeAssignments: UserAssignment[] = (authAccountsResult.assignments || usersRes.data || []).filter((user: any) => !user.deleted_at);
     const activeEmails = new Set(activeAssignments.map((u) => u.email?.toLowerCase()).filter(Boolean));
@@ -102,40 +116,24 @@ export default function AdminPortal() {
 
     const employeeMap = new Map((employeesRes.data || []).map((e: any) => [e.email?.toLowerCase(), e]));
 
-    // Enrich existing assignments with names from employee directory if missing
-    const enrichedAssignments = activeAssignments.map((assignmentUser) => {
+    // Enrich existing assignments with names and branches from employee directory
+    const enrichedAssignments: UserAssignment[] = activeAssignments.map((assignmentUser) => {
       const emp = assignmentUser.email ? employeeMap.get(assignmentUser.email.toLowerCase()) : null;
+      const bName = emp?.branches ? (emp.branches as any).name : null;
       return {
         ...assignmentUser,
         display_name: assignmentUser.display_name || (emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : null),
+        branch_id: emp?.branch_id || null,
+        branch_name: bName || "Headquarters",
       };
     });
-
-    let virtualIdCounter = -1;
-
-    // Ensure all employees in the branch directory are included in the User Management list
-    const directoryUsers: UserAssignment[] = (employeesRes.data || [])
-      .filter((emp: any) => emp.email && !activeEmails.has(emp.email.toLowerCase()) && !deletedEmails.has(emp.email.toLowerCase()))
-      .map((emp: any) => {
-        activeEmails.add(emp.email.toLowerCase());
-        const matchingRole = (rolesRes.data || []).find(
-          (r: any) => (r.name || "").trim().toLowerCase() === (emp.role || "").trim().toLowerCase()
-        );
-        return {
-          id: virtualIdCounter--,
-          user_id: null,
-          email: emp.email.toLowerCase(),
-          display_name: `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || emp.email,
-          role_id: matchingRole ? matchingRole.id : null,
-          created_at: new Date().toISOString(),
-          app_roles: matchingRole ? { id: matchingRole.id, name: matchingRole.name, color: matchingRole.color, is_admin: matchingRole.is_admin } : null,
-        };
-      });
 
     const unassignedAuthUsers: UserAssignment[] = (authAccountsResult.accounts || [])
       .filter((account) => account.email && !activeEmails.has(account.email.toLowerCase()) && !deletedEmails.has(account.email.toLowerCase()))
       .map((account) => {
         activeEmails.add(account.email!.toLowerCase());
+        const emp = employeeMap.get(account.email!.toLowerCase());
+        const bName = emp?.branches ? (emp.branches as any).name : null;
         return {
           id: virtualIdCounter--,
           user_id: account.id,
@@ -144,6 +142,8 @@ export default function AdminPortal() {
           role_id: null,
           created_at: new Date().toISOString(),
           app_roles: null,
+          branch_id: emp?.branch_id || null,
+          branch_name: bName || "Headquarters",
         };
       });
 
@@ -156,7 +156,8 @@ export default function AdminPortal() {
     const branchEmployeeEmails = new Set((employeesRes.data || []).map((e: any) => e.email?.toLowerCase()).filter(Boolean));
     if (user?.email) branchEmployeeEmails.add(user.email.toLowerCase());
 
-    const allCombinedUsers = [...enrichedAssignments, ...directoryUsers, ...unassignedAuthUsers];
+    // Only display actual provisioned role assignments and registered auth accounts
+    const allCombinedUsers = [...enrichedAssignments, ...unassignedAuthUsers];
     const filteredUsers = (!isSuperAdmin && targetBranchId)
       ? allCombinedUsers.filter((u) => branchEmployeeEmails.has(u.email?.toLowerCase()))
       : allCombinedUsers;
@@ -166,10 +167,21 @@ export default function AdminPortal() {
       ? allResets.filter((r) => branchEmployeeEmails.has(r.email?.toLowerCase()))
       : allResets;
 
+    const enrichedEmployees: DirectoryEmployee[] = (employeesRes.data || []).map((e: any) => ({
+      id: e.id,
+      email: e.email,
+      first_name: e.first_name,
+      last_name: e.last_name,
+      role: e.role,
+      department: e.department,
+      branch_id: e.branch_id,
+      branch_name: e.branches ? (e.branches as any).name : "Headquarters",
+    }));
+
     setRoles(rolesRes.data || []);
     setUsers(filteredUsers);
     setUnconfirmedEmails(unconfirmed);
-    setEmployees(employeesRes.data || []);
+    setEmployees(enrichedEmployees);
     setPasswordResetRequests(filteredResets);
     setLoading(false);
   }, [isSuperAdmin, userBranchId, user?.email]);
@@ -304,11 +316,36 @@ export default function AdminPortal() {
         return;
       }
     } else {
-      const { error } = await supabase.from("user_role_assignments").insert({
-        email: newUser.email.trim(),
-        display_name: newUser.display_name.trim() || null,
-        role_id: newUser.role_id ? parseInt(newUser.role_id) : null,
-      });
+      const cleanEmail = newUser.email.trim().toLowerCase();
+      const roleIdInt = newUser.role_id ? parseInt(newUser.role_id) : null;
+      const displayNameStr = newUser.display_name.trim() || null;
+
+      // Check if an assignment already exists (even if soft-deleted)
+      const { data: existingAssignment } = await supabase
+        .from("user_role_assignments")
+        .select("id")
+        .ilike("email", cleanEmail)
+        .maybeSingle();
+
+      let error: any = null;
+      if (existingAssignment) {
+        ({ error } = await supabase
+          .from("user_role_assignments")
+          .update({
+            display_name: displayNameStr,
+            role_id: roleIdInt,
+            deleted_at: null,
+            deleted_by: null,
+          })
+          .eq("id", existingAssignment.id));
+      } else {
+        ({ error } = await supabase.from("user_role_assignments").insert({
+          email: cleanEmail,
+          display_name: displayNameStr,
+          role_id: roleIdInt,
+        }));
+      }
+
       setSavingUser(false);
       if (error) { showToast("Failed to add user. Email may already exist.", "err"); return; }
       showToast("User added!");
@@ -386,19 +423,35 @@ export default function AdminPortal() {
     setUsers((current) => current.filter((user) => user.id !== targetUser.id));
 
     try {
-      await manageUserRole(
-        "delete_assignment",
-        targetUser.id > 0 ? targetUser.id : null,
-        null,
-        targetUser.email,
-        targetUser.display_name
-      );
+      try {
+        await manageUserRole(
+          "delete_assignment",
+          targetUser.id > 0 ? targetUser.id : null,
+          null,
+          targetUser.email,
+          targetUser.display_name
+        );
+      } catch {
+        const now = new Date().toISOString();
+        if (targetUser.id > 0) {
+          await supabase
+            .from("user_role_assignments")
+            .update({ deleted_at: now, deleted_by: user?.email || "Admin" })
+            .eq("id", targetUser.id);
+        } else if (targetUser.email) {
+          await supabase
+            .from("user_role_assignments")
+            .update({ deleted_at: now, deleted_by: user?.email || "Admin" })
+            .ilike("email", targetUser.email);
+        }
+      }
       showToast("User moved to Recycle Bin");
+      loadData();
     } catch (error: any) {
       setUsers(previousUsers);
       showToast(error.message || "Failed to remove user", "err");
     }
-  }, [users, isSuperAdmin, showToast]);
+  }, [users, isSuperAdmin, showToast, user?.email, loadData]);
 
   // ── Password Reset Actions ──
   const handlePasswordResetAction = useCallback(async (requestId: string, action: "approve" | "reject") => {
@@ -526,6 +579,11 @@ export default function AdminPortal() {
               users={users}
               roles={roles}
               employees={employees}
+              branches={branches}
+              filterBranch={filterBranch}
+              setFilterBranch={setFilterBranch}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
               unconfirmedEmails={unconfirmedEmails}
               invitingUserId={invitingUserId}
               userLoadError={userLoadError}

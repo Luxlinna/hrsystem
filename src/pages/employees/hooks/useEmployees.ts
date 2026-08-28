@@ -331,24 +331,66 @@ export function useEmployees() {
       e.preventDefault();
       if (!form.first_name.trim() || !form.last_name.trim() || !form.email.trim() || !canManage) return;
       setSubmitting(true);
-      const assignedBranch = (!isSuperAdmin && userBranchId) ? userBranchId : (form.branch_id || effectiveBranchId || null);
-      const { data, error } = await supabase
+      const assignedBranch = (!isSuperAdmin && userBranchId) ? userBranchId : (form.branch_id || null);
+      const cleanEmail = form.email.trim().toLowerCase();
+
+      // Check if a soft-deleted employee already exists with this email
+      const { data: existingEmp } = await supabase
         .from("employees")
-        .insert({
-          first_name: form.first_name.trim(),
-          last_name: form.last_name.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim() || null,
-          role: form.role.trim() || null,
-          department: form.department || null,
-          branch_id: assignedBranch,
-          status: form.status,
-          join_date: form.join_date,
-          reports_to: form.reports_to || null,
-          default_work_location_id: form.default_work_location_id || null,
-        })
-        .select()
-        .single();
+        .select("id, deleted_at")
+        .ilike("email", cleanEmail)
+        .maybeSingle();
+
+      let data: any = null;
+      let error: any = null;
+
+      if (existingEmp) {
+        // Update / reassign existing employee to the selected branch with new details
+        const res = await supabase
+          .from("employees")
+          .update({
+            first_name: form.first_name.trim(),
+            last_name: form.last_name.trim(),
+            phone: form.phone.trim() || null,
+            role: form.role.trim() || null,
+            department: form.department || null,
+            branch_id: assignedBranch,
+            status: form.status,
+            join_date: form.join_date,
+            reports_to: form.reports_to || null,
+            default_work_location_id: form.default_work_location_id || null,
+            deleted_at: null,
+            deleted_by: null,
+          })
+          .eq("id", existingEmp.id)
+          .select()
+          .single();
+
+        data = res.data;
+        error = res.error;
+      } else {
+        const res = await supabase
+          .from("employees")
+          .insert({
+            first_name: form.first_name.trim(),
+            last_name: form.last_name.trim(),
+            email: cleanEmail,
+            phone: form.phone.trim() || null,
+            role: form.role.trim() || null,
+            department: form.department || null,
+            branch_id: assignedBranch,
+            status: form.status,
+            join_date: form.join_date,
+            reports_to: form.reports_to || null,
+            default_work_location_id: form.default_work_location_id || null,
+          })
+          .select()
+          .single();
+
+        data = res.data;
+        error = res.error;
+      }
+
       setSubmitting(false);
       if (error) {
         toast(

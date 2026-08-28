@@ -217,6 +217,7 @@ export function useTopBar() {
     avatarUrl,
     can,
     isAdmin,
+    isBranchAdmin,
     canOpenRecycleBin,
     handleLogout,
     // Dropdown toggles

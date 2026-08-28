@@ -40,6 +40,7 @@ export default function TopBar() {
     avatarUrl,
     can,
     isAdmin,
+    isBranchAdmin,
     canOpenRecycleBin,
     handleLogout,
     menuOpen, setMenuOpen,
@@ -82,6 +83,7 @@ export default function TopBar() {
         handleLogout={handleLogout}
         can={can}
         isAdmin={isAdmin}
+        isBranchAdmin={isBranchAdmin}
         canOpenRecycleBin={canOpenRecycleBin}
       />
 
@@ -190,6 +192,7 @@ export default function TopBar() {
               userEmail={user?.email}
               can={can}
               isAdmin={isAdmin}
+              isBranchAdmin={isBranchAdmin}
               canOpenRecycleBin={canOpenRecycleBin}
               handleLogout={handleLogout}
             />

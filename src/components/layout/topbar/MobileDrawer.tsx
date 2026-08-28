@@ -13,6 +13,7 @@ interface MobileDrawerProps {
   handleLogout: () => void;
   can: (module: string) => boolean;
   isAdmin: boolean;
+  isBranchAdmin?: boolean;
   canOpenRecycleBin: boolean;
 }
 
@@ -35,6 +36,7 @@ const MobileDrawer = memo(function MobileDrawer({
   handleLogout,
   can,
   isAdmin,
+  isBranchAdmin,
   canOpenRecycleBin,
 }: MobileDrawerProps) {
   const location = useLocation();
@@ -75,12 +77,12 @@ const MobileDrawer = memo(function MobileDrawer({
     .map((group) => ({ ...group, items: group.items.filter((item) => can(item.module)) }))
     .filter((group) => group.items.length > 0);
 
-  if (isAdmin || canOpenRecycleBin) {
+  if (isAdmin || isBranchAdmin || canOpenRecycleBin) {
     visibleGroups.push({
       label: "Admin",
       items: [
         { path: "/recycle-bin", label: "Recycle Bin", icon: "ri-delete-bin-6-line", module: "admin" },
-        ...(isAdmin ? [{ path: "/admin", label: "Admin Portal", icon: "ri-admin-line", module: "admin" }] : []),
+        ...(isAdmin || isBranchAdmin ? [{ path: "/admin", label: "Admin Portal", icon: "ri-admin-line", module: "admin" }] : []),
       ],
     });
   }

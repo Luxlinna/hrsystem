@@ -50,10 +50,10 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
       .then(({ data }) => {
         const sites = (data as WorkLocation[]) || [];
         setWorkSites(sites);
-        // Auto-select the default site if none chosen yet
-        if (!form.default_work_location_id) {
-          const def = sites.find((s) => s.is_default);
-          if (def) setForm((p) => ({ ...p, default_work_location_id: def.id }));
+        // Auto-select the default site for this branch if not set or if changing branch
+        const def = sites.find((s) => s.is_default) || sites[0];
+        if (def && (!form.default_work_location_id || !sites.some((s) => s.id === form.default_work_location_id))) {
+          setForm((p) => ({ ...p, default_work_location_id: def.id }));
         }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,7 +156,10 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
               <select
                 value={form.branch_id}
                 disabled={isSuperAdmin === false}
-                onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
+                onChange={(e) => {
+                  const bId = e.target.value;
+                  setForm((p) => ({ ...p, branch_id: bId, default_work_location_id: "" }));
+                }}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:border-transparent bg-white cursor-pointer disabled:bg-gray-100 disabled:text-gray-600 disabled:cursor-not-allowed"
               >
                 <option value="">Headquarters / Unassigned</option>
