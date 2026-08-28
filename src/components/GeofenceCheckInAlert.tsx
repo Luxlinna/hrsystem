@@ -79,6 +79,16 @@ export default function GeofenceCheckInAlert() {
       const hasClockedIn = !!todayRecord?.clock_in;
       const hasClockedOut = !!todayRecord?.clock_out;
 
+      if (localStorage.getItem(dedupeKey("checkout_time"))) {
+        alertedModesRef.current.add("checkout_time");
+      }
+      if (localStorage.getItem(dedupeKey("checkin_geo"))) {
+        alertedModesRef.current.add("checkin_geo");
+      }
+      if (localStorage.getItem(dedupeKey("auto_checkout"))) {
+        autoCheckedOutRef.current = true;
+      }
+
       const nowZ = zonedParts(new Date(), scheduleSettings.timezone);
       const isSaturday = zonedDayOfWeek(new Date(), scheduleSettings.timezone) === 6;
 
@@ -89,9 +99,10 @@ export default function GeofenceCheckInAlert() {
       const shiftEndLabel = isSaturday ? "12:00 PM" : "5:00 PM";
       const autoCheckoutLabel = isSaturday ? "1:00 PM" : "6:00 PM";
 
-      // 1. AUTOMATIC CHECKOUT: If user forgot to checkout and threshold is reached
-      if (hasClockedIn && !hasClockedOut && nowZ.minutesOfDay >= autoCheckoutThresholdMin && !autoCheckedOutRef.current) {
+      // 1. AUTOMATIC CHECKOUT: If user forgot to checkout and threshold is reached (only once per day)
+      if (hasClockedIn && !hasClockedOut && nowZ.minutesOfDay >= autoCheckoutThresholdMin && !autoCheckedOutRef.current && !localStorage.getItem(dedupeKey("auto_checkout"))) {
         autoCheckedOutRef.current = true;
+        localStorage.setItem(dedupeKey("auto_checkout"), "1");
         const now = new Date();
         const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
         const [ciH, ciM, ciS] = (todayRecord.clock_in || "08:00:00").split(":").map(Number);
@@ -123,7 +134,7 @@ export default function GeofenceCheckInAlert() {
         return;
       }
 
-      // 2. CHECK-OUT TIME ALERT (5:00 PM on Mon-Fri, 12:00 PM on Sat)
+      // 2. CHECK-OUT TIME ALERT (5:00 PM on Mon-Fri, 12:00 PM on Sat) — strictly ONCE per day
       if (hasClockedIn && !hasClockedOut && nowZ.minutesOfDay >= checkoutAlertMin && nowZ.minutesOfDay < autoCheckoutThresholdMin) {
         if (!alertedModesRef.current.has("checkout_time") && !localStorage.getItem(dedupeKey("checkout_time"))) {
           alertedModesRef.current.add("checkout_time");
