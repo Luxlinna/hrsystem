@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import type { MediaItem } from "@/lib/s3-storage";
 
@@ -134,11 +135,18 @@ export default function WorkOutsideTab({ employeeId }: Props) {
                 </span>
               </div>
             </div>
-            <div className="shrink-0">
+            <div className="shrink-0 flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 Active
               </span>
+              <Link
+                to="/tasks"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-[#253C7D] hover:bg-[#1f3268] px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <i className="ri-task-line" />
+                Go to Tasks
+              </Link>
             </div>
           </div>
           {activeRecord.work_address && (

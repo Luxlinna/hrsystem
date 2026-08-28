@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { AttendanceRecord, BranchGeofence, OutsideWorkTask, CheckInStep } from "../../types";
 import { fmtHM, fmtClock } from "../../selfServiceUtils";
 
@@ -8,6 +9,7 @@ interface Props {
   workEndTime: string | null;
   shiftProgress: number | null;
   activeOutsideWork: OutsideWorkTask | null;
+  todayOutsideWork?: OutsideWorkTask | null;
   todayRecord: AttendanceRecord | null;
   elapsedHours: number;
   isCheckedIn: boolean;
@@ -58,22 +60,18 @@ function LiveClock({ currentTime, timezone }: Pick<Props, "currentTime" | "timez
 }
 
 function ShiftSnapshot(props: Props) {
-  const { workStartTime, workEndTime, shiftProgress, activeOutsideWork, todayRecord, elapsedHours, isCheckedIn, isCheckedOut } = props;
-  const isLive = activeOutsideWork && !todayRecord?.clock_in ? true : isCheckedIn && !isCheckedOut;
-  const displayHours = activeOutsideWork && !todayRecord?.clock_in
-    ? "Outside"
-    : isCheckedIn && !isCheckedOut
-    ? fmtHM(elapsedHours)
-    : todayRecord?.hours_worked
-    ? fmtHM(todayRecord.hours_worked)
-    : "—";
+  const {
+    shiftProgress, activeOutsideWork, todayOutsideWork, todayRecord, isCheckedIn, isCheckedOut,
+    elapsedHours, scheduleSettings,
+  } = props;
+
+  const hasOutsideToday = todayOutsideWork && todayOutsideWork.work_status !== "checked_out";
+
   return (
-    <div className="min-w-0">
-      <div className="flex items-center justify-between gap-3 mb-2">
-        <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Today's Shift</p>
-        <span className="text-[11px] font-semibold text-white/70">
-          {fmtClock(workStartTime)}{workEndTime ? ` – ${fmtClock(workEndTime)}` : ""}
-        </span>
+    <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
+      <div className="flex items-center justify-between text-[11px] font-semibold text-white/75 mb-2">
+        <span>Today's Shift</span>
+        <span>{scheduleSettings.timezone?.replace("_", " ") || "Cambodia"}</span>
       </div>
 
       {shiftProgress !== null && (
@@ -89,14 +87,9 @@ function ShiftSnapshot(props: Props) {
         <div className="bg-white/10 backdrop-blur rounded-xl px-3 py-2 border border-white/15">
           <p className="text-white/55 text-[10px] font-bold uppercase tracking-wider">In</p>
           <p className="text-[15px] font-bold tabular-nums mt-0.5">
-            {activeOutsideWork && !todayRecord?.clock_in
-              ? activeOutsideWork.work_checked_in_at
-                ? new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
-                : "—"
-              : todayRecord?.clock_in?.slice(0, 5) || "—"
-            }
+            {todayRecord?.clock_in?.slice(0, 5) || (activeOutsideWork?.work_checked_in_at ? new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—")}
           </p>
-          {(todayRecord?.late_minutes || 0) > props.scheduleSettings.lateGraceMinutes && (
+          {(todayRecord?.late_minutes || 0) > scheduleSettings.lateGraceMinutes && (
             <p className="text-amber-200 text-[10px] font-semibold mt-0.5">{todayRecord?.late_minutes}m late</p>
           )}
         </div>
@@ -105,16 +98,24 @@ function ShiftSnapshot(props: Props) {
           <p className="text-[15px] font-bold tabular-nums mt-0.5">
             {todayRecord?.clock_out?.slice(0, 5) || "—"}
           </p>
-          {(todayRecord?.early_leave_minutes || 0) > props.scheduleSettings.earlyLeaveGraceMinutes && (
+          {(todayRecord?.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes && (
             <p className="text-orange-200 text-[10px] font-semibold mt-0.5">{todayRecord?.early_leave_minutes}m early</p>
           )}
         </div>
         <div className="bg-white/10 backdrop-blur rounded-xl px-3 py-2 border border-white/15">
           <p className="text-white/55 text-[10px] font-bold uppercase tracking-wider">
-            {activeOutsideWork && !todayRecord?.clock_in ? "Status" : isCheckedIn && !isCheckedOut ? "Working" : "Hours"}
+            {hasOutsideToday ? "Status" : isCheckedIn && !isCheckedOut ? "Working" : "Hours"}
           </p>
-          <p className="text-[15px] font-bold tabular-nums mt-0.5">{displayHours}</p>
-          {isLive ? (
+          <p className="text-[15px] font-bold tabular-nums mt-0.5">
+            {hasOutsideToday
+              ? "Outside"
+              : isCheckedIn && !isCheckedOut
+              ? fmtHM(elapsedHours)
+              : todayRecord?.hours_worked
+              ? fmtHM(todayRecord.hours_worked)
+              : "—"}
+          </p>
+          {hasOutsideToday || (isCheckedIn && !isCheckedOut) ? (
             <p className="text-emerald-200 text-[10px] font-semibold mt-0.5 flex items-center gap-1">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
@@ -131,39 +132,52 @@ function ShiftSnapshot(props: Props) {
 
 function CheckInActions(props: Props) {
   const {
-    activeOutsideWork, isCheckedIn, isCheckedOut, checkInStep, checkInMessage, processing,
+    activeOutsideWork, todayOutsideWork, isCheckedIn, isCheckedOut, checkInStep, checkInMessage, processing,
     notes, setNotes, earlyCheckoutReason, setEarlyCheckoutReason, earlyCheckoutMinutesNow,
     isEarlyCheckoutNow, branch, branchLoading, todayRecord, scheduleSettings,
     onRequestClockIn, onConfirmClockIn, onClockOut, onResetCheckInFlow,
   } = props;
 
+  const currentOutsideTask = todayOutsideWork || activeOutsideWork;
+  const hasOutsideToday = !!(currentOutsideTask && currentOutsideTask.work_status !== "checked_out");
+
   return (
     <div className="flex flex-col gap-2 lg:w-72">
-      {activeOutsideWork && !isCheckedIn && (
-        <div className="bg-white/15 border border-white/30 rounded-xl px-4 py-3 space-y-2">
+      {hasOutsideToday && (
+        <div className="bg-white/15 border border-white/30 rounded-xl px-4 py-3.5 space-y-2.5">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-300" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-300" />
             </span>
-            <p className="text-[13px] font-bold">Working Outside</p>
+            <p className="text-[13px] font-bold text-white">
+              {currentOutsideTask.work_status === "checked_in" ? "Outside Work in Progress" : "Outside Work Assigned Today"}
+            </p>
           </div>
-          <p className="text-white/80 text-[12px] font-semibold">{activeOutsideWork.title}</p>
-          {activeOutsideWork.work_checked_in_at && (
-            <p className="text-white/60 text-[11px]">
-              Checked in at {new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+          <p className="text-[12px] text-white/80 leading-relaxed">
+            {currentOutsideTask.work_status === "checked_in" ? (
+              <>You are currently checked in to <strong className="text-white font-semibold">{currentOutsideTask.title}</strong>. Check-out must be completed in Task Management with location & photos.</>
+            ) : (
+              <>You have an outside work task scheduled for today (<strong className="text-white font-semibold">{currentOutsideTask.title}</strong>). Check-in and check-out must be performed in Task Management.</>
+            )}
+          </p>
+          {currentOutsideTask.work_address && (
+            <p className="text-white/70 text-[11px] flex items-center gap-1">
+              <i className="ri-map-pin-2-fill text-amber-300 shrink-0" />
+              <span className="truncate">{currentOutsideTask.work_address}</span>
             </p>
           )}
-          {activeOutsideWork.work_address && (
-            <p className="text-white/60 text-[11px] flex items-center gap-1">
-              <i className="ri-map-pin-2-fill text-emerald-300" />
-              {activeOutsideWork.work_address}
-            </p>
-          )}
+          <Link
+            to="/tasks"
+            className="w-full flex items-center justify-center gap-2 bg-white text-[#253C7D] font-bold py-2.5 px-4 rounded-xl text-[13px] hover:bg-white/90 transition-colors cursor-pointer"
+          >
+            <i className="ri-task-line text-base" />
+            {currentOutsideTask.work_status === "checked_in" ? "Go to Task Management to Check Out" : "Go to Task Management to Check In"}
+          </Link>
         </div>
       )}
 
-      {!isCheckedIn && !activeOutsideWork && checkInStep === "idle" && (
+      {!hasOutsideToday && !isCheckedIn && checkInStep === "idle" && (
         <div className="space-y-2">
           <input
             type="text"
@@ -189,14 +203,14 @@ function CheckInActions(props: Props) {
         </div>
       )}
 
-      {!isCheckedIn && !activeOutsideWork && checkInStep === "locating" && (
+      {!hasOutsideToday && !isCheckedIn && checkInStep === "locating" && (
         <div className="bg-white/20 rounded-xl px-5 py-4 text-center">
           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
           <p className="text-[13px] font-semibold">Checking your location...</p>
         </div>
       )}
 
-      {!isCheckedIn && !activeOutsideWork && checkInStep === "confirm" && (
+      {!hasOutsideToday && !isCheckedIn && checkInStep === "confirm" && (
         <div className="space-y-2">
           <div className="bg-white/20 rounded-xl px-4 py-3 flex items-start gap-2">
             <i className="ri-checkbox-circle-fill text-emerald-300 text-base shrink-0 mt-0.5" />
@@ -223,7 +237,7 @@ function CheckInActions(props: Props) {
         </div>
       )}
 
-      {!isCheckedIn && !activeOutsideWork && (checkInStep === "denied" || checkInStep === "error") && (
+      {!hasOutsideToday && !isCheckedIn && (checkInStep === "denied" || checkInStep === "error") && (
         <div className="space-y-2">
           <div className="bg-white/20 rounded-xl px-4 py-3 flex items-start gap-2">
             <i className={`${checkInStep === "denied" ? "ri-map-pin-off-line text-amber-300" : "ri-error-warning-line text-red-300"} text-base shrink-0 mt-0.5`} />
@@ -239,7 +253,7 @@ function CheckInActions(props: Props) {
         </div>
       )}
 
-      {isCheckedIn && !isCheckedOut && (
+      {!hasOutsideToday && isCheckedIn && !isCheckedOut && (
         <div className="space-y-2">
           {isEarlyCheckoutNow && (
             <div className="space-y-1">

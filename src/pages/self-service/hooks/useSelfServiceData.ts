@@ -71,13 +71,18 @@ export function useSelfServiceData() {
         can("notifications")
           ? supabase.from("notifications").select("id", { count: "exact", head: true }).or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).eq("is_read", false)
           : Promise.resolve({ count: 0 }),
-        supabase.from("tasks").select("title, work_checked_in_at").eq("assigned_to", selectedEmployee.id).eq("is_outside_work", true).eq("work_status", "checked_in").maybeSingle(),
+        supabase.from("tasks").select("id, title, due_date, work_status, work_checked_in_at, created_at").eq("assigned_to", selectedEmployee.id).eq("is_outside_work", true),
       ]);
       setTodayAttendance((attRes as any).data || null);
       setPendingLeaveCount((leaveRes as any).count || 0);
       setLatestPayslip((payRes as any).data || null);
       setUnreadCount((notifRes as any).count || 0);
-      setActiveOutsideWork((outsideRes as any).data || null);
+      const outsideTasks = ((outsideRes as any).data as any[]) || [];
+      const outsideItem = outsideTasks.find((t) => t.work_status === "checked_in")
+        || outsideTasks.find((t) => t.due_date === today || (t.work_checked_in_at && t.work_checked_in_at.startsWith(today)))
+        || outsideTasks.find((t) => t.created_at && t.created_at.startsWith(today) && t.work_status !== "checked_out")
+        || null;
+      setActiveOutsideWork(outsideItem ? { title: outsideItem.title, work_checked_in_at: outsideItem.work_checked_in_at } : null);
     })();
   }, [selectedEmployee, user, can, activeTab]);
 

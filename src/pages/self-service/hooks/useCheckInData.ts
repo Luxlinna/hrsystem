@@ -31,6 +31,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
   const [globalWorkStartTime, setGlobalWorkStartTime] = useState("09:00");
   const [scheduleSettings, setScheduleSettings] = useState(DEFAULT_WORK_SCHEDULE);
   const [activeOutsideWork, setActiveOutsideWork] = useState<OutsideWorkTask | null>(null);
+  const [todayOutsideWork, setTodayOutsideWork] = useState<OutsideWorkTask | null>(null);
 
   const today = todayYMD();
 
@@ -54,15 +55,20 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
     if (!employeeId) return;
     supabase
       .from("tasks")
-      .select("id, title, work_checked_in_at, work_address")
+      .select("id, title, due_date, work_status, work_checked_in_at, work_checked_out_at, work_address, created_at")
       .eq("assigned_to", employeeId)
       .eq("is_outside_work", true)
-      .eq("work_status", "checked_in")
-      .maybeSingle()
       .then(async ({ data }) => {
-        const task = (data as OutsideWorkTask) || null;
-        setActiveOutsideWork(task);
-        if (task?.work_checked_in_at) {
+        const list = (data as any[]) || [];
+        const task = list.find((t) => t.work_status === "checked_in")
+          || list.find((t) => t.due_date === today || (t.work_checked_in_at && t.work_checked_in_at.startsWith(today)))
+          || list.find((t) => t.created_at && t.created_at.startsWith(today) && t.work_status !== "checked_out")
+          || null;
+
+        setTodayOutsideWork(task);
+        setActiveOutsideWork(task?.work_status === "checked_in" ? task : null);
+
+        if (task?.work_checked_in_at && task.work_status === "checked_in") {
           const { data: existing } = await supabase
             .from("attendance_records")
             .select("id")
@@ -83,7 +89,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
           }
         }
       });
-  }, [employeeId]);
+  }, [employeeId, today]);
 
   const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
   const daySchedule = getScheduleForDate(scheduleSettings);
@@ -130,6 +136,10 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
   }, [employeeId]);
 
   const handleRequestClockIn = async () => {
+    if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
+      showToast("error", "You have an outside work task today. Please check in via Task Management.");
+      return;
+    }
     if (branchLoading) return;
     if (!branch?.latitude || !branch?.longitude) {
       handleClockIn();
@@ -170,10 +180,10 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
 
   const autoStartedRef = useRef(false);
   useEffect(() => {
-    if (!autoStart || loading || branchLoading || autoStartedRef.current || todayRecord?.clock_in) return;
+    if (!autoStart || loading || branchLoading || autoStartedRef.current || todayRecord?.clock_in || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
     autoStartedRef.current = true;
     handleRequestClockIn();
-  }, [autoStart, loading, branchLoading, todayRecord]);
+  }, [autoStart, loading, branchLoading, todayRecord, todayOutsideWork]);
 
   const resetCheckInFlow = () => {
     setCheckInStep("idle");
@@ -188,6 +198,10 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
   };
 
   const handleClockIn = async () => {
+    if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
+      showToast("error", "You have an outside work task today. Please check in via Task Management.");
+      return;
+    }
     if (!daySchedule) { showToast("error", "Today is not configured as a working day."); return; }
     const now = new Date();
     const nowZ = zonedParts(now, scheduleSettings.timezone);
@@ -228,6 +242,10 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
   };
 
   const handleClockOut = async () => {
+    if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
+      showToast("error", "You have an outside work assignment today. Please check out via Task Management.");
+      return;
+    }
     if (!todayRecord) return;
     const now = new Date();
     const nowZ = zonedParts(now, scheduleSettings.timezone);
@@ -291,11 +309,11 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
 
   const autoCheckedOutRef = useRef(false);
   useEffect(() => {
-    if (!autoCheckOut || loading || autoCheckedOutRef.current || isEarlyCheckoutNow) return;
+    if (!autoCheckOut || loading || autoCheckedOutRef.current || isEarlyCheckoutNow || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
     if (!isCheckedIn || isCheckedOut) return;
     autoCheckedOutRef.current = true;
     handleClockOut();
-  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow]);
+  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork]);
 
   const presentCount = records.filter((r) => r.status === "present" || r.status === "late").length;
   const lateCount = records.filter((r) => r.status === "late").length;
@@ -347,6 +365,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
     checkInMessage,
     scheduleSettings,
     activeOutsideWork,
+    todayOutsideWork,
     workStartTime,
     workEndTime,
     daySchedule,

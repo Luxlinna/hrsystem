@@ -39,7 +39,10 @@ export interface BranchGeofence {
 export interface OutsideWorkTask {
   id: string;
   title: string;
+  due_date?: string | null;
+  work_status?: "checked_in" | "checked_out" | null;
   work_checked_in_at: string | null;
+  work_checked_out_at?: string | null;
   work_address: string | null;
 }
 

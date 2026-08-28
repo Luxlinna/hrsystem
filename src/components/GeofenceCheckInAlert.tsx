@@ -55,6 +55,22 @@ export default function GeofenceCheckInAlert() {
 
       const branch = (employee as any).branches as BranchGeofence | undefined;
       if (!branch?.latitude || !branch?.longitude) return;
+
+      // Skip office geofence alerts if employee has outside work scheduled or active today
+      const { data: outsideTasks } = await supabase
+        .from("tasks")
+        .select("id, due_date, work_status, work_checked_in_at, created_at")
+        .eq("assigned_to", employee.id)
+        .eq("is_outside_work", true);
+
+      const hasOutsideToday = (outsideTasks || []).some(
+        (t) => t.work_status === "checked_in"
+          || (t.due_date === today && t.work_status !== "checked_out")
+          || (t.work_checked_in_at && t.work_checked_in_at.startsWith(today) && t.work_status !== "checked_out")
+          || (t.created_at && t.created_at.startsWith(today) && t.work_status !== "checked_out")
+      );
+      if (cancelled || hasOutsideToday) return;
+
       const { data: scheduleRows } = await supabase.from("system_settings").select("key, value");
       const scheduleSettings = scheduleRows ? settingsFromRows(scheduleRows) : DEFAULT_WORK_SCHEDULE;
       const daySchedule = getScheduleForDate(scheduleSettings);

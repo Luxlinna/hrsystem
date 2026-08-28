@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { distanceMeters, getCurrentPosition } from "@/lib/geo";
 import { addDaysYMD, todayYMD, zonedParts, zonedTimeToInstant } from "@/lib/date";
@@ -39,7 +40,10 @@ interface Props {
 interface OutsideWorkTask {
   id: string;
   title: string;
+  due_date?: string | null;
+  work_status?: "checked_in" | "checked_out" | null;
   work_checked_in_at: string | null;
+  work_checked_out_at?: string | null;
   work_address: string | null;
 }
 
@@ -63,6 +67,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const [globalWorkStartTime, setGlobalWorkStartTime] = useState("09:00");
   const [scheduleSettings, setScheduleSettings] = useState(DEFAULT_WORK_SCHEDULE);
   const [activeOutsideWork, setActiveOutsideWork] = useState<OutsideWorkTask | null>(null);
+  const [todayOutsideWork, setTodayOutsideWork] = useState<OutsideWorkTask | null>(null);
 
   const today = todayYMD();
 
@@ -88,16 +93,21 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     if (!employeeId) return;
     supabase
       .from("tasks")
-      .select("id, title, work_checked_in_at, work_address")
+      .select("id, title, due_date, work_status, work_checked_in_at, work_checked_out_at, work_address, created_at")
       .eq("assigned_to", employeeId)
       .eq("is_outside_work", true)
-      .eq("work_status", "checked_in")
-      .maybeSingle()
       .then(async ({ data }) => {
-        const task = (data as OutsideWorkTask) || null;
-        setActiveOutsideWork(task);
+        const list = (data as any[]) || [];
+        const task = list.find((t) => t.work_status === "checked_in")
+          || list.find((t) => t.due_date === today || (t.work_checked_in_at && t.work_checked_in_at.startsWith(today)))
+          || list.find((t) => t.created_at && t.created_at.startsWith(today) && t.work_status !== "checked_out")
+          || null;
+
+        setTodayOutsideWork(task);
+        setActiveOutsideWork(task?.work_status === "checked_in" ? task : null);
+
         // Sync outside work check-in to attendance if no record exists for today
-        if (task?.work_checked_in_at) {
+        if (task?.work_checked_in_at && task.work_status === "checked_in") {
           const { data: existing } = await supabase
             .from("attendance_records")
             .select("id")
@@ -118,7 +128,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
           }
         }
       });
-  }, [employeeId]);
+  }, [employeeId, today]);
 
   // A branch's own schedule (set in Branch Management) wins over the
   // company-wide default on weekdays — but not on Saturday, where the
@@ -171,6 +181,10 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   // Ask the browser for the current GPS position and check it against the
   // employee's branch geofence before allowing the actual check-in insert.
   const handleRequestClockIn = async () => {
+    if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
+      showToast("error", "You have an outside work task today. Please check in via Task Management.");
+      return;
+    }
     if (branchLoading) return; // branch data isn't in yet — avoid misreading "no geofence" as "not configured"
     if (!branch?.latitude || !branch?.longitude) {
       // No geofence configured for this branch — check in without a location check.
@@ -215,10 +229,10 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
   const autoStartedRef = useRef(false);
   useEffect(() => {
-    if (!autoStart || loading || branchLoading || autoStartedRef.current || todayRecord?.clock_in) return;
+    if (!autoStart || loading || branchLoading || autoStartedRef.current || todayRecord?.clock_in || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
     autoStartedRef.current = true;
     handleRequestClockIn();
-  }, [autoStart, loading, branchLoading, todayRecord]);
+  }, [autoStart, loading, branchLoading, todayRecord, todayOutsideWork]);
 
   const resetCheckInFlow = () => {
     setCheckInStep("idle");
@@ -233,6 +247,10 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   };
 
   const handleClockIn = async () => {
+    if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
+      showToast("error", "You have an outside work task today. Please check in via Task Management.");
+      return;
+    }
     if (!daySchedule) { showToast("error", "Today is not configured as a working day."); return; }
     // All clock times come from the company timezone (Admin → Settings →
     // Timezone, default Asia/Phnom_Penh), never from the device's own clock.
@@ -278,6 +296,10 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   };
 
   const handleClockOut = async () => {
+    if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
+      showToast("error", "You have an outside work assignment today. Please check out via Task Management.");
+      return;
+    }
     if (!todayRecord) return;
     const now = new Date();
     const nowZ = zonedParts(now, scheduleSettings.timezone);
@@ -344,11 +366,11 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
 
   const autoCheckedOutRef = useRef(false);
   useEffect(() => {
-    if (!autoCheckOut || loading || autoCheckedOutRef.current || isEarlyCheckoutNow) return;
+    if (!autoCheckOut || loading || autoCheckedOutRef.current || isEarlyCheckoutNow || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
     if (!isCheckedIn || isCheckedOut) return;
     autoCheckedOutRef.current = true;
     handleClockOut();
-  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow]);
+  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork]);
 
   const getStatusColor = (status: string) => {
     const map: Record<string, string> = {
@@ -508,31 +530,41 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
           </div>
 
           <div className="flex flex-col gap-2 lg:w-72">
-            {activeOutsideWork && !isCheckedIn && (
-              <div className="bg-white/15 border border-white/30 rounded-xl px-4 py-3 space-y-2">
+            {todayOutsideWork && todayOutsideWork.work_status !== "checked_out" && (
+              <div className="bg-white/15 border border-white/30 rounded-xl px-4 py-3.5 space-y-2.5">
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-300" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-300" />
                   </span>
-                  <p className="text-[13px] font-bold">Working Outside</p>
+                  <p className="text-[13px] font-bold text-white">
+                    {todayOutsideWork.work_status === "checked_in" ? "Outside Work in Progress" : "Outside Work Assigned Today"}
+                  </p>
                 </div>
-                <p className="text-white/80 text-[12px] font-semibold">{activeOutsideWork.title}</p>
-                {activeOutsideWork.work_checked_in_at && (
-                  <p className="text-white/60 text-[11px]">
-                    Checked in at {new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                <p className="text-[12px] text-white/80 leading-relaxed">
+                  {todayOutsideWork.work_status === "checked_in" ? (
+                    <>You are currently checked in to <strong className="text-white font-semibold">{todayOutsideWork.title}</strong>. Check-out must be completed in Task Management with location & photos.</>
+                  ) : (
+                    <>You have an outside work task scheduled for today (<strong className="text-white font-semibold">{todayOutsideWork.title}</strong>). Check-in and check-out must be performed in Task Management.</>
+                  )}
+                </p>
+                {todayOutsideWork.work_address && (
+                  <p className="text-white/70 text-[11px] flex items-center gap-1">
+                    <i className="ri-map-pin-2-fill text-amber-300 shrink-0" />
+                    <span className="truncate">{todayOutsideWork.work_address}</span>
                   </p>
                 )}
-                {activeOutsideWork.work_address && (
-                  <p className="text-white/60 text-[11px] flex items-center gap-1">
-                    <i className="ri-map-pin-2-fill text-emerald-300" />
-                    {activeOutsideWork.work_address}
-                  </p>
-                )}
+                <Link
+                  to="/tasks"
+                  className="w-full flex items-center justify-center gap-2 bg-white text-[#253C7D] font-bold py-2.5 px-4 rounded-xl text-[13px] hover:bg-white/90 transition-colors cursor-pointer"
+                >
+                  <i className="ri-task-line text-base" />
+                  {todayOutsideWork.work_status === "checked_in" ? "Go to Task Management to Check Out" : "Go to Task Management to Check In"}
+                </Link>
               </div>
             )}
 
-            {!isCheckedIn && !activeOutsideWork && checkInStep === "idle" && (
+            {(!todayOutsideWork || todayOutsideWork.work_status === "checked_out") && !isCheckedIn && checkInStep === "idle" && (
               <div className="space-y-2">
                 <input
                   type="text"
@@ -558,14 +590,14 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               </div>
             )}
 
-            {!isCheckedIn && !activeOutsideWork && checkInStep === "locating" && (
+            {(!todayOutsideWork || todayOutsideWork.work_status === "checked_out") && !isCheckedIn && checkInStep === "locating" && (
               <div className="bg-white/20 rounded-xl px-5 py-4 text-center">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                 <p className="text-[13px] font-semibold">Checking your location...</p>
               </div>
             )}
 
-            {!isCheckedIn && !activeOutsideWork && checkInStep === "confirm" && (
+            {(!todayOutsideWork || todayOutsideWork.work_status === "checked_out") && !isCheckedIn && checkInStep === "confirm" && (
               <div className="space-y-2">
                 <div className="bg-white/20 rounded-xl px-4 py-3 flex items-start gap-2">
                   <i className="ri-checkbox-circle-fill text-emerald-300 text-base shrink-0 mt-0.5" />
@@ -592,7 +624,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               </div>
             )}
 
-            {!isCheckedIn && !activeOutsideWork && (checkInStep === "denied" || checkInStep === "error") && (
+            {(!todayOutsideWork || todayOutsideWork.work_status === "checked_out") && !isCheckedIn && (checkInStep === "denied" || checkInStep === "error") && (
               <div className="space-y-2">
                 <div className="bg-white/20 rounded-xl px-4 py-3 flex items-start gap-2">
                   <i className={`${checkInStep === "denied" ? "ri-map-pin-off-line text-amber-300" : "ri-error-warning-line text-red-300"} text-base shrink-0 mt-0.5`} />
@@ -608,7 +640,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               </div>
             )}
 
-            {isCheckedIn && !isCheckedOut && (
+            {(!todayOutsideWork || todayOutsideWork.work_status === "checked_out") && isCheckedIn && !isCheckedOut && (
               <div className="space-y-2">
                 {isEarlyCheckoutNow && (
                   <div className="space-y-1">
