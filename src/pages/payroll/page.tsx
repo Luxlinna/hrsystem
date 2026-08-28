@@ -16,6 +16,8 @@ export default function Payroll() {
     isSuperAdmin,
     branches,
     targetBranch,
+    isPartnerBranchBlocked,
+    userBranchId,
     branchPolicy,
     allRecords,
     employees,
@@ -57,7 +59,7 @@ export default function Payroll() {
     isDark,
   } = usePayroll();
 
-  const activeBranch = branches.find((b) => b.id === targetBranch);
+  const activeBranch = branches.find((b) => b.id === (targetBranch || userBranchId));
   const activeBranchName = activeBranch?.name;
 
   if (loading && allRecords.length === 0) {
@@ -71,7 +73,7 @@ export default function Payroll() {
     );
   }
 
-  if (isSuperAdmin && !targetBranch) {
+  if (isPartnerBranchBlocked) {
     return (
       <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-950 p-5 sm:p-7 lg:p-8 font-sans">
         <PayrollHeader
@@ -82,19 +84,26 @@ export default function Payroll() {
           onExportCSV={() => {}}
           onOpenAddModal={() => {}}
         />
-        <div className="max-w-xl mx-auto my-12 p-8 bg-white dark:bg-slate-900 rounded-3xl border border-gray-200/80 dark:border-slate-800 shadow-sm text-center">
-          <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-3xl">
+        <div className="max-w-xl mx-auto my-12 p-8 bg-white dark:bg-slate-900 rounded-3xl border border-rose-200/80 dark:border-rose-900/40 shadow-sm text-center">
+          <div className="w-16 h-16 rounded-3xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4 text-3xl">
             <i className="ri-shield-keyhole-line" />
           </div>
           <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">
-            Branch Payroll Confidentiality &amp; Isolation
+            Partner Branch Payroll Privacy Shield
           </h2>
           <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed mb-4">
-            Each branch operates its own isolated payroll policies, salary disbursements, and employee compensation records. Global overview access is restricted for security and tenant privacy.
+            Each partner company branch operates with strictly confidential, isolated financial governance. Super Admins and users cannot access or view payroll and compensation records of other partner branches.
           </p>
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-2xl text-amber-800 dark:text-amber-300 text-xs font-semibold">
-            <i className="ri-information-line mr-1" />
-            Please select a specific branch from the header branch switcher to view or manage that branch's payroll operations.
+          <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 rounded-2xl text-rose-800 dark:text-rose-300 text-xs font-semibold text-left flex items-start gap-2.5">
+            <i className="ri-lock-line text-base shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">Access Restricted to Home Branch</p>
+              <p className="text-[11px] opacity-90 mt-0.5">
+                {userBranchId
+                  ? `You are assigned to ${activeBranchName || "your home branch"}. Please switch back to your home branch in the header switcher to access payroll operations.`
+                  : "You are not assigned to any branch. Please contact your company administrator to assign you to a branch."}
+              </p>
+            </div>
           </div>
         </div>
       </div>

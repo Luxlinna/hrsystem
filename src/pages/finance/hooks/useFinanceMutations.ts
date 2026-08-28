@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
-import type { Expense, ExpenseStatus, ExpenseFormState } from "../types";
+import type { Expense, ExpenseStatus, ExpenseFormState, BranchFinancePolicy } from "../types";
 import { STATUS_CONFIG, INITIAL_EXPENSE_FORM } from "../constants";
 
 interface UseFinanceMutationsProps {
@@ -14,7 +14,9 @@ interface UseFinanceMutationsProps {
   canManage: boolean;
   actorName: string;
   actorRole: string;
+  targetBranch?: string | null;
   loadData: () => Promise<void>;
+  setBranchPolicy: React.Dispatch<React.SetStateAction<BranchFinancePolicy | null>>;
 }
 
 export function useFinanceMutations({
@@ -25,11 +27,15 @@ export function useFinanceMutations({
   canManage,
   actorName,
   actorRole,
+  targetBranch,
   loadData,
+  setBranchPolicy,
 }: UseFinanceMutationsProps) {
   const [modal, setModal] = useState(false);
+  const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingPolicy, setSavingPolicy] = useState(false);
   const [expenseForm, setExpenseForm] = useState<ExpenseFormState>(INITIAL_EXPENSE_FORM);
 
   const updateStatus = useCallback(
@@ -78,10 +84,12 @@ export function useFinanceMutations({
       if (!expenseForm.category || !expenseForm.amount || !expenseForm.date || !canManage || saving) return;
       setSaving(true);
 
+      const resolvedBranchId = targetBranch || expenseForm.branch_id || null;
+
       const { error } = await supabase.from("expense_records").insert([
         {
           category: expenseForm.category,
-          branch_id: expenseForm.branch_id || null,
+          branch_id: resolvedBranchId,
           amount: Number(expenseForm.amount),
           date: expenseForm.date,
           description: expenseForm.description || null,
@@ -117,7 +125,7 @@ export function useFinanceMutations({
       });
       loadData();
     },
-    [expenseForm, canManage, saving, actorName, actorRole, loadData]
+    [expenseForm, canManage, saving, targetBranch, actorName, actorRole, loadData]
   );
 
   const openEditModal = useCallback(
@@ -125,7 +133,7 @@ export function useFinanceMutations({
       if (!canManage) return;
       setExpenseForm({
         category: expense.category,
-        branch_id: expense.branch_id || "",
+        branch_id: expense.branch_id || targetBranch || "",
         amount: String(expense.amount),
         date: expense.date,
         description: expense.description || "",
@@ -133,7 +141,7 @@ export function useFinanceMutations({
       });
       setEditingExpense(expense);
     },
-    [canManage]
+    [canManage, targetBranch]
   );
 
   const handleSaveEdit = useCallback(
@@ -142,15 +150,17 @@ export function useFinanceMutations({
       if (!editingExpense || !canManage || saving) return;
       setSaving(true);
 
+      const resolvedBranchId = targetBranch || expenseForm.branch_id || null;
+
       const { error } = await supabase
         .from("expense_records")
         .update({
           category: expenseForm.category,
-          branch_id: expenseForm.branch_id || null,
+          branch_id: resolvedBranchId,
           amount: Number(expenseForm.amount),
           date: expenseForm.date,
           description: expenseForm.description || null,
-          submitted_by: expenseForm.submitted_by || null,
+          submitted_by: expenseForm.submitted_by || actorName,
         })
         .eq("id", editingExpense.id);
 
@@ -161,7 +171,8 @@ export function useFinanceMutations({
       }
 
       setEditingExpense(null);
-      toast("Expense Saved", "Expense record updated successfully.", "success");
+      setExpenseForm(INITIAL_EXPENSE_FORM);
+      toast("Expense Updated", "Expense changes have been saved.", "success");
       logActivity({
         module: "finance",
         action: "updated",
@@ -169,57 +180,91 @@ export function useFinanceMutations({
         entityId: editingExpense.id,
         actorName,
         actorRole,
-        description: `${expenseForm.category} expense record updated ($${Number(expenseForm.amount).toLocaleString()})`,
+        description: `Updated expense #${editingExpense.id.slice(0, 8)} (${expenseForm.category})`,
       });
       loadData();
     },
-    [editingExpense, canManage, saving, expenseForm, actorName, actorRole, loadData]
+    [editingExpense, expenseForm, canManage, saving, targetBranch, actorName, actorRole, loadData]
   );
 
   const handleDeleteExpense = useCallback(
-    async (expense: Expense) => {
+    async (target: Expense | string, optCategory?: string) => {
       if (!canManage) return;
-      if (
-        !confirm(
-          `Delete this ${expense.category} expense ($${Number(
-            expense.amount
-          ).toLocaleString()})? It will be moved to the Recycle Bin.`
-        )
-      )
-        return;
+      const id = typeof target === "string" ? target : target.id;
+      const category = typeof target === "string" ? optCategory || "Expense" : target.category;
+
+      if (!confirm(`Move "${category}" expense to the Recycle Bin? It can be restored later.`)) return;
 
       const { error } = await supabase
         .from("expense_records")
         .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
-        .eq("id", expense.id);
+        .eq("id", id);
 
       if (error) {
         toast("Error", "Failed to delete expense", "error");
         return;
       }
 
-      toast("Expense Deleted", "Moved to Recycle Bin.", "success");
+      setExpenses((prev) => prev.filter((e) => e.id !== id));
+      if (selectedExpense?.id === id) setSelectedExpense(null);
+      toast("Moved to Recycle Bin", "The expense can be restored from the Recycle Bin.", "success");
       logActivity({
         module: "finance",
         action: "deleted",
         entityType: "expense_record",
-        entityId: expense.id,
+        entityId: id,
         actorName,
         actorRole,
-        description: `${expense.category} expense ($${Number(expense.amount).toLocaleString()}) moved to Recycle Bin`,
+        description: `Moved ${category} expense to Recycle Bin`,
       });
-      setSelectedExpense(null);
       loadData();
     },
-    [canManage, actorName, actorRole, setSelectedExpense, loadData]
+    [canManage, actorName, actorRole, selectedExpense, setExpenses, setSelectedExpense, loadData]
+  );
+
+  const handleSavePolicy = useCallback(
+    async (policyUpdates: Partial<BranchFinancePolicy>) => {
+      if (!targetBranch) {
+        toast("Error", "Please select a branch to configure its finance policy.", "error");
+        return;
+      }
+
+      setSavingPolicy(true);
+      const payload = {
+        branch_id: targetBranch,
+        ...policyUpdates,
+        updated_by: actorName,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("branch_finance_policies")
+        .upsert(payload, { onConflict: "branch_id" });
+
+      setSavingPolicy(false);
+
+      if (error) {
+        toast("Error", "Failed to save finance policy: " + error.message, "error");
+        return;
+      }
+
+      toast("Policy Saved", "Branch finance & budget policy updated successfully.", "success");
+      setBranchPolicy((prev) => (prev ? { ...prev, ...payload } : (payload as BranchFinancePolicy)));
+      setPolicyModalOpen(false);
+      loadData();
+    },
+    [targetBranch, actorName, setBranchPolicy, loadData]
   );
 
   return {
     modal,
     setModal,
+    policyModalOpen,
+    setPolicyModalOpen,
     editingExpense,
     setEditingExpense,
     saving,
+    savingPolicy,
     expenseForm,
     setExpenseForm,
     updateStatus,
@@ -227,5 +272,6 @@ export function useFinanceMutations({
     openEditModal,
     handleSaveEdit,
     handleDeleteExpense,
+    handleSavePolicy,
   };
 }

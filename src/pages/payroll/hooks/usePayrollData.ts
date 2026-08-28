@@ -32,7 +32,12 @@ export function usePayrollData(
   const [branchPolicy, setBranchPolicy] = useState<BranchPayrollPolicy | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' payroll data.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -46,8 +51,8 @@ export function usePayrollData(
       const branchList = (bData || []) as Branch[];
       setBranches(branchList);
 
-      // 2. Strict Branch Isolation: If Super Admin has no branch selected, do NOT load any branch payroll records
-      if (isSuperAdmin && !targetBranch) {
+      // 2. Strict Partner Branch Isolation: Block access if user does not belong to the selected branch
+      if (isPartnerBranchBlocked || !targetBranch) {
         setBranchPolicy(null);
         setAllRecords([]);
         setEmployees([]);
@@ -55,40 +60,32 @@ export function usePayrollData(
         return;
       }
 
-      // 3. Fetch Branch-Specific Payroll Policy if branch is selected
-      if (targetBranch) {
-        const { data: policyData } = await supabase
-          .from("branch_payroll_policies")
-          .select("*")
-          .eq("branch_id", targetBranch)
-          .maybeSingle();
+      // 3. Fetch Branch-Specific Payroll Policy for user's own home branch
+      const { data: policyData } = await supabase
+        .from("branch_payroll_policies")
+        .select("*")
+        .eq("branch_id", targetBranch)
+        .maybeSingle();
 
-        if (policyData) {
-          setBranchPolicy(policyData as BranchPayrollPolicy);
-        } else {
-          setBranchPolicy({
-            branch_id: targetBranch,
-            ...DEFAULT_BRANCH_PAYROLL_POLICY,
-          } as BranchPayrollPolicy);
-        }
+      if (policyData) {
+        setBranchPolicy(policyData as BranchPayrollPolicy);
       } else {
-        setBranchPolicy(null);
+        setBranchPolicy({
+          branch_id: targetBranch,
+          ...DEFAULT_BRANCH_PAYROLL_POLICY,
+        } as BranchPayrollPolicy);
       }
 
-      // 4. Leader / Admin View: Scoped strictly to target branch
+      // 4. Leader / Admin View: Scoped strictly to user's home branch
       if (isLeader) {
-        let empQuery = supabase
+        const { data: empsData } = await supabase
           .from("employees")
           .select("id, first_name, last_name, role, department, avatar_url, branch_id, branches(id, name)")
           .eq("status", "active")
           .is("deleted_at", null)
+          .eq("branch_id", targetBranch)
           .order("first_name");
 
-        if (targetBranch) {
-          empQuery = empQuery.eq("branch_id", targetBranch);
-        }
-
-        const { data: empsData } = await empQuery;
         const empList = (empsData as unknown as Employee[]) || [];
         setEmployees(empList);
         const empIds = empList.map((e) => e.id);
@@ -163,20 +160,21 @@ export function usePayrollData(
     } finally {
       setLoading(false);
     }
-  }, [targetBranch, isSuperAdmin, isLeader, myEmployee, user?.email, currentMonthStr, setSelectedMonth]);
+  }, [isPartnerBranchBlocked, targetBranch, isLeader, myEmployee, user?.email, currentMonthStr, setSelectedMonth]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   return {
-    canViewAll: canManage,
-    canManage,
+    canViewAll: canManage && !isPartnerBranchBlocked,
+    canManage: canManage && !isPartnerBranchBlocked,
     isSuperAdmin,
     isBranchAdmin,
     effectiveBranchId,
     userBranchId,
     targetBranch,
+    isPartnerBranchBlocked,
     branches,
     branchPolicy,
     setBranchPolicy,

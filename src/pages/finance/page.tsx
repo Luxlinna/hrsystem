@@ -9,12 +9,18 @@ import { FinanceTableView } from "./components/FinanceTableView";
 import { Pagination } from "./components/Pagination";
 import { ExpenseDetailDrawer } from "./components/ExpenseDetailDrawer";
 import { ExpenseModal } from "./components/ExpenseModal";
+import { BranchFinancePolicyModal } from "./components/modals/BranchFinancePolicyModal";
 import { useFinance } from "./hooks/useFinance";
 import { INITIAL_EXPENSE_FORM } from "./constants";
 
 export default function FinancePage() {
   const {
     canManage,
+    isSuperAdmin,
+    isPartnerBranchBlocked,
+    userBranchId,
+    targetBranch,
+    branchPolicy,
     actorName,
     expenses,
     branches,
@@ -54,9 +60,12 @@ export default function FinancePage() {
     monthlyTimelineData,
     modal,
     setModal,
+    policyModalOpen,
+    setPolicyModalOpen,
     editingExpense,
     setEditingExpense,
     saving,
+    savingPolicy,
     expenseForm,
     setExpenseForm,
     updateStatus,
@@ -64,17 +73,21 @@ export default function FinancePage() {
     openEditModal,
     handleSaveEdit,
     handleDeleteExpense,
+    handleSavePolicy,
     handleExportCSV,
   } = useFinance();
+
+  const activeBranch = branches.find((b) => b.id === (targetBranch || userBranchId));
+  const activeBranchName = activeBranch?.name;
 
   const handleOpenNewExpense = useCallback(() => {
     setExpenseForm({
       ...INITIAL_EXPENSE_FORM,
-      branch_id: branches[0]?.id || "",
+      branch_id: targetBranch || branches[0]?.id || "",
       submitted_by: actorName,
     });
     setModal(true);
-  }, [branches, actorName, setExpenseForm, setModal]);
+  }, [branches, targetBranch, actorName, setExpenseForm, setModal]);
 
   const handleResetPage = useCallback(() => {
     setPage(1);
@@ -89,13 +102,49 @@ export default function FinancePage() {
     );
   }
 
+  if (isPartnerBranchBlocked) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
+        <FinanceHeader
+          canManage={false}
+          onExportCSV={() => {}}
+          onOpenNewExpense={() => {}}
+        />
+        <div className="max-w-xl mx-auto my-12 p-8 bg-white dark:bg-slate-800 rounded-3xl border border-rose-200/80 dark:border-rose-900/40 shadow-sm text-center">
+          <div className="w-16 h-16 rounded-3xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4 text-3xl">
+            <i className="ri-shield-keyhole-line" />
+          </div>
+          <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2">
+            Partner Branch Finance Privacy Shield
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed mb-4">
+            Operational expenses, branch budgets, invoices, and financial reimbursement policies are strictly confidential to each partner branch. Super Admins and users cannot view or audit financial records of other partner branches.
+          </p>
+          <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 rounded-2xl text-rose-800 dark:text-rose-300 text-xs font-semibold text-left flex items-start gap-2.5">
+            <i className="ri-lock-line text-base shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">Access Restricted to Home Branch</p>
+              <p className="text-[11px] opacity-90 mt-0.5">
+                {userBranchId
+                  ? `You are assigned to ${activeBranchName || "your home branch"}. Please switch back to your home branch in the header switcher to view your financial ledgers.`
+                  : "You are not assigned to any branch. Please contact your company administrator to assign you to a branch."}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       {/* Top Header */}
       <FinanceHeader
         canManage={canManage}
+        branchName={activeBranchName}
         onExportCSV={handleExportCSV}
         onOpenNewExpense={handleOpenNewExpense}
+        onOpenPolicyModal={targetBranch ? () => setPolicyModalOpen(true) : undefined}
       />
 
       {/* Executive Financial KPI Cards */}
@@ -206,6 +255,18 @@ export default function FinancePage() {
         saving={saving}
         onClose={() => setEditingExpense(null)}
         onSubmit={handleSaveEdit}
+      />
+
+      {/* Modal: Branch Finance Policy */}
+      <BranchFinancePolicyModal
+        isOpen={policyModalOpen}
+        onClose={() => setPolicyModalOpen(false)}
+        policy={branchPolicy}
+        branchName={activeBranchName}
+        isSuperAdmin={isSuperAdmin}
+        canManage={canManage}
+        saving={savingPolicy}
+        onSave={handleSavePolicy}
       />
     </div>
   );

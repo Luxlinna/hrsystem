@@ -15,7 +15,13 @@ export function usePayrollApprovalData(
   setExpandedRun: (id: string | null) => void
 ) {
   const { isSuperAdmin, effectiveBranchId, userBranchId } = useBranchScope();
-  const targetBranch = effectiveBranchId || (!isSuperAdmin ? userBranchId : null);
+
+  // Partner Privacy Rule: Super Admin or any user CANNOT access other partner branches' approval process.
+  // Access is strictly confined to the user's home branch (userBranchId).
+  const isPartnerBranchBlocked = Boolean(
+    !userBranchId || (effectiveBranchId && effectiveBranchId !== userBranchId)
+  );
+  const targetBranch = isPartnerBranchBlocked ? null : userBranchId;
 
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [approvals, setApprovals] = useState<PayrollApproval[]>([]);
@@ -38,57 +44,50 @@ export function usePayrollApprovalData(
         .order("name");
       setBranches((bData || []) as BranchInfo[]);
 
-      // 2. If no branch selected in Super Admin mode, approvals are locked to protect branch security
-      if (!targetBranch) {
-        if (isSuperAdmin) {
-          setRuns([]);
-          setApprovals([]);
-          setItemizedRecords([]);
-          setBranchDepartments([]);
-          setLoading(false);
-          return;
-        }
+      // 2. If user does not belong to this branch, approvals are strictly locked
+      if (isPartnerBranchBlocked || !targetBranch) {
+        setRuns([]);
+        setApprovals([]);
+        setItemizedRecords([]);
+        setBranchDepartments([]);
+        setLoading(false);
+        return;
       }
 
       // 3. Fetch branch employees to get valid IDs & departments
-      let empQuery = supabase
+      const { data: branchEmps } = await supabase
         .from("employees")
         .select("id, department, branch_id")
         .eq("status", "active")
-        .is("deleted_at", null);
+        .is("deleted_at", null)
+        .eq("branch_id", targetBranch);
 
-      if (targetBranch) {
-        empQuery = empQuery.eq("branch_id", targetBranch);
-      }
-
-      const { data: branchEmps } = await empQuery;
       const empList = branchEmps || [];
       const empIds = empList.map((e) => e.id);
       const uniqueDepts = Array.from(new Set(empList.map((e) => e.department).filter(Boolean)));
       setBranchDepartments(uniqueDepts as string[]);
 
-      // 4. Fetch payroll runs for this branch
-      let runsQuery = supabase.from("payroll_runs").select("*").order("created_at", { ascending: false });
-      if (targetBranch) {
-        runsQuery = runsQuery.or(`branch_id.eq.${targetBranch},branch_id.is.null`);
-      }
-
-      // 5. Fetch approvals and itemized records
-      let recordsQuery = supabase
-        .from("payroll_records")
-        .select("id, employee_id, month, base_salary, bonus, deductions, net_pay, status, employees(first_name, last_name, role, department, avatar_url, branch_id)")
-        .order("month", { ascending: false });
-
-      if (targetBranch && empIds.length > 0) {
-        recordsQuery = recordsQuery.in("employee_id", empIds);
-      } else if (targetBranch && empIds.length === 0) {
-        // No employees in this branch yet
+      if (empIds.length === 0) {
         setRuns([]);
         setApprovals([]);
         setItemizedRecords([]);
         setLoading(false);
         return;
       }
+
+      // 4. Fetch payroll runs for this home branch
+      const runsQuery = supabase
+        .from("payroll_runs")
+        .select("*")
+        .or(`branch_id.eq.${targetBranch},branch_id.is.null`)
+        .order("created_at", { ascending: false });
+
+      // 5. Fetch approvals and itemized records
+      const recordsQuery = supabase
+        .from("payroll_records")
+        .select("id, employee_id, month, base_salary, bonus, deductions, net_pay, status, employees(first_name, last_name, role, department, avatar_url, branch_id)")
+        .in("employee_id", empIds)
+        .order("month", { ascending: false });
 
       const [{ data: r }, { data: a }, { data: recs }] = await Promise.all([
         runsQuery,
@@ -104,7 +103,7 @@ export function usePayrollApprovalData(
     } finally {
       setLoading(false);
     }
-  }, [targetBranch, isSuperAdmin]);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadData();
@@ -142,6 +141,8 @@ export function usePayrollApprovalData(
 
   return {
     isSuperAdmin,
+    isPartnerBranchBlocked,
+    userBranchId,
     targetBranch,
     branches,
     branchDepartments,

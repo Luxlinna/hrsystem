@@ -3,6 +3,20 @@ export interface Branch {
   name: string;
 }
 
+export interface BranchFinancePolicy {
+  id?: string;
+  branch_id: string;
+  monthly_budget_limit: number;
+  auto_approve_threshold: number;
+  receipt_required_above: number;
+  currency: string;
+  require_two_approvers_above: number;
+  allowed_categories: string[];
+  policy_notes?: string | null;
+  updated_by?: string | null;
+  updated_at?: string;
+}
+
 export type ExpenseStatus = "pending" | "approved" | "paid" | "rejected";
 
 export interface Expense {

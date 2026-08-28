@@ -16,7 +16,20 @@ export function useFinance() {
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
 
   // 1. Data Layer
-  const { expenses, setExpenses, branches, loading, loadData } = useFinanceData();
+  const {
+    isSuperAdmin,
+    isBranchAdmin,
+    isPartnerBranchBlocked,
+    userBranchId,
+    targetBranch,
+    expenses,
+    setExpenses,
+    branchPolicy,
+    setBranchPolicy,
+    branches,
+    loading,
+    loadData,
+  } = useFinanceData();
 
   // 2. Filter & Analytics Layer
   const filters = useFinanceFilters(expenses);
@@ -27,10 +40,12 @@ export function useFinance() {
     setExpenses,
     selectedExpense,
     setSelectedExpense,
-    canManage,
+    canManage: canManage && !isPartnerBranchBlocked,
     actorName,
     actorRole: role?.name || "Unknown",
+    targetBranch,
     loadData,
+    setBranchPolicy,
   });
 
   const handleExportCSV = useCallback(() => {
@@ -38,7 +53,13 @@ export function useFinance() {
   }, [filters.filtered]);
 
   return {
-    canManage,
+    canManage: canManage && !isPartnerBranchBlocked,
+    isSuperAdmin,
+    isBranchAdmin,
+    isPartnerBranchBlocked,
+    userBranchId,
+    targetBranch,
+    branchPolicy,
     actorName,
     expenses,
     branches,

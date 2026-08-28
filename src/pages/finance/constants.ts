@@ -71,3 +71,23 @@ export const INITIAL_EXPENSE_FORM: ExpenseFormState = {
   description: "",
   submitted_by: "",
 };
+
+export const DEFAULT_BRANCH_FINANCE_POLICY = {
+  monthly_budget_limit: 50000.0,
+  auto_approve_threshold: 100.0,
+  receipt_required_above: 25.0,
+  currency: "USD",
+  require_two_approvers_above: 500.0,
+  allowed_categories: [
+    "Office Supplies",
+    "IT Equipment",
+    "Travel",
+    "Training",
+    "Marketing",
+    "Utilities",
+    "Software",
+    "Catering",
+    "Other",
+  ],
+  policy_notes: "",
+};
