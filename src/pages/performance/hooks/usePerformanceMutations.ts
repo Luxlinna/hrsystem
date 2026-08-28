@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { logActivity } from "@/lib/audit";
 import type { Goal, ReviewForm, GoalForm, TaskStats } from "../types";
 import { MIN_COMMENT_LENGTH } from "../constants";
 
@@ -97,18 +98,32 @@ export function usePerformanceMutations({
           reviewForm.leadership_score) /
         4;
 
-      const { error } = await supabase.from("performance_reviews").insert({
-        ...reviewForm,
-        overall_score: parseFloat(overall.toFixed(1)),
-        status: "submitted",
-        submitted_at: new Date().toISOString(),
-      });
+      const { data: revData, error } = await supabase
+        .from("performance_reviews")
+        .insert({
+          ...reviewForm,
+          overall_score: parseFloat(overall.toFixed(1)),
+          status: "submitted",
+          submitted_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
 
       setSubmitting(false);
       if (error) {
         toast("Error", "Failed to submit review", "error");
         return;
       }
+      toast("Success", "Performance review submitted successfully.", "success");
+      logActivity({
+        module: "performance",
+        action: "created",
+        entityType: "performance_review",
+        entityId: revData?.id,
+        actorName: "Reviewer",
+        actorRole: "Manager",
+        description: `Submitted ${reviewForm.quarter} ${reviewForm.year} performance review (Score: ${overall.toFixed(1)})`,
+      });
       setReviewForm({
         employee_id: "",
         reviewer_id: "",
@@ -136,12 +151,27 @@ export function usePerformanceMutations({
         return;
       }
       setSubmitting(true);
-      const { error } = await supabase.from("performance_goals").insert(goalForm);
+      const { data: goalData, error } = await supabase
+        .from("performance_goals")
+        .insert(goalForm)
+        .select()
+        .single();
+
       setSubmitting(false);
       if (error) {
         toast("Error", "Failed to add goal", "error");
         return;
       }
+      toast("Success", "Goal created successfully.", "success");
+      logActivity({
+        module: "performance",
+        action: "created",
+        entityType: "performance_goal",
+        entityId: goalData?.id,
+        actorName: "Manager",
+        actorRole: "Manager",
+        description: `Created performance goal "${goalForm.title}"`,
+      });
       setGoalForm({
         employee_id: "",
         title: "",
@@ -167,6 +197,15 @@ export function usePerformanceMutations({
         toast("Error", "Failed to update goal progress", "error");
         return;
       }
+      logActivity({
+        module: "performance",
+        action: "updated",
+        entityType: "performance_goal",
+        entityId: goalId,
+        actorName: "Staff",
+        actorRole: "Employee",
+        description: `Updated performance goal progress to ${progress}%`,
+      });
       setGoals((prev) =>
         prev.map((g) =>
           g.id === goalId

@@ -22,7 +22,8 @@ type AuditModule =
   | "disciplinary"
   | "tasks"
   | "shifts"
-  | "reports";
+  | "reports"
+  | "training";
 type AuditAction = "created" | "updated" | "approved" | "rejected" | "deleted" | "processed" | "cancelled";
 
 interface LogActivityInput {

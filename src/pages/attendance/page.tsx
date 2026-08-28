@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import { toast } from "@/components/Toast";
+import { logActivity } from "@/lib/audit";
 import { toYMD, todayYMD as todayYMDLib } from "@/lib/date";
 import type {
   Employee,
@@ -426,6 +427,15 @@ export default function AttendancePage() {
     }
 
     toast("Attendance Logged", `Record added for ${newRecord.date}.`, "success");
+    logActivity({
+      module: "attendance",
+      action: "created",
+      entityType: "attendance_record",
+      actorName,
+      actorRole: role?.name || "Staff",
+      description: `Logged attendance for employee on ${newRecord.date} (${newRecord.status})`,
+      branchId: targetBranch,
+    });
     setShowLogModal(false);
     setNewRecord({
       employee_id: "",
@@ -437,7 +447,7 @@ export default function AttendancePage() {
       notes: "",
     });
     fetchData();
-  }, [newRecord, saving, todayYMD, fetchData]);
+  }, [newRecord, saving, todayYMD, actorName, role?.name, targetBranch, fetchData]);
 
   // Update existing record
   const handleUpdateRecord = useCallback(async (e: React.FormEvent) => {
@@ -463,12 +473,22 @@ export default function AttendancePage() {
     }
 
     toast("Attendance Updated", "Changes saved successfully.", "success");
+    logActivity({
+      module: "attendance",
+      action: "updated",
+      entityType: "attendance_record",
+      entityId: String(editingRecord.id),
+      actorName,
+      actorRole: role?.name || "Staff",
+      description: `Updated attendance record for employee on ${editingRecord.date}`,
+      branchId: targetBranch,
+    });
     setEditingRecord(null);
     if (selectedRecord && selectedRecord.id === editingRecord.id) {
       setSelectedRecord(editingRecord);
     }
     fetchData();
-  }, [editingRecord, saving, selectedRecord, fetchData]);
+  }, [editingRecord, saving, selectedRecord, actorName, role?.name, targetBranch, fetchData]);
 
   // Delete Record
   const handleDeleteRecord = useCallback(async (id: number) => {
@@ -482,10 +502,20 @@ export default function AttendancePage() {
       return;
     }
     toast("Record Moved", "Attendance entry moved to the Recycle Bin.", "success");
+    logActivity({
+      module: "attendance",
+      action: "deleted",
+      entityType: "attendance_record",
+      entityId: String(id),
+      actorName,
+      actorRole: role?.name || "Staff",
+      description: `Moved attendance record #${id} to Recycle Bin`,
+      branchId: targetBranch,
+    });
     setSelectedRecord(null);
     setEditingRecord(null);
     fetchData();
-  }, [actorName, fetchData]);
+  }, [actorName, role?.name, targetBranch, fetchData]);
 
   // Export CSV
   const handleExportCSV = useCallback(() => {

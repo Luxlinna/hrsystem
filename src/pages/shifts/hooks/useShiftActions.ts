@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { logActivity } from "@/lib/audit";
 import { formatDate, calculateHours } from "../utils";
 import { SHIFT_TEMPLATES } from "../constants";
 import type { Shift, ShiftForm, ViewMode } from "../types";
@@ -126,12 +127,22 @@ export function useShiftActions(p: UseShiftActionsParams) {
         return;
       }
       toast("Success", `Shift "${p.shiftForm.name}" created!`, "success");
+      logActivity({
+        module: "shifts",
+        action: "created",
+        entityType: "shift",
+        entityId: data?.id,
+        actorName: p.actorName,
+        actorRole: "Manager",
+        description: `Created shift "${p.shiftForm.name}" on ${p.shiftForm.shift_date}`,
+        branchId: p.shiftForm.branch_id || null,
+      });
       p.setShowCreateModal(false);
       await p.loadData();
       if (data) p.setSelectedShift({ ...data, assignmentCount: 0 });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [p.shiftForm, p.setSubmitting, p.setShowCreateModal, p.loadData, p.setSelectedShift]
+    [p.shiftForm, p.setSubmitting, p.setShowCreateModal, p.loadData, p.setSelectedShift, p.actorName]
   );
 
   const openEditModal = useCallback(
@@ -179,11 +190,21 @@ export function useShiftActions(p: UseShiftActionsParams) {
         return;
       }
       toast("Success", "Shift updated", "success");
+      logActivity({
+        module: "shifts",
+        action: "updated",
+        entityType: "shift",
+        entityId: p.selectedShift.id,
+        actorName: p.actorName,
+        actorRole: "Manager",
+        description: `Updated shift "${p.shiftForm.name}"`,
+        branchId: p.shiftForm.branch_id || p.selectedShift.branch_id || null,
+      });
       p.setShowEditModal(false);
       p.loadData();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [p.selectedShift, p.shiftForm, p.setSubmitting, p.setShowEditModal, p.loadData]
+    [p.selectedShift, p.shiftForm, p.setSubmitting, p.setShowEditModal, p.loadData, p.actorName]
   );
 
   const openDuplicateModal = useCallback(
@@ -203,7 +224,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       const nextDay = new Date(shift.shift_date);
       nextDay.setDate(nextDay.getDate() + 1);
       const targetDate = formatDate(nextDay);
-      const { error } = await supabase.from("shifts").insert({
+      const { data, error } = await supabase.from("shifts").insert({
         name: shift.name,
         branch_id: shift.branch_id || null,
         department: shift.department || null,
@@ -213,16 +234,26 @@ export function useShiftActions(p: UseShiftActionsParams) {
         capacity: shift.capacity,
         color: shift.color,
         notes: shift.notes,
-      });
+      }).select().single();
       if (error) {
         toast("Error", "Failed to duplicate shift: " + error.message, "error");
         return;
       }
       toast("Success", `Duplicated "${shift.name}" to ${targetDate}`, "success");
+      logActivity({
+        module: "shifts",
+        action: "created",
+        entityType: "shift",
+        entityId: data?.id,
+        actorName: p.actorName,
+        actorRole: "Manager",
+        description: `Duplicated shift "${shift.name}" to ${targetDate}`,
+        branchId: shift.branch_id || null,
+      });
       p.loadData();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [p.loadData]
+    [p.actorName, p.loadData]
   );
 
   const handleDuplicateShift = useCallback(
@@ -230,7 +261,7 @@ export function useShiftActions(p: UseShiftActionsParams) {
       e.preventDefault();
       if (!p.selectedShift) return;
       p.setSubmitting(true);
-      const { error } = await supabase.from("shifts").insert({
+      const { data, error } = await supabase.from("shifts").insert({
         name: `${p.selectedShift.name}`,
         branch_id: p.selectedShift.branch_id || null,
         department: p.selectedShift.department || null,
@@ -240,18 +271,28 @@ export function useShiftActions(p: UseShiftActionsParams) {
         capacity: p.selectedShift.capacity,
         color: p.selectedShift.color,
         notes: p.selectedShift.notes,
-      });
+      }).select().single();
       p.setSubmitting(false);
       if (error) {
         toast("Error", "Failed to duplicate shift: " + error.message, "error");
         return;
       }
       toast("Success", `Shift cloned to ${p.duplicateDate}`, "success");
+      logActivity({
+        module: "shifts",
+        action: "created",
+        entityType: "shift",
+        entityId: data?.id,
+        actorName: p.actorName,
+        actorRole: "Manager",
+        description: `Cloned shift "${p.selectedShift.name}" to ${p.duplicateDate}`,
+        branchId: p.selectedShift.branch_id || null,
+      });
       p.setShowDuplicateModal(false);
       p.loadData();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [p.selectedShift, p.duplicateDate, p.setSubmitting, p.setShowDuplicateModal, p.loadData]
+    [p.selectedShift, p.duplicateDate, p.actorName, p.setSubmitting, p.setShowDuplicateModal, p.loadData]
   );
 
   const handleCopyWeekSchedule = useCallback(async () => {
@@ -331,6 +372,14 @@ export function useShiftActions(p: UseShiftActionsParams) {
       return;
     }
     toast("Success", `Deleted ${p.selectedShiftIds.length} shift(s) (moved to Recycle Bin)`, "success");
+    logActivity({
+      module: "shifts",
+      action: "deleted",
+      entityType: "shift",
+      actorName: p.actorName,
+      actorRole: "Manager",
+      description: `Bulk deleted ${p.selectedShiftIds.length} shift(s)`,
+    });
     p.setSelectedShiftIds([]);
     p.setSelectedShift(null);
     p.loadData();
@@ -350,6 +399,16 @@ export function useShiftActions(p: UseShiftActionsParams) {
       return;
     }
     toast("Success", "Shift deleted (moved to Recycle Bin)", "success");
+    logActivity({
+      module: "shifts",
+      action: "deleted",
+      entityType: "shift",
+      entityId: p.selectedShift.id,
+      actorName: p.actorName,
+      actorRole: "Manager",
+      description: `Moved shift "${p.selectedShift.name}" to Recycle Bin`,
+      branchId: p.selectedShift.branch_id || null,
+    });
     p.setSelectedShift(null);
     p.setShowDeleteConfirm(false);
     p.loadData();
@@ -395,12 +454,22 @@ export function useShiftActions(p: UseShiftActionsParams) {
         return;
       }
       toast("Success", `${idsToAssign.length} staff member${idsToAssign.length === 1 ? "" : "s"} scheduled!`, "success");
+      logActivity({
+        module: "shifts",
+        action: "created",
+        entityType: "shift_assignment",
+        entityId: p.selectedShift.id,
+        actorName: p.actorName,
+        actorRole: "Manager",
+        description: `Assigned ${idsToAssign.length} employee(s) to shift "${p.selectedShift.name}"`,
+        branchId: p.selectedShift.branch_id || null,
+      });
       p.setAssignEmployeeIds([]);
       p.setShowAssignModal(false);
       p.loadData();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [p.selectedShift, p.assignEmployeeIds, p.setSubmitting, p.loadData, p.setAssignEmployeeIds, p.setShowAssignModal]
+    [p.selectedShift, p.assignEmployeeIds, p.actorName, p.setSubmitting, p.loadData, p.setAssignEmployeeIds, p.setShowAssignModal]
   );
 
   const removeAssignment = useCallback(
@@ -414,6 +483,15 @@ export function useShiftActions(p: UseShiftActionsParams) {
         return;
       }
       toast("Success", "Staff removed from shift (moved to Recycle Bin)", "success");
+      logActivity({
+        module: "shifts",
+        action: "deleted",
+        entityType: "shift_assignment",
+        entityId: assignId,
+        actorName: p.actorName,
+        actorRole: "Manager",
+        description: `Removed staff assignment #${assignId} from shift`,
+      });
       p.loadData();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
