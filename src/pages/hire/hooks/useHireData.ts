@@ -39,7 +39,7 @@ export function useHireData() {
         .from("job_postings")
         .select("*, branches(id, name)")
         .is("deleted_at", null)
-        .eq("branch_id", targetBranch)
+        .or(`branch_id.eq.${targetBranch},branch_id.is.null`)
         .order("posted_at", { ascending: false });
 
       const branchQuery = supabase.from("branches").select("id, name").is("deleted_at", null).order("name");
@@ -48,7 +48,7 @@ export function useHireData() {
         .from("hiring_requests")
         .select("*, branches(id, name)")
         .is("deleted_at", null)
-        .eq("branch_id", targetBranch)
+        .or(`branch_id.eq.${targetBranch},branch_id.is.null`)
         .order("created_at", { ascending: false });
 
       const [{ data: j }, { data: c }, { data: i }, { data: b }, { data: hr }] = await Promise.all([

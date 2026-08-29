@@ -68,7 +68,7 @@ export function useHire() {
 
   // Modal Openers
   const openCreateJob = useCallback(() => {
-    const target = (!isSuperAdmin && userBranchId) ? userBranchId : (selectedBranchId || effectiveBranchId || data.branches[0]?.id || "");
+    const target = selectedBranchId || effectiveBranchId || userBranchId || targetBranch || data.branches[0]?.id || "";
     setEditingJob(null);
     const selectedObj = data.branches.find((b) => b.id === target);
     setNewJob({
@@ -77,7 +77,7 @@ export function useHire() {
       location: selectedObj ? selectedObj.name : "",
     });
     setJobModal(true);
-  }, [data.branches, isSuperAdmin, userBranchId, selectedBranchId, effectiveBranchId]);
+  }, [data.branches, selectedBranchId, effectiveBranchId, userBranchId, targetBranch]);
 
   const openEditJob = useCallback((job: Job) => {
     setEditingJob(job);
@@ -170,7 +170,7 @@ export function useHire() {
     const selectedBranchObj = data.branches.find((b) => b.id === newJob.branch_id);
     const resolvedBranchId = selectedBranchObj?.is_site
       ? (selectedBranchObj.branch_id || targetBranch || null)
-      : (newJob.branch_id || null);
+      : (newJob.branch_id || targetBranch || null);
     const resolvedLocation = selectedBranchObj?.is_site
       ? selectedBranchObj.name
       : (newJob.location.trim() || selectedBranchObj?.name || "");
