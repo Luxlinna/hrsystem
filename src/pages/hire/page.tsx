@@ -53,6 +53,8 @@ export default function HirePage() {
     setFilterCandidateJob,
     filterInterviewStatus,
     setFilterInterviewStatus,
+    resetFilters,
+    hasFilters,
     departments,
     filteredJobs,
     filteredCandidates,
