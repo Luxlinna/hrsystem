@@ -36,7 +36,6 @@ export const TaskFormModal = memo(function TaskFormModal({
   const [form, setForm] = useState<FormState>(emptyForm);
   const [assignedIds, setAssignedIds] = useState<string[]>([]);
   const [owLocation, setOwLocation] = useState<LocationData | null>(null);
-  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
 
   useEffect(() => {
     if (editingTask) {
@@ -65,7 +64,6 @@ export const TaskFormModal = memo(function TaskFormModal({
       // Default to the current employee themselves if available!
       setAssignedIds(currentEmployeeId ? [currentEmployeeId] : []);
       setOwLocation(null);
-      setMediaFiles([]);
     }
   }, [editingTask, currentEmployeeId]);
 
@@ -201,8 +199,6 @@ export const TaskFormModal = memo(function TaskFormModal({
             onToggleOutsideWork={(val) => setForm({ ...form, is_outside_work: val })}
             location={owLocation}
             onSetLocation={setOwLocation}
-            mediaFiles={mediaFiles}
-            onSetMediaFiles={setMediaFiles}
           />
 
           <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">

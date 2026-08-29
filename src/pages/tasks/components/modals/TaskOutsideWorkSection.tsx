@@ -1,4 +1,4 @@
-import { memo, useState, useRef } from "react";
+import { memo, useState } from "react";
 
 interface LocationData {
   lat: number;
@@ -12,8 +12,6 @@ interface TaskOutsideWorkSectionProps {
   onToggleOutsideWork: (val: boolean) => void;
   location: LocationData | null;
   onSetLocation: (loc: LocationData | null) => void;
-  mediaFiles: File[];
-  onSetMediaFiles: (files: File[]) => void;
 }
 
 export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
@@ -21,11 +19,8 @@ export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
   onToggleOutsideWork,
   location,
   onSetLocation,
-  mediaFiles,
-  onSetMediaFiles,
 }: TaskOutsideWorkSectionProps) {
   const [locating, setLocating] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const captureLocation = () => {
     if (!navigator.geolocation) return;
@@ -70,16 +65,6 @@ export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
         address: val,
       });
     }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      onSetMediaFiles([...mediaFiles, ...Array.from(e.target.files)]);
-    }
-  };
-
-  const removeFile = (idx: number) => {
-    onSetMediaFiles(mediaFiles.filter((_, i) => i !== idx));
   };
 
   return (
@@ -168,51 +153,6 @@ export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
                 {location.accuracy != null && (
                   <span>±{location.accuracy}m accuracy</span>
                 )}
-              </div>
-            )}
-          </div>
-
-          {/* Media Capture */}
-          <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1.5">
-              <i className="ri-camera-line text-[#253C7D]" />
-              Photos / Videos <span className="text-gray-400 normal-case">(optional)</span>
-            </label>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              multiple
-              accept="image/*,video/*"
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              <i className="ri-camera-line text-sm" />
-              <span>{mediaFiles.length > 0 ? "Add More Photos / Videos" : "Add Photos / Videos"}</span>
-            </button>
-
-            {mediaFiles.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {mediaFiles.map((f, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-gray-200 rounded-lg text-[11px] font-semibold text-gray-700"
-                  >
-                    <i className="ri-image-line text-gray-400" />
-                    <span className="truncate max-w-[120px]">{f.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(i)}
-                      className="text-gray-400 hover:text-rose-500 cursor-pointer"
-                    >
-                      <i className="ri-close-line" />
-                    </button>
-                  </span>
-                ))}
               </div>
             )}
           </div>
