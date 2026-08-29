@@ -45,19 +45,54 @@ export function computeHrKpis(
   };
 }
 
-export function computeAttendanceBreakdown(attRecords: any[]): AttendanceBucket[] {
-  const dayBuckets: Record<string, { present: number; absent: number; late: number }> = {};
+export function computeAttendanceBreakdown(attRecords: any[], fromDate?: string, toDate?: string): AttendanceBucket[] {
+  const from = fromDate ? new Date(fromDate) : null;
+  const to = toDate ? new Date(toDate) : null;
+  const daysDiff = from && to ? Math.round((to.getTime() - from.getTime()) / 86400000) : 7;
+
+  // For ranges > 7 days, group into weekly buckets. For <= 7 days, group by weekday label.
+  if (daysDiff <= 7) {
+    const dayBuckets: Record<string, { present: number; absent: number; late: number }> = {};
+    attRecords.forEach((r: any) => {
+      const label = new Date(r.date).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+      if (!dayBuckets[label]) dayBuckets[label] = { present: 0, absent: 0, late: 0 };
+      if (r.status === "absent") dayBuckets[label].absent++;
+      else {
+        dayBuckets[label].present++;
+        if (r.status === "late") dayBuckets[label].late++;
+      }
+    });
+    const weekOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    return weekOrder.filter((d) => dayBuckets[d]).map((d) => ({ day: d, ...dayBuckets[d] }));
+  }
+
+  // Group by date for longer ranges, but cap X-axis points to max 30 by aggregating into weekly groups
+  const buckets: Record<string, { present: number; absent: number; late: number }> = {};
   attRecords.forEach((r: any) => {
-    const label = new Date(r.date).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
-    if (!dayBuckets[label]) dayBuckets[label] = { present: 0, absent: 0, late: 0 };
-    if (r.status === "absent") dayBuckets[label].absent++;
+    const d = new Date(r.date + "T00:00:00Z");
+    let label: string;
+    if (daysDiff <= 31) {
+      // Daily labels: "Aug 5"
+      label = d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+    } else {
+      // Weekly labels: bucket into week starting Monday
+      const weekStart = new Date(d);
+      const dayOfWeek = weekStart.getUTCDay();
+      const diff = (dayOfWeek + 6) % 7; // shift so Monday=0
+      weekStart.setUTCDate(weekStart.getUTCDate() - diff);
+      label = weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+    }
+    if (!buckets[label]) buckets[label] = { present: 0, absent: 0, late: 0 };
+    if (r.status === "absent") buckets[label].absent++;
     else {
-      dayBuckets[label].present++;
-      if (r.status === "late") dayBuckets[label].late++;
+      buckets[label].present++;
+      if (r.status === "late") buckets[label].late++;
     }
   });
-  const weekOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  return weekOrder.filter((d) => dayBuckets[d]).map((d) => ({ day: d, ...dayBuckets[d] }));
+
+  return Object.entries(buckets)
+    .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+    .map(([day, vals]) => ({ day, ...vals }));
 }
 
 export function computeHiringTrend(employees: any[], offList: any[]): HiringTrendItem[] {

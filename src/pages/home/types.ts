@@ -1,3 +1,9 @@
+export interface DateRange {
+  from: string; // ISO date string YYYY-MM-DD
+  to: string;   // ISO date string YYYY-MM-DD
+  label: string;
+}
+
 export interface LiveStats {
   branches: number;
   employees: number;

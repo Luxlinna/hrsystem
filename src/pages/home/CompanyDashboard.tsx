@@ -1,5 +1,6 @@
 import { DashboardHero } from "./components/DashboardHero";
 import { DashboardKpiGrid } from "./components/DashboardKpiGrid";
+import { DashboardDateRangePicker } from "./components/DashboardDateRangePicker";
 import { AttentionAlertRow } from "./components/AttentionAlertRow";
 import { OnboardingPipelineSection } from "./components/OnboardingPipelineSection";
 import { LeaveAndPayrollSection } from "./components/LeaveAndPayrollSection";
@@ -36,6 +37,8 @@ export default function CompanyDashboard() {
     hrKpis,
     attendanceData,
     hiringTrend,
+    dateRange,
+    setDateRange,
     fabOpen,
     setFabOpen,
     fabRef,
@@ -108,6 +111,9 @@ export default function CompanyDashboard() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
+        {/* Date Range Picker */}
+        <DashboardDateRangePicker dateRange={dateRange} onChange={setDateRange} />
+
         {/* KPI Grid */}
         <DashboardKpiGrid
           stats={stats}
@@ -153,6 +159,7 @@ export default function CompanyDashboard() {
           hrKpis={hrKpis}
           showHrInsights={showHrInsights}
           can={can}
+          rangeLabel={dateRange.label}
         />
 
         {/* Analytics Charts Section */}
@@ -161,6 +168,7 @@ export default function CompanyDashboard() {
           attendanceData={attendanceData}
           deptData={deptData}
           hiringTrend={hiringTrend}
+          rangeLabel={dateRange.label}
         />
 
         {/* Administrative Quick Actions */}

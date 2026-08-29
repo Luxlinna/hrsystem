@@ -9,8 +9,22 @@ import type {
   AttendanceBucket,
   HiringTrendItem,
   AnnouncementItem,
+  DateRange,
 } from "../types";
 import { computeHrKpis, computeAttendanceBreakdown, computeHiringTrend } from "../dashboardUtils";
+
+function todayStr() {
+  return new Date().toISOString().split("T")[0];
+}
+function daysAgoStr(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().split("T")[0];
+}
+function firstOfMonthStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
 
 export function useCompanyDashboard() {
   const { user } = useAuth();
@@ -62,6 +76,12 @@ export function useCompanyDashboard() {
   const [attendanceData, setAttendanceData] = useState<AttendanceBucket[]>([]);
   const [hiringTrend, setHiringTrend] = useState<HiringTrendItem[]>([]);
 
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: daysAgoStr(30),
+    to: todayStr(),
+    label: "Last 30 Days",
+  });
+
   // Mobile FAB state
   const [fabOpen, setFabOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -81,23 +101,22 @@ export function useCompanyDashboard() {
       return;
     }
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const fromDate = sevenDaysAgo.toISOString().split("T")[0];
-
     const branchId = targetBranch;
+    const { from: fromDate, to: toDate } = dateRange;
+    // For payroll we match any record whose month falls within the date range
+    const fromMonth = fromDate.slice(0, 7);
+    const toMonth = toDate.slice(0, 7);
 
     let empQuery = supabase.from("employees").select("id, first_name, last_name, department, status, join_date, branch_id, branches(name)").is("deleted_at", null);
     empQuery = empQuery.eq("branch_id", branchId);
 
     const obQuery = supabase.from("onboarding_requests").select("id, stage, status, created_at, employees(first_name, last_name, role, branch_id)").is("deleted_at", null).neq("status", "completed").order("created_at", { ascending: false });
 
-    const lrQuery = supabase.from("leave_requests").select("id, status, leave_type, start_date, end_date, created_at, employees(first_name, last_name, role, department, branch_id)").is("deleted_at", null).order("created_at", { ascending: false }).limit(20);
+    const lrQuery = supabase.from("leave_requests").select("id, status, leave_type, start_date, end_date, created_at, employees(first_name, last_name, role, department, branch_id)").is("deleted_at", null).gte("start_date", fromDate).lte("start_date", toDate).order("created_at", { ascending: false }).limit(50);
 
-    const prQuery = supabase.from("payroll_records").select("id, employee_id, month, net_pay, status, employees(branch_id)").is("deleted_at", null).eq("month", currentMonth);
+    const prQuery = supabase.from("payroll_records").select("id, employee_id, month, net_pay, status, employees(branch_id)").is("deleted_at", null).gte("month", fromMonth).lte("month", toMonth);
 
-    const attQuery = supabase.from("attendance_records").select("status, date, hours_worked, employees(branch_id)").is("deleted_at", null).gte("date", fromDate);
+    const attQuery = supabase.from("attendance_records").select("status, date, hours_worked, employees(branch_id)").is("deleted_at", null).gte("date", fromDate).lte("date", toDate);
 
     const [
       { data: b },
@@ -136,7 +155,7 @@ export function useCompanyDashboard() {
     const filteredCand = (c || []).filter((cand: any) => !cand.job_postings?.branch_id || cand.job_postings?.branch_id === branchId);
 
     setHrKpis(computeHrKpis(filteredAtt, trainEnroll || [], discData || []));
-    setAttendanceData(computeAttendanceBreakdown(filteredAtt));
+    setAttendanceData(computeAttendanceBreakdown(filteredAtt, dateRange.from, dateRange.to));
     setHiringTrend(computeHiringTrend(e || [], offData || []));
     setAnnouncements((announcementsData as unknown as AnnouncementItem[]) || []);
 
@@ -176,7 +195,7 @@ export function useCompanyDashboard() {
     setDeptData(depts);
     setLastUpdated(new Date());
     setLoading(false);
-  }, [user?.id, isPartnerBranchBlocked, targetBranch]);
+  }, [user?.id, isPartnerBranchBlocked, targetBranch, dateRange]);
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return;
@@ -268,6 +287,8 @@ export function useCompanyDashboard() {
     hrKpis,
     attendanceData,
     hiringTrend,
+    dateRange,
+    setDateRange,
     fabOpen,
     setFabOpen,
     fabRef,

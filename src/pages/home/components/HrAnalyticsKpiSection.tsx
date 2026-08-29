@@ -6,12 +6,14 @@ interface HrAnalyticsKpiSectionProps {
   hrKpis: HrKpiState;
   showHrInsights: boolean;
   can: (module: string) => boolean;
+  rangeLabel: string;
 }
 
 export const HrAnalyticsKpiSection = memo(function HrAnalyticsKpiSection({
   hrKpis,
   showHrInsights,
   can,
+  rangeLabel,
 }: HrAnalyticsKpiSectionProps) {
   if (!showHrInsights) return null;
 
@@ -28,7 +30,7 @@ export const HrAnalyticsKpiSection = memo(function HrAnalyticsKpiSection({
     <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-bold text-gray-900">HR Analytics KPIs</h2>
-        <span className="text-[11px] text-gray-400">Last 7 days</span>
+        <span className="text-[11px] text-gray-400">{rangeLabel}</span>
       </div>
 
       {/* KPI Cards Row */}

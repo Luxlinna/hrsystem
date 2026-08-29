@@ -21,6 +21,7 @@ interface AnalyticsChartsSectionProps {
   attendanceData: AttendanceBucket[];
   deptData: Record<string, number>;
   hiringTrend: HiringTrendItem[];
+  rangeLabel: string;
 }
 
 export const AnalyticsChartsSection = memo(function AnalyticsChartsSection({
@@ -28,6 +29,7 @@ export const AnalyticsChartsSection = memo(function AnalyticsChartsSection({
   attendanceData,
   deptData,
   hiringTrend,
+  rangeLabel,
 }: AnalyticsChartsSectionProps) {
   if (!showAnalyticsCharts) return null;
 
@@ -35,7 +37,10 @@ export const AnalyticsChartsSection = memo(function AnalyticsChartsSection({
 
   return (
     <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-5 sm:p-6 mb-6">
-      <h2 className="text-sm font-bold text-gray-900 mb-4">Analytics Charts</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-bold text-gray-900">Analytics Charts</h2>
+        <span className="text-[11px] text-gray-400">{rangeLabel}</span>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Weekly Attendance Overview */}
         <div className="border border-gray-100 rounded-xl p-4">
