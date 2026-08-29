@@ -65,7 +65,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       .is("deleted_at", null)
       .order("name");
 
-    // 2. Fetch work locations (sites)
+    // 2. Fetch work locations (sites) — kept in the combined list so
+    //    attendance and other pages can use them, but they are tagged is_site=true.
     const { data: locationsData } = await supabase
       .from("work_locations")
       .select("id, name, branch_id, description")
@@ -78,39 +79,16 @@ export function BranchProvider({ children }: { children: ReactNode }) {
         location: loc.description,
         status: "active",
         branch_id: loc.branch_id,
-        is_site: true,
+        is_site: true as const,
       }));
 
-      // Combined list
-      const combined: BranchInfo[] = [];
+      // Pure branches sorted alphabetically (sites come after, separately)
+      const sortedBranches = [...branchesData].sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "")
+      );
 
-      // Pinex Agro (primary branch created by super admin) should be first
-      const pinexAgroBranch = branchesData.find(b => (b.name || "").toLowerCase().includes("pinex agro"));
-      if (pinexAgroBranch) {
-        combined.push(pinexAgroBranch);
-      }
-
-      // Kandal site (branch site created by branch admin) should be second
-      const kandalSite = sitesList.find(s => (s.name || "").toLowerCase().includes("kandal"));
-      if (kandalSite) {
-        combined.push(kandalSite);
-      }
-
-      // Add remaining branches alphabetically
-      const remainingBranches = branchesData.filter(b => b.id !== pinexAgroBranch?.id);
-      remainingBranches.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-
-      // Add remaining sites
-      const remainingSites = sitesList.filter(s => s.id !== kandalSite?.id);
-
-      for (const branch of remainingBranches) {
-        combined.push(branch);
-      }
-
-      for (const site of remainingSites) {
-        combined.push(site);
-      }
-
+      // Combined: branches first, then sites
+      const combined: BranchInfo[] = [...sortedBranches, ...sitesList];
       setBranches(combined);
     }
   }, []);
@@ -205,7 +183,12 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   }, [isSuperAdmin, effectiveBranchId, userBranchId]);
 
   const visibleBranches = useMemo(() => {
-    if (isSuperAdmin) return branches;
+    if (isSuperAdmin) {
+      // Super admin only sees real branches in the switcher (not work sites).
+      // Work sites are accessible via the attendance page's own site filter.
+      return branches.filter((b) => !b.is_site);
+    }
+    // Branch admin sees their own branch + their branch's sites
     return branches.filter((b) => b.id === userBranchId || b.branch_id === userBranchId);
   }, [isSuperAdmin, branches, userBranchId]);
 
