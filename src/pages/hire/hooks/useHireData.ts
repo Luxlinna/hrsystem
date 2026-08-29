@@ -82,13 +82,16 @@ export function useHireData() {
         (iv) => candIds.has(iv.candidate_id)
       );
 
-      setJobs(rawJobs);
-      setCandidates(filteredCandidates);
-      setInterviews(filteredInterviews);
-      const branchesList = visibleBranches && visibleBranches.length > 0
+      const allBranches = visibleBranches && visibleBranches.length > 0
         ? (visibleBranches as Branch[])
         : ((b as unknown as Branch[]) || []);
-      setBranches(branchesList);
+
+      const currentBranchId = targetBranch || effectiveBranchId;
+      const scopedList = currentBranchId
+        ? allBranches.filter((br) => br.id === currentBranchId || br.branch_id === currentBranchId)
+        : allBranches;
+
+      setBranches(scopedList.length > 0 ? scopedList : allBranches);
       setHiringRequests((hr as unknown as HiringRequest[]) || []);
     } catch (err) {
       console.error("Error loading hire data:", err);
@@ -96,7 +99,7 @@ export function useHireData() {
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch, visibleBranches]);
+  }, [isPartnerBranchBlocked, targetBranch, effectiveBranchId, visibleBranches]);
 
   useEffect(() => {
     loadData();
