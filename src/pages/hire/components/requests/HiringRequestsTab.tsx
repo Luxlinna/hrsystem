@@ -95,23 +95,27 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
   return (
     <div className="space-y-6">
       {/* Executive Requisition Report Header */}
-      <div className="bg-linear-to-r from-[#253C7D] via-[#1E3066] to-[#14234B] rounded-3xl p-6 sm:p-8 text-white shadow-xl">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="bg-[#1B2B5A] bg-gradient-to-r from-[#172554] via-[#1e3a8a] to-[#1e293b] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        {/* Background ambient decoration */}
+        <div className="absolute -right-16 -top-16 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide uppercase text-blue-100">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-[11px] font-bold tracking-wide uppercase text-blue-100 border border-white/10">
                 Workflow: Manager Request → CEO Decision → Chairman Report
               </span>
               {isChairman && (
-                <span className="px-2.5 py-0.5 bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 rounded-full text-xs font-bold">
+                <span className="px-2.5 py-0.5 bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 rounded-full text-[11px] font-bold">
                   Chairman Oversight View
                 </span>
               )}
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
               Branch Hiring Requisitions
             </h2>
-            <p className="text-sm text-blue-100/80 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-blue-100/90 max-w-2xl leading-relaxed font-medium">
               Branch managers request new headcount for their branch operations. The CEO authorizes live job recruitment, and all requisition statuses are reported to the Chairman / Chairwoman.
             </p>
           </div>
@@ -119,7 +123,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
           {canRequest && (
             <button
               onClick={onOpenCreate}
-              className="inline-flex items-center gap-2 px-5 py-3 bg-white text-[#253C7D] hover:bg-blue-50 font-bold text-sm rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer shrink-0"
+              className="inline-flex items-center gap-2 px-5 py-3 bg-white text-[#172554] hover:bg-blue-50 font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer shrink-0"
             >
               <i className="ri-user-add-line text-lg" />
               Request New Employee
@@ -128,22 +132,22 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/10">
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 border border-white/10">
-            <p className="text-xs text-blue-200 font-semibold">Total Requisitions</p>
-            <p className="text-2xl font-black mt-1">{stats.total}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-6 border-t border-white/15 relative">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
+            <p className="text-[11px] text-blue-200 font-bold uppercase tracking-wider">Total Requisitions</p>
+            <p className="text-2xl sm:text-3xl font-black mt-1 text-white">{stats.total}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 border border-white/10">
-            <p className="text-xs text-amber-200 font-semibold">Pending CEO Action</p>
-            <p className="text-2xl font-black text-amber-300 mt-1">{stats.pending}</p>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
+            <p className="text-[11px] text-amber-200 font-bold uppercase tracking-wider">Pending CEO Action</p>
+            <p className="text-2xl sm:text-3xl font-black text-amber-300 mt-1">{stats.pending}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 border border-white/10">
-            <p className="text-xs text-emerald-200 font-semibold">Approved by CEO</p>
-            <p className="text-2xl font-black text-emerald-300 mt-1">{stats.approved}</p>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
+            <p className="text-[11px] text-emerald-200 font-bold uppercase tracking-wider">Approved by CEO</p>
+            <p className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1">{stats.approved}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 border border-white/10">
-            <p className="text-xs text-sky-200 font-semibold">Headcount Needed</p>
-            <p className="text-2xl font-black text-sky-300 mt-1">{stats.totalHeadcount}</p>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
+            <p className="text-[11px] text-sky-200 font-bold uppercase tracking-wider">Headcount Needed</p>
+            <p className="text-2xl sm:text-3xl font-black text-sky-300 mt-1">{stats.totalHeadcount}</p>
           </div>
         </div>
       </div>

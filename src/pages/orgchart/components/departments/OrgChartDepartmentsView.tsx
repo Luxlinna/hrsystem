@@ -102,7 +102,7 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
             className="bg-white rounded-3xl border border-gray-200/80 shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col"
           >
             {/* Department Card Header */}
-            <div className="p-5 border-b border-gray-100 bg-linear-to-r from-gray-50 via-white to-transparent flex items-center justify-between">
+            <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 via-white to-transparent flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`w-3.5 h-3.5 rounded-full ${deptColor}`} />
                 <h3 className="text-base font-bold text-gray-900">{group.department}</h3>
