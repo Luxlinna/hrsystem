@@ -30,7 +30,7 @@ export const MODULE_SEARCH_RESULTS: SearchResult[] = [
   { id: "m-audit",         label: "Audit Log",          sublabel: "Activity history",     icon: "ri-shield-check-line",       path: "/audit-log",         category: "Module" },
   { id: "m-selfservice",   label: "Self-Service Portal", sublabel: "Employee view",       icon: "ri-user-settings-line",     path: "/self-service",      category: "Module" },
   { id: "m-settings",      label: "Settings",           sublabel: "System configuration", icon: "ri-settings-3-line",         path: "/settings",          category: "Module" },
-  { id: "m-usermanagement", label: "User Management",   sublabel: "Accounts & permissions", icon: "ri-user-settings-line",   path: "/admin?tab=users",   category: "Module" },
+  { id: "m-usermanagement", label: "Admin Portal",   sublabel: "Accounts & permissions", icon: "ri-user-settings-line",   path: "/admin?tab=users",   category: "Module" },
   { id: "m-notifications", label: "Notifications",      sublabel: "Alerts & updates",     icon: "ri-notification-3-line",    path: "/notifications",     category: "Module" },
   { id: "m-meeting-rooms", label: "Meeting Rooms",      sublabel: "Book a room",          icon: "ri-door-open-line",          path: "/meeting-rooms",     category: "Module" },
   { id: "m-tasks",         label: "Tasks",              sublabel: "Track and assign work", icon: "ri-checkbox-multiple-line", path: "/tasks",             category: "Module" },
@@ -116,7 +116,7 @@ export const DRAWER_GROUPS: DrawerGroup[] = [
   {
     label: "System",
     items: [
-      { path: "/admin?tab=users", label: "User Management", icon: "ri-user-settings-line", module: "admin" },
+      { path: "/admin?tab=users", label: "Admin Portal", icon: "ri-user-settings-line", module: "admin" },
       { path: "/notifications", label: "Notifications", icon: "ri-notification-3-line", module: "notifications" },
       { path: "/settings",      label: "Settings",      icon: "ri-settings-3-line",     module: "settings"      },
     ],

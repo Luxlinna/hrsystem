@@ -60,7 +60,7 @@ const navGroups = [
   {
     label: "System",
     items: [
-      { path: "/admin?tab=users", label: "User Management", icon: "ri-user-settings-line", module: "admin" },
+      { path: "/admin?tab=users", label: "Admin Portal", icon: "ri-user-settings-line", module: "admin" },
       { path: "/settings", label: "Settings", icon: "ri-settings-3-line", module: "settings" },
     ],
   },

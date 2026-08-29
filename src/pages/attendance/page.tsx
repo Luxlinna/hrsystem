@@ -151,7 +151,20 @@ export default function AttendancePage() {
 
         const { data: recData, error: recErr } = await recPromise;
         if (recErr) console.warn("Error fetching attendance records:", recErr);
-        setRecords((recData as unknown as AttendanceRecord[]) || []);
+        const rawRecords = (recData as unknown as AttendanceRecord[]) || [];
+        const mappedRecords = rawRecords.map((r) => {
+          if (!r.work_location_id && r.employees?.default_work_location_id) {
+            const locId = r.employees.default_work_location_id;
+            const locObj = wlData?.find((wl) => wl.id === locId);
+            return {
+              ...r,
+              work_location_id: locId,
+              work_location: locObj ? { id: locObj.id, name: locObj.name } : null,
+            };
+          }
+          return r;
+        });
+        setRecords(mappedRecords);
       } else {
         // Individual employee view
         let empRecord = myEmployee;
@@ -178,7 +191,20 @@ export default function AttendancePage() {
             .is("deleted_at", null)
             .order("date", { ascending: false })
             .limit(1000);
-          setRecords((recData as unknown as AttendanceRecord[]) || []);
+          const rawRecords = (recData as unknown as AttendanceRecord[]) || [];
+          const mappedRecords = rawRecords.map((r) => {
+            if (!r.work_location_id && r.employees?.default_work_location_id) {
+              const locId = r.employees.default_work_location_id;
+              const locObj = wlData?.find((wl) => wl.id === locId);
+              return {
+                ...r,
+                work_location_id: locId,
+                work_location: locObj ? { id: locObj.id, name: locObj.name } : null,
+              };
+            }
+            return r;
+          });
+          setRecords(mappedRecords);
         } else {
           setEmployees([]);
           setRecords([]);
