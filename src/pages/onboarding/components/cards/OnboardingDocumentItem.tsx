@@ -72,7 +72,7 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <p className={`font-extrabold truncate ${isDone ? "line-through text-gray-400" : "text-gray-900"}`}>
+            <p className={`font-extrabold truncate ${isDone ? "text-gray-400" : "text-gray-900"}`}>
               {doc.document_name}
             </p>
             {doc.file_url && (

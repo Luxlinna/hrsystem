@@ -76,7 +76,7 @@ export const ChecklistTaskItem = memo(function ChecklistTaskItem({
         {/* Task Details */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h5 className={`font-extrabold text-xs sm:text-[13px] truncate ${isDone ? "line-through text-gray-400" : "text-gray-900"}`}>
+            <h5 className={`font-extrabold text-xs sm:text-[13px] truncate ${isDone ? "text-gray-400" : "text-gray-900"}`}>
               {task.task_name}
             </h5>
             <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded border ${catMeta.bg} ${catMeta.text} ${catMeta.border}`}>
