@@ -58,10 +58,29 @@ export default function AdminPortal() {
 
   // Sync filterBranch when header branch switches
   useEffect(() => {
-    if (effectiveBranchId) {
-      setFilterBranch(effectiveBranchId);
+    if (selectedBranchId) {
+      setFilterBranch(selectedBranchId);
     }
-  }, [effectiveBranchId]);
+  }, [selectedBranchId]);
+
+  // Scope branch tabs to the currently selected header branch and its sub-sites
+  const scopedBranches = useMemo(() => {
+    if (!selectedBranchId) return branches;
+
+    // If a site is selected (e.g. "site:123")
+    if (selectedBranchId.startsWith("site:")) {
+      const siteObj = branches.find((b) => b.id === selectedBranchId);
+      const parentBranchId = siteObj?.branch_id;
+      if (parentBranchId) {
+        return branches.filter((b) => b.id === parentBranchId || b.branch_id === parentBranchId);
+      }
+      return branches.filter((b) => b.id === selectedBranchId);
+    }
+
+    // If a parent branch is selected (e.g. "Phnom Penh Head Office")
+    const relevant = branches.filter((b) => b.id === selectedBranchId || b.branch_id === selectedBranchId);
+    return relevant.length > 0 ? relevant : branches;
+  }, [branches, selectedBranchId]);
 
   // Role editor state
   const [editingRole, setEditingRole] = useState<AppRole | null>(null);
@@ -637,7 +656,7 @@ export default function AdminPortal() {
               users={users}
               roles={roles}
               employees={employees}
-              branches={branches}
+              branches={scopedBranches}
               filterBranch={filterBranch}
               setFilterBranch={setFilterBranch}
               searchQuery={searchQuery}

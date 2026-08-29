@@ -120,6 +120,17 @@ export const UsersTab = memo(function UsersTab({
     return map;
   }, [users, branches]);
 
+  const scopedTotal = useMemo(() => {
+    const parentBranch = branches.find((b) => !b.is_site);
+    if (!parentBranch) return users.length;
+    return users.filter((u) => {
+      const isDirect = u.branch_id === parentBranch.id;
+      const isNameMatch = u.branch_name && u.branch_name.toLowerCase() === parentBranch.name.toLowerCase();
+      const isSiteMatch = u.default_work_location_id && branches.some((b) => b.is_site && b.id === `site:${u.default_work_location_id}`);
+      return isDirect || isNameMatch || isSiteMatch;
+    }).length;
+  }, [users, branches]);
+
   return (
     <div className="space-y-4">
       {/* Top Header & Actions */}
@@ -129,7 +140,7 @@ export const UsersTab = memo(function UsersTab({
             {displayedUsers.length} {displayedUsers.length === 1 ? "User" : "Users"} Listed
             {filterBranch !== "all" && (
               <span className="text-xs font-normal text-gray-500 ml-1.5">
-                (filtered from {users.length} total)
+                (filtered from {scopedTotal} total)
               </span>
             )}
           </p>
@@ -143,12 +154,8 @@ export const UsersTab = memo(function UsersTab({
             Add Me
           </button>
           <button
-            onClick={() => {
-              setSelectedEmployeeEmail("");
-              setNewUser({ email: "", display_name: "", role_id: "", sendInvite: true });
-              setShowAddUser(true);
-            }}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#253C7D] text-white rounded-xl text-xs font-semibold hover:bg-[#1F336A] shadow-xs hover:shadow-sm transition-all cursor-pointer whitespace-nowrap"
+            onClick={() => setShowAddUser(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#253C7D] text-white rounded-xl text-xs font-semibold hover:bg-[#1E3064] transition-colors cursor-pointer whitespace-nowrap shadow-2xs"
           >
             <i className="ri-add-line" />
             Add User
@@ -190,7 +197,7 @@ export const UsersTab = memo(function UsersTab({
                 onChange={(e) => setFilterBranch(e.target.value)}
                 className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 bg-gray-50/50 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all cursor-pointer"
               >
-                <option value="all">🏢 All Branches ({users.length})</option>
+                <option value="all">🏢 All ({scopedTotal})</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.is_site ? `↳ ${b.name} (Site)` : `📍 ${b.name}`} ({branchCounts[b.id] || 0})
@@ -220,7 +227,7 @@ export const UsersTab = memo(function UsersTab({
                     : "bg-gray-200/80 text-gray-500"
                 }`}
               >
-                {users.length}
+                {scopedTotal}
               </span>
             </button>
             {branches.map((b) => {
