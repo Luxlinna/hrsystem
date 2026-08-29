@@ -68,6 +68,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const [scheduleSettings, setScheduleSettings] = useState(DEFAULT_WORK_SCHEDULE);
   const [activeOutsideWork, setActiveOutsideWork] = useState<OutsideWorkTask | null>(null);
   const [todayOutsideWork, setTodayOutsideWork] = useState<OutsideWorkTask | null>(null);
+  const [assignedShift, setAssignedShift] = useState<{ start_time: string; end_time: string; name: string } | null>(null);
 
   const today = todayYMD();
 
@@ -132,14 +133,37 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId, today]);
 
+  // Check for assigned shift for today
+  useEffect(() => {
+    if (!employeeId) return;
+    supabase
+      .from("shift_assignments")
+      .select("id, shift:shifts(id, start_time, end_time, shift_date, name)")
+      .eq("employee_id", employeeId)
+      .is("deleted_at", null)
+      .then(({ data }) => {
+        const list = (data as any[]) || [];
+        const match = list.find((a) => a.shift && a.shift.shift_date === today && !a.shift.deleted_at);
+        if (match?.shift) {
+          setAssignedShift({
+            start_time: match.shift.start_time.substring(0, 5),
+            end_time: match.shift.end_time.substring(0, 5),
+            name: match.shift.name,
+          });
+        } else {
+          setAssignedShift(null);
+        }
+      });
+  }, [employeeId, today]);
+
   // A branch's own schedule (set in Branch Management) wins over the
   // company-wide default on weekdays — but not on Saturday, where the
   // company half-day hours (saturday_start/end_time) always apply, since
   // branches have no Saturday fields of their own.
   const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
   const daySchedule = getScheduleForDate(scheduleSettings);
-  const workStartTime = (!isSaturday && branch?.work_start_time) || daySchedule?.startTime || globalWorkStartTime;
-  const workEndTime = (!isSaturday && branch?.work_end_time) || daySchedule?.endTime || null;
+  const workStartTime = assignedShift?.start_time || (!isSaturday && branch?.work_start_time) || daySchedule?.startTime || globalWorkStartTime;
+  const workEndTime = assignedShift?.end_time || (!isSaturday && branch?.work_end_time) || daySchedule?.endTime || null;
 
   const loadRecords = async () => {
     if (!employeeId) return;

@@ -152,7 +152,39 @@ export default function CheckInOutModal({
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
       if (isCheckIn) {
-        const lateMinutes = Math.max(0, now.getHours() * 60 + now.getMinutes() - 8 * 60);
+        // Query assigned shift for today
+        const { data: shiftAssignments } = await supabase
+          .from("shift_assignments")
+          .select("id, shift:shifts(start_time, shift_date)")
+          .eq("employee_id", employeeId)
+          .is("deleted_at", null);
+        
+        const match = (shiftAssignments as any[])?.find(
+          (a) => a.shift && a.shift.shift_date === today
+        );
+        
+        let startH = 8;
+        let startM = 0;
+        if (match?.shift?.start_time) {
+          const [sh, sm] = match.shift.start_time.split(":").map(Number);
+          startH = sh;
+          startM = sm;
+        } else {
+          // Fallback to employee's branch work_start_time if available
+          const { data: empBranch } = await supabase
+            .from("employees")
+            .select("branches(work_start_time)")
+            .eq("id", employeeId)
+            .maybeSingle();
+          const branchStartTime = (empBranch as any)?.branches?.work_start_time;
+          if (branchStartTime) {
+            const [bh, bm] = branchStartTime.split(":").map(Number);
+            startH = bh;
+            startM = bm;
+          }
+        }
+
+        const lateMinutes = Math.max(0, now.getHours() * 60 + now.getMinutes() - (startH * 60 + startM));
         const status = lateMinutes > 0 ? "late" : "ontime";
         await supabase.from("attendance_records").upsert(
           {
