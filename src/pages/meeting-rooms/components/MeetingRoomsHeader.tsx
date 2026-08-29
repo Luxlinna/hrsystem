@@ -4,12 +4,16 @@ interface MeetingRoomsHeaderProps {
   viewMode: "timeline" | "month" | "cards";
   setViewMode: (mode: "timeline" | "month" | "cards") => void;
   onOpenBookModal: () => void;
+  onCreateRoom?: () => void;
+  canManageRooms?: boolean;
 }
 
 export const MeetingRoomsHeader = memo(function MeetingRoomsHeader({
   viewMode,
   setViewMode,
   onOpenBookModal,
+  onCreateRoom,
+  canManageRooms,
 }: MeetingRoomsHeaderProps) {
   return (
     <div className="w-full bg-white p-5 sm:p-6 rounded-3xl border border-gray-200/80 shadow-2xs flex flex-col xl:flex-row xl:items-center justify-between gap-5">
@@ -50,6 +54,17 @@ export const MeetingRoomsHeader = memo(function MeetingRoomsHeader({
           <i className="ri-calendar-check-line text-base" />
           <span>Book Meeting Room</span>
         </button>
+
+        {/* New Room Button — admins/approvers only */}
+        {canManageRooms && onCreateRoom && (
+          <button
+            onClick={onCreateRoom}
+            className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs hover:shadow-md cursor-pointer active:scale-98 whitespace-nowrap"
+          >
+            <i className="ri-add-circle-line text-base" />
+            <span>New Room</span>
+          </button>
+        )}
 
         {/* View Switcher */}
         <div className="flex items-center bg-gray-100/90 p-1 rounded-xl border border-gray-200/70">

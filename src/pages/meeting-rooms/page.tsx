@@ -8,8 +8,10 @@ import { BookingModal } from "./components/modals/BookingModal";
 import { BookingDetailModal } from "./components/modals/BookingDetailModal";
 import { ApprovalReviewModal } from "./components/modals/ApprovalReviewModal";
 import { CancellationReasonModal } from "./components/modals/CancellationReasonModal";
+import { CreateRoomModal } from "./components/modals/CreateRoomModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useMeetingRooms } from "./hooks/useMeetingRooms";
+import { useState } from "react";
 
 export default function MeetingRoomsPage() {
   const {
@@ -66,6 +68,8 @@ export default function MeetingRoomsPage() {
     showToast,
   } = useMeetingRooms();
 
+  const [createRoomOpen, setCreateRoomOpen] = useState(false);
+
   if (loading && rooms.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -117,6 +121,8 @@ export default function MeetingRoomsPage() {
         viewMode={viewMode}
         setViewMode={setViewMode}
         onOpenBookModal={() => openBookModal()}
+        canManageRooms={canApprove}
+        onCreateRoom={() => setCreateRoomOpen(true)}
       />
 
       {/* Stats Row */}
@@ -242,6 +248,13 @@ export default function MeetingRoomsPage() {
         roleName={role?.name}
         loadBookings={loadBookings}
         showToast={showToast}
+      />
+      {/* Create Room Modal */}
+      <CreateRoomModal
+        isOpen={createRoomOpen}
+        onClose={() => setCreateRoomOpen(false)}
+        onCreated={loadRooms}
+        showToast={(type, msg) => showToast(type as any, msg)}
       />
     </div>
   );
