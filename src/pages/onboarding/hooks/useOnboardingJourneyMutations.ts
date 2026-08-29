@@ -243,6 +243,20 @@ export function useOnboardingJourneyMutations({
     }
   }, [setRequests]);
 
+  const regressStage = useCallback(async (req: OnboardingRequest) => {
+    const currentIndex = STAGES.findIndex((s) => s.key === req.stage);
+    if (currentIndex <= 0) return;
+    const prevStage = STAGES[currentIndex - 1].key;
+    const { error } = await supabase.from("onboarding_requests").update({ stage: prevStage }).eq("id", req.id);
+    if (error) {
+      toast("Failed", "Failed to revert stage", "error");
+    } else {
+      setRequests((prev) => prev.map((r) => (r.id === req.id ? { ...r, stage: prevStage } : r)));
+      const targetLabel = STAGES[currentIndex - 1].label;
+      toast("Stage Reverted", `Moved back to ${targetLabel}`, "success");
+    }
+  }, [setRequests]);
+
   const completeOnboarding = useCallback(async (req: OnboardingRequest) => {
     const { error } = await supabase
       .from("onboarding_requests")
@@ -289,6 +303,7 @@ export function useOnboardingJourneyMutations({
     handlePopulateDefaultChecklist,
     handleApprove,
     advanceStage,
+    regressStage,
     completeOnboarding,
   };
 }

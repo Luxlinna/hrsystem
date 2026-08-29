@@ -52,6 +52,7 @@ export default function Onboarding() {
     handlePopulateDefaultChecklist,
     handleApprove,
     advanceStage,
+    regressStage,
     completeOnboarding,
     showDocModal,
     setShowDocModal,
@@ -138,6 +139,7 @@ export default function Onboarding() {
           isDocOverdue={isDocOverdue}
           onApprove={handleApprove}
           onAdvanceStage={advanceStage}
+          onRegressStage={regressStage}
           onCompleteOnboarding={completeOnboarding}
           onPopulateDefaultChecklist={handlePopulateDefaultChecklist}
           onDeleteRequest={handleDeleteRequest}

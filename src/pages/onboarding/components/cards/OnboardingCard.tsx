@@ -16,6 +16,7 @@ interface OnboardingCardProps {
   isDocOverdue: (doc: OnboardingDoc) => boolean;
   onApprove: (req: OnboardingRequest) => void;
   onAdvanceStage: (req: OnboardingRequest) => void;
+  onRegressStage?: (req: OnboardingRequest) => void;
   onCompleteOnboarding: (req: OnboardingRequest) => void;
   onPopulateDefaultChecklist: (req: OnboardingRequest) => void;
   onDeleteRequest: (req: OnboardingRequest) => void;
@@ -36,6 +37,7 @@ export const OnboardingCard = memo(function OnboardingCard({
   isDocOverdue,
   onApprove,
   onAdvanceStage,
+  onRegressStage,
   onCompleteOnboarding,
   onDeleteRequest,
   onOpenDocModal,
@@ -263,13 +265,26 @@ export const OnboardingCard = memo(function OnboardingCard({
                 {/* Column Action Bottom */}
                 <div className="mt-3.5 pt-2.5 border-t border-gray-100 shrink-0">
                   {isActive ? (
-                    <button
-                      onClick={() => idx === 3 ? onCompleteOnboarding(request) : onAdvanceStage(request)}
-                      className="w-full py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-[11px] font-extrabold rounded-xl shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <span>{idx === 3 ? "Complete Journey" : "Move On"}</span>
-                      <i className="ri-arrow-right-line" />
-                    </button>
+                    <div className="flex gap-2">
+                      {idx > 0 && (
+                        <button
+                          onClick={() => onRegressStage?.(request)}
+                          className="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-extrabold rounded-xl shadow-2xs cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <i className="ri-arrow-left-line" />
+                          <span>Move Back</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => idx === 3 ? onCompleteOnboarding(request) : onAdvanceStage(request)}
+                        className={`${
+                          idx > 0 ? "flex-1" : "w-full"
+                        } py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-[11px] font-extrabold rounded-xl shadow-2xs cursor-pointer flex items-center justify-center gap-1.5`}
+                      >
+                        <span>{idx === 3 ? "Complete Journey" : "Move On"}</span>
+                        <i className="ri-arrow-right-line" />
+                      </button>
+                    </div>
                   ) : isCompleted ? (
                     <div className="text-center text-[10px] font-bold text-emerald-600 flex items-center justify-center gap-1 py-1">
                       <i className="ri-checkbox-circle-fill text-sm" />

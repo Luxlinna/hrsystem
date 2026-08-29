@@ -13,6 +13,7 @@ interface OnboardingCardsViewProps {
   isDocOverdue: (doc: OnboardingDoc) => boolean;
   onApprove: (req: OnboardingRequest) => void;
   onAdvanceStage: (req: OnboardingRequest) => void;
+  onRegressStage?: (req: OnboardingRequest) => void;
   onCompleteOnboarding: (req: OnboardingRequest) => void;
   onPopulateDefaultChecklist: (req: OnboardingRequest) => void;
   onDeleteRequest: (req: OnboardingRequest) => void;
@@ -34,6 +35,7 @@ export const OnboardingCardsView = memo(function OnboardingCardsView({
   isDocOverdue,
   onApprove,
   onAdvanceStage,
+  onRegressStage,
   onCompleteOnboarding,
   onPopulateDefaultChecklist,
   onDeleteRequest,
@@ -78,6 +80,7 @@ export const OnboardingCardsView = memo(function OnboardingCardsView({
           isDocOverdue={isDocOverdue}
           onApprove={onApprove}
           onAdvanceStage={onAdvanceStage}
+          onRegressStage={onRegressStage}
           onCompleteOnboarding={onCompleteOnboarding}
           onPopulateDefaultChecklist={onPopulateDefaultChecklist}
           onDeleteRequest={onDeleteRequest}
