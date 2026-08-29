@@ -32,7 +32,7 @@ export const ChecklistCategoryView = memo(function ChecklistCategoryView({
   onOpenAddModal,
 }: ChecklistCategoryViewProps) {
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       {categories.map((catKey) => {
         const catTasks = tasks.filter((t) => t.category === catKey);
         const isLocked = isCategoryLocked(catKey);

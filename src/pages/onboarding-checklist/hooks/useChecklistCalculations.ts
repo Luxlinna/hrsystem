@@ -58,20 +58,16 @@ export function useChecklistCalculations(
 
   const isCategoryLocked = useCallback(
     (category: string) => {
-      if (!selectedHire) return false;
-      if (selectedHire.status === "pending") return true;
-      if (selectedHire.status === "completed") return false;
-      const catIdx = getCategoryStageIdx(category);
-      return catIdx > currentStageIdx;
+      return false;
     },
-    [selectedHire, currentStageIdx, getCategoryStageIdx]
+    []
   );
 
   const isTaskLocked = useCallback(
     (task: ChecklistTask) => {
-      return isCategoryLocked(task.category);
+      return false;
     },
-    [isCategoryLocked]
+    []
   );
 
   return {

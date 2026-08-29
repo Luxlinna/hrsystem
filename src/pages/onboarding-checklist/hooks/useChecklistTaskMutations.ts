@@ -48,8 +48,14 @@ export function useChecklistTaskMutations({
         toast("Pending Approval", "Please click 'Approve Journey' before completing checklist tasks.", "info");
         return;
       }
-      if (isTaskLocked(task)) {
-        toast("Step Locked", "Please complete earlier steps and click 'Move On' first.", "info");
+      if (task.assigned_to !== completerName) {
+        toast(
+          "Unassigned or Assigned to Other Staff",
+          task.assigned_to
+            ? `Only ${task.assigned_to} can check this task.`
+            : "Please edit and assign this task to a staff member first.",
+          "warning"
+        );
         return;
       }
 

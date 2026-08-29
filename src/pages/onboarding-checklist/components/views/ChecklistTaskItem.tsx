@@ -51,18 +51,26 @@ export const ChecklistTaskItem = memo(function ChecklistTaskItem({
             e.stopPropagation();
             onToggle(task);
           }}
-          disabled={toggling === task.id}
-          className={`w-5 h-5 rounded-lg border mt-0.5 flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+          disabled={toggling === task.id || task.assigned_to !== completerName}
+          className={`w-5 h-5 rounded-lg border mt-0.5 flex items-center justify-center transition-all shrink-0 ${
             isDone
-              ? "bg-emerald-500 border-emerald-600 text-white shadow-2xs"
-              : isLocked
-              ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-              : "bg-white border-gray-300 hover:border-[#253C7D]"
+              ? "bg-emerald-500 border-emerald-600 text-white shadow-2xs cursor-pointer"
+              : task.assigned_to !== completerName
+              ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-white border-gray-300 hover:border-[#253C7D] cursor-pointer"
           }`}
-          title={isLocked ? "Step is locked" : isDone ? "Mark as pending" : "Mark as completed"}
+          title={
+            task.assigned_to !== completerName
+              ? task.assigned_to
+                ? `Only ${task.assigned_to} can check this task`
+                : "Please assign a staff member first"
+              : isDone
+              ? "Mark as pending"
+              : "Mark as completed"
+          }
         >
           {isDone && <i className="ri-check-line text-xs font-black" />}
-          {isLocked && !isDone && <i className="ri-lock-line text-[10px]" />}
+          {task.assigned_to !== completerName && !isDone && <i className="ri-lock-line text-[10px]" />}
         </button>
 
         {/* Task Details */}

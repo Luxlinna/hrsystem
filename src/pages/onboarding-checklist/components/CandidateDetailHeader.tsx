@@ -180,7 +180,7 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
             return (
               <div
                 key={item.key}
-                className={`p-3 rounded-2xl border transition-all ${
+                className={`px-4 py-3 rounded-2xl border transition-all flex items-center justify-between gap-2 ${
                   isActive
                     ? "bg-[#253C7D]/5 border-[#253C7D] text-[#253C7D]"
                     : isCompleted
@@ -188,27 +188,19 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
                     : "bg-gray-50/50 border-gray-200 text-gray-400"
                 }`}
               >
-                <div className="flex justify-between items-center gap-1">
-                  <span className="text-[11px] font-bold truncate">{item.label}</span>
-                  <span className="text-[10px] font-black">
-                    {item.count.done}/{item.count.total}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[10px] font-semibold mt-1">
+                <div className="flex items-center gap-2 min-w-0">
                   {isCompleted ? (
-                    <span className="text-emerald-600 flex items-center gap-0.5">
-                      <i className="ri-checkbox-circle-fill" /> Completed
-                    </span>
-                  ) : isLocked ? (
-                    <span className="text-gray-400 flex items-center gap-0.5">
-                      <i className="ri-lock-line" /> Locked (Step {item.step})
-                    </span>
+                    <i className="ri-checkbox-circle-fill text-emerald-500 text-sm shrink-0" />
+                  ) : isActive ? (
+                    <i className="ri-focus-2-line text-[#253C7D] text-sm shrink-0 animate-pulse" />
                   ) : (
-                    <span className="text-[#253C7D] font-bold flex items-center gap-0.5">
-                      <i className="ri-focus-2-line animate-pulse" /> Active Stage
-                    </span>
+                    <i className="ri-lock-line text-gray-400 text-sm shrink-0" />
                   )}
+                  <span className="text-[12px] font-bold truncate">{item.label}</span>
                 </div>
+                <span className="text-[11px] font-black shrink-0">
+                  {item.count.done}/{item.count.total}
+                </span>
               </div>
             );
           })}
