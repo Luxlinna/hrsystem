@@ -44,11 +44,12 @@ export function useHireFilters(
       }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchTitle = j.title.toLowerCase().includes(q);
-        const matchDept = j.department.toLowerCase().includes(q);
+        const matchTitle = (j.title || "").toLowerCase().includes(q);
+        const matchDept = (j.department || "").toLowerCase().includes(q);
         const matchLoc = (j.location || "").toLowerCase().includes(q);
         const matchBranch = (j.branches?.name || "").toLowerCase().includes(q);
-        if (!matchTitle && !matchDept && !matchLoc && !matchBranch) return false;
+        const matchDesc = (j.description || "").toLowerCase().includes(q);
+        if (!matchTitle && !matchDept && !matchLoc && !matchBranch && !matchDesc) return false;
       }
       return true;
     });
