@@ -96,6 +96,21 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
     return { label: val, icon: "ri-user-settings-line", color: "#253C7D" };
   };
 
+  const formatUrgentDuration = (hours: number | null | undefined) => {
+    const hVal = Number(hours) || 0;
+    if (hVal <= 0) return "24 hours";
+    const totalMins = Math.round(hVal * 60);
+    if (totalMins < 60) {
+      return `${totalMins} minute${totalMins !== 1 ? "s" : ""}`;
+    }
+    const hrs = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    if (mins === 0) {
+      return `${hrs} hour${hrs !== 1 ? "s" : ""}`;
+    }
+    return `${hrs} hr ${mins} min`;
+  };
+
   if (!isOpen) return null;
 
   const handleInsertFormatting = (prefix: string, suffix: string = "") => {
@@ -417,30 +432,104 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
               </div>
 
               {form.priority === "urgent" && (
-                <div className="p-3.5 rounded-2xl border border-rose-200 bg-rose-50/70">
+                <div className="p-4 rounded-2xl border border-rose-200 bg-rose-50/70 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="min-w-0">
-                      <label className="text-[11px] font-extrabold text-rose-700 uppercase tracking-wider block mb-1">
+                      <label className="text-[11px] font-extrabold text-rose-700 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                        <i className="ri-alarm-warning-line text-sm" />
                         Urgent Alert Duration
                       </label>
-                      <p className="text-[11px] text-rose-700/70 font-medium">
-                        Staff will be alerted every 30 seconds until accepted or until this time expires.
+                      <p className="text-[11px] text-rose-700/70 font-medium leading-relaxed">
+                        Staff will be alerted every 30 seconds until acknowledged or until this timer expires.
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <input
-                        type="number"
-                        min={1}
-                        max={168}
-                        value={form.urgent_alert_hours}
-                        onChange={(e) => {
-                          const nextValue = Math.min(168, Math.max(1, Number(e.target.value) || 1));
-                          setForm((prev) => ({ ...prev, urgent_alert_hours: nextValue }));
-                        }}
-                        className="w-20 px-3 py-2 bg-white border border-rose-200 rounded-xl text-sm font-extrabold text-rose-800 focus:outline-none focus:border-rose-500"
-                      />
-                      <span className="text-xs font-bold text-rose-700">hours</span>
+
+                    {/* Hours & Minutes inputs */}
+                    <div className="flex items-center gap-2 shrink-0 bg-white p-1.5 rounded-xl border border-rose-200 shadow-2xs">
+                      {/* Hours Input */}
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={0}
+                          max={168}
+                          value={Math.floor(form.urgent_alert_hours || 0)}
+                          onChange={(e) => {
+                            const newHours = Math.max(0, Number(e.target.value) || 0);
+                            const currentMins = Math.round(((form.urgent_alert_hours || 0) % 1) * 60);
+                            const combined = newHours + currentMins / 60;
+                            setForm((prev) => ({
+                              ...prev,
+                              urgent_alert_hours: Math.max(0.083, combined),
+                            }));
+                          }}
+                          className="w-12 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs font-black text-rose-800 text-center focus:bg-white focus:outline-none focus:border-rose-400"
+                        />
+                        <span className="text-[11px] font-bold text-rose-700">hrs</span>
+                      </div>
+
+                      <span className="text-gray-300 font-bold">:</span>
+
+                      {/* Minutes Input */}
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={0}
+                          max={59}
+                          step={5}
+                          value={Math.round(((form.urgent_alert_hours || 0) % 1) * 60)}
+                          onChange={(e) => {
+                            const currentHours = Math.floor(form.urgent_alert_hours || 0);
+                            const newMins = Math.min(59, Math.max(0, Number(e.target.value) || 0));
+                            const combined = currentHours + newMins / 60;
+                            setForm((prev) => ({
+                              ...prev,
+                              urgent_alert_hours: Math.max(0.083, combined),
+                            }));
+                          }}
+                          className="w-12 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs font-black text-rose-800 text-center focus:bg-white focus:outline-none focus:border-rose-400"
+                        />
+                        <span className="text-[11px] font-bold text-rose-700">mins</span>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-rose-200/60">
+                    <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mr-1">
+                      Quick Presets:
+                    </span>
+                    {[
+                      { label: "15 mins", hours: 0.25 },
+                      { label: "30 mins", hours: 0.5 },
+                      { label: "45 mins", hours: 0.75 },
+                      { label: "1 hour", hours: 1 },
+                      { label: "2 hours", hours: 2 },
+                      { label: "4 hours", hours: 4 },
+                      { label: "12 hours", hours: 12 },
+                      { label: "24 hours", hours: 24 },
+                    ].map((preset) => {
+                      const isActive =
+                        Math.abs((form.urgent_alert_hours || 0) - preset.hours) < 0.01;
+                      return (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              urgent_alert_hours: preset.hours,
+                            }))
+                          }
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                            isActive
+                              ? "bg-rose-600 text-white shadow-2xs scale-105"
+                              : "bg-white/80 hover:bg-white text-rose-700 border border-rose-200"
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -782,7 +871,7 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
                 {form.priority === "urgent" && (
                   <div className="mb-4 p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 text-xs font-bold">
                     <i className="ri-error-warning-line text-sm" />
-                    <span>Requires staff acknowledgment for {form.urgent_alert_hours} hours</span>
+                    <span>Requires staff acknowledgment for {formatUrgentDuration(form.urgent_alert_hours)}</span>
                   </div>
                 )}
 
