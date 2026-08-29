@@ -1,4 +1,4 @@
-import React, { memo, useRef } from "react";
+import React, { memo, useRef, useState, useEffect } from "react";
 import type { AnnouncementFormState, ComposerMode } from "../types";
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, AUDIENCE_CONFIG, QUICK_EMOJIS } from "../constants";
 
@@ -32,6 +32,30 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
   userBranchId = null,
 }: AnnouncementComposerModalProps) {
   const contentInputRef = useRef<HTMLTextAreaElement>(null);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const priorityDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(e.target as Node)
+      ) {
+        setCategoryDropdownOpen(false);
+      }
+      if (
+        priorityDropdownRef.current &&
+        !priorityDropdownRef.current.contains(e.target as Node)
+      ) {
+        setPriorityDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -194,68 +218,162 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
                 )}
               </div>
 
-              {/* Category Selection Grid */}
-              <div>
-                <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-2">
-                  Announcement Category <span className="text-rose-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => {
-                    const isSelected = form.category === key;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setForm((prev) => ({ ...prev, category: key }))}
-                        className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                          isSelected
-                            ? `${cfg.bg} ${cfg.color} border-current ring-2 ring-current/20 shadow-xs scale-[1.02]`
-                            : "bg-white border-gray-200/80 text-gray-700 hover:bg-slate-50 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <i className={`${cfg.icon} text-base`} />
-                          {isSelected && <i className="ri-checkbox-circle-fill text-xs" />}
-                        </div>
-                        <p className="text-xs font-black truncate">{cfg.label}</p>
-                        <p className="text-[10px] text-gray-400 truncate mt-0.5">{cfg.desc}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {/* Category & Priority Dropdowns in a 2-column grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Announcement Category Dropdown */}
+                <div className="relative" ref={categoryDropdownRef}>
+                  <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-1.5">
+                    Announcement Category <span className="text-rose-500">*</span>
+                  </label>
 
-              {/* Priority Level Segmented Cards */}
-              <div>
-                <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-2">
-                  Priority & Urgency Level <span className="text-rose-500">*</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {Object.entries(PRIORITY_CONFIG).map(([key, pri]) => {
-                    const isSelected = form.priority === key;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setForm((prev) => ({ ...prev, priority: key }))}
-                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
-                          isSelected
-                            ? key === "urgent"
-                              ? "bg-rose-50 border-rose-300 text-rose-800 ring-2 ring-rose-500/20 shadow-xs"
-                              : key === "high"
-                              ? "bg-amber-50 border-amber-300 text-amber-800 ring-2 ring-amber-500/20 shadow-xs"
-                              : "bg-[#253C7D]/10 border-[#253C7D]/40 text-[#253C7D] ring-2 ring-[#253C7D]/20 shadow-xs"
-                            : "bg-white border-gray-200/80 text-gray-700 hover:bg-slate-50"
-                        }`}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCategoryDropdownOpen((prev) => !prev);
+                      setPriorityDropdownOpen(false);
+                    }}
+                    className={`w-full px-3.5 py-2.5 bg-gray-50/80 hover:bg-white border rounded-xl text-xs text-left font-semibold flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                      categoryDropdownOpen
+                        ? "border-[#253C7D] ring-2 ring-[#253C7D]/10 bg-white"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 ${
+                          CATEGORY_CONFIG[form.category]?.bg || "bg-slate-100"
+                        } ${CATEGORY_CONFIG[form.category]?.color || "text-slate-600"}`}
                       >
-                        <span className={`w-3 h-3 rounded-full ${pri.dot} shrink-0`} />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-black">{pri.label}</p>
-                          <p className="text-[10px] text-gray-400 truncate">{pri.desc}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
+                        <i className={CATEGORY_CONFIG[form.category]?.icon || "ri-megaphone-line"} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-900 truncate">
+                          {CATEGORY_CONFIG[form.category]?.label || "Select Category"}
+                        </p>
+                        <p className="text-[10px] text-gray-400 truncate">
+                          {CATEGORY_CONFIG[form.category]?.desc || ""}
+                        </p>
+                      </div>
+                    </div>
+
+                    <i
+                      className={`ri-arrow-down-s-line text-gray-400 text-base transition-transform duration-200 shrink-0 ${
+                        categoryDropdownOpen ? "rotate-180 text-[#253C7D]" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {categoryDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+                      {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => {
+                        const isSelected = form.category === key;
+                        return (
+                          <div
+                            key={key}
+                            onClick={() => {
+                              setForm((prev) => ({ ...prev, category: key }));
+                              setCategoryDropdownOpen(false);
+                            }}
+                            className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs ${
+                              isSelected
+                                ? "bg-[#253C7D]/10 text-[#253C7D]"
+                                : "hover:bg-gray-50 text-gray-700"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div
+                                className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 ${cfg.bg} ${cfg.color}`}
+                              >
+                                <i className={cfg.icon} />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-gray-900 truncate">{cfg.label}</p>
+                                <p className="text-[10px] text-gray-400 truncate">{cfg.desc}</p>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <i className="ri-checkbox-circle-fill text-[#253C7D] text-sm shrink-0" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Priority & Urgency Level Dropdown */}
+                <div className="relative" ref={priorityDropdownRef}>
+                  <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-1.5">
+                    Priority & Urgency Level <span className="text-rose-500">*</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPriorityDropdownOpen((prev) => !prev);
+                      setCategoryDropdownOpen(false);
+                    }}
+                    className={`w-full px-3.5 py-2.5 bg-gray-50/80 hover:bg-white border rounded-xl text-xs text-left font-semibold flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                      priorityDropdownOpen
+                        ? "border-[#253C7D] ring-2 ring-[#253C7D]/10 bg-white"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span
+                        className={`w-3.5 h-3.5 rounded-full shrink-0 ${
+                          PRIORITY_CONFIG[form.priority]?.dot || "bg-gray-400"
+                        }`}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-900 truncate">
+                          {PRIORITY_CONFIG[form.priority]?.label || "Select Priority"}
+                        </p>
+                        <p className="text-[10px] text-gray-400 truncate">
+                          {PRIORITY_CONFIG[form.priority]?.desc || ""}
+                        </p>
+                      </div>
+                    </div>
+
+                    <i
+                      className={`ri-arrow-down-s-line text-gray-400 text-base transition-transform duration-200 shrink-0 ${
+                        priorityDropdownOpen ? "rotate-180 text-[#253C7D]" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {priorityDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-100">
+                      {Object.entries(PRIORITY_CONFIG).map(([key, pri]) => {
+                        const isSelected = form.priority === key;
+                        return (
+                          <div
+                            key={key}
+                            onClick={() => {
+                              setForm((prev) => ({ ...prev, priority: key }));
+                              setPriorityDropdownOpen(false);
+                            }}
+                            className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs ${
+                              isSelected
+                                ? "bg-[#253C7D]/10 text-[#253C7D]"
+                                : "hover:bg-gray-50 text-gray-700"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${pri.dot}`} />
+                              <div className="min-w-0">
+                                <p className="font-bold text-gray-900 truncate">{pri.label}</p>
+                                <p className="text-[10px] text-gray-400 truncate">{pri.desc}</p>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <i className="ri-checkbox-circle-fill text-[#253C7D] text-sm shrink-0" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
