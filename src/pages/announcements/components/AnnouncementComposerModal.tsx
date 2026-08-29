@@ -1,4 +1,5 @@
 import React, { memo, useRef, useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import type { AnnouncementFormState, ComposerMode } from "../types";
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, AUDIENCE_CONFIG, QUICK_EMOJIS } from "../constants";
 
@@ -34,9 +35,24 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
   const contentInputRef = useRef<HTMLTextAreaElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const priorityDropdownRef = useRef<HTMLDivElement>(null);
+  const audienceDropdownRef = useRef<HTMLDivElement>(null);
 
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
+  const [audienceDropdownOpen, setAudienceDropdownOpen] = useState(false);
+  const [roles, setRoles] = useState<{ id: number; name: string; color?: string }[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("app_roles")
+      .select("id, name, color")
+      .order("name")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setRoles(data);
+        }
+      });
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -52,10 +68,33 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
       ) {
         setPriorityDropdownOpen(false);
       }
+      if (
+        audienceDropdownRef.current &&
+        !audienceDropdownRef.current.contains(e.target as Node)
+      ) {
+        setAudienceDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const getAudienceDisplay = (val: string) => {
+    if (val === "all") return { label: "All Staff (Everyone)", icon: "ri-global-line", color: "#253C7D" };
+    if (val === "hq") return { label: "HQ Staff Only", icon: "ri-building-line", color: "#475569" };
+    if (val === "management") return { label: "Management Only", icon: "ri-shield-user-line", color: "#7C3AED" };
+    const matchedRole = roles.find(
+      (r) => r.name.toLowerCase() === val.toLowerCase() || String(r.id) === val
+    );
+    if (matchedRole) {
+      return {
+        label: `Role: ${matchedRole.name}`,
+        icon: "ri-user-star-line",
+        color: matchedRole.color || "#253C7D",
+      };
+    }
+    return { label: val, icon: "ri-user-settings-line", color: "#253C7D" };
+  };
 
   if (!isOpen) return null;
 
@@ -423,31 +462,142 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
 
               {/* Audience & Author details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {/* Target Audience */}
-                <div>
+                {/* Target Audience Dropdown (By Role) */}
+                <div className="relative" ref={audienceDropdownRef}>
                   <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-1.5">
-                    Target Audience <span className="text-rose-500">*</span>
+                    Target Audience (By Role) <span className="text-rose-500">*</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {Object.entries(AUDIENCE_CONFIG).map(([key, aud]) => {
-                      const isSelected = form.visible_to === key;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setForm((prev) => ({ ...prev, visible_to: key }))}
-                          className={`px-2 py-2 rounded-xl border text-[11px] font-bold flex flex-col items-center justify-center text-center gap-1 transition-all cursor-pointer ${
-                            isSelected
-                              ? "bg-[#253C7D] text-white border-[#253C7D] shadow-xs"
-                              : "bg-white border-gray-200 text-gray-600 hover:bg-slate-50"
-                          }`}
-                        >
-                          <i className={aud.icon} />
-                          <span className="truncate">{key === "all" ? "All Staff" : key === "hq" ? "HQ Only" : "Managers"}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAudienceDropdownOpen((prev) => !prev);
+                      setCategoryDropdownOpen(false);
+                      setPriorityDropdownOpen(false);
+                    }}
+                    className={`w-full px-3.5 py-2.5 bg-gray-50/80 hover:bg-white border rounded-xl text-xs text-left font-semibold flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                      audienceDropdownOpen
+                        ? "border-[#253C7D] ring-2 ring-[#253C7D]/10 bg-white"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 bg-[#253C7D]/10 text-[#253C7D]"
+                        style={{ color: getAudienceDisplay(form.visible_to).color }}
+                      >
+                        <i className={getAudienceDisplay(form.visible_to).icon} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-900 truncate">
+                          {getAudienceDisplay(form.visible_to).label}
+                        </p>
+                        <p className="text-[10px] text-gray-400 truncate">
+                          {form.visible_to === "all"
+                            ? "All company & branch members"
+                            : form.visible_to === "management"
+                            ? "Managers, Leads & Admins"
+                            : form.visible_to === "hq"
+                            ? "HQ Office staff only"
+                            : `Target only ${getAudienceDisplay(form.visible_to).label} role`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <i
+                      className={`ri-arrow-down-s-line text-gray-400 text-base transition-transform duration-200 shrink-0 ${
+                        audienceDropdownOpen ? "rotate-180 text-[#253C7D]" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {audienceDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+                      {/* Standard Scopes */}
+                      <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        General Scopes
+                      </div>
+                      {[
+                        { key: "all", label: "All Staff (Everyone)", icon: "ri-global-line", desc: "All company & branch members" },
+                        { key: "management", label: "Management Only", icon: "ri-shield-user-line", desc: "Managers, Leads & Admins" },
+                        { key: "hq", label: "HQ Staff Only", icon: "ri-building-line", desc: "HQ Office members only" },
+                      ].map((item) => {
+                        const isSelected = form.visible_to === item.key;
+                        return (
+                          <div
+                            key={item.key}
+                            onClick={() => {
+                              setForm((prev) => ({ ...prev, visible_to: item.key }));
+                              setAudienceDropdownOpen(false);
+                            }}
+                            className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs ${
+                              isSelected
+                                ? "bg-[#253C7D]/10 text-[#253C7D]"
+                                : "hover:bg-gray-50 text-gray-700"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-sm shrink-0">
+                                <i className={item.icon} />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-gray-900 truncate">{item.label}</p>
+                                <p className="text-[10px] text-gray-400 truncate">{item.desc}</p>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <i className="ri-checkbox-circle-fill text-[#253C7D] text-sm shrink-0" />
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* By Specific Role Target */}
+                      {roles.length > 0 && (
+                        <>
+                          <div className="px-2 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-t border-gray-100">
+                            By Specific Role Target
+                          </div>
+                          {roles.map((r) => {
+                            const isSelected = form.visible_to.toLowerCase() === r.name.toLowerCase();
+                            return (
+                              <div
+                                key={r.id}
+                                onClick={() => {
+                                  setForm((prev) => ({ ...prev, visible_to: r.name }));
+                                  setAudienceDropdownOpen(false);
+                                }}
+                                className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs ${
+                                  isSelected
+                                    ? "bg-[#253C7D]/10 text-[#253C7D]"
+                                    : "hover:bg-gray-50 text-gray-700"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0"
+                                    style={{
+                                      backgroundColor: `${r.color || "#253C7D"}18`,
+                                      color: r.color || "#253C7D",
+                                    }}
+                                  >
+                                    <i className="ri-user-star-line" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-gray-900 truncate">{r.name}</p>
+                                    <p className="text-[10px] text-gray-400 truncate">Target only users with {r.name} role</p>
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <i className="ri-checkbox-circle-fill text-[#253C7D] text-sm shrink-0" />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Author & Role */}
