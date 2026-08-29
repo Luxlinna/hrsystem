@@ -28,7 +28,7 @@ export function useChecklistData() {
     }
 
     try {
-      const [{ data: hr }, { data: tk }, { data: st }] = await Promise.all([
+      const [{ data: hr }, { data: tk }, { data: st }, { data: docs }] = await Promise.all([
         supabase
           .from("onboarding_requests")
           .select("*, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(name))")
@@ -46,6 +46,10 @@ export function useChecklistData() {
           .eq("branch_id", targetBranch)
           .is("deleted_at", null)
           .order("first_name"),
+        supabase
+          .from("onboarding_documents")
+          .select("id, onboarding_request_id, document_name, status")
+          .is("deleted_at", null),
       ]);
 
       const formattedHires = (hr || [])
@@ -62,8 +66,37 @@ export function useChecklistData() {
         }))
         .filter((h: any) => h.employees?.branch_id === targetBranch) as OnboardingHire[];
 
+      // Keep checklist tasks synced with onboarding documents status retroactively
+      const syncedTasks = (tk || []).map((t: any) => {
+        const matchingDoc = (docs || []).find(
+          (d: any) => d.onboarding_request_id === t.onboarding_request_id && matchDocAndTask(d.document_name, t.task_name)
+        );
+        if (matchingDoc) {
+          const docCompleted = matchingDoc.status === "complete";
+          if (t.completed !== docCompleted) {
+            // Trigger background database update to keep them in sync
+            supabase
+              .from("onboarding_checklist_tasks")
+              .update({
+                completed: docCompleted,
+                completed_at: docCompleted ? new Date().toISOString() : null,
+                completed_by: docCompleted ? "Auto Sync" : null,
+              })
+              .eq("id", t.id)
+              .then();
+            return {
+              ...t,
+              completed: docCompleted,
+              completed_at: docCompleted ? new Date().toISOString() : null,
+              completed_by: docCompleted ? "Auto Sync" : null,
+            };
+          }
+        }
+        return t;
+      });
+
       const hireIds = new Set(formattedHires.map((h) => h.id));
-      const filteredTasks = (tk || []).filter((t: any) => hireIds.has(t.onboarding_request_id)) as ChecklistTask[];
+      const filteredTasks = syncedTasks.filter((t: any) => hireIds.has(t.onboarding_request_id)) as ChecklistTask[];
 
       setHires(formattedHires);
       setTasks(filteredTasks);

@@ -1,5 +1,51 @@
 import { supabase } from "@/lib/supabase";
 
+export const DOC_TO_TASK: Record<string, string> = {
+  "Offer Letter": "Sign Offer Letter & Employment Terms",
+  "ID Verification": "Verify National ID / Passport & Proof of Address",
+  "Employment Contract": "Sign Employment Contract & Agreements",
+  "Bank Details Form": "Submit Bank Account & Tax Filing Details",
+  "NDA Agreement": "Sign Non-Disclosure & Confidentiality Agreement",
+
+  "Laptop Assignment": "Provision Laptop & Workstation Hardware",
+  "Email Account Setup": "Create Corporate Email & Slack/Teams Account",
+  "VPN Access Request": "Configure VPN & Secure Remote Access",
+  "Software Licenses": "Grant Software & Internal Tool Licenses",
+  "Security Badge": "Issue Security Access Badge & Keycards",
+
+  "HR Orientation Checklist": "HR Orientation & Company Policies Walkthrough",
+  "Team Introduction": "Team Introductions & Welcome Meeting",
+  "Role Training Schedule": "Role-Specific Skills Training & Setup Plan",
+  "Handbook Acknowledgment": "Review & Acknowledge Employee Handbook",
+
+  "Onboarding Sign-off": "Final Onboarding Sign-off & Buddy Review",
+  "30-Day Check-in Plan": "Schedule 30-Day Check-in & Feedback Review",
+  "Feedback Survey": "Complete New Hire Experience Feedback Survey",
+};
+
+export const TASK_TO_DOC: Record<string, string> = {
+  "Sign Offer Letter & Employment Terms": "Offer Letter",
+  "Verify National ID / Passport & Proof of Address": "ID Verification",
+  "Sign Employment Contract & Agreements": "Employment Contract",
+  "Submit Bank Account & Tax Filing Details": "Bank Details Form",
+  "Sign Non-Disclosure & Confidentiality Agreement": "NDA Agreement",
+
+  "Provision Laptop & Workstation Hardware": "Laptop Assignment",
+  "Create Corporate Email & Slack/Teams Account": "Email Account Setup",
+  "Configure VPN & Secure Remote Access": "VPN Access Request",
+  "Grant Software & Internal Tool Licenses": "Software Licenses",
+  "Issue Security Access Badge & Keycards": "Security Badge",
+
+  "HR Orientation & Company Policies Walkthrough": "HR Orientation Checklist",
+  "Team Introductions & Welcome Meeting": "Team Introduction",
+  "Role-Specific Skills Training & Setup Plan": "Role Training Schedule",
+  "Review & Acknowledge Employee Handbook": "Handbook Acknowledgment",
+
+  "Final Onboarding Sign-off & Buddy Review": "Onboarding Sign-off",
+  "Schedule 30-Day Check-in & Feedback Review": "30-Day Check-in Plan",
+  "Complete New Hire Experience Feedback Survey": "Feedback Survey",
+};
+
 export const ONBOARDING_DOCUMENT_TEMPLATES: Record<string, string[]> = {
   document: ["Offer Letter", "ID Verification", "Employment Contract", "Bank Details Form", "NDA Agreement"],
   it_setup: ["Laptop Assignment", "Email Account Setup", "VPN Access Request", "Software Licenses", "Security Badge"],

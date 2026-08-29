@@ -2,6 +2,7 @@ import { memo } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import type { OnboardingDoc, OnboardingRequest } from "../../types";
+import { DOC_TO_TASK } from "@/lib/onboarding";
 
 interface OnboardingDocumentItemProps {
   doc: OnboardingDoc;
@@ -29,6 +30,20 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
     if (error) {
       toast("Error", "Failed to update document status", "error");
     } else {
+      const taskName = DOC_TO_TASK[doc.document_name];
+      if (taskName) {
+        await supabase
+          .from("onboarding_checklist_tasks")
+          .update({
+            completed: nextStatus === "complete",
+            completed_at: nextStatus === "complete" ? new Date().toISOString() : null,
+            completed_by: nextStatus === "complete" ? "HR Admin" : null,
+          })
+          .eq("onboarding_request_id", request.id)
+          .eq("task_name", taskName)
+          .is("deleted_at", null);
+      }
+
       toast(nextStatus === "complete" ? "Item Completed" : "Item Reopened", "", "success");
       onRefresh();
     }
