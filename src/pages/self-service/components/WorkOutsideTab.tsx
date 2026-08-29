@@ -63,6 +63,7 @@ export default function WorkOutsideTab({ employeeId }: Props) {
       .eq("assigned_to", employeeId)
       .eq("is_outside_work", true)
       .eq("work_status", "checked_in")
+      .is("deleted_at", null)
       .maybeSingle()
       .then(({ data }) => setActiveRecord(data as OutsideWorkRecord | null));
 
@@ -71,6 +72,7 @@ export default function WorkOutsideTab({ employeeId }: Props) {
       .select("id, title, work_status, work_checked_in_at, work_checked_out_at, work_address, work_lat, work_lng, work_image_url, work_media_urls, work_check_out_address, work_check_out_lat, work_check_out_lng, work_check_out_image_url, work_check_out_media_urls")
       .eq("assigned_to", employeeId)
       .eq("is_outside_work", true)
+      .is("deleted_at", null)
       .not("work_checked_in_at", "is", null)
       .order("work_checked_in_at", { ascending: false })
       .then(({ data }) => {

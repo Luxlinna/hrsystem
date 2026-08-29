@@ -16,7 +16,12 @@ interface TaskFormModalProps {
   employees: Employee[];
   currentEmployeeId?: string | null;
   saving: boolean;
-  onSave: (form: FormState, editId?: string) => void;
+  onSave: (form: FormState & {
+    work_address?: string | null;
+    work_lat?: number | null;
+    work_lng?: number | null;
+    work_accuracy_m?: number | null;
+  }, editId?: string) => void;
   onClose: () => void;
 }
 
@@ -45,6 +50,16 @@ export const TaskFormModal = memo(function TaskFormModal({
         is_outside_work: editingTask.is_outside_work,
       });
       setAssignedIds(editingTask.assigned_to ? [editingTask.assigned_to] : []);
+      if (editingTask.is_outside_work && editingTask.work_address) {
+        setOwLocation({
+          lat: Number(editingTask.work_lat) || 0,
+          lng: Number(editingTask.work_lng) || 0,
+          accuracy: editingTask.work_accuracy_m || undefined,
+          address: editingTask.work_address,
+        });
+      } else {
+        setOwLocation(null);
+      }
     } else {
       setForm(emptyForm);
       // Default to the current employee themselves if available!
@@ -65,11 +80,19 @@ export const TaskFormModal = memo(function TaskFormModal({
     e.preventDefault();
     if (!form.title.trim() || assignedIds.length === 0) return;
 
+    const finalForm = {
+      ...form,
+      work_address: form.is_outside_work ? owLocation?.address || null : null,
+      work_lat: form.is_outside_work ? owLocation?.lat || null : null,
+      work_lng: form.is_outside_work ? owLocation?.lng || null : null,
+      work_accuracy_m: form.is_outside_work ? owLocation?.accuracy || null : null,
+    };
+
     if (assignedIds.length === 1) {
-      onSave({ ...form, assigned_to: assignedIds[0] }, editingTask?.id);
+      onSave({ ...finalForm, assigned_to: assignedIds[0] }, editingTask?.id);
     } else {
       assignedIds.forEach((id) => {
-        onSave({ ...form, assigned_to: id });
+        onSave({ ...finalForm, assigned_to: id });
       });
     }
   };

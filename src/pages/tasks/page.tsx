@@ -173,6 +173,7 @@ export default function TasksPage() {
         <CheckInOutModal
           taskId={checkInOutTask.task.id}
           employeeId={currentEmployeeId || checkInOutTask.task.assigned_to}
+          task={checkInOutTask.task}
           mode={checkInOutTask.mode}
           onDone={fetchTasks}
           onClose={() => setCheckInOutTask(null)}

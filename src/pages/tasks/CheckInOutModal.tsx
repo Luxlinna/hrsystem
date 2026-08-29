@@ -9,6 +9,7 @@ import {
   MediaUploadDropzone,
   type PendingFile,
 } from "./components/modals/check-in/MediaUploadDropzone";
+import type { Task } from "./types";
 
 interface Props {
   taskId: string;
@@ -17,6 +18,7 @@ interface Props {
   onDone: () => void;
   onClose: () => void;
   showToast: (type: string, message: string) => void;
+  task?: Task;
 }
 
 export default function CheckInOutModal({
@@ -26,6 +28,7 @@ export default function CheckInOutModal({
   onDone,
   onClose,
   showToast,
+  task,
 }: Props) {
   const [location, setLocation] = useState<{
     lat: number;
@@ -40,7 +43,8 @@ export default function CheckInOutModal({
   const [error, setError] = useState<string | null>(null);
 
   const isCheckIn = mode === "check_in";
-  const canSubmit = isCheckIn ? !!location && !saving : files.length > 0 && !saving;
+  const hasPredefinedLocation = !!task?.work_address || (task?.work_lat != null && task?.work_lng != null);
+  const canSubmit = isCheckIn ? (hasPredefinedLocation || !!location) && !saving : files.length > 0 && !saving;
 
   const handleCaptureLocation = async () => {
     setLocating(true);
@@ -157,7 +161,7 @@ export default function CheckInOutModal({
             clock_in: timeStr,
             status,
             late_minutes: lateMinutes,
-            notes: `Outside work: check-in at ${location?.address || "unknown location"}`,
+            notes: `Outside work: check-in at ${location?.address || task?.work_address || "unknown location"}`,
           },
           { onConflict: "employee_id,date" }
         );
@@ -246,6 +250,7 @@ export default function CheckInOutModal({
           locating={locating}
           onCaptureLocation={handleCaptureLocation}
           isCheckIn={isCheckIn}
+          isOptional={hasPredefinedLocation}
         />
 
         <MediaUploadDropzone

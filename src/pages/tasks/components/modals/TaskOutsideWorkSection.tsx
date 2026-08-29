@@ -58,6 +58,20 @@ export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
     );
   };
 
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (!val.trim()) {
+      onSetLocation(null);
+    } else {
+      onSetLocation({
+        lat: location?.lat || 0,
+        lng: location?.lng || 0,
+        accuracy: location?.accuracy,
+        address: val,
+      });
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       onSetMediaFiles([...mediaFiles, ...Array.from(e.target.files)]);
@@ -113,38 +127,48 @@ export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1.5">
               <i className="ri-map-pin-2-fill text-emerald-600" />
-              Current Location
+              Outside Work Location
             </label>
-            {location ? (
-              <div className="p-2.5 bg-emerald-50 border border-emerald-200/70 rounded-xl flex items-center justify-between gap-2">
-                <div className="min-w-0 text-xs">
-                  <p className="text-emerald-800 font-bold flex items-center gap-1">
-                    <i className="ri-checkbox-circle-fill text-emerald-600" />
-                    Location captured
-                  </p>
-                  <p className="text-emerald-700 text-[11px] truncate mt-0.5">{location.address}</p>
-                  {location.accuracy != null && (
-                    <p className="text-emerald-600 text-[10px]">±{location.accuracy}m GPS accuracy</p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onSetLocation(null)}
-                  className="text-xs font-bold text-emerald-800 hover:underline shrink-0 cursor-pointer"
-                >
-                  Recapture
-                </button>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={location?.address || ""}
+                  onChange={handleAddressChange}
+                  placeholder="Type address or capture current location..."
+                  className="w-full pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:border-[#253C7D] transition-colors"
+                />
+                {location?.address && (
+                  <button
+                    type="button"
+                    onClick={() => onSetLocation(null)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    <i className="ri-close-circle-fill text-sm" />
+                  </button>
+                )}
               </div>
-            ) : (
               <button
                 type="button"
                 onClick={captureLocation}
                 disabled={locating}
-                className="w-full py-2.5 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-700 text-xs font-bold hover:bg-emerald-50 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="px-3 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-emerald-700 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1 shrink-0"
+                title="Capture Current GPS Location"
               >
                 <i className="ri-map-pin-user-line text-sm" />
-                <span>{locating ? "Acquiring GPS location..." : "Capture Current Location"}</span>
+                <span>{locating ? "Locating..." : "Capture"}</span>
               </button>
+            </div>
+            {location && location.lat !== 0 && location.lng !== 0 && (
+              <div className="mt-1.5 flex items-center justify-between text-[10px] text-emerald-600 font-medium px-1">
+                <span className="flex items-center gap-1">
+                  <i className="ri-checkbox-circle-fill" />
+                  GPS coordinates captured ({location.lat.toFixed(4)}, {location.lng.toFixed(4)})
+                </span>
+                {location.accuracy != null && (
+                  <span>±{location.accuracy}m accuracy</span>
+                )}
+              </div>
             )}
           </div>
 

@@ -11,6 +11,7 @@ interface LocationCaptureCardProps {
   locating: boolean;
   onCaptureLocation: () => void;
   isCheckIn: boolean;
+  isOptional?: boolean;
 }
 
 export const LocationCaptureCard = memo(function LocationCaptureCard({
@@ -18,6 +19,7 @@ export const LocationCaptureCard = memo(function LocationCaptureCard({
   locating,
   onCaptureLocation,
   isCheckIn,
+  isOptional,
 }: LocationCaptureCardProps) {
   return (
     <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 space-y-3">
@@ -28,10 +30,14 @@ export const LocationCaptureCard = memo(function LocationCaptureCard({
           </span>
           <div>
             <h4 className="text-xs font-bold text-slate-800">
-              GPS Location {isCheckIn && <span className="text-rose-500">*</span>}
+              GPS Location {isCheckIn && !isOptional && <span className="text-rose-500">*</span>}
             </h4>
             <p className="text-[11px] text-slate-500">
-              {location ? "Coordinates recorded" : "Required to verify field location"}
+              {location 
+                ? "Coordinates recorded" 
+                : isOptional 
+                  ? "Optional (predefined location exists)" 
+                  : "Required to verify field location"}
             </p>
           </div>
         </div>

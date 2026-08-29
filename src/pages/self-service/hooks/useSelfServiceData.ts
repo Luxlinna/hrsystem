@@ -71,7 +71,7 @@ export function useSelfServiceData() {
         can("notifications")
           ? supabase.from("notifications").select("id", { count: "exact", head: true }).or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).or(`branch_id.is.null,branch_id.eq.${selectedEmployee.branch_id}`).eq("is_read", false)
           : Promise.resolve({ count: 0 }),
-        supabase.from("tasks").select("id, title, due_date, work_status, work_checked_in_at, created_at").eq("assigned_to", selectedEmployee.id).eq("is_outside_work", true),
+        supabase.from("tasks").select("id, title, due_date, work_status, work_checked_in_at, created_at").eq("assigned_to", selectedEmployee.id).eq("is_outside_work", true).is("deleted_at", null),
       ]);
       setTodayAttendance((attRes as any).data || null);
       setPendingLeaveCount((leaveRes as any).count || 0);

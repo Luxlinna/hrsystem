@@ -53,7 +53,8 @@ export default function GeofenceCheckInAlert() {
         .from("tasks")
         .select("id, due_date, work_status, work_checked_in_at, created_at")
         .eq("assigned_to", employee.id)
-        .eq("is_outside_work", true);
+        .eq("is_outside_work", true)
+        .is("deleted_at", null);
 
       const hasOutsideToday = (outsideTasks || []).some(
         (t) => t.work_status === "checked_in"

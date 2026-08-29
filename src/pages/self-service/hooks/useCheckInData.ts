@@ -58,6 +58,7 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
       .select("id, title, due_date, work_status, work_checked_in_at, work_checked_out_at, work_address, created_at")
       .eq("assigned_to", employeeId)
       .eq("is_outside_work", true)
+      .is("deleted_at", null)
       .then(async ({ data }) => {
         const list = (data as any[]) || [];
         const task = list.find((t) => t.work_status === "checked_in")

@@ -68,7 +68,15 @@ export function useTaskMutations({
   );
 
   const handleSaveTask = useCallback(
-    async (form: FormState, editId?: string) => {
+    async (
+      form: FormState & {
+        work_address?: string | null;
+        work_lat?: number | null;
+        work_lng?: number | null;
+        work_accuracy_m?: number | null;
+      },
+      editId?: string
+    ) => {
       setSaving(true);
       try {
         const payload = {
@@ -80,6 +88,10 @@ export function useTaskMutations({
           due_date: form.due_date || null,
           is_outside_work: form.is_outside_work,
           completed_at: form.status === "done" ? new Date().toISOString() : null,
+          work_address: form.is_outside_work ? form.work_address || null : null,
+          work_lat: form.is_outside_work ? form.work_lat || null : null,
+          work_lng: form.is_outside_work ? form.work_lng || null : null,
+          work_accuracy_m: form.is_outside_work ? form.work_accuracy_m || null : null,
         };
 
         if (editId) {
