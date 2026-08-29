@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
 import { toast } from "@/components/Toast";
 import type { OnboardingHire, ChecklistTask, StaffMember } from "../types";
+import { matchDocAndTask } from "../checklistUtils";
 
 export function useChecklistData() {
   const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
