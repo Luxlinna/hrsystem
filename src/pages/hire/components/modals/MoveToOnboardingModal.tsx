@@ -85,7 +85,7 @@ export const MoveToOnboardingModal = memo(function MoveToOnboardingModal({
               <option value="">Select Branch...</option>
               {branches.map((b) => (
                 <option key={b.id} value={b.id}>
-                  {b.name}
+                  {b.is_site ? `↳ ${b.name} (Site)` : b.name}
                 </option>
               ))}
             </select>

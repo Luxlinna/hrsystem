@@ -5,7 +5,8 @@ import { PIPELINE_STAGES } from "../constants";
 export function useHireFilters(
   jobs: Job[],
   candidates: Candidate[],
-  interviews: Interview[]
+  interviews: Interview[],
+  branches: Branch[] = []
 ) {
   const [tab, setTab] = useState<HireTab>("jobs");
   const [jobViewMode, setJobViewMode] = useState<"grid" | "list">("grid");
@@ -29,7 +30,18 @@ export function useHireFilters(
     return jobs.filter((j) => {
       if (filterJobStatus !== "all" && j.status !== filterJobStatus) return false;
       if (filterDepartment !== "all" && j.department !== filterDepartment) return false;
-      if (filterBranch !== "all" && j.branch_id !== filterBranch) return false;
+      if (filterBranch !== "all") {
+        if (filterBranch.startsWith("site:")) {
+          const site = branches.find((b) => b.id === filterBranch);
+          if (site) {
+            const loc = (j.location || "").toLowerCase().trim();
+            const sName = (site.name || "").toLowerCase().trim();
+            if (loc !== sName && !loc.includes(sName)) return false;
+          }
+        } else {
+          if (j.branch_id !== filterBranch) return false;
+        }
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchTitle = j.title.toLowerCase().includes(q);
@@ -40,7 +52,7 @@ export function useHireFilters(
       }
       return true;
     });
-  }, [jobs, filterJobStatus, filterDepartment, filterBranch, searchQuery]);
+  }, [jobs, filterJobStatus, filterDepartment, filterBranch, searchQuery, branches]);
 
   const filteredCandidates = useMemo(() => {
     return candidates.filter((c) => {

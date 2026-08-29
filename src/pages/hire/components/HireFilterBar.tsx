@@ -203,7 +203,7 @@ export const HireFilterBar = memo(function HireFilterBar({
             <option value="all">All Branches</option>
             {branches.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.name}
+                {b.is_site ? `↳ ${b.name} (Site)` : b.name}
               </option>
             ))}
           </select>

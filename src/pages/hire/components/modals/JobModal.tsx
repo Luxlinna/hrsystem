@@ -140,13 +140,21 @@ export const JobModal = memo(function JobModal({
               </label>
               <select
                 value={form.branch_id}
-                onChange={(e) => setForm((prev) => ({ ...prev, branch_id: e.target.value }))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const selected = branches.find((b) => b.id === val);
+                  setForm((prev) => ({
+                    ...prev,
+                    branch_id: val,
+                    location: selected ? selected.name : prev.location,
+                  }));
+                }}
                 className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
               >
                 <option value="">General HQ / Remote</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name}
+                    {b.is_site ? `↳ ${b.name} (Site)` : b.name}
                   </option>
                 ))}
               </select>

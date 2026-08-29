@@ -13,6 +13,7 @@ interface UseHiringRequestsProps {
   actorEmail?: string;
   myEmployeeId?: string;
   loadData: () => Promise<void>;
+  branches?: import("../types").Branch[];
 }
 
 export function useHiringRequests({
@@ -21,6 +22,7 @@ export function useHiringRequests({
   actorEmail,
   myEmployeeId,
   loadData,
+  branches = [],
 }: UseHiringRequestsProps) {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestForm, setRequestForm] = useState<NewHiringRequestFormState>(INITIAL_HIRING_REQUEST_FORM);
@@ -57,10 +59,15 @@ export function useHiringRequests({
 
     setSubmittingRequest(true);
     try {
+      const selectedBranchObj = branches.find((b) => b.id === requestForm.branch_id);
+      const resolvedBranchId = selectedBranchObj?.is_site
+        ? (selectedBranchObj.branch_id || null)
+        : (requestForm.branch_id || null);
+
       const payload = {
         title: requestForm.title.trim(),
         department: requestForm.department.trim(),
-        branch_id: requestForm.branch_id || null,
+        branch_id: resolvedBranchId,
         requested_by_id: myEmployeeId || null,
         requested_by_name: actorName,
         requested_by_email: actorEmail || null,

@@ -18,7 +18,7 @@ import { useHiringRequests } from "./useHiringRequests";
 export function useHire() {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, selectedBranchId, targetBranch } = useBranchScope();
   const { employee: myEmployee } = useMyEmployee();
 
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
@@ -31,7 +31,7 @@ export function useHire() {
 
   // Data & Filters
   const data = useHireData();
-  const filters = useHireFilters(data.jobs, data.candidates, data.interviews);
+  const filters = useHireFilters(data.jobs, data.candidates, data.interviews, data.branches);
   const mutations = useHireMutations({ actorName, actorRole, loadData: data.loadData });
   const requests = useHiringRequests({
     actorName,
@@ -39,6 +39,7 @@ export function useHire() {
     actorEmail: user?.email,
     myEmployeeId: myEmployee?.id,
     loadData: data.loadData,
+    branches: data.branches,
   });
 
   // Modal States
@@ -67,21 +68,26 @@ export function useHire() {
 
   // Modal Openers
   const openCreateJob = useCallback(() => {
-    const targetBranch = (!isSuperAdmin && userBranchId) ? userBranchId : (effectiveBranchId || data.branches[0]?.id || "");
+    const target = (!isSuperAdmin && userBranchId) ? userBranchId : (selectedBranchId || effectiveBranchId || data.branches[0]?.id || "");
     setEditingJob(null);
+    const selectedObj = data.branches.find((b) => b.id === target);
     setNewJob({
       ...INITIAL_JOB_FORM,
-      branch_id: targetBranch,
+      branch_id: target,
+      location: selectedObj ? selectedObj.name : "",
     });
     setJobModal(true);
-  }, [data.branches, isSuperAdmin, userBranchId, effectiveBranchId]);
+  }, [data.branches, isSuperAdmin, userBranchId, selectedBranchId, effectiveBranchId]);
 
   const openEditJob = useCallback((job: Job) => {
     setEditingJob(job);
+    const matchedSite = data.branches.find(
+      (b) => b.is_site && b.branch_id === job.branch_id && (b.name || "").toLowerCase() === (job.location || "").toLowerCase()
+    );
     setNewJob({
       title: job.title,
       department: job.department,
-      branch_id: job.branch_id || "",
+      branch_id: matchedSite ? matchedSite.id : (job.branch_id || ""),
       description: job.description || "",
       location: job.location || "",
       salary_min: String(job.salary_min || ""),
@@ -90,7 +96,7 @@ export function useHire() {
       closing_date: job.closing_date || "",
     });
     setJobModal(true);
-  }, []);
+  }, [data.branches]);
 
   const openCreateCandidate = useCallback((defaultJobId?: string) => {
     setEditingCandidate(null);
@@ -140,7 +146,10 @@ export function useHire() {
   const openMoveToOnboarding = useCallback((c: Candidate) => {
     setOnboardingCandidate(c);
     const job = data.jobs.find((j) => j.id === c.job_posting_id);
-    setOnboardingBranchId(job?.branch_id || data.branches[0]?.id || "");
+    const matchedSite = data.branches.find(
+      (b) => b.is_site && b.branch_id === job?.branch_id && (b.name || "").toLowerCase() === (job?.location || "").toLowerCase()
+    );
+    setOnboardingBranchId(matchedSite ? matchedSite.id : (job?.branch_id || data.branches[0]?.id || ""));
     setOnboardingJoinDate(new Date().toISOString().split("T")[0]);
     setOnboardingModal(true);
   }, [data.jobs, data.branches]);
@@ -158,12 +167,20 @@ export function useHire() {
     if (mutations.postingJob) return;
     mutations.setPostingJob(true);
 
+    const selectedBranchObj = data.branches.find((b) => b.id === newJob.branch_id);
+    const resolvedBranchId = selectedBranchObj?.is_site
+      ? (selectedBranchObj.branch_id || targetBranch || null)
+      : (newJob.branch_id || null);
+    const resolvedLocation = selectedBranchObj?.is_site
+      ? selectedBranchObj.name
+      : (newJob.location.trim() || selectedBranchObj?.name || "");
+
     const payload = {
       title: newJob.title.trim(),
       department: newJob.department.trim(),
-      branch_id: newJob.branch_id || null,
+      branch_id: resolvedBranchId,
       description: newJob.description.trim(),
-      location: newJob.location.trim(),
+      location: resolvedLocation,
       salary_min: Number(newJob.salary_min) || 0,
       salary_max: Number(newJob.salary_max) || 0,
       type: newJob.type,

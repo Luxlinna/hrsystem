@@ -1,6 +1,9 @@
 export interface Branch {
   id: string;
   name: string;
+  is_site?: boolean;
+  branch_id?: string | null;
+  location?: string | null;
 }
 
 export interface Job {

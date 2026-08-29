@@ -5,7 +5,15 @@ import { useBranchScope } from "@/context/BranchContext";
 import type { Job, Candidate, Interview, Branch, HiringRequest } from "../types";
 
 export function useHireData() {
-  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
+  const {
+    isSuperAdmin,
+    effectiveBranchId,
+    userBranchId,
+    userBranchName,
+    targetBranch,
+    isPartnerBranchBlocked,
+    visibleBranches,
+  } = useBranchScope();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -34,7 +42,7 @@ export function useHireData() {
         .eq("branch_id", targetBranch)
         .order("posted_at", { ascending: false });
 
-      const branchQuery = supabase.from("branches").select("id, name").eq("id", targetBranch).order("name");
+      const branchQuery = supabase.from("branches").select("id, name").is("deleted_at", null).order("name");
 
       const reqQuery = supabase
         .from("hiring_requests")
@@ -77,7 +85,10 @@ export function useHireData() {
       setJobs(rawJobs);
       setCandidates(filteredCandidates);
       setInterviews(filteredInterviews);
-      setBranches((b as unknown as Branch[]) || []);
+      const branchesList = visibleBranches && visibleBranches.length > 0
+        ? (visibleBranches as Branch[])
+        : ((b as unknown as Branch[]) || []);
+      setBranches(branchesList);
       setHiringRequests((hr as unknown as HiringRequest[]) || []);
     } catch (err) {
       console.error("Error loading hire data:", err);
@@ -85,7 +96,7 @@ export function useHireData() {
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch]);
+  }, [isPartnerBranchBlocked, targetBranch, visibleBranches]);
 
   useEffect(() => {
     loadData();

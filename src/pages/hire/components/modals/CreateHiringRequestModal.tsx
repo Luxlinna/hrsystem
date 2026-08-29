@@ -105,7 +105,7 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
                 <option value="">Headquarters / Default</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name}
+                    {b.is_site ? `↳ ${b.name} (Site)` : b.name}
                   </option>
                 ))}
               </select>
