@@ -248,6 +248,8 @@ export default function HirePage() {
           onReopenJob={reopenJob}
           onDeleteJob={deleteJob}
           onAddCandidate={openCreateCandidate}
+          onClearFilters={resetFilters}
+          hasFilters={hasFilters}
         />
       )}
 

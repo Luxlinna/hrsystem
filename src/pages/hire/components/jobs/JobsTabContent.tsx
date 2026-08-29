@@ -12,6 +12,8 @@ interface JobsTabContentProps {
   onReopenJob: (id: string) => void;
   onDeleteJob: (id: string, title: string) => void;
   onAddCandidate: (jobId: string) => void;
+  onClearFilters?: () => void;
+  hasFilters?: boolean;
 }
 
 export const JobsTabContent = memo(function JobsTabContent({
@@ -24,6 +26,8 @@ export const JobsTabContent = memo(function JobsTabContent({
   onReopenJob,
   onDeleteJob,
   onAddCandidate,
+  onClearFilters,
+  hasFilters = false,
 }: JobsTabContentProps) {
   if (jobs.length === 0) {
     return (
@@ -33,14 +37,26 @@ export const JobsTabContent = memo(function JobsTabContent({
         </div>
         <h3 className="text-base font-bold text-gray-900">No Job Postings Found</h3>
         <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-          No vacancies match your search query or selected department/branch filters.
+          {hasFilters
+            ? "No vacancies match your active search query or selected status/branch filters."
+            : "No vacancies have been posted in this branch yet."}
         </p>
-        <button
-          onClick={onOpenCreateJob}
-          className="mt-4 px-4 py-2 bg-[#253C7D] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#1E3064] transition-all cursor-pointer"
-        >
-          + Post New Job
-        </button>
+        <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+          {hasFilters && onClearFilters && (
+            <button
+              onClick={onClearFilters}
+              className="px-4 py-2 bg-gray-100 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-200 transition-all cursor-pointer inline-flex items-center gap-1.5"
+            >
+              <i className="ri-filter-off-line text-sm" /> Reset All Filters
+            </button>
+          )}
+          <button
+            onClick={onOpenCreateJob}
+            className="px-4 py-2 bg-[#253C7D] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#1E3064] transition-all cursor-pointer"
+          >
+            + Post New Job
+          </button>
+        </div>
       </div>
     );
   }

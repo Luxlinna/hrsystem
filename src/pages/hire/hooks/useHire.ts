@@ -211,12 +211,14 @@ export function useHire() {
         title: "New Job Posting",
         message: `A new job posting "${payload.title}" has been created in ${payload.department}.`,
       });
+      filters.setFilterJobStatus("all");
+      filters.setSearchQuery("");
     }
 
     setJobModal(false);
     setEditingJob(null);
     data.loadData();
-  }, [newJob, editingJob, mutations, actorName, actorRole, data]);
+  }, [newJob, editingJob, mutations, actorName, actorRole, data, filters]);
 
   const handleSaveCandidate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();

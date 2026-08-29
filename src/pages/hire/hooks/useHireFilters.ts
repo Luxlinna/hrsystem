@@ -97,6 +97,26 @@ export function useHireFilters(
     return counts;
   }, [candidates]);
 
+  const resetFilters = useCallback(() => {
+    setSearchQuery("");
+    setFilterJobStatus("all");
+    setFilterDepartment("all");
+    setFilterBranch("all");
+    setFilterCandidateStage("all");
+    setFilterCandidateJob("all");
+    setFilterInterviewStatus("all");
+  }, []);
+
+  const hasFilters = Boolean(
+    searchQuery.trim() ||
+      filterJobStatus !== "all" ||
+      filterDepartment !== "all" ||
+      filterBranch !== "all" ||
+      filterCandidateStage !== "all" ||
+      filterCandidateJob !== "all" ||
+      filterInterviewStatus !== "all"
+  );
+
   return {
     tab,
     setTab,
@@ -118,6 +138,8 @@ export function useHireFilters(
     setFilterCandidateJob,
     filterInterviewStatus,
     setFilterInterviewStatus,
+    resetFilters,
+    hasFilters,
     departments,
     filteredJobs,
     filteredCandidates,
