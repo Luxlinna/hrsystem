@@ -184,9 +184,16 @@ export function BranchProvider({ children }: { children: ReactNode }) {
 
   const visibleBranches = useMemo(() => {
     if (isSuperAdmin) {
-      // Super admin only sees real branches in the switcher (not work sites).
-      // Work sites are accessible via the attendance page's own site filter.
-      return branches.filter((b) => !b.is_site);
+      // Super admin sees all branches and their respective work sites
+      const pureBranches = branches.filter((b) => !b.is_site);
+      const sites = branches.filter((b) => b.is_site);
+      const result: BranchInfo[] = [];
+      pureBranches.forEach((branch) => {
+        result.push(branch);
+        const branchSites = sites.filter((s) => s.branch_id === branch.id);
+        result.push(...branchSites);
+      });
+      return result;
     }
     // Branch admin sees their own branch + their branch's sites
     return branches.filter((b) => b.id === userBranchId || b.branch_id === userBranchId);

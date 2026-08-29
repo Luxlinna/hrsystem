@@ -5,6 +5,8 @@ import { AddUserForm } from "./AddUserForm";
 interface BranchOption {
   id: string;
   name: string;
+  is_site?: boolean;
+  branch_id?: string;
 }
 
 interface UsersTabProps {
@@ -59,7 +61,7 @@ export const UsersTab = memo(function UsersTab({
   onResendInvite,
   onUpdateUserRole,
   onRemoveUser,
-}: UsersTabProps) {
+  }: UsersTabProps) {
   const assignableRoles = useMemo(() => {
     return isSuperAdmin ? roles : roles.filter((r) => !r.is_admin && r.name !== "Super Admin");
   }, [roles, isSuperAdmin]);
@@ -67,9 +69,18 @@ export const UsersTab = memo(function UsersTab({
   // Filter users by search and branch
   const displayedUsers = useMemo(() => {
     return users.filter((u) => {
-      // Branch filter (if specific branch selected)
+      // Branch filter (if specific branch or site selected)
       if (filterBranch !== "all") {
-        if (u.branch_id !== filterBranch) return false;
+        if (filterBranch.startsWith("site:")) {
+          const sId = filterBranch.substring(5);
+          if (u.default_work_location_id !== sId) return false;
+        } else {
+          // Check branch id match or branch name match
+          const targetB = branches.find((b) => b.id === filterBranch);
+          const isDirectMatch = u.branch_id === filterBranch;
+          const isNameMatch = targetB && u.branch_name && u.branch_name.toLowerCase() === targetB.name.toLowerCase();
+          if (!isDirectMatch && !isNameMatch) return false;
+        }
       }
 
       // Search query
@@ -79,22 +90,35 @@ export const UsersTab = memo(function UsersTab({
         const email = (u.email || "").toLowerCase();
         const role = (u.app_roles?.name || "").toLowerCase();
         const branch = (u.branch_name || "").toLowerCase();
-        return name.includes(q) || email.includes(q) || role.includes(q) || branch.includes(q);
+        const site = (u.site_name || "").toLowerCase();
+        return name.includes(q) || email.includes(q) || role.includes(q) || branch.includes(q) || site.includes(q);
       }
 
       return true;
     });
-  }, [users, filterBranch, searchQuery]);
+  }, [users, filterBranch, searchQuery, branches]);
 
   // Branch user counts
   const branchCounts = useMemo(() => {
     const map: Record<string, number> = {};
     users.forEach((u) => {
-      const bId = u.branch_id || "unassigned";
-      map[bId] = (map[bId] || 0) + 1;
+      if (u.branch_id) {
+        map[u.branch_id] = (map[u.branch_id] || 0) + 1;
+      }
+      if (u.default_work_location_id) {
+        const sKey = `site:${u.default_work_location_id}`;
+        map[sKey] = (map[sKey] || 0) + 1;
+      }
+      // Also fallback by branch_name if branch_id is null
+      if (!u.branch_id && u.branch_name) {
+        const matched = branches.find((b) => !b.is_site && b.name.toLowerCase() === u.branch_name?.toLowerCase());
+        if (matched) {
+          map[matched.id] = (map[matched.id] || 0) + 1;
+        }
+      }
     });
     return map;
-  }, [users]);
+  }, [users, branches]);
 
   return (
     <div className="space-y-4">
@@ -169,7 +193,7 @@ export const UsersTab = memo(function UsersTab({
                 <option value="all">🏢 All Branches ({users.length})</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
-                    📍 {b.name} ({branchCounts[b.id] || 0})
+                    {b.is_site ? `↳ ${b.name} (Site)` : `📍 ${b.name}`} ({branchCounts[b.id] || 0})
                   </option>
                 ))}
               </select>
@@ -182,27 +206,49 @@ export const UsersTab = memo(function UsersTab({
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-none">
             <button
               onClick={() => setFilterBranch("all")}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                 filterBranch === "all"
                   ? "bg-[#253C7D] text-white shadow-2xs"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200/80"
               }`}
             >
-              All ({users.length})
-            </button>
-            {branches.map((b) => (
-              <button
-                key={b.id}
-                onClick={() => setFilterBranch(b.id)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
-                  filterBranch === b.id
-                    ? "bg-[#253C7D] text-white shadow-2xs"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200/80"
+              <span>All</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  filterBranch === "all"
+                    ? "bg-white/20 text-white"
+                    : "bg-gray-200/80 text-gray-500"
                 }`}
               >
-                {b.name} ({branchCounts[b.id] || 0})
-              </button>
-            ))}
+                {users.length}
+              </span>
+            </button>
+            {branches.map((b) => {
+              const count = branchCounts[b.id] || 0;
+              const isSelected = filterBranch === b.id;
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => setFilterBranch(b.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    isSelected
+                      ? "bg-[#253C7D] text-white shadow-2xs"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200/80"
+                  }`}
+                >
+                  <span>{b.is_site ? `↳ ${b.name}` : b.name}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      isSelected
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-200/80 text-gray-500"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -268,6 +314,13 @@ export const UsersTab = memo(function UsersTab({
                         <i className="ri-building-line text-[9px]" />
                         {user.branch_name || "Headquarters"}
                       </span>
+                      {/* Site Badge */}
+                      {user.site_name && (
+                        <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <i className="ri-map-pin-2-line text-[9px]" />
+                          {user.site_name}
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
                   </div>

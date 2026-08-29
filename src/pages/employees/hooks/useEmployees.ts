@@ -37,6 +37,7 @@ export function useEmployees() {
     isPartnerBranchBlocked,
     branches: scopeBranches,
     selectedBranchId,
+    selectedSiteId,
     visibleBranches,
   } = useBranchScope();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
@@ -74,12 +75,16 @@ export function useEmployees() {
       return;
     }
 
-    const query = supabase
+    let query = supabase
       .from("employees")
       .select("id, first_name, last_name, email, phone, role, department, branch_id, status, join_date, reports_to, avatar_url, default_work_location_id, branches(name)")
       .is("deleted_at", null)
       .eq("branch_id", targetBranch)
       .order("first_name");
+
+    if (selectedSiteId) {
+      query = query.eq("default_work_location_id", selectedSiteId);
+    }
 
     query.then(({ data, error }) => {
       if (error) {
@@ -92,7 +97,7 @@ export function useEmployees() {
       })) as Employee[];
       setEmployees(formatted);
     });
-  }, [isPartnerBranchBlocked, targetBranch]);
+  }, [isPartnerBranchBlocked, targetBranch, selectedSiteId]);
 
   useEffect(() => {
     loadEmployees();

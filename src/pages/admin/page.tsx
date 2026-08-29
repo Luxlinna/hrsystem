@@ -102,10 +102,10 @@ export default function AdminPortal() {
     }
 
     const empQuery = !isSuperAdmin && targetBranchId
-      ? supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id, branches(id, name)").eq("branch_id", targetBranchId).not("email", "is", null).is("deleted_at", null).order("first_name")
-      : supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id, branches(id, name)").not("email", "is", null).is("deleted_at", null).order("first_name");
+      ? supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id, default_work_location_id, branches(id, name)").eq("branch_id", targetBranchId).not("email", "is", null).is("deleted_at", null).order("first_name")
+      : supabase.from("employees").select("id, email, first_name, last_name, role, department, branch_id, default_work_location_id, branches(id, name)").not("email", "is", null).is("deleted_at", null).order("first_name");
 
-    const [rolesRes, usersRes, deletedRes, employeesRes, resetRequestsRes, authAccountsResult, branchesRes] = await Promise.all([
+    const [rolesRes, usersRes, deletedRes, employeesRes, resetRequestsRes, authAccountsResult, branchesRes, locationsRes] = await Promise.all([
       supabase.from("app_roles").select("*").order("id"),
       supabase.from("user_role_assignments").select("*, app_roles(id, name, color, is_admin)").is("deleted_at", null).order("created_at", { ascending: false }),
       supabase.from("user_role_assignments").select("email").not("deleted_at", "is", null),
@@ -113,9 +113,12 @@ export default function AdminPortal() {
       supabase.from("password_reset_requests").select("id, email, status, requested_at, acted_at").is("deleted_at", null).order("requested_at", { ascending: false }).limit(50),
       authAccountsPromise,
       supabase.from("branches").select("id, name").is("deleted_at", null).order("name"),
+      supabase.from("work_locations").select("id, name, branch_id").is("deleted_at", null),
     ]);
 
-    const branchList = ((branchesRes.data || []) as { id: string; name: string }[]).sort((a, b) => {
+    const locationsMap = new Map(((locationsRes.data || []) as any[]).map((loc) => [loc.id, loc]));
+
+    const pureBranches = ((branchesRes.data || []) as { id: string; name: string }[]).sort((a, b) => {
       const aName = (a.name || "").toLowerCase();
       const bName = (b.name || "").toLowerCase();
       
@@ -131,7 +134,22 @@ export default function AdminPortal() {
       
       return aName.localeCompare(bName);
     });
-    setBranches(branchList);
+
+    const sitesList = ((locationsRes.data || []) as any[]).map((loc) => ({
+      id: `site:${loc.id}`,
+      name: loc.name,
+      branch_id: loc.branch_id,
+      is_site: true,
+    }));
+
+    const combinedBranches: { id: string; name: string; is_site?: boolean; branch_id?: string }[] = [];
+    pureBranches.forEach((branch) => {
+      combinedBranches.push(branch);
+      const bSites = sitesList.filter((s) => s.branch_id === branch.id);
+      combinedBranches.push(...bSites);
+    });
+
+    setBranches(combinedBranches);
 
     const activeAssignments: UserAssignment[] = (authAccountsResult.assignments || usersRes.data || []).filter((user: any) => !user.deleted_at);
     const activeEmails = new Set(activeAssignments.map((u) => u.email?.toLowerCase()).filter(Boolean));
@@ -143,11 +161,17 @@ export default function AdminPortal() {
     const enrichedAssignments: UserAssignment[] = activeAssignments.map((assignmentUser) => {
       const emp = assignmentUser.email ? employeeMap.get(assignmentUser.email.toLowerCase()) : null;
       const bName = emp?.branches ? (emp.branches as any).name : null;
+      const site = emp?.default_work_location_id ? locationsMap.get(emp.default_work_location_id) : null;
+      const resolvedBranchId = emp?.branch_id || site?.branch_id || null;
+      const resolvedBranchName = bName || (site ? (branchesRes.data as any[])?.find((b) => b.id === site.branch_id)?.name : null) || "Headquarters";
+
       return {
         ...assignmentUser,
         display_name: assignmentUser.display_name || (emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : null),
-        branch_id: emp?.branch_id || null,
-        branch_name: bName || "Headquarters",
+        branch_id: resolvedBranchId,
+        branch_name: resolvedBranchName,
+        default_work_location_id: emp?.default_work_location_id || null,
+        site_name: site?.name || null,
       };
     });
 
@@ -157,6 +181,10 @@ export default function AdminPortal() {
         activeEmails.add(account.email!.toLowerCase());
         const emp = employeeMap.get(account.email!.toLowerCase());
         const bName = emp?.branches ? (emp.branches as any).name : null;
+        const site = emp?.default_work_location_id ? locationsMap.get(emp.default_work_location_id) : null;
+        const resolvedBranchId = emp?.branch_id || site?.branch_id || null;
+        const resolvedBranchName = bName || (site ? (branchesRes.data as any[])?.find((b) => b.id === site.branch_id)?.name : null) || "Headquarters";
+
         return {
           id: virtualIdCounter--,
           user_id: account.id,
@@ -165,8 +193,10 @@ export default function AdminPortal() {
           role_id: null,
           created_at: new Date().toISOString(),
           app_roles: null,
-          branch_id: emp?.branch_id || null,
-          branch_name: bName || "Headquarters",
+          branch_id: resolvedBranchId,
+          branch_name: resolvedBranchName,
+          default_work_location_id: emp?.default_work_location_id || null,
+          site_name: site?.name || null,
         };
       });
 
@@ -190,16 +220,21 @@ export default function AdminPortal() {
       ? allResets.filter((r) => branchEmployeeEmails.has(r.email?.toLowerCase()))
       : allResets;
 
-    const enrichedEmployees: DirectoryEmployee[] = (employeesRes.data || []).map((e: any) => ({
-      id: e.id,
-      email: e.email,
-      first_name: e.first_name,
-      last_name: e.last_name,
-      role: e.role,
-      department: e.department,
-      branch_id: e.branch_id,
-      branch_name: e.branches ? (e.branches as any).name : "Headquarters",
-    }));
+    const enrichedEmployees: DirectoryEmployee[] = (employeesRes.data || []).map((e: any) => {
+      const site = e.default_work_location_id ? locationsMap.get(e.default_work_location_id) : null;
+      return {
+        id: e.id,
+        email: e.email,
+        first_name: e.first_name,
+        last_name: e.last_name,
+        role: e.role,
+        department: e.department,
+        branch_id: e.branch_id || site?.branch_id || null,
+        branch_name: e.branches ? (e.branches as any).name : (site ? (branchesRes.data as any[])?.find((b) => b.id === site.branch_id)?.name : "Headquarters"),
+        default_work_location_id: e.default_work_location_id || null,
+        site_name: site?.name || null,
+      };
+    });
 
     setRoles(rolesRes.data || []);
     setUsers(filteredUsers);

@@ -148,7 +148,7 @@ export default function TopBar() {
                   {visibleBranches.length === 0 && <option value="">No Branches</option>}
                   {visibleBranches.map((b) => (
                     <option key={b.id} value={b.id}>
-                      {b.name}
+                      {b.is_site ? `↳ ${b.name} (Site)` : b.name}
                     </option>
                   ))}
                 </select>
