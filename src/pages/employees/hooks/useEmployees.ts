@@ -36,6 +36,8 @@ export function useEmployees() {
     targetBranch,
     isPartnerBranchBlocked,
     branches: scopeBranches,
+    selectedBranchId,
+    visibleBranches,
   } = useBranchScope();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const canManage = isAdmin || isBranchAdmin || !!role?.employees_manage;
@@ -530,6 +532,8 @@ export function useEmployees() {
     isPartnerBranchBlocked,
     employees,
     branches,
+    selectedBranchId,
+    visibleBranches,
     search,
     setSearch,
     filterDept,

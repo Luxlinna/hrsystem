@@ -42,7 +42,7 @@ const MobileDrawer = memo(function MobileDrawer({
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const {
-    branches,
+    visibleBranches,
     selectedBranchId,
     setSelectedBranchId,
     userBranchName,
@@ -132,7 +132,7 @@ const MobileDrawer = memo(function MobileDrawer({
 
         {/* Mobile Branch Switcher / Indicator */}
         <div className="px-5 py-2.5 border-b border-white/10 bg-white/5">
-          {isSuperAdmin ? (
+          {(isSuperAdmin || (isBranchAdmin && visibleBranches.length > 1)) ? (
             <div className="flex items-center gap-2">
               <i className="ri-building-line text-[#60A5FA] text-sm shrink-0" />
               <select
@@ -140,8 +140,8 @@ const MobileDrawer = memo(function MobileDrawer({
                 onChange={(e) => setSelectedBranchId(e.target.value)}
                 className="w-full bg-[#262626] text-white border border-white/15 rounded-xl px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-blue-500 cursor-pointer"
               >
-                {branches.length === 0 && <option value="">No Branches</option>}
-                {branches.map((b) => (
+                {visibleBranches.length === 0 && <option value="">No Branches</option>}
+                {visibleBranches.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
                   </option>

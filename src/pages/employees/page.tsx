@@ -22,6 +22,8 @@ export default function EmployeesPage() {
     userBranchName,
     targetBranch,
     branches,
+    selectedBranchId,
+    visibleBranches,
     search,
     setSearch,
     filterDept,
@@ -78,12 +80,19 @@ export default function EmployeesPage() {
   } = useEmployees();
 
   const handleOpenAddModal = useCallback(() => {
+    const isSite = selectedBranchId && selectedBranchId.startsWith("site:");
+    const branchId = isSite 
+      ? (visibleBranches.find((b) => b.id === selectedBranchId)?.branch_id || "") 
+      : (selectedBranchId || targetBranch || userBranchId || "");
+    const siteId = isSite ? selectedBranchId.substring(5) : "";
+
     setForm({
       ...INITIAL_EMPLOYEE_FORM,
-      branch_id: targetBranch || userBranchId || "",
+      branch_id: branchId,
+      default_work_location_id: siteId,
     });
     setShowAddModal(true);
-  }, [targetBranch, userBranchId, setForm, setShowAddModal]);
+  }, [selectedBranchId, targetBranch, userBranchId, visibleBranches, setForm, setShowAddModal]);
 
   if (isPartnerBranchBlocked) {
     return (

@@ -2,6 +2,7 @@ import { memo, useState, useEffect } from "react";
 import type { Branch, Employee, EmployeeFormState } from "../types";
 import { DEPARTMENTS } from "../constants";
 import { supabase } from "@/lib/supabase";
+import { useBranchScope } from "@/context/BranchContext";
 
 interface WorkLocation {
   id: string;
@@ -32,6 +33,8 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
   onClose,
   onSubmit,
 }: AddEmployeeModalProps) {
+  const { visibleBranches } = useBranchScope();
+
   if (!isOpen) return null;
 
   // Fetch work sites whenever selected branch changes
@@ -50,11 +53,6 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
       .then(({ data }) => {
         const sites = (data as WorkLocation[]) || [];
         setWorkSites(sites);
-        // Auto-select the default site for this branch if not set or if changing branch
-        const def = sites.find((s) => s.is_default) || sites[0];
-        if (def && (!form.default_work_location_id || !sites.some((s) => s.id === form.default_work_location_id))) {
-          setForm((p) => ({ ...p, default_work_location_id: def.id }));
-        }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.branch_id]);
@@ -154,7 +152,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Branch</label>
               <select
-                value={form.branch_id}
+                value={form.branch_id || ""}
                 disabled={isSuperAdmin === false}
                 onChange={(e) => {
                   const bId = e.target.value;
@@ -162,7 +160,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
                 }}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:border-transparent bg-white cursor-pointer disabled:bg-gray-100 disabled:text-gray-600 disabled:cursor-not-allowed"
               >
-                <option value="">Headquarters / Unassigned</option>
+                {isSuperAdmin && <option value="">Headquarters / Unassigned</option>}
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
@@ -188,7 +186,9 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
                   onChange={(e) => setForm({ ...form, default_work_location_id: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:border-transparent bg-white cursor-pointer"
                 >
-                  <option value="">— Not assigned —</option>
+                  <option value="">
+                    {visibleBranches.find((b) => b.id === form.branch_id)?.name || "Headquarters"} (Main Office)
+                  </option>
                   {workSites.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}{s.is_default ? " (Default)" : ""}

@@ -115,7 +115,22 @@ export default function AdminPortal() {
       supabase.from("branches").select("id, name").is("deleted_at", null).order("name"),
     ]);
 
-    const branchList = (branchesRes.data || []) as { id: string; name: string }[];
+    const branchList = ((branchesRes.data || []) as { id: string; name: string }[]).sort((a, b) => {
+      const aName = (a.name || "").toLowerCase();
+      const bName = (b.name || "").toLowerCase();
+      
+      const aIsPinex = aName.includes("pinex agro");
+      const bIsPinex = bName.includes("pinex agro");
+      if (aIsPinex && !bIsPinex) return -1;
+      if (!aIsPinex && bIsPinex) return 1;
+      
+      const aIsKandal = aName.includes("kandal");
+      const bIsKandal = bName.includes("kandal");
+      if (aIsKandal && !bIsKandal) return -1;
+      if (!aIsKandal && bIsKandal) return 1;
+      
+      return aName.localeCompare(bName);
+    });
     setBranches(branchList);
 
     const activeAssignments: UserAssignment[] = (authAccountsResult.assignments || usersRes.data || []).filter((user: any) => !user.deleted_at);

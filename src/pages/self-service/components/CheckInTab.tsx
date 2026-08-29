@@ -69,6 +69,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const [activeOutsideWork, setActiveOutsideWork] = useState<OutsideWorkTask | null>(null);
   const [todayOutsideWork, setTodayOutsideWork] = useState<OutsideWorkTask | null>(null);
   const [assignedShift, setAssignedShift] = useState<{ start_time: string; end_time: string; name: string } | null>(null);
+  const [defaultWorkLocationId, setDefaultWorkLocationId] = useState<string | null>(null);
 
   const today = todayYMD();
 
@@ -125,6 +126,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
               clock_in: timeStr,
               status: "ontime",
               notes: `Outside work: ${task.title}`,
+              work_location_id: defaultWorkLocationId || null,
             }, { onConflict: "employee_id,date" });
             loadRecords();
           }
@@ -196,11 +198,35 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     (async () => {
       const { data } = await supabase
         .from("employees")
-        .select("branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time)")
+        .select("branch_id, default_work_location_id, branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time)")
         .eq("id", employeeId)
         .maybeSingle();
       const b = (data as any)?.branches as BranchGeofence | undefined;
       setBranch(b || null);
+
+      let wlId = (data as any)?.default_work_location_id || null;
+      if (!wlId && (data as any)?.branch_id) {
+        const { data: defaultSite } = await supabase
+          .from("work_locations")
+          .select("id")
+          .eq("branch_id", (data as any).branch_id)
+          .eq("is_default", true)
+          .is("deleted_at", null)
+          .maybeSingle();
+        if (defaultSite) {
+          wlId = defaultSite.id;
+        } else {
+          const { data: firstSite } = await supabase
+            .from("work_locations")
+            .select("id")
+            .eq("branch_id", (data as any).branch_id)
+            .is("deleted_at", null)
+            .limit(1)
+            .maybeSingle();
+          if (firstSite) wlId = firstSite.id;
+        }
+      }
+      setDefaultWorkLocationId(wlId);
       setBranchLoading(false);
     })();
   }, [employeeId]);
@@ -299,6 +325,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       status,
       late_minutes: lateMinutes,
       notes: notes || null,
+      work_location_id: defaultWorkLocationId || null,
     }, { onConflict: "employee_id,date" });
 
     setProcessing(false);

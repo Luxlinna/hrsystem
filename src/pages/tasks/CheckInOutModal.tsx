@@ -152,6 +152,7 @@ export default function CheckInOutModal({
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
       if (isCheckIn) {
+        let workLocationId: string | null = null;
         // Query assigned shift for today
         const { data: shiftAssignments } = await supabase
           .from("shift_assignments")
@@ -171,17 +172,42 @@ export default function CheckInOutModal({
           startM = sm;
         } else {
           // Fallback to employee's branch work_start_time if available
-          const { data: empBranch } = await supabase
+          const { data: empData } = await supabase
             .from("employees")
-            .select("branches(work_start_time)")
+            .select("branch_id, default_work_location_id, branches(work_start_time)")
             .eq("id", employeeId)
             .maybeSingle();
-          const branchStartTime = (empBranch as any)?.branches?.work_start_time;
+          const branchStartTime = (empData as any)?.branches?.work_start_time;
           if (branchStartTime) {
             const [bh, bm] = branchStartTime.split(":").map(Number);
             startH = bh;
             startM = bm;
           }
+
+          // Resolve work_location_id
+          let wlId = (empData as any)?.default_work_location_id || null;
+          if (!wlId && (empData as any)?.branch_id) {
+            const { data: defaultSite } = await supabase
+              .from("work_locations")
+              .select("id")
+              .eq("branch_id", (empData as any).branch_id)
+              .eq("is_default", true)
+              .is("deleted_at", null)
+              .maybeSingle();
+            if (defaultSite) {
+              wlId = defaultSite.id;
+            } else {
+              const { data: firstSite } = await supabase
+                .from("work_locations")
+                .select("id")
+                .eq("branch_id", (empData as any).branch_id)
+                .is("deleted_at", null)
+                .limit(1)
+                .maybeSingle();
+              if (firstSite) wlId = firstSite.id;
+            }
+          }
+          workLocationId = wlId;
         }
 
         const lateMinutes = Math.max(0, now.getHours() * 60 + now.getMinutes() - (startH * 60 + startM));
@@ -194,6 +220,7 @@ export default function CheckInOutModal({
             status,
             late_minutes: lateMinutes,
             notes: `Outside work: check-in at ${location?.address || task?.work_address || "unknown location"}`,
+            work_location_id: workLocationId,
           },
           { onConflict: "employee_id,date" }
         );

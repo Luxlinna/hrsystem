@@ -27,7 +27,7 @@ export default function TopBar() {
   const { isDark, toggleTheme } = useTheme();
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const {
-    branches,
+    visibleBranches,
     selectedBranchId,
     setSelectedBranchId,
     userBranchName,
@@ -135,32 +135,32 @@ export default function TopBar() {
 
           {/* Right — branch switcher/indicator, theme toggle, notifications, profile */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Super Admin Global Branch Switcher */}
-            {isSuperAdmin && (
+            {/* Global Branch/Site Switcher */}
+            {(isSuperAdmin || (isBranchAdmin && visibleBranches.length > 1)) ? (
               <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors shadow-2xs">
                 <i className="ri-building-line text-[#253C7D] text-sm" />
                 <select
                   value={selectedBranchId}
                   onChange={(e) => setSelectedBranchId(e.target.value)}
                   className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer max-w-[150px] truncate"
-                  title="Select branch"
+                  title="Select branch or site"
                 >
-                  {branches.length === 0 && <option value="">No Branches</option>}
-                  {branches.map((b) => (
+                  {visibleBranches.length === 0 && <option value="">No Branches</option>}
+                  {visibleBranches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
                     </option>
                   ))}
                 </select>
               </div>
-            )}
-
-            {/* Branch Admin / Employee Branch Badge */}
-            {!isSuperAdmin && userBranchName && (
-              <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 rounded-xl text-[11px] font-bold">
-                <i className="ri-map-pin-2-fill text-xs text-[#253C7D]" />
-                <span className="max-w-[130px] truncate" title={`Branch: ${userBranchName}`}>{userBranchName}</span>
-              </div>
+            ) : (
+              /* Branch Admin / Employee Branch Badge */
+              userBranchName && (
+                <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 rounded-xl text-[11px] font-bold">
+                  <i className="ri-map-pin-2-fill text-xs text-[#253C7D]" />
+                  <span className="max-w-[130px] truncate" title={`Branch: ${userBranchName}`}>{userBranchName}</span>
+                </div>
+              )
             )}
 
             {/* Theme toggle */}

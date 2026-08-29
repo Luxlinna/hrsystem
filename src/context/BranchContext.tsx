@@ -9,10 +9,13 @@ export interface BranchInfo {
   name: string;
   location?: string | null;
   status?: string | null;
+  branch_id?: string | null;
+  is_site?: boolean;
 }
 
 export interface BranchContextType {
   branches: BranchInfo[];
+  visibleBranches: BranchInfo[];
   loading: boolean;
   userBranchId: string | null;
   userBranchName: string | null;
@@ -20,6 +23,7 @@ export interface BranchContextType {
   setSelectedBranchId: (id: string) => void;
   effectiveBranchId: string | null;
   effectiveBranchName: string | null;
+  selectedSiteId: string | null;
   targetBranch: string | null;
   isPartnerBranchBlocked: boolean;
   isSuperAdmin: boolean;
@@ -54,12 +58,61 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   }, [isSuperAdmin, role]);
 
   const fetchBranches = useCallback(async () => {
-    const { data } = await supabase
+    // 1. Fetch branches
+    const { data: branchesData } = await supabase
       .from("branches")
       .select("id, name, location, status")
       .is("deleted_at", null)
       .order("name");
-    if (data) setBranches(data);
+
+    // 2. Fetch work locations (sites)
+    const { data: locationsData } = await supabase
+      .from("work_locations")
+      .select("id, name, branch_id, description")
+      .is("deleted_at", null);
+
+    if (branchesData) {
+      const sitesList = (locationsData || []).map((loc) => ({
+        id: `site:${loc.id}`,
+        name: loc.name,
+        location: loc.description,
+        status: "active",
+        branch_id: loc.branch_id,
+        is_site: true,
+      }));
+
+      // Combined list
+      const combined: BranchInfo[] = [];
+
+      // Pinex Agro (primary branch created by super admin) should be first
+      const pinexAgroBranch = branchesData.find(b => (b.name || "").toLowerCase().includes("pinex agro"));
+      if (pinexAgroBranch) {
+        combined.push(pinexAgroBranch);
+      }
+
+      // Kandal site (branch site created by branch admin) should be second
+      const kandalSite = sitesList.find(s => (s.name || "").toLowerCase().includes("kandal"));
+      if (kandalSite) {
+        combined.push(kandalSite);
+      }
+
+      // Add remaining branches alphabetically
+      const remainingBranches = branchesData.filter(b => b.id !== pinexAgroBranch?.id);
+      remainingBranches.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+      // Add remaining sites
+      const remainingSites = sitesList.filter(s => s.id !== kandalSite?.id);
+
+      for (const branch of remainingBranches) {
+        combined.push(branch);
+      }
+
+      for (const site of remainingSites) {
+        combined.push(site);
+      }
+
+      setBranches(combined);
+    }
   }, []);
 
   const fetchUserBranch = useCallback(async () => {
@@ -92,32 +145,56 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   }, [fetchBranches, fetchUserBranch]);
 
   const selectedBranchId = useMemo(() => {
-    // Non-Super-Admin is strictly locked to their own assigned branch
-    if (!isSuperAdmin) {
-      return userBranchId || (branches[0]?.id ?? "");
+    // Super Admin can select anything
+    if (isSuperAdmin) {
+      if (storedBranchId && branches.some((b) => b.id === storedBranchId)) {
+        return storedBranchId;
+      }
+      if (userBranchId && branches.some((b) => b.id === userBranchId)) {
+        return userBranchId;
+      }
+      return branches[0]?.id || "";
     }
-    // Super Admin: check if stored branch exists in branches list
-    if (storedBranchId && branches.some((b) => b.id === storedBranchId)) {
+
+    // Non-Super-Admin: locked to their own branch or any of their branch's sites
+    if (storedBranchId && branches.some((b) => b.id === storedBranchId && (b.id === userBranchId || b.branch_id === userBranchId))) {
       return storedBranchId;
     }
-    // Default to user's assigned branch or first branch in list
-    if (userBranchId && branches.some((b) => b.id === userBranchId)) {
-      return userBranchId;
-    }
-    return branches[0]?.id || "";
+    return userBranchId || branches[0]?.id || "";
   }, [isSuperAdmin, userBranchId, storedBranchId, branches]);
 
   const setSelectedBranchId = useCallback(
     (id: string) => {
-      if (!isSuperAdmin) return;
-      setStoredBranchId(id);
-      localStorage.setItem("hrm_selected_branch_id", id);
+      // Super Admin can set any branch/site
+      if (isSuperAdmin) {
+        setStoredBranchId(id);
+        localStorage.setItem("hrm_selected_branch_id", id);
+        return;
+      }
+      // Non-Super-Admin can only select their own branch or their branch's sites
+      const allowed = branches.some((b) => b.id === id && (b.id === userBranchId || b.branch_id === userBranchId));
+      if (allowed) {
+        setStoredBranchId(id);
+        localStorage.setItem("hrm_selected_branch_id", id);
+      }
     },
-    [isSuperAdmin]
+    [isSuperAdmin, branches, userBranchId]
   );
 
   const effectiveBranchId = useMemo(() => {
-    return selectedBranchId || null;
+    const rawId = selectedBranchId;
+    if (rawId && rawId.startsWith("site:")) {
+      const siteObj = branches.find((b) => b.id === rawId);
+      return siteObj?.branch_id || null;
+    }
+    return rawId || null;
+  }, [selectedBranchId, branches]);
+
+  const selectedSiteId = useMemo(() => {
+    if (selectedBranchId && selectedBranchId.startsWith("site:")) {
+      return selectedBranchId.substring(5);
+    }
+    return null;
   }, [selectedBranchId]);
 
   const targetBranch = useMemo(() => {
@@ -127,24 +204,28 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     return userBranchId;
   }, [isSuperAdmin, effectiveBranchId, userBranchId]);
 
+  const visibleBranches = useMemo(() => {
+    if (isSuperAdmin) return branches;
+    return branches.filter((b) => b.id === userBranchId || b.branch_id === userBranchId);
+  }, [isSuperAdmin, branches, userBranchId]);
+
   const isPartnerBranchBlocked = useMemo(() => {
-    // Super Admin can access any branch selected
     if (isSuperAdmin) return false;
-    // Regular employee / Branch Admin is blocked only if they have no branch assigned
     return !userBranchId;
   }, [isSuperAdmin, userBranchId]);
 
   const effectiveBranchName = useMemo(() => {
     if (!effectiveBranchId) return "Select Branch";
-    const found = branches.find((b) => b.id === effectiveBranchId);
+    const found = branches.find((b) => b.id === selectedBranchId);
     return found?.name || userBranchName || "Selected Branch";
-  }, [effectiveBranchId, branches, userBranchName]);
+  }, [effectiveBranchId, selectedBranchId, branches, userBranchName]);
 
   const isBranchScoped = Boolean(effectiveBranchId);
 
   const value = useMemo(
     () => ({
       branches,
+      visibleBranches,
       loading,
       userBranchId,
       userBranchName,
@@ -152,6 +233,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       setSelectedBranchId,
       effectiveBranchId,
       effectiveBranchName,
+      selectedSiteId,
       targetBranch,
       isPartnerBranchBlocked,
       isSuperAdmin,
@@ -161,6 +243,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     }),
     [
       branches,
+      visibleBranches,
       loading,
       userBranchId,
       userBranchName,
@@ -168,6 +251,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       setSelectedBranchId,
       effectiveBranchId,
       effectiveBranchName,
+      selectedSiteId,
       targetBranch,
       isPartnerBranchBlocked,
       isSuperAdmin,
