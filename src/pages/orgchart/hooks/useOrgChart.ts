@@ -4,23 +4,18 @@ import { useOrgChartFilters } from "./useOrgChartFilters";
 import { useOrgChartMutations } from "./useOrgChartMutations";
 
 export function useOrgChart() {
-  // 1. Filters hook
-  const filters = useOrgChartFilters([]);
+  // 1. Data hook
+  const data = useOrgChartData();
 
-  // 2. Tree hook with filter values
-  const treeHook = useOrgChartTree([], filters.deptFilter, filters.searchTerm);
+  // 2. Filters hook with real employees
+  const filters = useOrgChartFilters(data.employees);
 
-  // 3. Data hook
-  const data = useOrgChartData(treeHook.setExpandedIds);
-
-  // Dynamic tree & filters with real employees list
-  const dynamicTree = useOrgChartTree(
+  // 3. Tree hook with real employees and active filter values
+  const tree = useOrgChartTree(
     data.employees,
     filters.deptFilter,
     filters.searchTerm
   );
-
-  const dynamicFilters = useOrgChartFilters(data.employees);
 
   // 4. Mutations hook
   const mutations = useOrgChartMutations({
@@ -30,8 +25,8 @@ export function useOrgChart() {
 
   return {
     ...data,
-    ...dynamicTree,
-    ...dynamicFilters,
+    ...tree,
+    ...filters,
     ...mutations,
   };
 }

@@ -11,6 +11,24 @@ export function useOrgChartTree(
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (employees.length > 0) {
+      const empIds = new Set(employees.map((e) => e.id));
+      const topLevel = employees.filter((e) => !e.reports_to || !empIds.has(e.reports_to));
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        let added = false;
+        for (const e of topLevel) {
+          if (!next.has(e.id) && !next.has(`collapsed_${e.id}`)) {
+            next.add(e.id);
+            added = true;
+          }
+        }
+        return added ? next : prev;
+      });
+    }
+  }, [employees]);
+
+  useEffect(() => {
     const t = buildTree(employees);
     const applyExpanded = (nodes: TreeNode[]): TreeNode[] =>
       nodes.map((n) => {

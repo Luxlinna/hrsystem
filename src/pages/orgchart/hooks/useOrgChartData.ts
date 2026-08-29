@@ -4,9 +4,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import type { Employee, Branch } from "../types";
 
-export function useOrgChartData(
-  setExpandedIds: React.Dispatch<React.SetStateAction<Set<string>>>
-) {
+export function useOrgChartData() {
   const { role, isAdmin } = usePermissions();
   const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
@@ -42,15 +40,10 @@ export function useOrgChartData(
     ]);
 
     const list = (empData || []) as unknown as Employee[];
-    const empIds = new Set(list.map((e) => e.id));
     setEmployees(list);
     setBranches((branchData || []) as unknown as Branch[]);
-
-    // Root nodes: no reports_to OR manager not in this branch list
-    const topLevel = list.filter((e) => !e.reports_to || !empIds.has(e.reports_to));
-    setExpandedIds(new Set(topLevel.map((e) => e.id)));
     setLoading(false);
-  }, [setExpandedIds, isPartnerBranchBlocked, targetBranch]);
+  }, [isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
     loadEmployees();
