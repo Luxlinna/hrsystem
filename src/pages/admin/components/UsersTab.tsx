@@ -37,15 +37,15 @@ interface UsersTabProps {
 }
 
 export const UsersTab = memo(function UsersTab({
-  users,
-  roles,
-  employees,
-  branches,
-  filterBranch,
+  users = [],
+  roles = [],
+  employees = [],
+  branches = [],
+  filterBranch = "all",
   setFilterBranch,
-  searchQuery,
+  searchQuery = "",
   setSearchQuery,
-  unconfirmedEmails,
+  unconfirmedEmails = new Set(),
   invitingUserId,
   userLoadError,
   showAddUser,
@@ -61,30 +61,37 @@ export const UsersTab = memo(function UsersTab({
   onResendInvite,
   onUpdateUserRole,
   onRemoveUser,
-  }: UsersTabProps) {
+}: UsersTabProps) {
   const assignableRoles = useMemo(() => {
-    return isSuperAdmin ? roles : roles.filter((r) => !r.is_admin && r.name !== "Super Admin");
+    return isSuperAdmin ? roles : (roles || []).filter((r) => !r?.is_admin && r?.name !== "Super Admin");
   }, [roles, isSuperAdmin]);
 
   // Filter users by search and branch
   const displayedUsers = useMemo(() => {
-    return users.filter((u) => {
+    const list = Array.isArray(users) ? users : [];
+    const bList = Array.isArray(branches) ? branches : [];
+
+    return list.filter((u) => {
+      if (!u) return false;
+
       // Branch filter (if specific branch or site selected)
-      if (filterBranch !== "all") {
-        if (filterBranch.startsWith("site:")) {
+      if (filterBranch && filterBranch !== "all") {
+        if (typeof filterBranch === "string" && filterBranch.startsWith("site:")) {
           const sId = filterBranch.substring(5);
           if (u.default_work_location_id !== sId) return false;
         } else {
           // Check branch id match or branch name match
-          const targetB = branches.find((b) => b.id === filterBranch);
+          const targetB = bList.find((b) => b && b.id === filterBranch);
           const isDirectMatch = u.branch_id === filterBranch;
-          const isNameMatch = targetB && u.branch_name && u.branch_name.toLowerCase() === targetB.name.toLowerCase();
+          const uBranchName = (u.branch_name || "").toLowerCase().trim();
+          const targetBName = (targetB?.name || "").toLowerCase().trim();
+          const isNameMatch = Boolean(uBranchName && targetBName && uBranchName === targetBName);
           if (!isDirectMatch && !isNameMatch) return false;
         }
       }
 
       // Search query
-      if (searchQuery.trim()) {
+      if (searchQuery && searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const name = (u.display_name || "").toLowerCase();
         const email = (u.email || "").toLowerCase();
@@ -101,7 +108,11 @@ export const UsersTab = memo(function UsersTab({
   // Branch user counts
   const branchCounts = useMemo(() => {
     const map: Record<string, number> = {};
-    users.forEach((u) => {
+    const list = Array.isArray(users) ? users : [];
+    const bList = Array.isArray(branches) ? branches : [];
+
+    list.forEach((u) => {
+      if (!u) return;
       if (u.branch_id) {
         map[u.branch_id] = (map[u.branch_id] || 0) + 1;
       }
@@ -111,8 +122,9 @@ export const UsersTab = memo(function UsersTab({
       }
       // Also fallback by branch_name if branch_id is null
       if (!u.branch_id && u.branch_name) {
-        const matched = branches.find((b) => !b.is_site && b.name.toLowerCase() === u.branch_name?.toLowerCase());
-        if (matched) {
+        const uBName = (u.branch_name || "").toLowerCase().trim();
+        const matched = bList.find((b) => b && !b.is_site && (b.name || "").toLowerCase().trim() === uBName);
+        if (matched && matched.id) {
           map[matched.id] = (map[matched.id] || 0) + 1;
         }
       }
@@ -121,12 +133,21 @@ export const UsersTab = memo(function UsersTab({
   }, [users, branches]);
 
   const scopedTotal = useMemo(() => {
-    const parentBranch = branches.find((b) => !b.is_site);
-    if (!parentBranch) return users.length;
-    return users.filter((u) => {
+    const list = Array.isArray(users) ? users : [];
+    const bList = Array.isArray(branches) ? branches : [];
+    const parentBranch = bList.find((b) => b && !b.is_site);
+    if (!parentBranch) return list.length;
+
+    const parentName = (parentBranch.name || "").toLowerCase().trim();
+    return list.filter((u) => {
+      if (!u) return false;
       const isDirect = u.branch_id === parentBranch.id;
-      const isNameMatch = u.branch_name && u.branch_name.toLowerCase() === parentBranch.name.toLowerCase();
-      const isSiteMatch = u.default_work_location_id && branches.some((b) => b.is_site && b.id === `site:${u.default_work_location_id}`);
+      const uBName = (u.branch_name || "").toLowerCase().trim();
+      const isNameMatch = Boolean(uBName && parentName && uBName === parentName);
+      const isSiteMatch = Boolean(
+        u.default_work_location_id &&
+        bList.some((b) => b && b.is_site && b.id === `site:${u.default_work_location_id}`)
+      );
       return isDirect || isNameMatch || isSiteMatch;
     }).length;
   }, [users, branches]);

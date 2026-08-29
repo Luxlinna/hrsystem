@@ -65,20 +65,21 @@ export default function AdminPortal() {
 
   // Scope branch tabs to the currently selected header branch and its sub-sites
   const scopedBranches = useMemo(() => {
-    if (!selectedBranchId) return branches;
+    if (!branches || branches.length === 0) return [];
+    if (!selectedBranchId || selectedBranchId === "all") return branches;
 
     // If a site is selected (e.g. "site:123")
-    if (selectedBranchId.startsWith("site:")) {
-      const siteObj = branches.find((b) => b.id === selectedBranchId);
+    if (typeof selectedBranchId === "string" && selectedBranchId.startsWith("site:")) {
+      const siteObj = branches.find((b) => b && b.id === selectedBranchId);
       const parentBranchId = siteObj?.branch_id;
       if (parentBranchId) {
-        return branches.filter((b) => b.id === parentBranchId || b.branch_id === parentBranchId);
+        return branches.filter((b) => b && (b.id === parentBranchId || b.branch_id === parentBranchId));
       }
-      return branches.filter((b) => b.id === selectedBranchId);
+      return branches.filter((b) => b && b.id === selectedBranchId);
     }
 
     // If a parent branch is selected (e.g. "Phnom Penh Head Office")
-    const relevant = branches.filter((b) => b.id === selectedBranchId || b.branch_id === selectedBranchId);
+    const relevant = branches.filter((b) => b && (b.id === selectedBranchId || b.branch_id === selectedBranchId));
     return relevant.length > 0 ? relevant : branches;
   }, [branches, selectedBranchId]);
 
