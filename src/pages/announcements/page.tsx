@@ -268,24 +268,52 @@ export default function Announcements() {
     if (!canManage || submitting || !form.title.trim()) return;
     setSubmitting(true);
 
+    const VALID_CATEGORIES = ["event", "policy", "news", "benefits", "compliance", "hr", "general"];
+    const VALID_VISIBILITIES = ["all", "hq", "management"];
+
+    const normalizedCategory = form.category?.toLowerCase() || "general";
+    const category = VALID_CATEGORIES.includes(normalizedCategory) ? normalizedCategory : "general";
+
+    const normalizedPriority = form.priority?.toLowerCase() || "normal";
+    const priority = ["urgent", "high", "normal"].includes(normalizedPriority) ? normalizedPriority : "normal";
+
+    let visible_to = "all";
+    const normalizedVis = form.visible_to?.toLowerCase() || "all";
+    if (VALID_VISIBILITIES.includes(normalizedVis)) {
+      visible_to = normalizedVis;
+    } else if (/admin|manager|lead|director/i.test(normalizedVis)) {
+      visible_to = "management";
+    } else if (/hq/i.test(normalizedVis)) {
+      visible_to = "hq";
+    }
+
+    const urgent_alert_hours = Math.max(
+      1,
+      Math.min(168, Math.ceil(Number(form.urgent_alert_hours) || 24))
+    );
+
+    const payload = {
+      title: form.title.trim(),
+      content: form.content.trim(),
+      category,
+      priority,
+      urgent_alert_hours,
+      pinned: Boolean(form.pinned),
+      visible_to,
+      author_name: authorName || form.author_name || "Admin",
+      author_role: role?.name || form.author_role || "Corporate Operations",
+      branch_id: isSuperAdmin ? form.branch_id : targetBranch,
+    };
+
     if (editingId) {
       const { error } = await supabase
         .from("announcements")
-        .update({
-          title: form.title.trim(),
-          content: form.content.trim(),
-          category: form.category,
-          priority: form.priority,
-          urgent_alert_hours: form.urgent_alert_hours,
-          pinned: form.pinned,
-          visible_to: form.visible_to,
-          branch_id: isSuperAdmin ? form.branch_id : targetBranch,
-        })
+        .update(payload)
         .eq("id", editingId);
 
       setSubmitting(false);
       if (error) {
-        toast("Error", "Failed to update announcement", "error");
+        toast("Error", error.message || "Failed to update announcement", "error");
         return;
       }
 
@@ -303,12 +331,9 @@ export default function Announcements() {
       const { data, error } = await supabase
         .from("announcements")
         .insert({
-          ...form,
-          title: form.title.trim(),
-          content: form.content.trim(),
+          ...payload,
           published_at: new Date().toISOString(),
           view_count: 0,
-          branch_id: isSuperAdmin ? form.branch_id : targetBranch,
         })
         .select()
         .single();
