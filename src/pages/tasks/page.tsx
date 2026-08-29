@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useTasks } from "./hooks/useTasks";
 import { TasksHeader } from "./components/TasksHeader";
@@ -175,7 +176,20 @@ export default function TasksPage() {
           employeeId={currentEmployeeId || checkInOutTask.task.assigned_to}
           task={checkInOutTask.task}
           mode={checkInOutTask.mode}
-          onDone={fetchTasks}
+          onDone={async () => {
+            await fetchTasks();
+            // Sync selectedTask with freshly fetched data so the drawer
+            // immediately shows "Check Out" after a successful check-in.
+            if (selectedTask) {
+              // Re-fetch just this task to get latest work_status
+              const { data: fresh } = await supabase
+                .from("tasks")
+                .select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url, branch_id)")
+                .eq("id", selectedTask.id)
+                .maybeSingle();
+              if (fresh) setSelectedTask(fresh as any);
+            }
+          }}
           onClose={() => setCheckInOutTask(null)}
           showToast={(type, msg) => toast(type === "error" ? "Error" : "Success", msg, type as any)}
         />
