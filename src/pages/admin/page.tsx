@@ -29,7 +29,7 @@ import { PasswordResetsTab } from "./components/PasswordResetsTab";
 
 export default function AdminPortal() {
   const { user } = useAuth();
-  const { isSuperAdmin, isBranchAdmin, userBranchId, userBranchName, targetBranch, effectiveBranchId } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, userBranchId, userBranchName, targetBranch, effectiveBranchId, selectedBranchId } = useBranchScope();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     const tabParam = searchParams.get("tab");
