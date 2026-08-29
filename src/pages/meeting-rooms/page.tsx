@@ -64,6 +64,7 @@ export default function MeetingRoomsPage() {
     handleBook,
     handleCancelOwnBooking,
     loadBookings,
+    loadRooms,
     toast,
     showToast,
   } = useMeetingRooms();
@@ -253,7 +254,7 @@ export default function MeetingRoomsPage() {
       <CreateRoomModal
         isOpen={createRoomOpen}
         onClose={() => setCreateRoomOpen(false)}
-        onCreated={loadRooms}
+        onCreated={() => loadRooms()}
         showToast={(type, msg) => showToast(type as any, msg)}
       />
     </div>
