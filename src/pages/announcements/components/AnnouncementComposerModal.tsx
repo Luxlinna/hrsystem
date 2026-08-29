@@ -41,6 +41,10 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
   const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
   const [audienceDropdownOpen, setAudienceDropdownOpen] = useState(false);
   const [roles, setRoles] = useState<{ id: number; name: string; color?: string }[]>([]);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [audienceSearch, setAudienceSearch] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
+  const [customAudience, setCustomAudience] = useState("");
 
   useEffect(() => {
     supabase
@@ -79,6 +83,19 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const getCategoryDisplay = (catKey: string) => {
+    if (CATEGORY_CONFIG[catKey]) {
+      return CATEGORY_CONFIG[catKey];
+    }
+    return {
+      label: catKey || "General Notice",
+      desc: "Custom Announcement Category",
+      icon: "ri-price-tag-3-line",
+      bg: "bg-slate-100 border-slate-200",
+      color: "text-slate-700",
+    };
+  };
+
   const getAudienceDisplay = (val: string) => {
     if (val === "all") return { label: "All Staff (Everyone)", icon: "ri-global-line", color: "#253C7D" };
     if (val === "hq") return { label: "HQ Staff Only", icon: "ri-building-line", color: "#475569" };
@@ -93,7 +110,7 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
         color: matchedRole.color || "#253C7D",
       };
     }
-    return { label: val, icon: "ri-user-settings-line", color: "#253C7D" };
+    return { label: `Target: ${val}`, icon: "ri-user-settings-line", color: "#253C7D" };
   };
 
   const formatUrgentDuration = (hours: number | null | undefined) => {
@@ -285,6 +302,7 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
                     onClick={() => {
                       setCategoryDropdownOpen((prev) => !prev);
                       setPriorityDropdownOpen(false);
+                      setAudienceDropdownOpen(false);
                     }}
                     className={`w-full px-3.5 py-2.5 bg-gray-50/80 hover:bg-white border rounded-xl text-xs text-left font-semibold flex items-center justify-between gap-2 transition-all cursor-pointer ${
                       categoryDropdownOpen
@@ -295,17 +313,17 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div
                         className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 ${
-                          CATEGORY_CONFIG[form.category]?.bg || "bg-slate-100"
-                        } ${CATEGORY_CONFIG[form.category]?.color || "text-slate-600"}`}
+                          getCategoryDisplay(form.category).bg
+                        } ${getCategoryDisplay(form.category).color}`}
                       >
-                        <i className={CATEGORY_CONFIG[form.category]?.icon || "ri-megaphone-line"} />
+                        <i className={getCategoryDisplay(form.category).icon} />
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-gray-900 truncate">
-                          {CATEGORY_CONFIG[form.category]?.label || "Select Category"}
+                          {getCategoryDisplay(form.category).label}
                         </p>
                         <p className="text-[10px] text-gray-400 truncate">
-                          {CATEGORY_CONFIG[form.category]?.desc || ""}
+                          {getCategoryDisplay(form.category).desc}
                         </p>
                       </div>
                     </div>
@@ -318,39 +336,98 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
                   </button>
 
                   {categoryDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
-                      {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => {
-                        const isSelected = form.category === key;
-                        return (
-                          <div
-                            key={key}
-                            onClick={() => {
-                              setForm((prev) => ({ ...prev, category: key }));
-                              setCategoryDropdownOpen(false);
-                            }}
-                            className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs ${
-                              isSelected
-                                ? "bg-[#253C7D]/10 text-[#253C7D]"
-                                : "hover:bg-gray-50 text-gray-700"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-2 space-y-1.5 max-h-72 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+                      {/* Search Filter */}
+                      <div className="relative">
+                        <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                        <input
+                          type="text"
+                          value={categorySearch}
+                          onChange={(e) => setCategorySearch(e.target.value)}
+                          placeholder="Filter category..."
+                          className="w-full pl-7 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:border-[#253C7D]"
+                        />
+                      </div>
+
+                      {/* Options List */}
+                      <div className="space-y-1 max-h-44 overflow-y-auto">
+                        {Object.entries(CATEGORY_CONFIG)
+                          .filter(([_, cfg]) =>
+                            cfg.label.toLowerCase().includes(categorySearch.toLowerCase())
+                          )
+                          .map(([key, cfg]) => {
+                            const isSelected = form.category === key;
+                            return (
                               <div
-                                className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 ${cfg.bg} ${cfg.color}`}
+                                key={key}
+                                onClick={() => {
+                                  setForm((prev) => ({ ...prev, category: key }));
+                                  setCategoryDropdownOpen(false);
+                                }}
+                                className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs ${
+                                  isSelected
+                                    ? "bg-[#253C7D]/10 text-[#253C7D]"
+                                    : "hover:bg-gray-50 text-gray-700"
+                                }`}
                               >
-                                <i className={cfg.icon} />
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div
+                                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 ${cfg.bg} ${cfg.color}`}
+                                  >
+                                    <i className={cfg.icon} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-gray-900 truncate">{cfg.label}</p>
+                                    <p className="text-[10px] text-gray-400 truncate">{cfg.desc}</p>
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <i className="ri-checkbox-circle-fill text-[#253C7D] text-sm shrink-0" />
+                                )}
                               </div>
-                              <div className="min-w-0">
-                                <p className="font-bold text-gray-900 truncate">{cfg.label}</p>
-                                <p className="text-[10px] text-gray-400 truncate">{cfg.desc}</p>
-                              </div>
-                            </div>
-                            {isSelected && (
-                              <i className="ri-checkbox-circle-fill text-[#253C7D] text-sm shrink-0" />
-                            )}
-                          </div>
-                        );
-                      })}
+                            );
+                          })}
+                      </div>
+
+                      {/* Manual Custom Entry */}
+                      <div className="pt-2 border-t border-gray-100 bg-gray-50/70 p-2 rounded-xl space-y-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                          Or Type Custom Category:
+                        </label>
+                        <div className="flex gap-1.5">
+                          <input
+                            type="text"
+                            value={customCategory}
+                            onChange={(e) => setCustomCategory(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                if (customCategory.trim()) {
+                                  setForm((prev) => ({ ...prev, category: customCategory.trim() }));
+                                  setCustomCategory("");
+                                  setCategoryDropdownOpen(false);
+                                }
+                              }
+                            }}
+                            placeholder="e.g. Training, Wellness..."
+                            className="flex-1 px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#253C7D]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (customCategory.trim()) {
+                                setForm((prev) => ({ ...prev, category: customCategory.trim() }));
+                                setCustomCategory("");
+                                setCategoryDropdownOpen(false);
+                              }
+                            }}
+                            disabled={!customCategory.trim()}
+                            className="px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            Set
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -601,59 +678,39 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
                   </button>
 
                   {audienceDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
-                      {/* Standard Scopes */}
-                      <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                        General Scopes
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-2 space-y-1.5 max-h-72 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+                      {/* Search Filter */}
+                      <div className="relative">
+                        <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                        <input
+                          type="text"
+                          value={audienceSearch}
+                          onChange={(e) => setAudienceSearch(e.target.value)}
+                          placeholder="Filter roles or scopes..."
+                          className="w-full pl-7 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:border-[#253C7D]"
+                        />
                       </div>
-                      {[
-                        { key: "all", label: "All Staff (Everyone)", icon: "ri-global-line", desc: "All company & branch members" },
-                        { key: "management", label: "Management Only", icon: "ri-shield-user-line", desc: "Managers, Leads & Admins" },
-                        { key: "hq", label: "HQ Staff Only", icon: "ri-building-line", desc: "HQ Office members only" },
-                      ].map((item) => {
-                        const isSelected = form.visible_to === item.key;
-                        return (
-                          <div
-                            key={item.key}
-                            onClick={() => {
-                              setForm((prev) => ({ ...prev, visible_to: item.key }));
-                              setAudienceDropdownOpen(false);
-                            }}
-                            className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs ${
-                              isSelected
-                                ? "bg-[#253C7D]/10 text-[#253C7D]"
-                                : "hover:bg-gray-50 text-gray-700"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-sm shrink-0">
-                                <i className={item.icon} />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-bold text-gray-900 truncate">{item.label}</p>
-                                <p className="text-[10px] text-gray-400 truncate">{item.desc}</p>
-                              </div>
-                            </div>
-                            {isSelected && (
-                              <i className="ri-checkbox-circle-fill text-[#253C7D] text-sm shrink-0" />
-                            )}
-                          </div>
-                        );
-                      })}
 
-                      {/* By Specific Role Target */}
-                      {roles.length > 0 && (
-                        <>
-                          <div className="px-2 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-t border-gray-100">
-                            By Specific Role Target
-                          </div>
-                          {roles.map((r) => {
-                            const isSelected = form.visible_to.toLowerCase() === r.name.toLowerCase();
+                      {/* Standard Scopes */}
+                      <div className="space-y-1">
+                        <div className="px-2 py-0.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                          General Scopes
+                        </div>
+                        {[
+                          { key: "all", label: "All Staff (Everyone)", icon: "ri-global-line", desc: "All company & branch members" },
+                          { key: "management", label: "Management Only", icon: "ri-shield-user-line", desc: "Managers, Leads & Admins" },
+                          { key: "hq", label: "HQ Staff Only", icon: "ri-building-line", desc: "HQ Office members only" },
+                        ]
+                          .filter((item) =>
+                            item.label.toLowerCase().includes(audienceSearch.toLowerCase())
+                          )
+                          .map((item) => {
+                            const isSelected = form.visible_to === item.key;
                             return (
                               <div
-                                key={r.id}
+                                key={item.key}
                                 onClick={() => {
-                                  setForm((prev) => ({ ...prev, visible_to: r.name }));
+                                  setForm((prev) => ({ ...prev, visible_to: item.key }));
                                   setAudienceDropdownOpen(false);
                                 }}
                                 className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs ${
@@ -663,18 +720,12 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
                                 }`}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                  <div
-                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0"
-                                    style={{
-                                      backgroundColor: `${r.color || "#253C7D"}18`,
-                                      color: r.color || "#253C7D",
-                                    }}
-                                  >
-                                    <i className="ri-user-star-line" />
+                                  <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-sm shrink-0">
+                                    <i className={item.icon} />
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="font-bold text-gray-900 truncate">{r.name}</p>
-                                    <p className="text-[10px] text-gray-400 truncate">Target only users with {r.name} role</p>
+                                    <p className="font-bold text-gray-900 truncate">{item.label}</p>
+                                    <p className="text-[10px] text-gray-400 truncate">{item.desc}</p>
                                   </div>
                                 </div>
                                 {isSelected && (
@@ -683,8 +734,96 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
                               </div>
                             );
                           })}
-                        </>
+                      </div>
+
+                      {/* By Specific Role Target */}
+                      {roles.length > 0 && (
+                        <div className="space-y-1 pt-1 border-t border-gray-100 max-h-36 overflow-y-auto">
+                          <div className="px-2 py-0.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                            By Specific Role Target
+                          </div>
+                          {roles
+                            .filter((r) =>
+                              r.name.toLowerCase().includes(audienceSearch.toLowerCase())
+                            )
+                            .map((r) => {
+                              const isSelected = form.visible_to.toLowerCase() === r.name.toLowerCase();
+                              return (
+                                <div
+                                  key={r.id}
+                                  onClick={() => {
+                                    setForm((prev) => ({ ...prev, visible_to: r.name }));
+                                    setAudienceDropdownOpen(false);
+                                  }}
+                                  className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs ${
+                                    isSelected
+                                      ? "bg-[#253C7D]/10 text-[#253C7D]"
+                                      : "hover:bg-gray-50 text-gray-700"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div
+                                      className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0"
+                                      style={{
+                                        backgroundColor: `${r.color || "#253C7D"}18`,
+                                        color: r.color || "#253C7D",
+                                      }}
+                                    >
+                                      <i className="ri-user-star-line" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-gray-900 truncate">{r.name}</p>
+                                      <p className="text-[10px] text-gray-400 truncate">Target only {r.name} role</p>
+                                    </div>
+                                  </div>
+                                  {isSelected && (
+                                    <i className="ri-checkbox-circle-fill text-[#253C7D] text-sm shrink-0" />
+                                  )}
+                                </div>
+                              );
+                            })}
+                        </div>
                       )}
+
+                      {/* Manual Custom Entry */}
+                      <div className="pt-2 border-t border-gray-100 bg-gray-50/70 p-2 rounded-xl space-y-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                          Or Type Custom Target / Role:
+                        </label>
+                        <div className="flex gap-1.5">
+                          <input
+                            type="text"
+                            value={customAudience}
+                            onChange={(e) => setCustomAudience(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                if (customAudience.trim()) {
+                                  setForm((prev) => ({ ...prev, visible_to: customAudience.trim() }));
+                                  setCustomAudience("");
+                                  setAudienceDropdownOpen(false);
+                                }
+                              }
+                            }}
+                            placeholder="e.g. Sales Team, Shift A..."
+                            className="flex-1 px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#253C7D]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (customAudience.trim()) {
+                                setForm((prev) => ({ ...prev, visible_to: customAudience.trim() }));
+                                setCustomAudience("");
+                                setAudienceDropdownOpen(false);
+                              }
+                            }}
+                            disabled={!customAudience.trim()}
+                            className="px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            Set
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
