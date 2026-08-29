@@ -1,23 +1,23 @@
-import { memo, useState } from "react";
+import { memo, useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
-const AMENITY_OPTIONS = [
-  "4K Display TV",
-  "Polycom Conference Mic",
-  "Whiteboard",
-  "High-speed Wi-Fi",
-  "AC Climate",
-  'Dual 75" 4K Displays',
-  "Cisco Video Conf System",
-  "Interactive Smartboard",
-  "Conference Mic Array",
-  "Dual 4K Projector & Screens",
-  "Wireless Mics & Audio PA",
-  "Modular Desks & Chairs",
-  "Trainer Podium & Clicker",
-  "Video Conference (Zoom/Teams)",
-  "Extra Power Outlets",
-  "Extra Chairs",
+const AMENITY_ITEMS = [
+  { label: "4K Display TV", icon: "ri-tv-line" },
+  { label: "High-speed Wi-Fi", icon: "ri-wifi-line" },
+  { label: "AC Climate", icon: "ri-temp-cold-line" },
+  { label: "Whiteboard", icon: "ri-artboard-line" },
+  { label: "Polycom Conference Mic", icon: "ri-mic-line" },
+  { label: 'Dual 75" 4K Displays', icon: "ri-tv-2-line" },
+  { label: "Cisco Video Conf System", icon: "ri-vidicon-line" },
+  { label: "Interactive Smartboard", icon: "ri-dashboard-3-line" },
+  { label: "Conference Mic Array", icon: "ri-mic-2-line" },
+  { label: "Dual 4K Projector & Screens", icon: "ri-projector-2-line" },
+  { label: "Wireless Mics & Audio PA", icon: "ri-volume-up-line" },
+  { label: "Modular Desks & Chairs", icon: "ri-layout-grid-line" },
+  { label: "Trainer Podium & Clicker", icon: "ri-presentation-line" },
+  { label: "Video Conference (Zoom/Teams)", icon: "ri-video-chat-line" },
+  { label: "Extra Power Outlets", icon: "ri-plug-line" },
+  { label: "Extra Chairs", icon: "ri-armchair-line" },
 ];
 
 const COLOR_PRESETS = [
@@ -57,9 +57,24 @@ export const CreateRoomModal = memo(function CreateRoomModal({
     "High-speed Wi-Fi",
     "AC Climate",
   ]);
+  const [amenityDropdownOpen, setAmenityDropdownOpen] = useState(false);
+  const [amenitySearch, setAmenitySearch] = useState("");
   const [customAmenity, setCustomAmenity] = useState("");
+  const amenityDropdownRef = useRef<HTMLDivElement>(null);
 
-  // All hooks must be called before any early return
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        amenityDropdownRef.current &&
+        !amenityDropdownRef.current.contains(e.target as Node)
+      ) {
+        setAmenityDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const finalColor = customColor || color;
 
   const reset = () => {
@@ -69,6 +84,8 @@ export const CreateRoomModal = memo(function CreateRoomModal({
     setColor(COLOR_PRESETS[0]);
     setCustomColor("");
     setSelectedAmenities(["4K Display TV", "High-speed Wi-Fi", "AC Climate"]);
+    setAmenityDropdownOpen(false);
+    setAmenitySearch("");
     setCustomAmenity("");
   };
 
@@ -83,6 +100,14 @@ export const CreateRoomModal = memo(function CreateRoomModal({
     );
   };
 
+  const selectAllAmenities = () => {
+    setSelectedAmenities(AMENITY_ITEMS.map((o) => o.label));
+  };
+
+  const clearAllAmenities = () => {
+    setSelectedAmenities([]);
+  };
+
   const addCustomAmenity = () => {
     const trimmed = customAmenity.trim();
     if (trimmed && !selectedAmenities.includes(trimmed)) {
@@ -90,6 +115,10 @@ export const CreateRoomModal = memo(function CreateRoomModal({
     }
     setCustomAmenity("");
   };
+
+  const filteredAmenityItems = AMENITY_ITEMS.filter((item) =>
+    item.label.toLowerCase().includes(amenitySearch.toLowerCase())
+  );
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -116,7 +145,6 @@ export const CreateRoomModal = memo(function CreateRoomModal({
     }
   };
 
-  // Safe early return AFTER all hooks
   if (!isOpen) return null;
 
   return (
@@ -251,71 +279,156 @@ export const CreateRoomModal = memo(function CreateRoomModal({
             </div>
           </div>
 
-          {/* Amenities */}
-          <div>
+          {/* Amenities & Equipment Dropdown */}
+          <div className="relative" ref={amenityDropdownRef}>
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Amenities & Equipment
+              Amenities &amp; Equipment
             </label>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {AMENITY_OPTIONS.map((a) => {
-                const active = selectedAmenities.includes(a);
-                return (
+
+            {/* Dropdown Trigger */}
+            <button
+              type="button"
+              onClick={() => setAmenityDropdownOpen((prev) => !prev)}
+              className={`w-full px-3.5 py-2.5 bg-gray-50/80 hover:bg-white border rounded-xl text-xs text-left font-semibold flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                amenityDropdownOpen
+                  ? "border-[#253C7D] ring-2 ring-[#253C7D]/10 bg-white"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-sm shrink-0">
+                  <i className="ri-tools-line" />
+                </div>
+                <span className="truncate text-gray-800">
+                  {selectedAmenities.length === 0
+                    ? "Select amenities & equipment..."
+                    : `${selectedAmenities.length} amenity${
+                        selectedAmenities.length > 1 ? "ies" : ""
+                      } selected (${selectedAmenities.join(", ")})`}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedAmenities.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#253C7D] text-white">
+                    {selectedAmenities.length}
+                  </span>
+                )}
+                <i
+                  className={`ri-arrow-down-s-line text-gray-400 text-base transition-transform duration-200 ${
+                    amenityDropdownOpen ? "rotate-180 text-[#253C7D]" : ""
+                  }`}
+                />
+              </div>
+            </button>
+
+            {/* Dropdown Menu */}
+            {amenityDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-3 space-y-2.5 max-h-72 overflow-y-auto">
+                {/* Search & Actions Bar */}
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-100 text-[11px]">
+                  <span className="font-bold text-gray-600">
+                    Available Amenities:
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={selectAllAmenities}
+                      className="text-[#253C7D] font-bold hover:underline cursor-pointer"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-gray-300">&middot;</span>
+                    <button
+                      type="button"
+                      onClick={clearAllAmenities}
+                      className="text-gray-400 hover:text-gray-600 font-medium cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter Search Input */}
+                <div className="relative">
+                  <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                  <input
+                    type="text"
+                    value={amenitySearch}
+                    onChange={(e) => setAmenitySearch(e.target.value)}
+                    placeholder="Filter amenities..."
+                    className="w-full pl-7 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:border-[#253C7D]"
+                  />
+                </div>
+
+                {/* Checkbox Options Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-44 overflow-y-auto">
+                  {filteredAmenityItems.map((item) => {
+                    const isSelected = selectedAmenities.includes(item.label);
+                    return (
+                      <div
+                        key={item.label}
+                        onClick={() => toggleAmenity(item.label)}
+                        className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs font-semibold ${
+                          isSelected
+                            ? "bg-[#253C7D]/10 text-[#253C7D]"
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <i className={`${item.icon} text-sm shrink-0`} />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          className="w-4 h-4 rounded text-[#253C7D] focus:ring-[#253C7D] pointer-events-none"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Amenity Adder */}
+                <div className="pt-2 border-t border-gray-100 flex gap-1.5">
+                  <input
+                    type="text"
+                    value={customAmenity}
+                    onChange={(e) => setCustomAmenity(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCustomAmenity();
+                      }
+                    }}
+                    placeholder="Add custom amenity..."
+                    className="flex-1 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:border-[#253C7D]"
+                  />
                   <button
-                    key={a}
                     type="button"
-                    onClick={() => toggleAmenity(a)}
-                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
-                      active
-                        ? "bg-[#253C7D] border-[#253C7D] text-white"
-                        : "bg-gray-50 border-gray-200 text-gray-600 hover:border-[#253C7D]/40"
-                    }`}
+                    onClick={addCustomAmenity}
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
                   >
-                    {a}
+                    Add
                   </button>
-                );
-              })}
-            </div>
+                </div>
+              </div>
+            )}
 
-            {/* Custom amenity */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={customAmenity}
-                onChange={(e) => setCustomAmenity(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addCustomAmenity();
-                  }
-                }}
-                placeholder="Add custom amenity..."
-                className="flex-1 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#253C7D] transition-colors"
-              />
-              <button
-                type="button"
-                onClick={addCustomAmenity}
-                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
-              >
-                Add
-              </button>
-            </div>
-
+            {/* Selected Chips */}
             {selectedAmenities.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
+              <div className="flex flex-wrap gap-1.5 mt-2">
                 {selectedAmenities.map((a) => (
                   <span
                     key={a}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                    style={{
-                      backgroundColor: `${finalColor}18`,
-                      color: finalColor,
-                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-gray-100 text-gray-800 border border-gray-200"
                   >
-                    {a}
+                    <span>{a}</span>
                     <button
                       type="button"
                       onClick={() => toggleAmenity(a)}
-                      className="hover:opacity-60 cursor-pointer ml-0.5"
+                      className="text-gray-400 hover:text-rose-500 cursor-pointer ml-0.5"
                     >
                       <i className="ri-close-line text-xs" />
                     </button>
@@ -354,3 +467,4 @@ export const CreateRoomModal = memo(function CreateRoomModal({
     </div>
   );
 });
+
