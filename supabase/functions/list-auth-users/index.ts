@@ -98,8 +98,17 @@ Deno.serve(async (req) => {
       page += 1;
     }
 
-    const authAssignments = users
-      .filter((user) => user.email)
+    // Fetch existing assignment emails to avoid upsert conflict issues
+    const { data: existingList } = await admin
+      .from("user_role_assignments")
+      .select("email, user_id")
+      .is("deleted_at", null);
+
+    const existingEmails = new Set((existingList || []).map((x) => x.email?.toLowerCase()).filter(Boolean));
+    const existingUserIds = new Set((existingList || []).map((x) => x.user_id).filter(Boolean));
+
+    const newAssignments = users
+      .filter((user) => user.email && !existingEmails.has(user.email.toLowerCase()) && !existingUserIds.has(user.id))
       .map((user) => ({
         user_id: user.id,
         email: user.email!.toLowerCase(),
@@ -107,11 +116,8 @@ Deno.serve(async (req) => {
         role_id: null,
       }));
 
-    if (authAssignments.length > 0) {
-      const { error: syncError } = await admin
-        .from("user_role_assignments")
-        .upsert(authAssignments, { onConflict: "email", ignoreDuplicates: true });
-      if (syncError) throw syncError;
+    if (newAssignments.length > 0) {
+      await admin.from("user_role_assignments").insert(newAssignments).catch(() => {});
     }
 
     const { data: assignments, error: assignmentsError } = await admin
