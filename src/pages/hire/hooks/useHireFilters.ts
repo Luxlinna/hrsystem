@@ -39,7 +39,7 @@ export function useHireFilters(
             if (loc !== sName && !loc.includes(sName)) return false;
           }
         } else {
-          if (j.branch_id !== filterBranch) return false;
+          if (j.branch_id && j.branch_id !== filterBranch) return false;
         }
       }
       if (searchQuery.trim()) {

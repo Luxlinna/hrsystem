@@ -169,8 +169,8 @@ export function useHire() {
 
     const selectedBranchObj = data.branches.find((b) => b.id === newJob.branch_id);
     const resolvedBranchId = selectedBranchObj?.is_site
-      ? (selectedBranchObj.branch_id || targetBranch || null)
-      : (newJob.branch_id || targetBranch || null);
+      ? (selectedBranchObj.branch_id || targetBranch || effectiveBranchId || userBranchId || null)
+      : (newJob.branch_id || targetBranch || effectiveBranchId || userBranchId || null);
     const resolvedLocation = selectedBranchObj?.is_site
       ? selectedBranchObj.name
       : (newJob.location.trim() || selectedBranchObj?.name || "");
