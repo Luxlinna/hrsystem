@@ -8,6 +8,7 @@ import { DisciplinaryTableView } from "./components/DisciplinaryTableView";
 import { DisciplinaryCardsView } from "./components/DisciplinaryCardsView";
 import { DisciplinaryDrawer } from "./components/DisciplinaryDrawer";
 import { DisciplinaryModal } from "./components/DisciplinaryModal";
+import { Pagination } from "./components/Pagination";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 
 export default function DisciplinaryPage() {
@@ -38,10 +39,10 @@ export default function DisciplinaryPage() {
     return (
       <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
         <DisciplinaryHeader
-          totalCount={0}
+          recordsCount={0}
           canManage={false}
           onExportCSV={() => {}}
-          onOpenModal={() => {}}
+          onOpenCreateModal={() => {}}
         />
         <PartnerBranchPrivacyShield
           moduleName="Disciplinary & PIP Hub"
@@ -55,15 +56,16 @@ export default function DisciplinaryPage() {
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       <DisciplinaryHeader
-        totalCount={filteredRecords.length}
+        recordsCount={filteredRecords.length}
         canManage={canManage}
         onExportCSV={handleExportCSV}
-        onOpenModal={openCreateModal}
+        onOpenCreateModal={openCreateModal}
       />
 
       <OverdueAlertBanner
+        canManage={canManage}
         overdueCount={overdueCount}
-        onFilterOverdue={() => {
+        onReviewOverdue={() => {
           setActiveTab("all");
           setFilterStatus("open");
         }}
@@ -80,58 +82,56 @@ export default function DisciplinaryPage() {
 
       <NavigationTabs
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        onSelectTab={setActiveTab}
         totalCount={filteredRecords.length}
         openCount={openCount}
         pipCount={pipCount}
         criticalCount={criticalCount}
         resolvedCount={resolvedCount}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
       />
 
       <FilterBar
-        filterType={filterType}
-        setFilterType={setFilterType}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        filterSeverity={filterSeverity}
-        setFilterSeverity={setFilterSeverity}
-        filterScope={filterScope}
-        setFilterScope={setFilterScope}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        filterSeverity={filterSeverity}
+        setFilterSeverity={setFilterSeverity}
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+        filterScope={filterScope}
+        setFilterScope={setFilterScope}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
         isSuperAdmin={isSuperAdmin}
       />
 
       {viewMode === "table" ? (
         <DisciplinaryTableView
-          records={filteredRecords}
-          pagedRecords={pagedRecords}
-          totalCount={filteredRecords.length}
-          canManage={canManage}
-          pageSize={pageSize}
-          setPageSize={setPageSize}
-          page={page}
-          setPage={setPage}
-          totalPages={totalPages}
+          records={pagedRecords}
           onSelectRecord={setSelectedRecord}
-          onOpenCreateModal={openCreateModal}
         />
       ) : (
         <DisciplinaryCardsView
-          records={filteredRecords}
-          pagedRecords={pagedRecords}
-          totalCount={filteredRecords.length}
+          records={pagedRecords}
+          selectedRecordId={selectedRecord?.id || null}
           canManage={canManage}
-          pageSize={pageSize}
-          setPageSize={setPageSize}
-          page={page}
-          setPage={setPage}
-          totalPages={totalPages}
           onSelectRecord={setSelectedRecord}
           onOpenCreateModal={openCreateModal}
         />
+      )}
+
+      {filteredRecords.length > 0 && (
+        <div className="mt-6">
+          <Pagination
+            totalCount={filteredRecords.length}
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+            page={page}
+            setPage={setPage}
+            totalPages={totalPages}
+          />
+        </div>
       )}
 
       <DisciplinaryDrawer

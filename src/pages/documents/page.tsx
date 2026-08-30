@@ -1,133 +1,17 @@
-import { useCallback } from "react";
+import { useDocuments } from "./hooks/useDocuments";
 import { DocumentsHeader } from "./components/DocumentsHeader";
 import { DocumentsMetricCards } from "./components/DocumentsMetricCards";
 import { FolderTreeSidebar } from "./components/FolderTreeSidebar";
-import { SubfolderBreadcrumbs } from "./components/SubfolderBreadcrumbs";
-import { FilterBar } from "./components/FilterBar";
-import { DocumentsCardsView } from "./components/DocumentsCardsView";
-import { DocumentsTableView } from "./components/DocumentsTableView";
-import { Pagination } from "./components/Pagination";
+import { DocumentsMainContent } from "./components/DocumentsMainContent";
 import { DocumentDrawer } from "./components/DocumentDrawer";
 import { FolderModal } from "./components/FolderModal";
 import { DocumentUploadModal } from "./components/DocumentUploadModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
-import { useDocuments } from "./hooks/useDocuments";
 
 export default function DocumentsPage() {
-  const {
-    isPartnerBranchBlocked,
-    userBranchName,
-    userBranchId,
-    canManageDocs,
-    documents,
-    folders,
-    expandedFolderIds,
-    loading,
-    activeCategory,
-    setActiveCategory,
-    search,
-    setSearch,
-    filterTemplate,
-    setFilterTemplate,
-    statusFilter,
-    setStatusFilter,
-    visibilityFilter,
-    setVisibilityFilter,
-    viewMode,
-    setViewMode,
-    pageSize,
-    setPageSize,
-    page,
-    setPage,
-    selectedDoc,
-    setSelectedDoc,
-    drawerTab,
-    setDrawerTab,
-    showUploadModal,
-    setShowUploadModal,
-    editingDoc,
-    submitting,
-    showFolderModal,
-    setShowFolderModal,
-    editingFolder,
-    folderForm,
-    setFolderForm,
-    folderSubmitting,
-    form,
-    setForm,
-    fileUpload,
-    setFileUpload,
-    fileLink,
-    setFileLink,
-    dragOver,
-    setDragOver,
-    fileInputRef,
-    rootFolders,
-    getSubfolders,
-    activeFolderObj,
-    activeParentFolder,
-    currentSubfolders,
-    relatedDocuments,
-    filtered,
-    activeDocsCount,
-    templatesCount,
-    totalDownloads,
-    archivedCount,
-    categoryCounts,
-    docTotalPages,
-    pagedDocs,
-    handleDownload,
-    handleCopyLink,
-    handleQuickMoveFolder,
-    handleSubmit,
-    handleArchive,
-    handleDelete,
-    openEdit,
-    openUploadModal,
-    openNewFolderModal,
-    openEditFolderModal,
-    handleSaveFolder,
-    handleDeleteFolder,
-    toggleFolderExpanded,
-    handleExportCSV,
-  } = useDocuments();
+  const d = useDocuments();
 
-  const handleSelectCategory = useCallback(
-    (categoryId: string) => {
-      setActiveCategory(categoryId);
-      setPage(1);
-    },
-    [setActiveCategory, setPage]
-  );
-
-  const handleFilterChangeResetPage = useCallback(() => {
-    setPage(1);
-  }, [setPage]);
-
-  const handleFilterActive = useCallback(() => {
-    setStatusFilter("active");
-    setFilterTemplate(null);
-  }, [setStatusFilter, setFilterTemplate]);
-
-  const handleFilterTemplates = useCallback(() => {
-    setFilterTemplate(true);
-    setStatusFilter("all");
-  }, [setFilterTemplate, setStatusFilter]);
-
-  const handleFilterArchived = useCallback(() => {
-    setStatusFilter("archived");
-    setFilterTemplate(null);
-  }, [setStatusFilter, setFilterTemplate]);
-
-  const handleSearchTag = useCallback(
-    (tag: string) => {
-      setSearch(tag);
-      setSelectedDoc(null);
-    },
-    [setSearch, setSelectedDoc]
-  );
-
-  if (loading && documents.length === 0) {
+  if (d.loading && d.documents.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
@@ -136,7 +20,7 @@ export default function DocumentsPage() {
     );
   }
 
-  if (isPartnerBranchBlocked) {
+  if (d.isPartnerBranchBlocked) {
     return (
       <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
         <DocumentsHeader
@@ -148,8 +32,8 @@ export default function DocumentsPage() {
         />
         <PartnerBranchPrivacyShield
           moduleName="Documents & Policies Repository"
-          userBranchName={userBranchName}
-          hasNoBranch={!userBranchId}
+          userBranchName={d.userBranchName}
+          hasNoBranch={!d.userBranchId}
         />
       </div>
     );
@@ -157,165 +41,148 @@ export default function DocumentsPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
-      {/* Top Header */}
       <DocumentsHeader
-        totalFiles={documents.length}
-        canManageDocs={canManageDocs}
-        onExportCSV={handleExportCSV}
-        onOpenNewFolder={() => openNewFolderModal()}
-        onOpenUploadModal={openUploadModal}
+        totalFiles={d.documents.length}
+        canManageDocs={d.canManageDocs}
+        onExportCSV={d.handleExportCSV}
+        onOpenNewFolder={() => d.openNewFolderModal()}
+        onOpenUploadModal={d.openUploadModal}
       />
 
-      {/* Executive KPI Performance Bar */}
       <DocumentsMetricCards
-        activeDocsCount={activeDocsCount}
-        rootFoldersCount={rootFolders.length}
-        subfoldersCount={folders.length - rootFolders.length}
-        templatesCount={templatesCount}
-        totalDownloads={totalDownloads}
-        archivedCount={archivedCount}
-        statusFilter={statusFilter}
-        filterTemplate={filterTemplate}
-        onFilterActive={handleFilterActive}
-        onFilterTemplates={handleFilterTemplates}
-        onFilterArchived={handleFilterArchived}
+        activeDocsCount={d.activeDocsCount}
+        rootFoldersCount={d.rootFolders.length}
+        subfoldersCount={d.folders.length - d.rootFolders.length}
+        templatesCount={d.templatesCount}
+        totalDownloads={d.totalDownloads}
+        archivedCount={d.archivedCount}
+        statusFilter={d.statusFilter}
+        filterTemplate={d.filterTemplate}
+        onFilterActive={() => {
+          d.setStatusFilter("active");
+          d.setFilterTemplate(null);
+        }}
+        onFilterTemplates={() => {
+          d.setFilterTemplate(true);
+          d.setStatusFilter("all");
+        }}
+        onFilterArchived={() => {
+          d.setStatusFilter("archived");
+          d.setFilterTemplate(null);
+        }}
       />
 
-      {/* Main Layout: Hierarchical Folders Sidebar + Documents Content */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Categories & Folders Tree Sidebar */}
         <FolderTreeSidebar
-          rootFolders={rootFolders}
-          folders={folders}
-          activeCategory={activeCategory}
-          expandedFolderIds={expandedFolderIds}
-          categoryCounts={categoryCounts}
-          canManageDocs={canManageDocs}
-          filterTemplate={filterTemplate}
-          onSelectCategory={handleSelectCategory}
-          onToggleExpanded={toggleFolderExpanded}
-          onOpenNewFolder={openNewFolderModal}
-          onOpenEditFolder={openEditFolderModal}
-          onDeleteFolder={handleDeleteFolder}
+          rootFolders={d.rootFolders}
+          folders={d.folders}
+          activeCategory={d.activeCategory}
+          expandedFolderIds={d.expandedFolderIds}
+          categoryCounts={d.categoryCounts}
+          canManageDocs={d.canManageDocs}
+          filterTemplate={d.filterTemplate}
+          onSelectCategory={(cat) => {
+            d.setActiveCategory(cat);
+            d.setPage(1);
+          }}
+          onToggleExpanded={d.toggleFolderExpanded}
+          onOpenNewFolder={d.openNewFolderModal}
+          onOpenEditFolder={d.openEditFolderModal}
+          onDeleteFolder={d.handleDeleteFolder}
           onSetFilterTemplate={(val) => {
-            setFilterTemplate(val);
-            setPage(1);
+            d.setFilterTemplate(val);
+            d.setPage(1);
           }}
         />
 
-        {/* Main Content Area */}
-        <div className="lg:col-span-3 space-y-4">
-          {/* Breadcrumb & Subfolder Navigation Bar */}
-          <SubfolderBreadcrumbs
-            activeCategory={activeCategory}
-            activeFolderObj={activeFolderObj}
-            activeParentFolder={activeParentFolder}
-            currentSubfolders={currentSubfolders}
-            categoryCounts={categoryCounts}
-            totalFiles={filtered.length}
-            canManageDocs={canManageDocs}
-            onSelectCategory={handleSelectCategory}
-            onOpenNewFolder={openNewFolderModal}
-          />
-
-          {/* Search, Status & View Controls Bar */}
-          <FilterBar
-            search={search}
-            setSearch={setSearch}
-            visibilityFilter={visibilityFilter}
-            setVisibilityFilter={setVisibilityFilter}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            onFilterChangeResetPage={handleFilterChangeResetPage}
-          />
-
-          {/* Documents Grid / Table View */}
-          {viewMode === "cards" ? (
-            <DocumentsCardsView
-              documents={pagedDocs}
-              folders={folders}
-              selectedDocId={selectedDoc?.id ?? null}
-              canManageDocs={canManageDocs}
-              activeCategory={activeCategory}
-              onSelectDoc={setSelectedDoc}
-              onOpenNewFolder={openNewFolderModal}
-              onOpenUploadModal={openUploadModal}
-            />
-          ) : (
-            <DocumentsTableView
-              documents={pagedDocs}
-              folders={folders}
-              onSelectDoc={setSelectedDoc}
-              onDownload={handleDownload}
-            />
-          )}
-
-          {/* Pagination Controls */}
-          <Pagination
-            totalCount={filtered.length}
-            pageSize={pageSize}
-            setPageSize={setPageSize}
-            page={page}
-            setPage={setPage}
-            totalPages={docTotalPages}
-          />
-        </div>
+        <DocumentsMainContent
+          activeCategory={d.activeCategory}
+          activeFolderObj={d.activeFolderObj}
+          activeParentFolder={d.activeParentFolder}
+          currentSubfolders={d.currentSubfolders}
+          categoryCounts={d.categoryCounts}
+          filteredCount={d.filtered.length}
+          canManageDocs={d.canManageDocs}
+          onSelectCategory={(cat) => {
+            d.setActiveCategory(cat);
+            d.setPage(1);
+          }}
+          onOpenNewFolder={d.openNewFolderModal}
+          search={d.search}
+          setSearch={d.setSearch}
+          visibilityFilter={d.visibilityFilter}
+          setVisibilityFilter={d.setVisibilityFilter}
+          statusFilter={d.statusFilter}
+          setStatusFilter={d.setStatusFilter}
+          viewMode={d.viewMode}
+          setViewMode={d.setViewMode}
+          onFilterChangeResetPage={() => d.setPage(1)}
+          pagedDocs={d.pagedDocs}
+          folders={d.folders}
+          selectedDocId={d.selectedDoc?.id ?? null}
+          onSelectDoc={d.setSelectedDoc}
+          onOpenUploadModal={d.openUploadModal}
+          onDownload={d.handleDownload}
+          pageSize={d.pageSize}
+          setPageSize={d.setPageSize}
+          page={d.page}
+          setPage={d.setPage}
+          totalPages={d.docTotalPages}
+        />
       </div>
 
-      {/* Drawer: Document Inspection & Quick Actions */}
       <DocumentDrawer
-        selectedDoc={selectedDoc}
-        folders={folders}
-        rootFolders={rootFolders}
-        drawerTab={drawerTab}
-        setDrawerTab={setDrawerTab}
-        relatedDocuments={relatedDocuments}
-        canManageDocs={canManageDocs}
-        onClose={() => setSelectedDoc(null)}
-        onSelectDoc={setSelectedDoc}
-        onDownload={handleDownload}
-        onCopyLink={handleCopyLink}
-        onQuickMoveFolder={handleQuickMoveFolder}
-        onOpenEdit={openEdit}
-        onArchive={handleArchive}
-        onDelete={handleDelete}
-        onSearchTag={handleSearchTag}
+        selectedDoc={d.selectedDoc}
+        folders={d.folders}
+        rootFolders={d.rootFolders}
+        drawerTab={d.drawerTab}
+        setDrawerTab={d.setDrawerTab}
+        relatedDocuments={d.relatedDocuments}
+        canManageDocs={d.canManageDocs}
+        onClose={() => d.setSelectedDoc(null)}
+        onSelectDoc={d.setSelectedDoc}
+        onDownload={d.handleDownload}
+        onCopyLink={d.handleCopyLink}
+        onQuickMoveFolder={d.handleQuickMoveFolder}
+        onOpenEdit={d.openEdit}
+        onArchive={d.handleArchive}
+        onDelete={d.handleDelete}
+        onSearchTag={(tag) => {
+          d.setSearch(tag);
+          d.setSelectedDoc(null);
+        }}
       />
 
-      {/* Modal: Add / Edit Folder or Subfolder */}
       <FolderModal
-        isOpen={showFolderModal}
-        editingFolder={editingFolder}
-        folderForm={folderForm}
-        setFolderForm={setFolderForm}
-        folders={folders}
-        rootFolders={rootFolders}
-        folderSubmitting={folderSubmitting}
-        onClose={() => setShowFolderModal(false)}
-        onSubmit={handleSaveFolder}
+        isOpen={d.showFolderModal}
+        editingFolder={d.editingFolder}
+        folderForm={d.folderForm}
+        setFolderForm={d.setFolderForm}
+        folders={d.folders}
+        rootFolders={d.rootFolders}
+        folderSubmitting={d.folderSubmitting}
+        onClose={() => d.setShowFolderModal(false)}
+        onSubmit={d.handleSaveFolder}
       />
 
-      {/* Modal: Upload / Edit Document */}
       <DocumentUploadModal
-        isOpen={showUploadModal}
-        editingDoc={editingDoc}
-        form={form}
-        setForm={setForm}
-        fileUpload={fileUpload}
-        setFileUpload={setFileUpload}
-        fileLink={fileLink}
-        setFileLink={setFileLink}
-        dragOver={dragOver}
-        setDragOver={setDragOver}
-        fileInputRef={fileInputRef}
-        rootFolders={rootFolders}
-        getSubfolders={getSubfolders}
-        submitting={submitting}
-        onClose={() => setShowUploadModal(false)}
-        onOpenNewFolder={() => openNewFolderModal()}
-        onSubmit={handleSubmit}
+        isOpen={d.showUploadModal}
+        editingDoc={d.editingDoc}
+        form={d.form}
+        setForm={d.setForm}
+        fileUpload={d.fileUpload}
+        setFileUpload={d.setFileUpload}
+        fileLink={d.fileLink}
+        setFileLink={d.setFileLink}
+        dragOver={d.dragOver}
+        setDragOver={d.setDragOver}
+        fileInputRef={d.fileInputRef}
+        rootFolders={d.rootFolders}
+        getSubfolders={d.getSubfolders}
+        submitting={d.submitting}
+        onClose={() => d.setShowUploadModal(false)}
+        onOpenNewFolder={() => d.openNewFolderModal()}
+        onSubmit={d.handleSubmit}
       />
     </div>
   );

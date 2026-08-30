@@ -11,11 +11,11 @@ interface FilterBarProps {
   setFilterSeverity: (sev: string) => void;
   filterStatus: string;
   setFilterStatus: (status: string) => void;
-  filterScope?: "all" | "admin" | "branch";
-  setFilterScope?: (s: "all" | "admin" | "branch") => void;
+  filterScope: "all" | "admin" | "branch";
+  setFilterScope: (s: "all" | "admin" | "branch") => void;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
-  onFilterChangeResetPage: () => void;
+  isSuperAdmin: boolean;
 }
 
 export const FilterBar = memo(function FilterBar({
@@ -27,11 +27,11 @@ export const FilterBar = memo(function FilterBar({
   setFilterSeverity,
   filterStatus,
   setFilterStatus,
-  filterScope = "all",
+  filterScope,
   setFilterScope,
   viewMode,
   setViewMode,
-  onFilterChangeResetPage,
+  isSuperAdmin,
 }: FilterBarProps) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200/80 p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -40,15 +40,13 @@ export const FilterBar = memo(function FilterBar({
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            onFilterChangeResetPage();
-          }}
+          onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search cases by employee name, title, department, or keywords..."
           className="w-full pl-8 pr-7 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium"
         />
         {searchQuery && (
           <button
+            type="button"
             onClick={() => setSearchQuery("")}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
           >
@@ -58,14 +56,11 @@ export const FilterBar = memo(function FilterBar({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {/* Scope Filter */}
-        {setFilterScope && (
+        {/* Scope Filter for SuperAdmin */}
+        {isSuperAdmin && (
           <select
             value={filterScope}
-            onChange={(e) => {
-              setFilterScope(e.target.value as "all" | "admin" | "branch");
-              onFilterChangeResetPage();
-            }}
+            onChange={(e) => setFilterScope(e.target.value as "all" | "admin" | "branch")}
             className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-bold cursor-pointer"
           >
             <option value="all">🌐 All Scopes</option>
@@ -77,10 +72,7 @@ export const FilterBar = memo(function FilterBar({
         {/* Type Filter */}
         <select
           value={filterType}
-          onChange={(e) => {
-            setFilterType(e.target.value);
-            onFilterChangeResetPage();
-          }}
+          onChange={(e) => setFilterType(e.target.value)}
           className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-bold cursor-pointer"
         >
           <option value="">All Incident Types</option>
@@ -94,10 +86,7 @@ export const FilterBar = memo(function FilterBar({
         {/* Severity Filter */}
         <select
           value={filterSeverity}
-          onChange={(e) => {
-            setFilterSeverity(e.target.value);
-            onFilterChangeResetPage();
-          }}
+          onChange={(e) => setFilterSeverity(e.target.value)}
           className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-medium cursor-pointer"
         >
           <option value="">All Severities</option>
@@ -111,10 +100,7 @@ export const FilterBar = memo(function FilterBar({
         {/* Status Filter */}
         <select
           value={filterStatus}
-          onChange={(e) => {
-            setFilterStatus(e.target.value);
-            onFilterChangeResetPage();
-          }}
+          onChange={(e) => setFilterStatus(e.target.value)}
           className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-medium cursor-pointer"
         >
           <option value="">All Statuses</option>
@@ -128,6 +114,7 @@ export const FilterBar = memo(function FilterBar({
         {/* View Mode Switcher */}
         <div className="flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200/60">
           <button
+            type="button"
             onClick={() => setViewMode("cards")}
             title="Cards View"
             className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
@@ -137,6 +124,7 @@ export const FilterBar = memo(function FilterBar({
             <i className="ri-layout-grid-fill" />
           </button>
           <button
+            type="button"
             onClick={() => setViewMode("table")}
             title="Table View"
             className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${

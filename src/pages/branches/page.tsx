@@ -11,7 +11,6 @@ export default function Branches() {
     canManage,
     isAdmin,
     isSuperAdmin,
-    isBranchAdmin,
     userBranchId,
     branches,
     loading,
@@ -32,7 +31,7 @@ export default function Branches() {
     addressInputRef,
     form,
     setForm,
-    filtered,
+    filteredBranches,
     totalEmployees,
     activeBranches,
     deptGroups,
@@ -48,9 +47,9 @@ export default function Branches() {
     handleDeleteBranch,
   } = useBranches();
 
-  if (loading) {
+  if (loading && branches.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-[#F8FAFC]">
         <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -86,7 +85,7 @@ export default function Branches() {
 
           {/* Branch Grid */}
           <BranchGrid
-            branches={filtered}
+            branches={filteredBranches}
             selectedBranchId={selectedBranch?.id ?? null}
             isAdmin={isAdmin}
             onSelectBranch={openDetail}

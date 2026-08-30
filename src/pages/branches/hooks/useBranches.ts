@@ -89,6 +89,11 @@ export function useBranches() {
     setShowAddModal(true);
   }, [location]);
 
+  const closeModal = useCallback(() => {
+    setShowAddModal(false);
+    setEditingBranchId(null);
+  }, []);
+
   const filteredBranches = useMemo(() => {
     return branches.filter((branch) => {
       const matchesSearch =
@@ -151,6 +156,7 @@ export function useBranches() {
     isSuperAdmin,
     userBranchId,
     filteredBranches,
+    filtered: filteredBranches,
     deptGroups,
     totalEmployees,
     activeBranches,
@@ -158,6 +164,7 @@ export function useBranches() {
     closeDetail,
     openEditModal,
     openAddModal,
+    closeModal,
     handleAddBranch: handleFormSubmit,
     useCurrentLocation: location.useCurrentLocation,
     handleGeocodeAddress: location.handleGeocodeAddress,
