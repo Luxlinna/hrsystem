@@ -2,7 +2,8 @@ import { memo } from "react";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import type { Employee, LeaveFormData } from "../../types";
 import { LEAVE_TYPE_CONFIG } from "../../constants";
-import { calculateDays, toYMD } from "../../dateUtils";
+import { calculateDays } from "../../dateUtils";
+import { LeaveRequestDateFields } from "./LeaveRequestDateFields";
 
 interface LeaveRequestModalProps {
   isOpen: boolean;
@@ -38,35 +39,6 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
   const remainingDays = activeEmpId ? getRemaining(activeEmpId, formData.leave_type) : null;
   const isOverBalance = remainingDays !== null && requestedDays > remainingDays;
 
-  const setDatePreset = (preset: "today" | "tomorrow" | "3days" | "thisWeek" | "nextWeek") => {
-    const now = new Date();
-    const s = new Date(now);
-    const e = new Date(now);
-
-    if (preset === "tomorrow") {
-      s.setDate(s.getDate() + 1);
-      e.setDate(e.getDate() + 1);
-    } else if (preset === "3days") {
-      e.setDate(e.getDate() + 2);
-    } else if (preset === "thisWeek") {
-      const day = s.getDay();
-      const diff = s.getDate() - day + (day === 0 ? -6 : 1);
-      s.setDate(diff);
-      e.setDate(diff + 4);
-    } else if (preset === "nextWeek") {
-      const day = s.getDay();
-      const diff = s.getDate() - day + (day === 0 ? 1 : 8);
-      s.setDate(diff);
-      e.setDate(diff + 4);
-    }
-
-    setFormData({
-      ...formData,
-      start_date: toYMD(s),
-      end_date: toYMD(e),
-    });
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs" onClick={onClose} />
@@ -77,6 +49,7 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
             <p className="text-xs text-gray-400 mt-0.5">Submit a time off application for managerial approval</p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
           >
@@ -85,7 +58,6 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          {/* Employee Picker for Admins / Managers */}
           {canManage && employees.length > 1 && (
             <div>
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
@@ -94,13 +66,12 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
               <EmployeeSearchSelect
                 employees={employees}
                 value={formData.employee_id || myEmployee?.id || ""}
-                onChange={(id) => setFormData({ ...formData, employee_id: id })}
+                onChange={(id) => setFormData((prev) => ({ ...prev, employee_id: id }))}
                 placeholder="Search employee..."
               />
             </div>
           )}
 
-          {/* Leave Type */}
           <div>
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
               Leave Type Category *
@@ -113,7 +84,7 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
                   <button
                     key={t}
                     type="button"
-                    onClick={() => setFormData({ ...formData, leave_type: t })}
+                    onClick={() => setFormData((prev) => ({ ...prev, leave_type: t }))}
                     className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
                       isSelected
                         ? "bg-[#253C7D] text-white border-[#253C7D] shadow-xs"
@@ -128,115 +99,49 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
             </div>
           </div>
 
-          {/* Date Presets */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Quick Presets</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                { label: "Today", val: "today" as const },
-                { label: "Tomorrow", val: "tomorrow" as const },
-                { label: "3 Days", val: "3days" as const },
-                { label: "This Week", val: "thisWeek" as const },
-                { label: "Next Week", val: "nextWeek" as const },
-              ].map((p) => (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => setDatePreset(p.val)}
-                  className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 transition-colors cursor-pointer"
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <LeaveRequestDateFields
+            formData={formData}
+            setFormData={setFormData}
+            requestedDays={requestedDays}
+            remainingDays={remainingDays}
+            isOverBalance={isOverBalance}
+          />
 
-          {/* Start & End Dates */}
-          <div className="grid grid-cols-2 gap-3.5">
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                Start Date *
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                End Date *
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium"
-              />
-            </div>
-          </div>
-
-          {/* Duration & Balance Notice */}
-          {formData.start_date && formData.end_date && (
-            <div
-              className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
-                isOverBalance
-                  ? "bg-rose-50 border-rose-200 text-rose-700"
-                  : "bg-emerald-50 border-emerald-200 text-emerald-800"
-              }`}
-            >
-              <span>
-                Total Duration: <strong className="font-extrabold">{requestedDays} working days</strong>
-              </span>
-              {remainingDays !== null && (
-                <span>
-                  {isOverBalance ? "Exceeds allowance" : `${remainingDays} days available`}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Reason */}
           <div>
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-              Reason / Additional Details
+              Reason / Notes (Optional)
             </label>
             <textarea
-              rows={3}
+              rows={2}
               value={formData.reason}
-              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-              placeholder="Provide context for your manager regarding your leave request..."
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium resize-none leading-relaxed"
+              onChange={(e) => setFormData((prev) => ({ ...prev, reason: e.target.value }))}
+              placeholder="e.g. Vacation with family, doctor appointment..."
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D]"
             />
           </div>
 
-          {/* Manager Approver note */}
-          {myApproverName && (
-            <p className="text-[11px] text-gray-400">
-              This request will be routed to <strong className="text-gray-700">{myApproverName}</strong> for decision.
-            </p>
-          )}
+          <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs text-gray-600 flex items-center gap-2">
+            <i className="ri-shield-user-line text-[#253C7D] text-base shrink-0" />
+            <span>
+              Approver: <strong className="text-gray-900">{myApproverName}</strong>
+            </span>
+          </div>
 
-          {/* Bottom Actions */}
-          <div className="pt-3 flex items-center justify-end gap-2.5">
+          <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 text-xs font-bold text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              disabled={submitting}
+              className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-800 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={submitting}
-              className="px-5 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+              disabled={submitting || isOverBalance}
+              className="px-5 py-2 text-xs font-bold text-white bg-[#253C7D] hover:bg-[#1f336b] rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
             >
-              {submitting ? "Submitting..." : "Submit Leave Application"}
+              {submitting ? "Submitting..." : "Submit Request"}
             </button>
           </div>
         </form>

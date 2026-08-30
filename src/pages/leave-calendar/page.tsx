@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { CalendarHeader } from "./components/CalendarHeader";
 import { CalendarStatsRow } from "./components/CalendarStatsRow";
 import { CalendarFilterBar } from "./components/CalendarFilterBar";
@@ -6,71 +7,19 @@ import { TimelineViewContent } from "./components/timeline/TimelineViewContent";
 import { AgendaViewContent } from "./components/agenda/AgendaViewContent";
 import { DepartmentImpactWidget } from "./components/widgets/DepartmentImpactWidget";
 import { UpcomingLeavesWidget } from "./components/widgets/UpcomingLeavesWidget";
-import { QuickRequestModal } from "./components/modals/QuickRequestModal";
-import { LeaveInspectModal } from "./components/modals/LeaveInspectModal";
-import { DayLeavesModal } from "./components/modals/DayLeavesModal";
+import { LeaveCalendarModalsContainer } from "./components/modals/LeaveCalendarModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useLeaveCalendar } from "./hooks/useLeaveCalendar";
 import { exportCalendarCSV } from "./exportUtils";
 
 export default function LeaveCalendar() {
-  const {
-    isPartnerBranchBlocked,
-    userBranchName,
-    userBranchId,
-    canManage,
-    employees,
-    myEmployee,
-    loading,
-    year,
-    month,
-    selectedDay,
-    setSelectedDay,
-    viewMode,
-    setViewMode,
-    searchQuery,
-    setSearchQuery,
-    deptFilter,
-    setDeptFilter,
-    typeFilter,
-    setTypeFilter,
-    statusFilter,
-    setStatusFilter,
-    agendaPage,
-    setAgendaPage,
-    agendaPageSize,
-    departments,
-    filteredLeaves,
-    totalAgendaPages,
-    safeAgendaPage,
-    pagedAgendaLeaves,
-    calCells,
-    isCurrentDayToday,
-    prevMonth,
-    nextMonth,
-    jumpToToday,
-    selectedDayLeaves,
-    getDayLeaves,
-    leavesToday,
-    approvedInMonth,
-    totalDaysInMonth,
-    pendingLeaves,
-    upcomingLeaves,
-    departmentStats,
-    inspectLeave,
-    setInspectLeave,
-    dayLeavesModal,
-    setDayLeavesModal,
-    showRequestModal,
-    setShowRequestModal,
-    formData,
-    setFormData,
-    submitting,
-    handleQuickRequestSubmit,
-    toast,
-  } = useLeaveCalendar();
+  const c = useLeaveCalendar();
 
-  if (loading) {
+  const handleExportCSV = useCallback(() => {
+    exportCalendarCSV(c.filteredLeaves, c.month, c.year);
+  }, [c.filteredLeaves, c.month, c.year]);
+
+  if (c.loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
@@ -78,166 +27,128 @@ export default function LeaveCalendar() {
     );
   }
 
-  if (isPartnerBranchBlocked) {
+  if (c.isPartnerBranchBlocked) {
     return (
       <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
         <CalendarHeader
-          viewMode={viewMode}
-          setViewMode={setViewMode}
+          viewMode={c.viewMode}
+          setViewMode={c.setViewMode}
           onExportCSV={() => {}}
           onOpenQuickRequest={() => {}}
         />
         <PartnerBranchPrivacyShield
           moduleName="Leave Schedule Calendar"
-          userBranchName={userBranchName}
-          hasNoBranch={!userBranchId}
+          userBranchName={c.userBranchName}
+          hasNoBranch={!c.userBranchId}
         />
       </div>
     );
   }
 
-  const handleExportCSV = () => {
-    exportCalendarCSV(filteredLeaves, month, year);
-  };
-
   return (
     <div className="min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Toast Alert */}
-      {toast && (
+      {c.toast && (
         <div
           className={`fixed top-4 left-4 right-4 sm:top-6 sm:right-6 sm:left-auto sm:max-w-sm z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border backdrop-blur-md text-[13px] font-medium transition-all transform animate-in slide-in-from-top-4 duration-200 ${
-            toast.type === "success"
+            c.toast.type === "success"
               ? "bg-emerald-950/90 border-emerald-700/50 text-emerald-100"
-              : toast.type === "error"
+              : c.toast.type === "error"
               ? "bg-rose-950/90 border-rose-700/50 text-rose-100"
               : "bg-slate-900/90 border-slate-700/50 text-white"
           }`}
         >
           <i
             className={`${
-              toast.type === "success"
+              c.toast.type === "success"
                 ? "ri-checkbox-circle-fill text-emerald-400"
-                : toast.type === "error"
+                : c.toast.type === "error"
                 ? "ri-error-warning-fill text-rose-400"
                 : "ri-information-fill text-sky-400"
             } text-lg`}
           />
-          <span>{toast.message}</span>
+          <span>{c.toast.message}</span>
         </div>
       )}
 
-      {/* Header */}
       <CalendarHeader
-        viewMode={viewMode}
-        setViewMode={setViewMode}
+        viewMode={c.viewMode}
+        setViewMode={c.setViewMode}
         onExportCSV={handleExportCSV}
-        onOpenQuickRequest={() => setShowRequestModal(true)}
+        onOpenQuickRequest={() => c.setShowRequestModal(true)}
       />
 
-      {/* Stats Row */}
       <CalendarStatsRow
-        leavesTodayCount={leavesToday.length}
-        approvedInMonthCount={approvedInMonth.length}
-        totalDaysInMonth={totalDaysInMonth}
-        pendingLeavesCount={pendingLeaves.length}
-        month={month}
-        onFilterStatus={setStatusFilter}
+        leavesTodayCount={c.leavesToday.length}
+        approvedInMonthCount={c.approvedInMonth.length}
+        totalDaysInMonth={c.totalDaysInMonth}
+        pendingLeavesCount={c.pendingLeaves.length}
+        month={c.month}
+        onFilterStatus={c.setStatusFilter}
       />
 
-      {/* Filter Bar */}
       <CalendarFilterBar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        deptFilter={deptFilter}
-        setDeptFilter={setDeptFilter}
-        typeFilter={typeFilter}
-        setTypeFilter={setTypeFilter}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        departments={departments}
+        searchQuery={c.searchQuery}
+        setSearchQuery={c.setSearchQuery}
+        deptFilter={c.deptFilter}
+        setDeptFilter={c.setDeptFilter}
+        typeFilter={c.typeFilter}
+        setTypeFilter={c.setTypeFilter}
+        statusFilter={c.statusFilter}
+        setStatusFilter={c.setStatusFilter}
+        departments={c.departments}
       />
 
-      {/* View 1: Month Matrix */}
-      {viewMode === "month" && (
+      {c.viewMode === "month" && (
         <MonthViewContent
-          month={month}
-          year={year}
-          onPrevMonth={prevMonth}
-          onNextMonth={nextMonth}
-          onJumpToToday={jumpToToday}
-          calCells={calCells}
-          selectedDay={selectedDay}
-          onSelectDay={setSelectedDay}
-          getDayLeaves={getDayLeaves}
-          isCurrentDayToday={isCurrentDayToday}
-          selectedDayLeaves={selectedDayLeaves}
-          onInspectLeave={setInspectLeave}
-          onOpenDayLeavesModal={(day, leaves) => setDayLeavesModal({ day, leaves })}
-          onOpenQuickRequest={() => setShowRequestModal(true)}
+          month={c.month}
+          year={c.year}
+          onPrevMonth={c.prevMonth}
+          onNextMonth={c.nextMonth}
+          onJumpToToday={c.jumpToToday}
+          calCells={c.calCells}
+          selectedDay={c.selectedDay}
+          onSelectDay={c.setSelectedDay}
+          getDayLeaves={c.getDayLeaves}
+          isCurrentDayToday={c.isCurrentDayToday}
+          selectedDayLeaves={c.selectedDayLeaves}
+          onInspectLeave={c.setInspectLeave}
+          onOpenDayLeavesModal={(day, leaves) => c.setDayLeavesModal({ day, leaves })}
+          onOpenQuickRequest={() => c.setShowRequestModal(true)}
         />
       )}
 
-      {/* View 2: Horizontal Timeline Gantt */}
-      {viewMode === "timeline" && (
+      {c.viewMode === "timeline" && (
         <TimelineViewContent
-          employees={employees}
-          filteredLeaves={filteredLeaves}
-          year={year}
-          month={month}
-          daysInMonth={calCells.filter((c) => c !== 0).length}
-          onInspectLeave={setInspectLeave}
-          onPrevMonth={prevMonth}
-          onNextMonth={nextMonth}
-          onJumpToToday={jumpToToday}
+          employees={c.employees}
+          filteredLeaves={c.filteredLeaves}
+          year={c.year}
+          month={c.month}
+          daysInMonth={c.calCells.filter((cell) => cell !== 0).length}
+          onInspectLeave={c.setInspectLeave}
+          onPrevMonth={c.prevMonth}
+          onNextMonth={c.nextMonth}
+          onJumpToToday={c.jumpToToday}
         />
       )}
 
-      {/* View 3: Agenda List / Table */}
-      {viewMode === "agenda" && (
+      {c.viewMode === "agenda" && (
         <AgendaViewContent
-          leaves={pagedAgendaLeaves}
-          totalRows={filteredLeaves.length}
-          safeAgendaPage={safeAgendaPage}
-          totalAgendaPages={totalAgendaPages}
-          setAgendaPage={setAgendaPage}
-          agendaPageSize={agendaPageSize}
-          onInspectLeave={setInspectLeave}
+          leaves={c.pagedAgendaLeaves}
+          totalRows={c.filteredLeaves.length}
+          safeAgendaPage={c.safeAgendaPage}
+          totalAgendaPages={c.totalAgendaPages}
+          setAgendaPage={c.setAgendaPage}
+          agendaPageSize={c.agendaPageSize}
+          onInspectLeave={c.setInspectLeave}
         />
       )}
 
-      {/* Analytical Widgets Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DepartmentImpactWidget departmentStats={departmentStats} month={month} />
-        <UpcomingLeavesWidget upcomingLeaves={upcomingLeaves} onInspectLeave={setInspectLeave} />
+        <DepartmentImpactWidget departmentStats={c.departmentStats} month={c.month} />
+        <UpcomingLeavesWidget upcomingLeaves={c.upcomingLeaves} onInspectLeave={c.setInspectLeave} />
       </div>
 
-      {/* Quick Request Modal */}
-      <QuickRequestModal
-        isOpen={showRequestModal}
-        onClose={() => setShowRequestModal(false)}
-        formData={formData}
-        setFormData={setFormData}
-        employees={employees}
-        myEmployee={myEmployee}
-        canManage={canManage}
-        submitting={submitting}
-        onSubmit={handleQuickRequestSubmit}
-      />
-
-      {/* Leave Detail Inspect Modal */}
-      <LeaveInspectModal
-        inspectLeave={inspectLeave}
-        onClose={() => setInspectLeave(null)}
-      />
-
-      {/* Day Leaves Expanded Popup */}
-      <DayLeavesModal
-        dayLeavesModal={dayLeavesModal}
-        onClose={() => setDayLeavesModal(null)}
-        month={month}
-        year={year}
-        onInspectLeave={setInspectLeave}
-      />
+      <LeaveCalendarModalsContainer {...c} />
     </div>
   );
 }
