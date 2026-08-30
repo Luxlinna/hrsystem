@@ -1,8 +1,8 @@
 import { memo } from "react";
-import { Link } from "react-router-dom";
 import type { MyEmployee, DirectReport } from "../types";
 import { STATUS_STYLES } from "../constants";
 import { fmtDateTime } from "../profileUtils";
+import { ProfileDirectReportsList } from "./ProfileDirectReportsList";
 
 interface ProfileWorkInfoSidebarProps {
   role: { name: string; color: string } | null;
@@ -33,7 +33,6 @@ export const ProfileWorkInfoSidebar = memo(function ProfileWorkInfoSidebar({
 }: ProfileWorkInfoSidebarProps) {
   return (
     <div className="space-y-8">
-      {/* Role */}
       <div>
         <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
           Role
@@ -57,7 +56,6 @@ export const ProfileWorkInfoSidebar = memo(function ProfileWorkInfoSidebar({
         </div>
       </div>
 
-      {/* Job details */}
       <div>
         <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
           Job Details
@@ -124,7 +122,6 @@ export const ProfileWorkInfoSidebar = memo(function ProfileWorkInfoSidebar({
         )}
       </div>
 
-      {/* Account activity */}
       <div>
         <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
           Account Activity
@@ -145,51 +142,7 @@ export const ProfileWorkInfoSidebar = memo(function ProfileWorkInfoSidebar({
         </div>
       </div>
 
-      {/* Direct reports */}
-      {directReports.length > 0 && (
-        <div>
-          <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
-            Direct Reports ({directReports.length})
-          </label>
-          <div className="mt-2 border border-gray-100 rounded-xl divide-y divide-gray-50 shadow-2xs">
-            {directReports.map((r) => {
-              const rInitials = `${r.first_name[0]}${r.last_name[0]}`.toUpperCase();
-              const content = (
-                <div className="flex items-center gap-3 px-4 py-3">
-                  {r.avatar_url ? (
-                    <img
-                      src={r.avatar_url}
-                      alt={r.first_name}
-                      className="w-8 h-8 rounded-lg object-cover shrink-0"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 flex items-center justify-center text-[#253C7D] text-[11px] font-bold shrink-0">
-                      {rInitials}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-medium text-gray-900 truncate">
-                      {r.first_name} {r.last_name}
-                    </p>
-                    <p className="text-[11px] text-gray-500 truncate">{r.role}</p>
-                  </div>
-                </div>
-              );
-              return canViewEmployees ? (
-                <Link
-                  key={r.id}
-                  to={`/employees/${r.id}`}
-                  className="block hover:bg-gray-50 transition-colors"
-                >
-                  {content}
-                </Link>
-              ) : (
-                <div key={r.id}>{content}</div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <ProfileDirectReportsList directReports={directReports} canViewEmployees={canViewEmployees} />
     </div>
   );
 });
