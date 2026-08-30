@@ -6,71 +6,14 @@ import { OffboardCardsView } from "./components/cards/OffboardCardsView";
 import { OffboardListView } from "./components/list/OffboardListView";
 import { AllTasksTabContent } from "./components/tasks/AllTasksTabContent";
 import { OffboardAnalyticsTabContent } from "./components/analytics/OffboardAnalyticsTabContent";
-import { CreateOffboardingModal } from "./components/modals/CreateOffboardingModal";
-import { AddTaskModal } from "./components/modals/AddTaskModal";
-import { EditOffboardingModal } from "./components/modals/EditOffboardingModal";
+import { OffboardModalsContainer } from "./components/modals/OffboardModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useOffboard } from "./hooks/useOffboard";
 
 export default function Offboard() {
-  const {
-    isPartnerBranchBlocked,
-    userBranchName,
-    userBranchId,
-    employees,
-    branches,
-    loading,
-    tab,
-    setTab,
-    viewMode,
-    setViewMode,
-    searchQuery,
-    setSearchQuery,
-    filterDepartment,
-    setFilterDepartment,
-    filterBranch,
-    setFilterBranch,
-    filterStatus,
-    setFilterStatus,
-    filterTaskType,
-    setFilterTaskType,
-    departments,
-    activeOffboardings,
-    completedOffboardings,
-    filteredOffboardings,
-    filteredTasks,
-    totalActiveCount,
-    inClearanceCount,
-    totalCompletedCount,
-    pendingTasksCount,
-    overdueTasksCount,
-    reasonChartData,
-    deptChartData,
-    createModal,
-    setCreateModal,
-    submitting,
-    newForm,
-    setNewForm,
-    taskModal,
-    setTaskModal,
-    newTaskForm,
-    setNewTaskForm,
-    submittingTask,
-    editingOffboarding,
-    setEditingOffboarding,
-    editForm,
-    setEditForm,
-    savingEdit,
-    toggleTask,
-    updateOffboardingStatus,
-    deleteOffboarding,
-    createOffboarding,
-    handleAddTask,
-    openEditModal,
-    handleSaveEdit,
-  } = useOffboard();
+  const o = useOffboard();
 
-  if (loading) {
+  if (o.loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
@@ -79,14 +22,14 @@ export default function Offboard() {
     );
   }
 
-  if (isPartnerBranchBlocked) {
+  if (o.isPartnerBranchBlocked) {
     return (
       <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
         <OffboardHeader onStartOffboarding={() => {}} />
         <PartnerBranchPrivacyShield
           moduleName="Offboarding Operations"
-          userBranchName={userBranchName}
-          hasNoBranch={!userBranchId}
+          userBranchName={o.userBranchName}
+          hasNoBranch={!o.userBranchId}
         />
       </div>
     );
@@ -94,120 +37,84 @@ export default function Offboard() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
-      {/* Header */}
-      <OffboardHeader onStartOffboarding={() => setCreateModal(true)} />
+      <OffboardHeader onStartOffboarding={() => o.setCreateModal(true)} />
 
-      {/* KPI Stats Row */}
       <OffboardStatsRow
-        totalActiveCount={totalActiveCount}
-        inClearanceCount={inClearanceCount}
-        totalCompletedCount={totalCompletedCount}
-        pendingTasksCount={pendingTasksCount}
-        overdueTasksCount={overdueTasksCount}
-        tab={tab}
-        filterStatus={filterStatus}
-        onSelectTab={setTab}
-        onFilterStatus={setFilterStatus}
+        totalActiveCount={o.totalActiveCount}
+        inClearanceCount={o.inClearanceCount}
+        totalCompletedCount={o.totalCompletedCount}
+        pendingTasksCount={o.pendingTasksCount}
+        overdueTasksCount={o.overdueTasksCount}
+        tab={o.tab}
+        filterStatus={o.filterStatus}
+        onSelectTab={o.setTab}
+        onFilterStatus={o.setFilterStatus}
       />
 
-      {/* Navigation Tabs Bar */}
       <OffboardTabsBar
-        tab={tab}
-        setTab={setTab}
-        activeCount={activeOffboardings.length}
-        completedCount={completedOffboardings.length}
-        tasksCount={filteredTasks.length}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
+        tab={o.tab}
+        setTab={o.setTab}
+        activeCount={o.activeOffboardings.length}
+        completedCount={o.completedOffboardings.length}
+        tasksCount={o.filteredTasks.length}
+        viewMode={o.viewMode}
+        setViewMode={o.setViewMode}
       />
 
-      {/* Search & Multi-criteria Filter Bar */}
       <OffboardFilterBar
-        tab={tab}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        filterDepartment={filterDepartment}
-        setFilterDepartment={setFilterDepartment}
-        filterBranch={filterBranch}
-        setFilterBranch={setFilterBranch}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        filterTaskType={filterTaskType}
-        setFilterTaskType={setFilterTaskType}
-        departments={departments}
-        branches={branches}
+        tab={o.tab}
+        searchQuery={o.searchQuery}
+        setSearchQuery={o.setSearchQuery}
+        filterDepartment={o.filterDepartment}
+        setFilterDepartment={o.setFilterDepartment}
+        filterBranch={o.filterBranch}
+        setFilterBranch={o.setFilterBranch}
+        filterStatus={o.filterStatus}
+        setFilterStatus={o.setFilterStatus}
+        filterTaskType={o.filterTaskType}
+        setFilterTaskType={o.setFilterTaskType}
+        departments={o.departments}
+        branches={o.branches}
       />
 
-      {/* Tab 1: Active Departures & Tab 2: Completed Departures */}
-      {(tab === "active" || tab === "completed") && (
+      {(o.tab === "active" || o.tab === "completed") && (
         <>
-          {viewMode === "cards" ? (
+          {o.viewMode === "cards" ? (
             <OffboardCardsView
-              offboardings={filteredOffboardings}
-              onUpdateStatus={updateOffboardingStatus}
-              onToggleTask={toggleTask}
-              onOpenAddTaskModal={(id) => setTaskModal({ open: true, offboardingId: id })}
-              onOpenEditModal={openEditModal}
-              onDeleteOffboarding={deleteOffboarding}
-              onStartOffboarding={() => setCreateModal(true)}
+              offboardings={o.filteredOffboardings}
+              onUpdateStatus={o.updateOffboardingStatus}
+              onToggleTask={o.toggleTask}
+              onOpenAddTaskModal={(id) => o.setTaskModal({ open: true, offboardingId: id })}
+              onOpenEditModal={o.openEditModal}
+              onDeleteOffboarding={o.deleteOffboarding}
+              onStartOffboarding={() => o.setCreateModal(true)}
             />
           ) : (
             <OffboardListView
-              offboardings={filteredOffboardings}
-              onOpenEditModal={openEditModal}
-              onDeleteOffboarding={deleteOffboarding}
-              onUpdateStatus={updateOffboardingStatus}
+              offboardings={o.filteredOffboardings}
+              onOpenEditModal={o.openEditModal}
+              onDeleteOffboarding={o.deleteOffboarding}
+              onUpdateStatus={o.updateOffboardingStatus}
             />
           )}
         </>
       )}
 
-      {/* Tab 3: All Tasks Backlog */}
-      {tab === "tasks" && (
+      {o.tab === "tasks" && (
         <AllTasksTabContent
-          tasks={filteredTasks}
-          onToggleTask={toggleTask}
+          tasks={o.filteredTasks}
+          onToggleTask={o.toggleTask}
         />
       )}
 
-      {/* Tab 4: Analytics Visualizations */}
-      {tab === "analytics" && (
+      {o.tab === "analytics" && (
         <OffboardAnalyticsTabContent
-          reasonChartData={reasonChartData}
-          deptChartData={deptChartData}
+          reasonChartData={o.reasonChartData}
+          deptChartData={o.deptChartData}
         />
       )}
 
-      {/* Create Offboarding Modal */}
-      <CreateOffboardingModal
-        isOpen={createModal}
-        onClose={() => setCreateModal(false)}
-        newForm={newForm}
-        setNewForm={setNewForm}
-        employees={employees}
-        submitting={submitting}
-        onSubmit={createOffboarding}
-      />
-
-      {/* Add Task Modal */}
-      <AddTaskModal
-        isOpen={taskModal.open}
-        onClose={() => setTaskModal({ open: false, offboardingId: null })}
-        newTaskForm={newTaskForm}
-        setNewTaskForm={setNewTaskForm}
-        submitting={submittingTask}
-        onSubmit={handleAddTask}
-      />
-
-      {/* Edit Offboarding Modal */}
-      <EditOffboardingModal
-        editingOffboarding={editingOffboarding}
-        onClose={() => setEditingOffboarding(null)}
-        editForm={editForm}
-        setEditForm={setEditForm}
-        savingEdit={savingEdit}
-        onSubmit={handleSaveEdit}
-      />
+      <OffboardModalsContainer {...o} />
     </div>
   );
 }
