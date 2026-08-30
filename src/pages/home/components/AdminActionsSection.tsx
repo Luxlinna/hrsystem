@@ -18,15 +18,6 @@ export const AdminActionsSection = memo(function AdminActionsSection({
           <h2 className="text-sm font-bold text-gray-900">Administrative Actions</h2>
           <p className="text-[11px] text-gray-500 mt-0.5">Quick access to core HR modules and operations</p>
         </div>
-        {can("payroll") && (
-          <Link
-            to="/payroll-module"
-            className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1C2E60] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-colors shrink-0"
-          >
-            Process Payroll
-            <i className="ri-arrow-right-line" />
-          </Link>
-        )}
       </div>
 
       <div className="flex flex-wrap gap-3">

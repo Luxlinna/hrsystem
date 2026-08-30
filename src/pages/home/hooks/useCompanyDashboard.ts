@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
@@ -6,25 +6,22 @@ import type { DateRange } from "../types";
 import { useCompanyDashboardData } from "./useCompanyDashboardData";
 import { usePullToRefresh } from "./usePullToRefresh";
 
-function todayStr() {
-  return new Date().toISOString().split("T")[0];
-}
-function daysAgoStr(n: number) {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().split("T")[0];
-}
+const PULL_THRESHOLD = 70;
 
 export function useCompanyDashboard() {
   const { user } = useAuth();
   const { can } = usePermissions();
-  const { effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
+  const { isPartnerBranchBlocked, userBranchName, userBranchId, effectiveBranchId } = useBranchScope();
 
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: daysAgoStr(30),
-    to: todayStr(),
-    label: "Last 30 Days",
-  });
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+
+  const [dateRange, setDateRange] = useState<DateRange>({ from: firstDay, to: lastDay });
+  const [fabOpen, setFabOpen] = useState(false);
+  const fabRef = useRef<HTMLDivElement>(null);
+
+  const targetBranch = effectiveBranchId || userBranchId;
 
   const data = useCompanyDashboardData({
     userId: user?.id,
@@ -33,33 +30,33 @@ export function useCompanyDashboard() {
     dateRange,
   });
 
-  const pull = usePullToRefresh(data.handleRefresh);
+  const { isPulling, pullDistance, handleTouchStart, handleTouchMove, handleTouchEnd } =
+    usePullToRefresh({
+      onRefresh: data.handleRefresh,
+      pullThreshold: PULL_THRESHOLD,
+    });
 
-  const [fabOpen, setFabOpen] = useState(false);
-  const fabRef = useRef<HTMLDivElement>(null);
+  // Close FAB on outside click
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    if (fabRef.current && !fabRef.current.contains(e.target as Node)) {
+      setFabOpen(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (fabRef.current && !fabRef.current.contains(e.target as Node)) {
-        setFabOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [handleClickOutside]);
 
   return {
     user,
     can,
     isPartnerBranchBlocked,
-    userBranchId,
     userBranchName,
-    targetBranch,
+    userBranchId,
     stats: data.stats,
-    employees: data.employees,
     onboarding: data.onboarding,
     leaveRequests: data.leaveRequests,
-    payroll: data.payroll,
     notifications: data.notifications,
     jobs: data.jobs,
     candidates: data.candidates,
@@ -68,9 +65,6 @@ export function useCompanyDashboard() {
     refreshing: data.refreshing,
     deptData: data.deptData,
     lastUpdated: data.lastUpdated,
-    isPulling: pull.isPulling,
-    pullDistance: pull.pullDistance,
-    PULL_THRESHOLD: pull.PULL_THRESHOLD,
     hrKpis: data.hrKpis,
     attendanceData: data.attendanceData,
     hiringTrend: data.hiringTrend,
@@ -80,8 +74,11 @@ export function useCompanyDashboard() {
     setFabOpen,
     fabRef,
     handleRefresh: data.handleRefresh,
-    handleTouchStart: pull.handleTouchStart,
-    handleTouchMove: pull.handleTouchMove,
-    handleTouchEnd: pull.handleTouchEnd,
+    isPulling,
+    pullDistance,
+    PULL_THRESHOLD,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
   };
 }

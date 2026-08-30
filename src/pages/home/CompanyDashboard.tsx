@@ -3,7 +3,7 @@ import { DashboardKpiGrid } from "./components/DashboardKpiGrid";
 import { DashboardDateRangePicker } from "./components/DashboardDateRangePicker";
 import { AttentionAlertRow } from "./components/AttentionAlertRow";
 import { OnboardingPipelineSection } from "./components/OnboardingPipelineSection";
-import { LeaveAndPayrollSection } from "./components/LeaveAndPayrollSection";
+import { LeaveRequestsSection } from "./components/LeaveRequestsSection";
 import { HiringOverviewSection } from "./components/HiringOverviewSection";
 import { AnnouncementsSection } from "./components/AnnouncementsSection";
 import { HrAnalyticsKpiSection } from "./components/HrAnalyticsKpiSection";
@@ -23,7 +23,6 @@ export default function CompanyDashboard() {
     stats,
     onboarding,
     leaveRequests,
-    payroll,
     jobs,
     candidates,
     announcements,
@@ -68,12 +67,10 @@ export default function CompanyDashboard() {
     );
   }
 
-  const currentMonthLabel = new Date().toLocaleDateString("en-US", { month: "long" });
   const displayName =
     (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
 
   const showLeave = can("leave");
-  const showPayroll = can("payroll");
   const showHrInsights = can("attendance") || can("training") || can("disciplinary");
   const showAnalyticsCharts = can("analytics");
 
@@ -114,11 +111,10 @@ export default function CompanyDashboard() {
         {/* Date Range Picker */}
         <DashboardDateRangePicker dateRange={dateRange} onChange={setDateRange} />
 
-        {/* KPI Grid */}
+        {/* KPI Grid without payroll */}
         <DashboardKpiGrid
           stats={stats}
           can={can}
-          currentMonthLabel={currentMonthLabel}
         />
 
         {/* Needs Your Attention Alert Row */}
@@ -130,15 +126,10 @@ export default function CompanyDashboard() {
           canOnboarding={can("onboarding")}
         />
 
-        {/* Leave Requests & Payroll Split Section */}
-        <LeaveAndPayrollSection
+        {/* Leave Requests Section */}
+        <LeaveRequestsSection
           showLeave={showLeave}
-          showPayroll={showPayroll}
           leaveRequests={leaveRequests}
-          payroll={payroll}
-          statsPayrollTotal={stats.payrollTotal}
-          statsPayrollProcessed={stats.payrollProcessed}
-          currentMonthLabel={currentMonthLabel}
         />
 
         {/* Hiring Overview */}
@@ -159,19 +150,19 @@ export default function CompanyDashboard() {
           hrKpis={hrKpis}
           showHrInsights={showHrInsights}
           can={can}
-          rangeLabel={dateRange.label}
+          rangeLabel={`${dateRange.from} to ${dateRange.to}`}
         />
 
-        {/* Analytics Charts Section */}
+        {/* Department Breakdown & Attendance Trend Charts */}
         <AnalyticsChartsSection
           showAnalyticsCharts={showAnalyticsCharts}
-          attendanceData={attendanceData}
           deptData={deptData}
+          attendanceData={attendanceData}
           hiringTrend={hiringTrend}
-          rangeLabel={dateRange.label}
+          totalEmployees={stats.employees}
         />
 
-        {/* Administrative Quick Actions */}
+        {/* Admin Quick Actions */}
         <AdminActionsSection can={can} />
       </div>
 

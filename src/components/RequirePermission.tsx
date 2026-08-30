@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { isBootstrapAdminEmail, usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function LoadingScreen() {
   return (
@@ -32,7 +33,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   if (!isAdmin && !isBranchAdmin && !isBootstrapAdminEmail(user?.email)) {
     return <AccessDenied message="You don't have permission to access the admin portal." />;
   }
-  return <>{children}</>;
+  return <ErrorBoundary fallbackTitle="Admin Portal Error">{children}</ErrorBoundary>;
 }
 
 export function RequireRecycleBin({ children }: { children: ReactNode }) {
@@ -41,13 +42,15 @@ export function RequireRecycleBin({ children }: { children: ReactNode }) {
   if (!user) {
     return <AccessDenied message="Please sign in to access the Recycle Bin." />;
   }
-  return <>{children}</>;
+  return <ErrorBoundary fallbackTitle="Recycle Bin Error">{children}</ErrorBoundary>;
 }
 
 export function RequireModule({ module, children }: { module: string; children: ReactNode }) {
   const { can, loading } = usePermissions();
 
   if (loading) return <LoadingScreen />;
-  if (!can(module)) return <AccessDenied message="You don't have permission to access this module. Ask an admin to grant it in the Admin Portal." />;
-  return <>{children}</>;
+  if (!can(module)) {
+    return <AccessDenied message="You don't have permission to access this module. Ask an admin to grant it in the Admin Portal." />;
+  }
+  return <ErrorBoundary fallbackTitle={`Error loading ${module} module`}>{children}</ErrorBoundary>;
 }

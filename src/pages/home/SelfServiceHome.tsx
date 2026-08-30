@@ -18,7 +18,7 @@ interface MyEmployee {
 const QUICK_ACTIONS = [
   { label: "Log Attendance", icon: "ri-fingerprint-line", note: "Check in / out", color: "bg-emerald-500", path: "/self-service?tab=checkin" },
   { label: "Submit Leave", icon: "ri-calendar-event-line", note: "Request time off", color: "bg-amber-500", path: "/self-service?tab=leave" },
-  { label: "View Payslip", icon: "ri-money-dollar-circle-line", note: "Your payslips", color: "bg-[#253C7D]", path: "/self-service?tab=payslips" },
+  { label: "Tasks & Activity", icon: "ri-task-line", note: "View tasks", color: "bg-[#253C7D]", path: "/tasks" },
 ];
 
 export default function SelfServiceHome() {
@@ -28,7 +28,6 @@ export default function SelfServiceHome() {
   const [loading, setLoading] = useState(true);
   const [myLeave, setMyLeave] = useState<any[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<any | null>(null);
-  const [latestPayslip, setLatestPayslip] = useState<any | null>(null);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -45,22 +44,20 @@ export default function SelfServiceHome() {
       setMe(myEmp);
 
       const today = todayYMD();
-      const [leaveRes, attRes, payRes, annRes, notifRes] = await Promise.all([
+      const [leaveRes, attRes, annRes, notifRes] = await Promise.all([
         myEmp ? supabase.from("leave_requests").select("id, leave_type, start_date, end_date, status").eq("employee_id", myEmp.id).order("created_at", { ascending: false }).limit(5) : Promise.resolve({ data: [] }),
         myEmp ? supabase.from("attendance_records").select("status").eq("employee_id", myEmp.id).eq("date", today).maybeSingle() : Promise.resolve({ data: null }),
-        myEmp ? supabase.from("payroll_records").select("net_pay, month").eq("employee_id", myEmp.id).order("month", { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
         can("announcements") ? supabase.from("announcements").select("id, title, content").is("deleted_at", null).order("pinned", { ascending: false }).order("published_at", { ascending: false }).limit(3) : Promise.resolve({ data: [] }),
         can("notifications") ? supabase.from("notifications").select("id", { count: "exact", head: true }).or(`recipient_user_id.is.null,recipient_user_id.eq.${user.id}`).or(`branch_id.is.null,branch_id.eq.${(myEmp as any)?.branch_id}`).eq("is_read", false) : Promise.resolve({ count: 0 }),
       ]);
 
       setMyLeave((leaveRes as any).data || []);
       setTodayAttendance((attRes as any).data || null);
-      setLatestPayslip((payRes as any).data || null);
       setAnnouncements((annRes as any).data || []);
       setUnreadCount((notifRes as any).count || 0);
       setLoading(false);
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email, can]);
 
   const displayName = me ? `${me.first_name} ${me.last_name}` : (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
@@ -112,7 +109,7 @@ export default function SelfServiceHome() {
       {/* My Status Cards */}
       <section className="px-6 lg:px-10 py-10 md:py-14">
         <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A] mb-6">My Overview</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl p-5 border border-gray-100">
             <i className="ri-fingerprint-line text-[#253C7D] text-xl mb-3 block w-8 h-8 flex items-center justify-center" />
             <p className="text-lg font-bold text-gray-900 capitalize">{todayAttendance?.status || "Not checked in"}</p>
@@ -124,11 +121,6 @@ export default function SelfServiceHome() {
             <p className="text-[11px] text-gray-500 mt-1">Pending Leave Requests</p>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-gray-100">
-            <i className="ri-money-dollar-circle-line text-teal-600 text-xl mb-3 block w-8 h-8 flex items-center justify-center" />
-            <p className="text-lg font-bold text-gray-900">{latestPayslip ? `$${Number(latestPayslip.net_pay).toLocaleString()}` : "—"}</p>
-            <p className="text-[11px] text-gray-500 mt-1">Latest Payslip{latestPayslip ? ` (${latestPayslip.month})` : ""}</p>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-gray-100">
             <i className="ri-notification-3-line text-rose-600 text-xl mb-3 block w-8 h-8 flex items-center justify-center" />
             <p className="text-lg font-bold text-gray-900">{unreadCount}</p>
             <p className="text-[11px] text-gray-500 mt-1">Unread Notifications</p>
@@ -138,20 +130,24 @@ export default function SelfServiceHome() {
 
       {/* My Leave Requests */}
       {myLeave.length > 0 && (
-        <section className="px-6 lg:px-10 pb-10 md:pb-14">
+        <section className="px-6 lg:px-10 pb-12">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A]">My Recent Leave</h2>
-            <Link to="/self-service" className="text-[13px] text-[#253C7D] font-semibold hover:underline">View All</Link>
+            <h2 className="text-lg font-bold text-[#1A1A1A]">My Leave Requests</h2>
+            <Link to="/self-service?tab=leave" className="text-xs text-[#253C7D] font-bold hover:underline">
+              View All
+            </Link>
           </div>
-          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
             {myLeave.map((l) => (
-              <div key={l.id} className="flex items-center justify-between px-5 py-3.5 border-b border-gray-50 last:border-0">
+              <div key={l.id} className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[13px] font-semibold text-gray-900 capitalize">{l.leave_type}</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5">{l.start_date?.slice(5)} – {l.end_date?.slice(5)}</p>
+                  <p className="text-sm font-semibold text-gray-900 capitalize">{l.leave_type} Leave</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{l.start_date} to {l.end_date}</p>
                 </div>
-                <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full capitalize ${
-                  l.status === "approved" ? "bg-green-100 text-green-700" : l.status === "pending" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold capitalize ${
+                  l.status === "approved" ? "bg-emerald-50 text-emerald-700" :
+                  l.status === "rejected" ? "bg-rose-50 text-rose-700" :
+                  "bg-amber-50 text-amber-700"
                 }`}>
                   {l.status}
                 </span>
@@ -162,27 +158,16 @@ export default function SelfServiceHome() {
       )}
 
       {/* Announcements */}
-      {can("announcements") && announcements.length > 0 && (
-        <section className="px-6 lg:px-10 pb-10 md:pb-14">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl md:text-2xl font-bold text-[#1A1A1A]">Company Announcements</h2>
-            <Link to="/announcements" className="text-[13px] text-[#253C7D] font-semibold hover:underline">View All</Link>
-          </div>
+      {announcements.length > 0 && (
+        <section className="px-6 lg:px-10 pb-14">
+          <h2 className="text-lg font-bold text-[#1A1A1A] mb-4">Announcements</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {announcements.map((a) => (
-              <Link to="/announcements" key={a.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:border-[#253C7D]/20 transition-all">
-                <p className="text-[13px] font-semibold text-gray-900 line-clamp-1">{a.title}</p>
-                <p className="text-[12px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">{a.content}</p>
-              </Link>
+              <div key={a.id} className="bg-white rounded-2xl p-5 border border-gray-100">
+                <h3 className="text-sm font-bold text-gray-900 line-clamp-1">{a.title}</h3>
+                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{a.content}</p>
+              </div>
             ))}
-          </div>
-        </section>
-      )}
-
-      {!me && (
-        <section className="px-6 lg:px-10 pb-14">
-          <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-[13px] text-amber-800">
-            We couldn't find an employee record matching your account email ({user?.email}). Some personal details may not show until HR links your profile.
           </div>
         </section>
       )}

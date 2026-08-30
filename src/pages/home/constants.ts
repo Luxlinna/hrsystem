@@ -20,14 +20,6 @@ export const QUICK_ACTIONS: QuickActionItem[] = [
     note: "Request time off",
   },
   {
-    label: "View Payslip",
-    icon: "ri-money-dollar-circle-line",
-    path: "/self-service?tab=payslips",
-    module: "self-service",
-    color: "bg-[#253C7D]",
-    note: "Your payslips",
-  },
-  {
     label: "New Employee",
     icon: "ri-user-add-line",
     path: "/employees",

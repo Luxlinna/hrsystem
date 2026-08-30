@@ -1,47 +1,19 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
-import { supabase } from "@/lib/supabase";
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import type { BranchInfo, BranchContextType } from "./branchTypes";
+import { useBranchData } from "./useBranchData";
 
-export interface BranchInfo {
-  id: string;
-  name: string;
-  location?: string | null;
-  status?: string | null;
-  branch_id?: string | null;
-  is_site?: boolean;
-}
-
-export interface BranchContextType {
-  branches: BranchInfo[];
-  visibleBranches: BranchInfo[];
-  loading: boolean;
-  userBranchId: string | null;
-  userBranchName: string | null;
-  selectedBranchId: string;
-  setSelectedBranchId: (id: string) => void;
-  effectiveBranchId: string | null;
-  effectiveBranchName: string | null;
-  selectedSiteId: string | null;
-  targetBranch: string | null;
-  isPartnerBranchBlocked: boolean;
-  isSuperAdmin: boolean;
-  isBranchAdmin: boolean;
-  isBranchScoped: boolean;
-  refreshBranches: () => Promise<void>;
-}
+export type { BranchInfo, BranchContextType };
 
 const BranchContext = createContext<BranchContextType | undefined>(undefined);
 
 export function BranchProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { role, isAdmin: isSuperRole } = usePermissions();
+  const { branches, loading, userBranchId, userBranchName, fetchBranches } = useBranchData(user?.email);
 
-  const [branches, setBranches] = useState<BranchInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userBranchId, setUserBranchId] = useState<string | null>(null);
-  const [userBranchName, setUserBranchName] = useState<string | null>(null);
   const [storedBranchId, setStoredBranchId] = useState<string>(() => {
     const saved = localStorage.getItem("hrm_selected_branch_id");
     return saved && saved !== "all" ? saved : "";
@@ -57,84 +29,12 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     return /branch\s*admin/i.test(roleName);
   }, [isSuperAdmin, role]);
 
-  const fetchBranches = useCallback(async () => {
-    // 1. Fetch branches
-    const { data: branchesData } = await supabase
-      .from("branches")
-      .select("id, name, location, status")
-      .is("deleted_at", null)
-      .order("name");
-
-    // 2. Fetch work locations (sites) — kept in the combined list so
-    //    attendance and other pages can use them, but they are tagged is_site=true.
-    const { data: locationsData } = await supabase
-      .from("work_locations")
-      .select("id, name, branch_id, description")
-      .is("deleted_at", null);
-
-    if (branchesData) {
-      const sitesList = (locationsData || []).map((loc) => ({
-        id: `site:${loc.id}`,
-        name: loc.name,
-        location: loc.description,
-        status: "active",
-        branch_id: loc.branch_id,
-        is_site: true as const,
-      }));
-
-      // Pure branches sorted alphabetically (sites come after, separately)
-      const sortedBranches = [...branchesData].sort((a, b) =>
-        (a.name || "").localeCompare(b.name || "")
-      );
-
-      // Combined: branches first, then sites
-      const combined: BranchInfo[] = [...sortedBranches, ...sitesList];
-      setBranches(combined);
-    }
-  }, []);
-
-  const fetchUserBranch = useCallback(async () => {
-    if (!user?.email) {
-      setUserBranchId(null);
-      setUserBranchName(null);
-      setLoading(false);
-      return;
-    }
-    const { data } = await supabase
-      .from("employees")
-      .select("id, branch_id, branches(id, name)")
-      .eq("email", user.email)
-      .maybeSingle();
-
-    if (data?.branch_id) {
-      setUserBranchId(data.branch_id);
-      const bName = (data.branches as any)?.name || null;
-      setUserBranchName(bName);
-    } else {
-      setUserBranchId(null);
-      setUserBranchName(null);
-    }
-    setLoading(false);
-  }, [user?.email]);
-
-  useEffect(() => {
-    fetchBranches();
-    fetchUserBranch();
-  }, [fetchBranches, fetchUserBranch]);
-
   const selectedBranchId = useMemo(() => {
-    // Super Admin can select anything
     if (isSuperAdmin) {
-      if (storedBranchId && branches.some((b) => b.id === storedBranchId)) {
-        return storedBranchId;
-      }
-      if (userBranchId && branches.some((b) => b.id === userBranchId)) {
-        return userBranchId;
-      }
+      if (storedBranchId && branches.some((b) => b.id === storedBranchId)) return storedBranchId;
+      if (userBranchId && branches.some((b) => b.id === userBranchId)) return userBranchId;
       return branches[0]?.id || "";
     }
-
-    // Non-Super-Admin: locked to their own branch or any of their branch's sites
     if (storedBranchId && branches.some((b) => b.id === storedBranchId && (b.id === userBranchId || b.branch_id === userBranchId))) {
       return storedBranchId;
     }
@@ -143,13 +43,11 @@ export function BranchProvider({ children }: { children: ReactNode }) {
 
   const setSelectedBranchId = useCallback(
     (id: string) => {
-      // Super Admin can set any branch/site
       if (isSuperAdmin) {
         setStoredBranchId(id);
         localStorage.setItem("hrm_selected_branch_id", id);
         return;
       }
-      // Non-Super-Admin can only select their own branch or their branch's sites
       const allowed = branches.some((b) => b.id === id && (b.id === userBranchId || b.branch_id === userBranchId));
       if (allowed) {
         setStoredBranchId(id);
@@ -160,12 +58,11 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   );
 
   const effectiveBranchId = useMemo(() => {
-    const rawId = selectedBranchId;
-    if (rawId && rawId.startsWith("site:")) {
-      const siteObj = branches.find((b) => b.id === rawId);
+    if (selectedBranchId && selectedBranchId.startsWith("site:")) {
+      const siteObj = branches.find((b) => b.id === selectedBranchId);
       return siteObj?.branch_id || null;
     }
-    return rawId || null;
+    return selectedBranchId || null;
   }, [selectedBranchId, branches]);
 
   const selectedSiteId = useMemo(() => {
@@ -176,26 +73,20 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   }, [selectedBranchId]);
 
   const targetBranch = useMemo(() => {
-    if (isSuperAdmin) {
-      return effectiveBranchId;
-    }
-    return userBranchId;
+    return isSuperAdmin ? effectiveBranchId : userBranchId;
   }, [isSuperAdmin, effectiveBranchId, userBranchId]);
 
   const visibleBranches = useMemo(() => {
     if (isSuperAdmin) {
-      // Super admin sees all branches and their respective work sites
       const pureBranches = branches.filter((b) => !b.is_site);
       const sites = branches.filter((b) => b.is_site);
       const result: BranchInfo[] = [];
       pureBranches.forEach((branch) => {
         result.push(branch);
-        const branchSites = sites.filter((s) => s.branch_id === branch.id);
-        result.push(...branchSites);
+        result.push(...sites.filter((s) => s.branch_id === branch.id));
       });
       return result;
     }
-    // Branch admin sees their own branch + their branch's sites
     return branches.filter((b) => b.id === userBranchId || b.branch_id === userBranchId);
   }, [isSuperAdmin, branches, userBranchId]);
 
@@ -262,3 +153,4 @@ export function useBranchScope() {
   return context;
 }
 
+export const useBranch = useBranchScope;
