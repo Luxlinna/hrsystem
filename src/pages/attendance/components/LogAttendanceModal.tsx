@@ -28,18 +28,15 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
   saving,
   onSubmit,
 }: LogAttendanceModalProps) {
-  if (!isOpen) return null;
-
-  // Auto-set work_location_id to the selected employee's default work location
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (!newRecord.employee_id) return;
     const emp = employees.find((e) => e.id === newRecord.employee_id);
     if (emp?.default_work_location_id && !newRecord.work_location_id) {
       setNewRecord((p) => ({ ...p, work_location_id: emp.default_work_location_id! }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newRecord.employee_id]);
+  }, [newRecord.employee_id, employees, newRecord.work_location_id, setNewRecord]);
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -91,7 +88,7 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
           <div className="grid grid-cols-2 gap-3.5">
             <div>
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Date (Past or Present) <span className="text-rose-500">*</span>
+                Date <span className="text-rose-500">*</span>
               </label>
               <input
                 type="date"
@@ -103,18 +100,14 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
             </div>
 
             <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Status
-              </label>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Status</label>
               <select
                 value={newRecord.status}
                 onChange={(e) => setNewRecord({ ...newRecord, status: e.target.value })}
                 className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
               >
                 {Object.entries(STATUS_CONFIG).filter(([k]) => k !== "present").map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v.label}
-                  </option>
+                  <option key={k} value={k}>{v.label}</option>
                 ))}
               </select>
             </div>
@@ -124,8 +117,7 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
           {workLocations.length > 0 && (
             <div>
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                <i className="ri-building-2-line mr-1" />
-                Work Site
+                <i className="ri-building-2-line mr-1" /> Work Site
               </label>
               <select
                 value={newRecord.work_location_id}
@@ -134,23 +126,16 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
               >
                 <option value="">— Select work site —</option>
                 {workLocations.map((wl) => (
-                  <option key={wl.id} value={wl.id}>
-                    {wl.name}{wl.is_default ? " (Default)" : ""}
-                  </option>
+                  <option key={wl.id} value={wl.id}>{wl.name}{wl.is_default ? " (Default)" : ""}</option>
                 ))}
               </select>
-              <p className="text-[10px] text-gray-400 mt-1">
-                Which site did this employee work at? Defaults to their assigned site.
-              </p>
             </div>
           )}
 
           {newRecord.status !== "absent" && newRecord.status !== "holiday" && (
             <div className="grid grid-cols-2 gap-3.5">
               <div>
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                  Check In Time
-                </label>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Check In</label>
                 <input
                   type="time"
                   value={newRecord.clock_in}
@@ -158,10 +143,9 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
                   className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
+
               <div>
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                  Check Out Time
-                </label>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Check Out</label>
                 <input
                   type="time"
                   value={newRecord.clock_out}
@@ -172,48 +156,32 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
             </div>
           )}
 
-          {newRecord.status === "late" && (
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Minutes Late
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={newRecord.late_minutes}
-                onChange={(e) => setNewRecord({ ...newRecord, late_minutes: parseInt(e.target.value) || 0 })}
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-          )}
-
           <div>
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Notes / Reason
-            </label>
-            <textarea
-              rows={2}
+            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Notes / Reason</label>
+            <input
+              type="text"
               value={newRecord.notes}
               onChange={(e) => setNewRecord({ ...newRecord, notes: e.target.value })}
-              placeholder="Optional supervisor notes, reason for late/remote..."
+              placeholder="e.g. Worked from home, Approved medical leave..."
               className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
             />
           </div>
 
-          <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+          <div className="pt-2 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              disabled={saving}
+              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving || !newRecord.employee_id || !newRecord.date}
-              className="px-5 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              className="px-5 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Save Record"}
+              {saving ? "Saving..." : "Record Entry"}
             </button>
           </div>
         </form>

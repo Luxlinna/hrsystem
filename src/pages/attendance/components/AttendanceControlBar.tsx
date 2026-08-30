@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { DatePreset, ViewMode, WorkLocation } from "../types";
 import { STATUS_CONFIG } from "../constants";
+import { AttendanceDateRangePicker } from "./AttendanceDateRangePicker";
 
 interface AttendanceControlBarProps {
   canManage: boolean;
@@ -84,9 +85,8 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
         </div>
       </div>
 
-      {/* Filters: Search, Historical Date Range Selector & Department Dropdown */}
+      {/* Filters: Search, Date Range, Department, Location, Status */}
       <div className="flex items-center gap-2.5 flex-wrap">
-        {/* Live Search */}
         <div className="relative w-full sm:w-48">
           <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
           <input
@@ -98,6 +98,7 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery("")}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
             >
@@ -106,73 +107,30 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
           )}
         </div>
 
-        {/* Historical Date Preset Dropdown */}
-        <select
-          value={filterDatePreset}
-          onChange={(e) => setFilterDatePreset(e.target.value as DatePreset)}
-          className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer font-bold"
-        >
-          <option value="all">📅 All Historical Dates</option>
-          <option value="today">Today</option>
-          <option value="yesterday">Yesterday</option>
-          <option value="this_week">This Week</option>
-          <option value="last_week">Last Week</option>
-          <option value="this_month">This Month</option>
-          <option value="last_month">Last Month</option>
-          <option value="this_year">This Year</option>
-          <option value="last_year">Last Year</option>
-          <option value="single_date">Specific Date...</option>
-          <option value="custom_range">Custom Date Range...</option>
-        </select>
+        <AttendanceDateRangePicker
+          filterDatePreset={filterDatePreset}
+          setFilterDatePreset={setFilterDatePreset}
+          singleDate={singleDate}
+          setSingleDate={setSingleDate}
+          fromDate={fromDate}
+          setFromDate={setFromDate}
+          toDate={toDate}
+          setToDate={setToDate}
+        />
 
-        {/* Single Historical Date Picker */}
-        {filterDatePreset === "single_date" && (
-          <input
-            type="date"
-            value={singleDate}
-            onChange={(e) => setSingleDate(e.target.value)}
-            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer font-medium"
-          />
-        )}
-
-        {/* Custom Date Range Pickers */}
-        {filterDatePreset === "custom_range" && (
-          <div className="flex items-center gap-1.5 bg-gray-50 p-1 rounded-xl border border-gray-200">
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              placeholder="From"
-              className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none focus:border-[#253C7D]"
-            />
-            <span className="text-[10px] text-gray-400 font-bold">to</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              placeholder="To"
-              className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
-        )}
-
-        {/* Department Filter */}
-        {departments.length > 0 && canManage && (
+        {canManage && departments.length > 0 && (
           <select
             value={filterDepartment}
             onChange={(e) => setFilterDepartment(e.target.value)}
-            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer max-w-[125px] truncate font-medium"
+            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer font-bold"
           >
-            <option value="all">All Depts</option>
+            <option value="all">All Departments</option>
             {departments.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
+              <option key={d} value={d}>{d}</option>
             ))}
           </select>
         )}
 
-        {/* Status Filter */}
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
@@ -180,60 +138,45 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
         >
           <option value="all">All Statuses</option>
           {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v.label}
-            </option>
+            <option key={k} value={k}>{v.label}</option>
           ))}
         </select>
 
-        {/* Work Site Filter */}
-        {workLocations.length > 0 && (
-          <select
-            value={filterWorkLocation}
-            onChange={(e) => setFilterWorkLocation(e.target.value)}
-            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer max-w-[130px] truncate font-medium"
+        {isFiltered && (
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="px-2.5 py-1.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-gray-700 text-xs font-bold transition-colors cursor-pointer"
+            title="Reset Filters"
           >
-            <option value="all">🏢 All Sites</option>
-            {workLocations.map((wl) => (
-              <option key={wl.id} value={wl.id}>
-                {wl.name}
-              </option>
-            ))}
-          </select>
+            <i className="ri-refresh-line mr-1" />
+            Reset
+          </button>
         )}
 
-        {/* View Mode Toggle */}
-        <div className="flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200/60">
+        {/* View Mode Switcher */}
+        <div className="flex items-center bg-gray-100 p-0.5 rounded-xl border border-gray-200">
           <button
+            type="button"
             onClick={() => setViewMode("table")}
-            title="Table View"
-            className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
-              viewMode === "table" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
+            className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "table" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-400 hover:text-gray-600"
             }`}
+            title="Table View"
           >
             <i className="ri-table-line" />
           </button>
           <button
+            type="button"
             onClick={() => setViewMode("cards")}
-            title="Cards View"
-            className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
-              viewMode === "cards" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
+            className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "cards" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-400 hover:text-gray-600"
             }`}
+            title="Cards View"
           >
-            <i className="ri-layout-grid-fill" />
+            <i className="ri-grid-fill" />
           </button>
         </div>
-
-        {/* Reset Filters */}
-        {isFiltered && (
-          <button
-            onClick={handleResetFilters}
-            title="Reset Filters"
-            className="px-2 py-1.5 text-xs text-gray-400 hover:text-rose-600 transition-colors cursor-pointer"
-          >
-            <i className="ri-refresh-line text-sm" />
-          </button>
-        )}
       </div>
     </div>
   );
