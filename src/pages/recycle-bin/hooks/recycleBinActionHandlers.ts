@@ -34,6 +34,13 @@ export async function restoreSingleItem(item: BinItem): Promise<any> {
         .eq("id", item.id);
       error = dbErr;
     }
+  } else if (item.table === "employees") {
+    const { data: emp } = await supabase.from("employees").select("email").eq("id", item.id).maybeSingle();
+    const { error: dbErr } = await supabase.from("employees").update({ deleted_at: null, deleted_by: null }).eq("id", item.id);
+    if (emp?.email) {
+      await supabase.from("user_role_assignments").update({ deleted_at: null, deleted_by: null }).eq("email", emp.email.toLowerCase());
+    }
+    error = dbErr;
   } else if (item.table === "onboarding_requests") {
     const [{ error: dbErr }] = await Promise.all([
       supabase
@@ -124,6 +131,13 @@ export async function deleteForeverSingleItem(item: BinItem): Promise<any> {
         .eq("id", item.id);
       error = dbErr;
     }
+  } else if (item.table === "employees") {
+    const { data: emp } = await supabase.from("employees").select("email").eq("id", item.id).maybeSingle();
+    if (emp?.email) {
+      await supabase.from("user_role_assignments").delete().eq("email", emp.email.toLowerCase());
+    }
+    const { error: dbErr } = await supabase.from("employees").delete().eq("id", item.id);
+    error = dbErr;
   } else if (item.table === "onboarding_requests") {
     const [{ error: dbErr }] = await Promise.all([
       supabase

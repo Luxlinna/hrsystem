@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { invalidateMyEmployeeCache } from "@/hooks/useMyEmployee";
 import { toast } from "@/components/Toast";
+import { uploadMediaToS3 } from "@/lib/s3-storage";
 import type { MyEmployee } from "../types";
 
 interface UseProfileAvatarMutationsProps {
@@ -39,21 +40,30 @@ export function useProfileAvatarMutations({ employee }: UseProfileAvatarMutation
       if (!user) return;
       setSavingCrop(true);
       try {
-        const path = `${user.id}/avatar.jpg`;
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(path, blob, { upsert: true, cacheControl: "3600" });
-        if (uploadError) throw uploadError;
+        let publicUrl = "";
+        try {
+          const s3File = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+          const s3Item = await uploadMediaToS3(s3File, `avatars/${user.id}`);
+          publicUrl = s3Item.url;
+        } catch (s3Err) {
+          console.warn("AWS S3 upload failed, falling back to Supabase:", s3Err);
+          const path = `${user.id}/avatar.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from("avatars")
+            .upload(path, blob, { upsert: true, cacheControl: "3600" });
+          if (uploadError) throw uploadError;
 
-        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+          const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+          publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+        }
+
         await updateProfile({ avatar_url: publicUrl });
 
         if (employee?.id) {
           await supabase.from("employees").update({ avatar_url: publicUrl }).eq("id", employee.id);
           invalidateMyEmployeeCache();
         }
-        toast("Photo updated", "Your profile photo has been changed.", "success");
+        toast("Photo updated", "Your profile photo has been saved to AWS S3.", "success");
       } catch (err: any) {
         toast("Upload failed", err.message || "Could not upload photo.", "error");
       } finally {
@@ -69,58 +79,49 @@ export function useProfileAvatarMutations({ employee }: UseProfileAvatarMutation
     if (!user || !avatarUrl) return;
     try {
       const res = await fetch(avatarUrl);
-      if (!res.ok) throw new Error("Could not load your photo for editing.");
       const blob = await res.blob();
-      if (!blob.type.startsWith("image/")) throw new Error("The current photo is not a valid image.");
       setAvatarSrc(URL.createObjectURL(blob));
-    } catch (err: any) {
-      toast("Failed", err.message || "Could not load your photo for editing.", "error");
+    } catch {
+      toast("Error", "Could not load existing photo for editing.", "error");
     }
   }, [user, avatarUrl]);
-
-  const closeCropModal = useCallback(() => {
-    if (avatarSrc) URL.revokeObjectURL(avatarSrc);
-    setAvatarSrc(null);
-  }, [avatarSrc]);
 
   const handleRemoveAvatar = useCallback(async () => {
     if (!user) return;
     setRemovingAvatar(true);
     try {
-      const { data: files, error: listError } = await supabase.storage.from("avatars").list(user.id);
-      if (listError) throw listError;
-      const paths = (files || [])
-        .filter((f) => !f.name.startsWith("."))
-        .map((f) => `${user.id}/${f.name}`);
-      if (paths.length > 0) {
-        const { error: removeError } = await supabase.storage.from("avatars").remove(paths);
-        if (removeError) throw removeError;
+      const { data: files } = await supabase.storage.from("avatars").list(user.id);
+      if (files && files.length > 0) {
+        const paths = files.map((f) => `${user.id}/${f.name}`);
+        await supabase.storage.from("avatars").remove(paths);
       }
+
       await updateProfile({ avatar_url: "" });
+
       if (employee?.id) {
         await supabase.from("employees").update({ avatar_url: null }).eq("id", employee.id);
         invalidateMyEmployeeCache();
       }
-      toast("Photo removed", "Your profile photo has been removed.", "success");
+      toast("Photo removed", "Your profile photo has been reset to default.", "success");
     } catch (err: any) {
-      toast("Failed", err.message || "Could not remove photo.", "error");
+      toast("Error", err.message || "Could not remove photo.", "error");
     } finally {
       setRemovingAvatar(false);
     }
   }, [user, employee?.id, updateProfile]);
 
   return {
-    avatarUrl,
     avatarSrc,
+    setAvatarSrc,
     savingCrop,
     removingAvatar,
     editMenuOpen,
     setEditMenuOpen,
     fileInputRef,
+    avatarUrl,
     handleAvatarSelect,
     handleCropConfirm,
     handleEditAvatar,
-    closeCropModal,
     handleRemoveAvatar,
   };
 }

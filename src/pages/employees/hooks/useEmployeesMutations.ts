@@ -3,8 +3,9 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
-import type { Employee, EmployeeFormState, AppRole } from "../types";
+import { sendUserInvite } from "@/pages/admin/api";
 import { INITIAL_EMPLOYEE_FORM } from "../constants";
+import type { Employee, EmployeeFormState, AppRole } from "../types";
 
 interface UseEmployeesMutationsProps {
   actorName: string;
@@ -29,69 +30,65 @@ export function useEmployeesMutations({
 
   const inviteUser = useCallback(
     async (email: string, firstName: string, lastName: string, empRole: string) => {
+      if (!email) {
+        toast("Missing email", "Cannot invite employee without an email address.", "error");
+        return false;
+      }
       setInvitingId(email);
       try {
-        const { data: inviteData, error: inviteErr } = await supabase.rpc("invite_user_by_email", {
-          p_email: email,
-          p_display_name: `${firstName} ${lastName}`,
+        const staffRole = roles.find((r) => r.name.toLowerCase() === "staff") || roles[0];
+        const roleId = staffRole?.id ? String(staffRole.id) : null;
+        const displayName = `${firstName} ${lastName}`.trim();
+
+        const { res, result } = await sendUserInvite({
+          email,
+          display_name: displayName,
+          role_id: roleId,
         });
 
-        if (inviteErr) throw inviteErr;
-
-        if (inviteData && !inviteData.success) {
-          toast("Notice", inviteData.message || "Invite could not be sent.", "info");
+        if (!res.ok || result.error) {
+          const detailMsg = [result.error, result.detail].filter(Boolean).join(" — ");
+          toast("Invitation Failed", detailMsg || "Could not send invite.", "error");
           return false;
         }
 
-        const matchedRole = roles.find((r) => r.name.toLowerCase() === (empRole || "").toLowerCase());
-        if (matchedRole) {
-          await supabase.from("user_role_assignments").upsert(
-            {
-              email: email.toLowerCase().trim(),
-              role_id: matchedRole.id,
-              created_by: actorName,
-            },
-            { onConflict: "email" }
-          );
-        }
-
-        toast("Invite Sent", `An invite email has been sent to ${email}`, "success");
+        toast("Invite Sent", `Sent invitation to ${email}`, "success");
         await logActivity({
           module: "employees",
           action: "invited",
           entityType: "employee",
           actorName,
           actorRole: roleName,
-          description: `Sent system invitation to ${email}`,
+          description: `Invited user ${email} as ${empRole || "Staff"}`,
         });
+        loadEmployees();
         return true;
       } catch (err: any) {
-        toast("Error", err.message || "Failed to send invitation.", "error");
+        toast("Error", err.message || "Failed to invite user.", "error");
         return false;
       } finally {
         setInvitingId(null);
       }
     },
-    [roles, actorName, roleName]
+    [roles, actorName, roleName, loadEmployees]
   );
 
   const handleAddEmployee = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!form.first_name.trim() || !form.last_name.trim() || !form.email.trim()) {
-        toast("Error", "Please fill in all required fields.", "error");
+      if (!form.first_name || !form.last_name || !form.email) {
+        toast("Required fields", "Please fill in first name, last name, and email.", "error");
         return;
       }
-
       setSubmitting(true);
       try {
-        const payload: any = {
-          first_name: form.first_name.trim(),
-          last_name: form.last_name.trim(),
+        const payload = {
+          first_name: form.first_name,
+          last_name: form.last_name,
           email: form.email.trim().toLowerCase(),
-          phone: form.phone.trim() || null,
-          role: form.role.trim() || "Staff",
-          department: form.department || "Engineering",
+          phone: form.phone || null,
+          role: form.role || "Staff",
+          department: form.department,
           status: form.status,
           branch_id: form.branch_id || targetBranch || null,
           default_work_location_id: form.default_work_location_id || null,
@@ -122,10 +119,6 @@ export function useEmployeesMutations({
           branchId: form.branch_id || targetBranch || null,
         });
 
-        if (form.send_invite) {
-          await inviteUser(form.email, form.first_name, form.last_name, form.role);
-        }
-
         setShowAddModal(false);
         setForm(INITIAL_EMPLOYEE_FORM);
         loadEmployees();
@@ -135,7 +128,7 @@ export function useEmployeesMutations({
         setSubmitting(false);
       }
     },
-    [form, targetBranch, actorName, roleName, inviteUser, loadEmployees]
+    [form, targetBranch, actorName, roleName, loadEmployees]
   );
 
   const deleteEmployee = useCallback(
@@ -143,14 +136,28 @@ export function useEmployeesMutations({
       if (!confirm(`Are you sure you want to delete ${emp.first_name} ${emp.last_name}?`)) return;
       setDeletingId(emp.id);
       try {
+        const now = new Date().toISOString();
         const { error } = await supabase
           .from("employees")
-          .update({ deleted_at: new Date().toISOString() })
+          .update({ deleted_at: now, deleted_by: actorName || "Admin" })
           .eq("id", emp.id);
 
         if (error) throw error;
 
-        toast("Deleted", `${emp.first_name} ${emp.last_name} moved to trash.`, "success");
+        if (emp.email) {
+          const normEmail = emp.email.trim().toLowerCase();
+          await supabase
+            .from("user_role_assignments")
+            .update({
+              deleted_at: now,
+              deleted_by: actorName || "Admin",
+              role_id: null,
+              updated_at: now,
+            })
+            .eq("email", normEmail);
+        }
+
+        toast("Deleted", `${emp.first_name} ${emp.last_name} removed and deleted from user management.`, "success");
         await logActivity({
           module: "employees",
           action: "deleted",

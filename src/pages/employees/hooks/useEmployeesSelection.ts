@@ -55,9 +55,12 @@ export function useEmployeesSelection({
 
   const bulkDelete = useCallback(async () => {
     if (!confirm(`Are you sure you want to delete ${selectedIds.size} employees?`)) return;
+    const toDelete = pagedEmployees.filter((e) => selectedIds.has(e.id));
+    const now = new Date().toISOString();
+
     const { error } = await supabase
       .from("employees")
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: now, deleted_by: actorName || "Admin" })
       .in("id", Array.from(selectedIds));
 
     if (error) {
@@ -65,7 +68,20 @@ export function useEmployeesSelection({
       return;
     }
 
-    toast("Deleted", `${selectedIds.size} employees moved to trash.`, "success");
+    const emails = toDelete.map((e) => e.email?.trim().toLowerCase()).filter(Boolean);
+    if (emails.length > 0) {
+      await supabase
+        .from("user_role_assignments")
+        .update({
+          deleted_at: now,
+          deleted_by: actorName || "Admin",
+          role_id: null,
+          updated_at: now,
+        })
+        .in("email", emails);
+    }
+
+    toast("Deleted", `${selectedIds.size} employees and associated user accounts moved to trash.`, "success");
     await logActivity({
       module: "employees",
       action: "deleted",
@@ -78,7 +94,7 @@ export function useEmployeesSelection({
     setSelectedIds(new Set());
     setSelectAll(false);
     loadEmployees();
-  }, [selectedIds, actorName, roleName, loadEmployees]);
+  }, [selectedIds, pagedEmployees, actorName, roleName, loadEmployees]);
 
   return {
     selectedIds,

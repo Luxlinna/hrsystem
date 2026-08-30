@@ -41,11 +41,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
-    // Validate the caller's JWT with a direct GoTrue REST call instead of
-    // admin.auth.getUser(). getUser(token) has been observed to fall back to
-    // its (nonexistent) session store in edge isolates and throw
-    // "Auth session missing!" even when a token is passed — the floating
-    // esm.sh @2 URL resolves to different library builds per cold-start.
+    // Validate caller JWT
     const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: { Authorization: `Bearer ${token}`, apikey: serviceRoleKey },
     });
@@ -98,11 +94,10 @@ Deno.serve(async (req) => {
       page += 1;
     }
 
-    // Fetch existing assignment emails to avoid upsert conflict issues
+    // Fetch all existing assignments (including deleted_at) so deleted users are NOT auto-resurrected
     const { data: existingList } = await admin
       .from("user_role_assignments")
-      .select("email, user_id")
-      .is("deleted_at", null);
+      .select("email, user_id, deleted_at");
 
     const existingEmails = new Set((existingList || []).map((x) => x.email?.toLowerCase()).filter(Boolean));
     const existingUserIds = new Set((existingList || []).map((x) => x.user_id).filter(Boolean));

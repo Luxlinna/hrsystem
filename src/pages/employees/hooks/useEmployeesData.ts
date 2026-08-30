@@ -84,22 +84,29 @@ export function useEmployeesData({
   }, [loadEmployees, isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
-    const emails = employees.map((e) => e.email).filter(Boolean);
+    const emails = employees.map((e) => e.email?.trim().toLowerCase()).filter(Boolean);
     if (emails.length === 0) {
       setAccountStatus({});
       return;
     }
-    supabase.rpc("get_user_account_status", { emails }).then(({ data }) => {
-      if (data) {
+    supabase
+      .from("user_role_assignments")
+      .select("email, user_id, role_id")
+      .in("email", emails)
+      .is("deleted_at", null)
+      .not("role_id", "is", null)
+      .then(({ data }) => {
         const statusMap: Record<string, AccountStatus> = {};
-        data.forEach((row: any) => {
+        (data || []).forEach((row: any) => {
           if (row.email) {
-            statusMap[row.email] = { invited: Boolean(row.invited), hasAccount: Boolean(row.has_account) };
+            statusMap[row.email.toLowerCase()] = {
+              invited: true,
+              hasAccount: Boolean(row.user_id),
+            };
           }
         });
         setAccountStatus(statusMap);
-      }
-    });
+      });
   }, [employees]);
 
   return {
