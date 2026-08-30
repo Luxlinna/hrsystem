@@ -13,76 +13,23 @@ import { INITIAL_EMPLOYEE_FORM } from "./constants";
 
 export default function EmployeesPage() {
   const {
-    canManage,
-    isSuperAdmin,
-    isBranchAdmin,
-    isPartnerBranchBlocked,
-    effectiveBranchId,
-    userBranchId,
-    userBranchName,
-    targetBranch,
-    branches,
-    selectedBranchId,
-    visibleBranches,
-    search,
-    setSearch,
-    filterDept,
-    setFilterDept,
-    filterStatus,
-    setFilterStatus,
-    filterBranch,
-    setFilterBranch,
-    filterAccount,
-    setFilterAccount,
-    sortField,
-    sortDirection,
-    selectedIds,
-    selectAll,
-    pageSize,
-    setPageSize,
-    page,
-    setPage,
-    showAddModal,
-    setShowAddModal,
-    form,
-    setForm,
-    submitting,
-    accountStatus,
-    invitingId,
-    deletingId,
-    showFilters,
-    setShowFilters,
-    showColumnMenu,
-    setShowColumnMenu,
-    visibleColumns,
-    setVisibleColumns,
-    viewMode,
-    setViewMode,
-    depts,
-    branchCount,
-    managers,
-    stats,
-    filtered,
-    empTotalPages,
-    empPageStart,
-    empPageEnd,
-    pagedEmployees,
-    tableGridStyle,
-    handleSort,
-    handleSelectAll,
-    handleSelectOne,
-    bulkInvite,
-    bulkDelete,
-    handleExportCSV,
-    handleAddEmployee,
-    inviteUser,
-    deleteEmployee,
+    canManage, isSuperAdmin, isPartnerBranchBlocked, userBranchId, userBranchName,
+    targetBranch, branches, selectedBranchId, visibleBranches, search, setSearch,
+    filterDept, setFilterDept, filterStatus, setFilterStatus, filterBranch, setFilterBranch,
+    filterAccount, setFilterAccount, sortField, sortDirection, selectedIds, selectAll,
+    pageSize, setPageSize, page, setPage, showAddModal, setShowAddModal, form, setForm,
+    submitting, accountStatus, invitingId, deletingId, showFilters, setShowFilters,
+    showColumnMenu, setShowColumnMenu, visibleColumns, setVisibleColumns, viewMode,
+    setViewMode, depts, branchCount, managers, stats, filtered, empTotalPages,
+    empPageStart, empPageEnd, pagedEmployees, tableGridStyle, handleSort, handleSelectAll,
+    handleSelectOne, bulkInvite, bulkDelete, handleExportCSV, handleAddEmployee,
+    inviteUser, deleteEmployee,
   } = useEmployees();
 
   const handleOpenAddModal = useCallback(() => {
     const isSite = selectedBranchId && selectedBranchId.startsWith("site:");
-    const branchId = isSite 
-      ? (visibleBranches.find((b) => b.id === selectedBranchId)?.branch_id || "") 
+    const branchId = isSite
+      ? (visibleBranches.find((b) => b.id === selectedBranchId)?.branch_id || "")
       : (selectedBranchId || targetBranch || userBranchId || "");
     const siteId = isSite ? selectedBranchId.substring(5) : "";
 
@@ -93,6 +40,11 @@ export default function EmployeesPage() {
     });
     setShowAddModal(true);
   }, [selectedBranchId, targetBranch, userBranchId, visibleBranches, setForm, setShowAddModal]);
+
+  const handleInviteEmployee = useCallback(
+    (e: any) => inviteUser(e.email, e.first_name, e.last_name, e.role),
+    [inviteUser]
+  );
 
   if (isPartnerBranchBlocked) {
     return (
@@ -113,17 +65,14 @@ export default function EmployeesPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 sm:p-6 lg:p-8 font-sans">
-      {/* Header */}
       <EmployeesHeader
         branchCount={branchCount}
         canManage={canManage}
         onOpenAddModal={handleOpenAddModal}
       />
 
-      {/* Dashboard Statistics */}
       <EmployeesStatsRow stats={stats} branchCount={branchCount} />
 
-      {/* Search and Filters */}
       <EmployeesFilterBar
         search={search}
         setSearch={setSearch}
@@ -148,7 +97,6 @@ export default function EmployeesPage() {
         onExportCSV={handleExportCSV}
       />
 
-      {/* Selected Actions Bar */}
       <SelectedActionsBar
         selectedCount={selectedIds.size}
         canManage={canManage}
@@ -157,7 +105,6 @@ export default function EmployeesPage() {
         onClearSelection={handleSelectAll}
       />
 
-      {/* Employee List */}
       <div className="bg-white rounded-2xl border border-gray-200/80 shadow-2xs overflow-hidden">
         {viewMode === "table" ? (
           <EmployeesTableView
@@ -175,7 +122,7 @@ export default function EmployeesPage() {
             onSelectAll={handleSelectAll}
             onSelectOne={handleSelectOne}
             onSort={handleSort}
-            onInvite={inviteUser}
+            onInvite={handleInviteEmployee}
             onDelete={deleteEmployee}
           />
         ) : (
@@ -202,7 +149,6 @@ export default function EmployeesPage() {
         )}
       </div>
 
-      {/* Pagination */}
       <Pagination
         totalCount={filtered.length}
         pageSize={pageSize}
@@ -214,7 +160,6 @@ export default function EmployeesPage() {
         pageEnd={empPageEnd}
       />
 
-      {/* Add Employee Modal */}
       <AddEmployeeModal
         isOpen={showAddModal}
         form={form}

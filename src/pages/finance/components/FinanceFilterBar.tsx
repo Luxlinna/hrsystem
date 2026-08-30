@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { Branch, DatePreset, ViewMode } from "../types";
 import { CATEGORIES } from "../constants";
+import { FinanceDateRangeInputs } from "./FinanceDateRangeInputs";
 
 interface FinanceFilterBarProps {
   searchQuery: string;
@@ -43,14 +44,6 @@ export const FinanceFilterBar = memo(function FinanceFilterBar({
   branches,
   onResetPage,
 }: FinanceFilterBarProps) {
-  const isFiltered = Boolean(
-    searchQuery ||
-      categoryFilter !== "All Categories" ||
-      statusFilter !== "all" ||
-      branchFilter !== "all" ||
-      datePreset !== "all"
-  );
-
   return (
     <div className="bg-white rounded-2xl border border-gray-200/80 p-3.5 shadow-2xs mb-6 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
       {/* Search Input */}
@@ -68,6 +61,7 @@ export const FinanceFilterBar = memo(function FinanceFilterBar({
         />
         {searchQuery && (
           <button
+            type="button"
             onClick={() => {
               setSearchQuery("");
               onResetPage();
@@ -81,7 +75,6 @@ export const FinanceFilterBar = memo(function FinanceFilterBar({
 
       {/* Filter Dropdowns */}
       <div className="flex items-center gap-2 flex-wrap">
-        {/* Category Filter */}
         <select
           value={categoryFilter}
           onChange={(e) => {
@@ -97,7 +90,6 @@ export const FinanceFilterBar = memo(function FinanceFilterBar({
           ))}
         </select>
 
-        {/* Status Filter */}
         <select
           value={statusFilter}
           onChange={(e) => {
@@ -113,7 +105,6 @@ export const FinanceFilterBar = memo(function FinanceFilterBar({
           <option value="rejected">Rejected</option>
         </select>
 
-        {/* Branch Filter */}
         {branches.length > 0 && (
           <select
             value={branchFilter}
@@ -132,7 +123,6 @@ export const FinanceFilterBar = memo(function FinanceFilterBar({
           </select>
         )}
 
-        {/* Historical Date Preset Dropdown */}
         <select
           value={datePreset}
           onChange={(e) => {
@@ -141,45 +131,28 @@ export const FinanceFilterBar = memo(function FinanceFilterBar({
           }}
           className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer font-bold"
         >
-          <option value="all">📅 All Historical Dates</option>
+          <option value="all">📅 All Dates</option>
           <option value="this_month">This Month</option>
           <option value="last_month">Last Month</option>
           <option value="this_quarter">This Quarter</option>
           <option value="this_year">This Year</option>
           <option value="last_year">Last Year</option>
-          <option value="custom">Custom Date Range...</option>
+          <option value="custom">Custom Range...</option>
         </select>
 
-        {/* Custom Date Pickers */}
-        {datePreset === "custom" && (
-          <div className="flex items-center gap-1.5 bg-gray-50 p-1 rounded-xl border border-gray-200">
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => {
-                setFromDate(e.target.value);
-                onResetPage();
-              }}
-              placeholder="From"
-              className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none focus:border-[#253C7D]"
-            />
-            <span className="text-[10px] text-gray-400 font-bold">to</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => {
-                setToDate(e.target.value);
-                onResetPage();
-              }}
-              placeholder="To"
-              className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
-        )}
+        <FinanceDateRangeInputs
+          datePreset={datePreset}
+          fromDate={fromDate}
+          setFromDate={setFromDate}
+          toDate={toDate}
+          setToDate={setToDate}
+          onResetPage={onResetPage}
+        />
 
         {/* View Mode Toggle */}
-        <div className="flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200/60">
+        <div className="flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200/60 ml-1">
           <button
+            type="button"
             onClick={() => setViewMode("table")}
             title="Table View"
             className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
@@ -189,6 +162,7 @@ export const FinanceFilterBar = memo(function FinanceFilterBar({
             <i className="ri-table-line" />
           </button>
           <button
+            type="button"
             onClick={() => setViewMode("cards")}
             title="Cards View"
             className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
@@ -198,26 +172,6 @@ export const FinanceFilterBar = memo(function FinanceFilterBar({
             <i className="ri-layout-grid-fill" />
           </button>
         </div>
-
-        {/* Reset Filters */}
-        {isFiltered && (
-          <button
-            onClick={() => {
-              setSearchQuery("");
-              setCategoryFilter("All Categories");
-              setStatusFilter("all");
-              setBranchFilter("all");
-              setDatePreset("all");
-              setFromDate("");
-              setToDate("");
-              onResetPage();
-            }}
-            title="Reset Filters"
-            className="px-2 py-1.5 text-xs text-gray-400 hover:text-rose-600 transition-colors cursor-pointer"
-          >
-            <i className="ri-refresh-line text-sm" />
-          </button>
-        )}
       </div>
     </div>
   );
