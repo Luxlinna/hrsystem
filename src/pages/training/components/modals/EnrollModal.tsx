@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import type { Course, Employee } from "../../types";
-import { initials } from "../../trainingUtils";
+import { EnrollLearnerList } from "./EnrollLearnerList";
 
 interface EnrollModalProps {
   open: boolean;
@@ -77,7 +77,6 @@ export const EnrollModal = memo(function EnrollModal({
         </div>
 
         <div className="space-y-3 text-xs">
-          {/* Target Course Select */}
           <div>
             <label className="block font-bold text-gray-700 mb-1">
               Select Course <span className="text-rose-500">*</span>
@@ -95,7 +94,6 @@ export const EnrollModal = memo(function EnrollModal({
             </select>
           </div>
 
-          {/* Completion Target Date */}
           <div>
             <label className="block font-bold text-gray-700 mb-1">Target Completion Date</label>
             <input
@@ -106,7 +104,6 @@ export const EnrollModal = memo(function EnrollModal({
             />
           </div>
 
-          {/* Search Employees */}
           <div>
             <label className="block font-bold text-gray-700 mb-1">
               Select Learners ({enrollEmployeeIds.length} chosen)
@@ -121,90 +118,32 @@ export const EnrollModal = memo(function EnrollModal({
                 className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[#253C7D]"
               />
             </div>
-            <div className="flex items-center justify-between text-[11px] text-gray-500 mb-1">
-              <span>Matching: {filteredEmployees.length} staff</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={selectAll}
-                  className="text-[#253C7D] font-semibold hover:underline cursor-pointer"
-                >
-                  Select All
-                </button>
-                <span>&middot;</span>
-                <button
-                  type="button"
-                  onClick={clearAll}
-                  className="text-gray-400 hover:text-gray-600 cursor-pointer"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
+
+            <EnrollLearnerList
+              filteredEmployees={filteredEmployees}
+              enrollEmployeeIds={enrollEmployeeIds}
+              toggleEmployee={toggleEmployee}
+              selectAll={selectAll}
+              clearAll={clearAll}
+            />
           </div>
         </div>
 
-        {/* Employee Checkboxes */}
-        <div className="flex-1 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50 max-h-52 p-1 text-xs">
-          {filteredEmployees.map((emp) => {
-            const isSelected = enrollEmployeeIds.includes(emp.id);
-            const empName = `${emp.first_name} ${emp.last_name}`;
-
-            return (
-              <div
-                key={emp.id}
-                onClick={() => toggleEmployee(emp.id)}
-                className={`p-2 rounded-lg flex items-center justify-between gap-2 cursor-pointer transition-colors ${
-                  isSelected ? "bg-blue-50/50" : "hover:bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {emp.avatar_url ? (
-                    <img
-                      src={emp.avatar_url}
-                      alt={empName}
-                      className="w-6 h-6 rounded-full object-cover ring-1 ring-gray-200"
-                    />
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-[#253C7D] text-white text-[8px] font-bold flex items-center justify-center">
-                      {initials(emp.first_name, emp.last_name)}
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-semibold text-gray-800 leading-tight">{empName}</p>
-                    <p className="text-[10px] text-gray-400">{emp.department || "General"}</p>
-                  </div>
-                </div>
-
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => {}}
-                  className="w-4 h-4 rounded text-[#253C7D] focus:ring-[#253C7D] pointer-events-none"
-                />
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Modal Actions */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 text-xs">
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
           <button
             type="button"
             onClick={onClose}
-            disabled={saving}
-            className="px-4 py-2 rounded-xl font-semibold text-gray-600 hover:bg-gray-100 disabled:opacity-50 cursor-pointer"
+            className="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 font-semibold cursor-pointer text-xs"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onSave}
-            disabled={saving || enrollEmployeeIds.length === 0 || !enrollCourseId}
-            className="px-5 py-2 rounded-xl font-semibold text-white bg-[#253C7D] hover:bg-[#1F336A] disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5"
+            disabled={saving || !enrollCourseId || enrollEmployeeIds.length === 0}
+            className="px-5 py-2 bg-[#253C7D] text-white rounded-xl font-bold hover:bg-[#1E293B] disabled:opacity-50 transition-colors cursor-pointer text-xs"
           >
-            {saving && <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />}
-            Confirm Enrollment ({enrollEmployeeIds.length})
+            {saving ? "Enrolling…" : `Enroll ${enrollEmployeeIds.length} Staff`}
           </button>
         </div>
       </div>

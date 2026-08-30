@@ -11,65 +11,19 @@ import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShi
 
 export default function TrainingPage() {
   const {
-    isPartnerBranchBlocked,
-    userBranchName,
-    userBranchId,
-    canManage,
-    courses,
-    enrollments,
-    employees,
-    branches,
-    loading,
-    activeTab,
-    setActiveTab,
-    filterCategory,
-    setFilterCategory,
-    filterStatus,
-    setFilterStatus,
-    filterScope,
-    setFilterScope,
-    searchQuery,
-    setSearchQuery,
-    page,
-    setPage,
-    categories,
-    filteredCourses,
-    filteredEnrollments,
-    certificates,
-    enrollTotalPages,
-    enrollPageStart,
-    enrollPageEnd,
-    pagedEnrollments,
-    totalEnrolled,
-    totalCompleted,
-    totalCerts,
-    avgProgress,
-    saving,
-    selectedCourse,
-    setSelectedCourse,
-    showCourseModal,
-    setShowCourseModal,
-    showEnrollModal,
-    setShowEnrollModal,
-    editingCourseId,
-    newCourse,
-    setNewCourse,
-    enrollCourseId,
-    setEnrollCourseId,
-    enrollEmployeeIds,
-    setEnrollEmployeeIds,
-    enrollDueDate,
-    setEnrollDueDate,
-    openNewCourse,
-    openEditCourse,
-    openEnroll,
-    saveCourse,
-    deleteCourse,
-    saveEnrollment,
-    updateEnrollment,
-    deleteEnrollment,
-    isSuperAdmin,
-    effectiveBranchId,
+    isPartnerBranchBlocked, userBranchName, userBranchId, canManage, courses,
+    enrollments, employees, branches, loading, activeTab, setActiveTab,
+    filterCategory, setFilterCategory, filterStatus, setFilterStatus,
+    filterScope, setFilterScope, searchQuery, setSearchQuery, page, setPage,
+    categories, filteredCourses, filteredEnrollments, certificates,
+    enrollTotalPages, enrollPageStart, enrollPageEnd, pagedEnrollments,
+    totalEnrolled, totalCompleted, totalCerts, avgProgress, saving,
+    selectedCourse, setSelectedCourse, showCourseModal, setShowCourseModal,
+    showEnrollModal, setShowEnrollModal, editingCourseId, newCourse, setNewCourse,
+    enrollCourseId, setEnrollCourseId, enrollEmployeeIds, setEnrollEmployeeIds,
+    enrollDueDate, setEnrollDueDate, openNewCourse, openEditCourse, openEnroll,
+    saveCourse, deleteCourse, saveEnrollment, updateEnrollment, deleteEnrollment,
+    isSuperAdmin, effectiveBranchId,
   } = useTraining();
 
   const activeBranch = branches.find((b) => b.id === (effectiveBranchId || userBranchId));
@@ -100,7 +54,6 @@ export default function TrainingPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">
-      {/* Top Header with KPI Metrics and Tab Switcher */}
       <TrainingHeader
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -113,7 +66,6 @@ export default function TrainingPage() {
         onOpenEnroll={() => openEnroll()}
       />
 
-      {/* Filter and Search Bar */}
       {activeTab !== "certificates" && (
         <TrainingFilterBar
           activeTab={activeTab}
@@ -129,7 +81,6 @@ export default function TrainingPage() {
         />
       )}
 
-      {/* Tab Views */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
@@ -140,29 +91,38 @@ export default function TrainingPage() {
           courses={filteredCourses}
           enrollments={enrollments}
           canManage={canManage}
-          onSelect={setSelectedCourse}
+          onSelectCourse={setSelectedCourse}
+          onEnroll={(course) => openEnroll(course.id)}
           onEdit={openEditCourse}
           onDelete={deleteCourse}
-          onEnroll={openEnroll}
+          onNewCourse={openNewCourse}
         />
       ) : activeTab === "enrollments" ? (
         <EnrollmentsTableView
+          enrollments={filteredEnrollments}
           pagedEnrollments={pagedEnrollments}
-          totalFiltered={filteredEnrollments.length}
           page={page}
           totalPages={enrollTotalPages}
           pageStart={enrollPageStart}
           pageEnd={enrollPageEnd}
-          setPage={setPage}
           canManage={canManage}
-          onUpdate={updateEnrollment}
+          onPageChange={setPage}
+          onUpdateProgress={(id, progress) => {
+            const updates: any = { progress };
+            if (progress === 100) {
+              updates.status = "completed";
+              updates.completed_at = new Date().toISOString().slice(0, 10);
+            } else if (progress > 0) {
+              updates.status = "in_progress";
+            }
+            updateEnrollment(id, updates);
+          }}
           onDelete={deleteEnrollment}
         />
       ) : (
         <CertificatesGridView certificates={certificates} />
       )}
 
-      {/* Course Modal */}
       <CourseModal
         open={showCourseModal}
         editingId={editingCourseId}
@@ -176,7 +136,6 @@ export default function TrainingPage() {
         onClose={() => setShowCourseModal(false)}
       />
 
-      {/* Enroll Modal */}
       <EnrollModal
         open={showEnrollModal}
         courses={courses}
@@ -192,7 +151,6 @@ export default function TrainingPage() {
         onClose={() => setShowEnrollModal(false)}
       />
 
-      {/* Course Detail Drawer */}
       <CourseDetailDrawer
         course={selectedCourse}
         enrollments={enrollments}
@@ -200,7 +158,7 @@ export default function TrainingPage() {
         onClose={() => setSelectedCourse(null)}
         onEdit={openEditCourse}
         onDelete={deleteCourse}
-        onEnroll={openEnroll}
+        onEnroll={(course) => openEnroll(course.id)}
       />
     </div>
   );
