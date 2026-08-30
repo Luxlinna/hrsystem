@@ -116,9 +116,10 @@ export function useEmployeesMutations({
         await notify({
           title: "New Team Member",
           message: `${form.first_name} ${form.last_name} joined the ${form.department} team.`,
-          type: "employee",
-          targetRole: "admin",
-          link: `/employees?id=${newEmp.id}`,
+          type: "success",
+          source: "employees",
+          entityId: newEmp.id,
+          branchId: form.branch_id || targetBranch || null,
         });
 
         if (form.send_invite) {

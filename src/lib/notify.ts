@@ -25,13 +25,15 @@ export type NotificationSource =
 export interface NotifyInput {
   title: string;
   message: string;
-  type?: NotificationType;
-  source: NotificationSource;
+  type?: NotificationType | string;
+  source?: NotificationSource | string;
   entityId?: string | null;
   recipientUserId?: string | null;
   branchId?: string | null;
   branch_id?: string | null;
 }
+
+const VALID_TYPES: string[] = ["info", "warning", "success", "error"];
 
 // Notifications:
 // Scoped to specific partner branch or company-wide (branch_id: null for Super Admin broadcast).
@@ -61,11 +63,14 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
       }
     }
 
+    const resolvedType = entry.type && VALID_TYPES.includes(entry.type) ? entry.type : "info";
+    const resolvedSource = entry.source || "employees";
+
     const payload = {
       title: entry.title,
       message: entry.message,
-      type: entry.type ?? "info",
-      source: entry.source,
+      type: resolvedType,
+      source: resolvedSource,
       entity_id: entry.entityId ?? null,
       recipient_user_id: entry.recipientUserId ?? null,
       branch_id: branchId ?? null,
@@ -78,12 +83,13 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
       return true;
     }
 
-    console.warn("Primary notification insert failed with source:", entry.source, error.message);
+    console.warn("Primary notification insert failed with source:", resolvedSource, error.message);
 
     // If check constraint failed or source rejected, fallback to "system" (always allowed)
     const fallbackRes = await supabase.from("notifications").insert({
       ...payload,
       source: "system",
+      type: "info",
     });
 
     if (fallbackRes.error) {

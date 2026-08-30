@@ -27,25 +27,39 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
   onClose,
   onSubmit,
 }: AddEmployeeModalProps) {
-  const { visibleBranches } = useBranchScope();
+  const { visibleBranches, targetBranch, userBranchId } = useBranchScope();
   const [workSites, setWorkSites] = useState<WorkLocation[]>([]);
 
+  const rawBranchId = form.branch_id || targetBranch || userBranchId || "";
+  const resolvedBranchId = rawBranchId.startsWith("site:")
+    ? (visibleBranches.find((b) => b.id === rawBranchId)?.branch_id || targetBranch || userBranchId || "")
+    : rawBranchId;
+
   useEffect(() => {
-    if (!form.branch_id || !isOpen) {
+    if (isOpen && !isSuperAdmin) {
+      const defaultBranch = targetBranch || userBranchId || "";
+      if (defaultBranch && form.branch_id !== defaultBranch) {
+        setForm((prev) => ({ ...prev, branch_id: defaultBranch }));
+      }
+    }
+  }, [isOpen, isSuperAdmin, targetBranch, userBranchId, form.branch_id, setForm]);
+
+  useEffect(() => {
+    if (!resolvedBranchId || !isOpen) {
       setWorkSites([]);
       return;
     }
     supabase
       .from("work_locations")
       .select("id, name, is_default")
-      .eq("branch_id", form.branch_id)
+      .eq("branch_id", resolvedBranchId)
       .is("deleted_at", null)
       .order("is_default", { ascending: false })
       .order("name")
       .then(({ data }) => {
         setWorkSites((data as WorkLocation[]) || []);
       });
-  }, [form.branch_id, isOpen]);
+  }, [resolvedBranchId, isOpen]);
 
   if (!isOpen) return null;
 

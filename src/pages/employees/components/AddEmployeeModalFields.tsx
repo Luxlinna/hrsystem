@@ -27,6 +27,12 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
   workSites,
   isSuperAdmin,
 }: AddEmployeeModalFieldsProps) {
+  const branchList = visibleBranches.length > 0 ? visibleBranches : branches;
+  const currentBranchName =
+    branchList.find((b) => b.id === form.branch_id)?.name ||
+    branches.find((b) => b.id === form.branch_id)?.name ||
+    "OPS sulotion";
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -108,55 +114,52 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">Branch</label>
-          <select
-            value={form.branch_id}
-            onChange={(e) => setForm({ ...form, branch_id: e.target.value, default_work_location_id: "" })}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white cursor-pointer"
-          >
-            <option value="">Select Branch</option>
-            {(visibleBranches.length > 0 ? visibleBranches : branches).map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+          {isSuperAdmin ? (
+            <select
+              value={form.branch_id}
+              onChange={(e) => setForm({ ...form, branch_id: e.target.value, default_work_location_id: "" })}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white cursor-pointer"
+            >
+              <option value="">Select Branch</option>
+              {branchList.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div>
+              <div className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200/80 rounded-xl text-xs font-bold text-gray-600 cursor-not-allowed select-none">
+                {currentBranchName}
+              </div>
+              <p className="text-[11px] text-[#253C7D] font-bold mt-1.5 flex items-center gap-1.5">
+                <i className="ri-lock-line text-xs" />
+                <span>Auto-assigned to your branch</span>
+              </p>
+            </div>
+          )}
         </div>
         <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">Work Site / Location</label>
-          <select
-            value={form.default_work_location_id}
-            onChange={(e) => setForm({ ...form, default_work_location_id: e.target.value })}
-            disabled={!form.branch_id || workSites.length === 0}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white cursor-pointer disabled:bg-gray-100"
-          >
-            <option value="">
-              {!form.branch_id ? "Select a branch first" : workSites.length === 0 ? "No work sites configured" : "All Branch Sites (Flexible)"}
-            </option>
-            {workSites.map((site) => (
-              <option key={site.id} value={site.id}>
-                {site.name} {site.is_default ? "(Default)" : ""}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">Reports To (Manager)</label>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Reports To</label>
           <select
             value={form.reports_to}
             onChange={(e) => setForm({ ...form, reports_to: e.target.value })}
             className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white cursor-pointer"
           >
-            <option value="">None</option>
+            <option value="">No manager</option>
             {managers.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.first_name} {m.last_name} ({m.role})
               </option>
             ))}
           </select>
+          {managers.length === 0 && (
+            <p className="text-[11px] text-gray-400 mt-1">No managers are available in the directory.</p>
+          )}
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">Status</label>
           <select
@@ -171,7 +174,36 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
             ))}
           </select>
         </div>
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Join Date</label>
+          <input
+            type="date"
+            value={form.join_date}
+            onChange={(e) => setForm({ ...form, join_date: e.target.value })}
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white cursor-pointer"
+          />
+        </div>
       </div>
+
+      {workSites.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Work Site / Location</label>
+            <select
+              value={form.default_work_location_id}
+              onChange={(e) => setForm({ ...form, default_work_location_id: e.target.value })}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white cursor-pointer"
+            >
+              <option value="">{currentBranchName} (Main Branch)</option>
+              {workSites.map((site) => (
+                <option key={site.id} value={site.id}>
+                  {site.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
     </>
   );
 });
