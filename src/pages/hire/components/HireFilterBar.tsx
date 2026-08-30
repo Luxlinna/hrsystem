@@ -33,22 +33,14 @@ export const HireFilterBar = memo(function HireFilterBar({
   setSearchQuery,
   filterJobStatus,
   setFilterJobStatus,
-  filterDepartment,
-  setFilterDepartment,
-  filterBranch,
-  setFilterBranch,
   filterCandidateStage,
   setFilterCandidateStage,
   filterCandidateJob,
   setFilterCandidateJob,
-  filterInterviewStatus,
-  setFilterInterviewStatus,
   jobViewMode,
   setJobViewMode,
   candidateViewMode,
   setCandidateViewMode,
-  departments,
-  branches,
   jobs,
 }: HireFilterBarProps) {
   return (
@@ -73,6 +65,7 @@ export const HireFilterBar = memo(function HireFilterBar({
         />
         {searchQuery && (
           <button
+            type="button"
             onClick={() => setSearchQuery("")}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
           >
@@ -97,6 +90,7 @@ export const HireFilterBar = memo(function HireFilterBar({
 
             <div className="flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200/60">
               <button
+                type="button"
                 onClick={() => setJobViewMode("grid")}
                 className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   jobViewMode === "grid" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
@@ -105,6 +99,7 @@ export const HireFilterBar = memo(function HireFilterBar({
                 <i className="ri-layout-grid-fill" />
               </button>
               <button
+                type="button"
                 onClick={() => setJobViewMode("list")}
                 className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   jobViewMode === "list" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
@@ -146,6 +141,7 @@ export const HireFilterBar = memo(function HireFilterBar({
 
             <div className="flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200/60">
               <button
+                type="button"
                 onClick={() => setCandidateViewMode("cards")}
                 className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   candidateViewMode === "cards" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
@@ -154,59 +150,16 @@ export const HireFilterBar = memo(function HireFilterBar({
                 <i className="ri-layout-grid-fill" />
               </button>
               <button
+                type="button"
                 onClick={() => setCandidateViewMode("list")}
                 className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   candidateViewMode === "list" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
                 }`}
               >
-                <i className="ri-table-line" />
+                <i className="ri-list-check" />
               </button>
             </div>
           </>
-        )}
-
-        {activeTab === "interviews" && (
-          <select
-            value={filterInterviewStatus}
-            onChange={(e) => setFilterInterviewStatus(e.target.value)}
-            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 font-bold focus:outline-none focus:border-[#253C7D] cursor-pointer"
-          >
-            <option value="all">All Interviews</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        )}
-
-        {/* Global Department & Branch Dropdowns */}
-        {departments.length > 0 && (
-          <select
-            value={filterDepartment}
-            onChange={(e) => setFilterDepartment(e.target.value)}
-            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 font-medium focus:outline-none focus:border-[#253C7D] cursor-pointer max-w-[130px] truncate"
-          >
-            <option value="all">All Departments</option>
-            {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </select>
-        )}
-
-        {branches.length > 0 && (
-          <select
-            value={filterBranch}
-            onChange={(e) => setFilterBranch(e.target.value)}
-            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 font-medium focus:outline-none focus:border-[#253C7D] cursor-pointer max-w-[130px] truncate"
-          >
-            <option value="all">All Branches</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.is_site ? `↳ ${b.name} (Site)` : b.name}
-              </option>
-            ))}
-          </select>
         )}
       </div>
     </div>

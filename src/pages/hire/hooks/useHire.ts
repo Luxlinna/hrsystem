@@ -1,368 +1,117 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
-import { supabase } from "@/lib/supabase";
-import { toast } from "@/components/Toast";
-import { logActivity } from "@/lib/audit";
-import { notify } from "@/lib/notify";
-import { uploadFileToR2 } from "@/lib/r2-storage";
-import type { Job, Candidate, Interview, NewJobFormState, NewCandidateFormState, NewInterviewFormState } from "../types";
-import { INITIAL_JOB_FORM, INITIAL_CANDIDATE_FORM, INITIAL_INTERVIEW_FORM } from "../constants";
 import { useHireData } from "./useHireData";
 import { useHireFilters } from "./useHireFilters";
-import { useHireMutations } from "./useHireMutations";
 import { useHiringRequests } from "./useHiringRequests";
+import { useHireModals } from "./useHireModals";
+import { useHireActions } from "./useHireActions";
+import { useHireCandidateActions } from "./useHireCandidateActions";
 
 export function useHire() {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, selectedBranchId, targetBranch } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, isPartnerBranchBlocked, selectedBranchId, targetBranch } = useBranchScope();
   const { employee: myEmployee } = useMyEmployee();
 
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const actorRole = role?.name || "Admin";
-
   const roleNameLower = (role?.name || "").toLowerCase();
   const canRequest = /manager/i.test(roleNameLower) || isBranchAdmin || isAdmin;
   const canApprove = /ceo/i.test(roleNameLower) || (isAdmin && !isBranchAdmin) || isSuperAdmin;
   const isChairman = /chair/i.test(roleNameLower);
 
-  // Data & Filters
   const data = useHireData();
   const filters = useHireFilters(data.jobs, data.candidates, data.interviews, data.branches);
-  const mutations = useHireMutations({ actorName, actorRole, loadData: data.loadData });
   const requests = useHiringRequests({
-    actorName,
-    actorRole,
-    actorEmail: user?.email,
-    myEmployeeId: myEmployee?.id,
-    loadData: data.loadData,
-    branches: data.branches,
+    actorName, actorRole, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
+    loadData: data.loadData, branches: data.branches,
   });
 
-  // Modal States
-  const [jobModal, setJobModal] = useState(false);
-  const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [newJob, setNewJob] = useState<NewJobFormState>(INITIAL_JOB_FORM);
+  const modals = useHireModals({
+    branches: data.branches, jobs: data.jobs, candidates: data.candidates,
+    selectedBranchId, effectiveBranchId, userBranchId, targetBranch,
+  });
 
-  const [candidateModal, setCandidateModal] = useState(false);
-  const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
-  const [newCandidate, setNewCandidate] = useState<NewCandidateFormState>(INITIAL_CANDIDATE_FORM);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const actions = useHireActions({
+    actorName, actorRole, loadData: data.loadData, branches: data.branches, jobs: data.jobs,
+  });
 
-  const [interviewModal, setInterviewModal] = useState(false);
-  const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
-  const [newInterview, setNewInterview] = useState<NewInterviewFormState>(INITIAL_INTERVIEW_FORM);
+  const candidateActions = useHireCandidateActions({
+    actorName, actorRole, loadData: data.loadData, branches: data.branches, jobs: data.jobs,
+    setUploadingResume: actions.setUploadingResume, setSchedulingInterview: actions.setSchedulingInterview,
+    setMovingToOnboarding: actions.setMovingToOnboarding, setSavingFeedback: actions.setSavingFeedback,
+  });
 
-  const [onboardingModal, setOnboardingModal] = useState(false);
-  const [onboardingCandidate, setOnboardingCandidate] = useState<Candidate | null>(null);
-  const [onboardingBranchId, setOnboardingBranchId] = useState("");
-  const [onboardingJoinDate, setOnboardingJoinDate] = useState("");
-
-  const [feedbackModal, setFeedbackModal] = useState(false);
-  const [feedbackInterview, setFeedbackInterview] = useState<Interview | null>(null);
-  const [feedbackScore, setFeedbackScore] = useState(5);
-  const [feedbackNotes, setFeedbackNotes] = useState("");
-
-  // Modal Openers
-  const openCreateJob = useCallback(() => {
-    const target = selectedBranchId || effectiveBranchId || userBranchId || targetBranch || data.branches[0]?.id || "";
-    setEditingJob(null);
-    const selectedObj = data.branches.find((b) => b.id === target);
-    setNewJob({
-      ...INITIAL_JOB_FORM,
-      branch_id: target,
-      location: selectedObj ? selectedObj.name : "",
-    });
-    setJobModal(true);
-  }, [data.branches, selectedBranchId, effectiveBranchId, userBranchId, targetBranch]);
-
-  const openEditJob = useCallback((job: Job) => {
-    setEditingJob(job);
-    const matchedSite = data.branches.find(
-      (b) => b.is_site && b.branch_id === job.branch_id && (b.name || "").toLowerCase() === (job.location || "").toLowerCase()
-    );
-    setNewJob({
-      title: job.title,
-      department: job.department,
-      branch_id: matchedSite ? matchedSite.id : (job.branch_id || ""),
-      description: job.description || "",
-      location: job.location || "",
-      salary_min: String(job.salary_min || ""),
-      salary_max: String(job.salary_max || ""),
-      type: job.type || "full-time",
-      closing_date: job.closing_date || "",
-    });
-    setJobModal(true);
-  }, [data.branches]);
-
-  const openCreateCandidate = useCallback((defaultJobId?: string) => {
-    setEditingCandidate(null);
-    setNewCandidate({
-      ...INITIAL_CANDIDATE_FORM,
-      job_posting_id: defaultJobId || data.jobs[0]?.id || "",
-    });
-    setResumeFile(null);
-    setCandidateModal(true);
-  }, [data.jobs]);
-
-  const openEditCandidate = useCallback((c: Candidate) => {
-    setEditingCandidate(c);
-    setNewCandidate({
-      full_name: c.full_name,
-      email: c.email,
-      phone: c.phone || "",
-      job_posting_id: c.job_posting_id,
-      source: c.source || "Website",
-      notes: c.notes || "",
-    });
-    setResumeFile(null);
-    setCandidateModal(true);
-  }, []);
-
-  const openCreateInterview = useCallback((defaultCandidateId?: string) => {
-    setEditingInterview(null);
-    setNewInterview({
-      ...INITIAL_INTERVIEW_FORM,
-      candidate_id: defaultCandidateId || data.candidates[0]?.id || "",
-    });
-    setInterviewModal(true);
-  }, [data.candidates]);
-
-  const openEditInterview = useCallback((iv: Interview) => {
-    setEditingInterview(iv);
-    setNewInterview({
-      candidate_id: iv.candidate_id,
-      scheduled_at: iv.scheduled_at ? new Date(iv.scheduled_at).toISOString().slice(0, 16) : "",
-      duration_minutes: String(iv.duration_minutes || 60),
-      type: iv.type || "video",
-      notes: iv.notes || "",
-    });
-    setInterviewModal(true);
-  }, []);
-
-  const openMoveToOnboarding = useCallback((c: Candidate) => {
-    setOnboardingCandidate(c);
-    const job = data.jobs.find((j) => j.id === c.job_posting_id);
-    const matchedSite = data.branches.find(
-      (b) => b.is_site && b.branch_id === job?.branch_id && (b.name || "").toLowerCase() === (job?.location || "").toLowerCase()
-    );
-    setOnboardingBranchId(matchedSite ? matchedSite.id : (job?.branch_id || data.branches[0]?.id || ""));
-    setOnboardingJoinDate(new Date().toISOString().split("T")[0]);
-    setOnboardingModal(true);
-  }, [data.jobs, data.branches]);
-
-  const openFeedbackModal = useCallback((interview: Interview) => {
-    setFeedbackInterview(interview);
-    setFeedbackScore(interview.score || 5);
-    setFeedbackNotes(interview.feedback || "");
-    setFeedbackModal(true);
-  }, []);
-
-  // Form Submissions
   const handleSaveJob = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mutations.postingJob) return;
-    mutations.setPostingJob(true);
-
-    const selectedBranchObj = data.branches.find((b) => b.id === newJob.branch_id);
-    const resolvedBranchId = selectedBranchObj?.is_site
-      ? (selectedBranchObj.branch_id || targetBranch || effectiveBranchId || userBranchId || null)
-      : (newJob.branch_id || targetBranch || effectiveBranchId || userBranchId || null);
-    const resolvedLocation = selectedBranchObj?.is_site
-      ? selectedBranchObj.name
-      : (newJob.location.trim() || selectedBranchObj?.name || "");
-
-    const payload = {
-      title: newJob.title.trim(),
-      department: newJob.department.trim(),
-      branch_id: resolvedBranchId,
-      description: newJob.description.trim(),
-      location: resolvedLocation,
-      salary_min: Number(newJob.salary_min) || 0,
-      salary_max: Number(newJob.salary_max) || 0,
-      type: newJob.type,
-      closing_date: newJob.closing_date || null,
-    };
-
-    if (editingJob) {
-      const { error } = await supabase.from("job_postings").update(payload).eq("id", editingJob.id);
-      mutations.setPostingJob(false);
-      if (error) { toast("Error", "Failed to update job posting", "error"); return; }
-      toast("Job updated", "Changes saved successfully.", "success");
-    } else {
-      const { error } = await supabase.from("job_postings").insert([{ ...payload, status: "active", requirements: [] }]);
-      mutations.setPostingJob(false);
-      if (error) { toast("Error", "Failed to create job posting", "error"); return; }
-      toast("Job posted", "New job posting is live.", "success");
-      logActivity({
-        module: "hire",
-        action: "created",
-        entityType: "job_posting",
-        actorName,
-        actorRole,
-        description: `New job posting: ${payload.title}`,
-      });
-      notify({
-        source: "hire",
-        type: "info",
-        title: "New Job Posting",
-        message: `A new job posting "${payload.title}" has been created in ${payload.department}.`,
-      });
-      filters.setFilterJobStatus("all");
-      filters.setSearchQuery("");
-    }
-
-    setJobModal(false);
-    setEditingJob(null);
-    data.loadData();
-  }, [newJob, editingJob, mutations, actorName, actorRole, data, filters, effectiveBranchId, targetBranch, userBranchId]);
+    if (await actions.handleSaveJob(modals.newJob, modals.editingJob)) modals.setJobModal(false);
+  }, [actions, modals]);
 
   const handleSaveCandidate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    mutations.setUploadingResume(true);
-
-    let resume_url = editingCandidate?.resume_url || null;
-    let resume_name = editingCandidate?.resume_name || null;
-
-    if (resumeFile) {
-      try {
-        resume_url = await uploadFileToR2(resumeFile, "candidates/resumes");
-        resume_name = resumeFile.name;
-      } catch (err) {
-        toast("Upload failed", err instanceof Error ? err.message : "Could not upload resume", "error");
-        mutations.setUploadingResume(false);
-        return;
-      }
-    }
-
-    const payload = {
-      full_name: newCandidate.full_name.trim(),
-      email: newCandidate.email.trim(),
-      phone: newCandidate.phone.trim(),
-      job_posting_id: newCandidate.job_posting_id,
-      source: newCandidate.source.trim(),
-      notes: newCandidate.notes.trim(),
-      resume_url,
-      resume_name,
-    };
-
-    if (editingCandidate) {
-      const { error } = await supabase.from("candidates").update(payload).eq("id", editingCandidate.id);
-      mutations.setUploadingResume(false);
-      if (error) { toast("Error", "Failed to update candidate", "error"); return; }
-      toast("Candidate updated", "Candidate profile updated.", "success");
-    } else {
-      const { error } = await supabase.from("candidates").insert([{ ...payload, stage: "applied", rating: null }]);
-      mutations.setUploadingResume(false);
-      if (error) { toast("Error", "Failed to add candidate", "error"); return; }
-      toast("Candidate added", "New candidate added to applicant tracking.", "success");
-      notify({
-        source: "hire",
-        type: "info",
-        title: "New Candidate Applied",
-        message: `${payload.full_name} has applied and been added to the recruitment pipeline.`,
-      });
-    }
-
-    setCandidateModal(false);
-    setEditingCandidate(null);
-    setResumeFile(null);
-    data.loadData();
-  }, [newCandidate, editingCandidate, resumeFile, mutations, data]);
+    if (await candidateActions.handleSaveCandidate(modals.newCandidate, modals.editingCandidate, modals.resumeFile)) modals.setCandidateModal(false);
+  }, [candidateActions, modals]);
 
   const handleSaveInterview = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mutations.schedulingInterview) return;
-    mutations.setSchedulingInterview(true);
+    if (await candidateActions.handleSaveInterview(modals.newInterview, modals.editingInterview)) modals.setInterviewModal(false);
+  }, [candidateActions, modals]);
 
-    const payload = {
-      candidate_id: newInterview.candidate_id,
-      scheduled_at: new Date(newInterview.scheduled_at).toISOString(),
-      duration_minutes: Number(newInterview.duration_minutes) || 60,
-      type: newInterview.type,
-      notes: newInterview.notes.trim(),
-    };
+  const handleMoveToOnboarding = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!modals.onboardingCandidate) return;
+    if (await candidateActions.handleMoveToOnboarding(modals.onboardingCandidate, modals.onboardingBranchId, modals.onboardingJoinDate)) modals.setOnboardingModal(false);
+  }, [candidateActions, modals]);
 
-    if (editingInterview) {
-      const { error } = await supabase.from("interviews").update(payload).eq("id", editingInterview.id);
-      mutations.setSchedulingInterview(false);
-      if (error) { toast("Error", "Failed to update interview", "error"); return; }
-      toast("Interview updated", "Schedule updated.", "success");
-    } else {
-      const { error } = await supabase.from("interviews").insert([{ ...payload, status: "scheduled" }]);
-      mutations.setSchedulingInterview(false);
-      if (error) { toast("Error", "Failed to schedule interview", "error"); return; }
-      toast("Interview scheduled", "Interview added to calendar.", "success");
-      const candName = data.candidates.find((c) => c.id === payload.candidate_id)?.full_name || "a candidate";
-      notify({
-        source: "hire",
-        type: "info",
-        title: "Interview Scheduled",
-        message: `An interview has been scheduled for ${candName} on ${new Date(newInterview.scheduled_at).toLocaleDateString()}.`,
-      });
-    }
-
-    setInterviewModal(false);
-    setEditingInterview(null);
-    data.loadData();
-  }, [newInterview, editingInterview, mutations, data]);
+  const handleSaveFeedback = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!modals.feedbackInterview) return;
+    if (await candidateActions.handleSaveFeedback(modals.feedbackInterview, modals.feedbackScore, modals.feedbackNotes)) modals.setFeedbackModal(false);
+  }, [candidateActions, modals]);
 
   return {
-    actorName,
-    actorRole,
-    isAdmin,
-    canRequest,
-    canApprove,
-    isChairman,
-    isSuperAdmin,
-    ...data,
-    ...filters,
-    ...mutations,
-    ...requests,
-    jobModal,
-    setJobModal,
-    editingJob,
-    newJob,
-    setNewJob,
-    candidateModal,
-    setCandidateModal,
-    editingCandidate,
-    newCandidate,
-    setNewCandidate,
-    resumeFile,
-    setResumeFile,
-    interviewModal,
-    setInterviewModal,
-    editingInterview,
-    newInterview,
-    setNewInterview,
-    onboardingModal,
-    setOnboardingModal,
-    onboardingCandidate,
-    onboardingBranchId,
-    setOnboardingBranchId,
-    onboardingJoinDate,
-    setOnboardingJoinDate,
-    feedbackModal,
-    setFeedbackModal,
-    feedbackInterview,
-    feedbackScore,
-    setFeedbackScore,
-    feedbackNotes,
-    setFeedbackNotes,
-    openCreateJob,
-    openEditJob,
-    openCreateCandidate,
-    openEditCandidate,
-    openCreateInterview,
-    openEditInterview,
-    openMoveToOnboarding,
-    openFeedbackModal,
-    handleSaveJob,
-    handleSaveCandidate,
-    handleSaveInterview,
+    isPartnerBranchBlocked, userBranchName, userBranchId,
+    jobs: data.jobs, candidates: data.candidates, interviews: data.interviews, branches: data.branches,
+    hiringRequests: requests.hiringRequests, loading: data.loading,
+    tab: filters.tab, setTab: filters.setTab,
+    canRequest, canApprove, isChairman, isSuperAdmin,
+    jobViewMode: filters.jobViewMode, setJobViewMode: filters.setJobViewMode,
+    candidateViewMode: filters.candidateViewMode, setCandidateViewMode: filters.setCandidateViewMode,
+    searchQuery: filters.searchQuery, setSearchQuery: filters.setSearchQuery,
+    filterJobStatus: filters.filterJobStatus, setFilterJobStatus: filters.setFilterJobStatus,
+    filterDepartment: filters.filterDepartment, setFilterDepartment: filters.setFilterDepartment,
+    filterBranch: filters.filterBranch, setFilterBranch: filters.setFilterBranch,
+    filterCandidateStage: filters.filterCandidateStage, setFilterCandidateStage: filters.setFilterCandidateStage,
+    filterCandidateJob: filters.filterCandidateJob, setFilterCandidateJob: filters.setFilterCandidateJob,
+    filterInterviewStatus: filters.filterInterviewStatus, setFilterInterviewStatus: filters.setFilterInterviewStatus,
+    resetFilters: filters.resetFilters, hasFilters: filters.hasFilters,
+    departments: filters.departments, filteredJobs: filters.filteredJobs,
+    filteredCandidates: filters.filteredCandidates, filteredInterviews: filters.filteredInterviews,
+    pipelineStageCounts: filters.pipelineStageCounts,
+    jobModal: modals.jobModal, setJobModal: modals.setJobModal, editingJob: modals.editingJob, newJob: modals.newJob, setNewJob: modals.setNewJob,
+    candidateModal: modals.candidateModal, setCandidateModal: modals.setCandidateModal, editingCandidate: modals.editingCandidate,
+    newCandidate: modals.newCandidate, setNewCandidate: modals.setNewCandidate, resumeFile: modals.resumeFile, setResumeFile: modals.setResumeFile,
+    uploadingResume: actions.uploadingResume, interviewModal: modals.interviewModal, setInterviewModal: modals.setInterviewModal,
+    editingInterview: modals.editingInterview, newInterview: modals.newInterview, setNewInterview: modals.setNewInterview,
+    schedulingInterview: actions.schedulingInterview, onboardingModal: modals.onboardingModal, setOnboardingModal: modals.setOnboardingModal,
+    onboardingCandidate: modals.onboardingCandidate, onboardingBranchId: modals.onboardingBranchId, setOnboardingBranchId: modals.setOnboardingBranchId,
+    onboardingJoinDate: modals.onboardingJoinDate, setOnboardingJoinDate: modals.setOnboardingJoinDate, movingToOnboarding: actions.movingToOnboarding,
+    feedbackModal: modals.feedbackModal, setFeedbackModal: modals.setFeedbackModal, feedbackInterview: modals.feedbackInterview,
+    feedbackScore: modals.feedbackScore, setFeedbackScore: modals.setFeedbackScore, feedbackNotes: modals.feedbackNotes,
+    setFeedbackNotes: modals.setFeedbackNotes, savingFeedback: actions.savingFeedback, postingJob: actions.postingJob,
+    showRequestModal: requests.showRequestModal, setShowRequestModal: requests.setShowRequestModal, requestForm: requests.requestForm,
+    setRequestForm: requests.setRequestForm, submittingRequest: requests.submittingRequest, decisionModal: requests.decisionModal,
+    setDecisionModal: requests.setDecisionModal, targetRequest: requests.targetRequest, decisionAction: requests.decisionAction,
+    rejectionReason: requests.rejectionReason, setRejectionReason: requests.setRejectionReason, processingDecision: requests.processingDecision,
+    openCreateRequest: requests.openCreateRequest, openDecisionModal: requests.openDecisionModal, handleCreateRequest: requests.handleCreateRequest,
+    handleDecision: requests.handleDecision, openCreateJob: modals.openCreateJob, openEditJob: modals.openEditJob,
+    openCreateCandidate: modals.openCreateCandidate, openEditCandidate: modals.openEditCandidate, openCreateInterview: modals.openCreateInterview,
+    openEditInterview: modals.openEditInterview, openMoveToOnboarding: modals.openMoveToOnboarding, openFeedbackModal: modals.openFeedbackModal,
+    handleSaveJob, handleSaveCandidate, handleSaveInterview, closeJob: actions.closeJob, reopenJob: actions.reopenJob, deleteJob: actions.deleteJob,
+    updateCandidateStage: actions.updateCandidateStage, rateCandidate: actions.rateCandidate, deleteCandidate: actions.deleteCandidate,
+    handleMoveToOnboarding, uploadCandidateResume: candidateActions.uploadCandidateResume, deleteInterview: actions.deleteInterview, handleSaveFeedback,
   };
 }

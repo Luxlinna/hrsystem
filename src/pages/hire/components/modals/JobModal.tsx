@@ -1,7 +1,7 @@
 import { memo, useRef } from "react";
 import type { Branch, Job, NewJobFormState } from "../../types";
-
-const QUICK_EMOJIS = ["📢", "🎉", "🚨", "📅", "💡", "📌", "🎯", "⚠️", "🌟", "🏆"] as const;
+import { JobModalDescriptionEditor } from "./JobModalDescriptionEditor";
+import { JobModalSalaryAndMetaFields } from "./JobModalSalaryAndMetaFields";
 
 interface JobModalProps {
   isOpen: boolean;
@@ -36,34 +36,24 @@ export const JobModal = memo(function JobModal({
     const previousContent = form.description || "";
     const selectedText = previousContent.substring(start, end);
     const replacement = `${prefix}${selectedText || "text"}${suffix}`;
-    const newContent =
-      previousContent.substring(0, start) +
-      replacement +
-      previousContent.substring(end);
+    const newContent = previousContent.substring(0, start) + replacement + previousContent.substring(end);
     setForm((prev) => ({ ...prev, description: newContent }));
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(
-        start + prefix.length,
-        start + prefix.length + (selectedText ? selectedText.length : 4)
-      );
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + (selectedText ? selectedText.length : 4));
     }, 0);
   };
 
   const handleInsertEmoji = (emoji: string) => {
     const textarea = descriptionInputRef.current;
     if (!textarea) {
-      setForm((prev) => ({
-        ...prev,
-        description: (prev.description || "") + (prev.description ? " " : "") + emoji,
-      }));
+      setForm((prev) => ({ ...prev, description: (prev.description || "") + (prev.description ? " " : "") + emoji }));
       return;
     }
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const previousContent = form.description || "";
-    const newContent =
-      previousContent.substring(0, start) + emoji + previousContent.substring(end);
+    const newContent = previousContent.substring(0, start) + emoji + previousContent.substring(end);
     setForm((prev) => ({ ...prev, description: newContent }));
     setTimeout(() => {
       textarea.focus();
@@ -151,7 +141,7 @@ export const JobModal = memo(function JobModal({
                 }}
                 className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
               >
-                <option value="">General HQ / Remote</option>
+                <option value="">All / Remote</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.is_site ? `↳ ${b.name} (Site)` : b.name}
@@ -161,170 +151,31 @@ export const JobModal = memo(function JobModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Work Mode
-              </label>
-              <input
-                type="text"
-                value={form.location}
-                onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
-                placeholder="On-site, Remote, Hybrid"
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
+          <JobModalDescriptionEditor
+            description={form.description}
+            descriptionInputRef={descriptionInputRef}
+            onInsertFormatting={handleInsertFormatting}
+            onInsertEmoji={handleInsertEmoji}
+            onChange={(val) => setForm((prev) => ({ ...prev, description: val }))}
+          />
 
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Employment Type
-              </label>
-              <select
-                value={form.type}
-                onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value }))}
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
-              >
-                <option value="full-time">Full-time</option>
-                <option value="part-time">Part-time</option>
-                <option value="contract">Contract</option>
-                <option value="internship">Internship</option>
-              </select>
-            </div>
+          <JobModalSalaryAndMetaFields form={form} setForm={setForm} />
 
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Closing Date
-              </label>
-              <input
-                type="date"
-                value={form.closing_date}
-                onChange={(e) => setForm((prev) => ({ ...prev, closing_date: e.target.value }))}
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Min Salary ($)
-              </label>
-              <input
-                type="number"
-                value={form.salary_min}
-                onChange={(e) => setForm((prev) => ({ ...prev, salary_min: e.target.value }))}
-                placeholder="50000"
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Max Salary ($)
-              </label>
-              <input
-                type="number"
-                value={form.salary_max}
-                onChange={(e) => setForm((prev) => ({ ...prev, salary_max: e.target.value }))}
-                placeholder="80000"
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-          </div>
-
-          {/* Description & Requirements with Rich Toolbar */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                Description &amp; Requirements
-              </label>
-              <span className="text-[10px] text-gray-400 font-semibold">
-                {(form.description || "").length} characters
-              </span>
-            </div>
-
-            {/* Formatting Helper Toolbar */}
-            <div className="flex items-center gap-1 p-1 bg-gray-100 border border-gray-200 border-b-0 rounded-t-xl overflow-x-auto no-scrollbar">
-              <button
-                type="button"
-                onClick={() => handleInsertFormatting("**", "**")}
-                className="px-2 py-1 bg-white hover:bg-slate-100 rounded text-xs font-black text-gray-700 transition-colors cursor-pointer"
-                title="Bold"
-              >
-                B
-              </button>
-              <button
-                type="button"
-                onClick={() => handleInsertFormatting("*", "*")}
-                className="px-2 py-1 bg-white hover:bg-slate-100 rounded text-xs italic font-serif text-gray-700 transition-colors cursor-pointer"
-                title="Italic"
-              >
-                I
-              </button>
-              <button
-                type="button"
-                onClick={() => handleInsertFormatting("• ")}
-                className="px-2 py-1 bg-white hover:bg-slate-100 rounded text-xs font-bold text-gray-700 transition-colors cursor-pointer"
-                title="Bullet List"
-              >
-                <i className="ri-list-unordered" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleInsertFormatting("1. ")}
-                className="px-2 py-1 bg-white hover:bg-slate-100 rounded text-xs font-bold text-gray-700 transition-colors cursor-pointer"
-                title="Numbered List"
-              >
-                <i className="ri-list-ordered" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleInsertFormatting("> ")}
-                className="px-2 py-1 bg-white hover:bg-slate-100 rounded text-xs font-bold text-gray-700 transition-colors cursor-pointer"
-                title="Quote / Callout"
-              >
-                <i className="ri-double-quotes-l" />
-              </button>
-
-              <div className="h-4 w-px bg-gray-300 mx-1" />
-
-              {/* Emojis */}
-              {QUICK_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => handleInsertEmoji(emoji)}
-                  className="px-1.5 py-0.5 hover:bg-white rounded text-xs transition-colors cursor-pointer"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-
-            <textarea
-              ref={descriptionInputRef}
-              rows={4}
-              value={form.description}
-              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Outline role responsibilities, key qualifications, and tech stack..."
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-b-xl text-xs font-medium text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] resize-none leading-relaxed"
-            />
-          </div>
-
-          <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2 shrink-0">
+          <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              disabled={postingJob}
+              className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={postingJob || !form.title || !form.department}
-              className="px-5 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              disabled={postingJob}
+              className="px-5 py-2 text-xs font-bold text-white bg-[#253C7D] hover:bg-[#1f336b] rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
             >
-              {postingJob ? "Saving..." : editingJob ? "Save Changes" : "Post Vacancy"}
+              {postingJob ? "Saving..." : editingJob ? "Save Changes" : "Post Opening"}
             </button>
           </div>
         </form>
@@ -332,4 +183,3 @@ export const JobModal = memo(function JobModal({
     </div>
   );
 });
-

@@ -7,26 +7,26 @@ import { CandidateCard } from "./CandidateCard";
 
 interface CandidatesTabContentProps {
   candidates: Candidate[];
+  jobs?: any[];
   viewMode: "cards" | "list";
-  onOpenCreateCandidate: () => void;
+  canManage?: boolean;
+  onOpenCreate: () => void;
+  onOpenEdit?: (c: Candidate) => void;
   onUpdateStage: (id: string, stage: string) => void;
   onRate: (id: string, rating: number) => void;
+  onDelete?: (c: Candidate) => void;
   onMoveToOnboarding: (c: Candidate) => void;
-  onUploadResume: (id: string, file: File) => void;
-  onEdit: (c: Candidate) => void;
-  onDelete: (id: string, name: string) => void;
+  onOpenInterview?: (c: Candidate) => void;
 }
 
 export const CandidatesTabContent = memo(function CandidatesTabContent({
   candidates,
   viewMode,
-  onOpenCreateCandidate,
+  onOpenCreate,
   onUpdateStage,
   onRate,
   onMoveToOnboarding,
-  onUploadResume,
-  onEdit,
-  onDelete,
+  onOpenInterview,
 }: CandidatesTabContentProps) {
   if (candidates.length === 0) {
     return (
@@ -39,7 +39,8 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
           No applicants match your search query or selected stage filters.
         </p>
         <button
-          onClick={onOpenCreateCandidate}
+          type="button"
+          onClick={onOpenCreate}
           className="mt-4 px-4 py-2 bg-[#253C7D] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#1E3064] transition-all cursor-pointer"
         >
           + Add Candidate
@@ -67,7 +68,6 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
             <tbody className="divide-y divide-gray-100">
               {candidates.map((c) => {
                 const cfg = STAGE_CONFIG[c.stage] || STAGE_CONFIG.applied;
-
                 return (
                   <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-5 py-3.5 whitespace-nowrap">
@@ -76,18 +76,12 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
                           {initials(c.full_name)}
                         </div>
                         <div>
-                          <p className="font-extrabold text-gray-900 group-hover:text-[#253C7D] transition-colors">
-                            {c.full_name}
-                          </p>
+                          <p className="font-extrabold text-gray-900 group-hover:text-[#253C7D] transition-colors">{c.full_name}</p>
                           <p className="text-[10px] text-gray-400 font-medium">{c.email}</p>
                         </div>
                       </Link>
                     </td>
-
-                    <td className="px-5 py-3.5 whitespace-nowrap font-bold text-gray-700">
-                      {c.job_postings?.title || "Direct"}
-                    </td>
-
+                    <td className="px-5 py-3.5 whitespace-nowrap font-bold text-gray-700">{c.job_postings?.title || "Direct"}</td>
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <select
                         value={c.stage}
@@ -101,12 +95,12 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
                         ))}
                       </select>
                     </td>
-
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <div className="flex items-center gap-0.5">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <button
                             key={star}
+                            type="button"
                             onClick={() => onRate(c.id, star)}
                             className={`text-xs cursor-pointer transition-colors ${
                               star <= (c.rating || 0) ? "text-amber-400" : "text-gray-200 hover:text-amber-300"
@@ -117,31 +111,21 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
                         ))}
                       </div>
                     </td>
-
-                    <td className="px-5 py-3.5 whitespace-nowrap text-gray-500 font-semibold text-[11px]">
-                      {formatRelative(c.applied_at)}
-                    </td>
-
+                    <td className="px-5 py-3.5 whitespace-nowrap text-gray-500 font-semibold text-[11px]">{formatRelative(c.applied_at)}</td>
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       {c.resume_url ? (
-                        <a
-                          href={c.resume_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-bold text-[#253C7D] hover:underline flex items-center gap-1"
-                        >
-                          <i className="ri-file-text-line" />
-                          View
+                        <a href={c.resume_url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#253C7D] hover:underline flex items-center gap-1">
+                          <i className="ri-file-text-line" /> View
                         </a>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
-
                     <td className="px-5 py-3.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
                         {c.stage === "hired" && (
                           <button
+                            type="button"
                             onClick={() => onMoveToOnboarding(c)}
                             className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
                           >
@@ -150,25 +134,11 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
                         )}
                         <Link
                           to={`/hire/candidates/${c.id}`}
-                          className="p-1.5 text-gray-400 hover:text-[#253C7D] hover:bg-gray-100 rounded-lg transition-colors"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                           title="View Profile"
                         >
-                          <i className="ri-eye-line text-sm" />
+                          <i className="ri-arrow-right-line" />
                         </Link>
-                        <button
-                          onClick={() => onEdit(c)}
-                          className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                          title="Edit"
-                        >
-                          <i className="ri-edit-line text-sm" />
-                        </button>
-                        <button
-                          onClick={() => onDelete(c.id, c.full_name)}
-                          className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                          title="Delete"
-                        >
-                          <i className="ri-delete-bin-line text-sm" />
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -190,9 +160,7 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
           onUpdateStage={onUpdateStage}
           onRate={onRate}
           onMoveToOnboarding={onMoveToOnboarding}
-          onUploadResume={onUploadResume}
-          onEdit={onEdit}
-          onDelete={onDelete}
+          onScheduleInterview={onOpenInterview ? () => onOpenInterview(c) : undefined}
         />
       ))}
     </div>
