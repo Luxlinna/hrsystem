@@ -22,6 +22,38 @@ export const ROOM_AMENITIES: Record<string, string[]> = {
 
 export const DEFAULT_AMENITIES = ["4K Display", "Video Conference", "Whiteboard", "High-speed Wi-Fi"];
 
+export const COLOR_PRESETS = [
+  "#253C7D",
+  "#7C3AED",
+  "#059669",
+  "#DC2626",
+  "#D97706",
+  "#0891B2",
+  "#BE185D",
+  "#16A34A",
+  "#9333EA",
+  "#1D4ED8",
+];
+
+export const AMENITY_ITEMS = [
+  { label: "4K Display TV", icon: "ri-tv-line" },
+  { label: "High-speed Wi-Fi", icon: "ri-wifi-line" },
+  { label: "AC Climate", icon: "ri-temp-cold-line" },
+  { label: "Whiteboard", icon: "ri-artboard-line" },
+  { label: "Polycom Conference Mic", icon: "ri-mic-line" },
+  { label: 'Dual 75" 4K Displays', icon: "ri-tv-2-line" },
+  { label: "Cisco Video Conf System", icon: "ri-vidicon-line" },
+  { label: "Interactive Smartboard", icon: "ri-dashboard-3-line" },
+  { label: "Conference Mic Array", icon: "ri-mic-2-line" },
+  { label: "Dual 4K Projector & Screens", icon: "ri-projector-2-line" },
+  { label: "Wireless Mics & Audio PA", icon: "ri-volume-up-line" },
+  { label: "Modular Desks & Chairs", icon: "ri-layout-grid-line" },
+  { label: "Trainer Podium & Clicker", icon: "ri-presentation-line" },
+  { label: "Video Conference (Zoom/Teams)", icon: "ri-video-chat-line" },
+  { label: "Extra Power Outlets", icon: "ri-plug-line" },
+  { label: "Extra Chairs", icon: "ri-armchair-line" },
+];
+
 export const QUICK_TITLES = [
   "Operation Team Meeting",
   "Ballangk Mall Sync",

@@ -3,9 +3,10 @@ import { supabase } from "@/lib/supabase";
 import { notify } from "@/lib/notify";
 import { logActivity } from "@/lib/audit";
 import { notifyTelegramEvent, escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
-import type { Booking, MeetingRoom, ApprovalModalState, BookingEmployee } from "../../types";
+import type { MeetingRoom, ApprovalModalState, BookingEmployee } from "../../types";
 import { FloorBadge } from "../FloorBadge";
 import { getRoomFloor, fmtTime, formatDateDisplay } from "../../roomUtils";
+import { ApprovalReviewItemsList } from "./ApprovalReviewItemsList";
 
 interface ApprovalReviewModalProps {
   approvalModal: ApprovalModalState;
@@ -36,17 +37,10 @@ export const ApprovalReviewModal = memo(function ApprovalReviewModal({
 
   useEffect(() => {
     if (booking) {
-      const rawReqs = (booking.special_requirements || "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter((s) => s && s !== "None");
+      const rawReqs = (booking.special_requirements || "").split(",").map((s) => s.trim()).filter((s) => s && s !== "None");
       setApprovedReqs(rawReqs);
       setDeclinedReqs([]);
-
-      const rawRef = (booking.refreshments || "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter((s) => s && s !== "None");
+      const rawRef = (booking.refreshments || "").split(",").map((s) => s.trim()).filter((s) => s && s !== "None");
       setApprovedRef(rawRef);
       setDeclinedRef([]);
       setNotes("");
@@ -59,11 +53,29 @@ export const ApprovalReviewModal = memo(function ApprovalReviewModal({
   const roomFloor = getRoomFloor(targetRoom);
   const isVIP = roomFloor === 5;
 
+  const toggleReq = (item: string) => {
+    if (approvedReqs.includes(item)) {
+      setApprovedReqs((p) => p.filter((x) => x !== item));
+      setDeclinedReqs((p) => [...p, item]);
+    } else {
+      setDeclinedReqs((p) => p.filter((x) => x !== item));
+      setApprovedReqs((p) => [...p, item]);
+    }
+  };
+
+  const toggleRef = (item: string) => {
+    if (approvedRef.includes(item)) {
+      setApprovedRef((p) => p.filter((x) => x !== item));
+      setDeclinedRef((p) => [...p, item]);
+    } else {
+      setDeclinedRef((p) => p.filter((x) => x !== item));
+      setApprovedRef((p) => [...p, item]);
+    }
+  };
+
   const handleConfirmApproval = async () => {
     setProcessing(true);
-    const approverName = currentEmployee
-      ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
-      : "Management";
+    const approverName = currentEmployee ? `${currentEmployee.first_name} ${currentEmployee.last_name}` : "Management";
 
     const { error } = await supabase
       .from("room_bookings")
@@ -80,11 +92,7 @@ export const ApprovalReviewModal = memo(function ApprovalReviewModal({
       .eq("id", booking.id);
 
     setProcessing(false);
-
-    if (error) {
-      showToast("error", "Failed to approve booking.");
-      return;
-    }
+    if (error) return showToast("error", "Failed to approve booking.");
 
     await notify({
       source: "meeting_rooms",
@@ -117,24 +125,18 @@ export const ApprovalReviewModal = memo(function ApprovalReviewModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
+      <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto space-y-4 text-xs">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div>
-            <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-wider block">
-              MANAGER APPROVAL REVIEW
-            </span>
+            <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase tracking-wider block">MANAGER APPROVAL REVIEW</span>
             <h3 className="text-base font-extrabold text-gray-900 mt-0.5">Approve Meeting Reservation</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 cursor-pointer"
-          >
+          <button type="button" onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 cursor-pointer">
             <i className="ri-close-line text-lg" />
           </button>
         </div>
 
-        {/* Overview */}
-        <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 mb-4 text-xs space-y-1">
+        <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-gray-400">Workspace:</span>
             <div className="flex items-center gap-1.5 font-bold text-gray-900">
@@ -143,86 +145,46 @@ export const ApprovalReviewModal = memo(function ApprovalReviewModal({
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-400">Date & Time:</span>
-            <span className="font-extrabold text-gray-900">
-              {formatDateDisplay(booking.date)} ({fmtTime(booking.start_time)} - {fmtTime(booking.end_time)})
-            </span>
+            <span className="text-gray-400">Date &amp; Time:</span>
+            <span className="font-bold text-gray-900">{formatDateDisplay(booking.date)} &middot; {fmtTime(booking.start_time)}–{fmtTime(booking.end_time)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-400">Organizer:</span>
-            <span className="font-bold text-gray-900">
-              {booking.employees?.first_name} {booking.employees?.last_name} ({booking.employees?.department})
-            </span>
+            <span className="text-gray-400">Requested By:</span>
+            <span className="font-bold text-gray-900">{booking.employees?.first_name} {booking.employees?.last_name}</span>
           </div>
         </div>
 
-        {/* Requirements Selection */}
-        {approvedReqs.length > 0 && (
-          <div className="mb-3.5">
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-              Equipment / IT Support Requested
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {approvedReqs.map((req) => (
-                <span
-                  key={req}
-                  className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold"
-                >
-                  ✓ {req}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        <ApprovalReviewItemsList
+          approvedReqs={approvedReqs}
+          declinedReqs={declinedReqs}
+          onToggleReq={toggleReq}
+          approvedRef={approvedRef}
+          declinedRef={declinedRef}
+          onToggleRef={toggleRef}
+        />
 
-        {/* Refreshments Selection */}
-        {approvedRef.length > 0 && (
-          <div className="mb-3.5">
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-              Refreshments / Catering Requested
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {approvedRef.map((ref) => (
-                <span
-                  key={ref}
-                  className="px-2.5 py-1 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold"
-                >
-                  ✓ {ref}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Manager Notes */}
-        <div className="mb-4">
-          <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-            Managerial Approval Notes (Optional)
-          </label>
+        <div>
+          <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Approval Note / Instructions (Optional)</label>
           <textarea
             rows={2}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add notes for facilities or front desk staff..."
-            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium resize-none"
+            placeholder="e.g., Confirmed with Facilities team..."
+            className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:border-[#253C7D]"
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2.5">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 text-xs font-bold text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
-          >
+        <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
+          <button type="button" onClick={onClose} className="px-4 py-2 font-bold text-gray-500 hover:text-gray-800 rounded-xl hover:bg-gray-100 cursor-pointer">
             Cancel
           </button>
           <button
             type="button"
-            disabled={processing}
             onClick={handleConfirmApproval}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+            disabled={processing}
+            className="px-5 py-2 font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs cursor-pointer disabled:opacity-50"
           >
-            {processing ? "Approving..." : "Confirm & Approve Reservation"}
+            {processing ? "Approving..." : "Confirm Approval"}
           </button>
         </div>
       </div>
