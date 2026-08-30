@@ -64,3 +64,21 @@ export interface DaySummary {
   totalAssigned: number;
   totalHours: number;
 }
+
+export interface StaffWorkloadItem {
+  employee: Employee;
+  shiftCount: number;
+  totalHours: number;
+  isOvertime: boolean;
+  isFullTime: boolean;
+  isUnscheduled: boolean;
+}
+
+export interface ShiftTemplate {
+  label: string;
+  name: string;
+  start: string;
+  end: string;
+  color: string;
+  capacity: number;
+}
