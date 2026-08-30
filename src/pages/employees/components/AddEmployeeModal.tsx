@@ -54,7 +54,6 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
         const sites = (data as WorkLocation[]) || [];
         setWorkSites(sites);
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.branch_id]);
 
   return (

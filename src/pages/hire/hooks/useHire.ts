@@ -218,7 +218,7 @@ export function useHire() {
     setJobModal(false);
     setEditingJob(null);
     data.loadData();
-  }, [newJob, editingJob, mutations, actorName, actorRole, data, filters]);
+  }, [newJob, editingJob, mutations, actorName, actorRole, data, filters, effectiveBranchId, targetBranch, userBranchId]);
 
   const handleSaveCandidate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();

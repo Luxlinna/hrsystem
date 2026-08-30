@@ -15,6 +15,7 @@ import type {
   DatePreset,
   EmployeeSummaryItem,
   WorkLocation,
+  MatrixDay,
 } from "./types";
 import { calcHours, calcHoursNum } from "./constants";
 import { AttendanceHeader } from "./components/AttendanceHeader";
@@ -497,7 +498,7 @@ export default function AttendancePage() {
       work_location_id: "",
     });
     fetchData();
-  }, [newRecord, saving, todayYMD, actorName, role?.name, targetBranch, fetchData]);
+  }, [newRecord, saving, todayYMD, actorName, role?.name, targetBranch, fetchData, employees]);
 
   // Update existing record
   const handleUpdateRecord = useCallback(async (e: React.FormEvent) => {

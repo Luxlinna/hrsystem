@@ -419,7 +419,6 @@ export function useBranches() {
       setBranchEmployees([]);
       loadBranches();
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [canCreateBranch, actorName, role?.name, loadBranches]
   );
 

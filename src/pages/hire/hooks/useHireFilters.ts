@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import type { Job, Candidate, Interview, HireTab } from "../types";
+import { useState, useMemo, useCallback } from "react";
+import type { Job, Candidate, Interview, HireTab, Branch } from "../types";
 import { PIPELINE_STAGES } from "../constants";
 
 export function useHireFilters(

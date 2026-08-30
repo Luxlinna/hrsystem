@@ -126,7 +126,7 @@ export function useHiringRequests({
     } finally {
       setSubmittingRequest(false);
     }
-  }, [requestForm, myEmployeeId, actorName, actorRole, actorEmail, loadData]);
+  }, [requestForm, myEmployeeId, actorName, actorRole, actorEmail, loadData, branches]);
 
   const handleDecision = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();

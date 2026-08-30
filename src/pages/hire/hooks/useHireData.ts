@@ -109,7 +109,7 @@ export function useHireData() {
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch, effectiveBranchId, visibleBranches]);
+  }, [isPartnerBranchBlocked, targetBranch, effectiveBranchId, visibleBranches, isSuperAdmin, userBranchId]);
 
   useEffect(() => {
     loadData();

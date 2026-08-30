@@ -18,6 +18,7 @@ import type {
 
 export function useShiftState() {
   const { user } = useAuth();
+  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
   // Core data

@@ -133,7 +133,7 @@ export function useChecklistTaskMutations({
         });
       }
     },
-    [selectedHire, isTaskLocked, completerName, setTasks, loadData]
+    [selectedHire, completerName, setTasks, loadData]
   );
 
   const handleQuickAssignToMe = useCallback(
