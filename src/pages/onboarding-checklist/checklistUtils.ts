@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { DOC_TO_TASK, TASK_TO_DOC } from "@/lib/onboarding";
 import type { OnboardingHire, ChecklistTask } from "./types";
 
 export const getHireName = (hire: OnboardingHire | null): string => {
@@ -22,35 +23,44 @@ export const isOverdue = (task: ChecklistTask): boolean => {
 };
 
 export const matchDocAndTask = (docName: string, taskName: string): boolean => {
-  const d = docName.toLowerCase().trim();
-  const t = taskName.toLowerCase().trim();
-  if (t.includes(d) || d.includes(t)) return true;
+  if (!docName || !taskName) return false;
+  const d = docName.trim();
+  const t = taskName.trim();
 
-  const keywords: [string[], string[]][] = [
-    [["offer"], ["offer", "employment terms"]],
-    [["id", "verification", "passport"], ["verify", "id", "passport"]],
-    [["contract", "employment"], ["contract", "employment terms"]],
-    [["bank", "details", "tax"], ["bank", "tax", "filing"]],
-    [["nda", "agreement", "confidentiality"], ["nda", "confidentiality"]],
-    [["laptop", "assignment", "hardware"], ["laptop", "hardware", "workstation"]],
-    [["email", "account", "slack"], ["email", "slack", "teams"]],
-    [["vpn", "access"], ["vpn", "remote"]],
-    [["software", "license", "licenses"], ["software", "license", "licenses", "tool"]],
-    [["security", "badge", "access"], ["badge", "workspace", "access"]],
-    [["orientation", "checklist"], ["orientation", "walkthrough"]],
-    [["team", "intro", "introduction"], ["team", "introduction", "welcome"]],
-    [["training", "schedule"], ["training", "setup"]],
-    [["handbook"], ["handbook", "acknowledge"]],
-    [["signoff", "sign-off"], ["signoff", "sign-off", "complete"]],
-    [["checkin", "check-in", "30day", "30-day"], ["checkin", "check-in", "30day", "30-day"]],
-    [["survey", "feedback"], ["feedback", "survey"]],
+  // 1. Direct dictionary match from shared mapping
+  if (DOC_TO_TASK[d] === t || TASK_TO_DOC[t] === d) return true;
+
+  // 2. Exact case-insensitive match
+  if (d.toLowerCase() === t.toLowerCase()) return true;
+
+  // 3. Fallback direct pairs to ensure strict 1-to-1 correlation
+  const pairs: [string, string][] = [
+    ["offer letter", "sign offer letter"],
+    ["id verification", "verify national id"],
+    ["employment contract", "sign employment contract"],
+    ["bank details", "submit bank account"],
+    ["nda agreement", "sign non-disclosure"],
+    ["laptop assignment", "provision laptop"],
+    ["email account setup", "create corporate email"],
+    ["vpn access", "configure vpn"],
+    ["software licenses", "grant software"],
+    ["security badge", "issue security access badge"],
+    ["hr orientation", "hr orientation & company policies"],
+    ["team introduction", "team introductions"],
+    ["role training schedule", "role-specific skills training"],
+    ["handbook acknowledgment", "review & acknowledge employee handbook"],
+    ["onboarding sign-off", "final onboarding sign-off"],
+    ["30-day check-in", "schedule 30-day check-in"],
+    ["feedback survey", "complete new hire experience"],
   ];
 
-  for (const [docKeys, taskKeys] of keywords) {
-    const docMatches = docKeys.some((k) => d.includes(k));
-    const taskMatches = taskKeys.some((k) => t.includes(k));
-    if (docMatches && taskMatches) return true;
+  const dLow = d.toLowerCase();
+  const tLow = t.toLowerCase();
+
+  for (const [pDoc, pTask] of pairs) {
+    if (dLow.includes(pDoc) && tLow.includes(pTask)) return true;
   }
+
   return false;
 };
 

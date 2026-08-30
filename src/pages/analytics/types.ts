@@ -43,6 +43,7 @@ export interface Candidate {
   stage: string;
   department: string;
   applied_at: string;
+  job_posting_id?: string;
 }
 
 export interface OffboardingRequest {
@@ -55,19 +56,22 @@ export interface OffboardingRequest {
 
 export interface ExpenseRecord {
   id: string;
-  employee_id: string;
   category: string;
   amount: number;
   status: string;
-  submitted_at: string;
-  branch_id: string;
+  date?: string;
+  submitted_at?: string;
+  branch_id?: string | null;
+  submitted_by?: string | null;
+  employee_id?: string;
 }
 
 export interface ITAsset {
   id: string;
   type: string;
   status: string;
-  assigned_to: string | null;
+  employee_id?: string | null;
+  assigned_to?: string | null;
 }
 
 export interface ITTicket {

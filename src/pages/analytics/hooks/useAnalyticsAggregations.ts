@@ -133,6 +133,6 @@ export function useAnalyticsAggregations({
     totalExpense: useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]),
     paidExpense: useMemo(() => expenses.filter((e) => e.status === "paid").reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]),
     openTickets: useMemo(() => itTickets.filter((t) => t.status === "open").length, [itTickets]),
-    assignedAssets: useMemo(() => itAssets.filter((a) => a.assigned_to).length, [itAssets]),
+    assignedAssets: useMemo(() => itAssets.filter((a) => a.assigned_to || a.employee_id).length, [itAssets]),
   };
 }

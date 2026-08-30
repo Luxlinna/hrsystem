@@ -132,6 +132,7 @@ export function useChecklistData() {
     const ch = supabase
       .channel("onboarding-checklist-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_checklist_tasks" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_documents" }, () => loadData())
       .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_requests" }, () => loadData())
       .subscribe();
 
