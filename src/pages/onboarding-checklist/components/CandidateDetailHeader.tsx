@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { OnboardingHire, ChecklistTask } from "../types";
 import { getHireName, getHireInitials } from "../checklistUtils";
+import { CandidateProgressionStages } from "./CandidateProgressionStages";
 
 interface CandidateDetailHeaderProps {
   selectedHire: OnboardingHire | null;
@@ -31,7 +32,6 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
     return { total, completed, pending, pct };
   }, [hireTasks]);
 
-  // Stage progress counts
   const stageStats = useMemo(() => {
     const getCount = (cat: string) => {
       const catTasks = hireTasks.filter((t) => t.category === cat);
@@ -92,24 +92,28 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
+            type="button"
             onClick={onOpenAuditLogs}
             className="px-3.5 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors cursor-pointer"
           >
             View Details
           </button>
           <button
+            type="button"
             onClick={handleOpenHub}
             className="px-3.5 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors cursor-pointer"
           >
             Open in Onboarding Hub
           </button>
           <button
+            type="button"
             onClick={copyReport}
             className="px-3.5 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors cursor-pointer"
           >
             Copy Report
           </button>
           <button
+            type="button"
             onClick={onOpenAddModal}
             className="px-4 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
@@ -152,6 +156,7 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
             </div>
           </div>
           <button
+            type="button"
             onClick={handleOpenHub}
             className="px-3.5 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-[11px] font-bold rounded-xl shadow-2xs whitespace-nowrap cursor-pointer"
           >
@@ -161,51 +166,7 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
       )}
 
       {/* 4-Stage Onboarding Progression */}
-      <div>
-        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
-          4-Stage Onboarding Progression
-        </h4>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-          {[
-            { label: "Document Collection", key: "document", count: stageStats.documents, step: 1 },
-            { label: "IT & Equipment Setup", key: "it_setup", count: stageStats.it_setup, step: 2 },
-            { label: "Training & Orientation", key: "training", count: stageStats.training, step: 3 },
-            { label: "Final Sign-off", key: "complete", count: stageStats.general, step: 4 },
-          ].map((item, idx) => {
-            const hireStageIdx = ["document", "it_setup", "training", "complete"].indexOf(selectedHire.stage);
-            const isActive = selectedHire.stage === item.key;
-            const isCompleted = hireStageIdx > idx;
-            const isLocked = hireStageIdx < idx;
-
-            return (
-              <div
-                key={item.key}
-                className={`px-4 py-3 rounded-2xl border transition-all flex items-center justify-between gap-2 ${
-                  isActive
-                    ? "bg-[#253C7D]/5 border-[#253C7D] text-[#253C7D]"
-                    : isCompleted
-                    ? "bg-emerald-50/50 border-emerald-200 text-emerald-700"
-                    : "bg-gray-50/50 border-gray-200 text-gray-400"
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  {isCompleted ? (
-                    <i className="ri-checkbox-circle-fill text-emerald-500 text-sm shrink-0" />
-                  ) : isActive ? (
-                    <i className="ri-focus-2-line text-[#253C7D] text-sm shrink-0 animate-pulse" />
-                  ) : (
-                    <i className="ri-lock-line text-gray-400 text-sm shrink-0" />
-                  )}
-                  <span className="text-[12px] font-bold truncate">{item.label}</span>
-                </div>
-                <span className="text-[11px] font-black shrink-0">
-                  {item.count.done}/{item.count.total}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <CandidateProgressionStages selectedHire={selectedHire} stageStats={stageStats} />
     </div>
   );
 });

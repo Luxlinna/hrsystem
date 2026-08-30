@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase";
 import type { OnboardingHire, ChecklistTask } from "./types";
 
 export const getHireName = (hire: OnboardingHire | null): string => {
@@ -50,6 +51,30 @@ export const matchDocAndTask = (docName: string, taskName: string): boolean => {
     const taskMatches = taskKeys.some((k) => t.includes(k));
     if (docMatches && taskMatches) return true;
   }
-
   return false;
 };
+
+export async function syncTaskWithOnboardingDocuments(
+  onboardingRequestId: string,
+  taskName: string,
+  completed: boolean
+) {
+  try {
+    const { data: relatedDocs } = await supabase
+      .from("onboarding_documents")
+      .select("id, document_name")
+      .eq("onboarding_request_id", onboardingRequestId);
+
+    if (relatedDocs && relatedDocs.length > 0) {
+      const matchingDocs = relatedDocs.filter((d) => matchDocAndTask(d.document_name, taskName));
+      for (const d of matchingDocs) {
+        await supabase
+          .from("onboarding_documents")
+          .update({ status: completed ? "complete" : "pending" })
+          .eq("id", d.id);
+      }
+    }
+  } catch (e) {
+    console.error("Doc sync error:", e);
+  }
+}

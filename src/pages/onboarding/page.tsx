@@ -4,76 +4,14 @@ import { OnboardingFilterBar } from "./components/OnboardingFilterBar";
 import { OnboardingCardsView } from "./components/cards/OnboardingCardsView";
 import { OnboardingKanbanView } from "./components/kanban/OnboardingKanbanView";
 import { OnboardingTableView } from "./components/table/OnboardingTableView";
-import { StartOnboardingModal } from "./components/modals/StartOnboardingModal";
-import { OnboardingDocModal } from "./components/modals/OnboardingDocModal";
+import { OnboardingModalsContainer } from "./components/modals/OnboardingModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useOnboarding } from "./hooks/useOnboarding";
 
 export default function Onboarding() {
-  const {
-    isPartnerBranchBlocked,
-    userBranchName,
-    userBranchId,
-    documents,
-    loading,
-    viewMode,
-    setViewMode,
-    statusFilter,
-    setStatusFilter,
-    stageFilter,
-    setStageFilter,
-    searchQuery,
-    setSearchQuery,
-    sortBy,
-    setSortBy,
-    expandedRequest,
-    setExpandedRequest,
-    filteredRequests,
-    totalActive,
-    pendingApproval,
-    inDocStage,
-    completed,
-    getDocsForRequestAndStage,
-    getStageProgress,
-    isStageComplete,
-    isDocOverdue,
-    eligibleEmployees,
-    filteredEligibleEmployees,
-    showStartModal,
-    setShowStartModal,
-    startEmployeeId,
-    setStartEmployeeId,
-    empSearch,
-    setEmpSearch,
-    starting,
-    openStartOnboarding,
-    handleStartOnboarding,
-    handleDeleteRequest,
-    handlePopulateDefaultChecklist,
-    handleApprove,
-    advanceStage,
-    regressStage,
-    completeOnboarding,
-    showDocModal,
-    setShowDocModal,
-    selectedRequest,
-    selectedStage,
-    docForm,
-    setDocForm,
-    selectedFileName,
-    editingDocId,
-    uploading,
-    isDragOver,
-    setIsDragOver,
-    fileInputRef,
-    openDocModal,
-    openEditDocModal,
-    handleDocUpload,
-    bulkSetStageDeadline,
-    loadData,
-  } = useOnboarding();
+  const o = useOnboarding();
 
-  if (loading) {
+  if (o.loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
@@ -82,14 +20,14 @@ export default function Onboarding() {
     );
   }
 
-  if (isPartnerBranchBlocked) {
+  if (o.isPartnerBranchBlocked) {
     return (
       <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
         <OnboardingHeader onStartOnboarding={() => {}} />
         <PartnerBranchPrivacyShield
           moduleName="Onboarding"
-          userBranchName={userBranchName}
-          hasNoBranch={!userBranchId}
+          userBranchName={o.userBranchName}
+          hasNoBranch={!o.userBranchId}
         />
       </div>
     );
@@ -97,118 +35,83 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
-      {/* Header */}
-      <OnboardingHeader onStartOnboarding={openStartOnboarding} />
+      <OnboardingHeader onStartOnboarding={o.openStartOnboarding} />
 
-      {/* KPI Stats Bar */}
       <OnboardingStatsRow
-        totalActive={totalActive}
-        pendingApproval={pendingApproval}
-        inDocStage={inDocStage}
-        completed={completed}
-        statusFilter={statusFilter}
-        stageFilter={stageFilter}
-        onFilterStatus={setStatusFilter}
-        onFilterStage={setStageFilter}
+        totalActive={o.totalActive}
+        pendingApproval={o.pendingApproval}
+        inDocStage={o.inDocStage}
+        completed={o.completed}
+        statusFilter={o.statusFilter}
+        stageFilter={o.stageFilter}
+        onFilterStatus={o.setStatusFilter}
+        onFilterStage={o.setStageFilter}
       />
 
-      {/* Filter & View Switcher Bar */}
       <OnboardingFilterBar
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        stageFilter={stageFilter}
-        setStageFilter={setStageFilter}
-        sortBy={sortBy}
-        setSortBy={setSortBy}
+        viewMode={o.viewMode}
+        setViewMode={o.setViewMode}
+        searchQuery={o.searchQuery}
+        setSearchQuery={o.setSearchQuery}
+        statusFilter={o.statusFilter}
+        setStatusFilter={o.setStatusFilter}
+        stageFilter={o.stageFilter}
+        setStageFilter={o.setStageFilter}
+        sortBy={o.sortBy}
+        setSortBy={o.setSortBy}
       />
 
-      {/* View 1: Cards View */}
-      {viewMode === "cards" && (
+      {o.viewMode === "cards" && (
         <OnboardingCardsView
-          requests={filteredRequests}
-          documents={documents}
-          expandedRequest={expandedRequest}
-          onToggleExpand={setExpandedRequest}
-          getDocsForRequestAndStage={getDocsForRequestAndStage}
-          getStageProgress={getStageProgress}
-          isStageComplete={isStageComplete}
-          isDocOverdue={isDocOverdue}
-          onApprove={handleApprove}
-          onAdvanceStage={advanceStage}
-          onRegressStage={regressStage}
-          onCompleteOnboarding={completeOnboarding}
-          onPopulateDefaultChecklist={handlePopulateDefaultChecklist}
-          onDeleteRequest={handleDeleteRequest}
-          onOpenDocModal={openDocModal}
-          onOpenEditDocModal={openEditDocModal}
-          onBulkSetDeadline={bulkSetStageDeadline}
-          onRefresh={loadData}
-          onStartOnboarding={openStartOnboarding}
+          requests={o.filteredRequests}
+          documents={o.documents}
+          expandedRequest={o.expandedRequest}
+          onToggleExpand={o.setExpandedRequest}
+          getDocsForRequestAndStage={o.getDocsForRequestAndStage}
+          getStageProgress={o.getStageProgress}
+          isStageComplete={o.isStageComplete}
+          isDocOverdue={o.isDocOverdue}
+          onApprove={o.handleApprove}
+          onAdvanceStage={o.advanceStage}
+          onRegressStage={o.regressStage}
+          onCompleteOnboarding={o.completeOnboarding}
+          onPopulateDefaultChecklist={o.handlePopulateDefaultChecklist}
+          onDeleteRequest={o.handleDeleteRequest}
+          onOpenDocModal={o.openDocModal}
+          onOpenEditDocModal={o.openEditDocModal}
+          onBulkSetDeadline={o.bulkSetStageDeadline}
+          onRefresh={o.loadData}
+          onStartOnboarding={o.openStartOnboarding}
         />
       )}
 
-      {/* View 2: Kanban View */}
-      {viewMode === "kanban" && (
+      {o.viewMode === "kanban" && (
         <OnboardingKanbanView
-          requests={filteredRequests}
-          documents={documents}
+          requests={o.filteredRequests}
+          documents={o.documents}
           onSelectRequest={(id) => {
-            setViewMode("cards");
-            setExpandedRequest(id);
+            o.setViewMode("cards");
+            o.setExpandedRequest(id);
           }}
-          onAdvanceStage={advanceStage}
-          onCompleteOnboarding={completeOnboarding}
+          onAdvanceStage={o.advanceStage}
+          onCompleteOnboarding={o.completeOnboarding}
         />
       )}
 
-      {/* View 3: Table View */}
-      {viewMode === "table" && (
+      {o.viewMode === "table" && (
         <OnboardingTableView
-          requests={filteredRequests}
-          documents={documents}
+          requests={o.filteredRequests}
+          documents={o.documents}
           onSelectRequest={(id) => {
-            setViewMode("cards");
-            setExpandedRequest(id);
+            o.setViewMode("cards");
+            o.setExpandedRequest(id);
           }}
-          onApprove={handleApprove}
-          onDeleteRequest={handleDeleteRequest}
+          onApprove={o.handleApprove}
+          onDeleteRequest={o.handleDeleteRequest}
         />
       )}
 
-      {/* Start Onboarding Modal */}
-      <StartOnboardingModal
-        isOpen={showStartModal}
-        onClose={() => setShowStartModal(false)}
-        startEmployeeId={startEmployeeId}
-        setStartEmployeeId={setStartEmployeeId}
-        empSearch={empSearch}
-        setEmpSearch={setEmpSearch}
-        filteredEligibleEmployees={filteredEligibleEmployees}
-        eligibleCount={eligibleEmployees.length}
-        starting={starting}
-        onSubmit={handleStartOnboarding}
-      />
-
-      {/* Onboarding Doc / Checklist Item Modal */}
-      <OnboardingDocModal
-        isOpen={showDocModal}
-        onClose={() => setShowDocModal(false)}
-        selectedRequest={selectedRequest}
-        selectedStage={selectedStage}
-        docForm={docForm}
-        setDocForm={setDocForm}
-        selectedFileName={selectedFileName}
-        editingDocId={editingDocId}
-        uploading={uploading}
-        isDragOver={isDragOver}
-        setIsDragOver={setIsDragOver}
-        fileInputRef={fileInputRef}
-        onSubmit={handleDocUpload}
-      />
+      <OnboardingModalsContainer {...o} />
     </div>
   );
 }

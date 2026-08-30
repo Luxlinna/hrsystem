@@ -2,9 +2,10 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
-import type { OnboardingHire, ChecklistTask, TaskForm } from "../types";
-import { STANDARD_TASK_TEMPLATES } from "../constants";
-import { getHireName, matchDocAndTask } from "../checklistUtils";
+import type { OnboardingHire, ChecklistTask } from "../types";
+import { getHireName, syncTaskWithOnboardingDocuments } from "../checklistUtils";
+import { useChecklistTaskFormMutations } from "./useChecklistTaskFormMutations";
+import { useChecklistBatchActions } from "./useChecklistBatchActions";
 
 interface UseChecklistTaskMutationsProps {
   selectedHire: OnboardingHire | null;
@@ -24,22 +25,18 @@ export function useChecklistTaskMutations({
   setTasks,
 }: UseChecklistTaskMutationsProps) {
   const [toggling, setToggling] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [populatingDefaults, setPopulatingDefaults] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [viewingTask, setViewingTask] = useState<ChecklistTask | null>(null);
-  const [selectedTask, setSelectedTask] = useState<ChecklistTask | null>(null);
 
-  const [taskForm, setTaskForm] = useState<TaskForm>({
-    task_name: "",
-    description: "",
-    category: "documents",
-    assigned_to: "",
-    assigned_to_role: "",
-    due_date: "",
-    priority: "medium",
+  const formMutations = useChecklistTaskFormMutations({
+    selectedHire,
+    hireTasks,
+    loadData,
+  });
+
+  const batchActions = useChecklistBatchActions({
+    selectedHire,
+    hireTasks,
+    completerName,
+    loadData,
   });
 
   const toggleTask = useCallback(
@@ -51,9 +48,7 @@ export function useChecklistTaskMutations({
       if (task.assigned_to !== completerName) {
         toast(
           "Unassigned or Assigned to Other Staff",
-          task.assigned_to
-            ? `Only ${task.assigned_to} can check this task.`
-            : "Please edit and assign this task to a staff member first.",
+          task.assigned_to ? `Only ${task.assigned_to} can check this task.` : "Please edit and assign this task to a staff member first.",
           "warning"
         );
         return;
@@ -93,33 +88,8 @@ export function useChecklistTaskMutations({
         return;
       }
 
-      toast(
-        newCompleted ? "Task Completed" : "Marked Pending",
-        `"${task.task_name}" updated`,
-        newCompleted ? "success" : "info"
-      );
-
-      // Bidirectional sync with onboarding_documents
-      try {
-        const { data: relatedDocs } = await supabase
-          .from("onboarding_documents")
-          .select("id, document_name")
-          .eq("onboarding_request_id", task.onboarding_request_id);
-
-        if (relatedDocs && relatedDocs.length > 0) {
-          const matchingDocs = relatedDocs.filter((d) => matchDocAndTask(d.document_name, task.task_name));
-          for (const d of matchingDocs) {
-            await supabase
-              .from("onboarding_documents")
-              .update({
-                status: newCompleted ? "complete" : "pending",
-              })
-              .eq("id", d.id);
-          }
-        }
-      } catch (e) {
-        console.error("Doc sync error:", e);
-      }
+      toast(newCompleted ? "Task Completed" : "Marked Pending", `"${task.task_name}" updated`, newCompleted ? "success" : "info");
+      await syncTaskWithOnboardingDocuments(task.onboarding_request_id, task.task_name, newCompleted);
 
       if (newCompleted && selectedHire) {
         logActivity({
@@ -140,10 +110,7 @@ export function useChecklistTaskMutations({
     async (task: ChecklistTask) => {
       const { error } = await supabase
         .from("onboarding_checklist_tasks")
-        .update({
-          assigned_to: completerName,
-          assigned_to_role: "HR",
-        })
+        .update({ assigned_to: completerName, assigned_to_role: "HR" })
         .eq("id", task.id);
 
       if (error) {
@@ -159,82 +126,12 @@ export function useChecklistTaskMutations({
     [completerName, setTasks]
   );
 
-  const handlePopulateDefaultTasks = useCallback(async () => {
-    if (!selectedHire) return;
-    setPopulatingDefaults(true);
-
-    const existingNames = new Set(hireTasks.map((t) => t.task_name.toLowerCase().trim()));
-    const toInsert = STANDARD_TASK_TEMPLATES.filter((tpl) => !existingNames.has(tpl.task_name.toLowerCase().trim())).map(
-      (tpl, idx) => ({
-        onboarding_request_id: selectedHire.id,
-        task_name: tpl.task_name,
-        description: tpl.description,
-        category: tpl.category,
-        priority: tpl.priority,
-        sort_order: hireTasks.length + idx + 1,
-        completed: false,
-      })
-    );
-
-    if (toInsert.length === 0) {
-      toast("Up to Date", "All standard checklist tasks already exist for this candidate", "info");
-      setPopulatingDefaults(false);
-      return;
-    }
-
-    const { error } = await supabase.from("onboarding_checklist_tasks").insert(toInsert);
-    setPopulatingDefaults(false);
-
-    if (error) {
-      toast("Error", "Failed to load default checklist tasks", "error");
-    } else {
-      toast("Checklist Loaded", `Added ${toInsert.length} standard tasks`, "success");
-      loadData();
-    }
-  }, [selectedHire, hireTasks, loadData]);
-
-  const handleMarkAllComplete = useCallback(
-    async (categoryKey?: string) => {
-      if (!selectedHire) return;
-      const targetTasks = hireTasks.filter((t) => (!categoryKey || t.category === categoryKey) && !t.completed);
-      if (targetTasks.length === 0) {
-        toast("Info", "No pending tasks to mark complete", "info");
-        return;
-      }
-
-      if (!confirm(`Mark all ${targetTasks.length} pending task(s) as completed?`)) return;
-
-      const ids = targetTasks.map((t) => t.id);
-      const now = new Date().toISOString();
-
-      const { error } = await supabase
-        .from("onboarding_checklist_tasks")
-        .update({
-          completed: true,
-          completed_at: now,
-          completed_by: completerName,
-        })
-        .in("id", ids);
-
-      if (error) {
-        toast("Error", "Failed to complete tasks", "error");
-      } else {
-        toast("Completed", `Marked ${targetTasks.length} tasks as completed`, "success");
-        loadData();
-      }
-    },
-    [selectedHire, hireTasks, completerName, loadData]
-  );
-
   const handleDeleteTask = useCallback(
     async (taskId: string) => {
       if (!confirm("Are you sure you want to remove this checklist item?")) return;
       const { error } = await supabase
         .from("onboarding_checklist_tasks")
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_by: completerName,
-        })
+        .update({ deleted_at: new Date().toISOString(), deleted_by: completerName })
         .eq("id", taskId);
 
       if (error) {
@@ -247,123 +144,28 @@ export function useChecklistTaskMutations({
     [completerName, loadData]
   );
 
-  const handleAddTask = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!selectedHire || !taskForm.task_name.trim()) return;
-
-      setSubmitting(true);
-      const { error } = await supabase.from("onboarding_checklist_tasks").insert([
-        {
-          onboarding_request_id: selectedHire.id,
-          task_name: taskForm.task_name.trim(),
-          description: taskForm.description.trim() || null,
-          category: taskForm.category,
-          assigned_to: taskForm.assigned_to.trim() || null,
-          assigned_to_role: taskForm.assigned_to_role.trim() || null,
-          due_date: taskForm.due_date || null,
-          priority: taskForm.priority,
-          sort_order: hireTasks.length + 1,
-          completed: false,
-        },
-      ]);
-
-      setSubmitting(false);
-
-      if (error) {
-        toast("Error", "Failed to create task", "error");
-      } else {
-        toast("Task Added", "Checklist item added successfully", "success");
-        setShowAddModal(false);
-        setTaskForm({
-          task_name: "",
-          description: "",
-          category: "documents",
-          assigned_to: "",
-          assigned_to_role: "",
-          due_date: "",
-          priority: "medium",
-        });
-        loadData();
-      }
-    },
-    [selectedHire, taskForm, hireTasks.length, loadData]
-  );
-
-  const handleEditTask = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!selectedTask || !taskForm.task_name.trim()) return;
-
-      setSubmitting(true);
-      const { error } = await supabase
-        .from("onboarding_checklist_tasks")
-        .update({
-          task_name: taskForm.task_name.trim(),
-          description: taskForm.description.trim() || null,
-          category: taskForm.category,
-          assigned_to: taskForm.assigned_to.trim() || null,
-          assigned_to_role: taskForm.assigned_to_role.trim() || null,
-          due_date: taskForm.due_date || null,
-          priority: taskForm.priority,
-        })
-        .eq("id", selectedTask.id);
-
-      setSubmitting(false);
-
-      if (error) {
-        toast("Error", "Failed to update task", "error");
-      } else {
-        toast("Task Updated", "Changes saved successfully", "success");
-        setShowEditModal(false);
-        setSelectedTask(null);
-        loadData();
-      }
-    },
-    [selectedTask, taskForm, loadData]
-  );
-
-  const openEditModal = useCallback((task: ChecklistTask) => {
-    setSelectedTask(task);
-    setTaskForm({
-      task_name: task.task_name,
-      description: task.description || "",
-      category: (task.category as any) || "documents",
-      assigned_to: task.assigned_to || "",
-      assigned_to_role: task.assigned_to_role || "",
-      due_date: task.due_date || "",
-      priority: task.priority || "medium",
-    });
-    setShowEditModal(true);
-  }, []);
-
-  const openDetailsModal = useCallback((task: ChecklistTask) => {
-    setViewingTask(task);
-    setShowDetailsModal(true);
-  }, []);
-
   return {
     toggling,
-    submitting,
-    populatingDefaults,
-    showAddModal,
-    setShowAddModal,
-    showEditModal,
-    setShowEditModal,
-    showDetailsModal,
-    setShowDetailsModal,
-    viewingTask,
-    selectedTask,
-    taskForm,
-    setTaskForm,
+    submitting: formMutations.submitting,
+    populatingDefaults: batchActions.populatingDefaults,
+    showAddModal: formMutations.showAddModal,
+    setShowAddModal: formMutations.setShowAddModal,
+    showEditModal: formMutations.showEditModal,
+    setShowEditModal: formMutations.setShowEditModal,
+    showDetailsModal: formMutations.showDetailsModal,
+    setShowDetailsModal: formMutations.setShowDetailsModal,
+    viewingTask: formMutations.viewingTask,
+    selectedTask: formMutations.selectedTask,
+    taskForm: formMutations.taskForm,
+    setTaskForm: formMutations.setTaskForm,
     toggleTask,
     handleQuickAssignToMe,
-    handlePopulateDefaultTasks,
-    handleMarkAllComplete,
+    handlePopulateDefaultTasks: batchActions.handlePopulateDefaultTasks,
+    handleMarkAllComplete: batchActions.handleMarkAllComplete,
     handleDeleteTask,
-    handleAddTask,
-    handleEditTask,
-    openEditModal,
-    openDetailsModal,
+    handleAddTask: formMutations.handleAddTask,
+    handleEditTask: formMutations.handleEditTask,
+    openEditModal: formMutations.openEditModal,
+    openDetailsModal: formMutations.openDetailsModal,
   };
 }
