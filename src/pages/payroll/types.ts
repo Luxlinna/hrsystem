@@ -44,6 +44,7 @@ export interface PayrollRecord {
   base_salary: number;
   bonus: number;
   deductions: number;
+  gross_pay?: number;
   net_pay: number;
   status: "paid" | "processed" | "pending";
   created_at?: string;
@@ -59,7 +60,6 @@ export interface PayrollForm {
   bonus: number;
   deductions: number;
   status: "paid" | "processed" | "pending";
-  notes: string;
 }
 
 export interface PayrollStats {

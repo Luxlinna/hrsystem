@@ -91,7 +91,7 @@ export function usePayrollData(
 
         const { data: recordsData } = await supabase
           .from("payroll_records")
-          .select("id, employee_id, branch_id, month, base_salary, bonus, deductions, net_pay, status, notes, created_at, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(id, name))")
+          .select("id, employee_id, branch_id, month, base_salary, bonus, deductions, net_pay, status, created_at, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(id, name))")
           .is("deleted_at", null)
           .in("employee_id", empIds)
           .order("month", { ascending: false })
@@ -126,7 +126,7 @@ export function usePayrollData(
           setEmployees([empRecord as unknown as Employee]);
           const { data: myRecords } = await supabase
             .from("payroll_records")
-            .select("id, employee_id, branch_id, month, base_salary, bonus, deductions, net_pay, status, notes, created_at, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(id, name))")
+            .select("id, employee_id, branch_id, month, base_salary, bonus, deductions, net_pay, status, created_at, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(id, name))")
             .eq("employee_id", empRecord.id)
             .is("deleted_at", null)
             .order("month", { ascending: false });

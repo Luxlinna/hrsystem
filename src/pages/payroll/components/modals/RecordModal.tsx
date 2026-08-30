@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { PayrollForm, PayrollRecord, Employee } from "../../types";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
+import { RecordModalSalaryFields } from "./RecordModalSalaryFields";
 
 interface RecordModalProps {
   isOpen: boolean;
@@ -25,9 +26,6 @@ export const RecordModal = memo(function RecordModal({
 }: RecordModalProps) {
   if (!isOpen) return null;
 
-  const calculatedNet =
-    Number(form.base_salary || 0) + Number(form.bonus || 0) - Number(form.deductions || 0);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs">
       <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
@@ -41,6 +39,7 @@ export const RecordModal = memo(function RecordModal({
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 flex items-center justify-center text-gray-400 cursor-pointer"
           >
@@ -49,7 +48,6 @@ export const RecordModal = memo(function RecordModal({
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          {/* Employee Selection */}
           {!recordToEdit ? (
             <div>
               <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
@@ -75,7 +73,6 @@ export const RecordModal = memo(function RecordModal({
             </div>
           )}
 
-          {/* Month Period & Status */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
@@ -106,77 +103,8 @@ export const RecordModal = memo(function RecordModal({
             </div>
           </div>
 
-          {/* Breakdown Numbers */}
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                Base Salary ($) *
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="50"
-                required
-                value={form.base_salary}
-                onChange={(e) => setForm({ ...form, base_salary: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-white font-medium focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
+          <RecordModalSalaryFields form={form} setForm={setForm} />
 
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                Bonuses ($)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="25"
-                value={form.bonus}
-                onChange={(e) => setForm({ ...form, bonus: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-white font-medium focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                Deductions ($)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="10"
-                value={form.deductions}
-                onChange={(e) => setForm({ ...form, deductions: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-white font-medium focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-          </div>
-
-          {/* Calculated Net Take-Home preview */}
-          <div className="p-3 bg-[#253C7D]/5 dark:bg-sky-400/10 rounded-2xl border border-[#253C7D]/10 dark:border-sky-400/20 flex items-center justify-between">
-            <span className="text-xs font-bold text-[#253C7D] dark:text-sky-300">
-              Calculated Net Pay:
-            </span>
-            <span className="text-base font-black text-[#253C7D] dark:text-sky-300">
-              ${calculatedNet.toLocaleString()}
-            </span>
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
-              Internal Notes / Details
-            </label>
-            <textarea
-              rows={2}
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder="e.g., Performance incentive included for Q3 milestone..."
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#253C7D] font-medium resize-none"
-            />
-          </div>
-
-          {/* Actions */}
           <div className="pt-3 flex items-center justify-end gap-2.5">
             <button
               type="button"
