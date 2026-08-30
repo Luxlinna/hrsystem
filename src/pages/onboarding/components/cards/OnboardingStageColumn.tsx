@@ -43,9 +43,10 @@ export const OnboardingStageColumn = memo(function OnboardingStageColumn({
   isDocOverdue,
   onRefresh,
 }: OnboardingStageColumnProps) {
-  const isActive = idx === currentStageIdx && request.status !== "pending";
-  const isCompleted = idx < currentStageIdx || request.status === "completed";
-  const isLocked = idx > currentStageIdx || request.status === "pending";
+  const isCompletedJourney = request.status === "completed" || request.stage === "complete";
+  const isActive = idx === currentStageIdx && request.status !== "pending" && !isCompletedJourney;
+  const isCompleted = idx < currentStageIdx || isCompletedJourney;
+  const isLocked = (idx > currentStageIdx && !isCompletedJourney) || request.status === "pending";
 
   return (
     <div
