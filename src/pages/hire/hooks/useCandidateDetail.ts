@@ -124,6 +124,17 @@ export function useCandidateDetail(id: string | undefined) {
     toast("Notes Saved", "Candidate recruiter notes updated.", "success");
   }, [id, notesText]);
 
+  const deleteCandidate = useCallback(async () => {
+    if (!id || !candidate) return;
+    const { error } = await supabase.from("candidates").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    if (error) {
+      toast("Error", "Failed to delete candidate", "error");
+      return;
+    }
+    toast("Candidate Deleted", `${candidate.full_name} was removed.`, "success");
+    navigate("/hire");
+  }, [id, candidate, navigate]);
+
   return {
     candidate,
     interviews,
@@ -152,6 +163,7 @@ export function useCandidateDetail(id: string | undefined) {
     rateCandidate,
     uploadResume,
     handleSaveNotes,
+    deleteCandidate,
     handleScheduleInterview: feedback.handleScheduleInterview,
     handleSaveFeedback: feedback.handleSaveFeedback,
     navigate,

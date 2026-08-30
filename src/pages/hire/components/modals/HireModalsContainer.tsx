@@ -135,7 +135,7 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
         setScore={props.setFeedbackScore}
         notes={props.feedbackNotes}
         setNotes={props.setFeedbackNotes}
-        savingFeedback={props.savingFeedback}
+        saving={props.savingFeedback}
         onClose={() => props.setFeedbackModal(false)}
         onSubmit={props.handleSaveFeedback}
       />

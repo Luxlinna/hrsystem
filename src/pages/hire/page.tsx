@@ -28,16 +28,17 @@ export default function HirePage() {
     return (
       <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
         <HireHeader
-          branchCount={h.branches.length}
-          jobCount={0}
+          activeJobsCount={0}
+          candidatesCount={0}
+          activeTab={h.tab}
           canManage={false}
-          onOpenJobModal={() => {}}
-          onOpenCandidateModal={() => {}}
-          onOpenInterviewModal={() => {}}
-          onExportCSV={() => {}}
+          onOpenCreateJob={() => {}}
+          onOpenCreateCandidate={() => {}}
+          onOpenCreateInterview={() => {}}
+          onOpenCreateRequest={() => {}}
         />
         <PartnerBranchPrivacyShield
-          moduleName="Recruitment &amp; Talent Acquisition"
+          moduleName="Recruitment & Talent Acquisition"
           userBranchName={h.userBranchName}
           hasNoBranch={!h.userBranchId}
         />
@@ -48,13 +49,14 @@ export default function HirePage() {
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       <HireHeader
-        branchCount={h.branches.length}
-        jobCount={h.jobs.length}
+        activeJobsCount={h.jobs.filter((j) => j.status === "active").length || h.jobs.length}
+        candidatesCount={h.candidates.length}
+        activeTab={h.tab}
         canManage={h.canRequest}
-        onOpenJobModal={h.openCreateJob}
-        onOpenCandidateModal={() => h.openCreateCandidate()}
-        onOpenInterviewModal={() => h.openCreateInterview()}
-        onExportCSV={() => {}}
+        onOpenCreateJob={h.openCreateJob}
+        onOpenCreateCandidate={() => h.openCreateCandidate()}
+        onOpenCreateInterview={() => h.openCreateInterview()}
+        onOpenCreateRequest={() => h.openCreateRequest()}
       />
 
       <HireTabsBar
@@ -101,17 +103,18 @@ export default function HirePage() {
       {h.tab === "jobs" && (
         <JobsTabContent
           jobs={h.filteredJobs}
+          candidates={h.candidates}
           viewMode={h.jobViewMode}
-          canManage={h.canRequest}
-          onOpenCreate={h.openCreateJob}
-          onOpenEdit={h.openEditJob}
+          onOpenCreateJob={h.openCreateJob}
+          onEditJob={h.openEditJob}
           onCloseJob={h.closeJob}
           onReopenJob={h.reopenJob}
           onDeleteJob={h.deleteJob}
-          onSelectCandidateJob={(jobId) => {
-            h.setFilterCandidateJob(jobId);
-            h.setTab("candidates");
+          onAddCandidate={(jobId) => {
+            h.openCreateCandidate(jobId);
           }}
+          onClearFilters={h.resetFilters}
+          hasFilters={h.hasFilters}
         />
       )}
 
@@ -134,9 +137,8 @@ export default function HirePage() {
       {h.tab === "interviews" && (
         <InterviewsTabContent
           interviews={h.filteredInterviews}
-          canManage={h.canRequest}
-          onOpenCreate={() => h.openCreateInterview()}
-          onOpenEdit={h.openEditInterview}
+          onOpenCreateInterview={() => h.openCreateInterview()}
+          onEditInterview={h.openEditInterview}
           onOpenFeedback={h.openFeedbackModal}
           onDeleteInterview={h.deleteInterview}
         />

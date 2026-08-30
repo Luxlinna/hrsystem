@@ -45,11 +45,12 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
     if (branchId === undefined) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
+        const email = session?.user?.email;
+        if (email) {
           const { data: emp } = await supabase
             .from("employees")
             .select("branch_id")
-            .eq("user_id", session.user.id)
+            .eq("email", email)
             .maybeSingle();
           if (emp?.branch_id) {
             branchId = emp.branch_id;

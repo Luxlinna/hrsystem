@@ -5,18 +5,21 @@ interface HireHeaderProps {
   activeJobsCount: number;
   candidatesCount: number;
   activeTab: HireTab;
+  canManage: boolean;
   onOpenCreateJob: () => void;
   onOpenCreateCandidate: () => void;
   onOpenCreateInterview: () => void;
+  onOpenCreateRequest: () => void;
 }
 
 export const HireHeader = memo(function HireHeader({
   activeJobsCount,
-  candidatesCount,
   activeTab,
+  canManage,
   onOpenCreateJob,
   onOpenCreateCandidate,
   onOpenCreateInterview,
+  onOpenCreateRequest,
 }: HireHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -41,7 +44,8 @@ export const HireHeader = memo(function HireHeader({
       <div className="flex items-center gap-2.5 flex-wrap">
         {activeTab === "candidates" && (
           <button
-            onClick={() => onOpenCreateCandidate()}
+            type="button"
+            onClick={onOpenCreateCandidate}
             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
           >
             <i className="ri-user-add-line text-sm" />
@@ -51,7 +55,8 @@ export const HireHeader = memo(function HireHeader({
 
         {activeTab === "interviews" && (
           <button
-            onClick={() => onOpenCreateInterview()}
+            type="button"
+            onClick={onOpenCreateInterview}
             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
           >
             <i className="ri-calendar-event-line text-sm" />
@@ -59,13 +64,27 @@ export const HireHeader = memo(function HireHeader({
           </button>
         )}
 
-        <button
-          onClick={onOpenCreateJob}
-          className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
-        >
-          <i className="ri-briefcase-line text-base font-bold" />
-          Post New Job
-        </button>
+        {activeTab === "requests" ? (
+          <button
+            type="button"
+            onClick={onOpenCreateRequest}
+            className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+          >
+            <i className="ri-user-add-line text-base font-bold" />
+            Request New Employee
+          </button>
+        ) : (
+          canManage && (
+            <button
+              type="button"
+              onClick={onOpenCreateJob}
+              className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+            >
+              <i className="ri-briefcase-line text-base font-bold" />
+              Post New Job
+            </button>
+          )
+        )}
       </div>
     </div>
   );

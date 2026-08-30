@@ -2,22 +2,34 @@ import { memo } from "react";
 import type { HireTab } from "../types";
 
 interface HireTabsBarProps {
-  activeTab: HireTab;
-  setActiveTab: (tab: HireTab) => void;
+  activeTab?: HireTab;
+  setActiveTab?: (tab: HireTab) => void;
+  tab?: HireTab;
+  setTab?: (tab: HireTab) => void;
   jobsCount: number;
   candidatesCount: number;
   interviewsCount: number;
+  requestsCount?: number;
   pendingRequestsCount?: number;
+  isChairman?: boolean;
 }
 
 export const HireTabsBar = memo(function HireTabsBar({
   activeTab,
   setActiveTab,
+  tab,
+  setTab,
   jobsCount,
   candidatesCount,
   interviewsCount,
   pendingRequestsCount = 0,
 }: HireTabsBarProps) {
+  const currentTab = activeTab || tab || "requests";
+  const handleSelectTab = (tKey: HireTab) => {
+    if (setActiveTab) setActiveTab(tKey);
+    else if (setTab) setTab(tKey);
+  };
+
   const tabs = [
     { key: "requests" as HireTab, label: "Requisitions", icon: "ri-file-list-3-line", count: pendingRequestsCount, isBadge: true },
     { key: "jobs" as HireTab, label: "Job Openings", icon: "ri-briefcase-line", count: jobsCount },
@@ -29,11 +41,12 @@ export const HireTabsBar = memo(function HireTabsBar({
   return (
     <div className="flex items-center gap-2 border-b border-gray-200/80 mb-6 overflow-x-auto no-scrollbar pb-px">
       {tabs.map((t) => {
-        const isActive = activeTab === t.key;
+        const isActive = currentTab === t.key;
         return (
           <button
             key={t.key}
-            onClick={() => setActiveTab(t.key)}
+            type="button"
+            onClick={() => handleSelectTab(t.key)}
             className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               isActive
                 ? "border-[#253C7D] text-[#253C7D]"

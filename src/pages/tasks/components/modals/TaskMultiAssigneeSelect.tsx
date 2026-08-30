@@ -3,19 +3,30 @@ import type { Employee } from "../../types";
 import { initials } from "../../taskUtils";
 
 interface TaskMultiAssigneeSelectProps {
-  employees: Employee[];
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
+  employees?: Employee[];
+  selectedIds?: string[];
+  assignedIds?: string[];
+  onChange?: (ids: string[]) => void;
+  setAssignedIds?: React.Dispatch<React.SetStateAction<string[]>> | ((ids: string[]) => void);
 }
 
 export const TaskMultiAssigneeSelect = memo(function TaskMultiAssigneeSelect({
-  employees,
+  employees = [],
   selectedIds,
+  assignedIds,
   onChange,
+  setAssignedIds,
 }: TaskMultiAssigneeSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const currentIds = selectedIds ?? assignedIds ?? [];
+
+  const updateIds = (ids: string[]) => {
+    if (onChange) onChange(ids);
+    if (setAssignedIds) setAssignedIds(ids);
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -27,32 +38,32 @@ export const TaskMultiAssigneeSelect = memo(function TaskMultiAssigneeSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredEmployees = employees.filter((e) =>
-    `${e.first_name} ${e.last_name} ${e.department}`
+  const filteredEmployees = (employees || []).filter((e) =>
+    `${e.first_name || ""} ${e.last_name || ""} ${e.department || ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
 
-  const selectedEmployees = employees.filter((e) => selectedIds.includes(e.id));
+  const selectedEmployees = (employees || []).filter((e) => currentIds.includes(e.id));
 
   const toggleEmployee = (id: string) => {
-    if (selectedIds.includes(id)) {
-      onChange(selectedIds.filter((item) => item !== id));
+    if (currentIds.includes(id)) {
+      updateIds(currentIds.filter((item) => item !== id));
     } else {
-      onChange([...selectedIds, id]);
+      updateIds([...currentIds, id]);
     }
   };
 
   const removeId = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    onChange(selectedIds.filter((item) => item !== id));
+    updateIds(currentIds.filter((item) => item !== id));
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === employees.length) {
-      onChange([]);
+    if (currentIds.length === employees.length) {
+      updateIds([]);
     } else {
-      onChange(employees.map((e) => e.id));
+      updateIds(employees.map((e) => e.id));
     }
   };
 
@@ -116,12 +127,12 @@ export const TaskMultiAssigneeSelect = memo(function TaskMultiAssigneeSelect({
             className="w-full flex items-center gap-2 px-3 py-1 text-xs font-bold text-[#253C7D] hover:bg-slate-50 rounded-lg transition-colors cursor-pointer border-b border-gray-100"
           >
             <i className="ri-checkbox-multiple-line" />
-            <span>{selectedIds.length === employees.length ? "Deselect All" : `Select All (${employees.length})`}</span>
+            <span>{currentIds.length === employees.length ? "Deselect All" : `Select All (${employees.length})`}</span>
           </button>
 
           <div className="space-y-0.5 max-h-40 overflow-y-auto">
             {filteredEmployees.map((emp) => {
-              const checked = selectedIds.includes(emp.id);
+              const checked = currentIds.includes(emp.id);
               return (
                 <div
                   key={emp.id}

@@ -76,6 +76,7 @@ const routes: RouteObject[] = [
       { path: "it-management", element: mod("it-management", <ITManagement />) },
       { path: "hire", element: mod("hire", <Hire />) },
       { path: "hire/candidate/:id", element: mod("hire", <CandidateDetail />) },
+      { path: "hire/candidates/:id", element: mod("hire", <CandidateDetail />) },
       { path: "offboard", element: mod("offboard", <Offboard />) },
       { path: "org-chart", element: mod("org-chart", <OrgChart />) },
       { path: "tools", element: mod("tools", <Tools />) },

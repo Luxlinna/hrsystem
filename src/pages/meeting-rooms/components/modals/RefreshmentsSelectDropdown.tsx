@@ -2,18 +2,40 @@ import { memo, useState, useRef, useEffect } from "react";
 import { REFRESHMENTS_OPTIONS } from "../../constants";
 
 interface RefreshmentsSelectDropdownProps {
-  selectedRefreshments: string[];
-  onToggleRefreshment: (label: string) => void;
-  onSetRefreshments: (refs: string[]) => void;
+  selectedRefreshments?: string[];
+  selectedRef?: string[];
+  onToggleRefreshment?: (label: string) => void;
+  onToggleRef?: (label: string) => void;
+  onSetRefreshments?: (refs: string[]) => void;
+  onSetRefs?: (refs: string[]) => void;
+  customRef?: string;
+  setCustomRef?: (val: string) => void;
 }
 
 export const RefreshmentsSelectDropdown = memo(function RefreshmentsSelectDropdown({
   selectedRefreshments,
+  selectedRef,
   onToggleRefreshment,
+  onToggleRef,
   onSetRefreshments,
+  onSetRefs,
+  customRef = "",
+  setCustomRef,
 }: RefreshmentsSelectDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const currentRefs = selectedRefreshments ?? selectedRef ?? [];
+
+  const handleToggle = (label: string) => {
+    if (onToggleRefreshment) onToggleRefreshment(label);
+    if (onToggleRef) onToggleRef(label);
+  };
+
+  const handleSet = (refs: string[]) => {
+    if (onSetRefreshments) onSetRefreshments(refs);
+    if (onSetRefs) onSetRefs(refs);
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -26,16 +48,16 @@ export const RefreshmentsSelectDropdown = memo(function RefreshmentsSelectDropdo
   }, []);
 
   const selectAll = () => {
-    onSetRefreshments(REFRESHMENTS_OPTIONS.map((o) => o.label));
+    handleSet(REFRESHMENTS_OPTIONS.map((o) => o.label));
   };
 
   const clearAll = () => {
-    onSetRefreshments([]);
+    handleSet([]);
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+    <div className="relative space-y-2" ref={dropdownRef}>
+      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
         Refreshments &amp; Catering
       </label>
 
@@ -54,16 +76,16 @@ export const RefreshmentsSelectDropdown = memo(function RefreshmentsSelectDropdo
             <i className="ri-cup-line" />
           </div>
           <span className="truncate text-gray-800">
-            {selectedRefreshments.length === 0
+            {currentRefs.length === 0
               ? "Select refreshments & catering..."
-              : `${selectedRefreshments.length} item${selectedRefreshments.length > 1 ? "s" : ""} selected (${selectedRefreshments.join(", ")})`}
+              : `${currentRefs.length} item${currentRefs.length > 1 ? "s" : ""} selected (${currentRefs.join(", ")})`}
           </span>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {selectedRefreshments.length > 0 && (
+          {currentRefs.length > 0 && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">
-              {selectedRefreshments.length}
+              {currentRefs.length}
             </span>
           )}
           <i
@@ -100,11 +122,11 @@ export const RefreshmentsSelectDropdown = memo(function RefreshmentsSelectDropdo
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-1">
             {REFRESHMENTS_OPTIONS.map((ref) => {
-              const isSelected = selectedRefreshments.includes(ref.label);
+              const isSelected = currentRefs.includes(ref.label);
               return (
                 <div
                   key={ref.label}
-                  onClick={() => onToggleRefreshment(ref.label)}
+                  onClick={() => handleToggle(ref.label)}
                   className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs font-semibold ${
                     isSelected
                       ? "bg-emerald-50 text-emerald-800 font-bold"
@@ -126,6 +148,16 @@ export const RefreshmentsSelectDropdown = memo(function RefreshmentsSelectDropdo
             })}
           </div>
         </div>
+      )}
+
+      {setCustomRef && (
+        <input
+          type="text"
+          value={customRef}
+          onChange={(e) => setCustomRef(e.target.value)}
+          placeholder="Other custom refreshments or requests (optional)..."
+          className="w-full px-3.5 py-2 bg-gray-50/80 border border-gray-200/80 rounded-2xl text-xs font-semibold focus:bg-white focus:outline-none focus:border-emerald-600"
+        />
       )}
     </div>
   );

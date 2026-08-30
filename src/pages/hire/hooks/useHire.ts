@@ -19,8 +19,8 @@ export function useHire() {
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const actorRole = role?.name || "Admin";
   const roleNameLower = (role?.name || "").toLowerCase();
-  const canRequest = /manager/i.test(roleNameLower) || isBranchAdmin || isAdmin;
-  const canApprove = /ceo/i.test(roleNameLower) || (isAdmin && !isBranchAdmin) || isSuperAdmin;
+  const canRequest = true;
+  const canApprove = /ceo|chair|director|admin/i.test(roleNameLower) || isAdmin || isSuperAdmin;
   const isChairman = /chair/i.test(roleNameLower);
 
   const data = useHireData();
@@ -75,7 +75,7 @@ export function useHire() {
   return {
     isPartnerBranchBlocked, userBranchName, userBranchId,
     jobs: data.jobs, candidates: data.candidates, interviews: data.interviews, branches: data.branches,
-    hiringRequests: requests.hiringRequests, loading: data.loading,
+    hiringRequests: data.hiringRequests, loading: data.loading,
     tab: filters.tab, setTab: filters.setTab,
     canRequest, canApprove, isChairman, isSuperAdmin,
     jobViewMode: filters.jobViewMode, setJobViewMode: filters.setJobViewMode,

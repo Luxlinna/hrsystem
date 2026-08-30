@@ -2,18 +2,40 @@ import { memo, useState, useRef, useEffect } from "react";
 import { SPECIAL_REQUIREMENTS_OPTIONS } from "../../constants";
 
 interface RequirementsSelectDropdownProps {
-  selectedRequirements: string[];
-  onToggleRequirement: (label: string) => void;
-  onSetRequirements: (reqs: string[]) => void;
+  selectedRequirements?: string[];
+  selectedReqs?: string[];
+  onToggleRequirement?: (label: string) => void;
+  onToggleReq?: (label: string) => void;
+  onSetRequirements?: (reqs: string[]) => void;
+  onSetReqs?: (reqs: string[]) => void;
+  customReq?: string;
+  setCustomReq?: (val: string) => void;
 }
 
 export const RequirementsSelectDropdown = memo(function RequirementsSelectDropdown({
   selectedRequirements,
+  selectedReqs,
   onToggleRequirement,
+  onToggleReq,
   onSetRequirements,
+  onSetReqs,
+  customReq = "",
+  setCustomReq,
 }: RequirementsSelectDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const currentReqs = selectedRequirements ?? selectedReqs ?? [];
+
+  const handleToggle = (label: string) => {
+    if (onToggleRequirement) onToggleRequirement(label);
+    if (onToggleReq) onToggleReq(label);
+  };
+
+  const handleSet = (reqs: string[]) => {
+    if (onSetRequirements) onSetRequirements(reqs);
+    if (onSetReqs) onSetReqs(reqs);
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -26,16 +48,16 @@ export const RequirementsSelectDropdown = memo(function RequirementsSelectDropdo
   }, []);
 
   const selectAll = () => {
-    onSetRequirements(SPECIAL_REQUIREMENTS_OPTIONS.map((o) => o.label));
+    handleSet(SPECIAL_REQUIREMENTS_OPTIONS.map((o) => o.label));
   };
 
   const clearAll = () => {
-    onSetRequirements([]);
+    handleSet([]);
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+    <div className="relative space-y-2" ref={dropdownRef}>
+      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
         Required Equipment &amp; Support
       </label>
 
@@ -54,16 +76,16 @@ export const RequirementsSelectDropdown = memo(function RequirementsSelectDropdo
             <i className="ri-tools-line" />
           </div>
           <span className="truncate text-gray-800">
-            {selectedRequirements.length === 0
+            {currentReqs.length === 0
               ? "Select required equipment & support..."
-              : `${selectedRequirements.length} item${selectedRequirements.length > 1 ? "s" : ""} selected (${selectedRequirements.join(", ")})`}
+              : `${currentReqs.length} item${currentReqs.length > 1 ? "s" : ""} selected (${currentReqs.join(", ")})`}
           </span>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {selectedRequirements.length > 0 && (
+          {currentReqs.length > 0 && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#253C7D] text-white">
-              {selectedRequirements.length}
+              {currentReqs.length}
             </span>
           )}
           <i
@@ -100,11 +122,11 @@ export const RequirementsSelectDropdown = memo(function RequirementsSelectDropdo
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-1">
             {SPECIAL_REQUIREMENTS_OPTIONS.map((req) => {
-              const isSelected = selectedRequirements.includes(req.label);
+              const isSelected = currentReqs.includes(req.label);
               return (
                 <div
                   key={req.label}
-                  onClick={() => onToggleRequirement(req.label)}
+                  onClick={() => handleToggle(req.label)}
                   className={`p-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-xs font-semibold ${
                     isSelected
                       ? "bg-[#253C7D]/10 text-[#253C7D]"
@@ -126,6 +148,16 @@ export const RequirementsSelectDropdown = memo(function RequirementsSelectDropdo
             })}
           </div>
         </div>
+      )}
+
+      {setCustomReq && (
+        <input
+          type="text"
+          value={customReq}
+          onChange={(e) => setCustomReq(e.target.value)}
+          placeholder="Other custom equipment or requirements (optional)..."
+          className="w-full px-3.5 py-2 bg-gray-50/80 border border-gray-200/80 rounded-2xl text-xs font-semibold focus:bg-white focus:outline-none focus:border-[#253C7D]"
+        />
       )}
     </div>
   );

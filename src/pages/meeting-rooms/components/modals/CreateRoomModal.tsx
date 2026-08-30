@@ -11,6 +11,8 @@ interface Props {
   showToast: (type: string, message: string) => void;
 }
 
+const FLOOR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 export const CreateRoomModal = memo(function CreateRoomModal({
   isOpen,
   onClose,
@@ -21,34 +23,25 @@ export const CreateRoomModal = memo(function CreateRoomModal({
   const [name, setName] = useState("");
   const [capacity, setCapacity] = useState(10);
   const [floor, setFloor] = useState<number>(3);
+  const [isOtherFloor, setIsOtherFloor] = useState(false);
   const [color, setColor] = useState(COLOR_PRESETS[0]);
   const [customColor, setCustomColor] = useState("");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([
-    "4K Display TV",
-    "High-speed Wi-Fi",
-    "AC Climate",
+    "4K Display TV", "High-speed Wi-Fi", "AC Climate",
   ]);
   const [customAmenity, setCustomAmenity] = useState("");
 
   const reset = () => {
-    setName("");
-    setCapacity(10);
-    setFloor(3);
-    setColor(COLOR_PRESETS[0]);
-    setCustomColor("");
+    setName(""); setCapacity(10); setFloor(3); setIsOtherFloor(false);
+    setColor(COLOR_PRESETS[0]); setCustomColor("");
     setSelectedAmenities(["4K Display TV", "High-speed Wi-Fi", "AC Climate"]);
     setCustomAmenity("");
   };
 
-  const handleClose = () => {
-    reset();
-    onClose();
-  };
+  const handleClose = () => { reset(); onClose(); };
 
   const toggleAmenity = (a: string) => {
-    setSelectedAmenities((prev) =>
-      prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]
-    );
+    setSelectedAmenities((prev) => prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]);
   };
 
   const addCustomAmenity = () => {
@@ -131,15 +124,35 @@ export const CreateRoomModal = memo(function CreateRoomModal({
                 Floor Location
               </label>
               <select
-                value={floor}
-                onChange={(e) => setFloor(Number(e.target.value) || 3)}
+                value={isOtherFloor ? "other" : floor}
+                onChange={(e) => {
+                  if (e.target.value === "other") {
+                    setIsOtherFloor(true);
+                  } else {
+                    setIsOtherFloor(false);
+                    setFloor(Number(e.target.value) || 3);
+                  }
+                }}
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
               >
-                <option value={3}>Floor 3 - Team Workspaces</option>
-                <option value={5}>Floor 5 - Executive VIP</option>
-                <option value={1}>Floor 1 - Main Hub</option>
-                <option value={2}>Floor 2 - Conference Hall</option>
+                {FLOOR_OPTIONS.map((f) => (
+                  <option key={f} value={f}>
+                    Floor {f}
+                  </option>
+                ))}
+                <option value="other">Other...</option>
               </select>
+              {isOtherFloor && (
+                <input
+                  type="number"
+                  min={0}
+                  max={99}
+                  value={floor}
+                  onChange={(e) => setFloor(Number(e.target.value) || 1)}
+                  placeholder="Enter floor number..."
+                  className="w-full mt-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
+                />
+              )}
             </div>
           </div>
 
