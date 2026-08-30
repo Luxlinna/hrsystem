@@ -13,6 +13,14 @@ export const DEPARTMENTS = [
   "Customer Service",
 ];
 
+export const STATUS_OPTIONS = [
+  { value: "onboarding", label: "Onboarding" },
+  { value: "active", label: "Active" },
+  { value: "on_leave", label: "On Leave" },
+  { value: "suspended", label: "Suspended" },
+  { value: "inactive", label: "Inactive" },
+];
+
 export const STATUS_META: Record<
   string,
   { label: string; bg: string; text: string; dot: string }

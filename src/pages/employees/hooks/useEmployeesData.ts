@@ -77,20 +77,25 @@ export function useEmployeesData({
         const emails = new Set<string>();
         data.forEach((row: any) => {
           const roleName = row.app_roles?.name || "";
-          if (/manager/i.test(roleName)) emails.add(row.email?.toLowerCase());
+          if (/manager/i.test(roleName) && row.email) emails.add(row.email.toLowerCase());
         });
         setManagerEmails(emails);
       });
   }, [loadEmployees, isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
-    const emails = employees.map((e) => e.email);
-    if (emails.length === 0) return;
+    const emails = employees.map((e) => e.email).filter(Boolean);
+    if (emails.length === 0) {
+      setAccountStatus({});
+      return;
+    }
     supabase.rpc("get_user_account_status", { emails }).then(({ data }) => {
       if (data) {
         const statusMap: Record<string, AccountStatus> = {};
         data.forEach((row: any) => {
-          statusMap[row.email] = { invited: row.invited, hasAccount: row.has_account };
+          if (row.email) {
+            statusMap[row.email] = { invited: Boolean(row.invited), hasAccount: Boolean(row.has_account) };
+          }
         });
         setAccountStatus(statusMap);
       }

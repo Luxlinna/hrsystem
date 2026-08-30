@@ -7,12 +7,14 @@ interface UseEmployeesFiltersProps {
   employees: Employee[];
   managerEmails: Set<string>;
   accountStatus: Record<string, AccountStatus>;
+  canManage: boolean;
 }
 
 export function useEmployeesFilters({
   employees,
   managerEmails,
   accountStatus,
+  canManage,
 }: UseEmployeesFiltersProps) {
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
@@ -35,14 +37,20 @@ export function useEmployeesFilters({
     [employees, managerEmails]
   );
 
-  const stats: EmployeeStats = useMemo(() => {
-    const total = employees.length;
-    const active = employees.filter((e) => e.status === "active").length;
-    const onLeave = employees.filter((e) => e.status === "on_leave").length;
-    const terminated = employees.filter((e) => e.status === "terminated").length;
-    const totalAccounts = Object.values(accountStatus).filter((s) => s.hasAccount).length;
-    return { total, active, onLeave, terminated, totalAccounts };
-  }, [employees, accountStatus]);
+  const stats: EmployeeStats = useMemo(
+    () => ({
+      total: employees.length,
+      active: employees.filter((e) => e.status === "active").length,
+      onboarding: employees.filter((e) => e.status === "onboarding").length,
+      withAccounts: Object.values(accountStatus).filter((acc) => acc.hasAccount).length,
+      invited: Object.values(accountStatus).filter((acc) => acc.invited && !acc.hasAccount).length,
+      byDepartment: depts.reduce((acc, dept) => {
+        if (dept) acc[dept] = employees.filter((e) => e.department === dept).length;
+        return acc;
+      }, {} as Record<string, number>),
+    }),
+    [employees, accountStatus, depts]
+  );
 
   const filtered = useMemo(() => {
     return employees
@@ -89,16 +97,24 @@ export function useEmployeesFilters({
     [filtered, safePage, pageSize]
   );
 
-  const tableGridStyle = useMemo(() => {
-    const cols: string[] = ["48px"];
-    Object.keys(visibleColumns).forEach((key) => {
-      if (visibleColumns[key as keyof VisibleColumns]) {
-        cols.push(COLUMN_WIDTHS[key as keyof VisibleColumns] || "150px");
-      }
-    });
-    cols.push("80px");
-    return { gridTemplateColumns: cols.join(" ") };
-  }, [visibleColumns]);
+  const tableColumns = useMemo(
+    () => [
+      ...(visibleColumns.employee ? ["employee"] : []),
+      ...(visibleColumns.role ? ["role"] : []),
+      ...(visibleColumns.department ? ["department"] : []),
+      ...(visibleColumns.branch ? ["branch"] : []),
+      ...(visibleColumns.status ? ["status"] : []),
+      ...(visibleColumns.account ? ["account"] : []),
+      ...(visibleColumns.joinDate ? ["joinDate"] : []),
+      ...(visibleColumns.actions && canManage ? ["actions"] : []),
+    ],
+    [visibleColumns, canManage]
+  );
+
+  const tableGridStyle = useMemo(
+    () => ({ "--emp-cols": tableColumns.map((c) => COLUMN_WIDTHS[c] || "150px").join(" ") } as React.CSSProperties),
+    [tableColumns]
+  );
 
   const handleSort = useCallback((field: SortField) => {
     setSortField((prev) => {

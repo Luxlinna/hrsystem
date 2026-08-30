@@ -24,7 +24,7 @@ export function useEmployees() {
     visibleBranches,
   } = useBranchScope();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
-  const canManage = isAdmin || isBranchAdmin || !!role?.employees_manage;
+  const canManage = (isAdmin || isBranchAdmin || !!role?.employees_manage) && !isPartnerBranchBlocked;
 
   const data = useEmployeesData({
     isPartnerBranchBlocked,
@@ -36,6 +36,7 @@ export function useEmployees() {
     employees: data.employees,
     managerEmails: data.managerEmails,
     accountStatus: data.accountStatus,
+    canManage,
   });
 
   const mutations = useEmployeesMutations({

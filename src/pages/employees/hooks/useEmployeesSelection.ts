@@ -23,14 +23,14 @@ export function useEmployeesSelection({
   const [selectAll, setSelectAll] = useState(false);
 
   const handleSelectAll = useCallback(() => {
-    if (selectAll) {
+    if (selectAll || selectedIds.size > 0) {
       setSelectedIds(new Set());
       setSelectAll(false);
     } else {
       setSelectedIds(new Set(pagedEmployees.map((e) => e.id)));
       setSelectAll(true);
     }
-  }, [selectAll, pagedEmployees]);
+  }, [selectAll, selectedIds.size, pagedEmployees]);
 
   const handleSelectOne = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -45,7 +45,7 @@ export function useEmployeesSelection({
     const toInvite = pagedEmployees.filter((e) => selectedIds.has(e.id));
     let successCount = 0;
     for (const emp of toInvite) {
-      const ok = await inviteUser(emp.email, emp.first_name, emp.last_name, emp.role);
+      const ok = await inviteUser(emp.email, emp.first_name, emp.last_name, emp.role || "");
       if (ok) successCount++;
     }
     toast("Bulk Invites", `Sent ${successCount} of ${toInvite.length} invites.`, "success");

@@ -18,6 +18,8 @@ export interface Employee {
 export interface Branch {
   id: string;
   name: string;
+  is_site?: boolean;
+  branch_id?: string;
 }
 
 export interface AppRole {
@@ -43,6 +45,16 @@ export interface EmployeeFormState {
   join_date: string;
   reports_to: string;
   default_work_location_id: string;
+  send_invite?: boolean;
+}
+
+export interface EmployeeStats {
+  total: number;
+  active: number;
+  onboarding: number;
+  withAccounts: number;
+  invited: number;
+  byDepartment?: Record<string, number>;
 }
 
 export interface ReportEntry {

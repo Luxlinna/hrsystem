@@ -114,7 +114,12 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
         <div className="flex items-center justify-end gap-2" onClick={(ev) => ev.stopPropagation()}>
           {!hasAccount && (
             <button
-              onClick={() => onInvite(e)}
+              type="button"
+              onClick={(ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                onInvite(e);
+              }}
               disabled={invitingId === e.email}
               className="p-2 text-gray-400 hover:text-[#253C7D] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
               title={isInvited ? "Resend Invite" : "Send Account Invite"}
@@ -123,7 +128,12 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
             </button>
           )}
           <button
-            onClick={() => onDelete(e)}
+            type="button"
+            onClick={(ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              onDelete(e);
+            }}
             disabled={deletingId === e.id}
             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
             title="Delete Employee"
