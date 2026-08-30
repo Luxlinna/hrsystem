@@ -43,18 +43,8 @@ export const FilterBar = memo(function FilterBar({
     { id: "all" as const, label: "All Broadcasts", count: announcements.length, icon: "ri-layout-grid-line" },
     { id: "urgent" as const, label: "Urgent & High", count: urgentCount, icon: "ri-fire-line", isAlert: urgentCount > 0 },
     { id: "pinned" as const, label: "Pinned Notices", count: pinnedCount, icon: "ri-pushpin-line" },
-    {
-      id: "policies" as const,
-      label: "Policies & Compliance",
-      count: announcements.filter((a) => a.category === "policy" || a.category === "compliance").length,
-      icon: "ri-file-shield-line",
-    },
-    {
-      id: "management" as const,
-      label: "Management Only",
-      count: announcements.filter((a) => a.visible_to === "management").length,
-      icon: "ri-lock-line",
-    },
+    { id: "policies" as const, label: "Policies & Compliance", count: announcements.filter((a) => a.category === "policy" || a.category === "compliance").length, icon: "ri-file-shield-line" },
+    { id: "management" as const, label: "Management Only", count: announcements.filter((a) => a.visible_to === "management").length, icon: "ri-lock-line" },
   ];
 
   return (
@@ -66,27 +56,15 @@ export const FilterBar = memo(function FilterBar({
           return (
             <button
               key={tab.id}
-              onClick={() => {
-                setMainTab(tab.id);
-                onFilterChange();
-              }}
+              type="button"
+              onClick={() => { setMainTab(tab.id); onFilterChange(); }}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                isActive
-                  ? "bg-[#253C7D] text-white shadow-xs"
-                  : "bg-white text-gray-600 hover:text-gray-900 border border-gray-200/60 hover:bg-gray-50"
+                isActive ? "bg-[#253C7D] text-white shadow-xs" : "bg-white text-gray-600 hover:text-gray-900 border border-gray-200/60 hover:bg-gray-50"
               }`}
             >
               <i className={tab.icon} />
               <span>{tab.label}</span>
-              <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                  isActive
-                    ? "bg-white/20 text-white"
-                    : tab.isAlert
-                    ? "bg-rose-100 text-rose-700 font-black"
-                    : "bg-gray-100 text-gray-600"
-                }`}
-              >
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${isActive ? "bg-white/20 text-white" : tab.isAlert ? "bg-rose-100 text-rose-700 font-black" : "bg-gray-100 text-gray-600"}`}>
                 {tab.count}
               </span>
             </button>
@@ -101,92 +79,43 @@ export const FilterBar = memo(function FilterBar({
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              onFilterChange();
-            }}
+            onChange={(e) => { setSearchTerm(e.target.value); onFilterChange(); }}
             placeholder="Search announcements by title, author, or keywords..."
             className="w-full pl-8 pr-7 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium"
           />
           {searchTerm && (
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                onFilterChange();
-              }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-            >
+            <button type="button" onClick={() => { setSearchTerm(""); onFilterChange(); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
               <i className="ri-close-circle-fill text-xs" />
             </button>
           )}
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Category Filter */}
-          <select
-            value={filterCat}
-            onChange={(e) => {
-              setFilterCat(e.target.value);
-              onFilterChange();
-            }}
-            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-bold cursor-pointer"
-          >
+          <select value={filterCat} onChange={(e) => { setFilterCat(e.target.value); onFilterChange(); }} className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-bold cursor-pointer">
             <option value="all">All Categories</option>
             {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => (
-              <option key={key} value={key}>
-                {cfg.label}
-              </option>
+              <option key={key} value={key}>{cfg.label}</option>
             ))}
           </select>
 
-          {/* Priority Filter */}
-          <select
-            value={filterPriority}
-            onChange={(e) => {
-              setFilterPriority(e.target.value);
-              onFilterChange();
-            }}
-            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-medium cursor-pointer"
-          >
+          <select value={filterPriority} onChange={(e) => { setFilterPriority(e.target.value); onFilterChange(); }} className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-medium cursor-pointer">
             <option value="all">All Priorities</option>
             <option value="urgent">Urgent Only</option>
             <option value="high">High Priority</option>
             <option value="normal">Normal</option>
           </select>
 
-          {/* Audience Filter */}
-          <select
-            value={filterAudience}
-            onChange={(e) => {
-              setFilterAudience(e.target.value);
-              onFilterChange();
-            }}
-            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-medium cursor-pointer"
-          >
+          <select value={filterAudience} onChange={(e) => { setFilterAudience(e.target.value); onFilterChange(); }} className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] font-medium cursor-pointer">
             <option value="all">All Audiences</option>
-            <option value="all">All Employees</option>
             <option value="hq">HQ Staff</option>
             <option value="management">Management</option>
           </select>
 
-          {/* View Mode Toggle */}
           <div className="flex items-center bg-gray-100 p-0.5 rounded-lg border border-gray-200/60">
-            <button
-              onClick={() => setViewMode("cards")}
-              title="Cards Grid"
-              className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                viewMode === "cards" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
+            <button type="button" onClick={() => setViewMode("cards")} title="Cards Grid" className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${viewMode === "cards" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"}`}>
               <i className="ri-layout-grid-fill" />
             </button>
-            <button
-              onClick={() => setViewMode("table")}
-              title="Table View"
-              className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                viewMode === "table" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
+            <button type="button" onClick={() => setViewMode("table")} title="Table View" className={`p-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${viewMode === "table" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-500 hover:text-gray-800"}`}>
               <i className="ri-table-line" />
             </button>
           </div>
