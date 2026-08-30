@@ -1,20 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
-import { toast } from "@/components/Toast";
-import { useAuth } from "@/context/AuthContext";
+import { useState, useCallback } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
-import { logActivity } from "@/lib/audit";
-import type {
-  Employee,
-  BenefitPlan,
-  Enrollment,
-  PlanFormState,
-  BenefitTabKey,
-  ViewMode,
-  ProviderItem,
-} from "../types";
-import { exportPlansCSV, exportEnrollmentsCSV } from "../exportUtils";
+import type { BenefitPlan, BenefitTabKey, PlanFormState } from "../types";
+import { useBenefitsData } from "./useBenefitsData";
+import { useBenefitsMetrics } from "./useBenefitsMetrics";
+import { useBenefitsFilters } from "./useBenefitsFilters";
+import { useBenefitsMutations } from "./useBenefitsMutations";
 
 export const INITIAL_PLAN_FORM: PlanFormState = {
   name: "",
@@ -28,428 +19,94 @@ export const INITIAL_PLAN_FORM: PlanFormState = {
 };
 
 export function useBenefits() {
-  const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
+  const { isPartnerBranchBlocked, userBranchName, userBranchId } = useBranchScope();
 
-  const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const canManage =
-    (isAdmin || isBranchAdmin || (!!role && !["Employee", "Staff", "Chairman"].includes(role.name))) &&
+    (isAdmin || (!!role && !["Employee", "Staff", "Chairman"].includes(role.name))) &&
     !isPartnerBranchBlocked;
 
   const [tab, setTab] = useState<BenefitTabKey>("plans");
-  const [plans, setPlans] = useState<BenefitPlan[]>([]);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Filters for Plans Tab
-  const [planSearchQuery, setPlanSearchQuery] = useState("");
-  const [planTypeFilter, setPlanTypeFilter] = useState("all");
-  const [planStatusFilter, setPlanStatusFilter] = useState("all");
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
-
-  // Filters for Enrollment Tab
-  const [enrollSearchQuery, setEnrollSearchQuery] = useState("");
-  const [enrollPlanFilter, setEnrollPlanFilter] = useState("all");
-  const [enrollStatusFilter, setEnrollStatusFilter] = useState("all");
-  const [enrollDeptFilter, setEnrollDeptFilter] = useState("all");
-
-  // Selected Plan Drawer
   const [selectedPlan, setSelectedPlan] = useState<BenefitPlan | null>(null);
-
-  // Modals
   const [enrollModal, setEnrollModal] = useState(false);
   const [planModal, setPlanModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState<BenefitPlan | null>(null);
-  const [saving, setSaving] = useState(false);
 
-  // Batch Enrollment Form State
   const [enrollForm, setEnrollForm] = useState({ plan_id: "" });
   const [enrollEmployeeIds, setEnrollEmployeeIds] = useState<string[]>([]);
-
-  // Create / Edit Plan Form State
   const [planForm, setPlanForm] = useState<PlanFormState>(INITIAL_PLAN_FORM);
 
-  const loadData = useCallback(async () => {
-    if (isPartnerBranchBlocked || !targetBranch) {
-      setPlans([]);
-      setEnrollments([]);
-      setEmployees([]);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    const [{ data: p }, { data: e }, { data: emps }] = await Promise.all([
-      supabase
-        .from("benefit_plans")
-        .select("*")
-        .eq("branch_id", targetBranch)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("benefit_enrollments")
-        .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id), benefit_plans(id, name, type, provider, coverage_amount, employee_contribution)")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("employees")
-        .select("id, first_name, last_name, department, role, avatar_url, branch_id")
-        .eq("branch_id", targetBranch)
-        .is("deleted_at", null)
-        .order("first_name"),
-    ]);
-
-    const empList = (emps as Employee[]) || [];
-    const empIds = new Set(empList.map((x) => x.id));
-    const filteredEnrollments = ((e as unknown as Enrollment[]) || []).filter(
-      (en: any) => empIds.has(en.employee_id) || en.employees?.branch_id === targetBranch
-    );
-
-    setPlans((p as BenefitPlan[]) || []);
-    setEnrollments(filteredEnrollments);
-    setEmployees(empList);
-    setLoading(false);
-  }, [isPartnerBranchBlocked, targetBranch]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Aggregate Metrics
-  const activePlans = useMemo(() => plans.filter((p) => p.status === "active").length, [plans]);
-  const totalEnrolled = useMemo(() => enrollments.filter((e) => e.status === "enrolled").length, [enrollments]);
-  const optedOut = useMemo(() => enrollments.filter((e) => e.status === "opted_out").length, [enrollments]);
-  const totalEligible = useMemo(() => plans.reduce((s, p) => s + (p.eligible_count || 0), 0), [plans]);
-  const overallRate = totalEligible > 0 ? ((totalEnrolled / totalEligible) * 100).toFixed(1) : "0.0";
-
-  // Distinct Departments
-  const departments = useMemo(() => {
-    const set = new Set<string>();
-    employees.forEach((emp) => emp.department && set.add(emp.department));
-    return ["All Departments", ...Array.from(set).sort()];
-  }, [employees]);
-
-  // Filtered Plans (for Plans Tab)
-  const filteredPlans = useMemo(() => {
-    return plans.filter((p) => {
-      if (planTypeFilter !== "all" && p.type !== planTypeFilter) return false;
-      if (planStatusFilter !== "all" && p.status !== planStatusFilter) return false;
-      if (
-        planSearchQuery &&
-        !p.name.toLowerCase().includes(planSearchQuery.toLowerCase()) &&
-        !p.provider.toLowerCase().includes(planSearchQuery.toLowerCase())
-      )
-        return false;
-      return true;
-    });
-  }, [plans, planTypeFilter, planStatusFilter, planSearchQuery]);
-
-  // Filtered Enrollments (for Enrollment Tab)
-  const filteredEnrollments = useMemo(() => {
-    return enrollments.filter((e) => {
-      if (enrollPlanFilter !== "all" && e.plan_id !== enrollPlanFilter) return false;
-      if (enrollStatusFilter !== "all" && e.status !== enrollStatusFilter) return false;
-      if (
-        enrollDeptFilter !== "all" &&
-        e.employees &&
-        e.employees.department !== enrollDeptFilter
-      )
-        return false;
-      if (enrollSearchQuery) {
-        const q = enrollSearchQuery.toLowerCase();
-        const empName = `${e.employees?.first_name || ""} ${e.employees?.last_name || ""}`.toLowerCase();
-        const planName = (e.benefit_plans?.name || "").toLowerCase();
-        if (!empName.includes(q) && !planName.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [enrollments, enrollPlanFilter, enrollStatusFilter, enrollDeptFilter, enrollSearchQuery]);
-
-  // Providers Directory
-  const providersList: ProviderItem[] = useMemo(() => {
-    const map = new Map<string, { plans: BenefitPlan[]; enrolledCount: number }>();
-    plans.forEach((p) => {
-      const prov = p.provider || "Company Self-Insured";
-      if (!map.has(prov)) {
-        map.set(prov, { plans: [], enrolledCount: 0 });
-      }
-      const item = map.get(prov)!;
-      item.plans.push(p);
-      const enr = enrollments.filter((e) => e.plan_id === p.id && e.status === "enrolled").length;
-      item.enrolledCount += enr;
-    });
-
-    return Array.from(map.entries()).map(([provider, data]) => ({
-      provider,
-      plans: data.plans,
-      enrolledCount: data.enrolledCount,
-    }));
-  }, [plans, enrollments]);
-
-  // Mutations
-  const toggleEnrollmentStatus = useCallback(
-    async (enrollment: Enrollment) => {
-      if (!canManage) return;
-      const nextStatus = enrollment.status === "enrolled" ? "opted_out" : "enrolled";
-      const { error } = await supabase
-        .from("benefit_enrollments")
-        .update({ status: nextStatus })
-        .eq("id", enrollment.id);
-
-      if (error) {
-        toast("Error", "Failed to update enrollment status", "error");
-        return;
-      }
-
-      toast("Status Updated", `Enrollment updated to ${nextStatus.replace("_", " ")}`, "success");
-      loadData();
-    },
-    [canManage, loadData]
-  );
-
-  const handleBatchEnroll = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!enrollForm.plan_id || enrollEmployeeIds.length === 0 || !canManage || saving) return;
-      setSaving(true);
-
-      const rows = enrollEmployeeIds.map((empId) => ({
-        plan_id: enrollForm.plan_id,
-        employee_id: empId,
-        status: "enrolled",
-      }));
-
-      const { error } = await supabase.from("benefit_enrollments").upsert(rows, {
-        onConflict: "plan_id,employee_id",
-      });
-
-      setSaving(false);
-      if (error) {
-        toast("Error", "Failed to enroll employees", "error");
-        return;
-      }
-
-      const planName = plans.find((p) => p.id === enrollForm.plan_id)?.name || "Plan";
-      toast("Enrolled Successfully", `Added ${enrollEmployeeIds.length} members to "${planName}"`, "success");
-      logActivity({
-        module: "benefits",
-        action: "created",
-        entityType: "benefit_enrollment",
-        actorName,
-        actorRole: role?.name || "Unknown",
-        description: `Enrolled ${enrollEmployeeIds.length} employees into benefit plan "${planName}"`,
-      });
-
-      setEnrollModal(false);
-      setEnrollEmployeeIds([]);
-      setEnrollForm({ plan_id: "" });
-      loadData();
-    },
-    [enrollEmployeeIds, enrollForm.plan_id, saving, plans, canManage, actorName, role?.name, loadData]
-  );
-
-  const handleCreatePlan = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!planForm.name || !planForm.provider || !canManage || saving || !targetBranch) return;
-      setSaving(true);
-
-      const { error } = await supabase.from("benefit_plans").insert([
-        {
-          name: planForm.name,
-          provider: planForm.provider,
-          type: planForm.type,
-          coverage_amount: Number(planForm.coverage_amount || 0),
-          employee_contribution: Number(planForm.employee_contribution || 0),
-          eligible_count: Number(planForm.eligible_count || 50),
-          description: planForm.description || null,
-          status: planForm.status || "active",
-          branch_id: targetBranch,
-        },
-      ]);
-
-      setSaving(false);
-      if (error) {
-        toast("Error", "Failed to create benefit plan", "error");
-        return;
-      }
-
-      setPlanModal(false);
-      setPlanForm(INITIAL_PLAN_FORM);
-      toast("Plan Created", "New benefit plan registered successfully.", "success");
-      logActivity({
-        module: "benefits",
-        action: "created",
-        entityType: "benefit_plan",
-        actorName,
-        actorRole: role?.name || "Unknown",
-        description: `Registered new benefit plan "${planForm.name}" (${planForm.provider})`,
-      });
-      loadData();
-    },
-    [planForm, canManage, saving, targetBranch, actorName, role?.name, loadData]
-  );
-
-  const openEditPlan = useCallback(
-    (plan: BenefitPlan) => {
-      if (!canManage) return;
-      setPlanForm({
-        name: plan.name,
-        provider: plan.provider,
-        type: plan.type,
-        coverage_amount: String(plan.coverage_amount || 0),
-        employee_contribution: String(plan.employee_contribution || 0),
-        eligible_count: String(plan.eligible_count || 50),
-        status: plan.status || "active",
-        description: plan.description || "",
-      });
-      setEditingPlan(plan);
-    },
-    [canManage]
-  );
-
-  const handleSavePlanEdit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!editingPlan || !canManage || saving) return;
-      setSaving(true);
-
-      const { error } = await supabase
-        .from("benefit_plans")
-        .update({
-          name: planForm.name,
-          provider: planForm.provider,
-          type: planForm.type,
-          coverage_amount: Number(planForm.coverage_amount || 0),
-          employee_contribution: Number(planForm.employee_contribution || 0),
-          eligible_count: Number(planForm.eligible_count || 50),
-          status: planForm.status,
-          description: planForm.description || null,
-        })
-        .eq("id", editingPlan.id);
-
-      setSaving(false);
-      if (error) {
-        toast("Error", "Failed to update benefit plan", "error");
-        return;
-      }
-
-      setEditingPlan(null);
-      toast("Plan Updated", `"${planForm.name}" details updated successfully.`, "success");
-      logActivity({
-        module: "benefits",
-        action: "updated",
-        entityType: "benefit_plan",
-        entityId: editingPlan.id,
-        actorName,
-        actorRole: role?.name || "Unknown",
-        description: `Updated benefit plan "${planForm.name}" (${planForm.provider})`,
-      });
-
-      if (selectedPlan && selectedPlan.id === editingPlan.id) {
-        setSelectedPlan({
-          ...selectedPlan,
-          name: planForm.name,
-          provider: planForm.provider,
-          type: planForm.type,
-          coverage_amount: Number(planForm.coverage_amount || 0),
-          employee_contribution: Number(planForm.employee_contribution || 0),
-          eligible_count: Number(planForm.eligible_count || 50),
-          status: planForm.status,
-          description: planForm.description,
-        });
-      }
-      loadData();
-    },
-    [editingPlan, canManage, saving, planForm, selectedPlan, actorName, role?.name, loadData]
-  );
-
-  const handleDeletePlan = useCallback(
-    async (plan: BenefitPlan) => {
-      if (!canManage) return;
-      const enrolledMembersCount = enrollments.filter((e) => e.plan_id === plan.id).length;
-      const confirmMsg =
-        enrolledMembersCount > 0
-          ? `Delete benefit plan "${plan.name}"? This will also remove ${enrolledMembersCount} active employee enrollment${
-              enrolledMembersCount > 1 ? "s" : ""
-            }.`
-          : `Are you sure you want to delete the benefit plan "${plan.name}"?`;
-
-      if (!confirm(confirmMsg)) return;
-
-      await supabase.from("benefit_enrollments").delete().eq("plan_id", plan.id);
-      const { error } = await supabase.from("benefit_plans").delete().eq("id", plan.id);
-
-      if (error) {
-        toast("Error", "Failed to delete benefit plan", "error");
-        return;
-      }
-
-      toast("Plan Deleted", `"${plan.name}" has been removed from catalog.`, "success");
-      logActivity({
-        module: "benefits",
-        action: "deleted",
-        entityType: "benefit_plan",
-        entityId: plan.id,
-        actorName,
-        actorRole: role?.name || "Unknown",
-        description: `Deleted benefit plan "${plan.name}" (${plan.provider})`,
-      });
-
-      if (selectedPlan && selectedPlan.id === plan.id) {
-        setSelectedPlan(null);
-      }
-      loadData();
-    },
-    [canManage, enrollments, selectedPlan, actorName, role?.name, loadData]
-  );
-
-  const handleExportCSV = useCallback(() => {
-    if (tab === "plans") {
-      exportPlansCSV(filteredPlans, enrollments);
-    } else {
-      exportEnrollmentsCSV(filteredEnrollments);
-    }
-  }, [tab, filteredPlans, enrollments, filteredEnrollments]);
+  const data = useBenefitsData();
+  const metrics = useBenefitsMetrics({
+    plans: data.plans,
+    enrollments: data.enrollments,
+    employees: data.employees,
+  });
+  const filters = useBenefitsFilters(data.plans, data.enrollments, tab);
+  const mutations = useBenefitsMutations({
+    canManage,
+    loadData: data.loadData,
+    setSelectedPlan,
+    setEditingPlan,
+    setPlanModal,
+    setEnrollModal,
+    plans: data.plans,
+  });
 
   const openNewPlanModal = useCallback(() => {
     setPlanForm(INITIAL_PLAN_FORM);
+    setEditingPlan(null);
+    setPlanModal(true);
+  }, []);
+
+  const openEditPlan = useCallback((p: BenefitPlan) => {
+    setPlanForm({
+      name: p.name,
+      provider: p.provider,
+      type: p.type,
+      coverage_amount: String(p.coverage_amount || 0),
+      employee_contribution: String(p.employee_contribution || 0),
+      eligible_count: String(p.eligible_count || 0),
+      status: p.status,
+      description: p.description || "",
+    });
+    setEditingPlan(p);
     setPlanModal(true);
   }, []);
 
   const openEnrollWithPlan = useCallback((planId: string) => {
     setEnrollForm({ plan_id: planId });
+    setEnrollEmployeeIds([]);
     setEnrollModal(true);
   }, []);
 
+  const handleBatchEnrollSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    return mutations.handleBatchEnroll(enrollForm.plan_id, enrollEmployeeIds);
+  }, [mutations, enrollForm.plan_id, enrollEmployeeIds]);
+
+  const handleCreatePlanSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    return mutations.handleCreatePlan(planForm);
+  }, [mutations, planForm]);
+
+  const handleSavePlanEditSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPlan) return;
+    return mutations.handleSavePlanEdit(planForm, editingPlan);
+  }, [mutations, planForm, editingPlan]);
+
   return {
     isPartnerBranchBlocked,
-    userBranchId,
     userBranchName,
-    targetBranch,
+    userBranchId,
     canManage,
     tab,
     setTab,
-    plans,
-    enrollments,
-    employees,
-    loading,
-    planSearchQuery,
-    setPlanSearchQuery,
-    planTypeFilter,
-    setPlanTypeFilter,
-    planStatusFilter,
-    setPlanStatusFilter,
-    viewMode,
-    setViewMode,
-    enrollSearchQuery,
-    setEnrollSearchQuery,
-    enrollPlanFilter,
-    setEnrollPlanFilter,
-    enrollStatusFilter,
-    setEnrollStatusFilter,
-    enrollDeptFilter,
-    setEnrollDeptFilter,
+    data,
+    metrics,
+    filters,
+    mutations,
     selectedPlan,
     setSelectedPlan,
     enrollModal,
@@ -458,30 +115,17 @@ export function useBenefits() {
     setPlanModal,
     editingPlan,
     setEditingPlan,
-    saving,
     enrollForm,
     setEnrollForm,
     enrollEmployeeIds,
     setEnrollEmployeeIds,
     planForm,
     setPlanForm,
-    activePlans,
-    totalEnrolled,
-    optedOut,
-    totalEligible,
-    overallRate,
-    departments,
-    filteredPlans,
-    filteredEnrollments,
-    providersList,
-    toggleEnrollmentStatus,
-    handleBatchEnroll,
-    handleCreatePlan,
-    openEditPlan,
-    handleSavePlanEdit,
-    handleDeletePlan,
-    handleExportCSV,
     openNewPlanModal,
+    openEditPlan,
     openEnrollWithPlan,
+    handleBatchEnrollSubmit,
+    handleCreatePlanSubmit,
+    handleSavePlanEditSubmit,
   };
 }

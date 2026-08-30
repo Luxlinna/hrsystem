@@ -12,68 +12,16 @@ import { useBenefits } from "./hooks/useBenefits";
 
 export default function Benefits() {
   const {
-    isPartnerBranchBlocked,
-    userBranchName,
-    userBranchId,
-    canManage,
-    tab,
-    setTab,
-    plans,
-    enrollments,
-    employees,
-    loading,
-    planSearchQuery,
-    setPlanSearchQuery,
-    planTypeFilter,
-    setPlanTypeFilter,
-    planStatusFilter,
-    setPlanStatusFilter,
-    viewMode,
-    setViewMode,
-    enrollSearchQuery,
-    setEnrollSearchQuery,
-    enrollPlanFilter,
-    setEnrollPlanFilter,
-    enrollStatusFilter,
-    setEnrollStatusFilter,
-    enrollDeptFilter,
-    setEnrollDeptFilter,
-    selectedPlan,
-    setSelectedPlan,
-    enrollModal,
-    setEnrollModal,
-    planModal,
-    setPlanModal,
-    editingPlan,
-    setEditingPlan,
-    saving,
-    enrollForm,
-    setEnrollForm,
-    enrollEmployeeIds,
-    setEnrollEmployeeIds,
-    planForm,
-    setPlanForm,
-    activePlans,
-    totalEnrolled,
-    optedOut,
-    totalEligible,
-    overallRate,
-    departments,
-    filteredPlans,
-    filteredEnrollments,
-    providersList,
-    toggleEnrollmentStatus,
-    handleBatchEnroll,
-    handleCreatePlan,
-    openEditPlan,
-    handleSavePlanEdit,
-    handleDeletePlan,
-    handleExportCSV,
-    openNewPlanModal,
-    openEnrollWithPlan,
+    isPartnerBranchBlocked, userBranchName, userBranchId, canManage,
+    tab, setTab, data, metrics, filters, mutations,
+    selectedPlan, setSelectedPlan, enrollModal, setEnrollModal,
+    planModal, setPlanModal, editingPlan, setEditingPlan,
+    enrollForm, setEnrollForm, enrollEmployeeIds, setEnrollEmployeeIds,
+    planForm, setPlanForm, openNewPlanModal, openEditPlan, openEnrollWithPlan,
+    handleBatchEnrollSubmit, handleCreatePlanSubmit, handleSavePlanEditSubmit,
   } = useBenefits();
 
-  if (loading && plans.length === 0) {
+  if (data.loading && data.plans.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB] dark:bg-slate-900">
         <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
@@ -102,138 +50,117 @@ export default function Benefits() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
-      {/* Top Header */}
       <BenefitsHeader
         canManage={canManage}
-        onExportCSV={handleExportCSV}
+        onExportCSV={filters.handleExportCSV}
         onOpenNewPlanModal={openNewPlanModal}
         onOpenEnrollModal={() => setEnrollModal(true)}
       />
 
-      {/* Executive KPI Metric Cards */}
       <MetricCards
-        activePlans={activePlans}
-        providersCount={providersList.length}
-        totalEnrolled={totalEnrolled}
-        overallRate={overallRate}
-        optedOut={optedOut}
-        totalEligible={totalEligible}
+        activePlans={metrics.activePlans}
+        providersCount={metrics.providersList.length}
+        totalEnrolled={metrics.totalEnrolled}
+        overallRate={metrics.overallRate}
+        optedOut={metrics.optedOut}
+        totalEligible={metrics.totalEligible}
         tab={tab}
-        enrollStatusFilter={enrollStatusFilter}
-        onSelectPlans={() => {
-          setTab("plans");
-          setPlanStatusFilter("all");
-        }}
-        onSelectEnrolled={() => {
-          setTab("enrollment");
-          setEnrollStatusFilter("enrolled");
-        }}
-        onSelectOptedOut={() => {
-          setTab("enrollment");
-          setEnrollStatusFilter("opted_out");
-        }}
+        enrollStatusFilter={filters.enrollStatusFilter}
+        onSelectPlans={() => { setTab("plans"); filters.setPlanStatusFilter("all"); }}
+        onSelectEnrolled={() => { setTab("enrollment"); filters.setEnrollStatusFilter("enrolled"); }}
+        onSelectOptedOut={() => { setTab("enrollment"); filters.setEnrollStatusFilter("opted_out"); }}
       />
 
-      {/* Tabs & View Switcher Navigation */}
       <NavigationTabs
         tab={tab}
         setTab={setTab}
-        plansCount={plans.length}
-        enrollmentsCount={enrollments.length}
-        providersCount={providersList.length}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
+        plansCount={data.plans.length}
+        enrollmentsCount={data.enrollments.length}
+        providersCount={metrics.providersList.length}
+        viewMode={filters.viewMode}
+        setViewMode={filters.setViewMode}
       />
 
-      {/* Tab 1: Benefit Plans Catalog */}
       {tab === "plans" && (
         <PlansTab
-          plans={plans}
-          filteredPlans={filteredPlans}
-          enrollments={enrollments}
+          plans={data.plans}
+          filteredPlans={filters.filteredPlans}
+          enrollments={data.enrollments}
           canManage={canManage}
-          viewMode={viewMode}
-          planSearchQuery={planSearchQuery}
-          setPlanSearchQuery={setPlanSearchQuery}
-          planTypeFilter={planTypeFilter}
-          setPlanTypeFilter={setPlanTypeFilter}
-          planStatusFilter={planStatusFilter}
-          setPlanStatusFilter={setPlanStatusFilter}
+          viewMode={filters.viewMode}
+          planSearchQuery={filters.planSearchQuery}
+          setPlanSearchQuery={filters.setPlanSearchQuery}
+          planTypeFilter={filters.planTypeFilter}
+          setPlanTypeFilter={filters.setPlanTypeFilter}
+          planStatusFilter={filters.planStatusFilter}
+          setPlanStatusFilter={filters.setPlanStatusFilter}
           onSelectPlan={setSelectedPlan}
           onOpenEditPlan={openEditPlan}
-          onDeletePlan={handleDeletePlan}
+          onDeletePlan={mutations.handleDeletePlan}
           onOpenEnrollModal={openEnrollWithPlan}
           onOpenNewPlanModal={openNewPlanModal}
         />
       )}
 
-      {/* Tab 2: Employee Enrollment Roster */}
       {tab === "enrollment" && (
         <EnrollmentTab
-          enrollments={enrollments}
-          filteredEnrollments={filteredEnrollments}
-          plans={plans}
-          departments={departments}
+          enrollments={data.enrollments}
+          filteredEnrollments={filters.filteredEnrollments}
+          plans={data.plans}
+          departments={metrics.departments}
           canManage={canManage}
-          enrollSearchQuery={enrollSearchQuery}
-          setEnrollSearchQuery={setEnrollSearchQuery}
-          enrollPlanFilter={enrollPlanFilter}
-          setEnrollPlanFilter={setEnrollPlanFilter}
-          enrollStatusFilter={enrollStatusFilter}
-          setEnrollStatusFilter={setEnrollStatusFilter}
-          enrollDeptFilter={enrollDeptFilter}
-          setEnrollDeptFilter={setEnrollDeptFilter}
-          onToggleEnrollmentStatus={toggleEnrollmentStatus}
+          enrollSearchQuery={filters.enrollSearchQuery}
+          setEnrollSearchQuery={filters.setEnrollSearchQuery}
+          enrollPlanFilter={filters.enrollPlanFilter}
+          setEnrollPlanFilter={filters.setEnrollPlanFilter}
+          enrollStatusFilter={filters.enrollStatusFilter}
+          setEnrollStatusFilter={filters.setEnrollStatusFilter}
+          enrollDeptFilter={filters.enrollDeptFilter}
+          setEnrollDeptFilter={filters.setEnrollDeptFilter}
+          onToggleEnrollmentStatus={mutations.toggleEnrollmentStatus}
           onOpenEnrollModal={() => setEnrollModal(true)}
         />
       )}
 
-      {/* Tab 3: Insurance Providers Directory */}
       {tab === "providers" && (
         <ProvidersTab
-          providersList={providersList}
+          providersList={metrics.providersList}
           onSelectPlan={setSelectedPlan}
         />
       )}
 
-      {/* Slide-over Plan Reader Drawer */}
       <PlanDrawer
         selectedPlan={selectedPlan}
-        enrollments={enrollments}
+        enrollments={data.enrollments}
         canManage={canManage}
         onClose={() => setSelectedPlan(null)}
         onOpenEditPlan={openEditPlan}
-        onDeletePlan={handleDeletePlan}
+        onDeletePlan={mutations.handleDeletePlan}
         onOpenEnrollModal={openEnrollWithPlan}
-        onToggleEnrollmentStatus={toggleEnrollmentStatus}
+        onToggleEnrollmentStatus={mutations.toggleEnrollmentStatus}
       />
 
-      {/* Batch Multi-Select Enrollment Modal */}
       <BatchEnrollModal
         isOpen={enrollModal}
         onClose={() => setEnrollModal(false)}
-        plans={plans}
-        employees={employees}
+        plans={data.plans}
+        employees={data.employees}
         enrollForm={enrollForm}
         setEnrollForm={setEnrollForm}
         enrollEmployeeIds={enrollEmployeeIds}
         setEnrollEmployeeIds={setEnrollEmployeeIds}
-        saving={saving}
-        onSubmit={handleBatchEnroll}
+        saving={mutations.saving}
+        onSubmit={handleBatchEnrollSubmit}
       />
 
-      {/* Create / Edit Benefit Plan Modal */}
       <PlanFormModal
         isOpen={planModal || !!editingPlan}
-        onClose={() => {
-          setPlanModal(false);
-          setEditingPlan(null);
-        }}
+        onClose={() => { setPlanModal(false); setEditingPlan(null); }}
         editingPlan={editingPlan}
         planForm={planForm}
         setPlanForm={setPlanForm}
-        saving={saving}
-        onSubmit={editingPlan ? handleSavePlanEdit : handleCreatePlan}
+        saving={mutations.saving}
+        onSubmit={editingPlan ? handleSavePlanEditSubmit : handleCreatePlanSubmit}
       />
     </div>
   );

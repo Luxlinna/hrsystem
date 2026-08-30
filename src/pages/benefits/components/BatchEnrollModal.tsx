@@ -1,6 +1,6 @@
-import React, { memo, useRef, useEffect, useState } from "react";
+import React, { memo } from "react";
 import type { BenefitPlan, Employee } from "../types";
-import { initials } from "../constants";
+import { BatchEnrollEmployeePicker } from "./BatchEnrollEmployeePicker";
 
 interface BatchEnrollModalProps {
   isOpen: boolean;
@@ -27,34 +27,7 @@ export const BatchEnrollModal = memo(function BatchEnrollModal({
   saving,
   onSubmit,
 }: BatchEnrollModalProps) {
-  const [enrollOpen, setEnrollOpen] = useState(false);
-  const [enrollModalSearch, setEnrollModalSearch] = useState("");
-  const enrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (enrollRef.current && !enrollRef.current.contains(e.target as Node)) {
-        setEnrollOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setEnrollOpen(false);
-      setEnrollModalSearch("");
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
-
-  const filteredEmployees = employees.filter((emp) => {
-    const q = enrollModalSearch.trim().toLowerCase();
-    if (!q) return true;
-    return `${emp.first_name} ${emp.last_name} ${emp.role || ""}`.toLowerCase().includes(q);
-  });
 
   return (
     <div
@@ -77,6 +50,7 @@ export const BatchEnrollModal = memo(function BatchEnrollModal({
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 cursor-pointer"
           >
@@ -85,7 +59,6 @@ export const BatchEnrollModal = memo(function BatchEnrollModal({
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          {/* Plan Selector */}
           <div>
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
               Select Benefit Plan <span className="text-rose-500">*</span>
@@ -99,117 +72,35 @@ export const BatchEnrollModal = memo(function BatchEnrollModal({
               <option value="">Choose a Benefit Plan...</option>
               {plans
                 .filter((p) => p.status === "active")
-                .map((plan) => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.name} ({plan.provider} · {plan.type})
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.provider}) — ${Number(p.coverage_amount).toLocaleString()}
                   </option>
                 ))}
             </select>
           </div>
 
-          {/* Employee Multi-Select Combobox */}
-          <div>
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Select Employees <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative" ref={enrollRef}>
-              <div className="relative">
-                <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
-                <input
-                  type="text"
-                  role="combobox"
-                  aria-expanded={enrollOpen}
-                  value={
-                    enrollOpen
-                      ? enrollModalSearch
-                      : enrollEmployeeIds.length > 0
-                      ? `${enrollEmployeeIds.length} employee${enrollEmployeeIds.length === 1 ? "" : "s"} selected`
-                      : enrollModalSearch
-                  }
-                  onChange={(e) => {
-                    setEnrollModalSearch(e.target.value);
-                    setEnrollOpen(true);
-                  }}
-                  onFocus={() => setEnrollOpen(true)}
-                  placeholder="Search employee by name or role..."
-                  className="w-full pl-8 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-                />
-                <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              </div>
+          <BatchEnrollEmployeePicker
+            employees={employees}
+            enrollEmployeeIds={enrollEmployeeIds}
+            setEnrollEmployeeIds={setEnrollEmployeeIds}
+          />
 
-              {enrollOpen && (
-                <div className="absolute z-30 mt-1.5 w-full bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto py-1.5">
-                  {/* Select All */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const matchingIds = filteredEmployees.map((e) => e.id);
-                      const allSelected =
-                        matchingIds.length > 0 && matchingIds.every((id) => enrollEmployeeIds.includes(id));
-                      setEnrollEmployeeIds(allSelected ? [] : matchingIds);
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-[#253C7D] hover:bg-slate-50 border-b border-gray-100 transition-colors cursor-pointer"
-                  >
-                    <i className="ri-checkbox-multiple-line text-sm" />
-                    Select All ({employees.length})
-                  </button>
-
-                  {filteredEmployees.map((emp) => {
-                    const checked = enrollEmployeeIds.includes(emp.id);
-                    return (
-                      <label
-                        key={emp.id}
-                        className={`w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-slate-50 transition-colors cursor-pointer ${
-                          checked ? "bg-[#253C7D]/5" : ""
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => {
-                            setEnrollEmployeeIds((prev) =>
-                              prev.includes(emp.id) ? prev.filter((id) => id !== emp.id) : [...prev, emp.id]
-                            );
-                          }}
-                          className="rounded text-[#253C7D] focus:ring-[#253C7D]"
-                        />
-                        <div className="w-6 h-6 rounded-full bg-[#253C7D] text-white flex items-center justify-center font-bold text-[9px] shrink-0">
-                          {initials(emp.first_name, emp.last_name)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="block text-xs font-bold text-gray-900 truncate">
-                            {emp.first_name} {emp.last_name}
-                          </span>
-                          <span className="block text-[10px] text-gray-400 truncate">
-                            {emp.role} · {emp.department}
-                          </span>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-3 border-t border-gray-100">
+          <div className="pt-2 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
+              disabled={saving}
+              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={saving || enrollEmployeeIds.length === 0 || !enrollForm.plan_id}
-              className="flex-1 px-4 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              disabled={saving || !enrollForm.plan_id || enrollEmployeeIds.length === 0}
+              className="px-5 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
             >
-              {saving
-                ? "Enrolling..."
-                : enrollEmployeeIds.length > 1
-                ? `Enroll ${enrollEmployeeIds.length} Staff`
-                : "Enroll Staff"}
+              {saving ? "Enrolling..." : `Enroll ${enrollEmployeeIds.length} Staff`}
             </button>
           </div>
         </form>
