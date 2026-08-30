@@ -16,47 +16,14 @@ import CheckInOutModal from "./CheckInOutModal";
 
 export default function TasksPage() {
   const {
-    isPartnerBranchBlocked,
-    userBranchName,
-    userBranchId,
-    tasks,
-    employees,
-    managedEmployees,
-    assignableEmployees,
-    isManager,
-    hasSubordinates,
-    loading,
-    currentEmployeeId,
-    fetchTasks,
-    activities,
-    loadingActivities,
-    fetchActivities,
-    viewMode,
-    setViewMode,
-    search,
-    setSearch,
-    assigneeFilter,
-    setAssigneeFilter,
-    priorityFilter,
-    setPriorityFilter,
-    quickTab,
-    setQuickTab,
-    filteredTasks,
-    stats,
-    saving,
-    selectedTask,
-    setSelectedTask,
-    editingTask,
-    setEditingTask,
-    deletingTask,
-    setDeletingTask,
-    showCreateModal,
-    setShowCreateModal,
-    checkInOutTask,
-    setCheckInOutTask,
-    handleStatusChange,
-    handleSaveTask,
-    handleDeleteTask,
+    isPartnerBranchBlocked, userBranchName, userBranchId, tasks, employees,
+    managedEmployees, assignableEmployees, isManager, hasSubordinates, loading,
+    currentEmployeeId, fetchTasks, activities, loadingActivities, fetchActivities,
+    viewMode, setViewMode, search, setSearch, assigneeFilter, setAssigneeFilter,
+    priorityFilter, setPriorityFilter, quickTab, setQuickTab, filteredTasks,
+    stats, saving, selectedTask, setSelectedTask, editingTask, setEditingTask,
+    deletingTask, setDeletingTask, showCreateModal, setShowCreateModal,
+    checkInOutTask, setCheckInOutTask, handleStatusChange, handleSaveTask, handleDeleteTask,
   } = useTasks();
 
   if (isPartnerBranchBlocked) {
@@ -72,15 +39,23 @@ export default function TasksPage() {
     );
   }
 
+  const handleCheckInOutDone = async () => {
+    await fetchTasks();
+    if (selectedTask) {
+      const { data: fresh } = await supabase
+        .from("tasks")
+        .select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url, branch_id)")
+        .eq("id", selectedTask.id)
+        .maybeSingle();
+      if (fresh) setSelectedTask(fresh as any);
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-5 font-sans">
-      {/* Top Header with Breadcrumbs & Action */}
       <TasksHeader onNewTask={() => setShowCreateModal(true)} />
-
-      {/* 5 KPI Stats Cards Row */}
       <TasksStatsCards stats={stats} />
 
-      {/* View Switcher, Search, Assignee & Quick Filter Pills Toolbar */}
       <TasksFilterBar
         viewMode={viewMode}
         setViewMode={setViewMode}
@@ -97,7 +72,6 @@ export default function TasksPage() {
         hasSubordinates={hasSubordinates}
       />
 
-      {/* Main Content Views */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
@@ -134,7 +108,6 @@ export default function TasksPage() {
         />
       )}
 
-      {/* Create / Edit Modal */}
       {(showCreateModal || editingTask) && (
         <TaskFormModal
           editingTask={editingTask}
@@ -149,7 +122,6 @@ export default function TasksPage() {
         />
       )}
 
-      {/* Detailed Inspection Drawer */}
       <TaskDetailDrawer
         task={selectedTask}
         activities={activities}
@@ -162,34 +134,19 @@ export default function TasksPage() {
         onCheckInOut={(task, mode) => setCheckInOutTask({ task, mode })}
       />
 
-      {/* Delete Confirmation Modal */}
       <TaskDeleteModal
         task={deletingTask}
         onConfirm={handleDeleteTask}
         onCancel={() => setDeletingTask(null)}
       />
 
-      {/* Check In / Out Modal for Outside Work */}
       {checkInOutTask && (
         <CheckInOutModal
           taskId={checkInOutTask.task.id}
           employeeId={currentEmployeeId || checkInOutTask.task.assigned_to}
           task={checkInOutTask.task}
           mode={checkInOutTask.mode}
-          onDone={async () => {
-            await fetchTasks();
-            // Sync selectedTask with freshly fetched data so the drawer
-            // immediately shows "Check Out" after a successful check-in.
-            if (selectedTask) {
-              // Re-fetch just this task to get latest work_status
-              const { data: fresh } = await supabase
-                .from("tasks")
-                .select("id, title, description, assigned_to, assigned_by, status, priority, due_date, completed_at, created_at, is_outside_work, work_status, work_checked_in_at, work_checked_out_at, work_lat, work_lng, work_accuracy_m, work_address, work_image_url, work_check_out_lat, work_check_out_lng, work_check_out_accuracy_m, work_check_out_address, work_check_out_image_url, work_media_urls, work_check_out_media_urls, employees!tasks_assigned_to_fkey(first_name, last_name, department, avatar_url, branch_id)")
-                .eq("id", selectedTask.id)
-                .maybeSingle();
-              if (fresh) setSelectedTask(fresh as any);
-            }
-          }}
+          onDone={handleCheckInOutDone}
           onClose={() => setCheckInOutTask(null)}
           showToast={(type, msg) => toast(type === "error" ? "Error" : "Success", msg, type as any)}
         />

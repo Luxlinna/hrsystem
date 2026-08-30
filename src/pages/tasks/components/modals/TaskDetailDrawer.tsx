@@ -1,8 +1,9 @@
 import { memo, useEffect } from "react";
 import type { Task, TaskActivity } from "../../types";
-import { STATUS_CONFIG, PRIORITY_META, ACTIVITY_ICON, ACTIVITY_COLOR } from "../../constants";
-import { formatDueDate, formatExact, formatRelative, activityText, initials } from "../../taskUtils";
+import { STATUS_CONFIG, PRIORITY_META } from "../../constants";
+import { formatDueDate, formatExact, initials } from "../../taskUtils";
 import { getGoogleMapsUrl } from "../../geoUtils";
+import { TaskDetailActivityTimeline } from "./TaskDetailActivityTimeline";
 
 interface TaskDetailDrawerProps {
   task: Task | null;
@@ -24,7 +25,6 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
   onClose,
   onEdit,
   onDelete,
-  onStatusChange,
   onCheckInOut,
 }: TaskDetailDrawerProps) {
   useEffect(() => {
@@ -53,34 +53,24 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${statusCfg.badge}`}
-            >
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${statusCfg.badge}`}>
               <i className={statusCfg.icon} />
               {statusCfg.label}
             </span>
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold ${priority.bg} ${priority.text} border ${priority.border}`}
-            >
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold ${priority.bg} ${priority.text} border ${priority.border}`}>
               <i className={priority.icon} />
               {priority.label}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => {
-                onClose();
-                onEdit(task);
-              }}
+              onClick={() => { onClose(); onEdit(task); }}
               className="p-1.5 text-gray-400 hover:text-[#253C7D] hover:bg-gray-100 rounded-lg cursor-pointer"
             >
               <i className="ri-pencil-line text-base" />
             </button>
             <button
-              onClick={() => {
-                onClose();
-                onDelete(task);
-              }}
+              onClick={() => { onClose(); onDelete(task); }}
               className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
             >
               <i className="ri-delete-bin-line text-base" />
@@ -96,7 +86,6 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5 text-xs">
-          {/* Title & Description */}
           <div>
             <h2 className="text-base font-bold text-gray-900 leading-snug">{task.title}</h2>
             {task.description && (
@@ -106,17 +95,12 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             )}
           </div>
 
-          {/* Metadata Grid */}
           <div className="grid grid-cols-2 gap-3 p-3.5 bg-gray-50/60 rounded-xl border border-gray-100">
             <div>
               <span className="text-[11px] text-gray-400 font-medium">Assignee</span>
               <div className="flex items-center gap-1.5 mt-1">
                 {task.employees?.avatar_url ? (
-                  <img
-                    src={task.employees.avatar_url}
-                    alt={assigneeName}
-                    className="w-5 h-5 rounded-full object-cover"
-                  />
+                  <img src={task.employees.avatar_url} alt={assigneeName} className="w-5 h-5 rounded-full object-cover" />
                 ) : (
                   <div className="w-5 h-5 rounded-full bg-[#253C7D] text-white text-[9px] font-bold flex items-center justify-center">
                     {initials(assigneeName)}
@@ -134,7 +118,6 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             </div>
           </div>
 
-          {/* Outside Field Work GPS Inspection */}
           {task.is_outside_work && (
             <div className="rounded-xl border border-indigo-100 bg-indigo-50/30 p-3.5 space-y-3">
               <div className="flex items-center justify-between">
@@ -187,36 +170,10 @@ export const TaskDetailDrawer = memo(function TaskDetailDrawer({
             </div>
           )}
 
-          {/* Activity Audit Timeline */}
-          <div>
-            <h4 className="font-bold text-gray-800 mb-3 uppercase tracking-wider text-[10px]">
-              Activity History
-            </h4>
-            {loadingActivities ? (
-              <div className="py-6 text-center text-gray-400">Loading activity…</div>
-            ) : activities.length === 0 ? (
-              <p className="text-gray-400 italic">No activity recorded yet.</p>
-            ) : (
-              <div className="space-y-3 pl-2 border-l-2 border-gray-100">
-                {activities.map((a) => (
-                  <div key={a.id} className="relative pl-3 space-y-0.5">
-                    <div
-                      className={`absolute -left-[19px] top-0.5 w-4 h-4 rounded-full bg-white flex items-center justify-center ${ACTIVITY_COLOR[a.action]}`}
-                    >
-                      <i className={ACTIVITY_ICON[a.action]} />
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-gray-800">
-                        {a.employees ? `${a.employees.first_name} ${a.employees.last_name}` : "User"}
-                      </span>
-                      <span className="text-[10px] text-gray-400">{formatRelative(a.created_at)}</span>
-                    </div>
-                    <p className="text-gray-500">{activityText(a)}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <TaskDetailActivityTimeline
+            activities={activities}
+            loadingActivities={loadingActivities}
+          />
         </div>
       </div>
     </div>
