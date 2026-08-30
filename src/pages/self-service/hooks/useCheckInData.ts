@@ -1,10 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { supabase } from "@/lib/supabase";
-import { distanceMeters, getCurrentPosition } from "@/lib/geo";
-import { addDaysYMD, todayYMD, zonedParts, zonedTimeToInstant, zonedDayOfWeek } from "@/lib/date";
-import { DEFAULT_WORK_SCHEDULE, computeHoursWorked, getScheduleForDate, settingsFromRows } from "@/lib/workSchedule";
-import { notifyAttendanceEvent } from "@/lib/attendanceNotify";
-import type { AttendanceRecord, BranchGeofence, OutsideWorkTask, CheckInStep } from "../types";
+import { useCheckInScheduleAndData } from "./useCheckInScheduleAndData";
+import { useCheckInCalculations } from "./useCheckInCalculations";
+import { useCheckInMutations } from "./useCheckInMutations";
 
 interface Props {
   employeeId: string;
@@ -14,446 +10,84 @@ interface Props {
 }
 
 export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckOut }: Props) {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [todayRecord, setTodayRecord] = useState<AttendanceRecord | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
-  const [notes, setNotes] = useState("");
-  const [earlyCheckoutReason, setEarlyCheckoutReason] = useState("");
+  const data = useCheckInScheduleAndData({ employeeId });
 
-  const [branch, setBranch] = useState<BranchGeofence | null>(null);
-  const [checkInStep, setCheckInStep] = useState<CheckInStep>("idle");
-  const [checkInMessage, setCheckInMessage] = useState("");
-  const [checkInDistance, setCheckInDistance] = useState<number | null>(null);
-  const [checkInAccuracy, setCheckInAccuracy] = useState<number | null>(null);
-  const [globalWorkStartTime, setGlobalWorkStartTime] = useState("08:00");
-  const [scheduleSettings, setScheduleSettings] = useState(DEFAULT_WORK_SCHEDULE);
-  const [activeOutsideWork, setActiveOutsideWork] = useState<OutsideWorkTask | null>(null);
-  const [todayOutsideWork, setTodayOutsideWork] = useState<OutsideWorkTask | null>(null);
-  const [assignedShift, setAssignedShift] = useState<{ start_time: string; end_time: string; name: string } | null>(null);
-  const [defaultWorkLocationId, setDefaultWorkLocationId] = useState<string | null>(null);
+  const calcs = useCheckInCalculations({
+    records: data.records,
+    todayRecord: data.todayRecord,
+    currentTime: data.currentTime,
+    today: data.today,
+    scheduleSettings: data.scheduleSettings,
+    workStartTime: data.workStartTime,
+    workEndTime: data.workEndTime,
+  });
 
-  const today = todayYMD();
-
-  const showToast = (type: string, message: string) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    supabase.from("system_settings").select("key, value").then(({ data }) => {
-      if (data) { const next = settingsFromRows(data); setScheduleSettings(next); setGlobalWorkStartTime(next.workStartTime); }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!employeeId) return;
-    supabase
-      .from("tasks")
-      .select("id, title, due_date, work_status, work_checked_in_at, work_checked_out_at, work_address, created_at")
-      .eq("assigned_to", employeeId)
-      .eq("is_outside_work", true)
-      .is("deleted_at", null)
-      .then(async ({ data }) => {
-        const list = (data as any[]) || [];
-        const task = list.find((t) => t.work_status === "checked_in")
-          || list.find((t) => t.due_date === today || (t.work_checked_in_at && t.work_checked_in_at.startsWith(today)))
-          || list.find((t) => t.created_at && t.created_at.startsWith(today) && t.work_status !== "checked_out")
-          || null;
-
-        setTodayOutsideWork(task);
-        setActiveOutsideWork(task?.work_status === "checked_in" ? task : null);
-
-        if (task?.work_checked_in_at && task.work_status === "checked_in") {
-          const { data: existing } = await supabase
-            .from("attendance_records")
-            .select("id")
-            .eq("employee_id", employeeId)
-            .eq("date", today)
-            .maybeSingle();
-          if (!existing) {
-            const ci = new Date(task.work_checked_in_at);
-            const timeStr = `${String(ci.getHours()).padStart(2, "0")}:${String(ci.getMinutes()).padStart(2, "0")}:${String(ci.getSeconds()).padStart(2, "0")}`;
-            await supabase.from("attendance_records").upsert({
-              employee_id: employeeId,
-              date: today,
-              clock_in: timeStr,
-              status: "ontime",
-              notes: `Outside work: ${task.title}`,
-              work_location_id: defaultWorkLocationId || null,
-            }, { onConflict: "employee_id,date" });
-            loadRecords();
-          }
-        }
-      });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeId, today]);
-
-  // Check for assigned shift for today
-  useEffect(() => {
-    if (!employeeId) return;
-    supabase
-      .from("shift_assignments")
-      .select("id, shift:shifts(id, start_time, end_time, shift_date, name)")
-      .eq("employee_id", employeeId)
-      .is("deleted_at", null)
-      .then(({ data }) => {
-        const list = (data as any[]) || [];
-        const match = list.find((a) => a.shift && a.shift.shift_date === today && !a.shift.deleted_at);
-        if (match?.shift) {
-          setAssignedShift({
-            start_time: match.shift.start_time.substring(0, 5),
-            end_time: match.shift.end_time.substring(0, 5),
-            name: match.shift.name,
-          });
-        } else {
-          setAssignedShift(null);
-        }
-      });
-  }, [employeeId, today]);
-
-  const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
-  const daySchedule = getScheduleForDate(scheduleSettings);
-  const workStartTime = assignedShift?.start_time || (!isSaturday && branch?.work_start_time) || daySchedule?.startTime || globalWorkStartTime;
-  const workEndTime = assignedShift?.end_time || (!isSaturday && branch?.work_end_time) || daySchedule?.endTime || null;
-
-  const loadRecords = async () => {
-    if (!employeeId) return;
-    setLoading(true);
-
-    const fromDate = addDaysYMD(today, -30);
-
-    const { data } = await supabase
-      .from("attendance_records")
-      .select("*")
-      .eq("employee_id", employeeId)
-      .gte("date", fromDate)
-      .order("date", { ascending: false });
-
-    const all = data || [];
-    setRecords(all);
-    setTodayRecord(all.find((r) => r.date === today) || null);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadRecords();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeId]);
-
-  const [branchLoading, setBranchLoading] = useState(true);
-  useEffect(() => {
-    if (!employeeId) return;
-    setBranchLoading(true);
-    (async () => {
-      const { data } = await supabase
-        .from("employees")
-        .select("branch_id, default_work_location_id, branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time)")
-        .eq("id", employeeId)
-        .maybeSingle();
-      const b = (data as any)?.branches as BranchGeofence | undefined;
-      setBranch(b || null);
-
-      let wlId = (data as any)?.default_work_location_id || null;
-      if (!wlId && (data as any)?.branch_id) {
-        const { data: defaultSite } = await supabase
-          .from("work_locations")
-          .select("id")
-          .eq("branch_id", (data as any).branch_id)
-          .eq("is_default", true)
-          .is("deleted_at", null)
-          .maybeSingle();
-        if (defaultSite) {
-          wlId = defaultSite.id;
-        } else {
-          const { data: firstSite } = await supabase
-            .from("work_locations")
-            .select("id")
-            .eq("branch_id", (data as any).branch_id)
-            .is("deleted_at", null)
-            .limit(1)
-            .maybeSingle();
-          if (firstSite) wlId = firstSite.id;
-        }
-      }
-      setDefaultWorkLocationId(wlId);
-      setBranchLoading(false);
-    })();
-  }, [employeeId]);
-
-  const handleRequestClockIn = async () => {
-    if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
-      showToast("error", "You have an outside work task today. Please check in via Task Management.");
-      return;
-    }
-    if (branchLoading) return;
-    if (!branch?.latitude || !branch?.longitude) {
-      handleClockIn();
-      return;
-    }
-
-    setCheckInStep("locating");
-    try {
-      const pos = await getCurrentPosition();
-      const dist = Math.round(
-        distanceMeters(pos.coords.latitude, pos.coords.longitude, branch.latitude, branch.longitude)
-      );
-      const accuracy = Math.round(pos.coords.accuracy);
-      setCheckInDistance(dist);
-      setCheckInAccuracy(accuracy);
-
-      if (dist <= branch.geofence_radius_m) {
-        setCheckInMessage(`You're ${dist}m from ${branch.name} — within range. Confirm to check in.`);
-        setCheckInStep("confirm");
-      } else {
-        const accuracyNote =
-          accuracy > branch.geofence_radius_m
-            ? ` Your device's location is only accurate to about ±${accuracy}m right now (common on desktop/laptop computers without GPS), so this reading may not be exact — try again on a phone with GPS/location services on for a more precise result.`
-            : "";
-        setCheckInMessage(`You're ${dist}m from ${branch.name} — you need to be within ${branch.geofence_radius_m}m to check in.${accuracyNote}`);
-        setCheckInStep("denied");
-      }
-    } catch (err: any) {
-      const codeNote = err?.code != null ? ` (code ${err.code}${err?.message ? `: ${err.message}` : ""})` : err?.message ? ` (${err.message})` : "";
-      setCheckInMessage(
-        err?.code === 1
-          ? `Location access was denied. Please enable location permissions for this site and try again.${codeNote}`
-          : `Couldn't get your location. On a laptop/desktop, this is usually the OS-level Location Services setting, not just the browser — check Settings > Privacy > Location (Windows) or System Settings > Privacy & Security > Location Services (Mac), then try again.${codeNote}`
-      );
-      setCheckInStep("error");
-    }
-  };
-
-  const autoStartedRef = useRef(false);
-  useEffect(() => {
-    if (!autoStart || loading || branchLoading || autoStartedRef.current || todayRecord?.clock_in || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
-    autoStartedRef.current = true;
-    handleRequestClockIn();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStart, loading, branchLoading, todayRecord, todayOutsideWork]);
-
-  const resetCheckInFlow = () => {
-    setCheckInStep("idle");
-    setCheckInMessage("");
-    setCheckInDistance(null);
-    setCheckInAccuracy(null);
-  };
-
-  const handleConfirmClockIn = async () => {
-    setProcessing(true);
-    await handleClockIn();
-  };
-
-  const handleClockIn = async () => {
-    if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
-      showToast("error", "You have an outside work task today. Please check in via Task Management.");
-      return;
-    }
-    if (!daySchedule) { showToast("error", "Today is not configured as a working day."); return; }
-    const now = new Date();
-    const nowZ = zonedParts(now, scheduleSettings.timezone);
-    const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
-    const [startH, startM] = workStartTime.split(":").map(Number);
-    const lateMinutes = Math.max(0, nowZ.minutesOfDay - (startH * 60 + startM));
-    const status = lateMinutes > 0 ? "late" : "ontime";
-
-    const { error } = await supabase.from("attendance_records").upsert({
-      employee_id: employeeId,
-      date: today,
-      clock_in: timeStr,
-      status,
-      late_minutes: lateMinutes,
-      notes: notes || null,
-      work_location_id: defaultWorkLocationId || null,
-    }, { onConflict: "employee_id,date" });
-
-    setProcessing(false);
-    resetCheckInFlow();
-    if (error) {
-      showToast("error", "Failed to check in. Please try again.");
-    } else {
-      showToast("success", `Checked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > 0 ? ` — ${lateMinutes} min late` : " — On time!"}`);
-      setNotes("");
-      setEarlyCheckoutReason("");
-      loadRecords();
-      notifyAttendanceEvent({
-        employeeName,
-        employeeId,
-        type: "in",
-        isException: lateMinutes > 0,
-        exceptionMinutes: lateMinutes,
-        date: today,
-        time: timeStr,
-        branchName: branch?.name,
-      });
-    }
-  };
-
-  const handleClockOut = async () => {
-    if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
-      showToast("error", "You have an outside work assignment today. Please check out via Task Management.");
-      return;
-    }
-    if (!todayRecord) return;
-    const now = new Date();
-    const nowZ = zonedParts(now, scheduleSettings.timezone);
-    const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
-
-    const [ciH, ciM, ciS] = (todayRecord.clock_in || "00:00:00").split(":").map(Number);
-    const clockInTime = todayRecord.clock_in ? zonedTimeToInstant(today, ciH, ciM, ciS, scheduleSettings.timezone) : null;
-    const hoursWorked = clockInTime ? computeHoursWorked(clockInTime, now, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime) : null;
-
-    let earlyLeaveMinutes = 0;
-    if (workEndTime) {
-      const [endH, endM] = workEndTime.split(":").map(Number);
-      earlyLeaveMinutes = Math.max(0, (endH * 60 + endM) - nowZ.minutesOfDay);
-    }
-
-    const requiresReason = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes;
-    if (requiresReason && !earlyCheckoutReason.trim()) {
-      showToast("error", "Please enter a reason before checking out early.");
-      return;
-    }
-
-    setProcessing(true);
-
-    const checkoutNotes = requiresReason
-      ? [todayRecord.notes, `Early checkout reason: ${earlyCheckoutReason.trim()}`].filter(Boolean).join("\n")
-      : todayRecord.notes;
-
-    const { error } = await supabase.from("attendance_records")
-      .update({ clock_out: timeStr, hours_worked: hoursWorked, early_leave_minutes: earlyLeaveMinutes, notes: checkoutNotes })
-      .eq("id", todayRecord.id);
-
-    setProcessing(false);
-    if (error) {
-      showToast("error", "Failed to check out. Please try again.");
-    } else {
-      const hrs = hoursWorked ? `${Math.floor(hoursWorked)}h ${Math.round((hoursWorked % 1) * 60)}m worked` : "";
-      const earlyNote = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes ? ` — ${earlyLeaveMinutes} min early` : "";
-      showToast("success", `Checked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
-      loadRecords();
-      notifyAttendanceEvent({
-        employeeName,
-        employeeId,
-        type: "out",
-        isException: earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes,
-        exceptionMinutes: earlyLeaveMinutes,
-        date: today,
-        time: timeStr,
-        branchName: branch?.name,
-      });
-    }
-  };
-
-  const isCheckedIn = !!todayRecord?.clock_in;
-  const isCheckedOut = !!(todayRecord?.clock_in && todayRecord?.clock_out);
-  const earlyCheckoutMinutesNow = (() => {
-    if (!workEndTime || !isCheckedIn || isCheckedOut) return 0;
-    const [endH, endM] = workEndTime.split(":").map(Number);
-    return Math.max(0, (endH * 60 + endM) - zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay);
-  })();
-  const isEarlyCheckoutNow = earlyCheckoutMinutesNow > scheduleSettings.earlyLeaveGraceMinutes;
-
-  const autoCheckedOutRef = useRef(false);
-  useEffect(() => {
-    if (loading || autoCheckedOutRef.current || !isCheckedIn || isCheckedOut || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
-
-    const isSat = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
-    const autoCheckoutThreshold = isSat ? 13 * 60 : 18 * 60; // 1:00 PM Sat, 6:00 PM Mon-Fri
-    const nowMin = zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay;
-
-    const shouldAutoCheckoutByTime = nowMin >= autoCheckoutThreshold;
-    const shouldAutoCheckoutByParam = !!autoCheckOut && !isEarlyCheckoutNow;
-
-    if (shouldAutoCheckoutByTime || shouldAutoCheckoutByParam) {
-      autoCheckedOutRef.current = true;
-      handleClockOut();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork, currentTime, scheduleSettings.timezone]);
-
-  const presentCount = records.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "late").length;
-  const lateCount = records.filter((r) => r.status === "late").length;
-  const earlyLeaveCount = records.filter((r) => (r.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes).length;
-  const absentCount = records.filter((r) => r.status === "absent").length;
-  const totalHours = records.reduce((s, r) => s + (r.hours_worked || 0), 0);
-
-  const daysWithHours = records.filter((r) => (r.hours_worked || 0) > 0).length;
-  const avgHours = daysWithHours > 0 ? totalHours / daysWithHours : 0;
-  const punctuality = presentCount > 0 ? Math.round(((presentCount - lateCount) / presentCount) * 100) : 0;
-
-  const elapsedHours = (() => {
-    if (!isCheckedIn || isCheckedOut || !todayRecord?.clock_in) return 0;
-    const [ciH, ciM, ciS] = todayRecord.clock_in.split(":").map(Number);
-    const start = zonedTimeToInstant(today, ciH, ciM, ciS, scheduleSettings.timezone);
-    return computeHoursWorked(start, currentTime, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime);
-  })();
-
-  const shiftProgress = (() => {
-    if (!workEndTime) return null;
-    const [sh, sm] = workStartTime.split(":").map(Number);
-    const [eh, em] = workEndTime.split(":").map(Number);
-    const start = sh * 60 + sm;
-    const end = eh * 60 + em;
-    if (end <= start) return null;
-    const nowMin = zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay;
-    return Math.min(100, Math.max(0, ((nowMin - start) / (end - start)) * 100));
-  })();
-
-  const last7Days = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDaysYMD(today, -i)),
-    [today]
-  );
+  const mutations = useCheckInMutations({
+    employeeId,
+    employeeName,
+    autoStart,
+    autoCheckOut,
+    today: data.today,
+    todayRecord: data.todayRecord,
+    loading: data.loading,
+    branch: data.branch,
+    branchLoading: data.branchLoading,
+    scheduleSettings: data.scheduleSettings,
+    daySchedule: data.daySchedule,
+    workStartTime: data.workStartTime,
+    workEndTime: data.workEndTime,
+    defaultWorkLocationId: data.defaultWorkLocationId,
+    todayOutsideWork: data.todayOutsideWork,
+    currentTime: data.currentTime,
+    isCheckedIn: calcs.isCheckedIn,
+    isCheckedOut: calcs.isCheckedOut,
+    isEarlyCheckoutNow: calcs.isEarlyCheckoutNow,
+    loadRecords: data.loadRecords,
+  });
 
   return {
-    records,
-    todayRecord,
-    loading,
-    processing,
-    currentTime,
-    toast,
-    notes,
-    setNotes,
-    earlyCheckoutReason,
-    setEarlyCheckoutReason,
-    branch,
-    branchLoading,
-    checkInStep,
-    checkInMessage,
-    scheduleSettings,
-    activeOutsideWork,
-    todayOutsideWork,
-    workStartTime,
-    workEndTime,
-    daySchedule,
-    handleRequestClockIn,
-    handleConfirmClockIn,
-    handleClockIn,
-    handleClockOut,
-    resetCheckInFlow,
-    isCheckedIn,
-    isCheckedOut,
-    earlyCheckoutMinutesNow,
-    isEarlyCheckoutNow,
-    past7Days: last7Days,
-    // stats
-    presentCount,
-    lateCount,
-    earlyLeaveCount,
-    absentCount,
-    totalHours,
-    daysWithHours,
-    avgHours,
-    punctuality,
-    elapsedHours,
-    shiftProgress,
+    records: data.records,
+    todayRecord: data.todayRecord,
+    loading: data.loading,
+    currentTime: data.currentTime,
+    branch: data.branch,
+    branchLoading: data.branchLoading,
+    scheduleSettings: data.scheduleSettings,
+    activeOutsideWork: data.activeOutsideWork,
+    todayOutsideWork: data.todayOutsideWork,
+    workStartTime: data.workStartTime,
+    workEndTime: data.workEndTime,
+    daySchedule: data.daySchedule,
+
+    processing: mutations.processing,
+    toast: mutations.toast,
+    notes: mutations.notes,
+    setNotes: mutations.setNotes,
+    earlyCheckoutReason: mutations.earlyCheckoutReason,
+    setEarlyCheckoutReason: mutations.setEarlyCheckoutReason,
+    checkInStep: mutations.checkInStep,
+    checkInMessage: mutations.checkInMessage,
+    handleRequestClockIn: mutations.handleRequestClockIn,
+    handleConfirmClockIn: mutations.handleConfirmClockIn,
+    handleClockIn: mutations.handleClockIn,
+    handleClockOut: mutations.handleClockOut,
+    resetCheckInFlow: mutations.resetCheckInFlow,
+
+    isCheckedIn: calcs.isCheckedIn,
+    isCheckedOut: calcs.isCheckedOut,
+    earlyCheckoutMinutesNow: calcs.earlyCheckoutMinutesNow,
+    isEarlyCheckoutNow: calcs.isEarlyCheckoutNow,
+    past7Days: calcs.past7Days,
+
+    presentCount: calcs.presentCount,
+    lateCount: calcs.lateCount,
+    earlyLeaveCount: calcs.earlyLeaveCount,
+    absentCount: calcs.absentCount,
+    totalHours: calcs.totalHours,
+    daysWithHours: calcs.daysWithHours,
+    avgHours: calcs.avgHours,
+    punctuality: calcs.punctuality,
+    elapsedHours: calcs.elapsedHours,
+    shiftProgress: calcs.shiftProgress,
   };
 }
