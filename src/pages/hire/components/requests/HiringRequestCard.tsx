@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { HiringRequest } from "../../types";
+import { formatDateTime } from "../../hireUtils";
 
 interface HiringRequestCardProps {
   request: HiringRequest;
@@ -105,7 +106,7 @@ export const HiringRequestCard = memo(function HiringRequestCard({
       case "pending_hr_admin_review":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300 animate-pulse">
-            <i className="ri-admin-line text-sm" /> Awaiting HR Admin Approval
+            <i className="ri-admin-line text-sm" /> Awaiting Admin Manager Approval
           </span>
         );
       case "pending_hr_review":
@@ -114,6 +115,8 @@ export const HiringRequestCard = memo(function HiringRequestCard({
             <i className="ri-user-star-line text-sm" /> In HR Manager Review
           </span>
         );
+      case "pending_branch_review":
+      case "pending":
       default:
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
@@ -138,7 +141,7 @@ export const HiringRequestCard = memo(function HiringRequestCard({
             </span>
             {getStatusBadge(r.status)}
             <span className="text-xs text-gray-400 font-medium">
-              Requested {new Date(r.created_at).toLocaleDateString()}
+              Requested {formatDateTime(r.created_at)}
             </span>
           </div>
 
@@ -177,28 +180,28 @@ export const HiringRequestCard = memo(function HiringRequestCard({
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-medium">
                 <i className="ri-checkbox-circle-line text-amber-600" />
                 Branch Endorsed: <strong>{r.branch_approved_by}</strong>
-                {r.branch_approved_at && ` (${new Date(r.branch_approved_at).toLocaleDateString()})`}
+                {r.branch_approved_at && ` · ${formatDateTime(r.branch_approved_at)}`}
               </span>
             )}
             {r.hr_reviewed_by && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 font-medium">
                 <i className="ri-user-star-line text-sky-600" />
                 HR Manager Reviewed: <strong>{r.hr_reviewed_by}</strong>
-                {r.hr_reviewed_at && ` (${new Date(r.hr_reviewed_at).toLocaleDateString()})`}
+                {r.hr_reviewed_at && ` · ${formatDateTime(r.hr_reviewed_at)}`}
               </span>
             )}
             {r.hr_admin_approved_by && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 text-purple-800 border border-purple-200 font-medium">
                 <i className="ri-admin-line text-purple-600" />
-                HR Admin Approved: <strong>{r.hr_admin_approved_by}</strong>
-                {r.hr_admin_approved_at && ` (${new Date(r.hr_admin_approved_at).toLocaleDateString()})`}
+                Admin Manager Approved: <strong>{r.hr_admin_approved_by}</strong>
+                {r.hr_admin_approved_at && ` · ${formatDateTime(r.hr_admin_approved_at)}`}
               </span>
             )}
             {r.chairman_approved_by && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
                 <i className="ri-vip-crown-line text-emerald-600" />
                 Chairman Authorized: <strong>{r.chairman_approved_by}</strong>
-                {r.chairman_approved_at && ` (${new Date(r.chairman_approved_at).toLocaleDateString()})`}
+                {r.chairman_approved_at && ` · ${formatDateTime(r.chairman_approved_at)}`}
               </span>
             )}
             {r.hr_assigned_to_name && (

@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { HiringRequest } from "../../types";
+import { formatDateTime } from "../../hireUtils";
 
 interface DecisionHiringRequestModalProps {
   isOpen: boolean;
@@ -92,7 +93,7 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
             </div>
             <div className="text-xs text-gray-600 space-y-1">
               <p><strong>Department:</strong> {request.department} {request.branches?.name ? `· ${request.branches.name}` : ""}</p>
-              <p><strong>Requested By:</strong> {request.requested_by_name} ({new Date(request.created_at).toLocaleDateString()})</p>
+              <p><strong>Requested By:</strong> {request.requested_by_name} ({formatDateTime(request.created_at)})</p>
               {request.branch_approved_by && (
                 <p className="text-amber-700 font-medium">
                   <strong>Branch Endorsed By:</strong> {request.branch_approved_by}

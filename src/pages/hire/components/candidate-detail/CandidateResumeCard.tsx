@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { Candidate, CandidateDocument } from "../../types";
+import { formatDateTime } from "../../hireUtils";
 
 interface CandidateResumeCardProps {
   candidate: Candidate;
@@ -122,7 +123,7 @@ export const CandidateResumeCard = memo(function CandidateResumeCard({
                       </span>
                       {sizeLabel && <span>• {sizeLabel}</span>}
                       {doc.uploaded_at && (
-                        <span>• {new Date(doc.uploaded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                        <span>• {formatDateTime(doc.uploaded_at)}</span>
                       )}
                     </div>
                   </div>

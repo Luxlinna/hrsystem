@@ -32,50 +32,55 @@ export function useMeetingRoomsData(selectedDate: string) {
       return;
     }
 
-    let { data, error } = await supabase.from("meeting_rooms").select("id, name, capacity, color, floor").order("capacity");
+    const { data, error } = await supabase
+      .from("meeting_rooms")
+      .select("id, name, capacity, color, floor, branch_id, deleted_at, amenities")
+      .is("deleted_at", null)
+      .order("capacity");
+
     if (error) {
       console.error("Failed to load rooms:", error);
       return;
     }
 
-    // Rename Big Meeting Room -> VIP Room if present in DB and set floor = 5
-    if (data && data.some((r) => r.name === "Big Meeting Room")) {
-      await supabase
-        .from("meeting_rooms")
-        .update({ name: "VIP Room", floor: 5 })
-        .eq("name", "Big Meeting Room");
+    // Filter rooms for this specific branch
+    const branchSpecificRooms = (data || []).filter((r: any) => r.branch_id === targetBranch);
+    const roomsToEnrich = branchSpecificRooms.length > 0
+      ? branchSpecificRooms
+      : (data || []).filter((r: any) => !r.branch_id);
 
-      data = data.map((r) => (r.name === "Big Meeting Room" ? { ...r, name: "VIP Room", floor: 5 } : r));
-    }
-
-    // Auto-seed Training Room if it does not exist in DB yet (Floor 3)
-    if (data && !data.some((r) => r.name.toLowerCase().includes("training"))) {
-      const { data: newRoom } = await supabase
-        .from("meeting_rooms")
-        .insert({
-          name: "Training Room",
-          capacity: 30,
-          color: "#059669",
-          floor: 3,
-        })
-        .select()
-        .single();
-
-      if (newRoom) {
-        data = [...data, newRoom].sort((a, b) => (a.capacity || 0) - (b.capacity || 0));
-      }
-    }
-
-    const enrichedRooms = (data || []).map((r) => {
+    const enrichedRooms: MeetingRoom[] = roomsToEnrich.map((r: any) => {
       const floor = r.floor || ROOM_FLOORS[r.name] || (r.name.toLowerCase().includes("vip") ? 5 : 3);
+      const amenities = (Array.isArray(r.amenities) && r.amenities.length > 0)
+        ? r.amenities
+        : (ROOM_AMENITIES[r.name] || DEFAULT_AMENITIES);
+
       return {
         ...r,
         floor,
-        amenities: ROOM_AMENITIES[r.name] || DEFAULT_AMENITIES,
+        amenities,
       };
     });
+
     setRooms(enrichedRooms);
   }, [isPartnerBranchBlocked, targetBranch]);
+
+  const deleteRoom = useCallback(async (roomId: string, roomName: string) => {
+    if (!confirm(`Are you sure you want to remove room "${roomName}"?`)) return false;
+    try {
+      const { error } = await supabase
+        .from("meeting_rooms")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", roomId);
+
+      if (error) throw error;
+      await loadRooms();
+      return true;
+    } catch (err: any) {
+      console.error("Failed to delete room:", err);
+      return false;
+    }
+  }, [loadRooms]);
 
   useEffect(() => {
     loadRooms();
@@ -183,5 +188,6 @@ export function useMeetingRoomsData(selectedDate: string) {
     loading,
     loadBookings,
     loadRooms,
+    deleteRoom,
   };
 }

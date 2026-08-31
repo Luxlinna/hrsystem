@@ -132,6 +132,7 @@ export default function HirePage() {
           onUpdateStage={h.updateCandidateStage}
           onRate={h.rateCandidate}
           onDelete={h.deleteCandidate}
+          onUploadResume={h.uploadCandidateResume}
           onMoveToOnboarding={h.openMoveToOnboarding}
           onOpenInterview={(c) => h.openCreateInterview(c.id)}
         />

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { Candidate } from "../../types";
 import { STAGE_CONFIG, PIPELINE_STAGES } from "../../constants";
-import { initials } from "../../hireUtils";
+import { initials, formatDateTime } from "../../hireUtils";
 
 interface CandidateProfileHeaderProps {
   candidate: Candidate;
@@ -76,12 +76,7 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
                 </span>
               )}
               <span className="flex items-center gap-1.5">
-                <i className="ri-calendar-line text-gray-400" /> Applied{" "}
-                {new Date(candidate.applied_at || Date.now()).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
+                <i className="ri-calendar-line text-gray-400" /> Applied {formatDateTime(candidate.applied_at)}
               </span>
             </div>
           </div>

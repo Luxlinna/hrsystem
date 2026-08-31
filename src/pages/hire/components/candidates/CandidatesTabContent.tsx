@@ -14,8 +14,9 @@ interface CandidatesTabContentProps {
   onOpenEdit?: (c: Candidate) => void;
   onUpdateStage: (id: string, stage: string) => void;
   onRate: (id: string, rating: number) => void;
-  onDelete?: (c: Candidate) => void;
+  onDelete?: (id: string, name: string) => void;
   onMoveToOnboarding: (c: Candidate) => void;
+  onUploadResume?: (id: string, file: File) => void;
   onOpenInterview?: (c: Candidate) => void;
 }
 
@@ -23,9 +24,12 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
   candidates,
   viewMode,
   onOpenCreate,
+  onOpenEdit,
   onUpdateStage,
   onRate,
+  onDelete,
   onMoveToOnboarding,
+  onUploadResume,
   onOpenInterview,
 }: CandidatesTabContentProps) {
   if (candidates.length === 0) {
@@ -160,6 +164,9 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
           onUpdateStage={onUpdateStage}
           onRate={onRate}
           onMoveToOnboarding={onMoveToOnboarding}
+          onUploadResume={onUploadResume}
+          onEdit={onOpenEdit}
+          onDelete={onDelete}
           onScheduleInterview={onOpenInterview ? () => onOpenInterview(c) : undefined}
         />
       ))}

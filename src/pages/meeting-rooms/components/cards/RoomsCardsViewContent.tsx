@@ -8,6 +8,8 @@ interface RoomsCardsViewContentProps {
   bookings: Booking[];
   onOpenBookModal: (room: MeetingRoom) => void;
   onSelectBooking: (b: Booking) => void;
+  canManageRooms?: boolean;
+  onDeleteRoom?: (roomId: string, roomName: string) => void;
 }
 
 export const RoomsCardsViewContent = memo(function RoomsCardsViewContent({
@@ -15,6 +17,8 @@ export const RoomsCardsViewContent = memo(function RoomsCardsViewContent({
   bookings,
   onOpenBookModal,
   onSelectBooking,
+  canManageRooms,
+  onDeleteRoom,
 }: RoomsCardsViewContentProps) {
   const todayStr = toYMD(new Date());
 
@@ -30,6 +34,8 @@ export const RoomsCardsViewContent = memo(function RoomsCardsViewContent({
             todayBookings={todayBookings}
             onOpenBookModal={onOpenBookModal}
             onSelectBooking={onSelectBooking}
+            canManageRooms={canManageRooms}
+            onDeleteRoom={onDeleteRoom}
           />
         );
       })}

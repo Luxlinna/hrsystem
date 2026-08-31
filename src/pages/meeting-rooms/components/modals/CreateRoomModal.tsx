@@ -9,6 +9,8 @@ interface Props {
   onClose: () => void;
   onCreated: () => void;
   showToast: (type: string, message: string) => void;
+  branchId?: string | null;
+  branchName?: string;
 }
 
 const FLOOR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -18,6 +20,8 @@ export const CreateRoomModal = memo(function CreateRoomModal({
   onClose,
   onCreated,
   showToast,
+  branchId,
+  branchName,
 }: Props) {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
@@ -56,14 +60,19 @@ export const CreateRoomModal = memo(function CreateRoomModal({
     if (!name.trim()) return showToast("error", "Room name is required.");
     setSaving(true);
     try {
-      const { error } = await supabase.from("meeting_rooms").insert({
+      const payload: any = {
         name: name.trim(),
         capacity,
         floor,
         color: customColor || color,
-      });
+        amenities: selectedAmenities,
+      };
+      if (branchId) {
+        payload.branch_id = branchId;
+      }
+      const { error } = await supabase.from("meeting_rooms").insert(payload);
       if (error) throw error;
-      showToast("success", `Room "${name.trim()}" created successfully!`);
+      showToast("success", `Room "${name.trim()}" created successfully${branchName ? ` for ${branchName}` : ""}!`);
       reset();
       onCreated();
       onClose();

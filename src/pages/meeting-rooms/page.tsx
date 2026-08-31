@@ -120,6 +120,8 @@ export default function MeetingRoomsPage() {
           bookings={m.bookings}
           onOpenBookModal={(room) => m.openBookModal(room, m.selectedDate)}
           onSelectBooking={m.setSelectedBooking}
+          canManageRooms={m.canApprove}
+          onDeleteRoom={m.deleteRoom}
         />
       )}
 

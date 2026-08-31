@@ -148,12 +148,15 @@ export function useHireActions({
     }
   }, [loadData]);
 
-  const deleteCandidate = useCallback(async (c: Candidate) => {
-    if (!confirm(`Are you sure you want to delete "${c.full_name}"?`)) return;
+  const deleteCandidate = useCallback(async (cOrId: Candidate | string, maybeName?: string) => {
+    const id = typeof cOrId === "string" ? cOrId : cOrId?.id;
+    const name = typeof cOrId === "string" ? (maybeName || "Candidate") : cOrId?.full_name;
+    if (!id) return;
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
     try {
-      const { error } = await supabase.from("candidates").update({ deleted_at: new Date().toISOString() }).eq("id", c.id);
+      const { error } = await supabase.from("candidates").update({ deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
-      toast("Candidate Deleted", `"${c.full_name}" moved to trash.`, "success");
+      toast("Candidate Deleted", `"${name}" moved to trash.`, "success");
       await loadData();
     } catch (err: any) {
       toast("Error", err.message || "Failed to delete candidate.", "error");

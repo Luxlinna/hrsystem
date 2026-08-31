@@ -37,6 +37,8 @@ interface MeetingRoomsModalsContainerProps {
 
   createRoomOpen: boolean;
   setCreateRoomOpen: (val: boolean) => void;
+  targetBranch?: string | null;
+  userBranchName?: string | null;
 }
 
 export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsContainer({
@@ -66,6 +68,8 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
   showToast,
   createRoomOpen,
   setCreateRoomOpen,
+  targetBranch,
+  userBranchName,
 }: MeetingRoomsModalsContainerProps) {
   return (
     <>
@@ -133,6 +137,8 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
         onClose={() => setCreateRoomOpen(false)}
         onCreated={() => loadRooms()}
         showToast={(type, msg) => showToast(type as any, msg)}
+        branchId={targetBranch}
+        branchName={userBranchName || undefined}
       />
     </>
   );

@@ -4,6 +4,8 @@ export interface MeetingRoom {
   capacity: number | null;
   color: string;
   floor?: number;
+  branch_id?: string | null;
+  deleted_at?: string | null;
   amenities?: string[];
 }
 

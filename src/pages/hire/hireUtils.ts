@@ -17,6 +17,20 @@ export const formatRelative = (ts: string): string => {
   return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
+export const formatDateTime = (ts?: string | null): string => {
+  if (!ts) return "—";
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
 export const formatScheduleDateTime = (iso: string): string => {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -30,5 +44,5 @@ export const formatScheduleDateTime = (iso: string): string => {
   const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
   if (isToday) return `Today at ${timeStr}`;
   if (isTomorrow) return `Tomorrow at ${timeStr}`;
-  return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })} at ${timeStr}`;
+  return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at ${timeStr}`;
 };

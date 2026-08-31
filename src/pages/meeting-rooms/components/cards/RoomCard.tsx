@@ -8,6 +8,8 @@ interface RoomCardProps {
   todayBookings: Booking[];
   onOpenBookModal: (room: MeetingRoom) => void;
   onSelectBooking: (b: Booking) => void;
+  canManageRooms?: boolean;
+  onDeleteRoom?: (roomId: string, roomName: string) => void;
 }
 
 export const RoomCard = memo(function RoomCard({
@@ -15,6 +17,8 @@ export const RoomCard = memo(function RoomCard({
   todayBookings,
   onOpenBookModal,
   onSelectBooking,
+  canManageRooms,
+  onDeleteRoom,
 }: RoomCardProps) {
   const roomFloor = getRoomFloor(room);
   const isVIP = roomFloor === 5;
@@ -34,12 +38,24 @@ export const RoomCard = memo(function RoomCard({
             </p>
           </div>
 
-          <button
-            onClick={() => onOpenBookModal(room)}
-            className="px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
-          >
-            + Book
-          </button>
+          <div className="flex items-center gap-1.5">
+            {canManageRooms && onDeleteRoom && (
+              <button
+                type="button"
+                onClick={() => onDeleteRoom(room.id, room.name)}
+                className="p-1.5 text-gray-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                title="Remove room"
+              >
+                <i className="ri-delete-bin-line text-sm" />
+              </button>
+            )}
+            <button
+              onClick={() => onOpenBookModal(room)}
+              className="px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              + Book
+            </button>
+          </div>
         </div>
 
         {/* Amenities Pills */}
