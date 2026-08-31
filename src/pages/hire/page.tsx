@@ -166,7 +166,16 @@ export default function HirePage() {
           canApprove={h.canApprove}
           canBranchApprove={h.canBranchApprove}
           canHrReview={h.canHrReview}
+          canHrAdminApprove={h.canHrAdminApprove}
+          canChairmanApprove={h.canChairmanApprove}
+          isHrDivisionBranch={h.isHrDivisionBranch}
+          userBranchId={h.userBranchId}
           isChairman={h.isChairman}
+          isSuperAdmin={h.isSuperAdmin}
+          isAdmin={h.isAdmin}
+          actorName={h.actorName}
+          actorEmail={h.actorEmail}
+          myEmployeeId={h.myEmployeeId}
           onOpenCreate={() => h.openCreateRequest()}
           onOpenDecision={h.openDecisionModal}
           onDeleteRequest={h.handleDeleteRequest}

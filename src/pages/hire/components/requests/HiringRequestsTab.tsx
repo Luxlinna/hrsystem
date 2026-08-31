@@ -8,7 +8,16 @@ interface HiringRequestsTabProps {
   canApprove: boolean;
   canBranchApprove?: boolean;
   canHrReview?: boolean;
+  canHrAdminApprove?: boolean;
+  canChairmanApprove?: boolean;
+  isHrDivisionBranch?: boolean;
+  userBranchId?: string | null;
   isChairman: boolean;
+  isSuperAdmin?: boolean;
+  isAdmin?: boolean;
+  actorName?: string;
+  actorEmail?: string;
+  myEmployeeId?: string;
   onOpenCreate: () => void;
   onOpenDecision: (req: HiringRequest, action: "approved" | "rejected") => void;
   onDeleteRequest?: (id: string) => void;
@@ -21,7 +30,16 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
   canApprove,
   canBranchApprove = false,
   canHrReview = false,
+  canHrAdminApprove = false,
+  canChairmanApprove = false,
+  isHrDivisionBranch = false,
+  userBranchId = null,
   isChairman,
+  isSuperAdmin = false,
+  isAdmin = false,
+  actorName,
+  actorEmail,
+  myEmployeeId,
   onOpenCreate,
   onOpenDecision,
   onDeleteRequest,
@@ -35,10 +53,9 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
       total: requests.length,
       pendingBranch: requests.filter((r) => !r.status || r.status === "pending" || r.status === "pending_branch_review").length,
       pendingHr: requests.filter((r) => r.status === "pending_hr_review").length,
+      pendingHrAdmin: requests.filter((r) => r.status === "pending_hr_admin_review").length,
+      pendingChairman: requests.filter((r) => r.status === "pending_chairman_review").length,
       approved: requests.filter((r) => r.status === "approved").length,
-      totalHeadcount: requests
-        .filter((r) => r.status === "approved" || !r.status || r.status === "pending" || r.status === "pending_hr_review")
-        .reduce((sum, r) => sum + (r.headcount || 1), 0),
     };
   }, [requests]);
 
@@ -73,7 +90,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-[11px] font-bold tracking-wide uppercase text-blue-100 border border-white/10">
-                Pipeline: Branch Manager Request → Branch Endorsement → HR Division Authorization
+                Pipeline: Branch Endorsement → HR Manager Review → HR Division Admin → Chairman Authorization
               </span>
               {isChairman && (
                 <span className="px-2.5 py-0.5 bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 rounded-full text-[11px] font-bold">
@@ -82,10 +99,10 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
               )}
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Branch Hiring Requisitions
+              Recruitment & Hiring Requisitions
             </h2>
             <p className="text-xs sm:text-sm text-blue-100/90 max-w-2xl leading-relaxed font-medium">
-              Branch managers request headcount for their branch. Branch Admins endorse the requisition, routing it to the HR Division for final assignment and live job recruitment.
+              Enterprise Governance: Branch Manager request is endorsed by Branch Leadership, vetted by the HR Manager, approved by HR Division Admin, and authorized by the Executive Chairman.
             </p>
           </div>
 
@@ -101,22 +118,26 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-6 border-t border-white/15 relative">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
-            <p className="text-[11px] text-blue-200 font-bold uppercase tracking-wider">Total Requisitions</p>
-            <p className="text-2xl sm:text-3xl font-black mt-1 text-white">{stats.total}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 mt-6 pt-6 border-t border-white/15 relative">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
+            <p className="text-[10px] text-amber-200 font-bold uppercase tracking-wider">Branch Review</p>
+            <p className="text-xl sm:text-2xl font-black text-amber-300 mt-1">{stats.pendingBranch}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
-            <p className="text-[11px] text-amber-200 font-bold uppercase tracking-wider">Round 1: Branch Action</p>
-            <p className="text-2xl sm:text-3xl font-black text-amber-300 mt-1">{stats.pendingBranch}</p>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
+            <p className="text-[10px] text-sky-200 font-bold uppercase tracking-wider">HR Manager Review</p>
+            <p className="text-xl sm:text-2xl font-black text-sky-300 mt-1">{stats.pendingHr}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
-            <p className="text-[11px] text-sky-200 font-bold uppercase tracking-wider">Round 2: HR Review</p>
-            <p className="text-2xl sm:text-3xl font-black text-sky-300 mt-1">{stats.pendingHr}</p>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
+            <p className="text-[10px] text-purple-200 font-bold uppercase tracking-wider">HR Admin Approval</p>
+            <p className="text-xl sm:text-2xl font-black text-purple-300 mt-1">{stats.pendingHrAdmin}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
-            <p className="text-[11px] text-emerald-200 font-bold uppercase tracking-wider">Approved & Live Jobs</p>
-            <p className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1">{stats.approved}</p>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
+            <p className="text-[10px] text-orange-200 font-bold uppercase tracking-wider">Chairman Review</p>
+            <p className="text-xl sm:text-2xl font-black text-orange-300 mt-1">{stats.pendingChairman}</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
+            <p className="text-[10px] text-emerald-200 font-bold uppercase tracking-wider">Live Active Jobs</p>
+            <p className="text-xl sm:text-2xl font-black text-emerald-300 mt-1">{stats.approved}</p>
           </div>
         </div>
       </div>
@@ -138,10 +159,12 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 font-bold focus:outline-none focus:border-[#253C7D] cursor-pointer"
         >
-          <option value="all">All Requisition Statuses</option>
-          <option value="pending">Round 1: Awaiting Branch Approval</option>
-          <option value="pending_hr_review">Round 2: In HR Division Review</option>
-          <option value="approved">Approved & Job Live</option>
+          <option value="all">All Requisition Statuses ({stats.total})</option>
+          <option value="pending">Awaiting Branch Approval</option>
+          <option value="pending_hr_review">In HR Manager Review</option>
+          <option value="pending_hr_admin_review">Awaiting HR Admin Approval</option>
+          <option value="pending_chairman_review">Awaiting Chairman Authorization</option>
+          <option value="approved">Fully Approved & Job Live</option>
           <option value="fulfilled">Position Hired / Closed</option>
           <option value="rejected">Rejected</option>
         </select>
@@ -156,6 +179,15 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
             canApprove={canApprove}
             canBranchApprove={canBranchApprove}
             canHrReview={canHrReview}
+            canHrAdminApprove={canHrAdminApprove}
+            canChairmanApprove={canChairmanApprove}
+            isHrDivisionBranch={isHrDivisionBranch}
+            userBranchId={userBranchId}
+            isSuperAdmin={isSuperAdmin}
+            isAdmin={isAdmin}
+            actorName={actorName}
+            actorEmail={actorEmail}
+            myEmployeeId={myEmployeeId}
             onOpenDecision={onOpenDecision}
             onDelete={onDeleteRequest}
           />

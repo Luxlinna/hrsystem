@@ -21,26 +21,38 @@ export function useHire() {
   const roleNameLower = (role?.name || "").toLowerCase();
   const canRequest = true;
 
-  const isHrDivisionBranch = /hr|human\s*resource|headquarter/i.test(userBranchName || "") || isSuperAdmin;
+  const isHrDivisionBranch = /hr|human\s*resource/i.test(userBranchName || "") || isSuperAdmin;
 
   const canBranchApprove =
     !!role?.hiring_requests_branch_approve ||
-    /branch\s*admin|branch\s*manager|ceo|chair|director/i.test(roleNameLower) ||
-    isAdmin ||
+    /branch\s*admin|branch\s*manager|general\s*manager|director/i.test(roleNameLower) ||
+    isBranchAdmin ||
     isSuperAdmin;
 
   const canHrReview =
     !!role?.hiring_requests_hr_review ||
-    /hr\s*manager|hr\s*staff|recruiter/i.test(roleNameLower) ||
-    (isHrDivisionBranch && (isBranchAdmin || isAdmin || isSuperAdmin));
+    (isHrDivisionBranch && /hr\s*manager|hr\s*staff|recruiter|hr\s*specialist|talent/i.test(roleNameLower)) ||
+    isSuperAdmin;
 
-  const canApprove = canBranchApprove || canHrReview;
+  const canHrAdminApprove =
+    !!role?.hiring_requests_hr_admin_approve ||
+    (isHrDivisionBranch && (isBranchAdmin || /hr\s*director|hr\s*admin|admin\s*manager/i.test(roleNameLower))) ||
+    isSuperAdmin;
+
+  const canChairmanApprove =
+    !!role?.hiring_requests_chairman_approve ||
+    /chair|ceo/i.test(roleNameLower) ||
+    isSuperAdmin;
+
+  const canApprove = canBranchApprove || canHrReview || canHrAdminApprove || canChairmanApprove;
   const isChairman = /chair/i.test(roleNameLower);
 
   const data = useHireData();
   const filters = useHireFilters(data.jobs, data.candidates, data.interviews, data.branches);
   const requests = useHiringRequests({
     actorName, actorRole, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
+    userBranchName,
+    isAdmin, isSuperAdmin,
     loadData: data.loadData, branches: data.branches,
   });
 
@@ -88,10 +100,12 @@ export function useHire() {
 
   return {
     isPartnerBranchBlocked, userBranchName, userBranchId,
+    actorName, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
     jobs: data.jobs, candidates: data.candidates, interviews: data.interviews, branches: data.branches,
     hiringRequests: data.hiringRequests, loading: data.loading,
     tab: filters.tab, setTab: filters.setTab,
-    canRequest, canApprove, isChairman, isSuperAdmin,
+    canRequest, canApprove, canBranchApprove, canHrReview, canHrAdminApprove, canChairmanApprove,
+    isHrDivisionBranch, isChairman, isSuperAdmin, isAdmin,
     jobViewMode: filters.jobViewMode, setJobViewMode: filters.setJobViewMode,
     candidateViewMode: filters.candidateViewMode, setCandidateViewMode: filters.setCandidateViewMode,
     searchQuery: filters.searchQuery, setSearchQuery: filters.setSearchQuery,

@@ -13,6 +13,9 @@ interface UseHiringRequestsProps {
   actorRole: string;
   actorEmail?: string;
   myEmployeeId?: string;
+  userBranchName?: string | null;
+  isAdmin?: boolean;
+  isSuperAdmin?: boolean;
   loadData: () => Promise<void>;
   branches?: Branch[];
 }
@@ -22,6 +25,9 @@ export function useHiringRequests({
   actorRole,
   actorEmail,
   myEmployeeId,
+  userBranchName,
+  isAdmin = false,
+  isSuperAdmin = false,
   loadData,
   branches = [],
 }: UseHiringRequestsProps) {
@@ -33,6 +39,7 @@ export function useHiringRequests({
   const decision = useHiringRequestDecision({
     actorName,
     actorRole,
+    userBranchName: userBranchName || undefined,
     loadData,
   });
 
@@ -129,6 +136,17 @@ export function useHiringRequests({
 
   const handleDeleteRequest = useCallback(
     async (id: string) => {
+      const target = hiringRequests.find((r) => r.id === id);
+      const isOwner =
+        (myEmployeeId && target?.requested_by_id === myEmployeeId) ||
+        (actorEmail && target?.requested_by_email?.toLowerCase() === actorEmail.toLowerCase()) ||
+        (actorName && target?.requested_by_name?.toLowerCase() === actorName.toLowerCase());
+
+      if (target && !isOwner && !isSuperAdmin && !isAdmin) {
+        toast("Permission Denied", "You can only delete requisitions that you created.", "error");
+        return;
+      }
+
       if (!confirm("Are you sure you want to delete this hiring requisition?")) return;
       try {
         const { error } = await supabase
@@ -142,7 +160,7 @@ export function useHiringRequests({
         toast("Error", err.message || "Failed to delete hiring requisition", "error");
       }
     },
-    [actorName, loadData]
+    [actorName, actorEmail, myEmployeeId, isSuperAdmin, isAdmin, hiringRequests, loadData]
   );
 
   return {

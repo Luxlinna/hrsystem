@@ -23,6 +23,8 @@ export interface UserRole {
   attendance_notify: boolean;
   hiring_requests_branch_approve?: boolean;
   hiring_requests_hr_review?: boolean;
+  hiring_requests_hr_admin_approve?: boolean;
+  hiring_requests_chairman_approve?: boolean;
 }
 
 export interface UsePermissionsReturn {

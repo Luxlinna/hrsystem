@@ -9,12 +9,14 @@ import type { HiringRequest } from "../types";
 interface UseHiringRequestDecisionProps {
   actorName: string;
   actorRole: string;
+  userBranchName?: string;
   loadData: () => Promise<void>;
 }
 
 export function useHiringRequestDecision({
   actorName,
   actorRole,
+  userBranchName,
   loadData,
 }: UseHiringRequestDecisionProps) {
   const [decisionModal, setDecisionModal] = useState(false);
@@ -62,25 +64,29 @@ export function useHiringRequestDecision({
 
       setProcessingDecision(true);
       try {
-        const isBranchStage = !targetRequest.status || targetRequest.status === "pending" || targetRequest.status === "pending_branch_review";
+        const status = targetRequest.status || "pending";
+        const isStage1Branch = status === "pending" || status === "pending_branch_review";
+        const isStage2HrReview = status === "pending_hr_review";
+        const isStage3HrAdmin = status === "pending_hr_admin_review";
+        const isStage4Chairman = status === "pending_chairman_review";
+
+        const originatingBranch = targetRequest.branches?.name || userBranchName || "Headquarters";
+        const currentBranch = userBranchName || "HR Division";
 
         if (decisionAction === "approved") {
-          if (isBranchStage) {
-            // Stage 1: Branch Approval -> Forward to HR Division
+          if (isStage1Branch) {
+            // Stage 1: Branch Approval -> Forward to HR Division (HR Manager)
             const { error: reqErr } = await supabase
               .from("hiring_requests")
               .update({
                 status: "pending_hr_review",
-                branch_approved_by: actorName,
+                branch_approved_by: `${actorName} (${actorRole} · ${originatingBranch})`,
                 branch_approved_at: new Date().toISOString(),
               })
               .eq("id", targetRequest.id);
 
             if (reqErr) throw reqErr;
 
-            const originatingBranch = targetRequest.branches?.name || "Headquarters";
-
-            // Find HR Division branch ID if exists
             const { data: hrBranch } = await supabase
               .from("branches")
               .select("id, name")
@@ -88,29 +94,96 @@ export function useHiringRequestDecision({
               .is("deleted_at", null)
               .maybeSingle();
 
-            // 1. In-app notification to HR Division
             await notify({
-              title: `📋 Requisition Forwarded to HR: ${targetRequest.title}`,
-              message: `${actorName} endorsed ${targetRequest.headcount}x ${targetRequest.title} from ${originatingBranch}. Awaiting HR authorization & job publishing.`,
+              title: `📋 HR Manager Review Required (${targetRequest.title})`,
+              message: `${actorName} endorsed ${targetRequest.headcount}x ${targetRequest.title} from ${originatingBranch}. Forwarded to HR Manager for review.`,
               type: "info",
               source: "hire",
               entityId: targetRequest.id,
               branch_id: hrBranch?.id || null,
             });
 
-            toast("Approved & Forwarded", "Requisition approved and routed to HR Division.", "success");
+            toast("Endorsed", `Requisition endorsed by ${actorName} and forwarded to HR Manager.`, "success");
 
             notifyTelegramEvent(
-              `🏢 <b>Hiring Requisition Approved by Branch (${escapeTelegramHtml(actorRole)})</b>\n` +
+              `🏢 <b>Branch Endorsement: ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)} · ${escapeTelegramHtml(originatingBranch)})</b>\n` +
               `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)} (${targetRequest.headcount} opening${targetRequest.headcount > 1 ? "s" : ""})\n` +
               `🏢 <b>Department:</b> ${escapeTelegramHtml(targetRequest.department)}\n` +
               `📍 <b>Branch:</b> ${escapeTelegramHtml(originatingBranch)}\n` +
-              `👤 <b>Approved By:</b> ${escapeTelegramHtml(actorName)}\n` +
-              `⏩ <b>Next Step:</b> Automatically forwarded to HR Division for final authorization.`,
+              `⏩ <b>Next Step:</b> In HR Manager Review.`,
               { text: "Review in HR Division", url: hrNexusUrl("/hire") }
             );
+          } else if (isStage2HrReview) {
+            // Stage 2: HR Manager Review -> Forward to HR Division Admin
+            const { error: reqErr } = await supabase
+              .from("hiring_requests")
+              .update({
+                status: "pending_hr_admin_review",
+                hr_reviewed_by: `${actorName} (${actorRole} · ${currentBranch})`,
+                hr_reviewed_at: new Date().toISOString(),
+              })
+              .eq("id", targetRequest.id);
+
+            if (reqErr) throw reqErr;
+
+            const { data: hrBranch } = await supabase
+              .from("branches")
+              .select("id, name")
+              .ilike("name", "%HR%")
+              .is("deleted_at", null)
+              .maybeSingle();
+
+            await notify({
+              title: `📋 HR Division Admin Approval Required (${targetRequest.title})`,
+              message: `HR Manager ${actorName} reviewed and endorsed ${targetRequest.title} (${originatingBranch}). Awaiting HR Division Admin approval.`,
+              type: "info",
+              source: "hire",
+              entityId: targetRequest.id,
+              branch_id: hrBranch?.id || null,
+            });
+
+            toast("Reviewed", `Requisition reviewed by ${actorName} and forwarded to HR Admin.`, "success");
+
+            notifyTelegramEvent(
+              `📑 <b>HR Manager Review: ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)} · ${escapeTelegramHtml(currentBranch)})</b>\n` +
+              `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)} (${targetRequest.headcount} opening${targetRequest.headcount > 1 ? "s" : ""})\n` +
+              `📍 <b>Branch:</b> ${escapeTelegramHtml(originatingBranch)}\n` +
+              `⏩ <b>Next Step:</b> Awaiting HR Division Admin Approval.`,
+              { text: "Review as HR Admin", url: hrNexusUrl("/hire") }
+            );
+          } else if (isStage3HrAdmin) {
+            // Stage 3: HR Division Admin Approval -> Forward to Chairman
+            const { error: reqErr } = await supabase
+              .from("hiring_requests")
+              .update({
+                status: "pending_chairman_review",
+                hr_admin_approved_by: `${actorName} (${actorRole} · ${currentBranch})`,
+                hr_admin_approved_at: new Date().toISOString(),
+              })
+              .eq("id", targetRequest.id);
+
+            if (reqErr) throw reqErr;
+
+            await notify({
+              title: `👑 Chairman Authorization Required (${targetRequest.title})`,
+              message: `HR Division Admin ${actorName} approved ${targetRequest.title} (${originatingBranch}). Awaiting Chairman final executive authorization.`,
+              type: "warning",
+              source: "hire",
+              entityId: targetRequest.id,
+              branch_id: null,
+            });
+
+            toast("Approved", `Requisition approved by HR Admin ${actorName} and escalated to Chairman.`, "success");
+
+            notifyTelegramEvent(
+              `🏛️ <b>HR Admin Approval: ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)} · ${escapeTelegramHtml(currentBranch)})</b>\n` +
+              `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)} (${targetRequest.headcount} opening${targetRequest.headcount > 1 ? "s" : ""})\n` +
+              `📍 <b>Branch:</b> ${escapeTelegramHtml(originatingBranch)}\n` +
+              `⏩ <b>Next Step:</b> Awaiting Executive Chairman Final Authorization.`,
+              { text: "Review as Chairman", url: hrNexusUrl("/hire") }
+            );
           } else {
-            // Stage 2: Final HR Division Authorization -> Create live job posting
+            // Stage 4: Chairman Executive Authorization -> Create live job posting & Complete
             const { data: jobData, error: jobErr } = await supabase
               .from("job_postings")
               .insert([
@@ -132,13 +205,15 @@ export function useHiringRequestDecision({
 
             if (jobErr) throw jobErr;
 
+            const chairmanRecord = `${actorName} (${actorRole} · ${userBranchName || "Executive"})`;
+
             const { error: reqErr } = await supabase
               .from("hiring_requests")
               .update({
                 status: "approved",
-                hr_reviewed_by: actorName,
-                hr_reviewed_at: new Date().toISOString(),
-                reviewed_by: actorName,
+                chairman_approved_by: chairmanRecord,
+                chairman_approved_at: new Date().toISOString(),
+                reviewed_by: chairmanRecord,
                 reviewed_at: new Date().toISOString(),
                 job_posting_id: jobData?.id,
               })
@@ -146,27 +221,23 @@ export function useHiringRequestDecision({
 
             if (reqErr) throw reqErr;
 
-            const branchName = targetRequest.branches?.name || "Headquarters";
-
-            // In-app alert back to the requesting branch
             await notify({
-              title: `🎉 Requisition Authorized: ${targetRequest.title}`,
-              message: `${actorName} in HR Division authorized the hiring request for ${branchName}. Live job posting is now published!`,
+              title: `🎉 Requisition Authorized by Chairman: ${targetRequest.title}`,
+              message: `Chairman ${actorName} fully authorized the hiring request for ${originatingBranch}. Live recruitment posting is now active!`,
               type: "success",
               source: "hire",
               entityId: targetRequest.id,
               branch_id: targetRequest.branch_id || null,
             });
 
-            toast("Authorized & Published", "Live job posting published on recruitment portal.", "success");
+            toast("Authorized & Published", `Chairman ${actorName} authorized live recruitment posting.`, "success");
 
             notifyTelegramEvent(
-              `✅ <b>Hiring Requisition Finalized by HR Division</b>\n` +
-              `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)}\n` +
+              `👑 <b>Authorized by Chairman: ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)})</b>\n` +
+              `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)} (${targetRequest.headcount} opening${targetRequest.headcount > 1 ? "s" : ""})\n` +
               `🏢 <b>Department:</b> ${escapeTelegramHtml(targetRequest.department)}\n` +
-              `📍 <b>Branch:</b> ${escapeTelegramHtml(branchName)}\n` +
-              `👤 <b>Authorized By:</b> ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)})\n` +
-              `📢 <b>Action:</b> Live Job Opening published on recruitment portal.`,
+              `📍 <b>Branch:</b> ${escapeTelegramHtml(originatingBranch)}\n` +
+              `📢 <b>Outcome:</b> Live Job Opening published on recruitment portal.`,
               { text: "View Live Job", url: hrNexusUrl("/hire") }
             );
           }

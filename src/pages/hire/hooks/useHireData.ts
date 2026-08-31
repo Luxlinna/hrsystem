@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useBranchScope } from "@/context/BranchContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { Job, Candidate, Interview, Branch, HiringRequest } from "../types";
 
 export function useHireData() {
   const {
     isSuperAdmin,
+    isBranchAdmin,
     effectiveBranchId,
     userBranchId,
     userBranchName,
@@ -14,6 +16,13 @@ export function useHireData() {
     isPartnerBranchBlocked,
     visibleBranches,
   } = useBranchScope();
+  const { role, isAdmin } = usePermissions();
+
+  const isHrDivisionBranch = /hr|human\s*resource|headquarter/i.test(userBranchName || "") || isSuperAdmin;
+  const canHrReview =
+    !!role?.hiring_requests_hr_review ||
+    /hr\s*manager|hr\s*staff|recruiter/i.test(role?.name || "") ||
+    (isHrDivisionBranch && (isBranchAdmin || isAdmin || isSuperAdmin));
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -53,7 +62,9 @@ export function useHireData() {
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
-      if (targetBranch) {
+      // If user is not HR reviewer or SuperAdmin, scope to their branch.
+      // HR Division / HR reviewers see all branch requests requiring review.
+      if (targetBranch && !isSuperAdmin && !canHrReview && !isHrDivisionBranch) {
         reqQuery = reqQuery.or(`branch_id.eq.${targetBranch},branch_id.is.null`);
       }
 
@@ -109,7 +120,7 @@ export function useHireData() {
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch, effectiveBranchId, visibleBranches, isSuperAdmin, userBranchId]);
+  }, [isPartnerBranchBlocked, targetBranch, effectiveBranchId, visibleBranches, isSuperAdmin, isBranchAdmin, userBranchId, userBranchName, canHrReview, isHrDivisionBranch]);
 
   useEffect(() => {
     loadData();

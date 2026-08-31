@@ -75,40 +75,56 @@ export function useHireActions({
   );
 
   const closeJob = useCallback(
-    async (job: Job) => {
-      const { error } = await supabase.from("job_postings").update({ status: "closed" }).eq("id", job.id);
+    async (jobOrId: Job | string) => {
+      const id = typeof jobOrId === "string" ? jobOrId : jobOrId?.id;
+      if (!id) return;
+      const { error } = await supabase.from("job_postings").update({ status: "closed" }).eq("id", id);
       if (error) {
         toast("Error", "Failed to close job posting.", "error");
         return;
       }
-      toast("Job Closed", `"${job.title}" has been closed.`, "info");
+      toast("Job Closed", "Job posting has been closed.", "info");
       await loadData();
     },
     [loadData]
   );
 
-  const reopenJob = useCallback(async (job: Job) => {
-    try {
-      const { error } = await supabase.from("job_postings").update({ status: "active" }).eq("id", job.id);
-      if (error) throw error;
-      toast("Job Reopened", `"${job.title}" is now open.`, "success");
-      await loadData();
-    } catch (err: any) {
-      toast("Error", err.message || "Failed to reopen job.", "error");
-    }
-  }, [loadData]);
+  const reopenJob = useCallback(
+    async (jobOrId: Job | string) => {
+      try {
+        const id = typeof jobOrId === "string" ? jobOrId : jobOrId?.id;
+        if (!id) return;
+        const { error } = await supabase.from("job_postings").update({ status: "active" }).eq("id", id);
+        if (error) throw error;
+        toast("Job Reopened", "Job posting is now open.", "success");
+        await loadData();
+      } catch (err: any) {
+        toast("Error", err.message || "Failed to reopen job.", "error");
+      }
+    },
+    [loadData]
+  );
 
-  const deleteJob = useCallback(async (job: Job) => {
-    if (!confirm(`Are you sure you want to delete "${job.title}"?`)) return;
-    try {
-      const { error } = await supabase.from("job_postings").update({ deleted_at: new Date().toISOString() }).eq("id", job.id);
-      if (error) throw error;
-      toast("Job Deleted", `"${job.title}" moved to trash.`, "success");
-      await loadData();
-    } catch (err: any) {
-      toast("Error", err.message || "Failed to delete job.", "error");
-    }
-  }, [loadData]);
+  const deleteJob = useCallback(
+    async (jobOrId: Job | string, maybeTitle?: string) => {
+      const id = typeof jobOrId === "string" ? jobOrId : jobOrId?.id;
+      const title = typeof jobOrId === "string" ? (maybeTitle || "this job posting") : (jobOrId?.title || "this job posting");
+      if (!id) return;
+      if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+      try {
+        const { error } = await supabase
+          .from("job_postings")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", id);
+        if (error) throw error;
+        toast("Job Deleted", `"${title}" moved to trash.`, "success");
+        await loadData();
+      } catch (err: any) {
+        toast("Error", err.message || "Failed to delete job.", "error");
+      }
+    },
+    [loadData]
+  );
 
   const updateCandidateStage = useCallback(async (candidateId: string, stage: string) => {
     try {

@@ -32,7 +32,27 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
   const updateReason = setReason || setRejectionReason || (() => {});
 
   const isApprove = action === "approved";
-  const isBranchStage = !request.status || request.status === "pending" || request.status === "pending_branch_review";
+  const status = request.status || "pending";
+  const isStage1Branch = status === "pending" || status === "pending_branch_review";
+  const isStage2HrReview = status === "pending_hr_review";
+  const isStage3HrAdmin = status === "pending_hr_admin_review";
+  const isStage4Chairman = status === "pending_chairman_review";
+
+  const getStageTitle = () => {
+    if (!isApprove) return "Reject Hiring Requisition";
+    if (isStage1Branch) return "Branch Leadership Endorsement";
+    if (isStage2HrReview) return "HR Manager Review & Endorsement";
+    if (isStage3HrAdmin) return "HR Division Admin Approval";
+    return "Chairman Executive Authorization";
+  };
+
+  const getStageSubtitle = () => {
+    if (!isApprove) return "Decline this requisition with explanatory feedback.";
+    if (isStage1Branch) return "Endorse headcount for your branch and forward to HR Division.";
+    if (isStage2HrReview) return "Review specification & budget, then forward to HR Division Admin.";
+    if (isStage3HrAdmin) return "Approve requisition and escalate to Chairman for final executive sign-off.";
+    return "Final executive authorization — will publish live job opening.";
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -45,14 +65,10 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900">
-                  {isApprove
-                    ? isBranchStage
-                      ? "Approve & Forward to HR Division"
-                      : "Authorize & Publish Live Job"
-                    : "Reject Hiring Requisition"}
+                  {getStageTitle()}
                 </h2>
                 <p className="text-xs text-gray-500">
-                  {isBranchStage ? "Round 1: Branch Leadership Endorsement" : "Round 2: HR Division Final Authorization"}
+                  {getStageSubtitle()}
                 </p>
               </div>
             </div>
@@ -78,8 +94,18 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
               <p><strong>Department:</strong> {request.department} {request.branches?.name ? `· ${request.branches.name}` : ""}</p>
               <p><strong>Requested By:</strong> {request.requested_by_name} ({new Date(request.created_at).toLocaleDateString()})</p>
               {request.branch_approved_by && (
-                <p className="text-emerald-700 font-medium">
+                <p className="text-amber-700 font-medium">
                   <strong>Branch Endorsed By:</strong> {request.branch_approved_by}
+                </p>
+              )}
+              {request.hr_reviewed_by && (
+                <p className="text-sky-700 font-medium">
+                  <strong>HR Manager Reviewed:</strong> {request.hr_reviewed_by}
+                </p>
+              )}
+              {request.hr_admin_approved_by && (
+                <p className="text-purple-700 font-medium">
+                  <strong>HR Admin Approved:</strong> {request.hr_admin_approved_by}
                 </p>
               )}
               {request.justification && (
@@ -91,15 +117,18 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
           </div>
 
           {isApprove ? (
-            <p className="text-xs text-gray-600">
-              {isBranchStage ? (
-                <>
-                  Approving this requisition endorses the headcount request for your branch and automatically routes it to the <strong>HR Division</strong> for recruitment assignment and final live posting.
-                </>
-              ) : (
-                <>
-                  Authorizing this requisition completes the HR review, marks it as <strong>Approved & Open</strong>, and automatically generates an <strong>Active Job Posting</strong> on the recruitment portal.
-                </>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              {isStage1Branch && (
+                <>Approving this requisition endorses the headcount for your branch and forwards it to the <strong>HR Division (HR Manager)</strong> for review.</>
+              )}
+              {isStage2HrReview && (
+                <>Endorsing this requisition confirms HR review and forwards it to the <strong>HR Division Admin / Director</strong> for administrative sign-off.</>
+              )}
+              {isStage3HrAdmin && (
+                <>Approving this requisition provides HR Division clearance and escalates it to the <strong>Executive Chairman</strong> for final authorization.</>
+              )}
+              {isStage4Chairman && (
+                <>Authorizing this requisition completes the full 4-stage recruitment governance pipeline, marks it as <strong>Approved</strong>, and immediately creates a live <strong>Active Job Posting</strong>.</>
               )}
             </p>
           ) : (

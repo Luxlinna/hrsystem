@@ -6,18 +6,42 @@ interface HiringRequestCardProps {
   canApprove: boolean;
   canBranchApprove?: boolean;
   canHrReview?: boolean;
+  canHrAdminApprove?: boolean;
+  canChairmanApprove?: boolean;
+  isHrDivisionBranch?: boolean;
+  userBranchId?: string | null;
+  isSuperAdmin?: boolean;
+  isAdmin?: boolean;
+  actorName?: string;
+  actorEmail?: string;
+  myEmployeeId?: string;
   onOpenDecision: (req: HiringRequest, action: "approved" | "rejected") => void;
   onDelete?: (id: string) => void;
 }
 
 export const HiringRequestCard = memo(function HiringRequestCard({
   request: r,
-  canApprove,
+  canApprove: _canApprove,
   canBranchApprove = false,
   canHrReview = false,
+  canHrAdminApprove = false,
+  canChairmanApprove = false,
+  isHrDivisionBranch = false,
+  userBranchId = null,
+  isSuperAdmin = false,
+  isAdmin = false,
+  actorName,
+  actorEmail,
+  myEmployeeId,
   onOpenDecision,
   onDelete,
 }: HiringRequestCardProps) {
+  const isOwner =
+    (myEmployeeId && r.requested_by_id === myEmployeeId) ||
+    (actorEmail && r.requested_by_email?.toLowerCase() === actorEmail.toLowerCase()) ||
+    (actorName && r.requested_by_name?.toLowerCase() === actorName.toLowerCase());
+
+  const canDeleteThisRequest = isOwner || isSuperAdmin || isAdmin;
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
       case "urgent":
@@ -31,15 +55,23 @@ export const HiringRequestCard = memo(function HiringRequestCard({
     }
   };
 
-  const isBranchStage = !r.status || r.status === "pending" || r.status === "pending_branch_review";
-  const isHrStage = r.status === "pending_hr_review";
+  const isStage1Branch = !r.status || r.status === "pending" || r.status === "pending_branch_review";
+  const isStage2HrReview = r.status === "pending_hr_review";
+  const isStage3HrAdmin = r.status === "pending_hr_admin_review";
+  const isStage4Chairman = r.status === "pending_chairman_review";
+
+  // Strict Stage-by-Stage Responsibility Scoping
+  const canActStage1 = isStage1Branch && canBranchApprove && (isSuperAdmin || !r.branch_id || r.branch_id === userBranchId);
+  const canActStage2 = isStage2HrReview && canHrReview && (isHrDivisionBranch || isSuperAdmin);
+  const canActStage3 = isStage3HrAdmin && canHrAdminApprove && (isHrDivisionBranch || isSuperAdmin);
+  const canActStage4 = isStage4Chairman && canChairmanApprove;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <i className="ri-checkbox-circle-fill text-sm" /> Approved & Job Live
+            <i className="ri-checkbox-circle-fill text-sm" /> Fully Approved & Job Live
           </span>
         );
       case "rejected":
@@ -54,16 +86,28 @@ export const HiringRequestCard = memo(function HiringRequestCard({
             <i className="ri-team-fill text-sm" /> Position Hired
           </span>
         );
+      case "pending_chairman_review":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-300 animate-pulse">
+            <i className="ri-vip-crown-line text-sm" /> Awaiting Chairman Authorization
+          </span>
+        );
+      case "pending_hr_admin_review":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300 animate-pulse">
+            <i className="ri-admin-line text-sm" /> Awaiting HR Admin Approval
+          </span>
+        );
       case "pending_hr_review":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-300 animate-pulse">
-            <i className="ri-building-4-line text-sm" /> Round 2: In HR Division Review
+            <i className="ri-user-star-line text-sm" /> In HR Manager Review
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-            <i className="ri-time-line text-sm" /> Round 1: Awaiting Branch Endorsement
+            <i className="ri-time-line text-sm" /> Awaiting Branch Endorsement
           </span>
         );
     }
@@ -112,25 +156,40 @@ export const HiringRequestCard = memo(function HiringRequestCard({
             </div>
           </div>
 
-          {/* Workflow Stage Details */}
-          <div className="flex items-center gap-3 pt-1 flex-wrap text-xs">
+          {/* 4-Stage Workflow Audit Trail */}
+          <div className="flex items-center gap-2.5 pt-1 flex-wrap text-xs">
             {r.branch_approved_by && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 font-medium">
-                <i className="ri-checkbox-circle-line text-emerald-600" />
-                Branch Endorsed By: <strong>{r.branch_approved_by}</strong>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-medium">
+                <i className="ri-checkbox-circle-line text-amber-600" />
+                Branch Endorsed: <strong>{r.branch_approved_by}</strong>
                 {r.branch_approved_at && ` (${new Date(r.branch_approved_at).toLocaleDateString()})`}
               </span>
             )}
             {r.hr_reviewed_by && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 text-sky-700 border border-sky-100 font-medium">
-                <i className="ri-award-line text-sky-600" />
-                HR Authorized By: <strong>{r.hr_reviewed_by}</strong>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 font-medium">
+                <i className="ri-user-star-line text-sky-600" />
+                HR Manager Reviewed: <strong>{r.hr_reviewed_by}</strong>
+                {r.hr_reviewed_at && ` (${new Date(r.hr_reviewed_at).toLocaleDateString()})`}
+              </span>
+            )}
+            {r.hr_admin_approved_by && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 text-purple-800 border border-purple-200 font-medium">
+                <i className="ri-admin-line text-purple-600" />
+                HR Admin Approved: <strong>{r.hr_admin_approved_by}</strong>
+                {r.hr_admin_approved_at && ` (${new Date(r.hr_admin_approved_at).toLocaleDateString()})`}
+              </span>
+            )}
+            {r.chairman_approved_by && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
+                <i className="ri-vip-crown-line text-emerald-600" />
+                Chairman Authorized: <strong>{r.chairman_approved_by}</strong>
+                {r.chairman_approved_at && ` (${new Date(r.chairman_approved_at).toLocaleDateString()})`}
               </span>
             )}
             {r.hr_assigned_to_name && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 text-purple-700 border border-purple-100 font-medium">
-                <i className="ri-user-star-line text-purple-600" />
-                Assigned HR Officer: <strong>{r.hr_assigned_to_name}</strong>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 font-medium">
+                <i className="ri-user-received-line text-slate-500" />
+                Assigned Officer: <strong>{r.hr_assigned_to_name}</strong>
               </span>
             )}
           </div>
@@ -151,47 +210,83 @@ export const HiringRequestCard = memo(function HiringRequestCard({
         </div>
 
         <div className="flex items-center gap-2 lg:flex-col shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-gray-100">
-          {/* Round 1: Branch Approval Action */}
-          {isBranchStage && (canBranchApprove || canApprove) && (
+          {/* Stage 1: Branch Endorsement Action */}
+          {canActStage1 && (
             <>
               <button
                 onClick={() => onOpenDecision(r, "approved")}
-                className="flex-1 lg:w-44 py-2.5 px-3 rounded-xl bg-[#253C7D] hover:bg-[#1B2B5A] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-[#253C7D] hover:bg-[#1B2B5A] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
               >
-                <i className="ri-send-plane-fill text-sm" /> Approve & Forward to HR
+                <i className="ri-send-plane-fill text-sm" /> Endorse Requisition
               </button>
               <button
                 onClick={() => onOpenDecision(r, "rejected")}
-                className="flex-1 lg:w-44 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
+                className="flex-1 lg:w-48 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
               >
                 <i className="ri-close-line text-sm" /> Reject Requisition
               </button>
             </>
           )}
 
-          {/* Round 2: HR Division Authorization Action */}
-          {isHrStage && (canHrReview || canApprove) && (
+          {/* Stage 2: HR Manager Review Action */}
+          {canActStage2 && (
             <>
               <button
                 onClick={() => onOpenDecision(r, "approved")}
-                className="flex-1 lg:w-44 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
               >
-                <i className="ri-checkbox-circle-line text-sm" /> Authorize & Publish Job
+                <i className="ri-user-star-line text-sm" /> HR Review & Endorse
               </button>
               <button
                 onClick={() => onOpenDecision(r, "rejected")}
-                className="flex-1 lg:w-44 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
+                className="flex-1 lg:w-48 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
               >
                 <i className="ri-close-line text-sm" /> Reject Requisition
               </button>
             </>
           )}
 
-          {onDelete && (
+          {/* Stage 3: HR Division Admin Approval Action */}
+          {canActStage3 && (
+            <>
+              <button
+                onClick={() => onOpenDecision(r, "approved")}
+                className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              >
+                <i className="ri-admin-line text-sm" /> HR Admin Approve
+              </button>
+              <button
+                onClick={() => onOpenDecision(r, "rejected")}
+                className="flex-1 lg:w-48 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
+              >
+                <i className="ri-close-line text-sm" /> Reject Requisition
+              </button>
+            </>
+          )}
+
+          {/* Stage 4: Chairman Executive Final Authorization Action */}
+          {canActStage4 && (
+            <>
+              <button
+                onClick={() => onOpenDecision(r, "approved")}
+                className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              >
+                <i className="ri-vip-crown-line text-sm" /> Authorize & Publish Job
+              </button>
+              <button
+                onClick={() => onOpenDecision(r, "rejected")}
+                className="flex-1 lg:w-48 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
+              >
+                <i className="ri-close-line text-sm" /> Reject Requisition
+              </button>
+            </>
+          )}
+
+          {onDelete && canDeleteThisRequest && (
             <button
               onClick={() => onDelete(r.id)}
               title="Delete Requisition"
-              className="py-2 px-3 rounded-xl bg-gray-50 hover:bg-rose-50 text-gray-400 hover:text-rose-600 font-bold text-xs flex items-center justify-center gap-1.5 border border-gray-200 hover:border-rose-200 transition-all cursor-pointer lg:w-44"
+              className="py-2 px-3 rounded-xl bg-gray-50 hover:bg-rose-50 text-gray-400 hover:text-rose-600 font-bold text-xs flex items-center justify-center gap-1.5 border border-gray-200 hover:border-rose-200 transition-all cursor-pointer lg:w-48"
             >
               <i className="ri-delete-bin-line text-sm" /> Delete Requisition
             </button>
