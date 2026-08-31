@@ -1,17 +1,24 @@
 import { memo } from "react";
+import type { BenefitPlan, Enrollment } from "../types";
+import { BenefitsExportMenu } from "./BenefitsExportMenu";
 
 interface BenefitsHeaderProps {
   canManage: boolean;
-  onExportCSV: () => void;
+  onExportCSV?: () => void;
   onOpenNewPlanModal: () => void;
   onOpenEnrollModal: () => void;
+  tab?: "plans" | "enrollment" | "providers";
+  plans?: BenefitPlan[];
+  enrollments?: Enrollment[];
 }
 
 export const BenefitsHeader = memo(function BenefitsHeader({
   canManage,
-  onExportCSV,
   onOpenNewPlanModal,
   onOpenEnrollModal,
+  tab = "plans",
+  plans = [],
+  enrollments = [],
 }: BenefitsHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -34,13 +41,12 @@ export const BenefitsHeader = memo(function BenefitsHeader({
 
       {/* Header Action Buttons */}
       <div className="flex items-center gap-2.5 flex-wrap">
-        <button
-          onClick={onExportCSV}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-        >
-          <i className="ri-file-excel-2-line text-emerald-600 text-sm" />
-          Export CSV
-        </button>
+        {/* 3-Format Export Dropdown */}
+        <BenefitsExportMenu
+          tab={tab}
+          plans={plans}
+          enrollments={enrollments}
+        />
 
         {canManage && (
           <button

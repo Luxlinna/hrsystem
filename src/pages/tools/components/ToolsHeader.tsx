@@ -1,5 +1,6 @@
 import { memo } from "react";
-import type { ToolsTab } from "../types";
+import type { ToolsTab, Tool, ToolAssignment, ToolUsage } from "../types";
+import { ToolsExportMenu } from "./ToolsExportMenu";
 
 interface ToolsHeaderProps {
   tab: ToolsTab;
@@ -8,6 +9,9 @@ interface ToolsHeaderProps {
   totalAssignments: number;
   totalUsages: number;
   avgUsagePerTool: number;
+  tools?: Tool[];
+  assignments?: ToolAssignment[];
+  usages?: ToolUsage[];
 }
 
 export const ToolsHeader = memo(function ToolsHeader({
@@ -17,19 +21,32 @@ export const ToolsHeader = memo(function ToolsHeader({
   totalAssignments,
   totalUsages,
   avgUsagePerTool,
+  tools = [],
+  assignments = [],
+  usages = [],
 }: ToolsHeaderProps) {
   return (
     <div className="mb-6 space-y-5">
-      {/* Title & Subtitle */}
-      <div>
-        <h1
-          className="text-2xl font-bold text-gray-900"
-        >
-          Tools &amp; Workspace Integrations
-        </h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Provision, audit, and manage role-based permissions for internal workforce tools
-        </p>
+      {/* Title, Subtitle & Export Menu */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Tools &amp; Workspace Integrations
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Provision, audit, and manage role-based permissions for internal workforce tools
+          </p>
+        </div>
+
+        {/* 3-Format Export Dropdown */}
+        <div className="flex items-center gap-2.5">
+          <ToolsExportMenu
+            tab={tab}
+            tools={tools}
+            assignments={assignments}
+            usages={usages}
+          />
+        </div>
       </div>
 
       {/* KPI Stats Row */}

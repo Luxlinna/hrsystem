@@ -56,6 +56,9 @@ export default function ITManagement() {
           it.setAssetModal(true);
         }}
         onOpenTicketModal={() => it.setTicketModal(true)}
+        tab={it.tab}
+        assets={it.filteredAssets}
+        tickets={it.filteredTickets}
       />
 
       <ITStatsRow

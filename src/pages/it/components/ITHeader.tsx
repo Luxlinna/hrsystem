@@ -1,4 +1,6 @@
 import { memo } from "react";
+import type { ITAsset, ITTicket } from "../types";
+import { ITExportMenu } from "./ITExportMenu";
 
 interface ITHeaderProps {
   canManage: boolean;
@@ -7,15 +9,20 @@ interface ITHeaderProps {
   openTicketsCount: number;
   onOpenAssetModal: () => void;
   onOpenTicketModal: () => void;
+  tab?: "assets" | "tickets" | "security";
+  assets?: ITAsset[];
+  tickets?: ITTicket[];
 }
 
 export const ITHeader = memo(function ITHeader({
   canManage,
   branchName,
   activeAssetsCount,
-  openTicketsCount,
   onOpenAssetModal,
   onOpenTicketModal,
+  tab = "assets",
+  assets = [],
+  tickets = [],
 }: ITHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -46,6 +53,13 @@ export const ITHeader = memo(function ITHeader({
 
       {/* Top Action Buttons */}
       <div className="flex items-center gap-2.5 flex-wrap">
+        {/* 3-Format Export Dropdown */}
+        <ITExportMenu
+          tab={tab}
+          assets={assets}
+          tickets={tickets}
+        />
+
         <button
           onClick={onOpenTicketModal}
           className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"

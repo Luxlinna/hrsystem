@@ -83,6 +83,9 @@ export default function ToolsPage() {
         totalAssignments={totalAssignments}
         totalUsages={totalUsages}
         avgUsagePerTool={avgUsagePerTool}
+        tools={filteredTools}
+        assignments={assignments}
+        usages={usages}
       />
 
       {/* Main Tab Views */}

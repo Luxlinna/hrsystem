@@ -52,9 +52,11 @@ export default function Benefits() {
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
       <BenefitsHeader
         canManage={canManage}
-        onExportCSV={filters.handleExportCSV}
         onOpenNewPlanModal={openNewPlanModal}
         onOpenEnrollModal={() => setEnrollModal(true)}
+        tab={tab}
+        plans={filters.filteredPlans}
+        enrollments={filters.filteredEnrollments}
       />
 
       <MetricCards
