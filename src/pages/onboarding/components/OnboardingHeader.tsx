@@ -1,11 +1,17 @@
 import { memo } from "react";
+import type { OnboardingRequest, OnboardingDoc } from "../types";
+import { OnboardingExportMenu } from "./OnboardingExportMenu";
 
 interface OnboardingHeaderProps {
   onStartOnboarding: () => void;
+  requests: OnboardingRequest[];
+  documents: OnboardingDoc[];
 }
 
 export const OnboardingHeader = memo(function OnboardingHeader({
   onStartOnboarding,
+  requests,
+  documents,
 }: OnboardingHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -27,6 +33,8 @@ export const OnboardingHeader = memo(function OnboardingHeader({
       </div>
 
       <div className="flex items-center gap-2.5 flex-wrap">
+        <OnboardingExportMenu requests={requests} documents={documents} />
+
         <button
           onClick={onStartOnboarding}
           className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"

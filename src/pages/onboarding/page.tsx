@@ -7,6 +7,12 @@ import { OnboardingTableView } from "./components/table/OnboardingTableView";
 import { OnboardingModalsContainer } from "./components/modals/OnboardingModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useOnboarding } from "./hooks/useOnboarding";
+import {
+  exportOnboardingCSV,
+  exportOnboardingXLSX,
+  exportOnboardingPDF,
+  exportOnboardingSVG,
+} from "./exportUtils";
 
 export default function Onboarding() {
   const o = useOnboarding();
@@ -23,7 +29,11 @@ export default function Onboarding() {
   if (o.isPartnerBranchBlocked) {
     return (
       <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
-        <OnboardingHeader onStartOnboarding={() => {}} />
+        <OnboardingHeader
+          onStartOnboarding={() => {}}
+          requests={[]}
+          documents={[]}
+        />
         <PartnerBranchPrivacyShield
           moduleName="Onboarding"
           userBranchName={o.userBranchName}
@@ -35,7 +45,11 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
-      <OnboardingHeader onStartOnboarding={o.openStartOnboarding} />
+      <OnboardingHeader
+        onStartOnboarding={o.openStartOnboarding}
+        requests={o.filteredRequests}
+        documents={o.documents}
+      />
 
       <OnboardingStatsRow
         totalActive={o.totalActive}

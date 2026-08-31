@@ -1,6 +1,12 @@
 import { memo } from "react";
 import type { OnboardingHire, ChecklistTask } from "../../types";
 import { getHireName } from "../../checklistUtils";
+import {
+  exportChecklistPDF,
+  exportChecklistXLSX,
+  exportChecklistCSV,
+  exportChecklistSVG,
+} from "../../exportUtils";
 
 interface ExportChecklistModalProps {
   isOpen: boolean;
@@ -21,32 +27,39 @@ export const ExportChecklistModal = memo(function ExportChecklistModal({
   const emp = selectedHire.employees;
   const completedCount = hireTasks.filter((t) => t.completed).length;
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto print:p-0 print:shadow-none">
-        {/* Printable Area Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-5">
+      <div className="relative w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+        {/* Modal Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-4 mb-5 gap-3">
           <div>
             <h2 className="text-xl font-black text-gray-900">Onboarding Checklist Summary</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               Employee: <span className="text-gray-900 font-extrabold">{hireName}</span> &middot; {emp?.role || "Staff"} &middot; {emp?.department || "General"}
             </p>
           </div>
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={handlePrint}
-              className="px-3.5 py-1.5 bg-[#253C7D] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              type="button"
+              onClick={() => exportChecklistPDF(selectedHire, hireTasks)}
+              className="px-3.5 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+              title="Save as PDF"
             >
-              <i className="ri-printer-line" /> Print / Save PDF
+              <i className="ri-file-pdf-line" /> PDF
             </button>
             <button
+              type="button"
+              onClick={() => exportChecklistXLSX(selectedHire, hireTasks)}
+              className="px-3.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+              title="Export Excel"
+            >
+              <i className="ri-file-excel-line" /> Excel
+            </button>
+            <button
+              type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 cursor-pointer"
+              className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 cursor-pointer ml-1"
             >
               <i className="ri-close-line text-lg" />
             </button>

@@ -22,6 +22,7 @@ export function useChecklistHireMutations({
   loadData,
 }: UseChecklistHireMutationsProps) {
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showAuditModal, setShowAuditModal] = useState(false);
   const [hireAuditLogs, setHireAuditLogs] = useState<any[]>([]);
   const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
 
@@ -107,6 +108,7 @@ export function useChecklistHireMutations({
 
   const loadHireAuditLogs = useCallback(async () => {
     if (!selectedHire) return;
+    setShowAuditModal(true);
     setLoadingAuditLogs(true);
     const { data } = await supabase
       .from("audit_logs")
@@ -121,7 +123,10 @@ export function useChecklistHireMutations({
   return {
     showExportModal,
     setShowExportModal,
+    showAuditModal,
+    setShowAuditModal,
     hireAuditLogs,
+    setHireAuditLogs,
     loadingAuditLogs,
     handleApproveHire,
     handleAdvanceStage,

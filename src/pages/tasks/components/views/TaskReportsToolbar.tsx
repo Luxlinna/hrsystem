@@ -1,11 +1,9 @@
 import { memo } from "react";
 import type { Task } from "../../types";
 import {
-  exportTasksCSV,
   exportTasksXLSX,
   exportTasksPDF,
-  exportTasksSVG,
-} from "../../taskExportUtils";
+} from "../../exportUtils";
 
 interface TaskReportsToolbarProps {
   datePreset: "all" | "today" | "week" | "month" | "custom";
@@ -78,28 +76,16 @@ export const TaskReportsToolbar = memo(function TaskReportsToolbar({
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => exportTasksCSV(dateFilteredTasks, "all_workforce_tasks.csv")}
-            className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-          >
-            <i className="ri-file-text-line" /> CSV
-          </button>
-          <button
             onClick={() => exportTasksXLSX(dateFilteredTasks, "all_workforce_tasks.xlsx")}
-            className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <i className="ri-file-excel-line" /> Excel
+            <i className="ri-file-excel-line text-sm" /> Excel
           </button>
           <button
             onClick={() => exportTasksPDF(dateFilteredTasks, "all_workforce_tasks.pdf")}
-            className="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <i className="ri-file-pdf-line" /> PDF
-          </button>
-          <button
-            onClick={() => exportTasksSVG(dateFilteredTasks, "all_workforce_tasks.svg")}
-            className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-          >
-            <i className="ri-image-line" /> SVG
+            <i className="ri-file-pdf-line text-sm" /> PDF
           </button>
         </div>
       </div>

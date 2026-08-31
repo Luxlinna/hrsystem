@@ -3,11 +3,9 @@ import type { Task, Employee } from "../../types";
 import { STATUS_CONFIG } from "../../constants";
 import { initials } from "../../taskUtils";
 import {
-  exportTasksCSV,
   exportTasksXLSX,
   exportTasksPDF,
-  exportTasksSVG,
-} from "../../taskExportUtils";
+} from "../../exportUtils";
 
 export interface EmployeeReportData {
   employee: Employee;
@@ -64,12 +62,6 @@ export const TaskReportEmployeeCard = memo(function TaskReportEmployeeCard({
           {activeExportMenu === emp.id && (
             <div className="absolute right-0 top-9 w-36 bg-white rounded-2xl shadow-xl border border-gray-100 p-1.5 z-30 space-y-1 animate-in zoom-in-95 duration-100">
               <button
-                onClick={() => { exportTasksCSV(empTasks, `${empName}_tasks.csv`); setActiveExportMenu(null); }}
-                className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <i className="ri-file-text-line" /> CSV
-              </button>
-              <button
                 onClick={() => { exportTasksXLSX(empTasks, `${empName}_tasks.xlsx`); setActiveExportMenu(null); }}
                 className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
               >
@@ -80,12 +72,6 @@ export const TaskReportEmployeeCard = memo(function TaskReportEmployeeCard({
                 className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-gray-700 hover:bg-rose-50 hover:text-rose-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <i className="ri-file-pdf-line" /> PDF
-              </button>
-              <button
-                onClick={() => { exportTasksSVG(empTasks, `${empName}_tasks.svg`, empName); setActiveExportMenu(null); }}
-                className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-gray-700 hover:bg-amber-50 hover:text-amber-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <i className="ri-image-line" /> SVG
               </button>
             </div>
           )}

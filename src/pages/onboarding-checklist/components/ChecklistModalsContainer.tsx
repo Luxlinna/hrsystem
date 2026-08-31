@@ -15,6 +15,9 @@ interface ChecklistModalsContainerProps {
   setShowDetailsModal: (b: boolean) => void;
   showExportModal: boolean;
   setShowExportModal: (b: boolean) => void;
+  showAuditModal?: boolean;
+  setShowAuditModal?: (b: boolean) => void;
+  setHireAuditLogs?: React.Dispatch<React.SetStateAction<any[]>>;
   selectedHire: OnboardingHire | null;
   taskForm: TaskForm;
   setTaskForm: React.Dispatch<React.SetStateAction<TaskForm>>;
@@ -39,6 +42,9 @@ export const ChecklistModalsContainer = memo(function ChecklistModalsContainer({
   setShowDetailsModal,
   showExportModal,
   setShowExportModal,
+  showAuditModal = false,
+  setShowAuditModal,
+  setHireAuditLogs,
   selectedHire,
   taskForm,
   setTaskForm,
@@ -85,8 +91,11 @@ export const ChecklistModalsContainer = memo(function ChecklistModalsContainer({
       />
 
       <CandidateAuditModal
-        isOpen={hireAuditLogs.length > 0}
-        onClose={() => {}}
+        isOpen={showAuditModal || hireAuditLogs.length > 0}
+        onClose={() => {
+          setShowAuditModal?.(false);
+          setHireAuditLogs?.([]);
+        }}
         selectedHire={selectedHire}
         hireAuditLogs={hireAuditLogs}
         loadingAuditLogs={loadingAuditLogs}

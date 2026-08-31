@@ -8,20 +8,10 @@ import { LeaveCalendarTabContent } from "./components/calendar/LeaveCalendarTabC
 import { LeaveModalsContainer } from "./components/modals/LeaveModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useLeave } from "./hooks/useLeave";
-import { exportLeaveToCSV } from "./exportUtils";
 import { INITIAL_LEAVE_FORM } from "./constants";
 
 export default function Leave() {
   const l = useLeave();
-
-  const handleExport = useCallback(() => {
-    const success = exportLeaveToCSV(l.filteredRequests);
-    l.setToast(
-      success
-        ? { type: "success", message: "Exported leave records to CSV" }
-        : { type: "info", message: "No requests to export with current filters" }
-    );
-  }, [l]);
 
   const handleOpenApprovalModal = useCallback((req: any, action: "approved" | "rejected") => {
     l.setSelectedRequest(req);
@@ -52,7 +42,7 @@ export default function Leave() {
   if (l.isPartnerBranchBlocked) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
-        <LeaveHeader onLeaveTodayCount={0} onExportCSV={() => {}} onRequestLeave={() => {}} />
+        <LeaveHeader onLeaveTodayCount={0} filteredRequests={[]} onRequestLeave={() => {}} />
         <PartnerBranchPrivacyShield moduleName="Leave Management" userBranchName={l.userBranchName} hasNoBranch={!l.userBranchId} />
       </div>
     );
@@ -85,7 +75,8 @@ export default function Leave() {
 
       <LeaveHeader
         onLeaveTodayCount={l.stats.onLeaveToday}
-        onExportCSV={handleExport}
+        filteredRequests={l.filteredRequests}
+        onToast={l.setToast}
         onRequestLeave={() => {
           l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: l.myEmployee?.id || "" });
           l.setShowForm(true);

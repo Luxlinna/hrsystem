@@ -105,6 +105,11 @@ export default function TasksPage() {
           tasks={tasks}
           employees={managedEmployees || employees}
           onSelectTask={setSelectedTask}
+          assigneeFilter={assigneeFilter}
+          priorityFilter={priorityFilter}
+          search={search}
+          quickTab={quickTab}
+          currentEmployeeId={currentEmployeeId}
         />
       )}
 

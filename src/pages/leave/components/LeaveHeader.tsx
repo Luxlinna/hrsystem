@@ -1,15 +1,19 @@
 import { memo } from "react";
+import type { LeaveRequest } from "../types";
+import { LeaveExportMenu } from "./LeaveExportMenu";
 
 interface LeaveHeaderProps {
   onLeaveTodayCount: number;
-  onExportCSV: () => void;
+  filteredRequests: LeaveRequest[];
   onRequestLeave: () => void;
+  onToast?: (toast: { type: "success" | "info" | "error"; message: string }) => void;
 }
 
 export const LeaveHeader = memo(function LeaveHeader({
   onLeaveTodayCount,
-  onExportCSV,
+  filteredRequests,
   onRequestLeave,
+  onToast,
 }: LeaveHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -31,13 +35,7 @@ export const LeaveHeader = memo(function LeaveHeader({
       </div>
 
       <div className="flex items-center gap-2.5 flex-wrap">
-        <button
-          onClick={onExportCSV}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-        >
-          <i className="ri-download-2-line text-sm text-gray-500" />
-          Export CSV
-        </button>
+        <LeaveExportMenu filteredRequests={filteredRequests} onToast={onToast} />
 
         <button
           onClick={onRequestLeave}
