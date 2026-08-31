@@ -3,6 +3,7 @@ import { ProfileBanner } from "./components/ProfileBanner";
 import { OverviewGrid } from "./components/OverviewGrid";
 import { TabsNav } from "./components/TabsNav";
 import { TabContent } from "./components/TabContent";
+import { SelfServiceExportMenu } from "./components/SelfServiceExportMenu";
 
 export default function SelfServicePage() {
   const {
@@ -52,7 +53,7 @@ export default function SelfServicePage() {
   return (
     <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
             <span>Workspace</span>
@@ -65,6 +66,14 @@ export default function SelfServicePage() {
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
             Access your payslips, leave requests, attendance, and benefits enrollment.
           </p>
+        </div>
+
+        {/* 3-Format Export Dropdown */}
+        <div className="flex items-center gap-2.5">
+          <SelfServiceExportMenu
+            activeTab={activeTab}
+            employee={selectedEmployee}
+          />
         </div>
       </div>
 
