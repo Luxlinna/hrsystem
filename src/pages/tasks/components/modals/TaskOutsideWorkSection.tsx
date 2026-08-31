@@ -9,17 +9,23 @@ interface LocationData {
 
 interface TaskOutsideWorkSectionProps {
   isOutsideWork: boolean;
-  onToggleOutsideWork: (val: boolean) => void;
+  onToggleOutsideWork?: (val: boolean) => void;
+  setIsOutsideWork?: (val: boolean) => void;
   location: LocationData | null;
-  onSetLocation: (loc: LocationData | null) => void;
+  onSetLocation?: (loc: LocationData | null) => void;
+  setLocation?: (loc: LocationData | null) => void;
 }
 
 export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
   isOutsideWork,
   onToggleOutsideWork,
+  setIsOutsideWork,
   location,
   onSetLocation,
+  setLocation,
 }: TaskOutsideWorkSectionProps) {
+  const toggleHandler = onToggleOutsideWork || setIsOutsideWork;
+  const setLocationHandler = onSetLocation || setLocation;
   const [locating, setLocating] = useState(false);
 
   const captureLocation = () => {
@@ -40,7 +46,7 @@ export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
         } catch {
           // fallback to coordinates
         }
-        onSetLocation({
+        setLocationHandler?.({
           lat: latitude,
           lng: longitude,
           accuracy: Math.round(accuracy),
@@ -56,9 +62,9 @@ export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     if (!val.trim()) {
-      onSetLocation(null);
+      setLocationHandler?.(null);
     } else {
-      onSetLocation({
+      setLocationHandler?.({
         lat: location?.lat || 0,
         lng: location?.lng || 0,
         accuracy: location?.accuracy,
@@ -72,7 +78,7 @@ export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
       {/* Toggle Banner */}
       <button
         type="button"
-        onClick={() => onToggleOutsideWork(!isOutsideWork)}
+        onClick={() => toggleHandler?.(!isOutsideWork)}
         className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors cursor-pointer hover:bg-gray-50/60"
       >
         <div className="flex items-center gap-3 min-w-0">
@@ -126,7 +132,7 @@ export const TaskOutsideWorkSection = memo(function TaskOutsideWorkSection({
                 {location?.address && (
                   <button
                     type="button"
-                    onClick={() => onSetLocation(null)}
+                    onClick={() => setLocationHandler?.(null)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                   >
                     <i className="ri-close-circle-fill text-sm" />

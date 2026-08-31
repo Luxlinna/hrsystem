@@ -136,9 +136,9 @@ export const TaskFormModal = memo(function TaskFormModal({
 
           <TaskOutsideWorkSection
             isOutsideWork={form.is_outside_work}
-            setIsOutsideWork={(val) => setForm((prev) => ({ ...prev, is_outside_work: val }))}
+            onToggleOutsideWork={(val) => setForm((prev) => ({ ...prev, is_outside_work: val }))}
             location={owLocation}
-            setLocation={setOwLocation}
+            onSetLocation={setOwLocation}
           />
 
           <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
