@@ -94,27 +94,6 @@ Deno.serve(async (req) => {
       page += 1;
     }
 
-    // Fetch all existing assignments (including deleted_at) so deleted users are NOT auto-resurrected
-    const { data: existingList } = await admin
-      .from("user_role_assignments")
-      .select("email, user_id, deleted_at");
-
-    const existingEmails = new Set((existingList || []).map((x) => x.email?.toLowerCase()).filter(Boolean));
-    const existingUserIds = new Set((existingList || []).map((x) => x.user_id).filter(Boolean));
-
-    const newAssignments = users
-      .filter((user) => user.email && !existingEmails.has(user.email.toLowerCase()) && !existingUserIds.has(user.id))
-      .map((user) => ({
-        user_id: user.id,
-        email: user.email!.toLowerCase(),
-        display_name: user.display_name,
-        role_id: null,
-      }));
-
-    if (newAssignments.length > 0) {
-      await admin.from("user_role_assignments").insert(newAssignments).catch(() => {});
-    }
-
     const { data: assignments, error: assignmentsError } = await admin
       .from("user_role_assignments")
       .select("*, app_roles(id, name, color)")
