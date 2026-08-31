@@ -25,27 +25,27 @@ export function useHire() {
 
   const canBranchApprove =
     !!role?.hiring_requests_branch_approve ||
-    /branch\s*admin|branch\s*manager|general\s*manager|director/i.test(roleNameLower) ||
+    /branch\s*admin|branch\s*manager|general\s*manager|branch\s*director/i.test(roleNameLower) ||
     isBranchAdmin ||
     isSuperAdmin;
 
   const canHrReview =
     !!role?.hiring_requests_hr_review ||
-    (isHrDivisionBranch && /hr\s*manager|hr\s*staff|recruiter|hr\s*specialist|talent/i.test(roleNameLower)) ||
+    /hr\s*manager|recruiter|talent|hr\s*specialist|hr\s*officer|hr\s*staff/i.test(roleNameLower) ||
     isSuperAdmin;
 
   const canHrAdminApprove =
     !!role?.hiring_requests_hr_admin_approve ||
-    (isHrDivisionBranch && (isBranchAdmin || /hr\s*director|hr\s*admin|admin\s*manager/i.test(roleNameLower))) ||
+    /admin\s*manager|hr\s*admin|hr\s*director|head\s*of\s*hr/i.test(roleNameLower) ||
     isSuperAdmin;
 
   const canChairmanApprove =
     !!role?.hiring_requests_chairman_approve ||
-    /chair|ceo/i.test(roleNameLower) ||
+    /chair|ceo|president|board/i.test(roleNameLower) ||
     isSuperAdmin;
 
   const canApprove = canBranchApprove || canHrReview || canHrAdminApprove || canChairmanApprove;
-  const isChairman = /chair/i.test(roleNameLower);
+  const isChairman = /chair|ceo|president/i.test(roleNameLower);
 
   const data = useHireData();
   const filters = useHireFilters(data.jobs, data.candidates, data.interviews, data.branches);

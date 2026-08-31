@@ -59,12 +59,12 @@ export function useNotificationsMutations({
 
   const openNotification = useCallback((n: Notification) => {
     if (!n.is_read) markRead(n.id);
-    const target = getNotificationTarget(n.source, n.entity_id);
+    const target = getNotificationTarget(n.source, n.entity_id, n.title, n.message);
     if (target && can(target.module)) navigate(target.path);
   }, [markRead, can, navigate]);
 
   const isNavigable = useCallback((n: Notification) => {
-    const target = getNotificationTarget(n.source, n.entity_id);
+    const target = getNotificationTarget(n.source, n.entity_id, n.title, n.message);
     return Boolean(target) && can(target.module);
   }, [can]);
 

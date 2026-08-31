@@ -42,16 +42,16 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
     if (!isApprove) return "Reject Hiring Requisition";
     if (isStage1Branch) return "Branch Leadership Endorsement";
     if (isStage2HrReview) return "HR Manager Review & Endorsement";
-    if (isStage3HrAdmin) return "HR Division Admin Approval";
-    return "Chairman Executive Authorization";
+    if (isStage3HrAdmin) return "Admin Manager Approval";
+    return "Chairman Final Round Authorization";
   };
 
   const getStageSubtitle = () => {
     if (!isApprove) return "Decline this requisition with explanatory feedback.";
-    if (isStage1Branch) return "Endorse headcount for your branch and forward to HR Division.";
-    if (isStage2HrReview) return "Review specification & budget, then forward to HR Division Admin.";
-    if (isStage3HrAdmin) return "Approve requisition and escalate to Chairman for final executive sign-off.";
-    return "Final executive authorization — will publish live job opening.";
+    if (isStage1Branch) return "Endorse headcount for your branch and forward to HR Manager.";
+    if (isStage2HrReview) return "Review role specification & budget, then forward to Admin Manager.";
+    if (isStage3HrAdmin) return "Approve requisition and escalate to Chairman for final round sign-off.";
+    return "Final round executive authorization — will publish live job opening.";
   };
 
   return (

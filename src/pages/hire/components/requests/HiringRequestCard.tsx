@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { HiringRequest } from "../../types";
 
 interface HiringRequestCardProps {
@@ -36,6 +37,8 @@ export const HiringRequestCard = memo(function HiringRequestCard({
   onOpenDecision,
   onDelete,
 }: HiringRequestCardProps) {
+  const [searchParams] = useSearchParams();
+  const isHighlighted = searchParams.get("highlight") === r.id;
   const isOwner =
     (myEmployeeId && r.requested_by_id === myEmployeeId) ||
     (actorEmail && r.requested_by_email?.toLowerCase() === actorEmail.toLowerCase()) ||
@@ -60,11 +63,18 @@ export const HiringRequestCard = memo(function HiringRequestCard({
   const isStage3HrAdmin = r.status === "pending_hr_admin_review";
   const isStage4Chairman = r.status === "pending_chairman_review";
 
-  // Strict Stage-by-Stage Responsibility Scoping
-  const canActStage1 = isStage1Branch && canBranchApprove && (isSuperAdmin || !r.branch_id || r.branch_id === userBranchId);
-  const canActStage2 = isStage2HrReview && canHrReview && (isHrDivisionBranch || isSuperAdmin);
-  const canActStage3 = isStage3HrAdmin && canHrAdminApprove && (isHrDivisionBranch || isSuperAdmin);
-  const canActStage4 = isStage4Chairman && canChairmanApprove;
+  // Strict Stage-by-Stage Separation of Duties
+  const canActStage1 =
+    isStage1Branch && canBranchApprove && (isSuperAdmin || !r.branch_id || r.branch_id === userBranchId);
+
+  const canActStage2 =
+    isStage2HrReview && (canHrReview || isSuperAdmin);
+
+  const canActStage3 =
+    isStage3HrAdmin && (canHrAdminApprove || isSuperAdmin);
+
+  const canActStage4 =
+    isStage4Chairman && (canChairmanApprove || isSuperAdmin);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -114,7 +124,12 @@ export const HiringRequestCard = memo(function HiringRequestCard({
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-xs hover:shadow-md transition-all relative group">
+    <div
+      id={`hiring-req-${r.id}`}
+      className={`bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-xs hover:shadow-md transition-all relative group ${
+        isHighlighted ? "ring-2 ring-[#253C7D] border-[#253C7D] bg-indigo-50/20" : ""
+      }`}
+    >
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="space-y-2 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -253,7 +268,7 @@ export const HiringRequestCard = memo(function HiringRequestCard({
                 onClick={() => onOpenDecision(r, "approved")}
                 className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
               >
-                <i className="ri-admin-line text-sm" /> HR Admin Approve
+                <i className="ri-admin-line text-sm" /> Admin Manager Approve
               </button>
               <button
                 onClick={() => onOpenDecision(r, "rejected")}

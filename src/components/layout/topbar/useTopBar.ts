@@ -119,7 +119,7 @@ export function useTopBar() {
   const openNotification = useCallback((n: NotificationRow) => {
     if (!n.is_read) markRead(n.id);
     setNotifOpen(false);
-    const target = getNotificationTarget(n.source, n.entity_id);
+    const target = getNotificationTarget(n.source, n.entity_id, n.title, n.message);
     if (target && can(target.module)) navigate(target.path);
   }, [markRead, can, navigate]);
 

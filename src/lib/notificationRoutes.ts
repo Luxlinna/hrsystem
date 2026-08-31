@@ -8,12 +8,43 @@
 // page itself is responsible for expanding and scrolling to that row.
 export function getNotificationTarget(
   source: string,
-  entityId?: string | null
+  entityId?: string | null,
+  title?: string | null,
+  message?: string | null
 ): { path: string; module: string } | null {
   const highlight = entityId ? `?highlight=${entityId}` : "";
+  const text = `${title || ""} ${message || ""}`.toLowerCase();
+
   switch (source) {
+    case "hiring_request":
+      return {
+        path: entityId ? `/hire?tab=requests&highlight=${entityId}` : "/hire?tab=requests",
+        module: "hire",
+      };
     case "hire":
-      return { path: entityId ? `/hire/candidate/${entityId}` : "/hire", module: "hire" };
+      // Route hiring requisitions and approvals to the Requests tab
+      if (
+        text.includes("requisition") ||
+        text.includes("headcount") ||
+        text.includes("authorization") ||
+        text.includes("endorse") ||
+        text.includes("hiring request") ||
+        text.includes("awaiting branch") ||
+        text.includes("awaiting hr") ||
+        text.includes("awaiting chairman")
+      ) {
+        return {
+          path: entityId ? `/hire?tab=requests&highlight=${entityId}` : "/hire?tab=requests",
+          module: "hire",
+        };
+      }
+      if (text.includes("interview")) {
+        return { path: "/hire?tab=interviews", module: "hire" };
+      }
+      if (text.includes("job") || text.includes("vacancy") || text.includes("opening")) {
+        return { path: "/hire?tab=jobs", module: "hire" };
+      }
+      return { path: entityId ? `/hire/candidate/${entityId}` : "/hire?tab=candidates", module: "hire" };
     case "leave":
       return { path: `/leave${highlight}`, module: "leave" };
     // All current "payroll" notifications come from the Payroll Approval

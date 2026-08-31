@@ -1,4 +1,5 @@
-import { memo, useState, useMemo } from "react";
+import { memo, useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { HiringRequest } from "../../types";
 import { HiringRequestCard } from "./HiringRequestCard";
 
@@ -45,8 +46,19 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
   onDeleteRequest,
   onAssignHrOfficer,
 }: HiringRequestsTabProps) {
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (highlightId) {
+      const el = document.getElementById(`hiring-req-${highlightId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [highlightId, requests]);
 
   const stats = useMemo(() => {
     return {

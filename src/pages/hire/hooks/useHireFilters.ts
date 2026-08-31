@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { Job, Candidate, Interview, HireTab, Branch } from "../types";
 import { PIPELINE_STAGES } from "../constants";
 
@@ -8,7 +9,29 @@ export function useHireFilters(
   interviews: Interview[],
   branches: Branch[] = []
 ) {
-  const [tab, setTab] = useState<HireTab>("jobs");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab") as HireTab | null;
+  const initialTab: HireTab = (urlTab && ["jobs", "candidates", "interviews", "pipeline", "requests"].includes(urlTab))
+    ? urlTab
+    : "jobs";
+
+  const [tab, setTabState] = useState<HireTab>(initialTab);
+
+  useEffect(() => {
+    if (urlTab && ["jobs", "candidates", "interviews", "pipeline", "requests"].includes(urlTab)) {
+      setTabState(urlTab);
+    }
+  }, [urlTab]);
+
+  const setTab = useCallback((newTab: HireTab) => {
+    setTabState(newTab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", newTab);
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
   const [jobViewMode, setJobViewMode] = useState<"grid" | "list">("grid");
   const [candidateViewMode, setCandidateViewMode] = useState<"cards" | "list">("cards");
   const [searchQuery, setSearchQuery] = useState("");
