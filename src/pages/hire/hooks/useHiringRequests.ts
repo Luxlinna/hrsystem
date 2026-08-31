@@ -78,9 +78,22 @@ export function useHiringRequests({
         const { data, error } = await supabase.from("hiring_requests").insert([payload]).select("*, branches(name)").single();
         if (error) throw error;
 
-        toast("Request Submitted", "Hiring request submitted for CEO review.", "success");
+        const branchName = data?.branches?.name || selectedBranchObj?.name || "Headquarters";
+
+        toast("Request Submitted", `Hiring request submitted for ${branchName} leadership review.`, "success");
         setShowRequestModal(false);
 
+        // 1. In-app notification to Branch Admin / Leadership in their own branch
+        await notify({
+          title: `📋 New Requisition: ${payload.title}`,
+          message: `${actorName} requested ${payload.headcount} headcount in ${payload.department} (${branchName}). Awaiting branch endorsement.`,
+          type: "info",
+          source: "hire",
+          entityId: data?.id,
+          branch_id: resolvedBranchId,
+        });
+
+        // 2. Audit log
         logActivity({
           module: "hire",
           action: "created",
@@ -88,17 +101,20 @@ export function useHiringRequests({
           entityId: data?.id,
           actorName,
           actorRole,
-          description: `Hiring requisition submitted: ${payload.headcount}x ${payload.title} (${payload.department})`,
+          description: `Hiring requisition submitted: ${payload.headcount}x ${payload.title} (${payload.department}) for ${branchName}`,
         });
 
+        // 3. Telegram notification targeting Branch Approvers first
         notifyTelegramEvent(
           `📋 <b>New Hiring Requisition Submitted</b>\n` +
           `👤 <b>Requester (Manager):</b> ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)})\n` +
           `💼 <b>Position:</b> ${escapeTelegramHtml(payload.title)} (${payload.headcount} opening${payload.headcount > 1 ? "s" : ""})\n` +
           `🏢 <b>Department:</b> ${escapeTelegramHtml(payload.department)}\n` +
+          `📍 <b>Branch:</b> ${escapeTelegramHtml(branchName)}\n` +
           `⚡ <b>Urgency:</b> ${escapeTelegramHtml(payload.urgency.toUpperCase())}\n` +
-          `ℹ️ <b>Status:</b> Awaiting CEO Acceptance`,
-          { text: "Review Requisition", url: hrNexusUrl("/hire") }
+          `🎯 <b>Action Required By:</b> Branch Admin / Branch Leadership (${escapeTelegramHtml(branchName)})\n` +
+          `ℹ️ <b>Status:</b> Round 1 — Awaiting Branch Endorsement`,
+          { text: "Review in Branch", url: hrNexusUrl("/hire") }
         );
 
         await loadData();
@@ -149,5 +165,6 @@ export function useHiringRequests({
     handleCreateRequest,
     handleDeleteRequest,
     handleDecision: decision.handleDecision,
+    handleAssignHrOfficer: decision.handleAssignHrOfficer,
   };
 }

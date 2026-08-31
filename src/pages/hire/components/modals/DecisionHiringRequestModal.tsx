@@ -32,6 +32,7 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
   const updateReason = setReason || setRejectionReason || (() => {});
 
   const isApprove = action === "approved";
+  const isBranchStage = !request.status || request.status === "pending" || request.status === "pending_branch_review";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -44,9 +45,15 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900">
-                  {isApprove ? "Accept & Publish Requisition" : "Reject Hiring Requisition"}
+                  {isApprove
+                    ? isBranchStage
+                      ? "Approve & Forward to HR Division"
+                      : "Authorize & Publish Live Job"
+                    : "Reject Hiring Requisition"}
                 </h2>
-                <p className="text-xs text-gray-500">Executive CEO Decision</p>
+                <p className="text-xs text-gray-500">
+                  {isBranchStage ? "Round 1: Branch Leadership Endorsement" : "Round 2: HR Division Final Authorization"}
+                </p>
               </div>
             </div>
             <button
@@ -70,6 +77,11 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
             <div className="text-xs text-gray-600 space-y-1">
               <p><strong>Department:</strong> {request.department} {request.branches?.name ? `· ${request.branches.name}` : ""}</p>
               <p><strong>Requested By:</strong> {request.requested_by_name} ({new Date(request.created_at).toLocaleDateString()})</p>
+              {request.branch_approved_by && (
+                <p className="text-emerald-700 font-medium">
+                  <strong>Branch Endorsed By:</strong> {request.branch_approved_by}
+                </p>
+              )}
               {request.justification && (
                 <p className="text-gray-500 italic mt-1 bg-white p-2.5 rounded-xl border border-gray-100">
                   "{request.justification}"
@@ -80,7 +92,15 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
 
           {isApprove ? (
             <p className="text-xs text-gray-600">
-              Approving this requisition will mark it as <strong>Approved by CEO</strong>, automatically generate an <strong>Active Job Posting</strong> for recruitment, and report the headcount authorization to the <strong>Chairman / Chairwoman</strong>.
+              {isBranchStage ? (
+                <>
+                  Approving this requisition endorses the headcount request for your branch and automatically routes it to the <strong>HR Division</strong> for recruitment assignment and final live posting.
+                </>
+              ) : (
+                <>
+                  Authorizing this requisition completes the HR review, marks it as <strong>Approved & Open</strong>, and automatically generates an <strong>Active Job Posting</strong> on the recruitment portal.
+                </>
+              )}
             </p>
           ) : (
             <div>

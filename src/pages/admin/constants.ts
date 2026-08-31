@@ -45,6 +45,8 @@ export const COLORS = [
 export const SCOPE_OVERRIDES = [
   { group: "action", key: "leave_approve", label: "Can approve / reject leave requests", hint: "Off by default. Required to act on someone else's leave request. Enforced in the database, not just hidden in the UI — without it a role can still submit and cancel its own leave." },
   { group: "action", key: "meeting_rooms_approve", label: "Can approve / reject meeting room bookings", hint: "Allows this role to approve, reject, and adjust requirements & refreshments for meeting room reservations across all branches." },
+  { group: "action", key: "hiring_requests_branch_approve", label: "Can approve branch hiring requests (Forward to HR)", hint: "Allows Branch Admins, Branch Managers, or authorized branch leaders to approve employee requisitions from their branch and route them to HR Division." },
+  { group: "action", key: "hiring_requests_hr_review", label: "Can perform final HR Division review & publish live jobs", hint: "Allows HR Division officers/managers to accept, assign, and publish incoming branch requisitions as active job postings." },
   { group: "action", key: "employees_manage", label: "Can edit employee records (role, department, status, manager)", hint: "Off by default — this role can view the Employee Directory but profiles open read-only." },
   { group: "action", key: "attendance_notify", label: "Receives attendance check-in / check-out notifications", hint: "Off by default. When on, this role gets notified on employee check-ins and check-outs — whether that's every clock event or only late/early exceptions is set globally in Settings → Notifications." },
 

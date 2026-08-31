@@ -21,6 +21,8 @@ export interface UserRole {
   task_view_own_branch: boolean;
   meeting_rooms_approve: boolean;
   attendance_notify: boolean;
+  hiring_requests_branch_approve?: boolean;
+  hiring_requests_hr_review?: boolean;
 }
 
 export interface UsePermissionsReturn {

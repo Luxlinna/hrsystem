@@ -57,8 +57,7 @@ export function useHireActions({
           if (error) throw error;
           toast("Job Updated", `"${jobForm.title}" saved.`, "success");
         } else {
-          payload.status = "open";
-          payload.posted_by = actorName;
+          payload.status = "active";
           const { error } = await supabase.from("job_postings").insert(payload);
           if (error) throw error;
           toast("Job Posted", `"${jobForm.title}" is now open.`, "success");
@@ -72,23 +71,25 @@ export function useHireActions({
         setPostingJob(false);
       }
     },
-    [branches, actorName, loadData]
+    [actorName, loadData, branches]
   );
 
-  const closeJob = useCallback(async (job: Job) => {
-    try {
+  const closeJob = useCallback(
+    async (job: Job) => {
       const { error } = await supabase.from("job_postings").update({ status: "closed" }).eq("id", job.id);
-      if (error) throw error;
-      toast("Job Closed", `"${job.title}" has been closed.`, "success");
+      if (error) {
+        toast("Error", "Failed to close job posting.", "error");
+        return;
+      }
+      toast("Job Closed", `"${job.title}" has been closed.`, "info");
       await loadData();
-    } catch (err: any) {
-      toast("Error", err.message || "Failed to close job.", "error");
-    }
-  }, [loadData]);
+    },
+    [loadData]
+  );
 
   const reopenJob = useCallback(async (job: Job) => {
     try {
-      const { error } = await supabase.from("job_postings").update({ status: "open" }).eq("id", job.id);
+      const { error } = await supabase.from("job_postings").update({ status: "active" }).eq("id", job.id);
       if (error) throw error;
       toast("Job Reopened", `"${job.title}" is now open.`, "success");
       await loadData();

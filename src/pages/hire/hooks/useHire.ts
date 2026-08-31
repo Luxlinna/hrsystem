@@ -20,7 +20,21 @@ export function useHire() {
   const actorRole = role?.name || "Admin";
   const roleNameLower = (role?.name || "").toLowerCase();
   const canRequest = true;
-  const canApprove = /ceo|chair|director|admin/i.test(roleNameLower) || isAdmin || isSuperAdmin;
+
+  const isHrDivisionBranch = /hr|human\s*resource|headquarter/i.test(userBranchName || "") || isSuperAdmin;
+
+  const canBranchApprove =
+    !!role?.hiring_requests_branch_approve ||
+    /branch\s*admin|branch\s*manager|ceo|chair|director/i.test(roleNameLower) ||
+    isAdmin ||
+    isSuperAdmin;
+
+  const canHrReview =
+    !!role?.hiring_requests_hr_review ||
+    /hr\s*manager|hr\s*staff|recruiter/i.test(roleNameLower) ||
+    (isHrDivisionBranch && (isBranchAdmin || isAdmin || isSuperAdmin));
+
+  const canApprove = canBranchApprove || canHrReview;
   const isChairman = /chair/i.test(roleNameLower);
 
   const data = useHireData();
@@ -106,8 +120,11 @@ export function useHire() {
     setRequestForm: requests.setRequestForm, submittingRequest: requests.submittingRequest, decisionModal: requests.decisionModal,
     setDecisionModal: requests.setDecisionModal, targetRequest: requests.targetRequest, decisionAction: requests.decisionAction,
     rejectionReason: requests.rejectionReason, setRejectionReason: requests.setRejectionReason, processingDecision: requests.processingDecision,
+    canBranchApprove,
+    canHrReview,
     openCreateRequest: requests.openCreateRequest, openDecisionModal: requests.openDecisionModal, handleCreateRequest: requests.handleCreateRequest,
-    handleDeleteRequest: requests.handleDeleteRequest, handleDecision: requests.handleDecision, openCreateJob: modals.openCreateJob, openEditJob: modals.openEditJob,
+    handleDeleteRequest: requests.handleDeleteRequest, handleDecision: requests.handleDecision, handleAssignHrOfficer: requests.handleAssignHrOfficer,
+    openCreateJob: modals.openCreateJob, openEditJob: modals.openEditJob,
     openCreateCandidate: modals.openCreateCandidate, openEditCandidate: modals.openEditCandidate, openCreateInterview: modals.openCreateInterview,
     openEditInterview: modals.openEditInterview, openMoveToOnboarding: modals.openMoveToOnboarding, openFeedbackModal: modals.openFeedbackModal,
     handleSaveJob, handleSaveCandidate, handleSaveInterview, closeJob: actions.closeJob, reopenJob: actions.reopenJob, deleteJob: actions.deleteJob,

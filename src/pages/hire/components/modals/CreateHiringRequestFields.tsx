@@ -63,12 +63,11 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
           </datalist>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Branch *</label>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">Branch / Work Site *</label>
           <select
             value={form.branch_id}
-            disabled={isSuperAdmin === false}
             onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:bg-white transition-all disabled:bg-gray-100 cursor-pointer"
+            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:bg-white transition-all cursor-pointer"
           >
             <option value="">Headquarters / Default</option>
             {branches.map((b) => (

@@ -6,20 +6,26 @@ interface HiringRequestsTabProps {
   requests: HiringRequest[];
   canRequest: boolean;
   canApprove: boolean;
+  canBranchApprove?: boolean;
+  canHrReview?: boolean;
   isChairman: boolean;
   onOpenCreate: () => void;
   onOpenDecision: (req: HiringRequest, action: "approved" | "rejected") => void;
   onDeleteRequest?: (id: string) => void;
+  onAssignHrOfficer?: (requestId: string, hrId: string | null, hrName: string | null) => void;
 }
 
 export const HiringRequestsTab = memo(function HiringRequestsTab({
   requests,
   canRequest,
   canApprove,
+  canBranchApprove = false,
+  canHrReview = false,
   isChairman,
   onOpenCreate,
   onOpenDecision,
   onDeleteRequest,
+  onAssignHrOfficer,
 }: HiringRequestsTabProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -27,17 +33,24 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
   const stats = useMemo(() => {
     return {
       total: requests.length,
-      pending: requests.filter((r) => r.status === "pending").length,
+      pendingBranch: requests.filter((r) => !r.status || r.status === "pending" || r.status === "pending_branch_review").length,
+      pendingHr: requests.filter((r) => r.status === "pending_hr_review").length,
       approved: requests.filter((r) => r.status === "approved").length,
       totalHeadcount: requests
-        .filter((r) => r.status === "approved" || r.status === "pending")
+        .filter((r) => r.status === "approved" || !r.status || r.status === "pending" || r.status === "pending_hr_review")
         .reduce((sum, r) => sum + (r.headcount || 1), 0),
     };
   }, [requests]);
 
   const filtered = useMemo(() => {
     return requests.filter((r) => {
-      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (statusFilter !== "all") {
+        if (statusFilter === "pending") {
+          if (r.status !== "pending" && r.status !== "pending_branch_review" && r.status !== undefined) return false;
+        } else if (r.status !== statusFilter) {
+          return false;
+        }
+      }
       if (search.trim()) {
         const q = search.toLowerCase();
         const title = (r.title || "").toLowerCase();
@@ -60,7 +73,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-[11px] font-bold tracking-wide uppercase text-blue-100 border border-white/10">
-                Workflow: Manager Request → CEO Decision → Chairman Report
+                Pipeline: Branch Manager Request → Branch Endorsement → HR Division Authorization
               </span>
               {isChairman && (
                 <span className="px-2.5 py-0.5 bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 rounded-full text-[11px] font-bold">
@@ -72,7 +85,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
               Branch Hiring Requisitions
             </h2>
             <p className="text-xs sm:text-sm text-blue-100/90 max-w-2xl leading-relaxed font-medium">
-              Branch managers request new headcount for their branch operations. The CEO authorizes live job recruitment.
+              Branch managers request headcount for their branch. Branch Admins endorse the requisition, routing it to the HR Division for final assignment and live job recruitment.
             </p>
           </div>
 
@@ -94,16 +107,16 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
             <p className="text-2xl sm:text-3xl font-black mt-1 text-white">{stats.total}</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
-            <p className="text-[11px] text-amber-200 font-bold uppercase tracking-wider">Pending CEO Action</p>
-            <p className="text-2xl sm:text-3xl font-black text-amber-300 mt-1">{stats.pending}</p>
+            <p className="text-[11px] text-amber-200 font-bold uppercase tracking-wider">Round 1: Branch Action</p>
+            <p className="text-2xl sm:text-3xl font-black text-amber-300 mt-1">{stats.pendingBranch}</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
-            <p className="text-[11px] text-emerald-200 font-bold uppercase tracking-wider">Approved by CEO</p>
+            <p className="text-[11px] text-sky-200 font-bold uppercase tracking-wider">Round 2: HR Review</p>
+            <p className="text-2xl sm:text-3xl font-black text-sky-300 mt-1">{stats.pendingHr}</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
+            <p className="text-[11px] text-emerald-200 font-bold uppercase tracking-wider">Approved & Live Jobs</p>
             <p className="text-2xl sm:text-3xl font-black text-emerald-300 mt-1">{stats.approved}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15">
-            <p className="text-[11px] text-sky-200 font-bold uppercase tracking-wider">Headcount Needed</p>
-            <p className="text-2xl sm:text-3xl font-black text-sky-300 mt-1">{stats.totalHeadcount}</p>
           </div>
         </div>
       </div>
@@ -126,9 +139,10 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
           className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 font-bold focus:outline-none focus:border-[#253C7D] cursor-pointer"
         >
           <option value="all">All Requisition Statuses</option>
-          <option value="pending">Pending CEO Review</option>
-          <option value="approved">Approved & Open</option>
-          <option value="fulfilled">Hired / Closed</option>
+          <option value="pending">Round 1: Awaiting Branch Approval</option>
+          <option value="pending_hr_review">Round 2: In HR Division Review</option>
+          <option value="approved">Approved & Job Live</option>
+          <option value="fulfilled">Position Hired / Closed</option>
           <option value="rejected">Rejected</option>
         </select>
       </div>
@@ -140,6 +154,8 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
             key={r.id}
             request={r}
             canApprove={canApprove}
+            canBranchApprove={canBranchApprove}
+            canHrReview={canHrReview}
             onOpenDecision={onOpenDecision}
             onDelete={onDeleteRequest}
           />

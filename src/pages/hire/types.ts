@@ -70,7 +70,13 @@ export interface HiringRequest {
   salary_max?: number | null;
   justification?: string | null;
   urgency: "low" | "medium" | "high" | "urgent";
-  status: "pending" | "approved" | "rejected" | "fulfilled";
+  status: "pending" | "pending_branch_review" | "pending_hr_review" | "approved" | "rejected" | "fulfilled";
+  branch_approved_by?: string | null;
+  branch_approved_at?: string | null;
+  hr_assigned_to_id?: string | null;
+  hr_assigned_to_name?: string | null;
+  hr_reviewed_by?: string | null;
+  hr_reviewed_at?: string | null;
   reviewed_by?: string | null;
   reviewed_at?: string | null;
   rejection_reason?: string | null;

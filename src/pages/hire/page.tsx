@@ -164,10 +164,13 @@ export default function HirePage() {
           requests={h.hiringRequests}
           canRequest={h.canRequest}
           canApprove={h.canApprove}
+          canBranchApprove={h.canBranchApprove}
+          canHrReview={h.canHrReview}
           isChairman={h.isChairman}
           onOpenCreate={() => h.openCreateRequest()}
           onOpenDecision={h.openDecisionModal}
           onDeleteRequest={h.handleDeleteRequest}
+          onAssignHrOfficer={h.handleAssignHrOfficer}
         />
       )}
 
