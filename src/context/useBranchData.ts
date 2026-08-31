@@ -46,10 +46,12 @@ export function useBranchData(userEmail?: string | null) {
       setLoading(false);
       return;
     }
+    const cleanEmail = userEmail.trim().toLowerCase();
     const { data } = await supabase
       .from("employees")
       .select("id, branch_id, branches(id, name)")
-      .eq("email", userEmail)
+      .ilike("email", cleanEmail)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (data?.branch_id) {

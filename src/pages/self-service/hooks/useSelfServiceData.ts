@@ -36,10 +36,12 @@ export function useSelfServiceData() {
     if (!user?.email) { setLoading(false); return; }
 
     (async () => {
+      const cleanEmail = user.email.trim().toLowerCase();
       const { data } = await supabase
         .from("employees")
         .select("id, first_name, last_name, role, department, status, join_date, email, phone, avatar_url, reports_to, branch_id, branches(name)")
-        .eq("email", user.email)
+        .ilike("email", cleanEmail)
+        .is("deleted_at", null)
         .maybeSingle();
 
       const emp = data as unknown as Employee | null;

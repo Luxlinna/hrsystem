@@ -49,7 +49,8 @@ export function useMyEmployee(): UseMyEmployeeReturn {
     const { data } = await supabase
       .from("employees")
       .select("id, first_name, last_name, role, department, avatar_url")
-      .eq("email", email)
+      .ilike("email", email.trim().toLowerCase())
+      .is("deleted_at", null)
       .maybeSingle();
 
     cachedEmployee = (data as MyEmployee) || null;
