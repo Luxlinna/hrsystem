@@ -31,7 +31,7 @@ export function useCourseMutations({
 
   const targetBranch = effectiveBranchId || userBranchId || "";
 
-  const openNewCourse = () => {
+  const openNewCourse = (initialDate?: string) => {
     if (!canManage) {
       toast("Permission Denied", "Only administrators and managers can create training courses.", "error");
       return;
@@ -41,6 +41,7 @@ export function useCourseMutations({
       ...emptyCourseForm,
       is_admin_course: isSuperAdmin && !effectiveBranchId,
       branch_id: targetBranch,
+      scheduled_date: initialDate || new Date().toISOString().slice(0, 10),
     });
     setShowCourseModal(true);
   };
@@ -57,6 +58,11 @@ export function useCourseMutations({
       status: course.status,
       branch_id: course.branch_id || targetBranch,
       is_admin_course: !course.branch_id,
+      scheduled_date: course.scheduled_date || "",
+      start_time: course.start_time || "09:00",
+      end_time: course.end_time || "11:00",
+      location: course.location || "",
+      invited_employee_ids: [],
     });
     setEditingCourseId(course.id);
     setSelectedCourse(null);
@@ -69,7 +75,7 @@ export function useCourseMutations({
 
     const resolvedBranchId = newCourse.is_admin_course ? null : (newCourse.branch_id || targetBranch || null);
 
-    const payload = {
+    const payload: Record<string, any> = {
       title: newCourse.title.trim(),
       description: newCourse.description || null,
       category: newCourse.category,
@@ -78,26 +84,71 @@ export function useCourseMutations({
       format: newCourse.format,
       status: newCourse.status,
       branch_id: resolvedBranchId,
+      scheduled_date: newCourse.scheduled_date || null,
+      start_time: newCourse.start_time || null,
+      end_time: newCourse.end_time || null,
+      location: newCourse.location || null,
     };
 
-    const { data: resData, error } = editingCourseId
+    if (!editingCourseId) {
+      payload.created_by_name = actorName;
+    }
+
+    let resData: any = null;
+    const { data, error } = editingCourseId
       ? await supabase.from("training_courses").update(payload).eq("id", editingCourseId).select().single()
       : await supabase.from("training_courses").insert(payload).select().single();
 
-    setSaving(false);
     if (error) {
-      toast("Error", "Failed to save course", "error");
-      return;
+      // Retry without new schedule columns if database column migration is pending
+      console.warn("Retrying course save without schedule columns:", error);
+      delete payload.scheduled_date;
+      delete payload.start_time;
+      delete payload.end_time;
+      delete payload.location;
+      delete payload.created_by_name;
+
+      const { data: retryData, error: retryErr } = editingCourseId
+        ? await supabase.from("training_courses").update(payload).eq("id", editingCourseId).select().single()
+        : await supabase.from("training_courses").insert(payload).select().single();
+
+      if (retryErr) {
+        setSaving(false);
+        toast("Error", "Failed to save course", "error");
+        return;
+      }
+      resData = retryData;
+    } else {
+      resData = data;
     }
-    toast("Success", editingCourseId ? "Course updated" : "Course created", "success");
+
+    const savedCourseId = resData?.id || editingCourseId;
+
+    // If creator invited employees, auto-enroll them
+    if (savedCourseId && newCourse.invited_employee_ids && newCourse.invited_employee_ids.length > 0) {
+      const enrollRecords = newCourse.invited_employee_ids.map((empId) => ({
+        course_id: savedCourseId,
+        employee_id: empId,
+        status: "enrolled",
+        progress: 0,
+        due_date: newCourse.scheduled_date || null,
+      }));
+
+      await supabase.from("training_enrollments").insert(enrollRecords);
+    }
+
+    setSaving(false);
+    toast("Success", editingCourseId ? "Course updated" : "Training session scheduled successfully", "success");
     logActivity({
       module: "training",
       action: editingCourseId ? "updated" : "created",
       entityType: "training_course",
-      entityId: resData?.id || editingCourseId,
+      entityId: savedCourseId,
       actorName,
       actorRole: "Admin",
-      description: `${editingCourseId ? "Updated" : "Created"} training course "${newCourse.title.trim()}"`,
+      description: `${editingCourseId ? "Updated" : "Scheduled"} training course "${newCourse.title.trim()}"${
+        newCourse.scheduled_date ? ` for ${newCourse.scheduled_date}` : ""
+      }`,
       branchId: resolvedBranchId,
     });
     setShowCourseModal(false);

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { Course, Enrollment } from "../../types";
 import { FORMAT_CONFIG, ENROLL_STATUS_CONFIG } from "../../constants";
-import { initials, formatDate } from "../../trainingUtils";
+import { initials } from "../../trainingUtils";
 
 interface CourseDetailDrawerProps {
   course: Course | null;
@@ -26,7 +26,6 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
 
   const format = FORMAT_CONFIG[course.format] || FORMAT_CONFIG.online;
   const courseEnrollments = enrollments.filter((e) => e.course_id === course.id);
-  const completedCount = courseEnrollments.filter((e) => e.status === "completed").length;
 
   return (
     <div
@@ -80,6 +79,43 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5 text-xs">
+          {/* Schedule & Location Card */}
+          {course.scheduled_date && (
+            <div className="p-3.5 bg-blue-50/70 rounded-2xl border border-blue-100 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold text-[#253C7D] uppercase tracking-wider flex items-center gap-1.5">
+                  <i className="ri-calendar-check-line text-xs" />
+                  Scheduled Session
+                </span>
+                {course.created_by_name && (
+                  <span className="text-[10px] text-gray-500 font-medium">
+                    Invited by: <strong>{course.created_by_name}</strong>
+                  </span>
+                )}
+              </div>
+              <p className="text-sm font-bold text-gray-900">
+                {new Date(course.scheduled_date).toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+              {course.start_time && (
+                <p className="text-xs text-[#253C7D] font-semibold flex items-center gap-1">
+                  <i className="ri-time-line text-xs" />
+                  {course.start_time} {course.end_time ? `— ${course.end_time}` : ""}
+                </p>
+              )}
+              {course.location && (
+                <p className="text-xs text-gray-600 flex items-center gap-1 mt-1 pt-1 border-t border-blue-100/60">
+                  <i className="ri-map-pin-line text-xs text-gray-400" />
+                  {course.location}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Overview */}
           {course.description && (
             <div>
@@ -102,10 +138,10 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
             </div>
             <div>
               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                Instructor
+                Instructor / Host
               </span>
               <p className="font-bold text-gray-800 mt-0.5 truncate">
-                {course.instructor || "Internal HR"}
+                {course.instructor || course.created_by_name || "Internal HR"}
               </p>
             </div>
           </div>

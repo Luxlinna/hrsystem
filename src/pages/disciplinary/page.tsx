@@ -58,8 +58,8 @@ export default function DisciplinaryPage() {
       <DisciplinaryHeader
         recordsCount={filteredRecords.length}
         canManage={canManage}
-        onExportCSV={handleExportCSV}
         onOpenCreateModal={openCreateModal}
+        records={filteredRecords}
       />
 
       <OverdueAlertBanner

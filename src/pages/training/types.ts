@@ -13,6 +13,11 @@ export interface Course {
   format: "online" | "in_person" | "hybrid" | "self_paced";
   status: "active" | "draft" | "archived";
   branch_id?: string | null;
+  scheduled_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
+  created_by_name?: string | null;
   created_at: string;
   branches?: { id?: string; name: string } | null;
 }
@@ -60,6 +65,11 @@ export interface CourseFormState {
   status: "active" | "draft" | "archived";
   branch_id: string;
   is_admin_course: boolean;
+  scheduled_date: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  invited_employee_ids: string[];
 }
 
-export type TrainingTab = "courses" | "enrollments" | "certificates";
+export type TrainingTab = "courses" | "calendar" | "enrollments" | "certificates";

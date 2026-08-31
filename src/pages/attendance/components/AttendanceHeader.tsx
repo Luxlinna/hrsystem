@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import type { AttendanceTabKey } from "../types";
+import type { AttendanceTabKey, AttendanceRecord, EmployeeSummaryItem } from "../types";
+import { AttendanceExportMenu } from "./AttendanceExportMenu";
 
 interface AttendanceHeaderProps {
   currentTime: Date;
@@ -8,8 +9,10 @@ interface AttendanceHeaderProps {
   dateRangeBounds: { start: string; end: string } | null;
   canViewAll: boolean;
   hasEmployee: boolean;
-  onExportCSV: () => void;
+  onExportCSV?: () => void;
   onOpenLogModal: () => void;
+  records?: AttendanceRecord[];
+  summaries?: EmployeeSummaryItem[];
 }
 
 export const AttendanceHeader = memo(function AttendanceHeader({
@@ -18,8 +21,9 @@ export const AttendanceHeader = memo(function AttendanceHeader({
   dateRangeBounds,
   canViewAll,
   hasEmployee,
-  onExportCSV,
   onOpenLogModal,
+  records = [],
+  summaries = [],
 }: AttendanceHeaderProps) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
@@ -69,14 +73,12 @@ export const AttendanceHeader = memo(function AttendanceHeader({
           Full Report
         </Link>
 
-        {/* Export CSV */}
-        <button
-          onClick={onExportCSV}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-        >
-          <i className="ri-file-excel-2-line text-emerald-600 text-sm" />
-          Export CSV
-        </button>
+        {/* 3-Format Export Menu (PDF, Excel, CSV) */}
+        <AttendanceExportMenu
+          activeTab={activeTab}
+          records={records}
+          summaries={summaries}
+        />
 
         {/* Manual Log Button (Can choose any old date) */}
         <button

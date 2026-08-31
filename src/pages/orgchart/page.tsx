@@ -92,6 +92,7 @@ export default function OrgChart() {
         setViewMode={setViewMode}
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
+        employees={employees}
       />
 
       {/* Search, Filter & Legend Bar */}

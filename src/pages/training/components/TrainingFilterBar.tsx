@@ -8,6 +8,9 @@ interface TrainingFilterBarProps {
   setFilterCategory: (cat: string) => void;
   filterStatus: string;
   setFilterStatus: (st: string) => void;
+  filterMonth?: string;
+  setFilterMonth?: (m: string) => void;
+  availableMonths?: { value: string; label: string }[];
   filterScope?: "all" | "admin" | "branch";
   setFilterScope?: (s: "all" | "admin" | "branch") => void;
   searchQuery: string;
@@ -21,6 +24,9 @@ export const TrainingFilterBar = memo(function TrainingFilterBar({
   setFilterCategory,
   filterStatus,
   setFilterStatus,
+  filterMonth = "",
+  setFilterMonth,
+  availableMonths = [],
   filterScope = "all",
   setFilterScope,
   searchQuery,
@@ -53,7 +59,23 @@ export const TrainingFilterBar = memo(function TrainingFilterBar({
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Month Filter */}
+        {setFilterMonth && availableMonths.length > 0 && (
+          <select
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer"
+          >
+            <option value="">📅 All Months</option>
+            {availableMonths.map((m) => (
+              <option key={m.value} value={m.value}>
+                📅 {m.label}
+              </option>
+            ))}
+          </select>
+        )}
+
         {activeTab === "courses" && setFilterScope && (
           <select
             value={filterScope}

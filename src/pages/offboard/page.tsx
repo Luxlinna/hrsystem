@@ -37,7 +37,12 @@ export default function Offboard() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
-      <OffboardHeader onStartOffboarding={() => o.setCreateModal(true)} />
+      <OffboardHeader
+        onStartOffboarding={() => o.setCreateModal(true)}
+        tab={o.tab}
+        offboardings={o.filteredOffboardings.length > 0 ? o.filteredOffboardings : (o.tab === "completed" ? o.completedOffboardings : o.activeOffboardings)}
+        tasks={o.filteredTasks}
+      />
 
       <OffboardStatsRow
         totalActiveCount={o.totalActiveCount}

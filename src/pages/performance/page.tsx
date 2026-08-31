@@ -78,6 +78,10 @@ export default function PerformanceReviews() {
           canManage={canManage}
           onOpenAddGoal={() => setShowGoalModal(true)}
           onOpenSubmitReview={() => setActiveTab("submit")}
+          activeTab={activeTab}
+          reviews={filteredReviews.length > 0 ? filteredReviews : reviews}
+          goals={goals}
+          employees={employees}
         />
 
         {/* Stats Row */}

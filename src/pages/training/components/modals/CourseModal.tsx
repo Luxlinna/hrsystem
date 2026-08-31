@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { CourseFormState, Branch } from "../../types";
+import type { CourseFormState, Branch, Employee } from "../../types";
 import { CourseScopeSelector } from "./CourseScopeSelector";
 import { CourseModalFields } from "./CourseModalFields";
 
@@ -9,6 +9,7 @@ interface CourseModalProps {
   form: CourseFormState;
   setForm: React.Dispatch<React.SetStateAction<CourseFormState>>;
   branches: Branch[];
+  employees?: Employee[];
   isSuperAdmin: boolean;
   activeBranchName?: string;
   saving: boolean;
@@ -22,6 +23,7 @@ export const CourseModal = memo(function CourseModal({
   form,
   setForm,
   branches,
+  employees = [],
   isSuperAdmin,
   activeBranchName,
   saving,
@@ -74,6 +76,7 @@ export const CourseModal = memo(function CourseModal({
           <CourseModalFields
             form={form}
             setForm={setForm}
+            employees={employees}
           />
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">

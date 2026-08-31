@@ -21,8 +21,14 @@ export const emptyCourseForm: CourseFormState = {
   category: "General",
   duration_hours: "",
   instructor: "",
-  format: "online",
+  format: "in_person",
   status: "active",
   branch_id: "",
   is_admin_course: false,
+  scheduled_date: new Date().toISOString().slice(0, 10),
+  start_time: "09:00",
+  end_time: "11:00",
+  location: "",
+  invited_employee_ids: [],
 };
+

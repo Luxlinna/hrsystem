@@ -1,5 +1,6 @@
 import { memo } from "react";
-import type { OrgChartViewMode } from "../types";
+import type { OrgChartViewMode, Employee } from "../types";
+import { OrgChartExportMenu } from "./OrgChartExportMenu";
 
 interface OrgChartHeaderProps {
   employeeCount: number;
@@ -9,6 +10,7 @@ interface OrgChartHeaderProps {
   setViewMode: (mode: OrgChartViewMode) => void;
   onExpandAll: () => void;
   onCollapseAll: () => void;
+  employees?: Employee[];
 }
 
 export const OrgChartHeader = memo(function OrgChartHeader({
@@ -19,6 +21,7 @@ export const OrgChartHeader = memo(function OrgChartHeader({
   setViewMode,
   onExpandAll,
   onCollapseAll,
+  employees = [],
 }: OrgChartHeaderProps) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
@@ -78,6 +81,12 @@ export const OrgChartHeader = memo(function OrgChartHeader({
             <span>Directory List</span>
           </button>
         </div>
+
+        {/* Export Menu */}
+        <OrgChartExportMenu
+          employees={employees}
+          branchName={branchName}
+        />
 
         {/* Tree Expand / Collapse Controls */}
         {viewMode === "tree" && (

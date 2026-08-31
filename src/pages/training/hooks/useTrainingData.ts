@@ -65,13 +65,13 @@ export function useTrainingData() {
       let courseList: Course[] = [];
       const { data: cData, error: cErr } = await supabase
         .from("training_courses")
-        .select("id, title, description, category, duration_hours, instructor, format, status, branch_id, created_at")
+        .select("id, title, description, category, duration_hours, instructor, format, status, branch_id, scheduled_date, start_time, end_time, location, created_by_name, created_at")
         .is("deleted_at", null)
         .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
         .order("created_at", { ascending: false });
 
       if (cErr) {
-        // Fallback if branch_id column is not yet on the database
+        // Fallback if branch_id or schedule columns are not yet on the database
         console.warn("Training courses scoped query error, using fallback:", cErr);
         const { data: fallbackData } = await supabase
           .from("training_courses")

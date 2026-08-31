@@ -2,6 +2,7 @@ import { useTraining } from "./hooks/useTraining";
 import { TrainingHeader } from "./components/TrainingHeader";
 import { TrainingFilterBar } from "./components/TrainingFilterBar";
 import { CoursesGridView } from "./components/views/CoursesGridView";
+import { TrainingCalendarView } from "./components/views/TrainingCalendarView";
 import { EnrollmentsTableView } from "./components/views/EnrollmentsTableView";
 import { CertificatesGridView } from "./components/views/CertificatesGridView";
 import { CourseModal } from "./components/modals/CourseModal";
@@ -14,6 +15,7 @@ export default function TrainingPage() {
     isPartnerBranchBlocked, userBranchName, userBranchId, canManage, courses,
     enrollments, employees, branches, loading, activeTab, setActiveTab,
     filterCategory, setFilterCategory, filterStatus, setFilterStatus,
+    filterMonth, setFilterMonth, availableMonths,
     filterScope, setFilterScope, searchQuery, setSearchQuery, page, setPage,
     categories, filteredCourses, filteredEnrollments, certificates,
     enrollTotalPages, enrollPageStart, enrollPageEnd, pagedEnrollments,
@@ -42,6 +44,9 @@ export default function TrainingPage() {
           canManage={false}
           onNewCourse={() => {}}
           onOpenEnroll={() => {}}
+          courses={[]}
+          enrollments={[]}
+          certificates={[]}
         />
         <PartnerBranchPrivacyShield
           moduleName="Training & Certifications"
@@ -64,22 +69,26 @@ export default function TrainingPage() {
         canManage={canManage}
         onNewCourse={openNewCourse}
         onOpenEnroll={() => openEnroll()}
+        courses={filteredCourses.length > 0 ? filteredCourses : courses}
+        enrollments={filteredEnrollments.length > 0 ? filteredEnrollments : enrollments}
+        certificates={certificates}
       />
 
-      {activeTab !== "certificates" && (
-        <TrainingFilterBar
-          activeTab={activeTab}
-          categories={categories}
-          filterCategory={filterCategory}
-          setFilterCategory={setFilterCategory}
-          filterStatus={filterStatus}
-          setFilterStatus={setFilterStatus}
-          filterScope={filterScope}
-          setFilterScope={setFilterScope}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-        />
-      )}
+      <TrainingFilterBar
+        activeTab={activeTab}
+        categories={categories}
+        filterCategory={filterCategory}
+        setFilterCategory={setFilterCategory}
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+        filterMonth={filterMonth}
+        setFilterMonth={setFilterMonth}
+        availableMonths={availableMonths}
+        filterScope={filterScope}
+        setFilterScope={setFilterScope}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -96,6 +105,15 @@ export default function TrainingPage() {
           onEdit={openEditCourse}
           onDelete={deleteCourse}
           onNewCourse={openNewCourse}
+        />
+      ) : activeTab === "calendar" ? (
+        <TrainingCalendarView
+          courses={filteredCourses.length > 0 ? filteredCourses : courses}
+          enrollments={filteredEnrollments.length > 0 ? filteredEnrollments : enrollments}
+          canManage={canManage}
+          onSelectCourse={setSelectedCourse}
+          onEnroll={(courseId) => openEnroll(courseId)}
+          onNewCourse={(initialDate) => openNewCourse(initialDate)}
         />
       ) : activeTab === "enrollments" ? (
         <EnrollmentsTableView
@@ -129,6 +147,7 @@ export default function TrainingPage() {
         form={newCourse}
         setForm={setNewCourse}
         branches={branches}
+        employees={employees}
         isSuperAdmin={isSuperAdmin}
         activeBranchName={activeBranchName}
         saving={saving}

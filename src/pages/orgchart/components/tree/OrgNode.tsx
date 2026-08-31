@@ -41,26 +41,26 @@ export const OrgNode = memo(function OrgNode({
         onClick={() => {
           onSelectEmployee(node);
         }}
-        className={`group relative flex flex-col items-center p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer min-w-[210px] max-w-[230px] shadow-sm hover:shadow-lg ${
+        className={`group relative flex flex-col items-center p-4 rounded-2xl border transition-all duration-200 cursor-pointer min-w-[216px] max-w-[236px] shadow-xs hover:shadow-lg hover:-translate-y-0.5 ${
           isMatch && searchTerm
-            ? "border-[#253C7D] bg-blue-50/70 ring-4 ring-blue-500/10 scale-105"
+            ? "border-[#253C7D] bg-blue-50/80 ring-4 ring-[#253C7D]/15 scale-105"
             : isExecutive
-            ? "border-[#253C7D] bg-white hover:border-[#1E3066]"
+            ? "border-[#253C7D]/40 bg-gradient-to-b from-blue-50/30 to-white hover:border-[#253C7D]"
             : isManager
-            ? "border-amber-300 bg-white hover:border-amber-400"
+            ? "border-amber-300/80 bg-gradient-to-b from-amber-50/20 to-white hover:border-amber-400"
             : "border-gray-200/90 bg-white hover:border-gray-300"
         }`}
       >
         {/* Top Department Accent Bar */}
-        <div className={`absolute top-0 left-0 right-0 h-1.5 ${deptColor} rounded-t-2xl`} />
+        <div className={`absolute top-0 left-0 right-0 h-1.5 ${deptColor} rounded-t-2xl shadow-2xs`} />
 
         {/* Level Tag (Executive / Manager) */}
         {isExecutive ? (
-          <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-blue-100 text-blue-800">
+          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider bg-blue-100/90 text-[#253C7D] border border-blue-200/60 shadow-2xs">
             Executive
           </span>
         ) : isManager ? (
-          <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
+          <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider bg-amber-100/90 text-amber-800 border border-amber-200/60 shadow-2xs">
             Lead
           </span>
         ) : null}
@@ -68,18 +68,18 @@ export const OrgNode = memo(function OrgNode({
         {/* Avatar & Info */}
         <Link
           to={`/employees/${node.id}`}
-          className="flex flex-col items-center w-full mt-1"
+          className="flex flex-col items-center w-full mt-1.5"
           onClick={(e) => e.stopPropagation()}
         >
           {node.avatar_url ? (
             <img
               src={node.avatar_url}
               alt=""
-              className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-xs mb-2 group-hover:scale-105 transition-transform"
+              className="w-13 h-13 rounded-2xl object-cover border-2 border-white shadow-sm mb-2 group-hover:scale-105 transition-transform"
             />
           ) : (
             <div
-              className={`w-12 h-12 rounded-full ${deptColor} flex items-center justify-center text-white font-black text-sm shadow-xs mb-2 group-hover:scale-105 transition-transform`}
+              className={`w-13 h-13 rounded-2xl ${deptColor} flex items-center justify-center text-white font-black text-sm shadow-sm mb-2 group-hover:scale-105 transition-transform`}
             >
               {node.first_name?.[0]}
               {node.last_name?.[0]}
@@ -105,7 +105,8 @@ export const OrgNode = memo(function OrgNode({
 
         {/* Branch / Status Row */}
         <div className="flex items-center justify-between w-full mt-2.5 pt-2 border-t border-gray-100 text-[10px] text-gray-400">
-          <span className="truncate max-w-[110px] font-medium text-gray-500">
+          <span className="truncate max-w-[110px] font-medium text-gray-500 flex items-center gap-1">
+            <i className="ri-building-line text-xs text-gray-400" />
             {node.branches?.name || "Branch Staff"}
           </span>
           <div className="flex items-center gap-1">
@@ -114,7 +115,7 @@ export const OrgNode = memo(function OrgNode({
                 node.status === "active" ? "bg-emerald-500" : "bg-amber-500"
               }`}
             />
-            <span className="capitalize">{node.status}</span>
+            <span className="capitalize font-semibold text-gray-600">{node.status}</span>
           </div>
         </div>
 
@@ -125,9 +126,9 @@ export const OrgNode = memo(function OrgNode({
               e.stopPropagation();
               onToggle(node.id);
             }}
-            className={`absolute -bottom-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 transition-all cursor-pointer shadow-xs ${
+            className={`absolute -bottom-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-extrabold border flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 ${
               node.expanded
-                ? "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                ? "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                 : "bg-[#253C7D] text-white border-[#253C7D] hover:bg-[#1E3066]"
             }`}
             title={node.expanded ? "Collapse team" : `Expand ${directReportsCount} direct reports`}
@@ -137,7 +138,7 @@ export const OrgNode = memo(function OrgNode({
                 node.expanded ? "rotate-180" : ""
               }`}
             />
-            <span>{node.expanded ? directReportsCount : `+${directReportsCount}`}</span>
+            <span>{node.expanded ? `${directReportsCount} reports` : `+${directReportsCount} reports`}</span>
           </button>
         )}
       </div>

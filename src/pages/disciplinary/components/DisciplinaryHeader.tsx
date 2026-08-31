@@ -1,17 +1,20 @@
 import { memo } from "react";
+import type { DisciplinaryRecord } from "../types";
+import { DisciplinaryExportMenu } from "./DisciplinaryExportMenu";
 
 interface DisciplinaryHeaderProps {
   recordsCount: number;
   canManage: boolean;
-  onExportCSV: () => void;
+  onExportCSV?: () => void;
   onOpenCreateModal: () => void;
+  records?: DisciplinaryRecord[];
 }
 
 export const DisciplinaryHeader = memo(function DisciplinaryHeader({
   recordsCount,
   canManage,
-  onExportCSV,
   onOpenCreateModal,
+  records = [],
 }: DisciplinaryHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -36,13 +39,7 @@ export const DisciplinaryHeader = memo(function DisciplinaryHeader({
 
       {/* Header Action Buttons */}
       <div className="flex items-center gap-2.5 flex-wrap">
-        <button
-          onClick={onExportCSV}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-        >
-          <i className="ri-file-excel-2-line text-emerald-600 text-sm" />
-          Export Records
-        </button>
+        <DisciplinaryExportMenu records={records} />
 
         {canManage && (
           <button

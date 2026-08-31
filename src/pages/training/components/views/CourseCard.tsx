@@ -67,6 +67,33 @@ export const CourseCard = memo(function CourseCard({
           </p>
         )}
 
+        {/* Scheduled Date & Time Pill */}
+        {course.scheduled_date && (
+          <div className="mt-2.5 p-2 bg-blue-50/70 rounded-xl border border-blue-100 text-[11px] text-[#253C7D] space-y-0.5">
+            <div className="flex items-center gap-1.5 font-bold">
+              <i className="ri-calendar-event-line text-xs" />
+              <span>
+                {new Date(course.scheduled_date).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </span>
+              {course.start_time && (
+                <span className="font-normal opacity-85">
+                  • {course.start_time} {course.end_time ? `- ${course.end_time}` : ""}
+                </span>
+              )}
+            </div>
+            {course.location && (
+              <p className="text-[10px] text-gray-500 truncate flex items-center gap-1">
+                <i className="ri-map-pin-line text-[10px]" />
+                {course.location}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Instructor & Duration */}
         <div className="flex items-center gap-3 text-xs text-gray-400 mt-3 pt-3 border-t border-gray-50">
           {course.duration_hours && (
@@ -79,6 +106,11 @@ export const CourseCard = memo(function CourseCard({
             <span className="flex items-center gap-1 truncate">
               <i className="ri-user-line text-xs" />
               {course.instructor}
+            </span>
+          )}
+          {course.created_by_name && (
+            <span className="flex items-center gap-1 truncate ml-auto text-[10px] text-gray-400">
+              Host: {course.created_by_name}
             </span>
           )}
         </div>

@@ -1,11 +1,19 @@
 import { memo } from "react";
+import type { Offboarding, EnrichedOffboardingTask } from "../types";
+import { OffboardExportMenu } from "./OffboardExportMenu";
 
 interface OffboardHeaderProps {
   onStartOffboarding: () => void;
+  tab?: "active" | "completed" | "tasks" | "analytics";
+  offboardings?: Offboarding[];
+  tasks?: EnrichedOffboardingTask[];
 }
 
 export const OffboardHeader = memo(function OffboardHeader({
   onStartOffboarding,
+  tab = "active",
+  offboardings = [],
+  tasks = [],
 }: OffboardHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -27,6 +35,12 @@ export const OffboardHeader = memo(function OffboardHeader({
       </div>
 
       <div className="flex items-center gap-2.5 flex-wrap">
+        <OffboardExportMenu
+          tab={tab}
+          offboardings={offboardings}
+          tasks={tasks}
+        />
+
         <button
           onClick={onStartOffboarding}
           className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
