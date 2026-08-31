@@ -66,7 +66,7 @@ export default function HirePage() {
         candidatesCount={h.candidates.length}
         interviewsCount={h.interviews.length}
         requestsCount={h.hiringRequests.length}
-        pendingRequestsCount={h.hiringRequests.filter((r) => r.status === "pending").length}
+        pendingRequestsCount={h.hiringRequests.length}
         isChairman={h.isChairman}
       />
 

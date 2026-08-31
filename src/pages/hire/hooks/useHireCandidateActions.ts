@@ -7,6 +7,7 @@ import type { Candidate, Job, Interview } from "../types";
 interface UseHireCandidateActionsProps {
   actorName: string;
   actorRole: string;
+  myEmployeeId?: string;
   loadData: () => Promise<void>;
   branches: any[];
   jobs: Job[];
@@ -16,8 +17,12 @@ interface UseHireCandidateActionsProps {
   setSavingFeedback: (val: boolean) => void;
 }
 
+const isUuid = (str?: string | null) =>
+  !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+
 export function useHireCandidateActions({
   actorName,
+  myEmployeeId,
   loadData,
   branches,
   jobs,
@@ -99,7 +104,11 @@ export function useHireCandidateActions({
           if (error) throw error;
           toast("Interview Updated", "Interview details saved.", "success");
         } else {
-          const { error } = await supabase.from("interviews").insert({ ...payload, interviewer_id: actorName, status: "scheduled" });
+          const { error } = await supabase.from("interviews").insert({
+            ...payload,
+            interviewer_id: isUuid(myEmployeeId) ? myEmployeeId : null,
+            status: "scheduled",
+          });
           if (error) throw error;
           toast("Interview Scheduled", "Interview scheduled successfully.", "success");
         }
@@ -112,7 +121,7 @@ export function useHireCandidateActions({
         setSchedulingInterview(false);
       }
     },
-    [actorName, loadData, setSchedulingInterview]
+    [myEmployeeId, loadData, setSchedulingInterview]
   );
 
   const handleMoveToOnboarding = useCallback(

@@ -66,7 +66,7 @@ export function useHire() {
   });
 
   const candidateActions = useHireCandidateActions({
-    actorName, actorRole, loadData: data.loadData, branches: data.branches, jobs: data.jobs,
+    actorName, actorRole, myEmployeeId: myEmployee?.id, loadData: data.loadData, branches: data.branches, jobs: data.jobs,
     setUploadingResume: actions.setUploadingResume, setSchedulingInterview: actions.setSchedulingInterview,
     setMovingToOnboarding: actions.setMovingToOnboarding, setSavingFeedback: actions.setSavingFeedback,
   });

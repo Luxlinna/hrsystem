@@ -22,6 +22,7 @@ export const HireTabsBar = memo(function HireTabsBar({
   jobsCount,
   candidatesCount,
   interviewsCount,
+  requestsCount,
   pendingRequestsCount = 0,
 }: HireTabsBarProps) {
   const currentTab = activeTab || tab || "requests";
@@ -30,8 +31,10 @@ export const HireTabsBar = memo(function HireTabsBar({
     else if (setTab) setTab(tKey);
   };
 
+  const totalReqCount = requestsCount ?? pendingRequestsCount ?? 0;
+
   const tabs = [
-    { key: "requests" as HireTab, label: "Requisitions", icon: "ri-file-list-3-line", count: pendingRequestsCount, isBadge: true },
+    { key: "requests" as HireTab, label: "Requisitions", icon: "ri-file-list-3-line", count: totalReqCount, isBadge: true },
     { key: "jobs" as HireTab, label: "Job Openings", icon: "ri-briefcase-line", count: jobsCount },
     { key: "candidates" as HireTab, label: "Candidates", icon: "ri-user-search-line", count: candidatesCount },
     { key: "interviews" as HireTab, label: "Interviews", icon: "ri-calendar-todo-line", count: interviewsCount },

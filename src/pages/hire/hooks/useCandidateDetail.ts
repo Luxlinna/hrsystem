@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { logActivity } from "@/lib/audit";
 import { uploadFileToR2 } from "@/lib/r2-storage";
 import type { Candidate, Interview } from "../types";
@@ -13,6 +14,7 @@ import { useCandidateDetailFeedback } from "./useCandidateDetailFeedback";
 export function useCandidateDetail(id: string | undefined) {
   const { user } = useAuth();
   const { role } = usePermissions();
+  const { employee: myEmployee } = useMyEmployee();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const navigate = useNavigate();
 
@@ -52,6 +54,7 @@ export function useCandidateDetail(id: string | undefined) {
   const feedback = useCandidateDetailFeedback({
     candidateId: id,
     actorName,
+    myEmployeeId: myEmployee?.id,
     loadCandidate,
   });
 
