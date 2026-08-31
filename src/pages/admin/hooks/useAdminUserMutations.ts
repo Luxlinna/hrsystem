@@ -134,11 +134,16 @@ export function useAdminUserMutations({
     try {
       try {
         await manageUserRole("delete_assignment", targetUser.id > 0 ? targetUser.id : null, null, targetUser.email, targetUser.display_name);
-      } catch {
+      } catch (edgeErr) {
+        console.warn("manageUserRole edge call failed, attempting direct DB update:", edgeErr);
         const now = new Date().toISOString();
         const query = supabase.from("user_role_assignments").update({ deleted_at: now, deleted_by: currentUserEmail || "Admin" });
-        if (targetUser.id > 0) await query.eq("id", targetUser.id);
-        else if (targetUser.email) await query.ilike("email", targetUser.email);
+        const { error: dbErr } = targetUser.id > 0
+          ? await query.eq("id", targetUser.id)
+          : await query.ilike("email", targetUser.email || "");
+        if (dbErr) {
+          throw new Error(dbErr.message || (edgeErr as any)?.message || "Failed to remove user");
+        }
       }
       showToast("User moved to Recycle Bin");
       loadData();
