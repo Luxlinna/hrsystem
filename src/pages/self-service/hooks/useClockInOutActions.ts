@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { zonedParts, zonedTimeToInstant } from "@/lib/date";
+import { zonedDayOfWeek, zonedParts, zonedTimeToInstant } from "@/lib/date";
 import { computeHoursWorked } from "@/lib/workSchedule";
 import { notifyAttendanceEvent } from "@/lib/attendanceNotify";
 import type { AttendanceRecord, BranchGeofence, OutsideWorkTask } from "../types";
@@ -123,13 +123,18 @@ export function useClockInOutActions({
       ? computeHoursWorked(clockInTime, now, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime)
       : null;
 
+    const isSaturday = zonedDayOfWeek(now, scheduleSettings.timezone) === 6;
+    const defaultEndMin = isSaturday ? 12 * 60 : 17 * 60; // 12:00 PM Sat, 5:00 PM Mon-Fri
+
     let earlyLeaveMinutes = 0;
     if (workEndTime) {
       const [endH, endM] = workEndTime.split(":").map(Number);
       earlyLeaveMinutes = Math.max(0, endH * 60 + endM - nowZ.minutesOfDay);
+    } else {
+      earlyLeaveMinutes = Math.max(0, defaultEndMin - nowZ.minutesOfDay);
     }
 
-    const requiresReason = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes;
+    const requiresReason = earlyLeaveMinutes > 0;
     if (requiresReason && !earlyCheckoutReason.trim()) {
       showToast("error", "Please enter a reason before checking out early.");
       return;
@@ -150,14 +155,14 @@ export function useClockInOutActions({
       showToast("error", "Failed to check out. Please try again.");
     } else {
       const hrs = hoursWorked ? `${Math.floor(hoursWorked)}h ${Math.round((hoursWorked % 1) * 60)}m worked` : "";
-      const earlyNote = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes ? ` — ${earlyLeaveMinutes} min early` : "";
+      const earlyNote = earlyLeaveMinutes > 0 ? ` — ${earlyLeaveMinutes} min early` : "";
       showToast("success", `Checked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
       loadRecords();
       notifyAttendanceEvent({
         employeeName,
         employeeId,
         type: "out",
-        isException: earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes,
+        isException: earlyLeaveMinutes > 0,
         exceptionMinutes: earlyLeaveMinutes,
         date: today,
         time: timeStr,

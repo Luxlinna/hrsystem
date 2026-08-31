@@ -27,15 +27,19 @@ export function useCheckInCalculations({
   workStartTime,
   workEndTime,
 }: UseCheckInCalculationsProps) {
-  const isCheckedIn = !!todayRecord?.clock_in;
-  const isCheckedOut = !!(todayRecord?.clock_in && todayRecord?.clock_out);
+  const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
+  const defaultEndMin = isSaturday ? 12 * 60 : 17 * 60; // 12:00 PM Sat, 5:00 PM Mon-Fri
 
   const earlyCheckoutMinutesNow = (() => {
-    if (!workEndTime || !isCheckedIn || isCheckedOut) return 0;
-    const [endH, endM] = workEndTime.split(":").map(Number);
-    return Math.max(0, endH * 60 + endM - zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay);
+    if (!isCheckedIn || isCheckedOut) return 0;
+    let endMinutes = defaultEndMin;
+    if (workEndTime) {
+      const [endH, endM] = workEndTime.split(":").map(Number);
+      endMinutes = endH * 60 + endM;
+    }
+    return Math.max(0, endMinutes - zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay);
   })();
-  const isEarlyCheckoutNow = earlyCheckoutMinutesNow > scheduleSettings.earlyLeaveGraceMinutes;
+  const isEarlyCheckoutNow = earlyCheckoutMinutesNow > 0;
 
   const presentCount = records.filter(
     (r) => r.status === "ontime" || r.status === "present" || r.status === "late"

@@ -163,8 +163,9 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
   const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
   const daySchedule = getScheduleForDate(scheduleSettings);
   const workStartTime =
-    assignedShift?.start_time || (!isSaturday && branch?.work_start_time) || daySchedule?.startTime || globalWorkStartTime;
-  const workEndTime = assignedShift?.end_time || (!isSaturday && branch?.work_end_time) || daySchedule?.endTime || null;
+    assignedShift?.start_time || (!isSaturday && branch?.work_start_time) || daySchedule?.startTime || globalWorkStartTime || "08:00";
+  const workEndTime =
+    assignedShift?.end_time || (!isSaturday && branch?.work_end_time) || daySchedule?.endTime || (isSaturday ? "12:00" : "17:00");
 
   return {
     records,

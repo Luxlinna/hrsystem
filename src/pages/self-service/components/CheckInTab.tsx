@@ -164,8 +164,8 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   // branches have no Saturday fields of their own.
   const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
   const daySchedule = getScheduleForDate(scheduleSettings);
-  const workStartTime = assignedShift?.start_time || (!isSaturday && branch?.work_start_time) || daySchedule?.startTime || globalWorkStartTime;
-  const workEndTime = assignedShift?.end_time || (!isSaturday && branch?.work_end_time) || daySchedule?.endTime || null;
+  const workStartTime = assignedShift?.start_time || (!isSaturday && branch?.work_start_time) || daySchedule?.startTime || globalWorkStartTime || "08:00";
+  const workEndTime = assignedShift?.end_time || (!isSaturday && branch?.work_end_time) || daySchedule?.endTime || (isSaturday ? "12:00" : "17:00");
 
   const loadRecords = async () => {
     if (!employeeId) return;
@@ -367,13 +367,18 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     // Deduct the unpaid break (e.g. 12:00–13:00) so hours reflect actual work time.
     const hoursWorked = clockInTime ? computeHoursWorked(clockInTime, now, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime) : null;
 
+    const isSat = zonedDayOfWeek(now, scheduleSettings.timezone) === 6;
+    const defaultEndMin = isSat ? 12 * 60 : 17 * 60; // 12:00 PM Sat, 5:00 PM Mon-Fri
+
     let earlyLeaveMinutes = 0;
     if (workEndTime) {
       const [endH, endM] = workEndTime.split(":").map(Number);
       earlyLeaveMinutes = Math.max(0, (endH * 60 + endM) - nowZ.minutesOfDay);
+    } else {
+      earlyLeaveMinutes = Math.max(0, defaultEndMin - nowZ.minutesOfDay);
     }
 
-    const requiresReason = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes;
+    const requiresReason = earlyLeaveMinutes > 0;
     if (requiresReason && !earlyCheckoutReason.trim()) {
       showToast("error", "Please enter a reason before checking out early.");
       return;
@@ -394,14 +399,14 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
       showToast("error", "Failed to check out. Please try again.");
     } else {
       const hrs = hoursWorked ? `${Math.floor(hoursWorked)}h ${Math.round((hoursWorked % 1) * 60)}m worked` : "";
-      const earlyNote = earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes ? ` — ${earlyLeaveMinutes} min early` : "";
+      const earlyNote = earlyLeaveMinutes > 0 ? ` — ${earlyLeaveMinutes} min early` : "";
       showToast("success", `Checked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
       loadRecords();
       notifyAttendanceEvent({
         employeeName,
         employeeId,
         type: "out",
-        isException: earlyLeaveMinutes > scheduleSettings.earlyLeaveGraceMinutes,
+        isException: earlyLeaveMinutes > 0,
         exceptionMinutes: earlyLeaveMinutes,
         date: today,
         time: timeStr,
@@ -413,11 +418,15 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   const isCheckedIn = !!todayRecord?.clock_in;
   const isCheckedOut = !!(todayRecord?.clock_in && todayRecord?.clock_out);
   const earlyCheckoutMinutesNow = (() => {
-    if (!workEndTime || !isCheckedIn || isCheckedOut) return 0;
-    const [endH, endM] = workEndTime.split(":").map(Number);
-    return Math.max(0, (endH * 60 + endM) - zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay);
+    if (!isCheckedIn || isCheckedOut) return 0;
+    let endMinutes = isSaturday ? 12 * 60 : 17 * 60;
+    if (workEndTime) {
+      const [endH, endM] = workEndTime.split(":").map(Number);
+      endMinutes = endH * 60 + endM;
+    }
+    return Math.max(0, endMinutes - zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay);
   })();
-  const isEarlyCheckoutNow = earlyCheckoutMinutesNow > scheduleSettings.earlyLeaveGraceMinutes;
+  const isEarlyCheckoutNow = earlyCheckoutMinutesNow > 0;
 
   const autoCheckedOutRef = useRef(false);
   useEffect(() => {
