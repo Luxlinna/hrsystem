@@ -23,6 +23,8 @@ interface HireModalsContainerProps {
   editingCandidate: Candidate | null;
   newCandidate: NewCandidateFormState;
   setNewCandidate: React.Dispatch<React.SetStateAction<NewCandidateFormState>>;
+  candidateFiles?: File[];
+  setCandidateFiles?: React.Dispatch<React.SetStateAction<File[]>>;
   resumeFile: File | null;
   setResumeFile: (file: File | null) => void;
   uploadingResume: boolean;
@@ -96,6 +98,8 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
         editingCandidate={props.editingCandidate}
         form={props.newCandidate}
         setForm={props.setNewCandidate}
+        candidateFiles={props.candidateFiles}
+        setCandidateFiles={props.setCandidateFiles}
         resumeFile={props.resumeFile}
         setResumeFile={props.setResumeFile}
         uploadingResume={props.uploadingResume}
@@ -123,7 +127,8 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
         joinDate={props.onboardingJoinDate}
         setJoinDate={props.setOnboardingJoinDate}
         branches={props.branches}
-        movingToOnboarding={props.movingToOnboarding}
+        jobs={props.jobs}
+        moving={props.movingToOnboarding}
         onClose={() => props.setOnboardingModal(false)}
         onSubmit={props.handleMoveToOnboarding}
       />

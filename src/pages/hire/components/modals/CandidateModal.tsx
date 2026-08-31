@@ -7,8 +7,10 @@ interface CandidateModalProps {
   form: NewCandidateFormState;
   setForm: React.Dispatch<React.SetStateAction<NewCandidateFormState>>;
   jobs: Job[];
-  resumeFile: File | null;
-  setResumeFile: (file: File | null) => void;
+  candidateFiles?: File[];
+  setCandidateFiles?: React.Dispatch<React.SetStateAction<File[]>>;
+  resumeFile?: File | null;
+  setResumeFile?: (file: File | null) => void;
   uploadingResume: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -20,6 +22,8 @@ export const CandidateModal = memo(function CandidateModal({
   form,
   setForm,
   jobs,
+  candidateFiles = [],
+  setCandidateFiles,
   resumeFile,
   setResumeFile,
   uploadingResume,
@@ -27,6 +31,36 @@ export const CandidateModal = memo(function CandidateModal({
   onSubmit,
 }: CandidateModalProps) {
   if (!isOpen) return null;
+
+  const currentFiles: File[] = candidateFiles.length > 0
+    ? candidateFiles
+    : resumeFile
+    ? [resumeFile]
+    : [];
+
+  const handleAddFiles = (newFiles: FileList | null) => {
+    if (!newFiles) return;
+    const fileList = Array.from(newFiles);
+    if (setCandidateFiles) {
+      setCandidateFiles((prev) => [...prev, ...fileList]);
+    } else if (setResumeFile && fileList[0]) {
+      setResumeFile(fileList[0]);
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    if (setCandidateFiles) {
+      setCandidateFiles((prev) => prev.filter((_, i) => i !== index));
+    } else if (setResumeFile) {
+      setResumeFile(null);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   return (
     <div
@@ -144,16 +178,56 @@ export const CandidateModal = memo(function CandidateModal({
             </div>
           </div>
 
+          {/* Multiple Documents / Files Upload (AWS S3) */}
           <div>
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Resume Document (PDF / DOCX)
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                <span>Candidate Documents & Files</span>
+                <span className="bg-amber-100 text-amber-800 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md">
+                  AWS S3
+                </span>
+              </label>
+              <span className="text-[10px] text-gray-400 font-medium">Multiple files allowed</span>
+            </div>
+
+            <label className="border-2 border-dashed border-gray-200 hover:border-[#253C7D] hover:bg-slate-50/60 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all">
+              <i className="ri-upload-cloud-2-line text-2xl text-[#253C7D] mb-1" />
+              <p className="text-xs font-bold text-gray-700">Choose or drag candidate documents</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Resume, Portfolio, Certificates, ID (.pdf, .docx, .png, .jpg)</p>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.zip"
+                onChange={(e) => handleAddFiles(e.target.files)}
+                className="hidden"
+              />
             </label>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
-              className="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#253C7D]/10 file:text-[#253C7D] hover:file:bg-[#253C7D]/20 cursor-pointer"
-            />
+
+            {/* Selected files preview */}
+            {currentFiles.length > 0 && (
+              <div className="mt-2.5 space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                {currentFiles.map((file, idx) => (
+                  <div
+                    key={`${file.name}-${idx}`}
+                    className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200/70 rounded-xl text-xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <i className="ri-file-3-line text-[#253C7D] shrink-0 text-sm" />
+                      <span className="font-bold text-gray-800 truncate max-w-[240px]">{file.name}</span>
+                      <span className="text-[10px] text-gray-400 shrink-0">({formatFileSize(file.size)})</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(idx)}
+                      className="w-6 h-6 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                      title="Remove file"
+                    >
+                      <i className="ri-close-line text-sm" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
@@ -180,9 +254,18 @@ export const CandidateModal = memo(function CandidateModal({
             <button
               type="submit"
               disabled={uploadingResume || !form.full_name || !form.email || !form.job_posting_id}
-              className="px-5 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              className="px-5 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
             >
-              {uploadingResume ? "Uploading..." : editingCandidate ? "Save Changes" : "Add Candidate"}
+              {uploadingResume ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Uploading to AWS S3...</span>
+                </>
+              ) : editingCandidate ? (
+                "Save Changes"
+              ) : (
+                "Add Candidate"
+              )}
             </button>
           </div>
         </form>

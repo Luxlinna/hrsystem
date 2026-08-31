@@ -120,7 +120,7 @@ export function useHireData() {
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch, effectiveBranchId, visibleBranches, isSuperAdmin, isBranchAdmin, userBranchId, userBranchName, canHrReview, isHrDivisionBranch]);
+  }, [isPartnerBranchBlocked, targetBranch, effectiveBranchId, userBranchId, visibleBranches, isSuperAdmin, canHrReview, isHrDivisionBranch]);
 
   useEffect(() => {
     loadData();

@@ -23,6 +23,14 @@ export interface Job {
   branches?: { id: string; name: string };
 }
 
+export interface CandidateDocument {
+  name: string;
+  url: string;
+  size?: number;
+  type?: string;
+  uploaded_at?: string;
+}
+
 export interface Candidate {
   id: string;
   job_posting_id: string;
@@ -36,6 +44,7 @@ export interface Candidate {
   applied_at: string;
   resume_url: string | null;
   resume_name: string | null;
+  documents?: CandidateDocument[] | null;
   linkedin_url?: string | null;
   job_postings?: { id: string; title: string; department: string; branch_id?: string | null; branches?: { name: string } } | null;
 }

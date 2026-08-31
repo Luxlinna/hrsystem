@@ -40,6 +40,8 @@ export default function CandidateDetail() {
     updateStage,
     rateCandidate,
     uploadResume,
+    uploadDocuments,
+    deleteDocument,
     handleSaveNotes,
     handleSaveFeedback,
     handleScheduleInterview,
@@ -116,12 +118,14 @@ export default function CandidateDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Primary Column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* 1. Resume & Candidate Documents */}
+          {/* 1. Resume & Candidate Documents (AWS S3) */}
           <CandidateResumeCard
             candidate={candidate}
             uploadingResume={uploadingResume}
             fileInputRef={fileInputRef}
             onUploadResume={uploadResume}
+            onUploadDocuments={uploadDocuments}
+            onDeleteDocument={deleteDocument}
           />
 
           {/* 2. Interview History */}

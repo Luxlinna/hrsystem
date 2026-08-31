@@ -28,7 +28,7 @@ export function useHireModals({
   const [candidateModal, setCandidateModal] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
   const [newCandidate, setNewCandidate] = useState<NewCandidateFormState>(INITIAL_CANDIDATE_FORM);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [candidateFiles, setCandidateFiles] = useState<File[]>([]);
 
   const [interviewModal, setInterviewModal] = useState(false);
   const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
@@ -81,7 +81,7 @@ export function useHireModals({
       ...INITIAL_CANDIDATE_FORM,
       job_posting_id: defaultJobId || jobs[0]?.id || "",
     });
-    setResumeFile(null);
+    setCandidateFiles([]);
     setCandidateModal(true);
   }, [jobs]);
 
@@ -95,7 +95,7 @@ export function useHireModals({
       source: c.source || "Website",
       notes: c.notes || "",
     });
-    setResumeFile(null);
+    setCandidateFiles([]);
     setCandidateModal(true);
   }, []);
 
@@ -145,7 +145,9 @@ export function useHireModals({
     candidateModal, setCandidateModal,
     editingCandidate, setEditingCandidate,
     newCandidate, setNewCandidate,
-    resumeFile, setResumeFile,
+    candidateFiles, setCandidateFiles,
+    resumeFile: candidateFiles[0] || null,
+    setResumeFile: (f: File | null) => setCandidateFiles(f ? [f] : []),
     interviewModal, setInterviewModal,
     editingInterview, setEditingInterview,
     newInterview, setNewInterview,

@@ -9,9 +9,10 @@ interface CandidateCardProps {
   onUpdateStage: (id: string, stage: string) => void;
   onRate: (id: string, rating: number) => void;
   onMoveToOnboarding: (c: Candidate) => void;
-  onUploadResume: (id: string, file: File) => void;
-  onEdit: (c: Candidate) => void;
-  onDelete: (id: string, name: string) => void;
+  onUploadResume?: (id: string, file: File) => void;
+  onEdit?: (c: Candidate) => void;
+  onDelete?: (id: string, name: string) => void;
+  onScheduleInterview?: () => void;
 }
 
 export const CandidateCard = memo(function CandidateCard({

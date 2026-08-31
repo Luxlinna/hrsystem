@@ -72,7 +72,13 @@ export default function HirePage() {
 
       {h.tab !== "requests" && (
         <>
-          <HireStatsRow tab={h.tab} jobs={h.jobs} candidates={h.candidates} interviews={h.interviews} />
+          <HireStatsRow
+            activeJobsCount={h.jobs.filter((j) => j.status === "active").length || h.jobs.length}
+            candidatesCount={h.candidates.length}
+            interviewsCount={h.interviews.length}
+            hiredCount={h.candidates.filter((c) => c.stage === "hired").length}
+            onSelectTab={h.setTab}
+          />
           <HireFilterBar
             activeTab={h.tab}
             searchQuery={h.searchQuery}
@@ -110,9 +116,7 @@ export default function HirePage() {
           onCloseJob={h.closeJob}
           onReopenJob={h.reopenJob}
           onDeleteJob={h.deleteJob}
-          onAddCandidate={(jobId) => {
-            h.openCreateCandidate(jobId);
-          }}
+          onAddCandidate={(jobId) => h.openCreateCandidate(jobId)}
           onClearFilters={h.resetFilters}
           hasFilters={h.hasFilters}
         />
@@ -121,7 +125,6 @@ export default function HirePage() {
       {h.tab === "candidates" && (
         <CandidatesTabContent
           candidates={h.filteredCandidates}
-          jobs={h.jobs}
           viewMode={h.candidateViewMode}
           canManage={h.canRequest}
           onOpenCreate={() => h.openCreateCandidate()}
@@ -140,7 +143,10 @@ export default function HirePage() {
           onOpenCreateInterview={() => h.openCreateInterview()}
           onEditInterview={h.openEditInterview}
           onOpenFeedback={h.openFeedbackModal}
-          onDeleteInterview={h.deleteInterview}
+          onDeleteInterview={(id) => {
+            const match = h.interviews.find((i) => i.id === id);
+            if (match) h.deleteInterview(match);
+          }}
         />
       )}
 
@@ -148,12 +154,8 @@ export default function HirePage() {
         <div className="space-y-6">
           <PipelineKanbanView
             candidates={h.filteredCandidates}
-            jobs={h.jobs}
-            canManage={h.canRequest}
             onUpdateStage={h.updateCandidateStage}
-            onRate={h.rateCandidate}
             onMoveToOnboarding={h.openMoveToOnboarding}
-            onOpenInterview={(c) => h.openCreateInterview(c.id)}
           />
           <PipelineMetricsChart stageCounts={h.pipelineStageCounts} />
         </div>

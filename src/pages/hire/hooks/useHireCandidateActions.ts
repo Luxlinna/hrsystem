@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import { uploadFileToR2 } from "@/lib/r2-storage";
-import type { Candidate, Job, Interview } from "../types";
+import { uploadFileToS3, uploadMultipleFilesToS3 } from "@/lib/s3-storage";
+import type { Candidate, Job, Interview, CandidateDocument } from "../types";
 
 interface UseHireCandidateActionsProps {
   actorName: string;
@@ -35,10 +35,10 @@ export function useHireCandidateActions({
     async (file: File): Promise<string | null> => {
       setUploadingResume(true);
       try {
-        const path = `resumes/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-        return await uploadFileToR2(file, path);
+        const item = await uploadFileToS3(file, "candidates/resumes");
+        return item.url;
       } catch (err: any) {
-        toast("Upload Error", err.message || "Failed to upload resume.", "error");
+        toast("AWS S3 Upload Error", err.message || "Failed to upload resume to AWS S3.", "error");
         return null;
       } finally {
         setUploadingResume(false);
@@ -48,13 +48,44 @@ export function useHireCandidateActions({
   );
 
   const handleSaveCandidate = useCallback(
-    async (candidateForm: any, editingCandidate: Candidate | null, resumeFile: File | null) => {
+    async (
+      candidateForm: any,
+      editingCandidate: Candidate | null,
+      filesToUpload?: File[] | File | null
+    ) => {
       if (!candidateForm.full_name || !candidateForm.email || !candidateForm.job_posting_id) {
         toast("Validation Error", "Name, email, and job are required.", "error");
         return false;
       }
+      setUploadingResume(true);
       try {
-        const resumeUrl = resumeFile ? await uploadCandidateResume(resumeFile) : null;
+        const filesList: File[] = Array.isArray(filesToUpload)
+          ? filesToUpload
+          : filesToUpload
+          ? [filesToUpload]
+          : [];
+
+        let newDocs: CandidateDocument[] = [];
+        if (filesList.length > 0) {
+          const s3Items = await uploadMultipleFilesToS3(filesList, "candidates/documents");
+          newDocs = s3Items.map((item) => ({
+            name: item.name,
+            url: item.url,
+            size: item.size,
+            type: item.type,
+            uploaded_at: new Date().toISOString(),
+          }));
+        }
+
+        const existingDocs: CandidateDocument[] = editingCandidate?.documents || (
+          editingCandidate?.resume_url
+            ? [{ name: editingCandidate.resume_name || "Resume", url: editingCandidate.resume_url }]
+            : []
+        );
+
+        const allDocs = [...existingDocs, ...newDocs];
+        const primaryDoc = allDocs[0] || null;
+
         const payload: any = {
           full_name: candidateForm.full_name,
           email: candidateForm.email,
@@ -62,26 +93,30 @@ export function useHireCandidateActions({
           job_posting_id: candidateForm.job_posting_id,
           source: candidateForm.source,
           notes: candidateForm.notes || null,
-          ...(resumeUrl ? { resume_url: resumeUrl } : {}),
+          documents: allDocs,
+          ...(primaryDoc ? { resume_url: primaryDoc.url, resume_name: primaryDoc.name } : {}),
         };
+
         if (editingCandidate) {
           const { error } = await supabase.from("candidates").update(payload).eq("id", editingCandidate.id);
           if (error) throw error;
-          toast("Candidate Updated", `"${candidateForm.full_name}" saved.`, "success");
+          toast("Candidate Updated", `"${candidateForm.full_name}" saved with ${allDocs.length} file(s).`, "success");
         } else {
           payload.stage = "applied";
           const { error } = await supabase.from("candidates").insert(payload);
           if (error) throw error;
-          toast("Candidate Added", `"${candidateForm.full_name}" added to pipeline.`, "success");
+          toast("Candidate Added", `"${candidateForm.full_name}" added with ${allDocs.length} file(s).`, "success");
         }
         await loadData();
         return true;
       } catch (err: any) {
-        toast("Error", err.message || "Failed to save candidate.", "error");
+        toast("Error", err.message || "Failed to save candidate files to AWS S3.", "error");
         return false;
+      } finally {
+        setUploadingResume(false);
       }
     },
-    [uploadCandidateResume, loadData]
+    [loadData, setUploadingResume]
   );
 
   const handleSaveInterview = useCallback(

@@ -77,7 +77,7 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
               )}
               <span className="flex items-center gap-1.5">
                 <i className="ri-calendar-line text-gray-400" /> Applied{" "}
-                {new Date(candidate.created_at || Date.now()).toLocaleDateString("en-US", {
+                {new Date(candidate.applied_at || Date.now()).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                   year: "numeric",

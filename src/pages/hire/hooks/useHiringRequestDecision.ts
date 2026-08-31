@@ -288,7 +288,7 @@ export function useHiringRequestDecision({
         setProcessingDecision(false);
       }
     },
-    [targetRequest, decisionAction, rejectionReason, actorName, actorRole, loadData]
+    [targetRequest, decisionAction, rejectionReason, actorName, actorRole, userBranchName, loadData]
   );
 
   return {

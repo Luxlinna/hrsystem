@@ -71,7 +71,7 @@ export function useHireActions({
         setPostingJob(false);
       }
     },
-    [actorName, loadData, branches]
+    [loadData, branches]
   );
 
   const closeJob = useCallback(

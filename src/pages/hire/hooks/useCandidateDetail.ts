@@ -6,8 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { logActivity } from "@/lib/audit";
-import { uploadFileToR2 } from "@/lib/r2-storage";
-import type { Candidate, Interview } from "../types";
+import { uploadFileToS3, uploadMultipleFilesToS3 } from "@/lib/s3-storage";
+import type { Candidate, Interview, CandidateDocument } from "../types";
 import { STAGE_CONFIG } from "../constants";
 import { useCandidateDetailFeedback } from "./useCandidateDetailFeedback";
 
@@ -95,22 +95,90 @@ export function useCandidateDetail(id: string | undefined) {
     [id]
   );
 
-  const uploadResume = useCallback(
-    async (file: File) => {
-      if (!id) return;
+  const uploadDocuments = useCallback(
+    async (files: File[]) => {
+      if (!id || files.length === 0) return;
       setUploadingResume(true);
       try {
-        const url = await uploadFileToR2(file, "candidates/resumes");
-        await supabase.from("candidates").update({ resume_url: url, resume_name: file.name }).eq("id", id);
-        setCandidate((prev) => (prev ? { ...prev, resume_url: url, resume_name: file.name } : prev));
-        toast("Resume Uploaded", "Candidate resume attached successfully.", "success");
+        const s3Items = await uploadMultipleFilesToS3(files, "candidates/documents");
+        const newDocs: CandidateDocument[] = s3Items.map((item) => ({
+          name: item.name,
+          url: item.url,
+          size: item.size,
+          type: item.type,
+          uploaded_at: new Date().toISOString(),
+        }));
+
+        const existingDocs: CandidateDocument[] = candidate?.documents || (
+          candidate?.resume_url
+            ? [{ name: candidate.resume_name || "Resume", url: candidate.resume_url }]
+            : []
+        );
+
+        const allDocs = [...existingDocs, ...newDocs];
+        const primaryDoc = allDocs[0] || null;
+
+        await supabase.from("candidates").update({
+          documents: allDocs,
+          resume_url: primaryDoc?.url || null,
+          resume_name: primaryDoc?.name || null,
+        }).eq("id", id);
+
+        setCandidate((prev) => (prev ? {
+          ...prev,
+          documents: allDocs,
+          resume_url: primaryDoc?.url || null,
+          resume_name: primaryDoc?.name || null,
+        } : prev));
+
+        toast("Files Uploaded", `${files.length} document(s) saved to AWS S3.`, "success");
       } catch (err) {
-        toast("Upload Failed", err instanceof Error ? err.message : "Could not upload resume", "error");
+        toast("Upload Failed", err instanceof Error ? err.message : "Could not upload documents to AWS S3", "error");
       } finally {
         setUploadingResume(false);
       }
     },
-    [id]
+    [id, candidate]
+  );
+
+  const uploadResume = useCallback(
+    async (file: File) => {
+      await uploadDocuments([file]);
+    },
+    [uploadDocuments]
+  );
+
+  const deleteDocument = useCallback(
+    async (docUrl: string) => {
+      if (!id || !candidate) return;
+      const currentDocs = candidate.documents || (
+        candidate.resume_url
+          ? [{ name: candidate.resume_name || "Resume", url: candidate.resume_url }]
+          : []
+      );
+      const remaining = currentDocs.filter((d) => d.url !== docUrl);
+      const primaryDoc = remaining[0] || null;
+
+      try {
+        await supabase.from("candidates").update({
+          documents: remaining,
+          resume_url: primaryDoc?.url || null,
+          resume_name: primaryDoc?.name || null,
+        }).eq("id", id);
+
+        setCandidate((prev) => (prev ? {
+          ...prev,
+          documents: remaining,
+          resume_url: primaryDoc?.url || null,
+          resume_name: primaryDoc?.name || null,
+        } : prev));
+
+        toast("Document Removed", "File removed from candidate profile.", "success");
+      } catch (err) {
+        toast("Error", "Could not remove file", "error");
+      }
+    },
+    [id, candidate]
   );
 
   const handleSaveNotes = useCallback(async () => {
@@ -165,6 +233,8 @@ export function useCandidateDetail(id: string | undefined) {
     updateStage,
     rateCandidate,
     uploadResume,
+    uploadDocuments,
+    deleteDocument,
     handleSaveNotes,
     deleteCandidate,
     handleScheduleInterview: feedback.handleScheduleInterview,

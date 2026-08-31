@@ -9,6 +9,14 @@ export interface MediaItem {
   name: string;
 }
 
+export interface S3FileItem {
+  url: string;
+  name: string;
+  size: number;
+  type: string;
+  key: string;
+}
+
 async function getUploadUrl(key: string, contentType: string): Promise<{ uploadUrl: string; publicUrl: string }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Not authenticated");
@@ -57,6 +65,66 @@ export function getS3KeyFromUrl(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Upload a document or generic file to AWS S3.
+ * Preserves original file extension and MIME type.
+ */
+export async function uploadFileToS3(
+  file: File,
+  folder: string,
+  onProgress?: (pct: number) => void
+): Promise<S3FileItem> {
+  const isImage = file.type.startsWith("image/");
+  let uploadFile: File = file;
+  if (isImage) {
+    try {
+      const compressedBlob = await compressImage(file);
+      uploadFile = new File([compressedBlob], file.name, { type: file.type || "image/jpeg" });
+    } catch {
+      uploadFile = file;
+    }
+  }
+
+  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const key = `${folder}/${Date.now()}_${cleanName}`;
+
+  onProgress?.(15);
+  const { uploadUrl, publicUrl } = await getUploadUrl(key, uploadFile.type || "application/octet-stream");
+  onProgress?.(45);
+
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    body: uploadFile,
+    headers: { "Content-Type": uploadFile.type || "application/octet-stream" },
+  });
+  if (!res.ok) throw new Error("Failed to upload file to AWS S3");
+
+  onProgress?.(100);
+  return {
+    url: publicUrl,
+    name: file.name,
+    size: file.size,
+    type: file.type || "application/octet-stream",
+    key,
+  };
+}
+
+/**
+ * Upload multiple files to AWS S3 in sequence.
+ */
+export async function uploadMultipleFilesToS3(
+  files: File[],
+  folder: string,
+  onProgress?: (index: number, pct: number) => void
+): Promise<S3FileItem[]> {
+  const results: S3FileItem[] = [];
+  for (let i = 0; i < files.length; i++) {
+    const item = await uploadFileToS3(files[i], folder, (pct) => onProgress?.(i, pct));
+    results.push(item);
+  }
+  return results;
 }
 
 /**

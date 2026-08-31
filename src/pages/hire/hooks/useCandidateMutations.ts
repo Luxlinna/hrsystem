@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
-import { uploadFileToR2 } from "@/lib/r2-storage";
+import { uploadFileToS3 } from "@/lib/s3-storage";
 import { startOnboardingForEmployee } from "@/lib/onboarding";
 import type { Job, Candidate } from "../types";
 import { STAGE_CONFIG } from "../constants";
@@ -158,12 +158,34 @@ export function useCandidateMutations({
     async (candidateId: string, file: File) => {
       setUploadingResume(true);
       try {
-        const resume_url = await uploadFileToR2(file, "candidates/resumes");
-        await supabase.from("candidates").update({ resume_url, resume_name: file.name }).eq("id", candidateId);
-        toast("Resume uploaded", "Resume attached successfully.", "success");
+        const item = await uploadFileToS3(file, "candidates/resumes");
+        
+        // Fetch existing documents to append
+        const { data: cand } = await supabase.from("candidates").select("documents, resume_url, resume_name").eq("id", candidateId).maybeSingle();
+        const existingDocs = (cand as any)?.documents || (
+          (cand as any)?.resume_url
+            ? [{ name: (cand as any).resume_name || "Resume", url: (cand as any).resume_url }]
+            : []
+        );
+        const newDoc = {
+          name: item.name,
+          url: item.url,
+          size: item.size,
+          type: item.type,
+          uploaded_at: new Date().toISOString(),
+        };
+        const allDocs = [...existingDocs, newDoc];
+
+        await supabase.from("candidates").update({
+          resume_url: item.url,
+          resume_name: item.name,
+          documents: allDocs,
+        }).eq("id", candidateId);
+
+        toast("Resume uploaded", "Resume attached and stored in AWS S3 successfully.", "success");
         loadData();
       } catch (err) {
-        toast("Upload failed", err instanceof Error ? err.message : "Could not upload resume", "error");
+        toast("Upload failed", err instanceof Error ? err.message : "Could not upload resume to AWS S3", "error");
       } finally {
         setUploadingResume(false);
       }

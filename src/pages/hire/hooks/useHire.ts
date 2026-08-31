@@ -78,7 +78,7 @@ export function useHire() {
 
   const handleSaveCandidate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (await candidateActions.handleSaveCandidate(modals.newCandidate, modals.editingCandidate, modals.resumeFile)) modals.setCandidateModal(false);
+    if (await candidateActions.handleSaveCandidate(modals.newCandidate, modals.editingCandidate, modals.candidateFiles)) modals.setCandidateModal(false);
   }, [candidateActions, modals]);
 
   const handleSaveInterview = useCallback(async (e: React.FormEvent) => {
@@ -121,7 +121,9 @@ export function useHire() {
     pipelineStageCounts: filters.pipelineStageCounts,
     jobModal: modals.jobModal, setJobModal: modals.setJobModal, editingJob: modals.editingJob, newJob: modals.newJob, setNewJob: modals.setNewJob,
     candidateModal: modals.candidateModal, setCandidateModal: modals.setCandidateModal, editingCandidate: modals.editingCandidate,
-    newCandidate: modals.newCandidate, setNewCandidate: modals.setNewCandidate, resumeFile: modals.resumeFile, setResumeFile: modals.setResumeFile,
+    newCandidate: modals.newCandidate, setNewCandidate: modals.setNewCandidate,
+    candidateFiles: modals.candidateFiles, setCandidateFiles: modals.setCandidateFiles,
+    resumeFile: modals.resumeFile, setResumeFile: modals.setResumeFile,
     uploadingResume: actions.uploadingResume, interviewModal: modals.interviewModal, setInterviewModal: modals.setInterviewModal,
     editingInterview: modals.editingInterview, newInterview: modals.newInterview, setNewInterview: modals.setNewInterview,
     schedulingInterview: actions.schedulingInterview, onboardingModal: modals.onboardingModal, setOnboardingModal: modals.setOnboardingModal,
@@ -134,8 +136,6 @@ export function useHire() {
     setRequestForm: requests.setRequestForm, submittingRequest: requests.submittingRequest, decisionModal: requests.decisionModal,
     setDecisionModal: requests.setDecisionModal, targetRequest: requests.targetRequest, decisionAction: requests.decisionAction,
     rejectionReason: requests.rejectionReason, setRejectionReason: requests.setRejectionReason, processingDecision: requests.processingDecision,
-    canBranchApprove,
-    canHrReview,
     openCreateRequest: requests.openCreateRequest, openDecisionModal: requests.openDecisionModal, handleCreateRequest: requests.handleCreateRequest,
     handleDeleteRequest: requests.handleDeleteRequest, handleDecision: requests.handleDecision, handleAssignHrOfficer: requests.handleAssignHrOfficer,
     openCreateJob: modals.openCreateJob, openEditJob: modals.openEditJob,
