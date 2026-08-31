@@ -118,11 +118,13 @@ export function useCandidateDetail(id: string | undefined) {
         const allDocs = [...existingDocs, ...newDocs];
         const primaryDoc = allDocs[0] || null;
 
-        await supabase.from("candidates").update({
+        const { error } = await supabase.from("candidates").update({
           documents: allDocs,
           resume_url: primaryDoc?.url || null,
           resume_name: primaryDoc?.name || null,
         }).eq("id", id);
+
+        if (error) throw error;
 
         setCandidate((prev) => (prev ? {
           ...prev,
@@ -133,7 +135,8 @@ export function useCandidateDetail(id: string | undefined) {
 
         toast("Files Uploaded", `${files.length} document(s) saved to AWS S3.`, "success");
       } catch (err) {
-        toast("Upload Failed", err instanceof Error ? err.message : "Could not upload documents to AWS S3", "error");
+        console.error("Upload error:", err);
+        toast("Upload Failed", err instanceof Error ? err.message : (err as any)?.message || "Could not upload documents", "error");
       } finally {
         setUploadingResume(false);
       }
@@ -160,11 +163,13 @@ export function useCandidateDetail(id: string | undefined) {
       const primaryDoc = remaining[0] || null;
 
       try {
-        await supabase.from("candidates").update({
+        const { error } = await supabase.from("candidates").update({
           documents: remaining,
           resume_url: primaryDoc?.url || null,
           resume_name: primaryDoc?.name || null,
         }).eq("id", id);
+
+        if (error) throw error;
 
         setCandidate((prev) => (prev ? {
           ...prev,
@@ -174,8 +179,8 @@ export function useCandidateDetail(id: string | undefined) {
         } : prev));
 
         toast("Document Removed", "File removed from candidate profile.", "success");
-      } catch (err) {
-        toast("Error", "Could not remove file", "error");
+      } catch (err: any) {
+        toast("Error", err?.message || "Could not remove file", "error");
       }
     },
     [id, candidate]

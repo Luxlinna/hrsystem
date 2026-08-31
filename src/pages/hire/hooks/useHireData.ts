@@ -50,7 +50,10 @@ export function useHireData() {
         .is("deleted_at", null)
         .order("posted_at", { ascending: false });
 
-      if (targetBranch) {
+      // HR Division, HR Reviewers, and SuperAdmins have enterprise-wide recruitment authority
+      // (managing jobs, candidates, interviews, and candidate files across all branches).
+      // Regular branch managers are scoped to their own branch's vacancies.
+      if (targetBranch && !isSuperAdmin && !canHrReview && !isHrDivisionBranch) {
         jobQuery = jobQuery.or(`branch_id.eq.${targetBranch},branch_id.is.null`);
       }
 
