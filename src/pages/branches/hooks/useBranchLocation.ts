@@ -64,13 +64,21 @@ export function useBranchLocation({ showAddModal, setForm }: UseBranchLocationPr
     setLocating(true);
     try {
       const pos = await getCurrentPosition();
-      const lat = pos.latitude.toFixed(6);
-      const lng = pos.longitude.toFixed(6);
+      const rawLat = pos.coords?.latitude ?? (pos as any).latitude;
+      const rawLng = pos.coords?.longitude ?? (pos as any).longitude;
+      if (rawLat == null || rawLng == null) {
+        throw new Error("Unable to obtain GPS coordinates from your device.");
+      }
+      const lat = Number(rawLat).toFixed(6);
+      const lng = Number(rawLng).toFixed(6);
       setForm((f) => ({ ...f, latitude: lat, longitude: lng }));
       try {
-        const addr = await reverseGeocode(pos.latitude, pos.longitude);
-        setAddressLookup(addr);
-        setForm((f) => ({ ...f, location: f.location || addr, latitude: lat, longitude: lng }));
+        const addrResult = await reverseGeocode(Number(rawLat), Number(rawLng));
+        const addr = typeof addrResult === "string" ? addrResult : (addrResult as any)?.formattedAddress || "";
+        if (addr) {
+          setAddressLookup(addr);
+          setForm((f) => ({ ...f, location: f.location || addr, latitude: lat, longitude: lng }));
+        }
       } catch {
         // Reverse geocoding optional
       }

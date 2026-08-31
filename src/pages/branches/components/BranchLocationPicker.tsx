@@ -43,7 +43,7 @@ export const BranchLocationPicker = memo(function BranchLocationPicker({
         <input
           ref={addressInputRef}
           type="text"
-          value={addressLookup}
+          value={typeof addressLookup === "string" ? addressLookup : ""}
           onChange={(e) => setAddressLookup(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -57,7 +57,7 @@ export const BranchLocationPicker = memo(function BranchLocationPicker({
         <button
           type="button"
           onClick={onGeocodeAddress}
-          disabled={geocoding || !addressLookup.trim()}
+          disabled={geocoding || !(typeof addressLookup === "string" && addressLookup.trim())}
           className="px-3 py-2.5 border border-gray-200 rounded-lg text-[12px] font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60 cursor-pointer whitespace-nowrap"
         >
           {geocoding ? "Looking up..." : "Look up"}
