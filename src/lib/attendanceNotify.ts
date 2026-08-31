@@ -120,3 +120,42 @@ export async function notifyAttendanceEvent(input: AttendanceNotifyInput) {
     );
   }
 }
+
+export interface GeofenceEventInput {
+  employeeName: string;
+  employeeId: string;
+  branchName: string;
+  distanceMeters?: number;
+  radiusMeters?: number;
+  timeLabel?: string;
+  type: "left_perimeter" | "returned_perimeter";
+}
+
+export async function notifyGeofenceEvent(input: GeofenceEventInput) {
+  const isLeaving = input.type === "left_perimeter";
+  const emoji = isLeaving ? "🚨" : "🏢";
+  const label = isLeaving ? "GPS Alert: Left Workplace Perimeter" : "GPS Notice: Returned to Workplace";
+
+  const lines = [
+    `${emoji} <b>${label}</b>`,
+    "",
+    `👤 <b>Employee:</b> ${escapeHtml(input.employeeName)}`,
+    `🏢 <b>Branch:</b> ${escapeHtml(input.branchName)}`,
+  ];
+
+  if (input.timeLabel) {
+    lines.push(`🕒 <b>Time:</b> ${input.timeLabel}`);
+  }
+  if (isLeaving && input.distanceMeters) {
+    lines.push(`📍 <b>Distance:</b> ~${Math.round(input.distanceMeters)}m from office (Geofence: ${input.radiusMeters || 100}m)`);
+    lines.push(`⚠️ <b>Status:</b> Stepped outside company premises during active work hours`);
+  } else if (!isLeaving) {
+    lines.push(`✅ <b>Status:</b> Back inside company perimeter`);
+  }
+
+  const appUrl = (import.meta.env.VITE_APP_URL || "https://hrsystem-quit.onrender.com").replace(/\/$/, "");
+  sendTelegramMessage(lines.join("\n"), { text: "Open Attendance", url: `${appUrl}/attendance` }).catch((err) =>
+    console.warn("Telegram geofence notify failed:", err)
+  );
+}
+

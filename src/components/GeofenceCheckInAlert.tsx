@@ -5,6 +5,7 @@ import { distanceMeters } from "@/lib/geo";
 import { todayYMD, zonedParts, zonedDayOfWeek, zonedTimeToInstant } from "@/lib/date";
 import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows, computeHoursWorked } from "@/lib/workSchedule";
 import { useAuth } from "@/context/AuthContext";
+import { notifyGeofenceEvent } from "@/lib/attendanceNotify";
 
 interface BranchGeofence {
   name: string;
@@ -13,7 +14,7 @@ interface BranchGeofence {
   geofence_radius_m: number;
 }
 
-type Mode = "checkin" | "checkout" | "auto_checkout";
+type Mode = "checkin" | "checkout" | "auto_checkout" | "outside_warning" | "returned_notice";
 
 // Check-in window in the morning
 const CHECKIN_WINDOW = { startMin: 7 * 60, endMin: 11 * 60 + 59 };
@@ -30,6 +31,7 @@ export default function GeofenceCheckInAlert() {
   const alertedModesRef = useRef<Set<string>>(new Set());
   const watchIdRef = useRef<number | null>(null);
   const autoCheckedOutRef = useRef(false);
+  const geoPresenceRef = useRef<"inside" | "outside" | null>(null);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -41,12 +43,13 @@ export default function GeofenceCheckInAlert() {
 
       const { data: employee } = await supabase
         .from("employees")
-        .select("id, branches(name, latitude, longitude, geofence_radius_m)")
+        .select("id, first_name, last_name, branches(name, latitude, longitude, geofence_radius_m)")
         .eq("email", user.email)
         .maybeSingle();
       if (cancelled || !employee) return;
 
       const branch = (employee as any).branches as BranchGeofence | undefined;
+      const employeeName = `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || user.email || "Employee";
 
       // Skip alerts if employee has outside work scheduled or active today
       const { data: outsideTasks } = await supabase
@@ -88,6 +91,9 @@ export default function GeofenceCheckInAlert() {
       }
       if (localStorage.getItem(dedupeKey("auto_checkout"))) {
         autoCheckedOutRef.current = true;
+      }
+      if (!geoPresenceRef.current) {
+        geoPresenceRef.current = (localStorage.getItem(dedupeKey("geo_presence")) as "inside" | "outside") || null;
       }
 
       const nowZ = zonedParts(new Date(), scheduleSettings.timezone);
@@ -162,29 +168,91 @@ export default function GeofenceCheckInAlert() {
         }
       }
 
-      // 3. Geofence Location Watch (if location is available)
+      // 3. Geofence Location Watch (if location and branch coordinates are available)
       if (branch?.latitude && branch?.longitude && navigator.geolocation && !watchIdRef.current) {
         watchIdRef.current = navigator.geolocation.watchPosition(
           (pos) => {
             const dist = distanceMeters(pos.coords.latitude, pos.coords.longitude, branch.latitude!, branch.longitude!);
-            if (dist > branch.geofence_radius_m) return;
+            const radius = branch.geofence_radius_m || 100;
 
-            if (!hasClockedIn && !alertedModesRef.current.has("checkin_geo") && !localStorage.getItem(dedupeKey("checkin_geo"))) {
-              const mins = zonedParts(new Date(), scheduleSettings.timezone).minutesOfDay;
-              if (mins >= CHECKIN_WINDOW.startMin && mins <= CHECKIN_WINDOW.endMin) {
-                alertedModesRef.current.add("checkin_geo");
-                localStorage.setItem(dedupeKey("checkin_geo"), "1");
-                setAlertState({
-                  branchName: branch.name,
-                  mode: "checkin",
-                  title: `You're near ${branch.name}`,
-                  message: "Tap to check in now.",
-                });
+            // (A) Pre-Checkin Reminder in Morning
+            if (!hasClockedIn && dist <= radius) {
+              if (!alertedModesRef.current.has("checkin_geo") && !localStorage.getItem(dedupeKey("checkin_geo"))) {
+                const mins = zonedParts(new Date(), scheduleSettings.timezone).minutesOfDay;
+                if (mins >= CHECKIN_WINDOW.startMin && mins <= CHECKIN_WINDOW.endMin) {
+                  alertedModesRef.current.add("checkin_geo");
+                  localStorage.setItem(dedupeKey("checkin_geo"), "1");
+                  setAlertState({
+                    branchName: branch.name,
+                    mode: "checkin",
+                    title: `You're near ${branch.name}`,
+                    message: "Tap to check in now.",
+                  });
+                }
+              }
+            }
+
+            // (B) Active Shift GPS Departure & Return Tracking
+            if (hasClockedIn && !hasClockedOut) {
+              const now = new Date();
+              const timeLabel = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+
+              if (dist > radius) {
+                // Stepped outside company perimeter
+                if (geoPresenceRef.current !== "outside" && localStorage.getItem(dedupeKey("geo_presence")) !== "outside") {
+                  geoPresenceRef.current = "outside";
+                  localStorage.setItem(dedupeKey("geo_presence"), "outside");
+
+                  notifyGeofenceEvent({
+                    employeeName,
+                    employeeId: employee.id,
+                    branchName: branch.name,
+                    distanceMeters: dist,
+                    radiusMeters: radius,
+                    timeLabel,
+                    type: "left_perimeter",
+                  });
+
+                  setAlertState({
+                    branchName: branch.name,
+                    mode: "outside_warning",
+                    title: "Outside Workplace Perimeter",
+                    message: `${employeeName} left ${branch.name} at ${timeLabel} (~${Math.round(dist)}m away).`,
+                  });
+                }
+              } else {
+                // Returned back inside company perimeter
+                if (geoPresenceRef.current === "outside" || localStorage.getItem(dedupeKey("geo_presence")) === "outside") {
+                  geoPresenceRef.current = "inside";
+                  localStorage.setItem(dedupeKey("geo_presence"), "inside");
+
+                  notifyGeofenceEvent({
+                    employeeName,
+                    employeeId: employee.id,
+                    branchName: branch.name,
+                    distanceMeters: dist,
+                    radiusMeters: radius,
+                    timeLabel,
+                    type: "returned_perimeter",
+                  });
+
+                  setAlertState({
+                    branchName: branch.name,
+                    mode: "returned_notice",
+                    title: `Welcome Back, ${employeeName}!`,
+                    message: `Returned to ${branch.name} at ${timeLabel}. You are now back inside company perimeter.`,
+                  });
+
+                  // Auto dismiss return banner after 10 seconds
+                  setTimeout(() => {
+                    setAlertState((curr) => (curr?.mode === "returned_notice" ? null : curr));
+                  }, 10000);
+                }
               }
             }
           },
           () => {},
-          { enableHighAccuracy: true, maximumAge: 30000, timeout: 20000 }
+          { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 }
         );
       }
     };
@@ -206,19 +274,36 @@ export default function GeofenceCheckInAlert() {
 
   const isCheckin = alertState.mode === "checkin";
   const isAuto = alertState.mode === "auto_checkout";
+  const isOutside = alertState.mode === "outside_warning";
+  const isReturned = alertState.mode === "returned_notice";
   const link = isCheckin ? "/self-service?tab=checkin&quickCheckIn=1" : "/self-service?tab=checkin&quickCheckOut=1";
 
+  const getBgColor = () => {
+    if (isAuto) return "bg-amber-600";
+    if (isOutside) return "bg-rose-600";
+    if (isReturned) return "bg-emerald-600";
+    return "bg-[#253C7D]";
+  };
+
+  const getIcon = () => {
+    if (isAuto) return "ri-time-line text-xl";
+    if (isCheckin) return "ri-map-pin-user-line text-xl";
+    if (isOutside) return "ri-map-pin-distance-line text-xl";
+    if (isReturned) return "ri-checkbox-circle-line text-xl";
+    return "ri-logout-box-r-line text-xl";
+  };
+
   return (
-    <div className="fixed bottom-20 lg:bottom-5 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-md">
-      <div className={`${isAuto ? "bg-amber-600" : "bg-[#253C7D]"} text-white rounded-2xl shadow-2xl px-4 py-3.5 flex items-center gap-3 border border-white/20 backdrop-blur-md`}>
+    <div className="fixed bottom-20 lg:bottom-5 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-md animate-in slide-in-from-bottom-4 duration-200">
+      <div className={`${getBgColor()} text-white rounded-2xl shadow-2xl px-4 py-3.5 flex items-center gap-3 border border-white/20 backdrop-blur-md`}>
         <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-          <i className={`${isAuto ? "ri-time-line text-xl" : isCheckin ? "ri-map-pin-user-line text-xl" : "ri-logout-box-r-line text-xl"}`} />
+          <i className={getIcon()} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-bold leading-snug">{alertState.title}</p>
           <p className="text-[11px] text-white/80 leading-relaxed mt-0.5">{alertState.message}</p>
         </div>
-        {!isAuto && (
+        {(isCheckin || alertState.mode === "checkout") && (
           <button
             onClick={() => {
               setAlertState(null);
@@ -236,3 +321,4 @@ export default function GeofenceCheckInAlert() {
     </div>
   );
 }
+
