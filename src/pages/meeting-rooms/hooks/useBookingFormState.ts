@@ -48,6 +48,10 @@ export function useBookingFormState({
 
   const openBookModal = useCallback(
     (room?: MeetingRoom, date?: string, startTime?: string) => {
+      if (rooms.length === 0) {
+        showToast("info", "No meeting rooms are available in this branch yet. Please create a new room first.");
+        return;
+      }
       const targetRoom = room || rooms[0] || null;
       const start = startTime || "14:00";
       const end = addMinutesToTime(start, 120);
@@ -65,7 +69,7 @@ export function useBookingFormState({
         custom_refreshments: "",
       });
     },
-    [rooms, selectedDate]
+    [rooms, selectedDate, showToast]
   );
 
   const openEditModal = useCallback(

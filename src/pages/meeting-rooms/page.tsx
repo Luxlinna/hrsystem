@@ -5,6 +5,7 @@ import { MeetingRoomsFilterBar } from "./components/MeetingRoomsFilterBar";
 import { TimelineViewContent } from "./components/timeline/TimelineViewContent";
 import { MonthViewContent } from "./components/month/MonthViewContent";
 import { RoomsCardsViewContent } from "./components/cards/RoomsCardsViewContent";
+import { PendingBookingsQueue } from "./components/PendingBookingsQueue";
 import { MeetingRoomsModalsContainer } from "./components/modals/MeetingRoomsModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useMeetingRooms } from "./hooks/useMeetingRooms";
@@ -61,6 +62,9 @@ export default function MeetingRoomsPage() {
       <MeetingRoomsHeader
         viewMode={m.viewMode}
         setViewMode={m.setViewMode}
+        bookings={m.bookings}
+        rooms={m.rooms}
+        selectedDate={m.selectedDate}
         onOpenBookModal={() => m.openBookModal()}
         canManageRooms={m.canApprove}
         onCreateRoom={() => setCreateRoomOpen(true)}
@@ -74,6 +78,7 @@ export default function MeetingRoomsPage() {
         pendingCount={m.pendingCount}
         onFilterFloor={m.setFilterFloor}
         onSelectStatusTab={m.setStatusTab}
+        onJumpToToday={m.jumpToToday}
       />
 
       <MeetingRoomsFilterBar
@@ -92,37 +97,68 @@ export default function MeetingRoomsPage() {
         setSearchQuery={m.setSearchQuery}
       />
 
-      {m.viewMode === "timeline" && (
-        <TimelineViewContent
-          rooms={m.filteredRooms}
-          bookings={m.activeDateBookings}
-          onOpenBookModal={(room, start) => m.openBookModal(room, m.selectedDate, start)}
-          onSelectBooking={m.setSelectedBooking}
-        />
-      )}
-
-      {m.viewMode === "month" && (
-        <MonthViewContent
-          selectedDate={m.selectedDate}
-          setSelectedDate={m.setSelectedDate}
-          onShiftMonth={m.shiftMonth}
-          onJumpToToday={m.jumpToToday}
+      {m.statusTab === "pending" ? (
+        <PendingBookingsQueue
           bookings={m.bookings}
           rooms={m.rooms}
           onSelectBooking={m.setSelectedBooking}
-          onOpenBookModal={() => m.openBookModal(undefined, m.selectedDate)}
+          onJumpToBookingDate={(dateStr) => {
+            m.setSelectedDate(dateStr);
+            m.setStatusTab("all");
+            m.setViewMode("timeline");
+          }}
+          canApprove={m.canApprove}
         />
-      )}
+      ) : (
+        <>
+          {m.viewMode === "timeline" && (
+            <TimelineViewContent
+              rooms={m.filteredRooms}
+              bookings={m.activeDateBookings}
+              onOpenBookModal={(room, start) => m.openBookModal(room, m.selectedDate, start)}
+              onSelectBooking={m.setSelectedBooking}
+              onResetFilters={() => {
+                m.setFilterFloor("all");
+                m.setFilterRoomId("all");
+                m.setSearchQuery("");
+              }}
+              onCreateRoom={() => setCreateRoomOpen(true)}
+              canManageRooms={m.canApprove}
+              totalRoomsCount={m.rooms.length}
+            />
+          )}
 
-      {m.viewMode === "cards" && (
-        <RoomsCardsViewContent
-          rooms={m.filteredRooms}
-          bookings={m.bookings}
-          onOpenBookModal={(room) => m.openBookModal(room, m.selectedDate)}
-          onSelectBooking={m.setSelectedBooking}
-          canManageRooms={m.canApprove}
-          onDeleteRoom={m.deleteRoom}
-        />
+          {m.viewMode === "month" && (
+            <MonthViewContent
+              selectedDate={m.selectedDate}
+              setSelectedDate={m.setSelectedDate}
+              onShiftMonth={m.shiftMonth}
+              onJumpToToday={m.jumpToToday}
+              bookings={m.bookings}
+              rooms={m.rooms}
+              onSelectBooking={m.setSelectedBooking}
+              onOpenBookModal={() => m.openBookModal(undefined, m.selectedDate)}
+            />
+          )}
+
+          {m.viewMode === "cards" && (
+            <RoomsCardsViewContent
+              rooms={m.filteredRooms}
+              bookings={m.bookings}
+              onOpenBookModal={(room) => m.openBookModal(room, m.selectedDate)}
+              onSelectBooking={m.setSelectedBooking}
+              canManageRooms={m.canApprove}
+              onDeleteRoom={m.deleteRoom}
+              onResetFilters={() => {
+                m.setFilterFloor("all");
+                m.setFilterRoomId("all");
+                m.setSearchQuery("");
+              }}
+              onCreateRoom={() => setCreateRoomOpen(true)}
+              totalRoomsCount={m.rooms.length}
+            />
+          )}
+        </>
       )}
 
       <MeetingRoomsModalsContainer

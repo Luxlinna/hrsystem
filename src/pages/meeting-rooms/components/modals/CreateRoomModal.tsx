@@ -11,6 +11,8 @@ interface Props {
   showToast: (type: string, message: string) => void;
   branchId?: string | null;
   branchName?: string;
+  branches?: { id: string; name: string }[];
+  isSuperAdmin?: boolean;
 }
 
 const FLOOR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -22,8 +24,11 @@ export const CreateRoomModal = memo(function CreateRoomModal({
   showToast,
   branchId,
   branchName,
+  branches = [],
+  isSuperAdmin = false,
 }: Props) {
   const [saving, setSaving] = useState(false);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(() => branchId || (branches[0]?.id || ""));
   const [name, setName] = useState("");
   const [capacity, setCapacity] = useState(10);
   const [floor, setFloor] = useState<number>(3);
@@ -40,6 +45,7 @@ export const CreateRoomModal = memo(function CreateRoomModal({
     setColor(COLOR_PRESETS[0]); setCustomColor("");
     setSelectedAmenities(["4K Display TV", "High-speed Wi-Fi", "AC Climate"]);
     setCustomAmenity("");
+    setSelectedBranchId(branchId || (branches[0]?.id || ""));
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -58,6 +64,11 @@ export const CreateRoomModal = memo(function CreateRoomModal({
 
   const handleSubmit = async () => {
     if (!name.trim()) return showToast("error", "Room name is required.");
+    const finalBranchId = selectedBranchId || branchId;
+    if (!finalBranchId) {
+      return showToast("error", "Branch assignment is required to create a room.");
+    }
+
     setSaving(true);
     try {
       const payload: any = {
@@ -66,13 +77,15 @@ export const CreateRoomModal = memo(function CreateRoomModal({
         floor,
         color: customColor || color,
         amenities: selectedAmenities,
+        branch_id: finalBranchId,
       };
-      if (branchId) {
-        payload.branch_id = branchId;
-      }
+
       const { error } = await supabase.from("meeting_rooms").insert(payload);
       if (error) throw error;
-      showToast("success", `Room "${name.trim()}" created successfully${branchName ? ` for ${branchName}` : ""}!`);
+      
+      const assignedBranchObj = branches.find((b) => b.id === finalBranchId);
+      const displayBranchName = assignedBranchObj?.name || branchName;
+      showToast("success", `Room "${name.trim()}" created successfully for ${displayBranchName || "your branch"}!`);
       reset();
       onCreated();
       onClose();
@@ -100,6 +113,32 @@ export const CreateRoomModal = memo(function CreateRoomModal({
         </div>
 
         <div className="space-y-3.5">
+          {isSuperAdmin && branches.length > 1 ? (
+            <div>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                Branch Location <span className="text-rose-500">*</span>
+              </label>
+              <select
+                value={selectedBranchId}
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              >
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-blue-50/70 border border-blue-100 rounded-2xl text-xs text-blue-950 font-medium">
+              <i className="ri-building-line text-[#253C7D] text-base" />
+              <span>
+                Creating for Branch: <strong className="text-[#253C7D] font-bold">{branchName || "Current Branch"}</strong>
+              </span>
+            </div>
+          )}
+
           <div>
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
               Room Name <span className="text-rose-500">*</span>

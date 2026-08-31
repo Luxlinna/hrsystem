@@ -1,8 +1,13 @@
 import { memo } from "react";
+import type { Booking, MeetingRoom } from "../types";
+import { MeetingRoomsExportMenu } from "./MeetingRoomsExportMenu";
 
 interface MeetingRoomsHeaderProps {
   viewMode: "timeline" | "month" | "cards";
   setViewMode: (mode: "timeline" | "month" | "cards") => void;
+  bookings: Booking[];
+  rooms: MeetingRoom[];
+  selectedDate?: string;
   onOpenBookModal: () => void;
   onCreateRoom?: () => void;
   canManageRooms?: boolean;
@@ -11,6 +16,9 @@ interface MeetingRoomsHeaderProps {
 export const MeetingRoomsHeader = memo(function MeetingRoomsHeader({
   viewMode,
   setViewMode,
+  bookings,
+  rooms,
+  selectedDate,
   onOpenBookModal,
   onCreateRoom,
   canManageRooms,
@@ -54,6 +62,13 @@ export const MeetingRoomsHeader = memo(function MeetingRoomsHeader({
           <i className="ri-calendar-check-line text-base" />
           <span>Book Meeting Room</span>
         </button>
+
+        {/* Export Menu */}
+        <MeetingRoomsExportMenu
+          bookings={bookings}
+          rooms={rooms}
+          selectedDate={selectedDate}
+        />
 
         {/* New Room Button — admins/approvers only */}
         {canManageRooms && onCreateRoom && (

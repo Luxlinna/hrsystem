@@ -39,6 +39,10 @@ interface MeetingRoomsModalsContainerProps {
   setCreateRoomOpen: (val: boolean) => void;
   targetBranch?: string | null;
   userBranchName?: string | null;
+  effectiveBranchName?: string | null;
+  branches?: any[];
+  visibleBranches?: any[];
+  isSuperAdmin?: boolean;
 }
 
 export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsContainer({
@@ -70,6 +74,10 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
   setCreateRoomOpen,
   targetBranch,
   userBranchName,
+  effectiveBranchName,
+  branches,
+  visibleBranches,
+  isSuperAdmin,
 }: MeetingRoomsModalsContainerProps) {
   return (
     <>
@@ -138,7 +146,9 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
         onCreated={() => loadRooms()}
         showToast={(type, msg) => showToast(type as any, msg)}
         branchId={targetBranch}
-        branchName={userBranchName || undefined}
+        branchName={effectiveBranchName || userBranchName || undefined}
+        branches={visibleBranches || branches}
+        isSuperAdmin={isSuperAdmin}
       />
     </>
   );

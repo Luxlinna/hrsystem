@@ -10,7 +10,17 @@ import { toYMD } from "../roomUtils";
 export function useMeetingRoomsData(selectedDate: string) {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
-  const { isSuperAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
+  const {
+    isSuperAdmin,
+    effectiveBranchId,
+    effectiveBranchName,
+    userBranchId,
+    userBranchName,
+    targetBranch,
+    isPartnerBranchBlocked,
+    visibleBranches,
+    branches,
+  } = useBranchScope();
 
   const canApprove = Boolean(
     (isAdmin ||
@@ -43,11 +53,10 @@ export function useMeetingRoomsData(selectedDate: string) {
       return;
     }
 
-    // Filter rooms for this specific branch
-    const branchSpecificRooms = (data || []).filter((r: any) => r.branch_id === targetBranch);
-    const roomsToEnrich = branchSpecificRooms.length > 0
-      ? branchSpecificRooms
-      : (data || []).filter((r: any) => !r.branch_id);
+    // Rooms belonging to this branch, plus legacy global rooms (branch_id is null)
+    const roomsToEnrich = (data || []).filter(
+      (r: any) => r.branch_id === targetBranch || !r.branch_id
+    );
 
     const enrichedRooms: MeetingRoom[] = roomsToEnrich.map((r: any) => {
       const floor = r.floor || ROOM_FLOORS[r.name] || (r.name.toLowerCase().includes("vip") ? 5 : 3);
@@ -179,7 +188,10 @@ export function useMeetingRoomsData(selectedDate: string) {
     isPartnerBranchBlocked,
     userBranchId,
     userBranchName,
+    effectiveBranchName,
     targetBranch,
+    branches,
+    visibleBranches,
     canApprove,
     rooms,
     bookings,
