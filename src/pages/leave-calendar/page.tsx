@@ -10,14 +10,9 @@ import { UpcomingLeavesWidget } from "./components/widgets/UpcomingLeavesWidget"
 import { LeaveCalendarModalsContainer } from "./components/modals/LeaveCalendarModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useLeaveCalendar } from "./hooks/useLeaveCalendar";
-import { exportCalendarCSV } from "./exportUtils";
 
 export default function LeaveCalendar() {
   const c = useLeaveCalendar();
-
-  const handleExportCSV = useCallback(() => {
-    exportCalendarCSV(c.filteredLeaves, c.month, c.year);
-  }, [c.filteredLeaves, c.month, c.year]);
 
   if (c.loading) {
     return (
@@ -33,7 +28,9 @@ export default function LeaveCalendar() {
         <CalendarHeader
           viewMode={c.viewMode}
           setViewMode={c.setViewMode}
-          onExportCSV={() => {}}
+          filteredLeaves={[]}
+          month={c.month}
+          year={c.year}
           onOpenQuickRequest={() => {}}
         />
         <PartnerBranchPrivacyShield
@@ -73,7 +70,9 @@ export default function LeaveCalendar() {
       <CalendarHeader
         viewMode={c.viewMode}
         setViewMode={c.setViewMode}
-        onExportCSV={handleExportCSV}
+        filteredLeaves={c.filteredLeaves}
+        month={c.month}
+        year={c.year}
         onOpenQuickRequest={() => c.setShowRequestModal(true)}
       />
 

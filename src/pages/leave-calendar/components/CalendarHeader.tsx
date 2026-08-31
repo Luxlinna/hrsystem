@@ -1,16 +1,22 @@
 import { memo } from "react";
+import type { LeaveRequest } from "../types";
+import { CalendarExportMenu } from "./CalendarExportMenu";
 
 interface CalendarHeaderProps {
   viewMode: "month" | "timeline" | "agenda";
   setViewMode: (mode: "month" | "timeline" | "agenda") => void;
-  onExportCSV: () => void;
+  filteredLeaves: LeaveRequest[];
+  month: number;
+  year: number;
   onOpenQuickRequest: () => void;
 }
 
 export const CalendarHeader = memo(function CalendarHeader({
   viewMode,
   setViewMode,
-  onExportCSV,
+  filteredLeaves,
+  month,
+  year,
   onOpenQuickRequest,
 }: CalendarHeaderProps) {
   return (
@@ -21,7 +27,7 @@ export const CalendarHeader = memo(function CalendarHeader({
             Schedule & Availability
           </span>
           <span className="text-gray-300">&bull;</span>
-          <span className="text-xs text-gray-505 font-medium flex items-center gap-1">
+          <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
             <i className="ri-time-line text-gray-400" />
             Live Sync
           </span>
@@ -46,13 +52,11 @@ export const CalendarHeader = memo(function CalendarHeader({
             <span>Request Leave</span>
           </button>
 
-          <button
-            onClick={onExportCSV}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-extrabold rounded-xl shadow-2xs transition-all cursor-pointer"
-          >
-            <i className="ri-download-2-line text-sm text-gray-500" />
-            <span>Export Schedule</span>
-          </button>
+          <CalendarExportMenu
+            filteredLeaves={filteredLeaves}
+            month={month}
+            year={year}
+          />
         </div>
 
         {/* View Switcher */}

@@ -46,9 +46,11 @@ export default function Shifts() {
             kpiCoveragePercentage={shiftsState.kpiCoveragePercentage}
             weekDates={shiftsState.weekDates}
             weekShiftsCount={shiftsState.weekShifts.length}
+            filteredShifts={shiftsState.filteredShifts}
+            assignments={shiftsState.assignments}
+            currentDate={shiftsState.currentDate}
             onOpenWorkload={() => shiftsState.setShowWorkloadDrawer(true)}
             onOpenCopyWeek={() => shiftsState.setShowCopyWeekModal(true)}
-            onExportCSV={shiftsState.handleExportCSV}
             onOpenCreate={() => shiftsState.openCreateModal()}
           />
 

@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
+import type { Shift, ShiftAssignment } from "../types";
 import { formatDate } from "../utils";
+import { ShiftExportMenu } from "./ShiftExportMenu";
 
 interface ShiftHeaderProps {
   kpiTotalShiftsThisWeek: number;
@@ -8,9 +10,11 @@ interface ShiftHeaderProps {
   kpiCoveragePercentage: number;
   weekDates: Date[];
   weekShiftsCount: number;
+  filteredShifts: Shift[];
+  assignments: ShiftAssignment[];
+  currentDate: Date;
   onOpenWorkload: () => void;
   onOpenCopyWeek: () => void;
-  onExportCSV: () => void;
   onOpenCreate: () => void;
 }
 
@@ -20,9 +24,11 @@ export const ShiftHeader = memo(function ShiftHeader({
   kpiCoveragePercentage,
   weekDates,
   weekShiftsCount,
+  filteredShifts,
+  assignments,
+  currentDate,
   onOpenWorkload,
   onOpenCopyWeek,
-  onExportCSV,
   onOpenCreate,
 }: ShiftHeaderProps) {
   return (
@@ -64,14 +70,11 @@ export const ShiftHeader = memo(function ShiftHeader({
           <span>Copy Week ({weekShiftsCount})</span>
         </button>
 
-        <button
-          onClick={onExportCSV}
-          title="Export schedule to CSV"
-          className="inline-flex items-center gap-1.5 border border-gray-200 bg-white text-gray-700 px-3 py-2.5 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
-        >
-          <i className="ri-download-2-line text-xs text-gray-500" />
-          <span>Export</span>
-        </button>
+        <ShiftExportMenu
+          filteredShifts={filteredShifts}
+          assignments={assignments}
+          currentDate={currentDate}
+        />
 
         <button
           onClick={onOpenCreate}
