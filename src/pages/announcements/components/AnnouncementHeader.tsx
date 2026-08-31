@@ -1,17 +1,20 @@
 import { memo } from "react";
+import type { Announcement } from "../types";
+import { AnnouncementExportMenu } from "./AnnouncementExportMenu";
 
 interface AnnouncementHeaderProps {
   publishedCount: number;
   canManage: boolean;
-  onExportCSV: () => void;
+  onExportCSV?: () => void;
   onOpenCreateModal: () => void;
+  announcements?: Announcement[];
 }
 
 export const AnnouncementHeader = memo(function AnnouncementHeader({
   publishedCount,
   canManage,
-  onExportCSV,
   onOpenCreateModal,
+  announcements = [],
 }: AnnouncementHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -34,13 +37,8 @@ export const AnnouncementHeader = memo(function AnnouncementHeader({
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2.5 flex-wrap">
-        <button
-          onClick={onExportCSV}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-        >
-          <i className="ri-file-excel-2-line text-emerald-600 text-sm" />
-          Export Feed
-        </button>
+        {/* 3-Format Export Dropdown */}
+        <AnnouncementExportMenu announcements={announcements} />
 
         {canManage && (
           <button

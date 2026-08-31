@@ -41,8 +41,8 @@ export default function Announcements() {
       <AnnouncementHeader
         publishedCount={data.announcements.length}
         canManage={canManage}
-        onExportCSV={filters.handleExportCSV}
         onOpenCreateModal={openCreateModal}
+        announcements={filters.filtered}
       />
 
       <MetricCards
