@@ -29,29 +29,22 @@ export function usePermissions(): UsePermissionsReturn {
       return;
     }
 
-    // 2. Strict Employee Directory Enforcement:
-    // Every non-bootstrap user must be an active, registered employee of a valid branch.
+    const cleanEmail = currentUser.email?.trim().toLowerCase() || "";
+
+    // 2. Employee Directory Status Check:
     const { data: empCheck } = await supabase
       .from("employees")
       .select("id, status, deleted_at, branch_id, branches(id, status, deleted_at)")
-      .eq("email", currentUser.email?.toLowerCase() || "")
+      .ilike("email", cleanEmail)
       .is("deleted_at", null)
       .maybeSingle();
 
-    if (!empCheck) {
-      // User is not in the Employee Directory -> Deny all access
-      cachedRole = null;
-      cachedUid = currentUser.id;
-      setRole(null);
-      setLoading(false);
-      return;
-    }
-
-    const isEmpInactive = empCheck.status === "inactive" || empCheck.status === "terminated";
+    const isEmpInactive = empCheck && (empCheck.status === "inactive" || empCheck.status === "terminated");
     const isBranchInvalid =
-      !empCheck.branch_id ||
-      (empCheck.branches as any)?.deleted_at !== null ||
-      (empCheck.branches as any)?.status === "inactive";
+      empCheck &&
+      empCheck.branch_id &&
+      ((empCheck.branches as any)?.deleted_at !== null ||
+       (empCheck.branches as any)?.status === "inactive");
 
     if (isEmpInactive || isBranchInvalid) {
       cachedRole = null;
@@ -65,7 +58,7 @@ export function usePermissions(): UsePermissionsReturn {
     const { data, error } = await supabase
       .from("user_role_assignments")
       .select("*, app_roles(*)")
-      .or(`user_id.eq.${currentUser.id},email.eq.${currentUser.email?.toLowerCase() || ""}`)
+      .or(`user_id.eq.${currentUser.id},email.ilike.${cleanEmail}`)
       .is("deleted_at", null)
       .order("user_id", { nullsFirst: false })
       .limit(1);
