@@ -1,19 +1,22 @@
 import { memo } from "react";
+import type { Expense } from "../types";
+import { FinanceExportMenu } from "./FinanceExportMenu";
 
 interface FinanceHeaderProps {
   canManage: boolean;
   branchName?: string;
-  onExportCSV: () => void;
+  onExportCSV?: () => void;
   onOpenNewExpense: () => void;
   onOpenPolicyModal?: () => void;
+  expenses?: Expense[];
 }
 
 export const FinanceHeader = memo(function FinanceHeader({
   canManage,
   branchName,
-  onExportCSV,
   onOpenNewExpense,
   onOpenPolicyModal,
+  expenses = [],
 }: FinanceHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -55,13 +58,8 @@ export const FinanceHeader = memo(function FinanceHeader({
           </button>
         )}
 
-        <button
-          onClick={onExportCSV}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-        >
-          <i className="ri-file-excel-2-line text-emerald-600 text-sm" />
-          Export CSV
-        </button>
+        {/* 3-Format Export Dropdown */}
+        <FinanceExportMenu expenses={expenses} />
 
         {canManage && (
           <button

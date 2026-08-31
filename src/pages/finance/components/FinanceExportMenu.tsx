@@ -1,22 +1,22 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
-import type { DisciplinaryRecord } from "../types";
+import type { Expense } from "../types";
 import {
-  exportDisciplinaryPDF,
-  exportDisciplinaryXLSX,
-  exportDisciplinaryCSV,
+  exportExpensesPDF,
+  exportExpensesXLSX,
+  exportExpensesCSV,
 } from "../exportUtils";
 
-interface DisciplinaryExportMenuProps {
-  records: DisciplinaryRecord[];
+interface FinanceExportMenuProps {
+  expenses: Expense[];
   disabled?: boolean;
 }
 
 type Format = "pdf" | "xlsx" | "csv";
 
-export const DisciplinaryExportMenu = memo(function DisciplinaryExportMenu({
-  records,
+export const FinanceExportMenu = memo(function FinanceExportMenu({
+  expenses,
   disabled = false,
-}: DisciplinaryExportMenuProps) {
+}: FinanceExportMenuProps) {
   const [open, setOpen] = useState(false);
   const [exporting, setExporting] = useState<Format | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -36,38 +36,38 @@ export const DisciplinaryExportMenu = memo(function DisciplinaryExportMenu({
       setExporting(fmt);
       setOpen(false);
       try {
-        if (fmt === "pdf") exportDisciplinaryPDF(records);
-        else if (fmt === "xlsx") await exportDisciplinaryXLSX(records);
-        else if (fmt === "csv") exportDisciplinaryCSV(records);
+        if (fmt === "pdf") exportExpensesPDF(expenses);
+        else if (fmt === "xlsx") await exportExpensesXLSX(expenses);
+        else if (fmt === "csv") exportExpensesCSV(expenses);
       } finally {
         setTimeout(() => setExporting(null), 700);
       }
     },
-    [records]
+    [expenses]
   );
 
   const exportOptions = [
     {
       fmt: "pdf" as Format,
-      label: "PDF Incidents Report",
+      label: "PDF Expense Report",
       ext: ".pdf",
-      desc: "Print-ready summary report with severity & PIP status",
+      desc: "Print-ready summary report with KPI stats and line items",
       icon: "ri-file-pdf-line",
       color: "text-rose-600 bg-rose-50 group-hover:bg-rose-100",
     },
     {
       fmt: "xlsx" as Format,
-      label: "Excel Disciplinary Log",
+      label: "Excel Expense Ledger",
       ext: ".xlsx",
-      desc: "Multi-column structured case spreadsheet with PIP details",
+      desc: "Multi-column structured financial spreadsheet",
       icon: "ri-file-excel-2-line",
       color: "text-emerald-600 bg-emerald-50 group-hover:bg-emerald-100",
     },
     {
       fmt: "csv" as Format,
-      label: "CSV Case Records",
+      label: "CSV Transactions File",
       ext: ".csv",
-      desc: "Raw comma-separated incident & warning records",
+      desc: "Raw comma-separated financial expense records",
       icon: "ri-file-text-line",
       color: "text-blue-600 bg-blue-50 group-hover:bg-blue-100",
     },
@@ -94,10 +94,10 @@ export const DisciplinaryExportMenu = memo(function DisciplinaryExportMenu({
         <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
           <div className="px-3 py-1.5 border-b border-gray-100 mb-1 flex items-center justify-between">
             <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
-              Disciplinary &amp; PIP
+              Finance &amp; Expenses
             </span>
             <span className="text-[10px] font-bold text-gray-400">
-              {records.length} records
+              {expenses.length} records
             </span>
           </div>
 

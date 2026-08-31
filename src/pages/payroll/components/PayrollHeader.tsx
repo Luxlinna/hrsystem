@@ -1,5 +1,7 @@
 import { memo } from "react";
+import type { PayrollRecord } from "../types";
 import { formatMonthLabel } from "../payrollUtils";
+import { PayrollExportMenu } from "./PayrollExportMenu";
 
 interface PayrollHeaderProps {
   periodMode: "month" | "all";
@@ -7,9 +9,10 @@ interface PayrollHeaderProps {
   canViewAll: boolean;
   branchName?: string;
   isSuperAdmin: boolean;
-  onExportCSV: () => void;
+  onExportCSV?: () => void;
   onOpenAddModal: () => void;
   onOpenPolicyModal?: () => void;
+  records?: PayrollRecord[];
 }
 
 export const PayrollHeader = memo(function PayrollHeader({
@@ -18,9 +21,9 @@ export const PayrollHeader = memo(function PayrollHeader({
   canViewAll,
   branchName,
   isSuperAdmin,
-  onExportCSV,
   onOpenAddModal,
   onOpenPolicyModal,
+  records = [],
 }: PayrollHeaderProps) {
   const selectedMonthLabel = formatMonthLabel(selectedMonth);
 
@@ -66,13 +69,12 @@ export const PayrollHeader = memo(function PayrollHeader({
           </button>
         )}
 
-        <button
-          onClick={onExportCSV}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-        >
-          <i className="ri-file-excel-2-line text-emerald-600 dark:text-emerald-400 text-sm" />
-          Export CSV
-        </button>
+        {/* 3-Format Export Dropdown */}
+        <PayrollExportMenu
+          records={records}
+          periodMode={periodMode}
+          selectedMonth={selectedMonth}
+        />
 
         {canViewAll && (
           <button

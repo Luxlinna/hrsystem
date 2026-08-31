@@ -54,9 +54,9 @@ export default function Payroll() {
         canViewAll={p.canViewAll}
         branchName={activeBranchName}
         isSuperAdmin={p.isSuperAdmin}
-        onExportCSV={() => exportToCSV(p.filteredRecords, p.periodMode, p.selectedMonth)}
         onOpenAddModal={() => p.openRecordModal(null)}
         onOpenPolicyModal={p.targetBranch ? () => p.setPolicyModalOpen(true) : undefined}
+        records={p.filteredRecords}
       />
 
       <PayrollStatsRow

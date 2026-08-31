@@ -76,9 +76,9 @@ export default function FinancePage() {
       <FinanceHeader
         canManage={canManage}
         branchName={activeBranchName}
-        onExportCSV={handleExportCSV}
         onOpenNewExpense={handleOpenNewExpense}
         onOpenPolicyModal={targetBranch ? () => setPolicyModalOpen(true) : undefined}
+        expenses={filtered}
       />
 
       <FinanceMetricCards

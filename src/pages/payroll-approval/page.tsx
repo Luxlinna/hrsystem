@@ -46,6 +46,9 @@ export default function PayrollApproval() {
         canManage={p.canManage}
         branchName={activeBranchName}
         onOpenCreate={() => p.setTab("create")}
+        tab={p.tab}
+        runs={p.displayedRuns}
+        itemizedRecords={p.filteredItemized}
       />
 
       {p.canManage && (
