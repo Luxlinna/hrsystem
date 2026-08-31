@@ -9,6 +9,7 @@ interface HiringRequestsTabProps {
   isChairman: boolean;
   onOpenCreate: () => void;
   onOpenDecision: (req: HiringRequest, action: "approved" | "rejected") => void;
+  onDeleteRequest?: (id: string) => void;
 }
 
 export const HiringRequestsTab = memo(function HiringRequestsTab({
@@ -18,6 +19,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
   isChairman,
   onOpenCreate,
   onOpenDecision,
+  onDeleteRequest,
 }: HiringRequestsTabProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -139,6 +141,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
             request={r}
             canApprove={canApprove}
             onOpenDecision={onOpenDecision}
+            onDelete={onDeleteRequest}
           />
         ))}
 

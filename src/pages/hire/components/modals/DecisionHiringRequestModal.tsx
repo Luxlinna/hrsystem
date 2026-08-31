@@ -6,8 +6,10 @@ interface DecisionHiringRequestModalProps {
   onClose: () => void;
   request: HiringRequest | null;
   action: "approved" | "rejected";
-  reason: string;
-  setReason: (reason: string) => void;
+  reason?: string;
+  rejectionReason?: string;
+  setReason?: (reason: string) => void;
+  setRejectionReason?: (reason: string) => void;
   processing: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -18,11 +20,16 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
   request,
   action,
   reason,
+  rejectionReason,
   setReason,
+  setRejectionReason,
   processing,
   onSubmit,
 }: DecisionHiringRequestModalProps) {
   if (!isOpen || !request) return null;
+
+  const currentReason = reason ?? rejectionReason ?? "";
+  const updateReason = setReason || setRejectionReason || (() => {});
 
   const isApprove = action === "approved";
 
@@ -84,8 +91,8 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
                 rows={3}
                 required
                 placeholder="Explain why this requisition is declined (e.g. budget cap, defer to Q3, etc.)..."
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                value={currentReason}
+                onChange={(e) => updateReason(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all"
               />
             </div>

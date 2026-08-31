@@ -167,6 +167,7 @@ export default function HirePage() {
           isChairman={h.isChairman}
           onOpenCreate={() => h.openCreateRequest()}
           onOpenDecision={h.openDecisionModal}
+          onDeleteRequest={h.handleDeleteRequest}
         />
       )}
 

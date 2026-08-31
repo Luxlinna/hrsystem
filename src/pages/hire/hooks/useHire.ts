@@ -107,7 +107,7 @@ export function useHire() {
     setDecisionModal: requests.setDecisionModal, targetRequest: requests.targetRequest, decisionAction: requests.decisionAction,
     rejectionReason: requests.rejectionReason, setRejectionReason: requests.setRejectionReason, processingDecision: requests.processingDecision,
     openCreateRequest: requests.openCreateRequest, openDecisionModal: requests.openDecisionModal, handleCreateRequest: requests.handleCreateRequest,
-    handleDecision: requests.handleDecision, openCreateJob: modals.openCreateJob, openEditJob: modals.openEditJob,
+    handleDeleteRequest: requests.handleDeleteRequest, handleDecision: requests.handleDecision, openCreateJob: modals.openCreateJob, openEditJob: modals.openEditJob,
     openCreateCandidate: modals.openCreateCandidate, openEditCandidate: modals.openEditCandidate, openCreateInterview: modals.openCreateInterview,
     openEditInterview: modals.openEditInterview, openMoveToOnboarding: modals.openMoveToOnboarding, openFeedbackModal: modals.openFeedbackModal,
     handleSaveJob, handleSaveCandidate, handleSaveInterview, closeJob: actions.closeJob, reopenJob: actions.reopenJob, deleteJob: actions.deleteJob,

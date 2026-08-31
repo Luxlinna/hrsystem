@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { invalidateMyEmployeeCache } from "@/hooks/useMyEmployee";
 import { toast } from "@/components/Toast";
-import { uploadMediaToS3 } from "@/lib/s3-storage";
+import { uploadMediaToS3, deleteS3File, getS3KeyFromUrl } from "@/lib/s3-storage";
 import type { MyEmployee } from "../types";
 
 interface UseProfileAvatarMutationsProps {
@@ -40,22 +40,9 @@ export function useProfileAvatarMutations({ employee }: UseProfileAvatarMutation
       if (!user) return;
       setSavingCrop(true);
       try {
-        let publicUrl = "";
-        try {
-          const s3File = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-          const s3Item = await uploadMediaToS3(s3File, `avatars/${user.id}`);
-          publicUrl = s3Item.url;
-        } catch (s3Err) {
-          console.warn("AWS S3 upload failed, falling back to Supabase:", s3Err);
-          const path = `${user.id}/avatar.jpg`;
-          const { error: uploadError } = await supabase.storage
-            .from("avatars")
-            .upload(path, blob, { upsert: true, cacheControl: "3600" });
-          if (uploadError) throw uploadError;
-
-          const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-          publicUrl = `${data.publicUrl}?t=${Date.now()}`;
-        }
+        const s3File = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+        const s3Item = await uploadMediaToS3(s3File, `avatars/${user.id}`);
+        const publicUrl = s3Item.url;
 
         await updateProfile({ avatar_url: publicUrl });
 
@@ -65,7 +52,7 @@ export function useProfileAvatarMutations({ employee }: UseProfileAvatarMutation
         }
         toast("Photo updated", "Your profile photo has been saved to AWS S3.", "success");
       } catch (err: any) {
-        toast("Upload failed", err.message || "Could not upload photo.", "error");
+        toast("Upload failed", err.message || "Could not upload photo to AWS S3.", "error");
       } finally {
         setSavingCrop(false);
         if (avatarSrc) URL.revokeObjectURL(avatarSrc);
@@ -90,10 +77,11 @@ export function useProfileAvatarMutations({ employee }: UseProfileAvatarMutation
     if (!user) return;
     setRemovingAvatar(true);
     try {
-      const { data: files } = await supabase.storage.from("avatars").list(user.id);
-      if (files && files.length > 0) {
-        const paths = files.map((f) => `${user.id}/${f.name}`);
-        await supabase.storage.from("avatars").remove(paths);
+      if (avatarUrl) {
+        const s3Key = getS3KeyFromUrl(avatarUrl);
+        if (s3Key) {
+          await deleteS3File(s3Key).catch((err) => console.warn("AWS S3 delete warning:", err));
+        }
       }
 
       await updateProfile({ avatar_url: "" });
@@ -108,7 +96,7 @@ export function useProfileAvatarMutations({ employee }: UseProfileAvatarMutation
     } finally {
       setRemovingAvatar(false);
     }
-  }, [user, employee?.id, updateProfile]);
+  }, [user, avatarUrl, employee?.id, updateProfile]);
 
   return {
     avatarSrc,

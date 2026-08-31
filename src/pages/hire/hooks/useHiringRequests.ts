@@ -111,6 +111,24 @@ export function useHiringRequests({
     [requestForm, myEmployeeId, actorName, actorRole, actorEmail, loadData, branches]
   );
 
+  const handleDeleteRequest = useCallback(
+    async (id: string) => {
+      if (!confirm("Are you sure you want to delete this hiring requisition?")) return;
+      try {
+        const { error } = await supabase
+          .from("hiring_requests")
+          .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
+          .eq("id", id);
+        if (error) throw error;
+        toast("Deleted", "Hiring requisition deleted.", "success");
+        await loadData();
+      } catch (err: any) {
+        toast("Error", err.message || "Failed to delete hiring requisition", "error");
+      }
+    },
+    [actorName, loadData]
+  );
+
   return {
     hiringRequests,
     setHiringRequests,
@@ -129,6 +147,7 @@ export function useHiringRequests({
     openCreateRequest,
     openDecisionModal: decision.openDecisionModal,
     handleCreateRequest,
+    handleDeleteRequest,
     handleDecision: decision.handleDecision,
   };
 }

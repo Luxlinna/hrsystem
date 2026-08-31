@@ -5,12 +5,14 @@ interface HiringRequestCardProps {
   request: HiringRequest;
   canApprove: boolean;
   onOpenDecision: (req: HiringRequest, action: "approved" | "rejected") => void;
+  onDelete?: (id: string) => void;
 }
 
 export const HiringRequestCard = memo(function HiringRequestCard({
   request: r,
   canApprove,
   onOpenDecision,
+  onDelete,
 }: HiringRequestCardProps) {
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
@@ -55,7 +57,7 @@ export const HiringRequestCard = memo(function HiringRequestCard({
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-xs hover:shadow-md transition-all">
+    <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-xs hover:shadow-md transition-all relative group">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="space-y-2 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -112,22 +114,34 @@ export const HiringRequestCard = memo(function HiringRequestCard({
           )}
         </div>
 
-        {r.status === "pending" && canApprove && (
-          <div className="flex items-center gap-2 lg:flex-col lg:w-36 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-gray-100">
+        <div className="flex items-center gap-2 lg:flex-col shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-gray-100">
+          {r.status === "pending" && canApprove && (
+            <>
+              <button
+                onClick={() => onOpenDecision(r, "approved")}
+                className="flex-1 lg:w-36 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              >
+                <i className="ri-check-line text-sm" /> Approve & Post
+              </button>
+              <button
+                onClick={() => onOpenDecision(r, "rejected")}
+                className="flex-1 lg:w-36 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
+              >
+                <i className="ri-close-line text-sm" /> Reject
+              </button>
+            </>
+          )}
+
+          {onDelete && (
             <button
-              onClick={() => onOpenDecision(r, "approved")}
-              className="flex-1 lg:w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              onClick={() => onDelete(r.id)}
+              title="Delete Requisition"
+              className="py-2 px-3 rounded-xl bg-gray-50 hover:bg-rose-50 text-gray-400 hover:text-rose-600 font-bold text-xs flex items-center justify-center gap-1.5 border border-gray-200 hover:border-rose-200 transition-all cursor-pointer lg:w-36"
             >
-              <i className="ri-check-line text-sm" /> Approve & Post
+              <i className="ri-delete-bin-line text-sm" /> Delete
             </button>
-            <button
-              onClick={() => onOpenDecision(r, "rejected")}
-              className="flex-1 lg:w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
-            >
-              <i className="ri-close-line text-sm" /> Reject
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

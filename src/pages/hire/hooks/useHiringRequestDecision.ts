@@ -69,9 +69,9 @@ export function useHiringRequestDecision({
             .from("hiring_requests")
             .update({
               status: "approved",
-              reviewed_by_name: actorName,
+              reviewed_by: actorName,
               reviewed_at: new Date().toISOString(),
-              created_job_posting_id: jobData?.id,
+              job_posting_id: jobData?.id,
             })
             .eq("id", targetRequest.id);
 
@@ -92,7 +92,7 @@ export function useHiringRequestDecision({
             .from("hiring_requests")
             .update({
               status: "rejected",
-              reviewed_by_name: actorName,
+              reviewed_by: actorName,
               reviewed_at: new Date().toISOString(),
               rejection_reason: rejectionReason.trim(),
             })

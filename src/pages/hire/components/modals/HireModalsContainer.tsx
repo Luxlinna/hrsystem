@@ -157,8 +157,8 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
         onClose={() => props.setDecisionModal(false)}
         request={props.targetRequest}
         action={props.decisionAction}
-        rejectionReason={props.rejectionReason}
-        setRejectionReason={props.setRejectionReason}
+        reason={props.rejectionReason}
+        setReason={props.setRejectionReason}
         processing={props.processingDecision}
         onSubmit={props.handleDecision}
       />
