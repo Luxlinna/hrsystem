@@ -6,8 +6,6 @@ export function exportMeetingRoomsCSV(
   rooms: MeetingRoom[],
   selectedDate?: string
 ): boolean {
-  if (bookings.length === 0) return false;
-
   const roomMap = new Map<string, MeetingRoom>();
   rooms.forEach((r) => roomMap.set(r.id, r));
 

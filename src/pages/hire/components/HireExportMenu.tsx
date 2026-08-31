@@ -1,26 +1,39 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
-import type { Booking, MeetingRoom } from "../types";
+import type { Candidate, Job, Interview, HiringRequest, HireTab } from "../types";
 import {
-  exportMeetingRoomsPDF,
-  exportMeetingRoomsXLSX,
-  exportMeetingRoomsCSV,
+  exportCandidatesPDF,
+  exportCandidatesXLSX,
+  exportCandidatesCSV,
+  exportJobsPDF,
+  exportJobsXLSX,
+  exportJobsCSV,
+  exportInterviewsPDF,
+  exportInterviewsXLSX,
+  exportInterviewsCSV,
+  exportRequestsPDF,
+  exportRequestsXLSX,
+  exportRequestsCSV,
 } from "../exportUtils";
 
-interface MeetingRoomsExportMenuProps {
-  bookings: Booking[];
-  rooms: MeetingRoom[];
-  selectedDate?: string;
+interface HireExportMenuProps {
+  activeTab: HireTab;
+  candidates: Candidate[];
+  jobs: Job[];
+  interviews: Interview[];
+  requests: HiringRequest[];
   disabled?: boolean;
 }
 
 type Format = "pdf" | "xlsx" | "csv";
 
-export const MeetingRoomsExportMenu = memo(function MeetingRoomsExportMenu({
-  bookings,
-  rooms,
-  selectedDate,
+export const HireExportMenu = memo(function HireExportMenu({
+  activeTab,
+  candidates,
+  jobs,
+  interviews,
+  requests,
   disabled = false,
-}: MeetingRoomsExportMenuProps) {
+}: HireExportMenuProps) {
   const [open, setOpen] = useState(false);
   const [exporting, setExporting] = useState<Format | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -40,42 +53,79 @@ export const MeetingRoomsExportMenu = memo(function MeetingRoomsExportMenu({
       setExporting(fmt);
       setOpen(false);
       try {
-        if (fmt === "pdf") {
-          exportMeetingRoomsPDF(bookings, rooms, selectedDate);
-        } else if (fmt === "xlsx") {
-          await exportMeetingRoomsXLSX(bookings, rooms, selectedDate);
-        } else if (fmt === "csv") {
-          exportMeetingRoomsCSV(bookings, rooms, selectedDate);
+        if (activeTab === "jobs") {
+          if (fmt === "pdf") exportJobsPDF(jobs);
+          else if (fmt === "xlsx") await exportJobsXLSX(jobs);
+          else if (fmt === "csv") exportJobsCSV(jobs);
+        } else if (activeTab === "interviews") {
+          if (fmt === "pdf") exportInterviewsPDF(interviews);
+          else if (fmt === "xlsx") await exportInterviewsXLSX(interviews);
+          else if (fmt === "csv") exportInterviewsCSV(interviews);
+        } else if (activeTab === "requests") {
+          if (fmt === "pdf") exportRequestsPDF(requests);
+          else if (fmt === "xlsx") await exportRequestsXLSX(requests);
+          else if (fmt === "csv") exportRequestsCSV(requests);
+        } else {
+          // Default candidates & pipeline
+          if (fmt === "pdf") exportCandidatesPDF(candidates);
+          else if (fmt === "xlsx") await exportCandidatesXLSX(candidates);
+          else if (fmt === "csv") exportCandidatesCSV(candidates);
         }
       } finally {
         setTimeout(() => setExporting(null), 700);
       }
     },
-    [bookings, rooms, selectedDate]
+    [activeTab, candidates, jobs, interviews, requests]
   );
+
+  const getRecordCount = () => {
+    switch (activeTab) {
+      case "jobs":
+        return `${jobs.length} jobs`;
+      case "interviews":
+        return `${interviews.length} interviews`;
+      case "requests":
+        return `${requests.length} requests`;
+      default:
+        return `${candidates.length} candidates`;
+    }
+  };
+
+  const getTabLabel = () => {
+    switch (activeTab) {
+      case "jobs":
+        return "Jobs";
+      case "interviews":
+        return "Interviews";
+      case "requests":
+        return "Requests";
+      default:
+        return "Candidates";
+    }
+  };
 
   const exportOptions = [
     {
       fmt: "pdf" as Format,
-      label: "PDF Schedule Report",
+      label: `PDF ${getTabLabel()} Report`,
       ext: ".pdf",
-      desc: "Print-ready reservations & room occupancy",
+      desc: "Print-ready summary with key metrics & table",
       icon: "ri-file-pdf-line",
       color: "text-rose-600 bg-rose-50 group-hover:bg-rose-100",
     },
     {
       fmt: "xlsx" as Format,
-      label: "Excel Spreadsheet",
+      label: `Excel ${getTabLabel()} Workbook`,
       ext: ".xlsx",
-      desc: "Detailed facility reservations workbook",
+      desc: "Structured spreadsheet data workbook",
       icon: "ri-file-excel-2-line",
       color: "text-emerald-600 bg-emerald-50 group-hover:bg-emerald-100",
     },
     {
       fmt: "csv" as Format,
-      label: "CSV Schedule",
+      label: `CSV ${getTabLabel()} Data`,
       ext: ".csv",
-      desc: "Raw comma-separated booking records",
+      desc: `Export current ${getTabLabel().toLowerCase()} records as comma-separated values`,
       icon: "ri-file-text-line",
       color: "text-blue-600 bg-blue-50 group-hover:bg-blue-100",
     },
@@ -102,10 +152,10 @@ export const MeetingRoomsExportMenu = memo(function MeetingRoomsExportMenu({
         <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
           <div className="px-3 py-1.5 border-b border-gray-100 mb-1 flex items-center justify-between">
             <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
-              Export Format
+              {getTabLabel()} Export
             </span>
             <span className="text-[10px] font-bold text-gray-400">
-              {bookings.length} reservations
+              {getRecordCount()}
             </span>
           </div>
 

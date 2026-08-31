@@ -7,8 +7,6 @@ export function exportMeetingRoomsPDF(
   selectedDate?: string,
   title = "Meeting Rooms & Conference Hub Schedule"
 ): boolean {
-  if (bookings.length === 0) return false;
-
   const roomMap = new Map<string, MeetingRoom>();
   rooms.forEach((r) => roomMap.set(r.id, r));
 
@@ -17,7 +15,7 @@ export function exportMeetingRoomsPDF(
   const pending = bookings.filter((b) => b.status === "pending").length;
   const totalAttendees = bookings.reduce((acc, b) => acc + (Number(b.attendees_count) || 0), 0);
 
-  const rows = bookings
+  const rows = bookings.length > 0 ? bookings
     .map((b) => {
       const room = roomMap.get(b.room_id);
       const floor = room ? `Floor ${getRoomFloor(room)}` : "—";
@@ -47,7 +45,7 @@ export function exportMeetingRoomsPDF(
         <td style="font-size:10px;color:#64748b">${reqs}</td>
       </tr>`;
     })
-    .join("");
+    .join("") : `<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b;font-weight:600">No scheduled reservations logged for this period.</td></tr>`;
 
   const html = `<!DOCTYPE html>
   <html>

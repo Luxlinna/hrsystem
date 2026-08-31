@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { MeetingRoom, Booking, BookingFormData, ReasonModalState, ApprovalModalState } from "../types";
 import { SPECIAL_REQUIREMENTS_OPTIONS, REFRESHMENTS_OPTIONS, INITIAL_BOOKING_FORM } from "../constants";
 import { addMinutesToTime } from "../roomUtils";
@@ -23,6 +23,16 @@ export function useBookingFormState({
   const [modalRoom, setModalRoom] = useState<MeetingRoom | null>(null);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
+  // Keep selectedBooking in sync whenever bookings reload
+  useEffect(() => {
+    if (selectedBooking) {
+      const fresh = bookings.find((b) => b.id === selectedBooking.id);
+      if (fresh && (fresh.status !== selectedBooking.status || fresh.approved_at !== selectedBooking.approved_at)) {
+        setSelectedBooking(fresh);
+      }
+    }
+  }, [bookings, selectedBooking]);
 
   const [bookingForm, setBookingForm] = useState<BookingFormData>({
     ...INITIAL_BOOKING_FORM,

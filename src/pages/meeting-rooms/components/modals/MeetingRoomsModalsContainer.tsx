@@ -103,7 +103,8 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
         canApprove={canApprove}
         onOpenEditModal={openEditModal}
         onCancelOwnBooking={handleCancelOwnBooking}
-        onOpenApprovalModal={(b) =>
+        onOpenApprovalModal={(b) => {
+          setSelectedBooking(null);
           setApprovalModal({
             isOpen: true,
             booking: b,
@@ -112,11 +113,12 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
             approvedRef: [],
             declinedRef: [],
             notes: "",
-          })
-        }
-        onOpenReasonModal={(b, action) =>
-          setReasonModal({ isOpen: true, booking: b, action, reason: "" })
-        }
+          });
+        }}
+        onOpenReasonModal={(b, action) => {
+          setSelectedBooking(null);
+          setReasonModal({ isOpen: true, booking: b, action, reason: "" });
+        }}
       />
 
       <ApprovalReviewModal

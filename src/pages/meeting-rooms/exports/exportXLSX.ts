@@ -10,12 +10,10 @@ export async function exportMeetingRoomsXLSX(
   rooms: MeetingRoom[],
   selectedDate?: string
 ): Promise<boolean> {
-  if (bookings.length === 0) return false;
-
   const roomMap = new Map<string, MeetingRoom>();
   rooms.forEach((r) => roomMap.set(r.id, r));
 
-  const data = bookings.map((b) => {
+  const data = bookings.length > 0 ? bookings.map((b) => {
     const room = roomMap.get(b.room_id);
     const floor = room ? `Floor ${getRoomFloor(room)}` : "—";
     const roomName = room?.name || "Room";
@@ -37,7 +35,21 @@ export async function exportMeetingRoomsXLSX(
       "Special Requirements": reqs,
       "Refreshments & Catering": refs,
     };
-  });
+  }) : [
+    {
+      Date: selectedDate || new Date().toISOString().slice(0, 10),
+      "Time Window": "—",
+      "Meeting Room": "—",
+      Floor: "—",
+      "Meeting Title": "No reservations scheduled",
+      "Booked By": "—",
+      Department: "—",
+      Attendees: 0,
+      Status: "EMPTY",
+      "Special Requirements": "—",
+      "Refreshments & Catering": "—",
+    }
+  ];
 
   const XLSX = await getXLSX();
   const ws = XLSX.utils.json_to_sheet(data);

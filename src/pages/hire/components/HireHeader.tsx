@@ -1,5 +1,6 @@
 import { memo } from "react";
-import type { HireTab } from "../types";
+import type { HireTab, Candidate, Job, Interview, HiringRequest } from "../types";
+import { HireExportMenu } from "./HireExportMenu";
 
 interface HireHeaderProps {
   activeJobsCount: number;
@@ -10,6 +11,10 @@ interface HireHeaderProps {
   onOpenCreateCandidate: () => void;
   onOpenCreateInterview: () => void;
   onOpenCreateRequest: () => void;
+  candidates?: Candidate[];
+  jobs?: Job[];
+  interviews?: Interview[];
+  requests?: HiringRequest[];
 }
 
 export const HireHeader = memo(function HireHeader({
@@ -20,6 +25,10 @@ export const HireHeader = memo(function HireHeader({
   onOpenCreateCandidate,
   onOpenCreateInterview,
   onOpenCreateRequest,
+  candidates = [],
+  jobs = [],
+  interviews = [],
+  requests = [],
 }: HireHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -42,6 +51,14 @@ export const HireHeader = memo(function HireHeader({
 
       {/* Top Action Buttons */}
       <div className="flex items-center gap-2.5 flex-wrap">
+        <HireExportMenu
+          activeTab={activeTab}
+          candidates={candidates}
+          jobs={jobs}
+          interviews={interviews}
+          requests={requests}
+        />
+
         {activeTab === "candidates" && (
           <button
             type="button"

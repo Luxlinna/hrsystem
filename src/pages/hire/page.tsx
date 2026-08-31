@@ -57,6 +57,10 @@ export default function HirePage() {
         onOpenCreateCandidate={() => h.openCreateCandidate()}
         onOpenCreateInterview={() => h.openCreateInterview()}
         onOpenCreateRequest={() => h.openCreateRequest()}
+        candidates={h.candidates}
+        jobs={h.jobs}
+        interviews={h.interviews}
+        requests={h.hiringRequests}
       />
 
       <HireTabsBar
