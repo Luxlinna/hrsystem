@@ -8,10 +8,8 @@ import { OnboardingModalsContainer } from "./components/modals/OnboardingModalsC
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useOnboarding } from "./hooks/useOnboarding";
 import {
-  exportOnboardingCSV,
   exportOnboardingXLSX,
   exportOnboardingPDF,
-  exportOnboardingSVG,
 } from "./exportUtils";
 
 export default function Onboarding() {

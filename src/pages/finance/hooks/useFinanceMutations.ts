@@ -146,7 +146,8 @@ export function useFinanceMutations({
   );
 
   const handleDeleteExpense = useCallback(
-    async (id: string) => {
+    async (expenseOrId: Expense | string) => {
+      const id = typeof expenseOrId === "string" ? expenseOrId : expenseOrId.id;
       if (!canManage || !confirm("Are you sure you want to delete this expense record?")) return;
       const { error } = await supabase.from("expense_records").update({ deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) {

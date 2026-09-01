@@ -31,6 +31,7 @@ export function useBenefitsMetrics({ plans, enrollments, employees }: UseBenefit
         existing.plans.push(p);
       } else {
         map.set(p.provider, {
+          provider: p.provider,
           name: p.provider,
           planCount: 1,
           totalEnrolled: enrCount,

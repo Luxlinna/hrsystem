@@ -102,7 +102,7 @@ export function useHire() {
     isPartnerBranchBlocked, userBranchName, userBranchId,
     actorName, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
     jobs: data.jobs, candidates: data.candidates, interviews: data.interviews, branches: data.branches,
-    hiringRequests: data.hiringRequests, loading: data.loading,
+    hiringRequests: data.hiringRequests, loading: data.loading, loadData: data.loadData,
     tab: filters.tab, setTab: filters.setTab,
     canRequest, canApprove, canBranchApprove, canHrReview, canHrAdminApprove, canChairmanApprove,
     isHrDivisionBranch, isChairman, isSuperAdmin, isAdmin,

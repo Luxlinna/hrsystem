@@ -7,6 +7,7 @@ import { useDocumentUpload } from "./useDocumentUpload";
 
 interface UseDocumentMutationsProps {
   actorName: string;
+  roleName?: string;
   targetBranch: string | null;
   loadData: () => Promise<void>;
   selectedDoc: Document | null;
@@ -40,15 +41,21 @@ export function useDocumentMutations({
     (doc: Document) => {
       setEditingDoc(doc);
       setForm({
+        ...INITIAL_DOC_FORM,
         title: doc.title,
         category: doc.category,
+        subcategory: doc.subcategory || "",
         department: doc.department || "",
         visibility: doc.visibility,
         description: doc.description || "",
         status: doc.status,
         version: doc.version,
         is_template: doc.is_template,
+        author_name: doc.author_name || "HR Team",
+        file_name: doc.file_name || "",
+        file_type: doc.file_type || "pdf",
         requires_acknowledgment: doc.requires_acknowledgment,
+        tags: (doc.tags || []).join(", "),
         tagsInput: (doc.tags || []).join(", "),
         change_summary: "",
       });
@@ -84,7 +91,7 @@ export function useDocumentMutations({
       try {
         const { finalFileUrl, finalFileName, finalFileSize, finalFileType } =
           await upload.uploadFileToStorage(form.title);
-        const tags = form.tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
+        const tags = (form.tagsInput || form.tags || "").split(",").map((t) => t.trim()).filter(Boolean);
 
         const basePayload = {
           title: form.title,

@@ -100,11 +100,10 @@ export default function TrainingPage() {
           courses={filteredCourses}
           enrollments={enrollments}
           canManage={canManage}
-          onSelectCourse={setSelectedCourse}
-          onEnroll={(course) => openEnroll(course.id)}
+          onSelect={setSelectedCourse}
+          onEnroll={(courseId) => openEnroll(courseId)}
           onEdit={openEditCourse}
           onDelete={deleteCourse}
-          onNewCourse={openNewCourse}
         />
       ) : activeTab === "calendar" ? (
         <TrainingCalendarView
@@ -117,22 +116,15 @@ export default function TrainingPage() {
         />
       ) : activeTab === "enrollments" ? (
         <EnrollmentsTableView
-          enrollments={filteredEnrollments}
+          totalFiltered={filteredEnrollments.length}
           pagedEnrollments={pagedEnrollments}
           page={page}
           totalPages={enrollTotalPages}
           pageStart={enrollPageStart}
           pageEnd={enrollPageEnd}
           canManage={canManage}
-          onPageChange={setPage}
-          onUpdateProgress={(id, progress) => {
-            const updates: any = { progress };
-            if (progress === 100) {
-              updates.status = "completed";
-              updates.completed_at = new Date().toISOString().slice(0, 10);
-            } else if (progress > 0) {
-              updates.status = "in_progress";
-            }
+          setPage={setPage}
+          onUpdate={(id, updates) => {
             updateEnrollment(id, updates);
           }}
           onDelete={deleteEnrollment}
@@ -177,7 +169,7 @@ export default function TrainingPage() {
         onClose={() => setSelectedCourse(null)}
         onEdit={openEditCourse}
         onDelete={deleteCourse}
-        onEnroll={(course) => openEnroll(course.id)}
+        onEnroll={(courseId) => openEnroll(courseId)}
       />
     </div>
   );

@@ -11,7 +11,7 @@ import GeofenceCheckInAlert from "@/components/GeofenceCheckInAlert";
 import UrgentAnnouncementAlert from "@/components/UrgentAnnouncementAlert";
 
 function NotInDirectoryScreen() {
-  const { signOut } = useAuth();
+  const { logout } = useAuth();
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC] p-6">
       <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-xl border border-gray-100">
@@ -24,7 +24,7 @@ function NotInDirectoryScreen() {
         </p>
         <button
           type="button"
-          onClick={() => signOut()}
+          onClick={() => logout()}
           className="w-full py-3 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
         >
           Sign Out

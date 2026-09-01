@@ -27,7 +27,7 @@ export function useDocumentUpload() {
           toast("File too large", `File exceeds ${MAX_FILE_SIZE_MB}MB limit`, "error");
           throw new Error(`File exceeds ${MAX_FILE_SIZE_MB}MB limit`);
         }
-        const { uploadUrl, publicUrl } = await getDocumentUploadUrl(fileUpload.name, fileUpload.type);
+        const { uploadUrl, publicUrl } = await getDocumentUploadUrl(fileUpload.name);
         const putRes = await fetch(uploadUrl, {
           method: "PUT",
           body: fileUpload,

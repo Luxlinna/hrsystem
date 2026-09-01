@@ -3,8 +3,10 @@ export interface Document {
   title: string;
   category: string;
   subcategory: string | null;
+  department?: string | null;
   description: string | null;
   file_name: string | null;
+  file_size?: string | null;
   file_size_kb: number | null;
   file_type: string;
   file_url: string | null;
@@ -12,6 +14,8 @@ export interface Document {
   status: string;
   visibility: string;
   author_name: string;
+  created_by?: string | null;
+  requires_acknowledgment?: boolean;
   tags: string[];
   download_count: number;
   is_template: boolean;
@@ -53,14 +57,19 @@ export interface DocFormState {
   title: string;
   category: string;
   subcategory: string;
+  department?: string;
   description: string;
   file_name: string;
   file_type: string;
   version: string;
+  status?: string;
   visibility: string;
   author_name: string;
   is_template: boolean;
+  requires_acknowledgment?: boolean;
   tags: string;
+  tagsInput?: string;
+  change_summary?: string;
 }
 
 export type DrawerTabKey = "overview" | "related" | "move";

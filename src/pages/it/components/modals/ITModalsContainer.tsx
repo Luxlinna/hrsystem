@@ -1,13 +1,13 @@
 import { memo } from "react";
 import { AssetModal } from "./AssetModal";
 import { TicketModal } from "./TicketModal";
-import type { Asset, AssetFormState, TicketFormState } from "../../types";
+import type { ITAsset, AssetFormState, TicketFormState } from "../../types";
 
 interface ITModalsContainerProps {
   assetModal: boolean;
   setAssetModal: (val: boolean) => void;
-  editingAsset: Asset | null;
-  setEditingAsset: (val: Asset | null) => void;
+  editingAsset: ITAsset | null;
+  setEditingAsset: (val: ITAsset | null) => void;
   assetForm: AssetFormState;
   setAssetForm: React.Dispatch<React.SetStateAction<AssetFormState>>;
   savingAsset: boolean;

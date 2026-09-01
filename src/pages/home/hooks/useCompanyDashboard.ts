@@ -17,7 +17,7 @@ export function useCompanyDashboard() {
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
 
-  const [dateRange, setDateRange] = useState<DateRange>({ from: firstDay, to: lastDay });
+  const [dateRange, setDateRange] = useState<DateRange>({ from: firstDay, to: lastDay, label: "This Month" });
   const [fabOpen, setFabOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
 
@@ -31,10 +31,7 @@ export function useCompanyDashboard() {
   });
 
   const { isPulling, pullDistance, handleTouchStart, handleTouchMove, handleTouchEnd } =
-    usePullToRefresh({
-      onRefresh: data.handleRefresh,
-      pullThreshold: PULL_THRESHOLD,
-    });
+    usePullToRefresh(data.handleRefresh);
 
   // Close FAB on outside click
   const handleClickOutside = useCallback((e: MouseEvent) => {

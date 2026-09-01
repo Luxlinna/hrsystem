@@ -39,6 +39,8 @@ export interface LeaveFormData {
   reason: string;
 }
 
+export type QuickRequestFormData = LeaveFormData;
+
 export interface DepartmentImpact {
   dept: string;
   totalDays: number;

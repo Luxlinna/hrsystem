@@ -10,6 +10,8 @@ import { PipelineMetricsChart } from "./components/pipeline/PipelineMetricsChart
 import { HiringRequestsTab } from "./components/requests/HiringRequestsTab";
 import { HireModalsContainer } from "./components/modals/HireModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
+import { supabase } from "@/lib/supabase";
+import { toast } from "@/components/Toast";
 import { useHire } from "./hooks/useHire";
 
 export default function HirePage() {
@@ -136,7 +138,14 @@ export default function HirePage() {
           onUpdateStage={h.updateCandidateStage}
           onRate={h.rateCandidate}
           onDelete={h.deleteCandidate}
-          onUploadResume={h.uploadCandidateResume}
+          onUploadResume={async (id: string, file: File) => {
+            const url = await h.uploadCandidateResume(file);
+            if (url) {
+              await supabase.from("candidates").update({ resume_url: url }).eq("id", id);
+              h.loadData();
+              toast("Resume Uploaded", "Candidate resume updated successfully.", "success");
+            }
+          }}
           onMoveToOnboarding={h.openMoveToOnboarding}
           onOpenInterview={(c) => h.openCreateInterview(c.id)}
         />

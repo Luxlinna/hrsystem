@@ -3,7 +3,7 @@ import { toast } from "@/components/Toast";
 
 export function exportEmployeesCSV(
   employees: Employee[],
-  accountStatus: Record<string, AccountStatus>
+  accountStatus: Record<string, AccountStatus> = {}
 ) {
   const headers = [
     "First Name",

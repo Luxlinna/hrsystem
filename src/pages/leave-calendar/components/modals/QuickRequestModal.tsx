@@ -13,7 +13,7 @@ interface QuickRequestModalProps {
   myEmployee: Employee | null;
   canManage: boolean;
   submitting: boolean;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSubmit: (e: React.FormEvent) => void | Promise<void>;
 }
 
 export const QuickRequestModal = memo(function QuickRequestModal({

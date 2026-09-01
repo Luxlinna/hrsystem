@@ -42,7 +42,7 @@ export const DocumentDrawerRelated = memo(function DocumentDrawerRelated({
                 {rd.title}
               </p>
               <p className="text-[10px] text-gray-400">
-                v{rd.version} &bull; {rd.file_size || "—"}
+                v{rd.version} &bull; {rd.file_size || (rd.file_size_kb ? `${rd.file_size_kb} KB` : "—")}
               </p>
             </div>
             <i className="ri-arrow-right-s-line text-gray-400 group-hover:text-[#253C7D]" />

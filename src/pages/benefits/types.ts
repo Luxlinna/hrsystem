@@ -25,6 +25,7 @@ export interface Enrollment {
   plan_id: string;
   employee_id: string;
   status: "enrolled" | "opted_out" | string;
+  enrolled_date?: string | null;
   created_at?: string;
   employees?: {
     id?: string;
@@ -57,8 +58,11 @@ export interface PlanFormState {
 
 export interface ProviderItem {
   provider: string;
+  name?: string;
   plans: BenefitPlan[];
-  enrolledCount: number;
+  enrolledCount?: number;
+  planCount?: number;
+  totalEnrolled?: number;
 }
 
 export type BenefitTabKey = "plans" | "enrollment" | "providers";

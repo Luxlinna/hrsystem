@@ -159,7 +159,7 @@ export default function CompanyDashboard() {
           deptData={deptData}
           attendanceData={attendanceData}
           hiringTrend={hiringTrend}
-          totalEmployees={stats.employees}
+          rangeLabel={`${dateRange.from} to ${dateRange.to}`}
         />
 
         {/* Admin Quick Actions */}

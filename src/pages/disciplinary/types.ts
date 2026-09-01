@@ -13,13 +13,24 @@ export interface Employee {
   branch_id?: string | null;
 }
 
+export type DisciplinarySeverity = "low" | "medium" | "high" | "critical";
+export type DisciplinaryType =
+  | "verbal_warning"
+  | "written_warning"
+  | "final_warning"
+  | "pip"
+  | "incident"
+  | "suspension"
+  | "termination"
+  | string;
+
 export interface DisciplinaryRecord {
   id: string;
   employee_id: string;
   type: string;
   title: string;
   description: string | null;
-  severity: "low" | "medium" | "high" | "critical";
+  severity: DisciplinarySeverity;
   status: "open" | "in_progress" | "resolved" | "escalated" | "closed";
   incident_date: string | null;
   follow_up_date: string | null;
@@ -30,7 +41,9 @@ export interface DisciplinaryRecord {
   pip_start_date: string | null;
   pip_end_date: string | null;
   pip_goals: string | null;
+  notes?: string | null;
   branch_id?: string | null;
+  is_admin_scope?: boolean;
   created_at: string;
   employees?: Employee;
   branches?: { id?: string; name: string } | null;
@@ -41,7 +54,7 @@ export interface NewRecord {
   type: string;
   title: string;
   description: string;
-  severity: "low" | "medium" | "high" | "critical";
+  severity: DisciplinarySeverity;
   status: "open" | "in_progress" | "resolved" | "escalated" | "closed";
   incident_date: string;
   follow_up_date: string;
@@ -50,6 +63,7 @@ export interface NewRecord {
   pip_start_date: string;
   pip_end_date: string;
   pip_goals: string;
+  notes?: string | null;
   branch_id?: string;
   is_admin_scope?: boolean;
 }

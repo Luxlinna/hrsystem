@@ -43,6 +43,8 @@ export interface EmployeeItemRecord {
   } | null;
 }
 
+export type PayrollRecord = EmployeeItemRecord;
+
 export interface CreatePayrollRunForm {
   period: string;
   department: string;

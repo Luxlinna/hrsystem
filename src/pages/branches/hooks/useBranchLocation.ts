@@ -99,8 +99,8 @@ export function useBranchLocation({ showAddModal, setForm }: UseBranchLocationPr
     setGeocoding(true);
     try {
       const result = await geocodeAddress(q);
-      const lat = result.latitude.toFixed(6);
-      const lng = result.longitude.toFixed(6);
+      const lat = result.lat.toFixed(6);
+      const lng = result.lng.toFixed(6);
       setForm((f) => ({
         ...f,
         location: f.location || result.formattedAddress,

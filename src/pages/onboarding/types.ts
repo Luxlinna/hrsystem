@@ -54,3 +54,5 @@ export interface DocForm {
   notes: string;
   due_date: string;
 }
+
+export type OnboardingDocForm = DocForm;

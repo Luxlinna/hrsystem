@@ -27,7 +27,7 @@ export const DisciplinarySeverityPicker = memo(function DisciplinarySeverityPick
               onClick={() => onSelectSeverity(sev)}
               className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 isSelected
-                  ? `${cfg.bg} ${cfg.border} ${cfg.color} font-black shadow-xs ring-1 ring-current`
+                  ? `${cfg.bg} ${cfg.color} font-black shadow-xs ring-1 ring-current`
                   : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50 text-xs font-semibold"
               }`}
             >

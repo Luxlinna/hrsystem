@@ -49,13 +49,15 @@ export const DocumentDrawerOverview = memo(function DocumentDrawerOverview({
 
         <div className="flex items-center justify-between">
           <span className="text-gray-400 font-medium">File Size:</span>
-          <span className="font-bold text-gray-800">{selectedDoc.file_size || "—"}</span>
+          <span className="font-bold text-gray-800">
+            {selectedDoc.file_size || (selectedDoc.file_size_kb ? `${selectedDoc.file_size_kb} KB` : "—")}
+          </span>
         </div>
 
         <div className="flex items-center justify-between">
           <span className="text-gray-400 font-medium">Access Visibility:</span>
           <span className="font-bold text-gray-800">
-            {VISIBILITY_LABELS[selectedDoc.visibility] || selectedDoc.visibility}
+            {VISIBILITY_LABELS[selectedDoc.visibility]?.label || selectedDoc.visibility}
           </span>
         </div>
 

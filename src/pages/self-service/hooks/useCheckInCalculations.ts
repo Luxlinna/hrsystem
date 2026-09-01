@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { addDaysYMD, zonedParts, zonedTimeToInstant } from "@/lib/date";
+import { addDaysYMD, zonedDayOfWeek, zonedParts, zonedTimeToInstant } from "@/lib/date";
 import { computeHoursWorked } from "@/lib/workSchedule";
 import type { AttendanceRecord } from "../types";
 
@@ -27,6 +27,9 @@ export function useCheckInCalculations({
   workStartTime,
   workEndTime,
 }: UseCheckInCalculationsProps) {
+  const isCheckedIn = !!todayRecord?.clock_in;
+  const isCheckedOut = !!(todayRecord?.clock_in && todayRecord?.clock_out);
+
   const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
   const defaultEndMin = isSaturday ? 12 * 60 : 17 * 60; // 12:00 PM Sat, 5:00 PM Mon-Fri
 

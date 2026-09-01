@@ -1,6 +1,6 @@
-import type { Document } from "../types";
+import type { Document, DocumentFolder } from "../types";
 
-export function exportDocumentsCSV(documents: Document[]): boolean {
+export function exportDocumentsCSV(documents: Document[], _folders?: DocumentFolder[]): boolean {
   const headers = [
     "Title",
     "Category",

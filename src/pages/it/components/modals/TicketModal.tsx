@@ -8,7 +8,7 @@ interface TicketModalProps {
   ticketForm: TicketFormState;
   setTicketForm: React.Dispatch<React.SetStateAction<TicketFormState>>;
   saving: boolean;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSubmit: (e: React.FormEvent) => void | Promise<void>;
 }
 
 export const TicketModal = memo(function TicketModal({

@@ -32,15 +32,14 @@ export function useFinancePolicyMutations({
 
       const payload = {
         branch_id: targetBranch,
-        monthly_budget: policyData.monthly_budget,
-        per_expense_cap: policyData.per_expense_cap,
-        allow_custom_categories: policyData.allow_custom_categories,
-        custom_categories: policyData.custom_categories,
-        approval_threshold_medium: policyData.approval_threshold_medium,
-        approval_threshold_high: policyData.approval_threshold_high,
-        require_receipts_above: policyData.require_receipts_above,
-        auto_reject_exceeding_budget: policyData.auto_reject_exceeding_budget,
-        notes: policyData.notes,
+        monthly_budget_limit: policyData.monthly_budget_limit,
+        auto_approve_threshold: policyData.auto_approve_threshold,
+        receipt_required_above: policyData.receipt_required_above,
+        currency: policyData.currency || "USD",
+        require_two_approvers_above: policyData.require_two_approvers_above,
+        allowed_categories: policyData.allowed_categories || [],
+        policy_notes: policyData.policy_notes || null,
+        updated_by: actorName,
         updated_at: new Date().toISOString(),
       };
 

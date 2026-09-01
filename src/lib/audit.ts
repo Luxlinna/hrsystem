@@ -24,7 +24,7 @@ type AuditModule =
   | "shifts"
   | "reports"
   | "training";
-type AuditAction = "created" | "updated" | "approved" | "rejected" | "deleted" | "processed" | "cancelled";
+type AuditAction = "created" | "updated" | "approved" | "rejected" | "deleted" | "processed" | "cancelled" | "invited" | "exported";
 
 interface LogActivityInput {
   module: AuditModule;

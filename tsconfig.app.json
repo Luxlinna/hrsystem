@@ -33,6 +33,7 @@
     "noUncheckedSideEffectImports": false,
     "paths": {
       "@/*": ["./src/*"],
+      "xlsx": ["./src/lib/xlsx.ts"]
     }
   },
   "include": ["src", "vite-env.d.ts"]

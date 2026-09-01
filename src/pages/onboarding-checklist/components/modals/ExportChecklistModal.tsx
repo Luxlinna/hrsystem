@@ -4,8 +4,6 @@ import { getHireName } from "../../checklistUtils";
 import {
   exportChecklistPDF,
   exportChecklistXLSX,
-  exportChecklistCSV,
-  exportChecklistSVG,
 } from "../../exportUtils";
 
 interface ExportChecklistModalProps {

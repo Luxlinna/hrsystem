@@ -78,7 +78,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
+      "@": resolve(import.meta.dirname || process.cwd(), "./src"),
+      "xlsx": resolve(import.meta.dirname || process.cwd(), "./src/lib/xlsx.ts"),
     },
   },
   server: {

@@ -36,8 +36,8 @@ export function useFolderMutations({
       setEditingFolder(null);
       setFolderForm({
         ...INITIAL_FOLDER_FORM,
-        parent_id: presetParentId || (activeCategory !== "all" ? activeCategory : null),
-        color: FOLDER_COLOR_PRESETS[Math.floor(Math.random() * FOLDER_COLOR_PRESETS.length)].color,
+        parentId: presetParentId || (activeCategory !== "all" ? activeCategory : ""),
+        colorPreset: FOLDER_COLOR_PRESETS[Math.floor(Math.random() * FOLDER_COLOR_PRESETS.length)].id,
       });
       setShowFolderModal(true);
     },
@@ -46,12 +46,13 @@ export function useFolderMutations({
 
   const openEditFolderModal = useCallback((folder: DocumentFolder) => {
     setEditingFolder(folder);
+    const preset = FOLDER_COLOR_PRESETS.find((p) => p.color === folder.color)?.id || "navy";
     setFolderForm({
-      name: folder.name,
+      label: folder.label,
       description: folder.description || "",
       icon: folder.icon,
-      color: folder.color,
-      parent_id: folder.parent_id || null,
+      colorPreset: preset,
+      parentId: folder.parent_id || "",
     });
     setShowFolderModal(true);
   }, []);
@@ -59,30 +60,35 @@ export function useFolderMutations({
   const handleSaveFolder = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!folderForm.name.trim()) {
+      if (!folderForm.label.trim()) {
         toast("Validation Error", "Folder name is required.", "error");
         return;
       }
       setFolderSubmitting(true);
+
+      const colorPresetObj =
+        FOLDER_COLOR_PRESETS.find((p) => p.id === folderForm.colorPreset) || FOLDER_COLOR_PRESETS[0];
 
       try {
         if (editingFolder) {
           const { error } = await supabase
             .from("document_folders")
             .update({
-              name: folderForm.name.trim(),
+              name: folderForm.label.trim(),
               description: folderForm.description.trim() || null,
               icon: folderForm.icon,
-              color: folderForm.color,
-              parent_id: folderForm.parent_id || null,
+              color: colorPresetObj.color,
+              bg: colorPresetObj.bg,
+              border: colorPresetObj.border,
+              parent_id: folderForm.parentId || null,
             })
             .eq("id", editingFolder.id);
 
           if (error) throw error;
-          toast("Folder Updated", `Folder "${folderForm.name}" updated.`, "success");
+          toast("Folder Updated", `Folder "${folderForm.label}" updated.`, "success");
         } else {
           const slugId =
-            folderForm.name
+            folderForm.label
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, "_")
               .replace(/^_+|_+$/g, "") +
@@ -91,20 +97,22 @@ export function useFolderMutations({
 
           const { error } = await supabase.from("document_folders").insert({
             id: slugId,
-            name: folderForm.name.trim(),
+            name: folderForm.label.trim(),
             description: folderForm.description.trim() || null,
             icon: folderForm.icon,
-            color: folderForm.color,
-            parent_id: folderForm.parent_id || null,
+            color: colorPresetObj.color,
+            bg: colorPresetObj.bg,
+            border: colorPresetObj.border,
+            parent_id: folderForm.parentId || null,
             created_by: actorName,
             branch_id: targetBranch,
           });
 
           if (error) throw error;
-          toast("Folder Created", `Folder "${folderForm.name}" created.`, "success");
+          toast("Folder Created", `Folder "${folderForm.label}" created.`, "success");
 
-          if (folderForm.parent_id) {
-            setExpandedFolderIds((prev) => new Set([...prev, folderForm.parent_id!]));
+          if (folderForm.parentId) {
+            setExpandedFolderIds((prev) => new Set([...prev, folderForm.parentId]));
           }
           setActiveCategory(slugId);
         }
@@ -127,13 +135,13 @@ export function useFolderMutations({
         toast("Cannot Delete", "This folder contains subfolders. Please delete or move them first.", "error");
         return;
       }
-      if (!confirm(`Are you sure you want to delete folder "${folder.name}"?`)) return;
+      if (!confirm(`Are you sure you want to delete folder "${folder.label}"?`)) return;
 
       try {
         const { error } = await supabase.from("document_folders").delete().eq("id", folder.id);
         if (error) throw error;
 
-        toast("Folder Deleted", `Folder "${folder.name}" removed.`, "success");
+        toast("Folder Deleted", `Folder "${folder.label}" removed.`, "success");
         if (activeCategory === folder.id) {
           setActiveCategory("all");
         }

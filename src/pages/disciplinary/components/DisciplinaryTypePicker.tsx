@@ -27,7 +27,7 @@ export const DisciplinaryTypePicker = memo(function DisciplinaryTypePicker({
               onClick={() => onSelectType(typeKey)}
               className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2 ${
                 isSelected
-                  ? `${cfg.border} ${cfg.bg} ring-2 ring-[#253C7D]/20 shadow-xs`
+                  ? `${cfg.bg} ring-2 ring-[#253C7D]/20 shadow-xs`
                   : "border-gray-200 bg-white hover:bg-gray-50"
               }`}
             >

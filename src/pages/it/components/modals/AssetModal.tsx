@@ -11,7 +11,7 @@ interface AssetModalProps {
   saving: boolean;
   employees: Employee[];
   branches: Branch[];
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSubmit: (e: React.FormEvent) => void | Promise<void>;
 }
 
 export const AssetModal = memo(function AssetModal({

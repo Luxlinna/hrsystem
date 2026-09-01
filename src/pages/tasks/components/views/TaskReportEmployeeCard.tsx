@@ -68,7 +68,7 @@ export const TaskReportEmployeeCard = memo(function TaskReportEmployeeCard({
                 <i className="ri-file-excel-line" /> Excel
               </button>
               <button
-                onClick={() => { exportTasksPDF(empTasks, `${empName}_tasks.pdf`, empName); setActiveExportMenu(null); }}
+                onClick={() => { exportTasksPDF(empTasks, `${empName} Tasks Report`); setActiveExportMenu(null); }}
                 className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-gray-700 hover:bg-rose-50 hover:text-rose-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <i className="ri-file-pdf-line" /> PDF

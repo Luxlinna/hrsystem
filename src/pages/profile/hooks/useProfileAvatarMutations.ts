@@ -110,6 +110,7 @@ export function useProfileAvatarMutations({ employee }: UseProfileAvatarMutation
     handleAvatarSelect,
     handleCropConfirm,
     handleEditAvatar,
+    closeCropModal: () => setAvatarSrc(""),
     handleRemoveAvatar,
   };
 }

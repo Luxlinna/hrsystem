@@ -56,7 +56,7 @@ export default function AttendancePage() {
         onExportCSV={filters.handleExportCSV}
         onOpenLogModal={openLogModal}
         records={filters.filteredRecords.length > 0 ? filters.filteredRecords : data.records}
-        summaries={metrics.employeeSummaries || []}
+        summaries={metrics.employeeSummary || []}
       />
 
       <SelfCheckInBanner myEmployee={data.myEmployee} myTodayRecord={myTodayRecord} />
