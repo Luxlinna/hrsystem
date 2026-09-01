@@ -12,7 +12,7 @@ const BranchContext = createContext<BranchContextType | undefined>(undefined);
 export function BranchProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { role, isAdmin: isSuperRole } = usePermissions();
-  const { branches, loading, userBranchId, userBranchName, fetchBranches } = useBranchData(user?.email);
+  const { branches, loading, userBranchId, userBranchName, userSiteId, userSiteName, fetchBranches } = useBranchData(user?.email);
 
   const [storedBranchId, setStoredBranchId] = useState<string>(() => {
     const saved = localStorage.getItem("hrm_selected_branch_id");
@@ -98,8 +98,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const effectiveBranchName = useMemo(() => {
     if (!effectiveBranchId) return "Select Branch";
     const found = branches.find((b) => b.id === selectedBranchId);
-    return found?.name || userBranchName || "Selected Branch";
-  }, [effectiveBranchId, selectedBranchId, branches, userBranchName]);
+    return found?.name || userSiteName || userBranchName || "Selected Branch";
+  }, [effectiveBranchId, selectedBranchId, branches, userSiteName, userBranchName]);
 
   const isBranchScoped = Boolean(effectiveBranchId);
 
@@ -110,6 +110,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       loading,
       userBranchId,
       userBranchName,
+      userSiteId,
+      userSiteName,
       selectedBranchId,
       setSelectedBranchId,
       effectiveBranchId,
@@ -128,6 +130,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       loading,
       userBranchId,
       userBranchName,
+      userSiteId,
+      userSiteName,
       selectedBranchId,
       setSelectedBranchId,
       effectiveBranchId,

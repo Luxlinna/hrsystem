@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { Branch, Employee } from "../types";
 import { statusColors } from "../constants";
 import { BranchWorkSitesSection } from "./BranchWorkSitesSection";
+import { BranchBiometricsSection } from "./BranchBiometricsSection";
 import { BranchStaffSection } from "./BranchStaffSection";
 
 interface BranchDetailDrawerProps {
@@ -152,6 +153,9 @@ function BranchDetailDrawerInner({
 
       {/* Work Sites Subcomponent */}
       <BranchWorkSitesSection branchId={branch.id} canManage={canManageThisBranch} />
+
+      {/* Biometric Fingerprint Machines Subcomponent */}
+      <BranchBiometricsSection branchId={branch.id} canManage={canManageThisBranch} />
 
       {/* Staff Breakdown Subcomponent */}
       <BranchStaffSection deptGroups={deptGroups} empLoading={empLoading} />

@@ -31,6 +31,7 @@ export default function TopBar() {
     selectedBranchId,
     setSelectedBranchId,
     userBranchName,
+    userSiteName,
     isSuperAdmin,
   } = useBranchScope();
 
@@ -154,11 +155,17 @@ export default function TopBar() {
                 </select>
               </div>
             ) : (
-              /* Branch Admin / Employee Branch Badge */
-              userBranchName && (
-                <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 rounded-xl text-[11px] font-bold">
-                  <i className="ri-map-pin-2-fill text-xs text-[#253C7D]" />
-                  <span className="max-w-[130px] truncate" title={`Branch: ${userBranchName}`}>{userBranchName}</span>
+              /* Branch Admin / Employee Branch & Site Badge */
+              (userSiteName || userBranchName) && (
+                <div
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-[11px] font-bold shadow-2xs"
+                  title={`Work Site: ${userSiteName || userBranchName}${userSiteName && userBranchName ? ` (${userBranchName})` : ""}`}
+                >
+                  <i className="ri-map-pin-2-fill text-xs text-emerald-600" />
+                  <span className="max-w-[150px] truncate">{userSiteName || userBranchName}</span>
+                  {userSiteName && userBranchName && (
+                    <span className="text-[10px] text-emerald-700/80 font-normal">({userBranchName})</span>
+                  )}
                 </div>
               )
             )}

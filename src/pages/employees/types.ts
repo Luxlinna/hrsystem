@@ -12,6 +12,7 @@ export interface Employee {
   avatar_url?: string | null;
   reports_to?: string | null;
   branches?: { name: string } | null;
+  work_locations?: { name: string } | null;
   default_work_location_id?: string | null;
 }
 

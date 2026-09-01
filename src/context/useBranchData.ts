@@ -7,6 +7,8 @@ export function useBranchData(userEmail?: string | null) {
   const [loading, setLoading] = useState(true);
   const [userBranchId, setUserBranchId] = useState<string | null>(null);
   const [userBranchName, setUserBranchName] = useState<string | null>(null);
+  const [userSiteId, setUserSiteId] = useState<string | null>(null);
+  const [userSiteName, setUserSiteName] = useState<string | null>(null);
 
   const fetchBranches = useCallback(async () => {
     const { data: branchesData } = await supabase
@@ -43,13 +45,19 @@ export function useBranchData(userEmail?: string | null) {
     if (!userEmail) {
       setUserBranchId(null);
       setUserBranchName(null);
+      setUserSiteId(null);
+      setUserSiteName(null);
       setLoading(false);
       return;
     }
     const cleanEmail = userEmail.trim().toLowerCase();
     const { data } = await supabase
       .from("employees")
-      .select("id, branch_id, branches(id, name)")
+      .select(`
+        id, branch_id, default_work_location_id,
+        branches(id, name),
+        work_locations:default_work_location_id(id, name)
+      `)
       .ilike("email", cleanEmail)
       .is("deleted_at", null)
       .maybeSingle();
@@ -57,10 +65,15 @@ export function useBranchData(userEmail?: string | null) {
     if (data?.branch_id) {
       setUserBranchId(data.branch_id);
       const bName = (data.branches as any)?.name || null;
+      const sName = (data.work_locations as any)?.name || null;
       setUserBranchName(bName);
+      setUserSiteName(sName);
+      setUserSiteId(data.default_work_location_id || null);
     } else {
       setUserBranchId(null);
       setUserBranchName(null);
+      setUserSiteId(null);
+      setUserSiteName(null);
     }
     setLoading(false);
   }, [userEmail]);
@@ -75,6 +88,8 @@ export function useBranchData(userEmail?: string | null) {
     loading,
     userBranchId,
     userBranchName,
+    userSiteId,
+    userSiteName,
     fetchBranches,
   };
 }

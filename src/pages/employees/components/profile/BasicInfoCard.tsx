@@ -10,6 +10,8 @@ interface BasicInfoCardProps {
   saving: boolean;
   manager: ReportEntry | null;
   allEmployees: ReportEntry[];
+  branches?: { id: string; name: string }[];
+  workSites?: { id: string; name: string; branch_id: string }[];
   onSave: () => void;
 }
 
@@ -21,8 +23,14 @@ export const BasicInfoCard = memo(function BasicInfoCard({
   saving,
   manager,
   allEmployees,
+  branches = [],
+  workSites = [],
   onSave,
 }: BasicInfoCardProps) {
+  // Filter sites for the currently selected branch in the form
+  const currentBranchId = form.branch_id || employee.branch_id;
+  const availableSites = workSites.filter((s) => !currentBranchId || s.branch_id === currentBranchId);
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6">
       <div className="flex items-center justify-between mb-5">
@@ -89,6 +97,69 @@ export const BasicInfoCard = memo(function BasicInfoCard({
             <p className="text-[14px] text-gray-900">{employee.phone || "—"}</p>
           )}
         </div>
+
+        {/* Branch Selection */}
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Branch</label>
+          {editing ? (
+            <select
+              value={form.branch_id || ""}
+              onChange={(e) => {
+                const newBranchId = e.target.value || null;
+                setForm({
+                  ...form,
+                  branch_id: newBranchId,
+                  // Reset site if changing branch
+                  default_work_location_id: null,
+                });
+              }}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            >
+              <option value="">No branch</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <i className="ri-building-line text-[#253C7D] text-sm" />
+              <p className="text-[14px] text-gray-900 font-medium">{employee.branches?.name || "No branch"}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Work Site / Location */}
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+            Work Site / Location
+          </label>
+          {editing ? (
+            <select
+              value={form.default_work_location_id || ""}
+              onChange={(e) => setForm({ ...form, default_work_location_id: e.target.value || null })}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            >
+              <option value="">
+                {branches.find((b) => b.id === currentBranchId)?.name || employee.branches?.name || "Main Branch"} (Main Branch)
+              </option>
+              {availableSites.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <i className="ri-map-pin-2-line text-emerald-600 text-sm" />
+              <p className="text-[14px] text-gray-900 font-medium">
+                {employee.work_locations?.name || `${employee.branches?.name || "Main Branch"} (Main Branch)`}
+              </p>
+            </div>
+          )}
+        </div>
+
         <div>
           <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Role</label>
           {editing ? (

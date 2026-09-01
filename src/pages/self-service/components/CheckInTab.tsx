@@ -198,35 +198,59 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     (async () => {
       const { data } = await supabase
         .from("employees")
-        .select("branch_id, default_work_location_id, branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time)")
+        .select(`
+          branch_id, default_work_location_id,
+          branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
+          work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time)
+        `)
         .eq("id", employeeId)
         .maybeSingle();
-      const b = (data as any)?.branches as BranchGeofence | undefined;
-      setBranch(b || null);
+
+      const mainBranch = (data as any)?.branches;
+      const site = (data as any)?.work_locations;
 
       let wlId = (data as any)?.default_work_location_id || null;
       if (!wlId && (data as any)?.branch_id) {
         const { data: defaultSite } = await supabase
           .from("work_locations")
-          .select("id")
+          .select("id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time")
           .eq("branch_id", (data as any).branch_id)
-          .eq("is_default", true)
           .is("deleted_at", null)
+          .order("is_default", { ascending: false })
+          .limit(1)
           .maybeSingle();
-        if (defaultSite) {
-          wlId = defaultSite.id;
-        } else {
-          const { data: firstSite } = await supabase
-            .from("work_locations")
-            .select("id")
-            .eq("branch_id", (data as any).branch_id)
-            .is("deleted_at", null)
-            .limit(1)
-            .maybeSingle();
-          if (firstSite) wlId = firstSite.id;
-        }
+        if (defaultSite) wlId = defaultSite.id;
       }
       setDefaultWorkLocationId(wlId);
+
+      let lat = site?.latitude ?? mainBranch?.latitude ?? null;
+      let lng = site?.longitude ?? mainBranch?.longitude ?? null;
+      const combinedLocText = `${site?.name || ""} ${site?.description || ""}`.toLowerCase();
+
+      // If coordinates are missing, resolve from known province address
+      if (!lat || !lng) {
+        if (combinedLocText.includes("kampong thom") || combinedLocText.includes("sala popel")) {
+          lat = 12.7111;
+          lng = 104.8887;
+        } else if (combinedLocText.includes("battambang")) {
+          lat = 13.0957;
+          lng = 103.2022;
+        } else if (combinedLocText.includes("siem reap")) {
+          lat = 13.3671;
+          lng = 103.8448;
+        }
+      }
+
+      const effectiveBranch: BranchGeofence = {
+        name: site?.name ? `${site.name} (${mainBranch?.name || "Site"})` : mainBranch?.name || "Office",
+        latitude: lat,
+        longitude: lng,
+        geofence_radius_m: site?.geofence_radius_m ?? mainBranch?.geofence_radius_m ?? 100,
+        work_start_time: site?.work_start_time || mainBranch?.work_start_time || null,
+        work_end_time: site?.work_end_time || mainBranch?.work_end_time || null,
+      };
+
+      setBranch(effectiveBranch);
       setBranchLoading(false);
     })();
   }, [employeeId]);
@@ -658,10 +682,10 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
                   <i className="ri-map-pin-line text-lg" />
                   Check In
                 </button>
-                {branch?.latitude && (
+                {branch?.name && (
                   <p className="text-white/60 text-[11px] text-center">
                     <i className="ri-map-pin-line mr-1" />
-                    Within {branch.geofence_radius_m}m of {branch.name}
+                    Within {branch.geofence_radius_m || 100}m of {branch.name}
                   </p>
                 )}
               </div>

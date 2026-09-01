@@ -99,9 +99,15 @@ export const ProfileHeader = memo(function ProfileHeader({
                 {employee.department}
               </span>
               <span className="flex items-center gap-1">
-                <i className="ri-map-pin-line" />
+                <i className="ri-building-line" />
                 {employee.branches?.name || "Headquarters"}
               </span>
+              {employee.work_locations?.name && (
+                <span className="flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-medium text-[11px]">
+                  <i className="ri-map-pin-2-line" />
+                  {employee.work_locations.name}
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <i className="ri-mail-line" />
                 {employee.email}

@@ -1,0 +1,127 @@
+import { useState, useRef, useEffect, useCallback } from "react";
+import { toast } from "@/components/Toast";
+import { getCurrentPosition } from "@/lib/geo";
+import { geocodeAddress, loadGoogleMaps, reverseGeocode } from "@/lib/geocode";
+import type { WorkSiteFormState } from "../types";
+
+interface UseWorkSiteLocationProps {
+  isOpen: boolean;
+  setForm: React.Dispatch<React.SetStateAction<WorkSiteFormState>>;
+}
+
+export function useWorkSiteLocation({ isOpen, setForm }: UseWorkSiteLocationProps) {
+  const [locating, setLocating] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+  const [addressLookup, setAddressLookup] = useState("");
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
+  const placesAutocompleteRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!isOpen || !addressInputRef.current) return;
+    let cancelled = false;
+
+    loadGoogleMaps()
+      .then(() => {
+        if (cancelled || !addressInputRef.current || placesAutocompleteRef.current) return;
+        const autocomplete = new (window as any).google.maps.places.Autocomplete(addressInputRef.current, {
+          fields: ["formatted_address", "geometry", "name"],
+          types: ["geocode", "establishment"],
+        });
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          const loc = place?.geometry?.location;
+          if (!loc) {
+            toast("Error", "That place doesn't include coordinates. Try a more specific address.", "error");
+            return;
+          }
+          const formattedAddress = place.formatted_address || place.name || addressInputRef.current?.value || "";
+          setAddressLookup(formattedAddress);
+          setForm((f) => ({
+            ...f,
+            description: f.description || formattedAddress,
+            latitude: loc.lat().toFixed(6),
+            longitude: loc.lng().toFixed(6),
+          }));
+          toast("Location selected", "Coordinates added to site.", "success");
+        });
+        placesAutocompleteRef.current = autocomplete;
+      })
+      .catch(() => {
+        // Handled by manual lookup
+      });
+
+    return () => {
+      cancelled = true;
+      if (placesAutocompleteRef.current) {
+        (window as any).google?.maps?.event?.clearInstanceListeners(placesAutocompleteRef.current);
+        placesAutocompleteRef.current = null;
+      }
+    };
+  }, [isOpen, setForm]);
+
+  const useCurrentLocation = useCallback(async () => {
+    setLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      const rawLat = pos.coords?.latitude ?? (pos as any).latitude;
+      const rawLng = pos.coords?.longitude ?? (pos as any).longitude;
+      if (rawLat == null || rawLng == null) throw new Error("Could not get GPS coordinates.");
+
+      const lat = Number(rawLat).toFixed(6);
+      const lng = Number(rawLng).toFixed(6);
+      setForm((f) => ({ ...f, latitude: lat, longitude: lng }));
+
+      try {
+        const addrResult = await reverseGeocode(Number(rawLat), Number(rawLng));
+        const addr = typeof addrResult === "string" ? addrResult : (addrResult as any)?.formattedAddress || "";
+        if (addr) {
+          setAddressLookup(addr);
+          setForm((f) => ({ ...f, description: f.description || addr, latitude: lat, longitude: lng }));
+        }
+      } catch {
+        // Optional
+      }
+      toast("Location acquired", `Coordinates set to ${lat}, ${lng}`, "success");
+    } catch (err: any) {
+      toast("Location error", err?.message || "Could not read location", "error");
+    } finally {
+      setLocating(false);
+    }
+  }, [setForm]);
+
+  const handleGeocodeAddress = useCallback(async () => {
+    const q = addressLookup.trim();
+    if (!q) {
+      toast("Address required", "Type an address or site name to look up.", "error");
+      return;
+    }
+    setGeocoding(true);
+    try {
+      const result = await geocodeAddress(q);
+      const lat = result.lat.toFixed(6);
+      const lng = result.lng.toFixed(6);
+      setForm((f) => ({
+        ...f,
+        description: f.description || result.formattedAddress,
+        latitude: lat,
+        longitude: lng,
+      }));
+      setAddressLookup(result.formattedAddress);
+      toast("Address found", `Resolved to ${result.formattedAddress} (${lat}, ${lng})`, "success");
+    } catch (err: any) {
+      toast("Lookup failed", err?.message || "Could not find coordinates for that address.", "error");
+    } finally {
+      setGeocoding(false);
+    }
+  }, [addressLookup, setForm]);
+
+  return {
+    locating,
+    geocoding,
+    addressLookup,
+    setAddressLookup,
+    addressInputRef,
+    useCurrentLocation,
+    handleGeocodeAddress,
+  };
+}

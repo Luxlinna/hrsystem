@@ -1,21 +1,10 @@
 import { memo } from "react";
-import type { WorkSite } from "./BranchWorkSitesSection";
+import type { WorkSite } from "../hooks/useWorkSites";
 
 interface WorkSiteItemProps {
   site: WorkSite;
   canManage: boolean;
-  editingSiteId: string | null;
-  editingSiteName: string;
-  setEditingSiteName: (name: string) => void;
-  editingSiteAddress: string;
-  setEditingSiteAddress: (addr: string) => void;
-  locatingEdit: boolean;
-  savingSite: boolean;
-  onUseCurrentLocation: (setter: (v: string) => void, setLoc: (v: boolean) => void) => void;
-  setLocatingEdit: (v: boolean) => void;
-  onStartEdit: (site: WorkSite) => void;
-  onCancelEdit: () => void;
-  onSaveEdit: (site: WorkSite) => void;
+  onEdit: (site: WorkSite) => void;
   onSetDefault: (site: WorkSite) => void;
   onDeleteSite: (site: WorkSite) => void;
 }
@@ -23,107 +12,83 @@ interface WorkSiteItemProps {
 export const WorkSiteItem = memo(function WorkSiteItem({
   site,
   canManage,
-  editingSiteId,
-  editingSiteName,
-  setEditingSiteName,
-  editingSiteAddress,
-  setEditingSiteAddress,
-  locatingEdit,
-  savingSite,
-  onUseCurrentLocation,
-  setLocatingEdit,
-  onStartEdit,
-  onCancelEdit,
-  onSaveEdit,
+  onEdit,
   onSetDefault,
   onDeleteSite,
 }: WorkSiteItemProps) {
-  if (editingSiteId === site.id) {
-    return (
-      <div className="p-3 rounded-xl border border-gray-300 bg-white text-xs space-y-2">
-        <input
-          type="text"
-          value={editingSiteName}
-          onChange={(e) => setEditingSiteName(e.target.value)}
-          className="w-full px-2.5 py-1 text-xs bg-white border border-gray-300 rounded-lg"
-          placeholder="Site Name"
-        />
-        <div className="relative">
-          <input
-            type="text"
-            value={editingSiteAddress}
-            onChange={(e) => setEditingSiteAddress(e.target.value)}
-            className="w-full px-2.5 pr-7 py-1 text-xs bg-white border border-gray-300 rounded-lg"
-            placeholder="Address"
-          />
-          <button
-            type="button"
-            onClick={() => onUseCurrentLocation(setEditingSiteAddress, setLocatingEdit)}
-            disabled={locatingEdit}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#253C7D] cursor-pointer"
-          >
-            <i className={locatingEdit ? "ri-loader-4-line animate-spin text-xs" : "ri-map-pin-user-line text-xs"} />
-          </button>
-        </div>
-        <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onCancelEdit} className="px-2 py-0.5 text-xs text-gray-500 cursor-pointer">
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => onSaveEdit(site)}
-            disabled={savingSite}
-            className="px-2 py-0.5 text-xs font-bold bg-[#253C7D] text-white rounded-lg cursor-pointer"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const startTime = site.work_start_time?.slice(0, 5) || "07:30";
+  const endTime = site.work_end_time?.slice(0, 5) || "17:00";
 
   return (
     <div
-      className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-2 ${
-        site.is_default ? "bg-amber-50/50 border-amber-200" : "bg-white border-gray-100"
+      className={`p-3.5 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
+        site.is_default ? "bg-amber-50/50 border-amber-200" : "bg-white border-gray-100 hover:border-gray-200 shadow-2xs"
       }`}
     >
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-gray-800 truncate">{site.name}</span>
+      <div className="min-w-0 space-y-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-bold text-gray-900 text-[13px]">{site.name}</span>
           {site.is_default && (
             <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              Default
+              Default Site
+            </span>
+          )}
+          {site.is_four_punch_enabled && (
+            <span className="bg-indigo-50 text-indigo-700 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border border-indigo-100">
+              4-Punch
             </span>
           )}
         </div>
-        {site.description && <p className="text-[11px] text-gray-400 truncate">{site.description}</p>}
+
+        {site.description && (
+          <p className="text-[11px] text-gray-500 truncate flex items-center gap-1">
+            <i className="ri-map-pin-line text-gray-400" />
+            {site.description}
+          </p>
+        )}
+
+        <div className="flex items-center gap-3 text-[11px] text-gray-400 flex-wrap pt-0.5">
+          <span className="flex items-center gap-1">
+            <i className="ri-time-line text-[#253C7D]" />
+            {startTime} – {endTime}
+          </span>
+          {site.latitude != null && site.longitude != null ? (
+            <span className="flex items-center gap-1 text-emerald-600">
+              <i className="ri-crosshair-2-line" />
+              {site.latitude.toFixed(4)}, {site.longitude.toFixed(4)} ({site.geofence_radius_m || 100}m)
+            </span>
+          ) : (
+            <span className="text-gray-400 italic">Inheriting branch GPS</span>
+          )}
+        </div>
       </div>
 
       {canManage && (
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
           {!site.is_default && (
             <button
               type="button"
               onClick={() => onSetDefault(site)}
-              className="px-2 py-0.5 text-[10px] text-gray-600 hover:bg-gray-100 rounded-md border border-gray-200 cursor-pointer"
+              className="px-2.5 py-1 text-[11px] font-semibold text-gray-600 hover:bg-gray-100 rounded-lg border border-gray-200 cursor-pointer transition-colors"
             >
               Make Default
             </button>
           )}
           <button
             type="button"
-            onClick={() => onStartEdit(site)}
-            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-[#253C7D] cursor-pointer"
+            onClick={() => onEdit(site)}
+            title="Edit site geofence and schedule"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-[#253C7D] hover:bg-blue-50 cursor-pointer transition-colors"
           >
-            <i className="ri-edit-line text-xs" />
+            <i className="ri-edit-line text-sm" />
           </button>
           <button
             type="button"
             onClick={() => onDeleteSite(site)}
-            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-rose-600 cursor-pointer"
+            title="Remove site"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors"
           >
-            <i className="ri-delete-bin-line text-xs" />
+            <i className="ri-delete-bin-line text-sm" />
           </button>
         </div>
       )}

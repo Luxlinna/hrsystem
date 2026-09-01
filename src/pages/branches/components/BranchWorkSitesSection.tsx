@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useWorkSites } from "../hooks/useWorkSites";
 import { WorkSiteItem } from "./WorkSiteItem";
-import { NewWorkSiteForm } from "./NewWorkSiteForm";
+import { WorkSiteModal } from "./WorkSiteModal";
 
 export type { WorkSite } from "../hooks/useWorkSites";
 
@@ -17,27 +17,14 @@ export const BranchWorkSitesSection = memo(function BranchWorkSitesSection({
   const {
     sites,
     sitesLoading,
-    newSiteName,
-    setNewSiteName,
-    newSiteAddress,
-    setNewSiteAddress,
-    addingMode,
-    setAddingMode,
+    modalOpen,
+    editingSite,
     savingSite,
-    editingSiteId,
-    setEditingSiteId,
-    editingSiteName,
-    setEditingSiteName,
-    editingSiteAddress,
-    setEditingSiteAddress,
-    locatingNew,
-    setLocatingNew,
-    locatingEdit,
-    setLocatingEdit,
-    handleUseCurrentLocation,
-    handleAddSite,
+    openAddModal,
+    openEditModal,
+    closeModal,
+    handleSubmitSite,
     handleSetDefault,
-    handleSaveEdit,
     handleDeleteSite,
   } = useWorkSites(branchId);
 
@@ -52,9 +39,10 @@ export const BranchWorkSitesSection = memo(function BranchWorkSitesSection({
             </span>
           )}
         </h3>
-        {canManage && !addingMode && (
+        {canManage && (
           <button
-            onClick={() => setAddingMode(true)}
+            type="button"
+            onClick={openAddModal}
             className="text-[11px] font-semibold text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer"
           >
             <i className="ri-add-line" /> Add Site
@@ -62,25 +50,21 @@ export const BranchWorkSitesSection = memo(function BranchWorkSitesSection({
         )}
       </div>
 
-      {addingMode && (
-        <NewWorkSiteForm
-          newSiteName={newSiteName}
-          setNewSiteName={setNewSiteName}
-          newSiteAddress={newSiteAddress}
-          setNewSiteAddress={setNewSiteAddress}
-          savingSite={savingSite}
-          locatingNew={locatingNew}
-          onUseCurrentLocation={handleUseCurrentLocation}
-          setLocatingNew={setLocatingNew}
-          onCancel={() => setAddingMode(false)}
-          onSubmit={handleAddSite}
-        />
-      )}
-
       {sitesLoading ? (
         <p className="text-xs text-gray-400 py-2">Loading work sites...</p>
       ) : sites.length === 0 ? (
-        <p className="text-xs text-gray-400 italic py-1">No work sites configured.</p>
+        <div className="p-4 rounded-xl border border-dashed border-gray-200 text-center">
+          <p className="text-xs text-gray-400 italic">No work sites configured for this branch.</p>
+          {canManage && (
+            <button
+              type="button"
+              onClick={openAddModal}
+              className="mt-2 text-xs font-semibold text-[#253C7D] hover:underline cursor-pointer"
+            >
+              + Add first site (e.g. Kampong Thom Site)
+            </button>
+          )}
+        </div>
       ) : (
         <div className="space-y-2">
           {sites.map((site) => (
@@ -88,28 +72,22 @@ export const BranchWorkSitesSection = memo(function BranchWorkSitesSection({
               key={site.id}
               site={site}
               canManage={canManage}
-              editingSiteId={editingSiteId}
-              editingSiteName={editingSiteName}
-              setEditingSiteName={setEditingSiteName}
-              editingSiteAddress={editingSiteAddress}
-              setEditingSiteAddress={setEditingSiteAddress}
-              locatingEdit={locatingEdit}
-              savingSite={savingSite}
-              onUseCurrentLocation={handleUseCurrentLocation}
-              setLocatingEdit={setLocatingEdit}
-              onStartEdit={(s) => {
-                setEditingSiteId(s.id);
-                setEditingSiteName(s.name);
-                setEditingSiteAddress(s.description || "");
-              }}
-              onCancelEdit={() => setEditingSiteId(null)}
-              onSaveEdit={handleSaveEdit}
+              onEdit={openEditModal}
               onSetDefault={handleSetDefault}
               onDeleteSite={handleDeleteSite}
             />
           ))}
         </div>
       )}
+
+      {/* Full Work Site Modal matching BranchModal style */}
+      <WorkSiteModal
+        isOpen={modalOpen}
+        editingSite={editingSite}
+        saving={savingSite}
+        onClose={closeModal}
+        onSubmit={handleSubmitSite}
+      />
     </div>
   );
 });

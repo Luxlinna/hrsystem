@@ -13,6 +13,8 @@ export interface BranchContextType {
   loading: boolean;
   userBranchId: string | null;
   userBranchName: string | null;
+  userSiteId?: string | null;
+  userSiteName?: string | null;
   selectedBranchId: string;
   setSelectedBranchId: (id: string) => void;
   effectiveBranchId: string | null;

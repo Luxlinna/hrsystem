@@ -26,12 +26,24 @@ export function useEmployeeProfile(id: string | undefined) {
   const [allEmployees, setAllEmployees] = useState<ReportEntry[]>([]);
   const loadRequestId = useRef(0);
 
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [workSites, setWorkSites] = useState<{ id: string; name: string; branch_id: string }[]>([]);
+
+  useEffect(() => {
+    supabase.from("branches").select("id, name").is("deleted_at", null).order("name").then(({ data }) => {
+      setBranches(data || []);
+    });
+    supabase.from("work_locations").select("id, name, branch_id").is("deleted_at", null).order("name").then(({ data }) => {
+      setWorkSites(data || []);
+    });
+  }, []);
+
   const loadEmployee = useCallback(async (empId: string) => {
     setLoading(true);
     const requestId = ++loadRequestId.current;
     const { data: emp } = await supabase
       .from("employees")
-      .select("*, branches(name)")
+      .select("*, branches(name), work_locations:default_work_location_id(name)")
       .eq("id", empId)
       .maybeSingle();
 
@@ -124,7 +136,8 @@ export function useEmployeeProfile(id: string | undefined) {
         phone: form.phone,
         role: form.role,
         department: form.department,
-        branch_id: form.branch_id,
+        branch_id: form.branch_id || null,
+        default_work_location_id: form.default_work_location_id || null,
         status: form.status,
         join_date: form.join_date,
         reports_to: form.reports_to,
@@ -183,6 +196,8 @@ export function useEmployeeProfile(id: string | undefined) {
     form,
     setForm,
     allEmployees,
+    branches,
+    workSites,
     saveChanges,
     uploadAvatar,
   };

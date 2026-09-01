@@ -136,18 +136,22 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
     (async () => {
       const { data } = await supabase
         .from("employees")
-        .select("branch_id, default_work_location_id, branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time)")
+        .select(`
+          branch_id, default_work_location_id,
+          branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
+          work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time)
+        `)
         .eq("id", employeeId)
         .maybeSingle();
 
-      const b = (data as any)?.branches as BranchGeofence | undefined;
-      setBranch(b || null);
+      const mainBranch = (data as any)?.branches;
+      const site = (data as any)?.work_locations;
 
       let wlId = (data as any)?.default_work_location_id || null;
       if (!wlId && (data as any)?.branch_id) {
         const { data: defaultSite } = await supabase
           .from("work_locations")
-          .select("id")
+          .select("id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time")
           .eq("branch_id", (data as any).branch_id)
           .is("deleted_at", null)
           .order("is_default", { ascending: false })
@@ -156,6 +160,37 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
         if (defaultSite) wlId = defaultSite.id;
       }
       setDefaultWorkLocationId(wlId);
+
+      let lat = site?.latitude ?? mainBranch?.latitude ?? null;
+      let lng = site?.longitude ?? mainBranch?.longitude ?? null;
+
+      // If coordinates are not stored in database yet, dynamically geocode site or branch address
+      if (!lat || !lng) {
+        const addressToGeocode = site?.description || site?.name || mainBranch?.location || "";
+        if (addressToGeocode) {
+          try {
+            const { geocodeAddress } = await import("@/lib/geocode");
+            const geoRes = await geocodeAddress(addressToGeocode);
+            if (geoRes?.lat && geoRes?.lng) {
+              lat = geoRes.lat;
+              lng = geoRes.lng;
+            }
+          } catch {
+            // Geocoding fallback handled gracefully
+          }
+        }
+      }
+
+      const effectiveBranch: BranchGeofence = {
+        name: site?.name ? `${site.name} (${mainBranch?.name || "Site"})` : mainBranch?.name || "Office",
+        latitude: lat,
+        longitude: lng,
+        geofence_radius_m: site?.geofence_radius_m ?? mainBranch?.geofence_radius_m ?? 100,
+        work_start_time: site?.work_start_time || mainBranch?.work_start_time || null,
+        work_end_time: site?.work_end_time || mainBranch?.work_end_time || null,
+      };
+
+      setBranch(effectiveBranch);
       setBranchLoading(false);
     })();
   }, [employeeId]);

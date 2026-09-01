@@ -25,6 +25,8 @@ export default function EmployeeProfile() {
     form,
     setForm,
     allEmployees,
+    branches,
+    workSites,
     saveChanges,
     uploadAvatar,
   } = useEmployeeProfile(id);
@@ -77,6 +79,8 @@ export default function EmployeeProfile() {
             saving={saving}
             manager={manager}
             allEmployees={allEmployees}
+            branches={branches}
+            workSites={workSites}
             onSave={saveChanges}
           />
           <LeaveHistoryCard leaveRequests={leaveRequests} />

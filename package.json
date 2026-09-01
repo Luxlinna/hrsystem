@@ -13,6 +13,7 @@
     "start": "node serve.mjs",
     "backup:s3": "node scripts/backup-db-to-s3.mjs",
     "restore:s3": "node scripts/restore-db-from-s3.mjs",
+    "zkteco:sync": "node scripts/zkteco-sync-agent.mjs",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit --project tsconfig.app.json"
   },
