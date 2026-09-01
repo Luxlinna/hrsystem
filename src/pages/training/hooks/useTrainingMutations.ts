@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Course, Employee, Branch } from "../types";
+import type { Course, Employee, Branch, Enrollment } from "../types";
 import { useCourseMutations } from "./useCourseMutations";
 import { useEnrollmentMutations } from "./useEnrollmentMutations";
 
@@ -12,6 +12,7 @@ interface UseTrainingMutationsProps {
   branches: Branch[];
   courses: Course[];
   employees: Employee[];
+  enrollments?: Enrollment[];
   fetchData: () => Promise<void>;
 }
 
@@ -22,6 +23,7 @@ export function useTrainingMutations({
   effectiveBranchId,
   userBranchId,
   courses,
+  enrollments = [],
   fetchData,
 }: UseTrainingMutationsProps) {
   const [saving, setSaving] = useState(false);
@@ -32,6 +34,7 @@ export function useTrainingMutations({
     isSuperAdmin,
     effectiveBranchId,
     userBranchId,
+    enrollments,
     fetchData,
     setSaving,
   });

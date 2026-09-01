@@ -30,6 +30,10 @@ export interface Course {
   created_by_name?: string | null;
   created_at: string;
   branches?: { id?: string; name: string } | null;
+  special_requirements?: string[] | null;
+  custom_requirement?: string | null;
+  refreshments?: string[] | null;
+  custom_refreshment?: string | null;
 }
 
 export interface Enrollment {
@@ -80,6 +84,10 @@ export interface CourseFormState {
   end_time: string;
   location: string;
   invited_employee_ids: string[];
+  special_requirements?: string[];
+  custom_requirement?: string;
+  refreshments?: string[];
+  custom_refreshment?: string;
 }
 
 export type TrainingTab = "courses" | "calendar" | "enrollments" | "certificates";

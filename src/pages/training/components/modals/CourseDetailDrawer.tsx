@@ -56,12 +56,23 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
         {/* Header */}
         <div className="p-5 border-b border-gray-100 flex items-start justify-between gap-3">
           <div>
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${format.color} mb-1.5`}
-            >
-              <i className={format.icon} />
-              {format.label}
-            </span>
+            <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${format.color}`}
+              >
+                <i className={format.icon} />
+                {format.label}
+              </span>
+              {course.is_admin_course ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100/70 text-[#253C7D] flex items-center gap-1">
+                  <i className="ri-global-line" /> Global
+                </span>
+              ) : course.branches?.name ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-700 flex items-center gap-1">
+                  <i className="ri-building-line" /> {course.branches.name}
+                </span>
+              ) : null}
+            </div>
             <h2 className="text-base font-bold text-gray-900 leading-snug">{course.title}</h2>
             <p className="text-xs text-gray-400 mt-0.5">{course.category}</p>
           </div>
@@ -131,6 +142,55 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
                   <i className="ri-door-open-line text-sm text-[#253C7D]" />
                   <span>Venue / Room: <strong>{course.location}</strong></span>
                 </p>
+              )}
+
+              {/* Equipment & Refreshments Badges */}
+              {((course.special_requirements && course.special_requirements.length > 0) ||
+                course.custom_requirement) && (
+                <div className="pt-2 border-t border-blue-100/60">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                    Equipment &amp; Support:
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {(course.special_requirements || []).map((req) => (
+                      <span
+                        key={req}
+                        className="px-2 py-0.5 bg-blue-100/80 text-[#253C7D] rounded-md text-[10px] font-bold flex items-center gap-1"
+                      >
+                        <i className="ri-tools-line" /> {req}
+                      </span>
+                    ))}
+                    {course.custom_requirement && (
+                      <span className="px-2 py-0.5 bg-blue-100/80 text-[#253C7D] rounded-md text-[10px] font-bold">
+                        {course.custom_requirement}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {((course.refreshments && course.refreshments.length > 0) ||
+                course.custom_refreshment) && (
+                <div className="pt-2 border-t border-blue-100/60">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                    Refreshments &amp; Catering:
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {(course.refreshments || []).map((ref) => (
+                      <span
+                        key={ref}
+                        className="px-2 py-0.5 bg-emerald-100/80 text-emerald-800 rounded-md text-[10px] font-bold flex items-center gap-1"
+                      >
+                        <i className="ri-cup-line" /> {ref}
+                      </span>
+                    ))}
+                    {course.custom_refreshment && (
+                      <span className="px-2 py-0.5 bg-emerald-100/80 text-emerald-800 rounded-md text-[10px] font-bold">
+                        {course.custom_refreshment}
+                      </span>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )}

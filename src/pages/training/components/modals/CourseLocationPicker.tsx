@@ -2,6 +2,8 @@ import { memo, useMemo, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { CourseFormState, MeetingRoomOption, Branch } from "../../types";
 import { decodeCourseDescription, type LocationType } from "./courseModalUtils";
+import { RequirementsSelectDropdown } from "@/pages/meeting-rooms/components/modals/RequirementsSelectDropdown";
+import { RefreshmentsSelectDropdown } from "@/pages/meeting-rooms/components/modals/RefreshmentsSelectDropdown";
 
 interface CourseLocationPickerProps {
   form: CourseFormState;
@@ -300,6 +302,45 @@ export const CourseLocationPicker = memo(function CourseLocationPicker({
                         </div>
                       </div>
                     )}
+                  </div>
+
+                  {/* Required Equipment & Support and Refreshments & Catering */}
+                  <div className="pt-2.5 space-y-3.5 border-t border-slate-200/80">
+                    <RequirementsSelectDropdown
+                      selectedRequirements={form.special_requirements || []}
+                      onToggleRequirement={(req) => {
+                        const current = form.special_requirements || [];
+                        const updated = current.includes(req)
+                          ? current.filter((r) => r !== req)
+                          : [...current, req];
+                        setForm((prev) => ({ ...prev, special_requirements: updated }));
+                      }}
+                      onSetRequirements={(reqs) => {
+                        setForm((prev) => ({ ...prev, special_requirements: reqs }));
+                      }}
+                      customReq={form.custom_requirement || ""}
+                      setCustomReq={(val) => {
+                        setForm((prev) => ({ ...prev, custom_requirement: val }));
+                      }}
+                    />
+
+                    <RefreshmentsSelectDropdown
+                      selectedRefreshments={form.refreshments || []}
+                      onToggleRefreshment={(ref) => {
+                        const current = form.refreshments || [];
+                        const updated = current.includes(ref)
+                          ? current.filter((r) => r !== ref)
+                          : [...current, ref];
+                        setForm((prev) => ({ ...prev, refreshments: updated }));
+                      }}
+                      onSetRefreshments={(refs) => {
+                        setForm((prev) => ({ ...prev, refreshments: refs }));
+                      }}
+                      customRef={form.custom_refreshment || ""}
+                      setCustomRef={(val) => {
+                        setForm((prev) => ({ ...prev, custom_refreshment: val }));
+                      }}
+                    />
                   </div>
                 </div>
               )}

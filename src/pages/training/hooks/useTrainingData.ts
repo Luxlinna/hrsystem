@@ -28,7 +28,7 @@ export function useTrainingData() {
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if (isPartnerBranchBlocked) {
       setCourses([]);
       setEnrollments([]);
       setEmployees([]);
@@ -51,36 +51,47 @@ export function useTrainingData() {
       setBranches(branchList);
 
       // 1.1 Query active meeting rooms for training location picker
-      const { data: mrData } = await supabase
+      let mrQuery = supabase
         .from("meeting_rooms")
         .select("id, name, capacity, floor, color, branch_id")
-        .is("deleted_at", null)
-        .order("name");
+        .is("deleted_at", null);
 
+      if (targetBranch) {
+        mrQuery = mrQuery.or(`branch_id.is.null,branch_id.eq.${targetBranch}`);
+      }
+
+      const { data: mrData } = await mrQuery.order("name");
       setMeetingRooms((mrData as MeetingRoomOption[]) || []);
 
       // 2. Query employees scoped to active branch
-      const { data: empData, error: empErr } = await supabase
+      let empQuery = supabase
         .from("employees")
         .select("id, first_name, last_name, email, department, avatar_url, branch_id")
         .eq("status", "active")
-        .eq("branch_id", targetBranch)
-        .is("deleted_at", null)
-        .order("first_name");
+        .is("deleted_at", null);
 
+      if (targetBranch) {
+        empQuery = empQuery.eq("branch_id", targetBranch);
+      }
+
+      const { data: empData, error: empErr } = await empQuery.order("first_name");
       if (empErr) console.error("Training employees query error:", empErr);
       const empList = (empData || []) as Employee[];
       const empIds = empList.map((e) => e.id);
       setEmployees(empList);
 
-      // 3. Query courses: Global (branch_id is null) + active branch courses
+      // 3. Query courses: Global (branch_id is null) + active branch courses with branch name joined
       let courseList: Course[] = [];
-      const { data: cData, error: cErr } = await supabase
+      let cQuery = supabase
         .from("training_courses")
-        .select("*")
-        .is("deleted_at", null)
-        .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
-        .order("created_at", { ascending: false });
+        .select("*, branches:branch_id(id, name)")
+        .is("deleted_at", null);
+
+      if (targetBranch) {
+        cQuery = cQuery.or(`branch_id.is.null,branch_id.eq.${targetBranch}`);
+      }
+
+      const { data: cData, error: cErr } = await cQuery.order("created_at", { ascending: false });
 
       if (cErr) {
         console.warn("Training courses scoped query error, using fallback:", cErr);
@@ -97,14 +108,20 @@ export function useTrainingData() {
       // Decode schedule and room location metadata
       const decodedCourses: Course[] = courseList.map((raw) => {
         const { description: cleanDesc, meta } = decodeCourseDescription(raw.description);
+        const branchInfo = raw.branches || branchList.find((b) => b.id === raw.branch_id) || null;
         return {
           ...raw,
+          branches: branchInfo,
           description: cleanDesc || null,
           scheduled_date: raw.scheduled_date || meta.scheduled_date || null,
           start_time: raw.start_time || meta.start_time || null,
           end_time: raw.end_time || meta.end_time || null,
           location: raw.location || meta.location || null,
           created_by_name: raw.created_by_name || meta.created_by_name || null,
+          special_requirements: meta.special_requirements || null,
+          custom_requirement: meta.custom_requirement || null,
+          refreshments: meta.refreshments || null,
+          custom_refreshment: meta.custom_refreshment || null,
         };
       });
 

@@ -1,4 +1,5 @@
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import type { MeetingRoom, Booking } from "../../types";
 import { FloorBadge } from "../FloorBadge";
 import { getRoomFloor, fmtTime, formatDateDisplay } from "../../roomUtils";
@@ -29,6 +30,46 @@ export const BookingDetailModal = memo(function BookingDetailModal({
   onOpenApprovalModal,
   onOpenReasonModal,
 }: BookingDetailModalProps) {
+  const [trainingLearners, setTrainingLearners] = useState<{ id: string; name: string; dept?: string }[]>([]);
+
+  useEffect(() => {
+    if (!booking || !booking.title?.includes("🎓 Training:")) {
+      setTrainingLearners([]);
+      return;
+    }
+    const cleanTitle = booking.title.replace("🎓 Training:", "").trim();
+    const fetchLearners = async () => {
+      const { data: course } = await supabase
+        .from("training_courses")
+        .select("id")
+        .ilike("title", cleanTitle)
+        .limit(1)
+        .maybeSingle();
+
+      if (course?.id) {
+        const { data: enrs } = await supabase
+          .from("training_enrollments")
+          .select("employees(id, first_name, last_name, department)")
+          .eq("course_id", course.id)
+          .neq("status", "dropped")
+          .is("deleted_at", null);
+
+        if (enrs) {
+          const list = enrs
+            .map((x: any) => x.employees)
+            .filter(Boolean)
+            .map((emp: any) => ({
+              id: emp.id,
+              name: `${emp.first_name} ${emp.last_name}`,
+              dept: emp.department || "Staff",
+            }));
+          setTrainingLearners(list);
+        }
+      }
+    };
+    fetchLearners();
+  }, [booking]);
+
   if (!booking) return null;
 
   const targetRoom = rooms.find((r) => r.id === booking.room_id);
@@ -152,6 +193,32 @@ export const BookingDetailModal = memo(function BookingDetailModal({
               <p className="text-[11px] text-gray-500">Seating Limit: {targetRoom?.capacity || "—"} seats</p>
             </div>
           </div>
+
+          {/* Training Enrolled Employees */}
+          {trainingLearners.length > 0 && (
+            <div className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100/70 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[#253C7D]">
+                  <i className="ri-group-line text-xs" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">
+                    Enrolled Staff Joining ({trainingLearners.length})
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                {trainingLearners.map((emp) => (
+                  <span
+                    key={emp.id}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white border border-blue-200/80 text-[11px] font-bold text-gray-800 shadow-2xs"
+                  >
+                    <i className="ri-user-line text-[#253C7D] text-xs" />
+                    <span>{emp.name}</span>
+                    <span className="text-[9px] font-normal text-gray-400">({emp.dept})</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Requested Equipment */}
           {rawReqs.length > 0 && (

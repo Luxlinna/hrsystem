@@ -30,5 +30,9 @@ export const emptyCourseForm: CourseFormState = {
   end_time: "11:00",
   location: "",
   invited_employee_ids: [],
+  special_requirements: [],
+  custom_requirement: "",
+  refreshments: [],
+  custom_refreshment: "",
 };
 

@@ -13,6 +13,7 @@ export function useMeetingRoomsData(selectedDate: string) {
   const { role, isAdmin } = usePermissions();
   const {
     isSuperAdmin,
+    isBranchAdmin,
     effectiveBranchId,
     effectiveBranchName,
     userBranchId,
@@ -25,7 +26,11 @@ export function useMeetingRoomsData(selectedDate: string) {
 
   const canApprove = Boolean(
     (isAdmin ||
+    isSuperAdmin ||
+    isBranchAdmin ||
     role?.name === "Super Admin" ||
+    role?.name === "Branch Admin" ||
+    role?.name === "Admin" ||
     role?.name === "HR Manager" ||
     role?.meeting_rooms_approve) && !isPartnerBranchBlocked
   );

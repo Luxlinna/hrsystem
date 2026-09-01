@@ -29,6 +29,10 @@ export interface CourseScheduleMeta {
   end_time?: string | null;
   location?: string | null;
   created_by_name?: string | null;
+  special_requirements?: string[] | null;
+  custom_requirement?: string | null;
+  refreshments?: string[] | null;
+  custom_refreshment?: string | null;
 }
 
 const META_REGEX = /<!--SCHEDULE_META:([\s\S]*?)-->/;
@@ -46,7 +50,11 @@ export function encodeCourseDescription(
     meta.start_time ||
     meta.end_time ||
     meta.location ||
-    meta.created_by_name;
+    meta.created_by_name ||
+    (meta.special_requirements && meta.special_requirements.length > 0) ||
+    meta.custom_requirement ||
+    (meta.refreshments && meta.refreshments.length > 0) ||
+    meta.custom_refreshment;
   if (!hasMeta) return cleanDesc;
   const metaJson = JSON.stringify(meta);
   return cleanDesc

@@ -72,6 +72,7 @@ export default function TrainingPage() {
         courses={filteredCourses.length > 0 ? filteredCourses : courses}
         enrollments={filteredEnrollments.length > 0 ? filteredEnrollments : enrollments}
         certificates={certificates}
+        activeBranchName={activeBranchName}
       />
 
       <TrainingFilterBar

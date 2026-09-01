@@ -31,6 +31,7 @@ export function useTraining() {
     branches: data.branches,
     courses: data.courses,
     employees: data.employees,
+    enrollments: data.enrollments,
     fetchData: data.fetchData,
   });
 

@@ -15,6 +15,7 @@ interface TrainingHeaderProps {
   courses?: Course[];
   enrollments?: Enrollment[];
   certificates?: Enrollment[];
+  activeBranchName?: string;
 }
 
 export const TrainingHeader = memo(function TrainingHeader({
@@ -30,17 +31,24 @@ export const TrainingHeader = memo(function TrainingHeader({
   courses = [],
   enrollments = [],
   certificates = [],
+  activeBranchName,
 }: TrainingHeaderProps) {
   return (
     <div className="mb-6 space-y-5">
       {/* Top Title & CTA Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1
-            className="text-2xl font-bold text-gray-900"
-          >
-            Training &amp; Development
-          </h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Training &amp; Development
+            </h1>
+            {activeBranchName && (
+              <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                <i className="ri-building-line text-sm" />
+                {activeBranchName}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-500 mt-0.5">
             Manage courses, employee enrollments, and professional certifications
           </p>
