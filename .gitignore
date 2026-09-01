@@ -13,3 +13,4 @@ out
 
 supabase/.temp
 supabase/.branches
+.env

@@ -54,9 +54,12 @@ export function useBranches() {
       .from("employees")
       .select("id, first_name, last_name, role, department, status, email")
       .eq("branch_id", branch.id)
+      .is("deleted_at", null)
       .order("department");
     if (requestId !== detailRequestId.current) return;
-    setBranchEmployees(data || []);
+    const emps = data || [];
+    setBranchEmployees(emps);
+    setSelectedBranch((prev) => (prev ? { ...prev, employee_count: emps.length } : null));
     setEmpLoading(false);
   }, []);
 

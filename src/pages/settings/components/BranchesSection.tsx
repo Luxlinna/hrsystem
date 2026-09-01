@@ -8,14 +8,33 @@ export function BranchesSection() {
   const [loadingBranches, setLoadingBranches] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from("branches")
-      .select("id, name, location, employee_count, status")
-      .order("name")
-      .then(({ data }) => {
-        setBranches(data || []);
-        setLoadingBranches(false);
-      });
+    Promise.all([
+      supabase
+        .from("branches")
+        .select("id, name, location, employee_count, status")
+        .is("deleted_at", null)
+        .order("name"),
+      supabase
+        .from("employees")
+        .select("id, branch_id")
+        .is("deleted_at", null),
+    ]).then(([branchesRes, empRes]) => {
+      const branchesData = branchesRes.data || [];
+      const empData = empRes.data || [];
+      const countMap: Record<string, number> = {};
+      for (const emp of empData) {
+        if (emp.branch_id) {
+          countMap[emp.branch_id] = (countMap[emp.branch_id] || 0) + 1;
+        }
+      }
+      setBranches(
+        branchesData.map((b) => ({
+          ...b,
+          employee_count: countMap[b.id] ?? 0,
+        }))
+      );
+      setLoadingBranches(false);
+    });
   }, []);
 
   if (loadingBranches) {
