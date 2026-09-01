@@ -13,4 +13,5 @@ out
 
 supabase/.temp
 supabase/.branches
-.env
+.temp-backups
+*.sql.gz

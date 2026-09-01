@@ -1,0 +1,88 @@
+name: Supabase Database Backup to AWS S3
+
+on:
+  schedule:
+    # Runs every day at 02:00 UTC (09:00 AM Cambodia / ICT)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      backup_label:
+        description: 'Optional manual backup label/tag (e.g. pre-migration, v2-release)'
+        required: false
+        default: 'manual'
+
+jobs:
+  backup-to-s3:
+    name: Dump PostgreSQL & Upload to AWS S3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL Client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client gzip
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_S3_REGION || 'ap-southeast-1' }}
+
+      - name: Perform Database Dump & Compress
+        id: dump
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          DB_HOST: ${{ secrets.SUPABASE_DB_HOST || 'aws-0-ap-southeast-1.pooler.supabase.com' }}
+          DB_PORT: ${{ secrets.SUPABASE_DB_PORT || '6543' }}
+          DB_USER: ${{ secrets.SUPABASE_DB_USER || format('postgres.{0}', secrets.SUPABASE_PROJECT_REF) }}
+          DB_NAME: ${{ secrets.SUPABASE_DB_NAME || 'postgres' }}
+          TAG: ${{ github.event.inputs.backup_label || 'daily' }}
+        run: |
+          TIMESTAMP=$(date +%Y-%m-%d_%H%M%S)
+          YEAR_MONTH=$(date +%Y-%m)
+          FILENAME="hrsystem_backup_${TIMESTAMP}_${TAG}.sql.gz"
+          
+          echo "Starting pg_dump for database ${DB_NAME} on host ${DB_HOST}..."
+          
+          pg_dump \
+            --host="${DB_HOST}" \
+            --port="${DB_PORT}" \
+            --username="${DB_USER}" \
+            --dbname="${DB_NAME}" \
+            --clean \
+            --if-exists \
+            --no-owner \
+            --no-privileges \
+            --verbose \
+            | gzip -9 > "${FILENAME}"
+            
+          FILESIZE=$(stat -c%s "${FILENAME}")
+          echo "Backup file created: ${FILENAME} (${FILESIZE} bytes)"
+          
+          echo "filename=${FILENAME}" >> $GITHUB_OUTPUT
+          echo "year_month=${YEAR_MONTH}" >> $GITHUB_OUTPUT
+          echo "filesize=${FILESIZE}" >> $GITHUB_OUTPUT
+
+      - name: Upload Backup to AWS S3 Bucket
+        env:
+          BUCKET: ${{ secrets.AWS_S3_BACKUP_BUCKET || secrets.AWS_S3_BUCKET }}
+          FILENAME: ${{ steps.dump.outputs.filename }}
+          YEAR_MONTH: ${{ steps.dump.outputs.year_month }}
+        run: |
+          S3_TARGET="s3://${BUCKET}/database-backups/${YEAR_MONTH}/${FILENAME}"
+          S3_LATEST="s3://${BUCKET}/database-backups/latest.sql.gz"
+          
+          echo "Uploading to ${S3_TARGET}..."
+          aws s3 cp "${FILENAME}" "${S3_TARGET}" --storage-class STANDARD_IA
+          
+          echo "Updating latest pointer..."
+          aws s3 cp "${FILENAME}" "${S3_LATEST}"
+          
+          echo "Listing recent backups in S3:"
+          aws s3 ls "s3://${BUCKET}/database-backups/${YEAR_MONTH}/" --human-readable
+
+      - name: Clean Up Local Dump
+        run: rm -f *.sql.gz
