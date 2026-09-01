@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import type { WorkSiteFormState } from "../components/WorkSiteModal";
+import type { WorkSiteFormState } from "../types";
 
 export interface WorkSite {
   id: string;

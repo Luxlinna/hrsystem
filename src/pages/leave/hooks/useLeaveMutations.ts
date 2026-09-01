@@ -57,6 +57,15 @@ export function useLeaveMutations({
         return;
       }
 
+      const cleanReason = (formData.reason || "").trim();
+      if (!cleanReason || cleanReason.length < 50) {
+        setToast({
+          type: "error",
+          message: "Please provide a detailed reason with at least 50 characters for managerial approval.",
+        });
+        return;
+      }
+
       const days = calculateDays(formData.start_date, formData.end_date);
       const remaining = getRemaining(targetEmpId, formData.leave_type);
       if (remaining !== null && days > remaining) {

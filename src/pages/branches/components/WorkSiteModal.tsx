@@ -1,6 +1,7 @@
 import React, { memo, useState, useEffect } from "react";
 import { toast } from "@/components/Toast";
 import type { WorkSite, WorkSiteFormState } from "../types";
+export type { WorkSiteFormState };
 import { useWorkSiteLocation } from "../hooks/useWorkSiteLocation";
 import { WorkSiteGeofenceSection } from "./WorkSiteGeofenceSection";
 import { WorkSiteScheduleSection } from "./WorkSiteScheduleSection";

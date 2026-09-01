@@ -113,6 +113,12 @@ export default function LeaveTab({ employeeId }: Props) {
       setTimeout(() => setToast(null), 3000);
       return;
     }
+    const cleanReason = (form.reason || "").trim();
+    if (!cleanReason || cleanReason.length < 50) {
+      setToast("Please provide a detailed reason with at least 50 characters for approval.");
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
     const conflict = requests.find(
       (r) =>
         (r.status === "pending" || r.status === "approved") &&
@@ -251,19 +257,41 @@ export default function LeaveTab({ employeeId }: Props) {
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-500 mb-1.5 block">Reason (optional)</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-gray-700">Reason / Justification *</label>
+              <span
+                className={`text-[11px] font-bold ${
+                  (form.reason || "").trim().length >= 50 ? "text-emerald-600" : "text-amber-600"
+                }`}
+              >
+                {(form.reason || "").trim().length} / 50 characters min
+                {(form.reason || "").trim().length < 50 &&
+                  ` (${50 - (form.reason || "").trim().length} more needed)`}
+              </span>
+            </div>
             <textarea
+              required
+              minLength={50}
               value={form.reason}
               onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))}
               maxLength={500}
               rows={3}
-              placeholder="Brief description of your leave request..."
+              placeholder="Please provide a detailed explanation for your leave request (at least 50 characters)..."
               className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 resize-none"
             />
-            <p className="text-xs text-gray-400 text-right mt-0.5">{form.reason.length}/500</p>
+            {(form.reason || "").trim().length < 50 && (
+              <p className="text-[11px] text-amber-600 mt-0.5">
+                <i className="ri-information-line mr-0.5" />
+                A detailed reason of at least 50 characters is required for approval.
+              </p>
+            )}
           </div>
           <div className="flex justify-end">
-            <button type="submit" disabled={submitting} className="flex items-center gap-2 px-5 py-2 bg-[#253C7D] text-white rounded-lg text-sm hover:bg-[#1F336A] disabled:opacity-60 transition-colors cursor-pointer whitespace-nowrap">
+            <button
+              type="submit"
+              disabled={submitting || (form.reason || "").trim().length < 50}
+              className="flex items-center gap-2 px-5 py-2 bg-[#253C7D] text-white rounded-lg text-sm hover:bg-[#1F336A] disabled:opacity-60 transition-colors cursor-pointer whitespace-nowrap"
+            >
               {submitting ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-send-plane-line" />}
               Submit Request
             </button>

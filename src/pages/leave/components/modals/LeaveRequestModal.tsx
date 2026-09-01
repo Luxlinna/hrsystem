@@ -76,26 +76,24 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
               Leave Type Category *
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {Object.keys(LEAVE_TYPE_CONFIG).map((t) => {
-                const cfg = LEAVE_TYPE_CONFIG[t];
-                const isSelected = formData.leave_type === t;
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, leave_type: t }))}
-                    className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-[#253C7D] text-white border-[#253C7D] shadow-xs"
-                        : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    <i className={`${cfg.icon} text-sm ${isSelected ? "text-white" : cfg.text}`} />
-                    <span className="text-xs font-bold truncate">{cfg.label}</span>
-                  </button>
-                );
-              })}
+            <div className="relative">
+              <select
+                value={formData.leave_type}
+                onChange={(e) => setFormData((prev) => ({ ...prev, leave_type: e.target.value }))}
+                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer appearance-none pr-10"
+              >
+                {Object.keys(LEAVE_TYPE_CONFIG).map((t) => {
+                  const cfg = LEAVE_TYPE_CONFIG[t];
+                  return (
+                    <option key={t} value={t}>
+                      {cfg.label}
+                    </option>
+                  );
+                })}
+              </select>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 flex items-center">
+                <i className="ri-arrow-down-s-line text-base" />
+              </div>
             </div>
           </div>
 
@@ -108,16 +106,37 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
           />
 
           <div>
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-              Reason / Notes (Optional)
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                Reason / Justification *
+              </label>
+              <span
+                className={`text-[10px] font-bold ${
+                  (formData.reason || "").trim().length >= 50
+                    ? "text-emerald-600"
+                    : "text-amber-600"
+                }`}
+              >
+                {(formData.reason || "").trim().length} / 50 characters min
+                {(formData.reason || "").trim().length < 50 &&
+                  ` (${50 - (formData.reason || "").trim().length} more needed)`}
+              </span>
+            </div>
             <textarea
-              rows={2}
+              required
+              rows={3}
+              minLength={50}
               value={formData.reason}
               onChange={(e) => setFormData((prev) => ({ ...prev, reason: e.target.value }))}
-              placeholder="e.g. Vacation with family, doctor appointment..."
+              placeholder="Please provide a detailed explanation for your leave request (at least 50 characters)..."
               className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D]"
             />
+            {(formData.reason || "").trim().length < 50 && (
+              <p className="text-[10px] text-amber-600 mt-0.5">
+                <i className="ri-information-line mr-0.5" />
+                A detailed reason of at least 50 characters is required for manager approval.
+              </p>
+            )}
           </div>
 
           <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs text-gray-600 flex items-center gap-2">
@@ -138,7 +157,7 @@ export const LeaveRequestModal = memo(function LeaveRequestModal({
             </button>
             <button
               type="submit"
-              disabled={submitting || isOverBalance}
+              disabled={submitting || isOverBalance || (formData.reason || "").trim().length < 50}
               className="px-5 py-2 text-xs font-bold text-white bg-[#253C7D] hover:bg-[#1f336b] rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
             >
               {submitting ? "Submitting..." : "Submit Request"}
