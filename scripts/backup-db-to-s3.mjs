@@ -34,56 +34,84 @@ const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
 const AWS_S3_BUCKET = process.env.AWS_S3_BUCKET || process.env.AWS_S3_BACKUP_BUCKET || "hrsystem-ops";
 const AWS_REGION = process.env.AWS_S3_REGION || process.env.AWS_REGION || "us-east-1";
 
-// All core HR tables across modules
+// All tables across all HR modules & system configurations
 const CORE_TABLES = [
+  // Organizational Structure & Hardware
   "branches",
   "work_locations",
+  "biometric_devices",
+  "biometric_raw_logs",
+
+  // Employees & Profile
   "employees",
+  "employee_work_logs",
+  "disciplinary_records",
+  "documents",
+
+  // Recruitment & Talent
   "candidates",
-  "hiring_requests",
+  "candidate_documents",
   "job_postings",
+  "hiring_requests",
   "interview_assessments",
+
+  // Onboarding & Offboarding
   "onboarding_requests",
   "onboarding_tasks",
   "onboarding_documents",
   "offboarding_requests",
   "offboarding_tasks",
+
+  // Time, Attendance & Scheduling
   "attendance_records",
   "shifts",
   "shift_assignments",
+  "leave_types",
   "leave_requests",
   "leave_balances",
+
+  // Payroll & Finance
   "payroll_runs",
   "payroll_records",
   "payslips",
   "salary_structures",
   "expense_records",
   "budget_allocations",
-  "it_assets",
-  "it_tickets",
+
+  // Benefits & Training
   "benefit_plans",
   "benefit_enrollments",
   "training_courses",
   "course_enrollments",
-  "disciplinary_records",
+
+  // Assets & Tools Management
+  "it_assets",
+  "it_tickets",
   "tools",
   "tool_assignments",
   "tool_usages",
-  "announcements",
-  "announcement_acknowledgements",
-  "documents",
+
+  // Tasks, Projects & Meetings
   "tasks",
   "task_activities",
   "meeting_rooms",
   "meeting_room_bookings",
+  "announcements",
+  "announcement_acknowledgements",
+
+  // System, Auth, RBAC & Audit Logs
   "system_settings",
   "audit_logs",
   "notifications",
   "notification_recipients",
-  "user_roles",
+  "app_roles",
   "roles",
+  "user_roles",
   "permissions",
-  "user_role_assignments"
+  "user_role_assignments",
+  "password_reset_requests",
+  "email_otps",
+  "webauthn_credentials",
 ];
 
 function escapeSqlValue(val) {
