@@ -53,14 +53,10 @@ export const TaskCard = memo(function TaskCard({
 
       {/* Task title & description */}
       <div>
-        <h4
-          className={`text-xs sm:text-sm font-extrabold text-gray-900 line-clamp-2 leading-snug group-hover:text-[#253C7D] transition-colors ${
-            isDone ? "line-through text-gray-400" : ""
-          }`}
-        >
+        <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 line-clamp-2 leading-snug group-hover:text-[#253C7D] transition-colors">
           {task.title}
         </h4>
-        {task.description && (
+        {!isDone && task.description && (
           <p className="text-[11px] text-gray-500 line-clamp-2 mt-1 leading-relaxed">
             {task.description}
           </p>

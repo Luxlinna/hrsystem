@@ -48,11 +48,7 @@ export const TaskTableRow = memo(function TaskTableRow({
             {task.status === "done" && <i className="ri-check-line text-xs font-bold" />}
           </button>
           <div>
-            <p
-              className={`font-semibold ${
-                task.status === "done" ? "line-through text-gray-400" : "text-gray-900"
-              }`}
-            >
+            <p className="font-semibold text-gray-900">
               {task.title}
             </p>
             <TaskOutsideWorkBadge task={task} />
