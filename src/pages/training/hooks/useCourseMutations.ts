@@ -3,8 +3,10 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
+import { notifyTelegramEvent, escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
 import type { Course, CourseFormState } from "../types";
 import { emptyCourseForm } from "../constants";
+import { encodeCourseDescription } from "../components/modals/courseModalUtils";
 
 interface UseCourseMutationsProps {
   actorName: string;
@@ -37,12 +39,16 @@ export function useCourseMutations({
       toast("Permission Denied", "Only administrators and managers can create training courses.", "error");
       return;
     }
+    const safeDate = typeof initialDate === "string" ? initialDate : new Date().toISOString().slice(0, 10);
     setEditingCourseId(null);
     setNewCourse({
       ...emptyCourseForm,
       is_admin_course: isSuperAdmin && !effectiveBranchId,
       branch_id: targetBranch,
-      scheduled_date: initialDate || new Date().toISOString().slice(0, 10),
+      scheduled_date: safeDate,
+      start_time: "09:00",
+      end_time: "11:00",
+      duration_hours: "2",
     });
     setShowCourseModal(true);
   };
@@ -76,9 +82,17 @@ export function useCourseMutations({
 
     const resolvedBranchId = newCourse.is_admin_course ? null : (newCourse.branch_id || targetBranch || null);
 
+    const encodedDescription = encodeCourseDescription(newCourse.description, {
+      scheduled_date: newCourse.scheduled_date,
+      start_time: newCourse.start_time,
+      end_time: newCourse.end_time,
+      location: newCourse.location,
+      created_by_name: actorName,
+    });
+
     const payload: Record<string, any> = {
       title: newCourse.title.trim(),
-      description: newCourse.description || null,
+      description: encodedDescription || null,
       category: newCourse.category,
       duration_hours: newCourse.duration_hours ? parseFloat(newCourse.duration_hours) : null,
       instructor: newCourse.instructor || null,
@@ -219,7 +233,7 @@ export function useCourseMutations({
         // Check if a booking already exists for this training course session
         const { data: existingBooking } = await supabase
           .from("room_bookings")
-          .select("id")
+          .select("id, status")
           .eq("room_id", matchedRoom.id)
           .eq("date", newCourse.scheduled_date)
           .ilike("title", `%${newCourse.title.trim()}%`)
@@ -233,15 +247,42 @@ export function useCourseMutations({
           start_time: newCourse.start_time,
           end_time: newCourse.end_time,
           attendees_count: matchedRoom.capacity || 10,
-          status: "approved" as const,
+          status: "pending" as const,
           special_requirements: `Category: ${newCourse.category} · Host: ${newCourse.instructor || actorName} · Purpose: Staff Training Session`,
           refreshments: "None",
         };
 
+        const isNewBooking = !existingBooking;
+        let createdBookingId = existingBooking?.id;
+
         if (existingBooking) {
-          await supabase.from("room_bookings").update(bookingPayload).eq("id", existingBooking.id);
+          await supabase.from("room_bookings").update({
+            ...bookingPayload,
+            status: existingBooking.status || "pending",
+          }).eq("id", existingBooking.id);
         } else {
-          await supabase.from("room_bookings").insert(bookingPayload);
+          const { data: insertedB } = await supabase.from("room_bookings").insert(bookingPayload).select().single();
+          createdBookingId = insertedB?.id;
+        }
+
+        // Notify branch admins / managers of the pending room reservation
+        if (isNewBooking && createdBookingId) {
+          const floorText = `Floor ${matchedRoom.floor || 3}`;
+          const timeText = `${newCourse.start_time}–${newCourse.end_time}`;
+
+          await notify({
+            source: "meeting_rooms",
+            type: "info",
+            title: "New Training Room Booking (Pending Approval)",
+            message: `${actorName} reserved ${matchedRoom.name} (${floorText}) on ${newCourse.scheduled_date} (${timeText}) for training course "${newCourse.title.trim()}". Awaiting branch admin approval.`,
+            entityId: createdBookingId,
+            branchId: matchedRoom.branch_id || resolvedBranchId,
+          });
+
+          notifyTelegramEvent(
+            `🚪 <b>New Training Room Booking Request</b>\n\n👤 <b>Requested By:</b> ${escapeTelegramHtml(actorName)}\n🏢 <b>Room:</b> ${escapeTelegramHtml(matchedRoom.name)} (${floorText})\n📅 <b>When:</b> ${newCourse.scheduled_date}, ${timeText}\n🎓 <b>Course:</b> ${escapeTelegramHtml(newCourse.title.trim())}\n⏳ <b>Status:</b> Pending Branch Admin Approval`,
+            { text: "Open Meeting Rooms", url: hrNexusUrl("/meeting-rooms") }
+          );
         }
       }
     }

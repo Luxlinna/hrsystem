@@ -10,7 +10,7 @@ export function useMeetingRoomsFilters(
 ) {
   const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
   const [viewMode, setViewMode] = useState<"timeline" | "month" | "cards">("timeline");
-  const [filterFloor, setFilterFloor] = useState<"all" | "3" | "5">("all");
+  const [filterFloor, setFilterFloor] = useState<string>("all");
   const [filterRoomId, setFilterRoomId] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusTab, setStatusTab] = useState<"all" | "pending" | "my">("all");
@@ -31,12 +31,18 @@ export function useMeetingRoomsFilters(
     setSelectedDate(toYMD(new Date()));
   }, []);
 
+  // Distinct floors available across registered rooms
+  const availableFloors = useMemo(() => {
+    const set = new Set<number>();
+    rooms.forEach((r) => set.add(getRoomFloor(r)));
+    return Array.from(set).sort((a, b) => a - b);
+  }, [rooms]);
+
   // Filtered rooms based on floor and selected room dropdown
   const filteredRooms = useMemo(() => {
     return rooms.filter((r) => {
       const fl = getRoomFloor(r);
-      if (filterFloor === "3" && fl !== 3) return false;
-      if (filterFloor === "5" && fl !== 5) return false;
+      if (filterFloor !== "all" && String(fl) !== filterFloor) return false;
       if (filterRoomId !== "all" && r.id !== filterRoomId) return false;
       return true;
     });
@@ -82,13 +88,17 @@ export function useMeetingRoomsFilters(
     ).length;
   }, [bookings]);
 
-  const floor3RoomsCount = useMemo(() => {
-    return rooms.filter((r) => getRoomFloor(r) === 3).length;
+  const floorCounts = useMemo(() => {
+    const map = new Map<number, number>();
+    rooms.forEach((r) => {
+      const fl = getRoomFloor(r);
+      map.set(fl, (map.get(fl) || 0) + 1);
+    });
+    return map;
   }, [rooms]);
 
-  const floor5RoomsCount = useMemo(() => {
-    return rooms.filter((r) => getRoomFloor(r) === 5).length;
-  }, [rooms]);
+  const floor3RoomsCount = useMemo(() => floorCounts.get(3) || 0, [floorCounts]);
+  const floor5RoomsCount = useMemo(() => floorCounts.get(5) || 0, [floorCounts]);
 
   return {
     selectedDate,
@@ -112,5 +122,7 @@ export function useMeetingRoomsFilters(
     todayBookingsCount,
     floor3RoomsCount,
     floor5RoomsCount,
+    availableFloors,
+    floorCounts,
   };
 }

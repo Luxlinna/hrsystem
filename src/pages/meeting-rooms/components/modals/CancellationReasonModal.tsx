@@ -40,17 +40,57 @@ export const CancellationReasonModal = memo(function CancellationReasonModal({
       ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
       : "Management";
 
-    const { error } = await supabase
-      .from("room_bookings")
-      .update({
-        status: isReject ? "rejected" : "cancelled",
-        rejection_reason: finalReason,
-        cancelled_by: isReject ? undefined : currentEmployee?.id,
-        cancelled_at: isReject ? undefined : new Date().toISOString(),
-      })
-      .eq("id", booking.id);
+    let targetBookingId = booking.id;
+    const isSynthetic = booking.id.startsWith("training-");
+
+    if (isSynthetic) {
+      const { data: matched } = await supabase
+        .from("room_bookings")
+        .select("id")
+        .eq("room_id", booking.room_id)
+        .eq("date", booking.date)
+        .maybeSingle();
+
+      if (matched) {
+        targetBookingId = matched.id;
+      }
+    }
+
+    let error: any = null;
+
+    if (!isSynthetic || targetBookingId !== booking.id) {
+      const { error: updateErr } = await supabase
+        .from("room_bookings")
+        .update({
+          status: isReject ? "rejected" : "cancelled",
+          rejection_reason: finalReason,
+          cancelled_by: isReject ? undefined : currentEmployee?.id,
+          cancelled_at: isReject ? undefined : new Date().toISOString(),
+        })
+        .eq("id", targetBookingId);
+      error = updateErr;
+    } else {
+      const { data: inserted, error: insertErr } = await supabase
+        .from("room_bookings")
+        .insert({
+          room_id: booking.room_id,
+          booked_by: booking.booked_by && !booking.booked_by.includes(" ") ? booking.booked_by : currentEmployee?.id,
+          title: booking.title,
+          date: booking.date,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          attendees_count: booking.attendees_count || 10,
+          status: isReject ? "rejected" : "cancelled",
+          rejection_reason: finalReason,
+        })
+        .select()
+        .single();
+      error = insertErr;
+      if (inserted) targetBookingId = inserted.id;
+    }
 
     if (error) {
+      console.error("Cancellation error:", error);
       showToast("error", `Failed to ${action} booking.`);
       return;
     }
@@ -60,7 +100,7 @@ export const CancellationReasonModal = memo(function CancellationReasonModal({
       type: isReject ? "warning" : "info",
       title: `Meeting Room Booking ${isReject ? "Rejected" : "Cancelled"}`,
       message: `Your booking for ${targetRoom?.name} on ${booking.date} (${fmtTime(booking.start_time)}–${fmtTime(booking.end_time)}) was ${isReject ? "rejected" : "cancelled"}. Reason: ${finalReason}`,
-      entityId: booking.id,
+      entityId: targetBookingId,
     });
 
     notifyTelegramEvent(

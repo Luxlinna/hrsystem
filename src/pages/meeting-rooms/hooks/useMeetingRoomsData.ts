@@ -6,6 +6,7 @@ import { useBranchScope } from "@/context/BranchContext";
 import type { MeetingRoom, Booking, BookingEmployee } from "../types";
 import { ROOM_FLOORS, ROOM_AMENITIES, DEFAULT_AMENITIES } from "../constants";
 import { toYMD } from "../roomUtils";
+import { decodeCourseDescription } from "@/pages/training/components/modals/courseModalUtils";
 
 export function useMeetingRoomsData(selectedDate: string) {
   const { user } = useAuth();
@@ -37,7 +38,7 @@ export function useMeetingRoomsData(selectedDate: string) {
 
   // Fetch rooms
   const loadRooms = useCallback(async () => {
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if (isPartnerBranchBlocked) {
       setRooms([]);
       return;
     }
@@ -126,7 +127,7 @@ export function useMeetingRoomsData(selectedDate: string) {
 
   // Load Bookings
   const loadBookings = useCallback(async () => {
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if (isPartnerBranchBlocked) {
       setBookings([]);
       setLoading(false);
       return;
@@ -153,19 +154,18 @@ export function useMeetingRoomsData(selectedDate: string) {
     // Also load training courses that booked meeting rooms
     const { data: trainingData } = await supabase
       .from("training_courses")
-      .select("id, title, category, scheduled_date, start_time, end_time, location, instructor, created_by_name, branch_id")
-      .not("scheduled_date", "is", null)
-      .not("start_time", "is", null)
-      .not("end_time", "is", null)
-      .gte("scheduled_date", from)
-      .lte("scheduled_date", to);
+      .select("*")
+      .is("deleted_at", null);
+
+    const roomsList = (dbRooms && dbRooms.length > 0 ? dbRooms : rooms).filter(
+      (r: any) => !targetBranch || r.branch_id === targetBranch || !r.branch_id
+    );
+    const validRoomIds = new Set(roomsList.map((r: any) => r.id));
 
     if (error) {
       console.error("Failed to load bookings:", error);
     } else {
-      const filtered = (data || []).filter(
-        (b: any) => !b.employees || !targetBranch || b.employees.branch_id === targetBranch
-      );
+      const filtered = (data || []).filter((b: any) => validRoomIds.has(b.room_id));
       const normalized = filtered.map((b: any) => ({
         ...b,
         status: b.status || "approved",
@@ -176,13 +176,20 @@ export function useMeetingRoomsData(selectedDate: string) {
 
       // Map training courses to meeting room bookings
       const trainingBookings: Booking[] = [];
-      const roomsList = dbRooms && dbRooms.length > 0 ? dbRooms : rooms;
 
-      (trainingData || []).forEach((tc) => {
-        if (!tc.location || !tc.scheduled_date || !tc.start_time || !tc.end_time) return;
+      (trainingData || []).forEach((rawTc) => {
+        const { meta } = decodeCourseDescription(rawTc.description);
+        const scheduledDate = rawTc.scheduled_date || meta.scheduled_date;
+        const startTime = rawTc.start_time || meta.start_time;
+        const endTime = rawTc.end_time || meta.end_time;
+        const location = rawTc.location || meta.location;
+
+        if (!location || !scheduledDate || !startTime || !endTime) return;
+        const dateStr = scheduledDate.slice(0, 10);
+        if (dateStr < from || dateStr > to) return;
 
         // Find room by matching name
-        const locLower = tc.location.toLowerCase().trim();
+        const locLower = location.toLowerCase().trim();
         const matchedRoom = roomsList.find((r) => {
           const rNameLower = r.name.toLowerCase().trim();
           return (
@@ -193,34 +200,52 @@ export function useMeetingRoomsData(selectedDate: string) {
         });
 
         if (matchedRoom) {
-          // If branch filtering applies, ensure room or course matches targetBranch
-          if (targetBranch && matchedRoom.branch_id && matchedRoom.branch_id !== targetBranch && tc.branch_id && tc.branch_id !== targetBranch) {
+          // If already in room_bookings table, keep the official record with its actual approval status
+          const alreadyInRoomBookings = normalized.some(
+            (b) =>
+              b.room_id === matchedRoom.id &&
+              b.date === dateStr &&
+              ((b.start_time || "").slice(0, 5) === (startTime || "").slice(0, 5) ||
+                (b.title && b.title.toLowerCase().includes(rawTc.title.toLowerCase())))
+          );
+          if (alreadyInRoomBookings) {
             return;
           }
 
-          const hostName = tc.created_by_name || tc.instructor || "Training Host";
+          // If branch filtering applies, ensure room or course matches targetBranch
+          if (
+            targetBranch &&
+            matchedRoom.branch_id &&
+            matchedRoom.branch_id !== targetBranch &&
+            rawTc.branch_id &&
+            rawTc.branch_id !== targetBranch
+          ) {
+            return;
+          }
+
+          const hostName = rawTc.created_by_name || meta.created_by_name || rawTc.instructor || "Training Host";
           const nameParts = hostName.split(" ");
           const fName = nameParts[0] || "Training";
           const lName = nameParts.slice(1).join(" ") || "Host";
 
           trainingBookings.push({
-            id: `training-${tc.id}`,
+            id: `training-${rawTc.id}`,
             room_id: matchedRoom.id,
-            title: `🎓 Training: ${tc.title}`,
+            title: `🎓 Training: ${rawTc.title}`,
             booked_by: hostName,
-            date: tc.scheduled_date.slice(0, 10),
-            start_time: tc.start_time,
-            end_time: tc.end_time,
+            date: dateStr,
+            start_time: startTime,
+            end_time: endTime,
             attendees_count: matchedRoom.capacity || 10,
-            status: "approved",
-            special_requirements: `Category: ${tc.category || "Training"} · Host: ${hostName} · Purpose: Training Course Session`,
+            status: "pending",
+            special_requirements: `Category: ${rawTc.category || "Training"} · Host: ${hostName} · Purpose: Training Course Session`,
             refreshments: "None",
             employees: {
               first_name: fName,
               last_name: lName,
-              department: tc.category || "Training",
+              department: rawTc.category || "Training",
               role: "Instructor",
-              branch_id: tc.branch_id || matchedRoom.branch_id || targetBranch,
+              branch_id: rawTc.branch_id || matchedRoom.branch_id || targetBranch,
             },
           });
         }

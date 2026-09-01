@@ -97,7 +97,7 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5 text-xs">
           {/* Schedule & Location Card */}
-          {course.scheduled_date && (
+          {(course.scheduled_date || course.location) && (
             <div className="p-3.5 bg-blue-50/70 rounded-2xl border border-blue-100 space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-extrabold text-[#253C7D] uppercase tracking-wider flex items-center gap-1.5">
@@ -110,14 +110,16 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
                   </span>
                 )}
               </div>
-              <p className="text-sm font-bold text-gray-900">
-                {new Date(course.scheduled_date).toLocaleDateString("en-US", {
-                  weekday: "short",
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </p>
+              {course.scheduled_date && (
+                <p className="text-sm font-bold text-gray-900">
+                  {new Date(course.scheduled_date).toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              )}
               {course.start_time && (
                 <p className="text-xs text-[#253C7D] font-semibold flex items-center gap-1">
                   <i className="ri-time-line text-xs" />
@@ -125,9 +127,9 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
                 </p>
               )}
               {course.location && (
-                <p className="text-xs text-gray-600 flex items-center gap-1 mt-1 pt-1 border-t border-blue-100/60">
-                  <i className="ri-map-pin-line text-xs text-gray-400" />
-                  {course.location}
+                <p className="text-xs text-gray-700 font-bold flex items-center gap-1.5 mt-1 pt-1.5 border-t border-blue-100/60">
+                  <i className="ri-door-open-line text-sm text-[#253C7D]" />
+                  <span>Venue / Room: <strong>{course.location}</strong></span>
                 </p>
               )}
             </div>

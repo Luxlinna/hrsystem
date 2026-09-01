@@ -23,6 +23,59 @@ export function calculateDurationHours(startTime: string, endTime: string): numb
   return hours > 0 ? hours : null;
 }
 
+export interface CourseScheduleMeta {
+  scheduled_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
+  created_by_name?: string | null;
+}
+
+const META_REGEX = /<!--SCHEDULE_META:([\s\S]*?)-->/;
+
+/**
+ * Encodes scheduled session date, times, location, and host into course description.
+ */
+export function encodeCourseDescription(
+  rawDescription: string,
+  meta: CourseScheduleMeta
+): string {
+  const cleanDesc = rawDescription ? rawDescription.replace(META_REGEX, "").trim() : "";
+  const hasMeta =
+    meta.scheduled_date ||
+    meta.start_time ||
+    meta.end_time ||
+    meta.location ||
+    meta.created_by_name;
+  if (!hasMeta) return cleanDesc;
+  const metaJson = JSON.stringify(meta);
+  return cleanDesc
+    ? `${cleanDesc}\n\n<!--SCHEDULE_META:${metaJson}-->`
+    : `<!--SCHEDULE_META:${metaJson}-->`;
+}
+
+/**
+ * Decodes scheduled session metadata from course description.
+ */
+export function decodeCourseDescription(
+  fullDescription: string | null
+): { description: string; meta: CourseScheduleMeta } {
+  if (!fullDescription) {
+    return { description: "", meta: {} };
+  }
+  const match = fullDescription.match(META_REGEX);
+  if (!match) {
+    return { description: fullDescription, meta: {} };
+  }
+  try {
+    const meta: CourseScheduleMeta = JSON.parse(match[1]);
+    const cleanDesc = fullDescription.replace(META_REGEX, "").trim();
+    return { description: cleanDesc, meta };
+  } catch {
+    return { description: fullDescription, meta: {} };
+  }
+}
+
 /**
  * Determines whether a location string corresponds to a room, online URL, or custom venue.
  */

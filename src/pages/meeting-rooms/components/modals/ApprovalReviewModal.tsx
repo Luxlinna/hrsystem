@@ -77,29 +77,79 @@ export const ApprovalReviewModal = memo(function ApprovalReviewModal({
     setProcessing(true);
     const approverName = currentEmployee ? `${currentEmployee.first_name} ${currentEmployee.last_name}` : "Management";
 
-    const { error } = await supabase
-      .from("room_bookings")
-      .update({
-        status: "approved",
-        approved_by: currentEmployee?.id,
-        approved_at: new Date().toISOString(),
-        approved_requirements: approvedReqs.join(", ") || "None",
-        declined_requirements: declinedReqs.join(", ") || "None",
-        approved_refreshments: approvedRef.join(", ") || "None",
-        declined_refreshments: declinedRef.join(", ") || "None",
-        approval_notes: notes.trim() || null,
-      })
-      .eq("id", booking.id);
+    let targetBookingId = booking.id;
+    const isSynthetic = booking.id.startsWith("training-");
+
+    if (isSynthetic) {
+      // Find matching real booking in database
+      const { data: matched } = await supabase
+        .from("room_bookings")
+        .select("id")
+        .eq("room_id", booking.room_id)
+        .eq("date", booking.date)
+        .maybeSingle();
+
+      if (matched) {
+        targetBookingId = matched.id;
+      }
+    }
+
+    let error: any = null;
+
+    if (!isSynthetic || targetBookingId !== booking.id) {
+      const { error: updateErr } = await supabase
+        .from("room_bookings")
+        .update({
+          status: "approved",
+          approved_by: currentEmployee?.id,
+          approved_at: new Date().toISOString(),
+          approved_requirements: approvedReqs.join(", ") || "None",
+          declined_requirements: declinedReqs.join(", ") || "None",
+          approved_refreshments: approvedRef.join(", ") || "None",
+          declined_refreshments: declinedRef.join(", ") || "None",
+          approval_notes: notes.trim() || null,
+        })
+        .eq("id", targetBookingId);
+      error = updateErr;
+    } else {
+      // If no database row existed yet, insert an approved reservation
+      const { data: inserted, error: insertErr } = await supabase
+        .from("room_bookings")
+        .insert({
+          room_id: booking.room_id,
+          booked_by: booking.booked_by && !booking.booked_by.includes(" ") ? booking.booked_by : currentEmployee?.id,
+          title: booking.title,
+          date: booking.date,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          attendees_count: booking.attendees_count || 10,
+          status: "approved",
+          approved_by: currentEmployee?.id,
+          approved_at: new Date().toISOString(),
+          approved_requirements: approvedReqs.join(", ") || "None",
+          declined_requirements: declinedReqs.join(", ") || "None",
+          approved_refreshments: approvedRef.join(", ") || "None",
+          declined_refreshments: declinedRef.join(", ") || "None",
+          approval_notes: notes.trim() || null,
+        })
+        .select()
+        .single();
+      error = insertErr;
+      if (inserted) targetBookingId = inserted.id;
+    }
 
     setProcessing(false);
-    if (error) return showToast("error", "Failed to approve booking.");
+    if (error) {
+      console.error("Approval error:", error);
+      return showToast("error", "Failed to approve booking.");
+    }
 
     await notify({
       source: "meeting_rooms",
       type: "info",
       title: "Meeting Room Booking Approved",
       message: `Your reservation for ${targetRoom?.name} on ${booking.date} (${fmtTime(booking.start_time)}–${fmtTime(booking.end_time)}) was approved.`,
-      entityId: booking.id,
+      entityId: targetBookingId,
     });
 
     notifyTelegramEvent(
@@ -111,7 +161,7 @@ export const ApprovalReviewModal = memo(function ApprovalReviewModal({
       module: "meeting_rooms",
       action: "updated",
       entityType: "room_booking",
-      entityId: booking.id,
+      entityId: targetBookingId,
       actorName: approverName,
       actorRole: roleName,
       description: `Approved booking for ${targetRoom?.name}: "${booking.title}"`,

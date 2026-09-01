@@ -79,6 +79,8 @@ export default function MeetingRoomsPage() {
         onFilterFloor={m.setFilterFloor}
         onSelectStatusTab={m.setStatusTab}
         onJumpToToday={m.jumpToToday}
+        availableFloors={m.availableFloors}
+        floorCounts={m.floorCounts}
       />
 
       <MeetingRoomsFilterBar
@@ -95,6 +97,7 @@ export default function MeetingRoomsPage() {
         pendingCount={m.pendingCount}
         searchQuery={m.searchQuery}
         setSearchQuery={m.setSearchQuery}
+        availableFloors={m.availableFloors}
       />
 
       {m.statusTab === "pending" ? (

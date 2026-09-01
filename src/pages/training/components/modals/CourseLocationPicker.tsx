@@ -1,7 +1,7 @@
 import { memo, useMemo, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { CourseFormState, MeetingRoomOption, Branch } from "../../types";
-import type { LocationType } from "./courseModalUtils";
+import { decodeCourseDescription, type LocationType } from "./courseModalUtils";
 
 interface CourseLocationPickerProps {
   form: CourseFormState;
@@ -49,7 +49,7 @@ export const CourseLocationPicker = memo(function CourseLocationPicker({
     setLoadingSchedule(true);
 
     const loadRoomSchedule = async () => {
-      // 1. Regular room bookings
+      // 1. Regular room bookings from room_bookings table
       const { data: rb } = await supabase
         .from("room_bookings")
         .select("id, title, start_time, end_time, status")
@@ -58,29 +58,49 @@ export const CourseLocationPicker = memo(function CourseLocationPicker({
         .neq("status", "rejected")
         .neq("status", "cancelled");
 
-      // 2. Other training courses in this room on this date
+      // 2. Training courses decoded from description
       const { data: tc } = await supabase
         .from("training_courses")
-        .select("id, title, start_time, end_time")
-        .eq("scheduled_date", form.scheduled_date)
-        .ilike("location", `%${selectedRoom.name}%`);
+        .select("id, title, description")
+        .is("deleted_at", null);
 
       if (cancelled) return;
 
       const merged: { id: string; title: string; start_time: string; end_time: string }[] = [];
+      const seenTimes = new Set<string>();
+
       (rb || []).forEach((b) => {
         if (b.start_time && b.end_time) {
-          merged.push({ id: b.id, title: b.title, start_time: b.start_time, end_time: b.end_time });
+          const sTime = b.start_time.slice(0, 5);
+          const eTime = b.end_time.slice(0, 5);
+          const timeKey = `${sTime}-${eTime}`;
+          seenTimes.add(timeKey);
+          merged.push({ id: b.id, title: b.title, start_time: sTime, end_time: eTime });
         }
       });
+
       (tc || []).forEach((c) => {
-        if (c.start_time && c.end_time && c.title !== form.title) {
-          merged.push({
-            id: c.id,
-            title: `🎓 Training: ${c.title}`,
-            start_time: c.start_time,
-            end_time: c.end_time,
-          });
+        if (c.title === form.title) return;
+        const { meta } = decodeCourseDescription(c.description);
+        if (
+          meta.scheduled_date === form.scheduled_date &&
+          meta.location &&
+          meta.location.toLowerCase().includes(selectedRoom.name.toLowerCase()) &&
+          meta.start_time &&
+          meta.end_time
+        ) {
+          const sTime = meta.start_time.slice(0, 5);
+          const eTime = meta.end_time.slice(0, 5);
+          const timeKey = `${sTime}-${eTime}`;
+          if (!seenTimes.has(timeKey)) {
+            seenTimes.add(timeKey);
+            merged.push({
+              id: c.id,
+              title: `🎓 Training: ${c.title}`,
+              start_time: sTime,
+              end_time: eTime,
+            });
+          }
         }
       });
 
@@ -236,7 +256,7 @@ export const CourseLocationPicker = memo(function CourseLocationPicker({
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-gray-700 flex items-center gap-1.5">
                         <i className="ri-calendar-schedule-line text-[#253C7D]" />
-                        Room Schedule on {form.scheduled_date || "Selected Date"}:
+                        Room Schedule on {typeof form.scheduled_date === "string" && form.scheduled_date ? form.scheduled_date : "Selected Date"}:
                       </span>
                       {loadingSchedule && (
                         <span className="text-[10px] text-gray-400">Checking…</span>

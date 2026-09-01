@@ -5,6 +5,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
 import type { Course, Enrollment, Employee, Branch, MeetingRoomOption } from "../types";
+import { decodeCourseDescription } from "../components/modals/courseModalUtils";
 
 export function useTrainingData() {
   const { user } = useAuth();
@@ -76,24 +77,38 @@ export function useTrainingData() {
       let courseList: Course[] = [];
       const { data: cData, error: cErr } = await supabase
         .from("training_courses")
-        .select("id, title, description, category, duration_hours, instructor, format, status, branch_id, scheduled_date, start_time, end_time, location, created_by_name, created_at")
+        .select("*")
         .is("deleted_at", null)
         .or(`branch_id.is.null,branch_id.eq.${targetBranch}`)
         .order("created_at", { ascending: false });
 
       if (cErr) {
-        // Fallback if branch_id or schedule columns are not yet on the database
         console.warn("Training courses scoped query error, using fallback:", cErr);
         const { data: fallbackData } = await supabase
           .from("training_courses")
-          .select("id, title, description, category, duration_hours, instructor, format, status, created_at")
+          .select("*")
           .is("deleted_at", null)
           .order("created_at", { ascending: false });
         courseList = (fallbackData || []) as Course[];
       } else {
         courseList = (cData || []) as Course[];
       }
-      setCourses(courseList);
+
+      // Decode schedule and room location metadata
+      const decodedCourses: Course[] = courseList.map((raw) => {
+        const { description: cleanDesc, meta } = decodeCourseDescription(raw.description);
+        return {
+          ...raw,
+          description: cleanDesc || null,
+          scheduled_date: raw.scheduled_date || meta.scheduled_date || null,
+          start_time: raw.start_time || meta.start_time || null,
+          end_time: raw.end_time || meta.end_time || null,
+          location: raw.location || meta.location || null,
+          created_by_name: raw.created_by_name || meta.created_by_name || null,
+        };
+      });
+
+      setCourses(decodedCourses);
 
       // 4. Query enrollments scoped to branch employees or single staff member
       let enrollList: Enrollment[] = [];

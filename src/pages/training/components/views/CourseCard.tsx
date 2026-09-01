@@ -69,26 +69,30 @@ export const CourseCard = memo(function CourseCard({
           {course.description || "No description provided."}
         </p>
 
-        {/* Session Schedule Info if available */}
-        {course.scheduled_date && (
-          <div className="mt-3 p-2.5 bg-blue-50/60 rounded-xl border border-blue-100/60 text-xs text-[#253C7D] flex items-center gap-2">
-            <i className="ri-calendar-event-line text-sm text-[#253C7D]" />
-            <div className="min-w-0">
-              <span className="font-bold">
-                {new Date(course.scheduled_date).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-              {course.start_time && (
-                <span className="text-[11px] text-gray-500 ml-1.5">
-                  ({course.start_time} {course.end_time ? `– ${course.end_time}` : ""})
-                </span>
-              )}
+        {/* Session Schedule & Venue Info */}
+        {(course.scheduled_date || course.location) && (
+          <div className="mt-3 p-2.5 bg-blue-50/60 rounded-xl border border-blue-100/60 text-xs text-[#253C7D] flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <i className="ri-calendar-event-line text-sm text-[#253C7D] shrink-0" />
+              <div className="min-w-0">
+                {course.scheduled_date && (
+                  <span className="font-bold">
+                    {new Date(course.scheduled_date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                )}
+                {course.start_time && (
+                  <span className="text-[11px] text-gray-500 ml-1.5 font-medium">
+                    {course.start_time} {course.end_time ? `– ${course.end_time}` : ""}
+                  </span>
+                )}
+              </div>
             </div>
             {course.location && (
-              <span className="text-[11px] text-gray-500 truncate ml-auto flex items-center gap-0.5">
-                <i className="ri-map-pin-line text-xs" /> {course.location}
+              <span className="text-[11px] font-semibold text-blue-900 bg-white/90 px-2 py-0.5 rounded-lg border border-blue-100/80 truncate max-w-[140px] flex items-center gap-1 shrink-0">
+                <i className="ri-door-open-line text-xs text-[#253C7D]" /> {course.location}
               </span>
             )}
           </div>

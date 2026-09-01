@@ -39,14 +39,30 @@ interface LogActivityInput {
   branch_id?: string | null;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Fire-and-forget: an audit trail entry should never block or fail the
 // actual user-facing action it's describing.
 export function logActivity(entry: LogActivityInput) {
+  let resolvedEntityId: string | null = null;
+  if (entry.entityId) {
+    if (UUID_REGEX.test(entry.entityId)) {
+      resolvedEntityId = entry.entityId;
+    } else {
+      const match = entry.entityId.match(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+      );
+      if (match) {
+        resolvedEntityId = match[0];
+      }
+    }
+  }
+
   supabase.from("audit_logs").insert({
     module: entry.module,
     action: entry.action,
     entity_type: entry.entityType,
-    entity_id: entry.entityId ?? null,
+    entity_id: resolvedEntityId,
     actor_name: entry.actorName,
     actor_role: entry.actorRole,
     description: entry.description,

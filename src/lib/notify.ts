@@ -66,12 +66,22 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
     const resolvedType = entry.type && VALID_TYPES.includes(entry.type) ? entry.type : "info";
     const resolvedSource = entry.source || "employees";
 
+    let resolvedEntityId: string | null = null;
+    if (entry.entityId) {
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.entityId)) {
+        resolvedEntityId = entry.entityId;
+      } else {
+        const match = entry.entityId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        if (match) resolvedEntityId = match[0];
+      }
+    }
+
     const payload = {
       title: entry.title,
       message: entry.message,
       type: resolvedType,
       source: resolvedSource,
-      entity_id: entry.entityId ?? null,
+      entity_id: resolvedEntityId,
       recipient_user_id: entry.recipientUserId ?? null,
       branch_id: branchId ?? null,
     };

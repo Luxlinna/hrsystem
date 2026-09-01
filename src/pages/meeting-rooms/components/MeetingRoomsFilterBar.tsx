@@ -6,8 +6,8 @@ interface MeetingRoomsFilterBarProps {
   selectedDate: string;
   onShiftDate: (days: number) => void;
   onJumpToToday: () => void;
-  filterFloor: "all" | "3" | "5";
-  setFilterFloor: (floor: "all" | "3" | "5") => void;
+  filterFloor: string;
+  setFilterFloor: (floor: string) => void;
   filterRoomId: string;
   setFilterRoomId: (roomId: string) => void;
   rooms: MeetingRoom[];
@@ -16,6 +16,7 @@ interface MeetingRoomsFilterBarProps {
   pendingCount: number;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  availableFloors?: number[];
 }
 
 export const MeetingRoomsFilterBar = memo(function MeetingRoomsFilterBar({
@@ -32,7 +33,10 @@ export const MeetingRoomsFilterBar = memo(function MeetingRoomsFilterBar({
   pendingCount,
   searchQuery,
   setSearchQuery,
+  availableFloors,
 }: MeetingRoomsFilterBarProps) {
+  const distinctFloors = availableFloors && availableFloors.length > 0 ? availableFloors : [3, 5];
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200/80 p-3.5 shadow-2xs space-y-3">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -110,25 +114,38 @@ export const MeetingRoomsFilterBar = memo(function MeetingRoomsFilterBar({
       {/* Second Row: Floor Filter & Room Selector & Search */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-2 border-t border-gray-100">
         {/* Floor Filter Buttons */}
-        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto flex-wrap">
           <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mr-1">Floor:</span>
-          {(["all", "3", "5"] as const).map((fl) => (
-            <button
-              key={fl}
-              onClick={() => setFilterFloor(fl)}
-              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                filterFloor === fl
-                  ? fl === "5"
-                    ? "bg-purple-600 text-white shadow-xs"
-                    : fl === "3"
-                    ? "bg-sky-600 text-white shadow-xs"
-                    : "bg-gray-900 text-white shadow-xs"
-                  : "bg-gray-100 hover:bg-gray-200 text-gray-600"
-              }`}
-            >
-              {fl === "all" ? "All Floors" : fl === "5" ? "Floor 5 (VIP)" : "Floor 3"}
-            </button>
-          ))}
+          <button
+            onClick={() => setFilterFloor("all")}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              filterFloor === "all"
+                ? "bg-gray-900 text-white shadow-xs"
+                : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+            }`}
+          >
+            All Floors
+          </button>
+          {distinctFloors.map((fl) => {
+            const flStr = String(fl);
+            const isVip = fl === 5;
+            const isSelected = filterFloor === flStr;
+            return (
+              <button
+                key={fl}
+                onClick={() => setFilterFloor(flStr)}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  isSelected
+                    ? isVip
+                      ? "bg-purple-600 text-white shadow-xs"
+                      : "bg-sky-600 text-white shadow-xs"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+                }`}
+              >
+                {isVip ? "Floor 5 (VIP)" : `Floor ${fl}`}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto flex-1 justify-end">

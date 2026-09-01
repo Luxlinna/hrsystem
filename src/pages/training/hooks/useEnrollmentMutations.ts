@@ -27,11 +27,13 @@ export function useEnrollmentMutations({
       toast("Permission Denied", "Only administrators and managers can enroll employees.", "error");
       return;
     }
-    const targetCourse = courses.find((c) => c.id === courseId) || courses[0] || null;
+    const safeCourseId = typeof courseId === "string" ? courseId : undefined;
+    const safeDueDate = typeof defaultDueDate === "string" ? defaultDueDate : undefined;
+    const targetCourse = courses.find((c) => c.id === safeCourseId) || courses[0] || null;
     setEnrollCourseId(targetCourse?.id || null);
     setEnrollEmployeeIds([]);
     const resolvedDate =
-      defaultDueDate ||
+      safeDueDate ||
       targetCourse?.scheduled_date ||
       targetCourse?.created_at?.slice(0, 10) ||
       "";

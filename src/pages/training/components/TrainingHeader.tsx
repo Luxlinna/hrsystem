@@ -58,14 +58,14 @@ export const TrainingHeader = memo(function TrainingHeader({
           {canManage && (
             <>
               <button
-                onClick={onOpenEnroll}
+                onClick={() => onOpenEnroll()}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-[#253C7D] bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-2xs cursor-pointer"
               >
                 <i className="ri-user-add-line" />
                 Enroll Staff
               </button>
               <button
-                onClick={onNewCourse}
+                onClick={() => onNewCourse()}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#253C7D] hover:bg-[#1F336A] transition-colors shadow-2xs cursor-pointer"
               >
                 <i className="ri-add-line font-bold text-sm" />
