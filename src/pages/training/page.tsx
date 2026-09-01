@@ -101,7 +101,7 @@ export default function TrainingPage() {
           enrollments={enrollments}
           canManage={canManage}
           onSelect={setSelectedCourse}
-          onEnroll={(courseId) => openEnroll(courseId)}
+          onEnroll={openEnroll}
           onEdit={openEditCourse}
           onDelete={deleteCourse}
         />
@@ -111,7 +111,7 @@ export default function TrainingPage() {
           enrollments={filteredEnrollments.length > 0 ? filteredEnrollments : enrollments}
           canManage={canManage}
           onSelectCourse={setSelectedCourse}
-          onEnroll={(courseId) => openEnroll(courseId)}
+          onEnroll={openEnroll}
           onNewCourse={(initialDate) => openNewCourse(initialDate)}
         />
       ) : activeTab === "enrollments" ? (
@@ -152,6 +152,8 @@ export default function TrainingPage() {
         open={showEnrollModal}
         courses={courses}
         employees={employees}
+        enrollments={enrollments}
+        branches={branches}
         enrollCourseId={enrollCourseId}
         setEnrollCourseId={setEnrollCourseId}
         enrollEmployeeIds={enrollEmployeeIds}
@@ -170,7 +172,7 @@ export default function TrainingPage() {
         onClose={() => setSelectedCourse(null)}
         onEdit={openEditCourse}
         onDelete={deleteCourse}
-        onEnroll={(courseId) => openEnroll(courseId)}
+        onEnroll={openEnroll}
       />
     </div>
   );

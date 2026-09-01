@@ -22,6 +22,7 @@ export interface Course {
   format: "online" | "in_person" | "hybrid" | "self_paced";
   status: "active" | "draft" | "archived";
   branch_id?: string | null;
+  is_admin_course?: boolean;
   scheduled_date?: string | null;
   start_time?: string | null;
   end_time?: string | null;

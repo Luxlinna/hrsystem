@@ -141,116 +141,147 @@ export default function GeofenceCheckInAlert() {
         return;
       }
 
-      // 2. CHECK-OUT TIME ALERT (5:00 PM on Mon-Fri, 12:00 PM on Sat) — strictly ONCE per day
+      // 2. CHECK-OUT TIME ALERT (Strictly ONCE per day: 5:00 PM on Mon-Fri, 12:00 PM on Sat)
       if (hasClockedIn && !hasClockedOut && nowZ.minutesOfDay >= checkoutAlertMin && nowZ.minutesOfDay < autoCheckoutThresholdMin) {
         if (!alertedModesRef.current.has("checkout_time") && !localStorage.getItem(dedupeKey("checkout_time"))) {
           alertedModesRef.current.add("checkout_time");
           localStorage.setItem(dedupeKey("checkout_time"), "1");
 
+          const checkoutTitle = isSaturday
+            ? "🔔 Saturday Shift Ended (12:00 PM)"
+            : "🔔 Time to Check Out (5:00 PM)";
+          const checkoutMsg = isSaturday
+            ? "Saturday half-day shift ended at 12:00 PM. Please remember to check out."
+            : "Work hours ended at 5:00 PM. Please remember to check out.";
+
           setAlertState({
             branchName: branch?.name,
             mode: "checkout",
-            title: `Time to Check Out (${shiftEndLabel})`,
-            message: `Your shift ended at ${shiftEndLabel}. Please check out now (auto checkout at ${autoCheckoutLabel}).`,
+            title: checkoutTitle,
+            message: checkoutMsg,
           });
 
           const link = "/self-service?tab=checkin&quickCheckOut=1";
-          const body = `Your shift ended at ${shiftEndLabel}. Tap to check out now.`;
+          const body = checkoutMsg;
 
           if (Notification.permission === "granted") {
-            const n = new Notification(`Time to Check Out (${shiftEndLabel})`, { body, icon: "/favicon.png" });
+            const n = new Notification(checkoutTitle, { body, icon: "/favicon.png" });
             n.onclick = () => { window.focus(); navigate(link); };
           }
 
           supabase.functions.invoke("send-push-notification", {
-            body: { title: `Time to Check Out (${shiftEndLabel})`, body, data: { link } },
+            body: { title: checkoutTitle, body, data: { link } },
           }).catch(() => {});
         }
       }
 
-      // 3. Geofence Location Watch (if location and branch coordinates are available)
+      // 3. Geofence Location Watch & 100m Morning Proximity Alert
       if (branch?.latitude && branch?.longitude && navigator.geolocation && !watchIdRef.current) {
+        const handleLocationUpdate = (coords: { latitude: number; longitude: number }) => {
+          const dist = distanceMeters(coords.latitude, coords.longitude, branch.latitude!, branch.longitude!);
+          // Alert within ~100m proximity from company branch or geofence radius
+          const proximityRadius = Math.max(branch.geofence_radius_m || 100, 100);
+
+          // (A) Morning Check-In Proximity Alert (Around 100m from company if employee has not checked in yet)
+          if (!hasClockedIn && dist <= proximityRadius) {
+            if (!alertedModesRef.current.has("checkin_geo") && !localStorage.getItem(dedupeKey("checkin_geo"))) {
+              const mins = zonedParts(new Date(), scheduleSettings.timezone).minutesOfDay;
+              if (mins >= CHECKIN_WINDOW.startMin && mins <= CHECKIN_WINDOW.endMin) {
+                alertedModesRef.current.add("checkin_geo");
+                localStorage.setItem(dedupeKey("checkin_geo"), "1");
+
+                const checkinTitle = `📍 Arrived Near ${branch.name} (~${Math.round(dist)}m)`;
+                const checkinMsg = "Morning check-in reminder: You haven't checked in yet. Tap to check in now.";
+
+                setAlertState({
+                  branchName: branch.name,
+                  mode: "checkin",
+                  title: checkinTitle,
+                  message: checkinMsg,
+                });
+
+                const link = "/self-service?tab=checkin&quickCheckIn=1";
+                if (Notification.permission === "granted") {
+                  const n = new Notification(checkinTitle, { body: checkinMsg, icon: "/favicon.png" });
+                  n.onclick = () => { window.focus(); navigate(link); };
+                }
+
+                supabase.functions.invoke("send-push-notification", {
+                  body: { title: checkinTitle, body: checkinMsg, data: { link } },
+                }).catch(() => {});
+              }
+            }
+          }
+
+          // (B) Active Shift GPS Departure & Return Tracking
+          if (hasClockedIn && !hasClockedOut) {
+            const now = new Date();
+            const timeLabel = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+
+            if (dist > proximityRadius) {
+              // Stepped outside company perimeter
+              if (geoPresenceRef.current !== "outside" && localStorage.getItem(dedupeKey("geo_presence")) !== "outside") {
+                geoPresenceRef.current = "outside";
+                localStorage.setItem(dedupeKey("geo_presence"), "outside");
+
+                notifyGeofenceEvent({
+                  employeeName,
+                  employeeId: employee.id,
+                  branchName: branch.name,
+                  distanceMeters: dist,
+                  radiusMeters: proximityRadius,
+                  timeLabel,
+                  type: "left_perimeter",
+                });
+
+                setAlertState({
+                  branchName: branch.name,
+                  mode: "outside_warning",
+                  title: "Outside Workplace Perimeter",
+                  message: `${employeeName} left ${branch.name} at ${timeLabel} (~${Math.round(dist)}m away).`,
+                });
+              }
+            } else {
+              // Returned back inside company perimeter
+              if (geoPresenceRef.current === "outside" || localStorage.getItem(dedupeKey("geo_presence")) === "outside") {
+                geoPresenceRef.current = "inside";
+                localStorage.setItem(dedupeKey("geo_presence"), "inside");
+
+                notifyGeofenceEvent({
+                  employeeName,
+                  employeeId: employee.id,
+                  branchName: branch.name,
+                  distanceMeters: dist,
+                  radiusMeters: proximityRadius,
+                  timeLabel,
+                  type: "returned_perimeter",
+                });
+
+                setAlertState({
+                  branchName: branch.name,
+                  mode: "returned_notice",
+                  title: `Welcome Back, ${employeeName}!`,
+                  message: `Returned to ${branch.name} at ${timeLabel}. You are now back inside company perimeter.`,
+                });
+
+                setTimeout(() => {
+                  setAlertState((curr) => (curr?.mode === "returned_notice" ? null : curr));
+                }, 10000);
+              }
+            }
+          }
+        };
+
+        // Immediate one-off position check for prompt morning arrival detection
+        navigator.geolocation.getCurrentPosition(
+          (pos) => handleLocationUpdate(pos.coords),
+          () => {},
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+        );
+
+        // Continuous watch for movement
         watchIdRef.current = navigator.geolocation.watchPosition(
-          (pos) => {
-            const dist = distanceMeters(pos.coords.latitude, pos.coords.longitude, branch.latitude!, branch.longitude!);
-            const radius = branch.geofence_radius_m || 100;
-
-            // (A) Pre-Checkin Reminder in Morning
-            if (!hasClockedIn && dist <= radius) {
-              if (!alertedModesRef.current.has("checkin_geo") && !localStorage.getItem(dedupeKey("checkin_geo"))) {
-                const mins = zonedParts(new Date(), scheduleSettings.timezone).minutesOfDay;
-                if (mins >= CHECKIN_WINDOW.startMin && mins <= CHECKIN_WINDOW.endMin) {
-                  alertedModesRef.current.add("checkin_geo");
-                  localStorage.setItem(dedupeKey("checkin_geo"), "1");
-                  setAlertState({
-                    branchName: branch.name,
-                    mode: "checkin",
-                    title: `You're near ${branch.name}`,
-                    message: "Tap to check in now.",
-                  });
-                }
-              }
-            }
-
-            // (B) Active Shift GPS Departure & Return Tracking
-            if (hasClockedIn && !hasClockedOut) {
-              const now = new Date();
-              const timeLabel = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-
-              if (dist > radius) {
-                // Stepped outside company perimeter
-                if (geoPresenceRef.current !== "outside" && localStorage.getItem(dedupeKey("geo_presence")) !== "outside") {
-                  geoPresenceRef.current = "outside";
-                  localStorage.setItem(dedupeKey("geo_presence"), "outside");
-
-                  notifyGeofenceEvent({
-                    employeeName,
-                    employeeId: employee.id,
-                    branchName: branch.name,
-                    distanceMeters: dist,
-                    radiusMeters: radius,
-                    timeLabel,
-                    type: "left_perimeter",
-                  });
-
-                  setAlertState({
-                    branchName: branch.name,
-                    mode: "outside_warning",
-                    title: "Outside Workplace Perimeter",
-                    message: `${employeeName} left ${branch.name} at ${timeLabel} (~${Math.round(dist)}m away).`,
-                  });
-                }
-              } else {
-                // Returned back inside company perimeter
-                if (geoPresenceRef.current === "outside" || localStorage.getItem(dedupeKey("geo_presence")) === "outside") {
-                  geoPresenceRef.current = "inside";
-                  localStorage.setItem(dedupeKey("geo_presence"), "inside");
-
-                  notifyGeofenceEvent({
-                    employeeName,
-                    employeeId: employee.id,
-                    branchName: branch.name,
-                    distanceMeters: dist,
-                    radiusMeters: radius,
-                    timeLabel,
-                    type: "returned_perimeter",
-                  });
-
-                  setAlertState({
-                    branchName: branch.name,
-                    mode: "returned_notice",
-                    title: `Welcome Back, ${employeeName}!`,
-                    message: `Returned to ${branch.name} at ${timeLabel}. You are now back inside company perimeter.`,
-                  });
-
-                  // Auto dismiss return banner after 10 seconds
-                  setTimeout(() => {
-                    setAlertState((curr) => (curr?.mode === "returned_notice" ? null : curr));
-                  }, 10000);
-                }
-              }
-            }
-          },
+          (pos) => handleLocationUpdate(pos.coords),
           () => {},
           { enableHighAccuracy: true, maximumAge: 15000, timeout: 15000 }
         );

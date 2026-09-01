@@ -9,7 +9,7 @@ interface CoursesGridViewProps {
   onSelect: (c: Course) => void;
   onEdit: (c: Course) => void;
   onDelete: (c: Course) => void;
-  onEnroll: (courseId: string) => void;
+  onEnroll: (courseId: string, defaultDueDate?: string) => void;
 }
 
 export const CoursesGridView = memo(function CoursesGridView({

@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
+import { notify } from "@/lib/notify";
 import type { Course, CourseFormState } from "../types";
 import { emptyCourseForm } from "../constants";
 
@@ -124,17 +125,125 @@ export function useCourseMutations({
 
     const savedCourseId = resData?.id || editingCourseId;
 
-    // If creator invited employees, auto-enroll them
+    // If creator invited employees, auto-enroll them & send notifications
     if (savedCourseId && newCourse.invited_employee_ids && newCourse.invited_employee_ids.length > 0) {
-      const enrollRecords = newCourse.invited_employee_ids.map((empId) => ({
-        course_id: savedCourseId,
-        employee_id: empId,
-        status: "enrolled",
-        progress: 0,
-        due_date: newCourse.scheduled_date || null,
-      }));
+      const uniqueInvitedEmpIds = Array.from(new Set(newCourse.invited_employee_ids));
 
-      await supabase.from("training_enrollments").insert(enrollRecords);
+      // Query existing enrollments for this course to prevent duplicates
+      const { data: existingEnrs } = await supabase
+        .from("training_enrollments")
+        .select("employee_id")
+        .eq("course_id", savedCourseId);
+
+      const existingSet = new Set((existingEnrs || []).map((x) => x.employee_id));
+      const finalToEnroll = uniqueInvitedEmpIds.filter((id) => !existingSet.has(id));
+
+      if (finalToEnroll.length > 0) {
+        const enrollRecords = finalToEnroll.map((empId) => ({
+          course_id: savedCourseId,
+          employee_id: empId,
+          status: "enrolled",
+          progress: 0,
+          due_date: newCourse.scheduled_date || null,
+        }));
+
+        await supabase.from("training_enrollments").insert(enrollRecords);
+
+        // Fetch employee info to resolve their user_id & branch
+        const { data: invitedEmps } = await supabase
+          .from("employees")
+          .select("id, first_name, last_name, email, branch_id")
+          .in("id", finalToEnroll);
+
+      const emails = (invitedEmps || []).map((e) => e.email).filter(Boolean);
+      let userRolesMap = new Map<string, string>();
+      if (emails.length > 0) {
+        const { data: userRoles } = await supabase
+          .from("user_roles")
+          .select("email, user_id")
+          .in("email", emails);
+        if (userRoles) {
+          userRolesMap = new Map(userRoles.map((ur) => [ur.email.toLowerCase(), ur.user_id]));
+        }
+      }
+
+      const scheduleDetails = newCourse.scheduled_date
+        ? ` scheduled on ${newCourse.scheduled_date}${newCourse.start_time ? ` at ${newCourse.start_time}` : ""}`
+        : "";
+      const locationDetails = newCourse.location ? ` at ${newCourse.location}` : "";
+
+      // Send individual notifications to each invited employee
+      await Promise.all(
+        (invitedEmps || []).map(async (emp) => {
+          const recipientUserId = emp.email ? userRolesMap.get(emp.email.toLowerCase()) || null : null;
+          return notify({
+            title: `Training Invitation: ${newCourse.title.trim()}`,
+            message: `You have been invited and enrolled in "${newCourse.title.trim()}"${scheduleDetails}${locationDetails}.`,
+            type: "info",
+            source: "training",
+            entityId: savedCourseId,
+            recipientUserId,
+            branchId: emp.branch_id || resolvedBranchId,
+          });
+        })
+      );
+      }
+    }
+
+    // If course booked a meeting room, sync reservation into room_bookings
+    if (newCourse.location && newCourse.scheduled_date && newCourse.start_time && newCourse.end_time) {
+      const locLower = newCourse.location.toLowerCase().trim();
+      const { data: mRooms } = await supabase
+        .from("meeting_rooms")
+        .select("id, name, floor, capacity, branch_id")
+        .is("deleted_at", null);
+
+      const matchedRoom = (mRooms || []).find((r) => {
+        const rNameLower = r.name.toLowerCase().trim();
+        return (
+          locLower === rNameLower ||
+          locLower.includes(rNameLower) ||
+          rNameLower.includes(locLower.split(" (")[0].trim())
+        );
+      });
+
+      if (matchedRoom) {
+        // Resolve employee ID for creator if possible
+        const { data: creatorEmp } = await supabase
+          .from("employees")
+          .select("id")
+          .ilike("first_name", `%${actorName.split(" ")[0]}%`)
+          .limit(1)
+          .maybeSingle();
+
+        // Check if a booking already exists for this training course session
+        const { data: existingBooking } = await supabase
+          .from("room_bookings")
+          .select("id")
+          .eq("room_id", matchedRoom.id)
+          .eq("date", newCourse.scheduled_date)
+          .ilike("title", `%${newCourse.title.trim()}%`)
+          .maybeSingle();
+
+        const bookingPayload = {
+          room_id: matchedRoom.id,
+          booked_by: creatorEmp?.id || null,
+          title: `🎓 Training: ${newCourse.title.trim()}`,
+          date: newCourse.scheduled_date,
+          start_time: newCourse.start_time,
+          end_time: newCourse.end_time,
+          attendees_count: matchedRoom.capacity || 10,
+          status: "approved" as const,
+          special_requirements: `Category: ${newCourse.category} · Host: ${newCourse.instructor || actorName} · Purpose: Staff Training Session`,
+          refreshments: "None",
+        };
+
+        if (existingBooking) {
+          await supabase.from("room_bookings").update(bookingPayload).eq("id", existingBooking.id);
+        } else {
+          await supabase.from("room_bookings").insert(bookingPayload);
+        }
+      }
     }
 
     setSaving(false);

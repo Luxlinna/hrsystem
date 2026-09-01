@@ -7,14 +7,14 @@ interface TrainingCalendarViewProps {
   enrollments: Enrollment[];
   canManage: boolean;
   onSelectCourse: (c: Course) => void;
-  onEnroll: (courseId: string) => void;
+  onEnroll: (courseId: string, defaultDueDate?: string) => void;
   onNewCourse?: (initialDate?: string) => void;
 }
 
 interface CalendarEvent {
   id: string;
   date: string;
-  type: "due" | "created" | "completed";
+  type: "due" | "completed";
   title: string;
   subtitle: string;
   status?: string;
@@ -99,26 +99,8 @@ export const TrainingCalendarView = memo(function TrainingCalendarView({
       }
     });
 
-    // 3. Course Scheduled Sessions / Launch Dates
-    courses.forEach((c) => {
-      const eventDate = (c.scheduled_date || c.created_at || "").slice(0, 10);
-      if (eventDate) {
-        const timeStr = c.start_time ? ` @ ${c.start_time}` : "";
-        const locationStr = c.location ? ` • ${c.location}` : "";
-        events.push({
-          id: `course-${c.id}`,
-          date: eventDate,
-          type: "created",
-          title: `Training: ${c.title}`,
-          subtitle: `${c.category}${timeStr}${locationStr}`,
-          status: c.status,
-          course: c,
-        });
-      }
-    });
-
     return events;
-  }, [enrollments, courses, todayStr]);
+  }, [enrollments, todayStr]);
 
   // Filter events
   const filteredEvents = useMemo(() => {
@@ -432,7 +414,12 @@ export const TrainingCalendarView = memo(function TrainingCalendarView({
                       key={ev.id}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (ev.course) onSelectCourse(ev.course);
+                        if (ev.course) {
+                          onSelectCourse({
+                            ...ev.course,
+                            scheduled_date: ev.course.scheduled_date || ev.date,
+                          });
+                        }
                       }}
                       className={`p-1 rounded-md text-[10px] border leading-tight truncate cursor-pointer hover:opacity-90 transition-opacity ${pillClass}`}
                       title={`${ev.title} — ${ev.subtitle}`}
@@ -492,7 +479,10 @@ export const TrainingCalendarView = memo(function TrainingCalendarView({
                   key={ev.id}
                   onClick={() => {
                     if (ev.course) {
-                      onSelectCourse(ev.course);
+                      onSelectCourse({
+                        ...ev.course,
+                        scheduled_date: ev.course.scheduled_date || ev.date,
+                      });
                       setSelectedDayEvents(null);
                     }
                   }}

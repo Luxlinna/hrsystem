@@ -22,14 +22,20 @@ export function useEnrollmentMutations({
   const [enrollEmployeeIds, setEnrollEmployeeIds] = useState<string[]>([]);
   const [enrollDueDate, setEnrollDueDate] = useState("");
 
-  const openEnroll = (courseId?: string) => {
+  const openEnroll = (courseId?: string, defaultDueDate?: string) => {
     if (!canManage) {
       toast("Permission Denied", "Only administrators and managers can enroll employees.", "error");
       return;
     }
-    setEnrollCourseId(courseId || courses[0]?.id || null);
+    const targetCourse = courses.find((c) => c.id === courseId) || courses[0] || null;
+    setEnrollCourseId(targetCourse?.id || null);
     setEnrollEmployeeIds([]);
-    setEnrollDueDate("");
+    const resolvedDate =
+      defaultDueDate ||
+      targetCourse?.scheduled_date ||
+      targetCourse?.created_at?.slice(0, 10) ||
+      "";
+    setEnrollDueDate(resolvedDate);
     setShowEnrollModal(true);
   };
 
@@ -37,7 +43,25 @@ export function useEnrollmentMutations({
     if (!enrollCourseId || enrollEmployeeIds.length === 0 || !canManage) return;
     setSaving(true);
 
-    const records = enrollEmployeeIds.map((empId) => ({
+    const uniqueEmpIds = Array.from(new Set(enrollEmployeeIds));
+
+    // Query existing enrollments for this course to prevent duplicates
+    const { data: existingEnrs } = await supabase
+      .from("training_enrollments")
+      .select("employee_id")
+      .eq("course_id", enrollCourseId);
+
+    const existingSet = new Set((existingEnrs || []).map((x) => x.employee_id));
+    const newEmpIds = uniqueEmpIds.filter((id) => !existingSet.has(id));
+
+    if (newEmpIds.length === 0) {
+      setSaving(false);
+      setShowEnrollModal(false);
+      toast("Notice", "Selected employee(s) are already enrolled in this course.", "info");
+      return;
+    }
+
+    const records = newEmpIds.map((empId) => ({
       course_id: enrollCourseId,
       employee_id: empId,
       status: "enrolled",
@@ -52,16 +76,46 @@ export function useEnrollmentMutations({
       return;
     }
 
-    const courseName = courses.find((c) => c.id === enrollCourseId)?.title || "a training course";
-    notify({
-      title: `Enrolled in: ${courseName}`,
-      message: `Enrolled in training course "${courseName}"${
-        enrollDueDate ? ` with due date ${enrollDueDate}` : ""
-      }.`,
-      type: "info",
-      source: "training",
-      entityId: enrollCourseId,
-    });
+    // Fetch employee info to resolve their user_id & branch
+    const { data: enrolledEmps } = await supabase
+      .from("employees")
+      .select("id, first_name, last_name, email, branch_id")
+      .in("id", newEmpIds);
+
+    const emails = (enrolledEmps || []).map((e) => e.email).filter(Boolean);
+    let userRolesMap = new Map<string, string>();
+    if (emails.length > 0) {
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("email, user_id")
+        .in("email", emails);
+      if (userRoles) {
+        userRolesMap = new Map(userRoles.map((ur) => [ur.email.toLowerCase(), ur.user_id]));
+      }
+    }
+
+    const courseObj = courses.find((c) => c.id === enrollCourseId);
+    const courseName = courseObj?.title || "a training course";
+    const scheduleDetails = courseObj?.scheduled_date
+      ? ` scheduled on ${courseObj.scheduled_date}${courseObj.start_time ? ` at ${courseObj.start_time}` : ""}`
+      : "";
+    const locationDetails = courseObj?.location ? ` at ${courseObj.location}` : "";
+    const dueDetails = enrollDueDate ? ` (Due: ${enrollDueDate})` : "";
+
+    await Promise.all(
+      (enrolledEmps || []).map(async (emp) => {
+        const recipientUserId = emp.email ? userRolesMap.get(emp.email.toLowerCase()) || null : null;
+        return notify({
+          title: `Training Enrollment: ${courseName}`,
+          message: `You have been enrolled in "${courseName}"${scheduleDetails}${locationDetails}${dueDetails}.`,
+          type: "info",
+          source: "training",
+          entityId: enrollCourseId,
+          recipientUserId,
+          branchId: emp.branch_id,
+        });
+      })
+    );
 
     toast("Success", `Enrolled ${enrollEmployeeIds.length} employee(s)`, "success");
     setShowEnrollModal(false);

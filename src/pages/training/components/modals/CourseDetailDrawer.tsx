@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import type { Course, Enrollment } from "../../types";
 import { FORMAT_CONFIG, ENROLL_STATUS_CONFIG } from "../../constants";
 import { initials } from "../../trainingUtils";
@@ -10,7 +10,7 @@ interface CourseDetailDrawerProps {
   onClose: () => void;
   onEdit: (c: Course) => void;
   onDelete: (c: Course) => void;
-  onEnroll: (courseId: string) => void;
+  onEnroll: (courseId: string, defaultDueDate?: string) => void;
 }
 
 export const CourseDetailDrawer = memo(function CourseDetailDrawer({
@@ -22,10 +22,27 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
   onDelete,
   onEnroll,
 }: CourseDetailDrawerProps) {
-  if (!course) return null;
+  const format = course ? FORMAT_CONFIG[course.format] || FORMAT_CONFIG.online : FORMAT_CONFIG.online;
 
-  const format = FORMAT_CONFIG[course.format] || FORMAT_CONFIG.online;
-  const courseEnrollments = enrollments.filter((e) => e.course_id === course.id);
+  // Deduplicate enrollments by employee_id so the same employee is never shown twice
+  const courseEnrollments = useMemo(() => {
+    if (!course) return [];
+    const list = enrollments.filter((e) => e.course_id === course.id);
+    const map = new Map<string, Enrollment>();
+    list.forEach((e) => {
+      if (!map.has(e.employee_id)) {
+        map.set(e.employee_id, e);
+      } else {
+        const existing = map.get(e.employee_id)!;
+        if ((e.progress || 0) >= (existing.progress || 0)) {
+          map.set(e.employee_id, e);
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [enrollments, course]);
+
+  if (!course) return null;
 
   return (
     <div
@@ -154,10 +171,12 @@ export const CourseDetailDrawer = memo(function CourseDetailDrawer({
               </h4>
               {canManage && (
                 <button
-                  onClick={() => onEnroll(course.id)}
-                  className="text-xs text-[#253C7D] font-semibold hover:underline cursor-pointer"
+                  type="button"
+                  onClick={() => onEnroll(course.id, course.scheduled_date || undefined)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#253C7D] text-white hover:bg-[#1E293B] font-bold text-xs transition-all shadow-xs hover:shadow cursor-pointer"
                 >
-                  + Enroll Staff
+                  <i className="ri-user-add-line text-sm" />
+                  <span>+ Enroll Staff</span>
                 </button>
               )}
             </div>

@@ -17,6 +17,7 @@ export interface BookingEmployee {
   role?: string;
   avatar_url?: string | null;
   email?: string;
+  branch_id?: string | null;
 }
 
 export interface Booking {

@@ -144,11 +144,27 @@ export function useMeetingRoomsData(selectedDate: string) {
       .lte("date", to)
       .order("start_time");
 
+    // Also load meeting rooms directly so matching never depends on initial state
+    const { data: dbRooms } = await supabase
+      .from("meeting_rooms")
+      .select("id, name, floor, capacity, color, branch_id")
+      .is("deleted_at", null);
+
+    // Also load training courses that booked meeting rooms
+    const { data: trainingData } = await supabase
+      .from("training_courses")
+      .select("id, title, category, scheduled_date, start_time, end_time, location, instructor, created_by_name, branch_id")
+      .not("scheduled_date", "is", null)
+      .not("start_time", "is", null)
+      .not("end_time", "is", null)
+      .gte("scheduled_date", from)
+      .lte("scheduled_date", to);
+
     if (error) {
       console.error("Failed to load bookings:", error);
     } else {
       const filtered = (data || []).filter(
-        (b: any) => !b.employees || b.employees.branch_id === targetBranch
+        (b: any) => !b.employees || !targetBranch || b.employees.branch_id === targetBranch
       );
       const normalized = filtered.map((b: any) => ({
         ...b,
@@ -157,20 +173,76 @@ export function useMeetingRoomsData(selectedDate: string) {
         special_requirements: b.special_requirements || "None",
         refreshments: b.refreshments || "None",
       }));
-      setBookings(normalized);
+
+      // Map training courses to meeting room bookings
+      const trainingBookings: Booking[] = [];
+      const roomsList = dbRooms && dbRooms.length > 0 ? dbRooms : rooms;
+
+      (trainingData || []).forEach((tc) => {
+        if (!tc.location || !tc.scheduled_date || !tc.start_time || !tc.end_time) return;
+
+        // Find room by matching name
+        const locLower = tc.location.toLowerCase().trim();
+        const matchedRoom = roomsList.find((r) => {
+          const rNameLower = r.name.toLowerCase().trim();
+          return (
+            locLower === rNameLower ||
+            locLower.includes(rNameLower) ||
+            rNameLower.includes(locLower.split(" (")[0].trim())
+          );
+        });
+
+        if (matchedRoom) {
+          // If branch filtering applies, ensure room or course matches targetBranch
+          if (targetBranch && matchedRoom.branch_id && matchedRoom.branch_id !== targetBranch && tc.branch_id && tc.branch_id !== targetBranch) {
+            return;
+          }
+
+          const hostName = tc.created_by_name || tc.instructor || "Training Host";
+          const nameParts = hostName.split(" ");
+          const fName = nameParts[0] || "Training";
+          const lName = nameParts.slice(1).join(" ") || "Host";
+
+          trainingBookings.push({
+            id: `training-${tc.id}`,
+            room_id: matchedRoom.id,
+            title: `🎓 Training: ${tc.title}`,
+            booked_by: hostName,
+            date: tc.scheduled_date.slice(0, 10),
+            start_time: tc.start_time,
+            end_time: tc.end_time,
+            attendees_count: matchedRoom.capacity || 10,
+            status: "approved",
+            special_requirements: `Category: ${tc.category || "Training"} · Host: ${hostName} · Purpose: Training Course Session`,
+            refreshments: "None",
+            employees: {
+              first_name: fName,
+              last_name: lName,
+              department: tc.category || "Training",
+              role: "Instructor",
+              branch_id: tc.branch_id || matchedRoom.branch_id || targetBranch,
+            },
+          });
+        }
+      });
+
+      setBookings([...normalized, ...trainingBookings]);
     }
     setLoading(false);
-  }, [selectedDate, isPartnerBranchBlocked, targetBranch]);
+  }, [selectedDate, isPartnerBranchBlocked, targetBranch, rooms]);
 
   useEffect(() => {
     loadBookings();
   }, [loadBookings]);
 
-  // Real-time subscription
+  // Real-time subscription for both room_bookings and training_courses
   useEffect(() => {
     const channel = supabase
       .channel("room_bookings_realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "room_bookings" }, () => {
+        loadBookings();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "training_courses" }, () => {
         loadBookings();
       })
       .subscribe();
