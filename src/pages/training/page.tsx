@@ -13,7 +13,7 @@ import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShi
 export default function TrainingPage() {
   const {
     isPartnerBranchBlocked, userBranchName, userBranchId, canManage, courses,
-    enrollments, employees, branches, loading, activeTab, setActiveTab,
+    enrollments, employees, branches, meetingRooms, loading, activeTab, setActiveTab,
     filterCategory, setFilterCategory, filterStatus, setFilterStatus,
     filterMonth, setFilterMonth, availableMonths,
     filterScope, setFilterScope, searchQuery, setSearchQuery, page, setPage,
@@ -140,6 +140,7 @@ export default function TrainingPage() {
         setForm={setNewCourse}
         branches={branches}
         employees={employees}
+        meetingRooms={meetingRooms}
         isSuperAdmin={isSuperAdmin}
         activeBranchName={activeBranchName}
         saving={saving}

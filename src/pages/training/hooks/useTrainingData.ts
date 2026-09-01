@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
-import type { Course, Enrollment, Employee, Branch } from "../types";
+import type { Course, Enrollment, Employee, Branch, MeetingRoomOption } from "../types";
 
 export function useTrainingData() {
   const { user } = useAuth();
@@ -23,6 +23,7 @@ export function useTrainingData() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [meetingRooms, setMeetingRooms] = useState<MeetingRoomOption[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -31,6 +32,7 @@ export function useTrainingData() {
       setEnrollments([]);
       setEmployees([]);
       setBranches([]);
+      setMeetingRooms([]);
       setLoading(false);
       return;
     }
@@ -46,6 +48,15 @@ export function useTrainingData() {
 
       const branchList = (bData as Branch[]) || [];
       setBranches(branchList);
+
+      // 1.1 Query active meeting rooms for training location picker
+      const { data: mrData } = await supabase
+        .from("meeting_rooms")
+        .select("id, name, capacity, floor, color, branch_id")
+        .is("deleted_at", null)
+        .order("name");
+
+      setMeetingRooms((mrData as MeetingRoomOption[]) || []);
 
       // 2. Query employees scoped to active branch
       const { data: empData, error: empErr } = await supabase
@@ -130,6 +141,7 @@ export function useTrainingData() {
     enrollments,
     employees,
     branches,
+    meetingRooms,
     loading,
     fetchData,
   };

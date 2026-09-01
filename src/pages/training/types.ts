@@ -3,6 +3,15 @@ export interface Branch {
   name: string;
 }
 
+export interface MeetingRoomOption {
+  id: string;
+  name: string;
+  capacity?: number | null;
+  floor?: number;
+  color?: string;
+  branch_id?: string | null;
+}
+
 export interface Course {
   id: string;
   title: string;
