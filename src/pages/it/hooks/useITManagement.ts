@@ -6,6 +6,7 @@ import { useITData } from "./useITData";
 import { useITFilters } from "./useITFilters";
 import { useAssetMutations } from "./useAssetMutations";
 import { useTicketMutations } from "./useTicketMutations";
+import { useStationeryData } from "./useStationeryData";
 
 export function useITManagement() {
   const { user } = useAuth();
@@ -43,6 +44,14 @@ export function useITManagement() {
     loadData: data.loadData,
   });
 
+  // 5. Stationery data & mutations
+  const stationery = useStationeryData({
+    canManage: canManage && !data.isPartnerBranchBlocked,
+    actorName,
+    actorRole,
+    targetBranch: data.targetBranch,
+  });
+
   return {
     user,
     role,
@@ -51,6 +60,7 @@ export function useITManagement() {
     actorName,
     selectedTicket,
     setSelectedTicket,
+    stationery,
     ...data,
     ...filters,
     ...assetMutations,

@@ -64,3 +64,60 @@ export interface TicketFormState {
   description: string;
   branch_id?: string;
 }
+
+export type ITTabType = "assets" | "tickets" | "security" | "stationery";
+
+export interface StationeryItem {
+  id: string;
+  name: string;
+  category: string;
+  sku: string;
+  stock_quantity: number;
+  min_stock_level: number;
+  unit: string;
+  unit_cost?: number | null;
+  location?: string | null;
+  branch_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StationeryRequest {
+  id: string;
+  item_id: string;
+  item_name: string;
+  requested_by_id?: string | null;
+  requested_by_name: string;
+  department: string;
+  quantity: number;
+  purpose?: string | null;
+  status: "pending" | "approved" | "rejected" | "issued";
+  urgency: "normal" | "urgent";
+  branch_id?: string | null;
+  created_at: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  rejection_reason?: string | null;
+}
+
+export interface StationeryItemFormState {
+  name: string;
+  category: string;
+  sku: string;
+  stock_quantity: number;
+  min_stock_level: number;
+  unit: string;
+  unit_cost: number | "";
+  location: string;
+  branch_id: string;
+}
+
+export interface StationeryRequestFormState {
+  item_id: string;
+  requested_by_name: string;
+  department: string;
+  quantity: number;
+  purpose: string;
+  urgency: "normal" | "urgent";
+  branch_id: string;
+}

@@ -85,6 +85,7 @@ export default function Sidebar() {
               {group.items.map((item) => {
                 const itemBasePath = item.path.split("?")[0];
                 const isActive = itemBasePath === "/admin" ? location.pathname === "/admin" : location.pathname === itemBasePath;
+                const isNotifications = item.module === "notifications";
                 return (
                   <Link
                     key={item.path}
@@ -93,7 +94,14 @@ export default function Sidebar() {
                       isExpanded ? "gap-3 px-3 py-2.5 mx-3" : "justify-center py-3 mx-2"
                     } ${isActive ? activeClass : inactiveClass}`}
                   >
-                    <i className={`${item.icon} text-lg w-5 h-5 flex items-center justify-center shrink-0`} />
+                    <div className="relative flex items-center justify-center">
+                      <i className={`${item.icon} text-lg w-5 h-5 flex items-center justify-center shrink-0`} />
+                      {isNotifications && unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1.5 min-w-3.5 h-3.5 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </div>
                     {isExpanded && (
                       <span className="text-[13px] whitespace-nowrap">{item.label}</span>
                     )}
@@ -104,29 +112,6 @@ export default function Sidebar() {
             </div>
           </div>
         ))}
-
-        {/* Notifications */}
-        {can("notifications") && (
-          <div className={`${isExpanded ? "mx-3" : "mx-2"}`}>
-            <Link
-              to="/notifications"
-              className={`flex items-center rounded-lg transition-all duration-200 group relative ${
-                isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
-              } ${location.pathname === "/notifications" ? activeClass : inactiveClass}`}
-            >
-              <div className="relative">
-                <i className="ri-notification-3-line text-lg w-5 h-5 flex items-center justify-center shrink-0" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
-              </div>
-              {isExpanded && <span className="text-[13px] whitespace-nowrap">Notifications</span>}
-              {!isExpanded && <span className={tooltipClass}>Notifications</span>}
-            </Link>
-          </div>
-        )}
 
         {/* Recycle Bin — Super Admins only */}
         {canOpenRecycleBin && (

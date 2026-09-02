@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
-import type { ITAsset, ITTicket } from "../types";
+import type { ITAsset, ITTicket, ITTabType } from "../types";
 import {
   exportITAssetsPDF,
   exportITAssetsXLSX,
@@ -10,7 +10,7 @@ import {
 } from "../exportUtils";
 
 interface ITExportMenuProps {
-  tab: "assets" | "tickets" | "security";
+  tab: ITTabType;
   assets: ITAsset[];
   tickets: ITTicket[];
   disabled?: boolean;

@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import type { ITAsset, ITTicket } from "../types";
+import type { ITAsset, ITTicket, ITTabType } from "../types";
 
 export function useITFilters(
   assets: ITAsset[],
   tickets: ITTicket[],
   setSelectedTicket: (ticket: ITTicket | null) => void
 ) {
-  const [tab, setTab] = useState<"assets" | "tickets" | "security">("assets");
+  const [tab, setTab] = useState<ITTabType>("assets");
 
   // Asset Filters & View Mode
   const [assetSearch, setAssetSearch] = useState("");

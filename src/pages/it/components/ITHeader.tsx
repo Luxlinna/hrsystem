@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { ITAsset, ITTicket } from "../types";
+import type { ITAsset, ITTicket, ITTabType } from "../types";
 import { ITExportMenu } from "./ITExportMenu";
 
 interface ITHeaderProps {
@@ -9,7 +9,7 @@ interface ITHeaderProps {
   openTicketsCount: number;
   onOpenAssetModal: () => void;
   onOpenTicketModal: () => void;
-  tab?: "assets" | "tickets" | "security";
+  tab?: ITTabType;
   assets?: ITAsset[];
   tickets?: ITTicket[];
 }

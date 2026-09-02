@@ -1,18 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { DailyReportSummaryCards } from "./daily-report/DailyReportSummaryCards";
+import { DailyReportToolbar } from "./daily-report/DailyReportToolbar";
+import { DailyReportEntryRow, type WorkLog } from "./daily-report/DailyReportEntryRow";
+import { DailyReportModal } from "./daily-report/DailyReportModal";
 
 interface Props {
   employeeId: string;
-}
-
-interface WorkLog {
-  id: string;
-  log_date: string;
-  start_time: string | null;
-  end_time: string | null;
-  activity: string;
-  notes: string | null;
 }
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -24,8 +19,6 @@ const toYMD = (d: Date) => {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 };
-
-const fmtTime = (t: string | null) => (t ? new Date(`2000-01-01T${t}`).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "--");
 
 const hoursBetween = (start: string | null, end: string | null) => {
   if (!start || !end) return 0;
@@ -76,7 +69,9 @@ export default function DailyReportTab({ employeeId }: Props) {
     setLoading(false);
   }, [employeeId, year]);
 
-  useEffect(() => { loadLogs(); }, [loadLogs]);
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
 
   const shift = (delta: number) => {
     const d = new Date(anchor);
@@ -99,166 +94,147 @@ export default function DailyReportTab({ employeeId }: Props) {
       log_date: log.log_date,
       start_time: log.start_time || "",
       end_time: log.end_time || "",
-      activity: log.activity,
+      activity: log.activity || "",
       notes: log.notes || "",
     });
     setShowModal(true);
   };
 
   const handleSave = async () => {
-    if (!form.activity.trim() || !form.log_date) return;
+    if (!form.activity.trim()) {
+      showToast("error", "Activity is required");
+      return;
+    }
     setSaving(true);
-    const payload = {
-      employee_id: employeeId,
-      log_date: form.log_date,
-      start_time: form.start_time || null,
-      end_time: form.end_time || null,
-      activity: form.activity.trim(),
-      notes: form.notes || null,
-    };
-    const { error } = editingLog
-      ? await supabase.from("work_logs").update(payload).eq("id", editingLog.id)
-      : await supabase.from("work_logs").insert(payload);
-    setSaving(false);
-    if (error) { showToast("error", "Couldn't save entry."); return; }
-    showToast("success", editingLog ? "Entry updated." : "Entry added.");
-    setShowModal(false);
-    loadLogs();
+    try {
+      const payload = {
+        employee_id: employeeId,
+        log_date: form.log_date,
+        start_time: form.start_time || null,
+        end_time: form.end_time || null,
+        activity: form.activity.trim(),
+        notes: form.notes.trim() || null,
+      };
+
+      if (editingLog) {
+        const { error } = await supabase.from("work_logs").update(payload).eq("id", editingLog.id);
+        if (error) throw error;
+        showToast("success", "Entry updated");
+      } else {
+        const { error } = await supabase.from("work_logs").insert(payload);
+        if (error) throw error;
+        showToast("success", "Entry added");
+      }
+      setShowModal(false);
+      loadLogs();
+    } catch (err: any) {
+      showToast("error", err?.message || "Failed to save");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async () => {
     if (!editingLog) return;
-    if (!confirm("Delete this entry? It will be moved to the Recycle Bin and can be restored later.")) return;
-    const { error } = await supabase
-      .from("work_logs")
-      .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
-      .eq("id", editingLog.id);
-    if (error) { showToast("error", "Couldn't delete entry."); return; }
-    showToast("success", "Entry moved to Recycle Bin.");
-    setShowModal(false);
-    loadLogs();
+    if (!confirm("Delete this entry?")) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("work_logs").update({ deleted_at: new Date().toISOString() }).eq("id", editingLog.id);
+      if (error) throw error;
+      showToast("success", "Entry deleted");
+      setShowModal(false);
+      loadLogs();
+    } catch (err: any) {
+      showToast("error", err?.message || "Failed to delete");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // ── Derived groupings ──
-  const dayYMD = toYMD(anchor);
-  const dayLogs = logs.filter((l) => l.log_date === dayYMD);
+  const todayStr = toYMD(new Date());
+  const todayLogs = logs.filter((l) => l.log_date === todayStr);
+  const todayHours = todayLogs.reduce((s, l) => s + hoursBetween(l.start_time, l.end_time), 0);
 
-  const weekStart = new Date(anchor);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const startOfWeek = new Date(anchor);
+  startOfWeek.setDate(anchor.getDate() - anchor.getDay());
   const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
     return toYMD(d);
   });
+  const weekLogs = logs.filter((l) => weekDays.includes(l.log_date));
+  const weekHours = weekLogs.reduce((s, l) => s + hoursBetween(l.start_time, l.end_time), 0);
 
-  const monthDays = Array.from(
-    new Set(logs.filter((l) => l.log_date.startsWith(`${year}-${String(anchor.getMonth() + 1).padStart(2, "0")}`)).map((l) => l.log_date))
-  ).sort();
+  const currentYMD = toYMD(anchor);
+  const dayLogs = logs.filter((l) => l.log_date === currentYMD);
 
-  const monthSummary = MONTHS.map((label, i) => {
-    const monthLogs = logs.filter((l) => Number(l.log_date.slice(5, 7)) === i + 1);
-    const hours = monthLogs.reduce((s, l) => s + hoursBetween(l.start_time, l.end_time), 0);
-    return { label, entries: monthLogs.length, hours: Math.round(hours * 10) / 10 };
+  const monthPrefix = `${year}-${String(anchor.getMonth() + 1).padStart(2, "0")}`;
+  const monthDays = Array.from(new Set(logs.filter((l) => l.log_date.startsWith(monthPrefix)).map((l) => l.log_date))).sort();
+
+  const monthSummary = MONTHS.map((name, i) => {
+    const pfx = `${year}-${String(i + 1).padStart(2, "0")}`;
+    const mLogs = logs.filter((l) => l.log_date.startsWith(pfx));
+    const hours = mLogs.reduce((s, l) => s + hoursBetween(l.start_time, l.end_time), 0);
+    return { label: name, entries: mLogs.length, hours: Math.round(hours * 10) / 10 };
   });
 
-  const weekLogsCount = logs.filter((l) => weekDays.includes(l.log_date)).length;
-  const weekHours = logs.filter((l) => weekDays.includes(l.log_date)).reduce((s, l) => s + hoursBetween(l.start_time, l.end_time), 0);
-
-  const renderEntryRow = (l: WorkLog) => (
-    <div
-      key={l.id}
-      onClick={() => openEdit(l)}
-      className="grid grid-cols-[110px_1fr] sm:grid-cols-[110px_1.2fr_1fr] gap-3 px-4 py-2.5 border-t border-gray-50 hover:bg-gray-50 cursor-pointer text-[13px]"
-    >
-      <span className="text-gray-500">{fmtTime(l.start_time)} – {fmtTime(l.end_time)}</span>
-      <span className="text-gray-900 font-medium">{l.activity}</span>
-      <span className="hidden sm:block text-gray-400 truncate">{l.notes}</span>
-    </div>
-  );
-
-  if (loading) return (
-    <div className="flex items-center justify-center h-40">
-      <div className="w-7 h-7 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-gray-400">
+        <i className="ri-loader-4-line text-2xl animate-spin mr-2" /> Loading reports...
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {toast && (
-        <div className={`fixed top-4 left-4 right-4 sm:top-5 sm:right-5 sm:left-auto sm:max-w-sm z-50 px-5 py-3 rounded-xl text-[13px] font-semibold text-white shadow-lg ${toast.type === "success" ? "bg-[#253C7D]" : "bg-red-500"}`}>
-          {toast.message}
+        <div
+          className={`p-3 rounded-xl text-[13px] font-medium flex items-center gap-2 ${
+            toast.type === "error" ? "bg-red-50 text-red-700 border border-red-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+          }`}
+        >
+          <i className={toast.type === "error" ? "ri-error-warning-line" : "ri-checkbox-circle-line"} />
+          <span>{toast.message}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white border border-gray-100 rounded-xl p-4">
-          <p className="text-xl font-bold text-gray-900">{dayLogs.length}</p>
-          <p className="text-[11px] text-gray-500">Entries today</p>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-xl p-4">
-          <p className="text-xl font-bold text-gray-900">{weekLogsCount}</p>
-          <p className="text-[11px] text-gray-500">Entries this week</p>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-xl p-4">
-          <p className="text-xl font-bold text-gray-900">{Math.round(weekHours * 10) / 10}h</p>
-          <p className="text-[11px] text-gray-500">Hours this week</p>
-        </div>
-      </div>
+      {/* Summary KPI Cards */}
+      <DailyReportSummaryCards
+        todayCount={todayLogs.length}
+        todayHours={todayHours}
+        weekCount={weekLogs.length}
+        weekHours={weekHours}
+      />
 
-      {/* Toolbar — an explicit stacked layout on phones (controls on top,
-          full-width Add Entry below) beats relying on ml-auto + flex-wrap,
-          which only lines the button up on the right when nothing above it
-          happens to wrap first. Side-by-side again from sm: up. */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1">
-            {(["day", "week", "month", "year"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-3 py-1.5 rounded-md text-[12px] font-semibold capitalize cursor-pointer ${view === v ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-700"}`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => shift(-1)} className="w-8 h-8 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <i className="ri-arrow-left-s-line" />
-            </button>
-            <p className="text-[13px] font-semibold text-gray-800 min-w-[140px] sm:min-w-[160px] text-center">
-              {view === "day" && anchor.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-              {view === "week" && `${fmtDateLabel(weekDays[0])} – ${fmtDateLabel(weekDays[6])}`}
-              {view === "month" && `${MONTHS[anchor.getMonth()]} ${year}`}
-              {view === "year" && year}
-            </p>
-            <button onClick={() => shift(1)} className="w-8 h-8 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <i className="ri-arrow-right-s-line" />
-            </button>
-          </div>
-          <button onClick={() => setAnchor(new Date())} className="text-[#253C7D] text-[12px] font-medium hover:underline cursor-pointer shrink-0">
-            Today
-          </button>
-        </div>
-        <button
-          onClick={() => openAdd()}
-          className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 bg-[#253C7D] text-white px-4 py-2.5 sm:py-2 rounded-lg text-[12px] font-semibold hover:bg-[#1F336A] cursor-pointer"
-        >
-          <i className="ri-add-line" /> Add Entry
-        </button>
-      </div>
+      {/* Toolbar & View Toggles */}
+      <DailyReportToolbar
+        view={view}
+        setView={setView}
+        anchor={anchor}
+        shift={shift}
+        setAnchor={setAnchor}
+        weekDays={weekDays}
+        openAdd={() => openAdd()}
+      />
 
+      {/* Day View */}
       {view === "day" && (
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[110px_1.2fr_1fr] gap-3 px-4 py-2 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-            <span>Time</span><span>Activity</span><span className="hidden sm:block">Notes</span>
+            <span>Time</span>
+            <span>Activity</span>
+            <span className="hidden sm:block">Notes</span>
           </div>
-          {dayLogs.length ? dayLogs.map(renderEntryRow) : (
+          {dayLogs.length ? (
+            dayLogs.map((l) => <DailyReportEntryRow key={l.id} log={l} onEdit={openEdit} />)
+          ) : (
             <p className="text-center py-10 text-gray-400 text-[13px]">No entries for this day yet.</p>
           )}
         </div>
       )}
 
+      {/* Week View */}
       {view === "week" && (
         <div className="space-y-3">
           {weekDays.map((ymd) => {
@@ -267,9 +243,13 @@ export default function DailyReportTab({ employeeId }: Props) {
               <div key={ymd} className="bg-white border border-gray-100 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2 bg-gray-50">
                   <span className="text-[12px] font-semibold text-gray-700">{fmtDateLabel(ymd)}</span>
-                  <button onClick={() => openAdd(ymd)} className="text-[#253C7D] text-[11px] font-semibold hover:underline cursor-pointer">+ Add</button>
+                  <button onClick={() => openAdd(ymd)} className="text-[#253C7D] text-[11px] font-semibold hover:underline cursor-pointer">
+                    + Add
+                  </button>
                 </div>
-                {dayEntries.length ? dayEntries.map(renderEntryRow) : (
+                {dayEntries.length ? (
+                  dayEntries.map((l) => <DailyReportEntryRow key={l.id} log={l} onEdit={openEdit} />)
+                ) : (
                   <p className="text-center py-4 text-gray-300 text-[12px]">No entries</p>
                 )}
               </div>
@@ -278,23 +258,29 @@ export default function DailyReportTab({ employeeId }: Props) {
         </div>
       )}
 
+      {/* Month View */}
       {view === "month" && (
         <div className="space-y-3">
           {monthDays.length === 0 && (
-            <p className="text-center py-10 text-gray-400 text-[13px] bg-white border border-gray-100 rounded-xl">No entries this month yet.</p>
+            <p className="text-center py-10 text-gray-400 text-[13px] bg-white border border-gray-100 rounded-xl">
+              No entries this month yet.
+            </p>
           )}
           {monthDays.map((ymd) => {
             const dayEntries = logs.filter((l) => l.log_date === ymd);
             return (
               <div key={ymd} className="bg-white border border-gray-100 rounded-xl overflow-hidden">
                 <div className="px-4 py-2 bg-gray-50 text-[12px] font-semibold text-gray-700">{fmtDateLabel(ymd)}</div>
-                {dayEntries.map(renderEntryRow)}
+                {dayEntries.map((l) => (
+                  <DailyReportEntryRow key={l.id} log={l} onEdit={openEdit} />
+                ))}
               </div>
             );
           })}
         </div>
       )}
 
+      {/* Year View */}
       {view === "year" && (
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <table className="w-full text-[13px]">
@@ -323,82 +309,17 @@ export default function DailyReportTab({ employeeId }: Props) {
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4" onClick={() => !saving && setShowModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-base font-bold text-gray-900 mb-4">{editingLog ? "Edit Entry" : "Add Work Entry"}</h3>
-
-            <label className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Date</label>
-            <input
-              type="date"
-              value={form.log_date}
-              onChange={(e) => setForm({ ...form, log_date: e.target.value })}
-              className="w-full mt-1 mb-3 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]"
-            />
-
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Start</label>
-                <input
-                  type="time"
-                  value={form.start_time}
-                  onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">End</label>
-                <input
-                  type="time"
-                  value={form.end_time}
-                  onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]"
-                />
-              </div>
-            </div>
-
-            <label className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Work Activity</label>
-            <input
-              type="text"
-              value={form.activity}
-              onChange={(e) => setForm({ ...form, activity: e.target.value })}
-              placeholder="e.g. Reviewed onboarding documents"
-              className="w-full mt-1 mb-3 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D]"
-            />
-
-            <label className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Notes</label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              rows={3}
-              placeholder="Optional detail..."
-              className="w-full mt-1 mb-4 px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-[#253C7D] resize-none"
-            />
-
-            <div className="flex gap-2">
-              {editingLog && (
-                <button onClick={handleDelete} className="px-4 py-2.5 border border-red-200 text-red-600 rounded-lg text-[13px] font-semibold hover:bg-red-50 cursor-pointer">
-                  <i className="ri-delete-bin-line" />
-                </button>
-              )}
-              <button
-                onClick={() => setShowModal(false)}
-                disabled={saving}
-                className="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-lg text-[13px] font-semibold hover:bg-gray-50 cursor-pointer disabled:opacity-60"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex-1 bg-[#253C7D] text-white py-2.5 rounded-lg text-[13px] font-semibold hover:bg-[#1F336A] cursor-pointer disabled:opacity-60"
-              >
-                {saving ? "Saving..." : editingLog ? "Save Changes" : "Add Entry"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Add / Edit Modal */}
+      <DailyReportModal
+        showModal={showModal}
+        setShowModal={setShowModal}
+        saving={saving}
+        editingLog={editingLog}
+        form={form}
+        setForm={setForm}
+        handleSave={handleSave}
+        handleDelete={handleDelete}
+      />
     </div>
   );
 }

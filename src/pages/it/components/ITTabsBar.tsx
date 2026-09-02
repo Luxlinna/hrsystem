@@ -1,10 +1,13 @@
 import { memo } from "react";
+import type { ITTabType } from "../types";
 
 interface ITTabsBarProps {
-  activeTab: "assets" | "tickets" | "security";
-  setActiveTab: (tab: "assets" | "tickets" | "security") => void;
+  activeTab: ITTabType;
+  setActiveTab: (tab: ITTabType) => void;
   assetsCount: number;
   openTicketsCount: number;
+  stationeryItemsCount?: number;
+  pendingRequestsCount?: number;
 }
 
 export const ITTabsBar = memo(function ITTabsBar({
@@ -12,10 +15,19 @@ export const ITTabsBar = memo(function ITTabsBar({
   setActiveTab,
   assetsCount,
   openTicketsCount,
+  stationeryItemsCount,
+  pendingRequestsCount = 0,
 }: ITTabsBarProps) {
   const tabs = [
     { key: "assets" as const, label: "Hardware & Asset Register", icon: "ri-macbook-line", count: assetsCount },
     { key: "tickets" as const, label: "Helpdesk & Incident Queue", icon: "ri-customer-service-2-line", count: openTicketsCount },
+    {
+      key: "stationery" as const,
+      label: "Stationery & Supplies",
+      icon: "ri-box-3-line",
+      count: stationeryItemsCount != null ? stationeryItemsCount : null,
+      badgeExtra: pendingRequestsCount > 0 ? `${pendingRequestsCount} req` : null,
+    },
     { key: "security" as const, label: "Enterprise Security & Access", icon: "ri-shield-check-line", count: null },
   ];
 
@@ -42,6 +54,11 @@ export const ITTabsBar = memo(function ITTabsBar({
                 }`}
               >
                 {t.count}
+              </span>
+            )}
+            {t.badgeExtra && (
+              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 animate-pulse">
+                {t.badgeExtra}
               </span>
             )}
           </button>

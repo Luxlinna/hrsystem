@@ -7,6 +7,7 @@ import { TicketsFilterBar } from "./components/tickets/TicketsFilterBar";
 import { TicketsTabContent } from "./components/tickets/TicketsTabContent";
 import { TicketDetailDrawer } from "./components/tickets/TicketDetailDrawer";
 import { SecurityTabContent } from "./components/security/SecurityTabContent";
+import { StationeryTabContent } from "./components/stationery/StationeryTabContent";
 import { ITModalsContainer } from "./components/modals/ITModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useITManagement } from "./hooks/useITManagement";
@@ -74,6 +75,8 @@ export default function ITManagement() {
         setActiveTab={it.setTab}
         assetsCount={it.assets.length}
         openTicketsCount={it.openTickets}
+        stationeryItemsCount={it.stationery.items.length}
+        pendingRequestsCount={it.stationery.pendingRequestsCount}
       />
 
       {it.tab === "assets" && (
@@ -127,6 +130,13 @@ export default function ITManagement() {
             onOpenTicketModal={() => it.setTicketModal(true)}
           />
         </>
+      )}
+
+      {it.tab === "stationery" && (
+        <StationeryTabContent
+          stationery={it.stationery}
+          canManage={it.canManage}
+        />
       )}
 
       {it.tab === "security" && <SecurityTabContent />}
