@@ -8,6 +8,7 @@ interface UseAttendanceMetricsProps {
   workLocations: WorkLocation[];
   activeScopeRecords: AttendanceRecord[];
   todayYMD: string;
+  branchName?: string;
   rosterDate: string;
   matrixMonth: string;
   filterDepartment: string;
@@ -20,6 +21,7 @@ export function useAttendanceMetrics({
   workLocations,
   activeScopeRecords,
   todayYMD,
+  branchName,
   rosterDate,
   matrixMonth,
   filterDepartment,
@@ -38,15 +40,51 @@ export function useAttendanceMetrics({
   );
 
   const todayByWorkSite = useMemo(() => {
-    if (workLocations.length === 0) return [];
     const todayRecs = records.filter((r) => r.date === todayYMD);
-    return workLocations.map((wl) => {
-      const siteRecs = todayRecs.filter((r) => r.work_location_id === wl.id);
-      const present = siteRecs.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "late" || r.status === "remote").length;
-      const workingNowHere = siteRecs.filter((r) => r.clock_in && !r.clock_out).length;
-      return { ...wl, present, workingNowHere, total: siteRecs.length };
+    const result: (WorkLocation & {
+      present: number;
+      workingNowHere: number;
+      total: number;
+      scopeCount: number;
+      isMain?: boolean;
+    })[] = [];
+
+    // 1. Calculate Main Branch Office stats (where work_location_id is null or "main")
+    const mainScopeRecs = activeScopeRecords.filter((r) => !r.work_location_id || r.work_location_id === "main");
+    const mainTodayRecs = todayRecs.filter((r) => !r.work_location_id || r.work_location_id === "main");
+    const mainPresent = mainTodayRecs.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "late" || r.status === "remote").length;
+    const mainWorkingNow = mainTodayRecs.filter((r) => r.clock_in && !r.clock_out).length;
+
+    result.push({
+      id: "main",
+      branch_id: "",
+      name: branchName || "Main Office",
+      is_default: true,
+      present: mainPresent,
+      workingNowHere: mainWorkingNow,
+      total: records.filter((r) => !r.work_location_id || r.work_location_id === "main").length,
+      scopeCount: mainScopeRecs.length,
+      isMain: true,
     });
-  }, [workLocations, records, todayYMD]);
+
+    // 2. Add each Branch Work Site
+    workLocations.forEach((wl) => {
+      const siteScopeRecs = activeScopeRecords.filter((r) => r.work_location_id === wl.id);
+      const siteTodayRecs = todayRecs.filter((r) => r.work_location_id === wl.id);
+      const present = siteTodayRecs.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "late" || r.status === "remote").length;
+      const workingNowHere = siteTodayRecs.filter((r) => r.clock_in && !r.clock_out).length;
+      result.push({
+        ...wl,
+        present,
+        workingNowHere,
+        total: records.filter((r) => r.work_location_id === wl.id).length,
+        scopeCount: siteScopeRecs.length,
+        isMain: false,
+      });
+    });
+
+    return result;
+  }, [workLocations, records, activeScopeRecords, todayYMD, branchName]);
 
   const rosterRecords = useMemo(() => records.filter((r) => r.date === rosterDate), [records, rosterDate]);
 
@@ -99,16 +137,19 @@ export function useAttendanceMetrics({
     const [yStr, mStr] = matrixMonth.split("-");
     const year = parseInt(yStr);
     const month = parseInt(mStr);
-    const totalDays = new Date(year, month, 0).getDate();
-    return Array.from({ length: totalDays }, (_, i) => {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    return Array.from({ length: daysInMonth }, (_, i) => {
       const dayNum = i + 1;
+      const d = new Date(year, month - 1, dayNum);
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
-      const dObj = new Date(year, month - 1, dayNum);
+      const dayOfWeek = d.getDay();
       return {
         dayNum,
         dateStr,
-        dayName: dObj.toLocaleDateString("en-US", { weekday: "narrow" }),
-        isWeekend: dObj.getDay() === 0 || dObj.getDay() === 6,
+        dayName: dayNames[dayOfWeek],
+        isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
       };
     });
   }, [matrixMonth]);

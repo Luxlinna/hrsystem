@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { DatePreset, ViewMode, WorkLocation } from "../types";
+import type { DatePreset, ViewMode, WorkLocation, Employee } from "../types";
 import { STATUS_CONFIG } from "../constants";
 import { AttendanceDateRangePicker } from "./AttendanceDateRangePicker";
 
@@ -19,6 +19,9 @@ interface AttendanceControlBarProps {
   departments: string[];
   filterDepartment: string;
   setFilterDepartment: (dept: string) => void;
+  employees?: Employee[];
+  filterEmployeeId?: string;
+  setFilterEmployeeId?: (empId: string) => void;
   filterStatus: string;
   setFilterStatus: (status: string) => void;
   workLocations: WorkLocation[];
@@ -45,6 +48,9 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   departments,
   filterDepartment,
   setFilterDepartment,
+  employees = [],
+  filterEmployeeId = "all",
+  setFilterEmployeeId,
   filterStatus,
   setFilterStatus,
   workLocations,
@@ -57,6 +63,7 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   const isFiltered =
     searchQuery ||
     filterDepartment !== "all" ||
+    (filterEmployeeId && filterEmployeeId !== "all") ||
     filterStatus !== "all" ||
     filterWorkLocation !== "all" ||
     filterDatePreset !== "all";
@@ -64,6 +71,7 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   const handleResetFilters = () => {
     setSearchQuery("");
     setFilterDepartment("all");
+    if (setFilterEmployeeId) setFilterEmployeeId("all");
     setFilterStatus("all");
     setFilterWorkLocation("all");
     setFilterDatePreset("all");
@@ -71,6 +79,11 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
     setToDate("");
     setSingleDate(todayYMD);
   };
+
+  // Filter employee list if a specific work location is selected
+  const availableEmployees = filterWorkLocation === "all"
+    ? employees
+    : employees.filter((e) => !e.default_work_location_id || e.default_work_location_id === filterWorkLocation);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200/80 p-3.5 shadow-2xs mb-6 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
@@ -85,15 +98,15 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
         </div>
       </div>
 
-      {/* Filters: Search, Date Range, Department, Location, Status */}
+      {/* Filters: Search, Date Range, Work Site, Employee, Department, Status */}
       <div className="flex items-center gap-2.5 flex-wrap">
-        <div className="relative w-full sm:w-48">
+        <div className="relative w-full sm:w-44">
           <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search name, date..."
+            placeholder="Search name, notes..."
             className="w-full pl-8 pr-7 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all font-medium"
           />
           {searchQuery && (
@@ -118,6 +131,24 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
           setToDate={setToDate}
         />
 
+        {/* Employee Filter */}
+        {canManage && employees.length > 0 && setFilterEmployeeId && (
+          <select
+            value={filterEmployeeId}
+            onChange={(e) => setFilterEmployeeId(e.target.value)}
+            className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer font-bold max-w-[170px] truncate"
+            title="Filter by specific employee"
+          >
+            <option value="all">All Employees ({availableEmployees.length})</option>
+            {availableEmployees.map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.first_name} {emp.last_name} ({emp.role || emp.department || "Staff"})
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* Department Filter */}
         {canManage && departments.length > 0 && (
           <select
             value={filterDepartment}
@@ -131,6 +162,7 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
           </select>
         )}
 
+        {/* Status Filter */}
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}

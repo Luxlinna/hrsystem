@@ -9,24 +9,29 @@ import { useAttendanceMetrics } from "./useAttendanceMetrics";
 import { useAttendanceMutations } from "./useAttendanceMutations";
 
 export function useAttendance() {
-  const { role, isAdmin, loading: permsLoading } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, userBranchName, userBranchId, isPartnerBranchBlocked } = useBranchScope();
+  const { role, isAdmin, loading: permsLoading, can } = usePermissions();
+  const { isSuperAdmin, isBranchAdmin, userBranchName, userBranchId, effectiveBranchName, isPartnerBranchBlocked } = useBranchScope();
 
   const roleName = (role?.name || "").toLowerCase();
+  const canViewAllBranches = isSuperAdmin || !!role?.attendance_view_all_employees;
   const isLeader =
     (isSuperAdmin ||
       isBranchAdmin ||
       isAdmin ||
+      role?.is_admin ||
+      role?.allowed_modules?.includes("attendance") ||
+      role?.allowed_modules?.includes("*") ||
+      can("attendance") ||
       /manager|lead|head|admin|ceo|director|chief|president|officer/i.test(roleName) ||
       !!role?.attendance_view_all_employees ||
       !!role?.attendance_view_own_branch) &&
-    !isPartnerBranchBlocked;
+    (!isPartnerBranchBlocked || canViewAllBranches);
 
   const canManage = isLeader;
   const canViewAll = isLeader;
   const todayYMD = todayYMDLib();
 
-  const data = useAttendanceData(isLeader);
+  const data = useAttendanceData(isLeader, canViewAllBranches);
   const { fetchData } = data;
 
   useEffect(() => {
@@ -36,12 +41,18 @@ export function useAttendance() {
 
   const filters = useAttendanceFilters(data.records, data.employees, todayYMD);
 
+  const currentBranchName =
+    effectiveBranchName && effectiveBranchName !== "Select Branch" && effectiveBranchName !== "Selected Branch"
+      ? effectiveBranchName
+      : userBranchName || data.employees[0]?.branches?.name || "Main Office";
+
   const metrics = useAttendanceMetrics({
     records: data.records,
     employees: data.employees,
     workLocations: data.workLocations,
     activeScopeRecords: filters.activeScopeRecords,
     todayYMD,
+    branchName: currentBranchName,
     rosterDate: filters.rosterDate,
     matrixMonth: filters.matrixMonth,
     filterDepartment: filters.filterDepartment,

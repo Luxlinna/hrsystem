@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { AttendanceRecord, BranchGeofence, OutsideWorkTask, CheckInStep } from "../../types";
-import { fmtHM, fmtClock } from "../../selfServiceUtils";
+import { fmtHM } from "../../selfServiceUtils";
 
 interface Props {
   currentTime: Date;
@@ -134,8 +134,7 @@ function CheckInActions(props: Props) {
   const {
     activeOutsideWork, todayOutsideWork, isCheckedIn, isCheckedOut, checkInStep, checkInMessage, processing,
     notes, setNotes, earlyCheckoutReason, setEarlyCheckoutReason, earlyCheckoutMinutesNow,
-    isEarlyCheckoutNow, branch, branchLoading, todayRecord, scheduleSettings,
-    onRequestClockIn, onConfirmClockIn, onClockOut, onResetCheckInFlow,
+    isEarlyCheckoutNow, branch, branchLoading, todayRecord, onRequestClockIn, onConfirmClockIn, onClockOut, onResetCheckInFlow,
   } = props;
 
   const currentOutsideTask = todayOutsideWork || activeOutsideWork;
@@ -195,8 +194,8 @@ function CheckInActions(props: Props) {
             Check In
           </button>
           {branch?.latitude && (
-            <p className="text-white/60 text-[11px] text-center">
-              <i className="ri-map-pin-line mr-1" />
+            <p className="text-white/70 text-[11px] text-center font-medium">
+              <i className="ri-map-pin-line mr-1 text-emerald-300" />
               Within {branch.geofence_radius_m}m of {branch.name}
             </p>
           )}

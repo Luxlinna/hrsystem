@@ -9,6 +9,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
+  const [filterEmployeeId, setFilterEmployeeId] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterWorkLocation, setFilterWorkLocation] = useState("all");
   const [pageSize, setPageSize] = useState(10);
@@ -79,7 +80,14 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
     return records.filter((r) => {
       if (filterStatus !== "all" && r.status !== filterStatus) return false;
       if (filterDepartment !== "all" && r.employees?.department !== filterDepartment) return false;
-      if (filterWorkLocation !== "all" && r.work_location_id !== filterWorkLocation) return false;
+      if (filterEmployeeId !== "all" && r.employee_id !== filterEmployeeId) return false;
+      if (filterWorkLocation !== "all") {
+        if (filterWorkLocation === "main") {
+          if (r.work_location_id && r.work_location_id !== "main") return false;
+        } else {
+          if (r.work_location_id !== filterWorkLocation) return false;
+        }
+      }
       if (dateRangeBounds && (r.date < dateRangeBounds.start || r.date > dateRangeBounds.end)) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
@@ -93,7 +101,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
       }
       return true;
     });
-  }, [records, filterStatus, filterDepartment, filterWorkLocation, dateRangeBounds, searchQuery]);
+  }, [records, filterStatus, filterDepartment, filterEmployeeId, filterWorkLocation, dateRangeBounds, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -102,8 +110,13 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
     [filteredRecords, safePage, pageSize]
   );
 
-  useEffect(() => { setPage(1); }, [searchQuery, filterDepartment, filterStatus, filterWorkLocation, filterDatePreset, fromDate, toDate, singleDate, pageSize]);
-  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filterDepartment, filterEmployeeId, filterStatus, filterWorkLocation, filterDatePreset, fromDate, toDate, singleDate, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const changeRosterDate = useCallback((offsetDays: number) => {
     const d = new Date(`${rosterDate}T00:00:00`);
@@ -145,6 +158,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
     viewMode, setViewMode,
     searchQuery, setSearchQuery,
     filterDepartment, setFilterDepartment,
+    filterEmployeeId, setFilterEmployeeId,
     filterStatus, setFilterStatus,
     filterWorkLocation, setFilterWorkLocation,
     pageSize, setPageSize,

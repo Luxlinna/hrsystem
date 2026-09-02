@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { addDaysYMD, todayYMD, zonedDayOfWeek } from "@/lib/date";
 import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows } from "@/lib/workSchedule";
@@ -130,73 +130,57 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
       });
   }, [employeeId, today]);
 
+  // Fetch employee record directly from Employee Directory to determine their assigned branch / work site
   useEffect(() => {
     if (!employeeId) return;
     setBranchLoading(true);
     (async () => {
-      const { data } = await supabase
+      const { data: empData } = await supabase
         .from("employees")
         .select(`
           branch_id, default_work_location_id,
-          branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
+          branches(id, name, location, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
           work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled)
         `)
         .eq("id", employeeId)
         .maybeSingle();
 
-      const mainBranch = (data as any)?.branches;
-      let site = (data as any)?.work_locations;
+      const mainBranch = (empData as any)?.branches;
+      const assignedSite = (empData as any)?.work_locations;
+      const hasSpecificSite = Boolean(empData?.default_work_location_id && assignedSite);
 
-      let wlId = (data as any)?.default_work_location_id || null;
-      if (!wlId && (data as any)?.branch_id) {
-        const { data: defaultSite } = await supabase
-          .from("work_locations")
-          .select("id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled")
-          .eq("branch_id", (data as any).branch_id)
-          .is("deleted_at", null)
-          .order("is_default", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (defaultSite) {
-          wlId = defaultSite.id;
-          site = defaultSite;
-        }
-      }
-      setDefaultWorkLocationId(wlId);
+      setDefaultWorkLocationId(hasSpecificSite ? empData.default_work_location_id : null);
 
-      let lat = site?.latitude ?? mainBranch?.latitude ?? null;
-      let lng = site?.longitude ?? mainBranch?.longitude ?? null;
-
-      // If coordinates are not stored in database yet, dynamically geocode site or branch address
-      if (!lat || !lng) {
-        const addressToGeocode = site?.description || site?.name || mainBranch?.location || "";
-        if (addressToGeocode) {
-          try {
-            const { geocodeAddress } = await import("@/lib/geocode");
-            const geoRes = await geocodeAddress(addressToGeocode);
-            if (geoRes?.lat && geoRes?.lng) {
-              lat = geoRes.lat;
-              lng = geoRes.lng;
-            }
-          } catch {
-            // Geocoding fallback handled gracefully
-          }
-        }
+      if (hasSpecificSite && assignedSite) {
+        // Employee is stationed at a specific Branch Site (e.g. KampongThom)
+        setBranch({
+          name: `${assignedSite.name} (${mainBranch?.name || "Site"})`,
+          latitude: assignedSite.latitude ?? mainBranch?.latitude ?? null,
+          longitude: assignedSite.longitude ?? mainBranch?.longitude ?? null,
+          geofence_radius_m: assignedSite.geofence_radius_m || 100,
+          work_start_time: assignedSite.work_start_time || "07:30",
+          work_end_time: assignedSite.work_end_time || "17:00",
+          break_start_time: assignedSite.break_start_time || "11:30",
+          break_end_time: assignedSite.break_end_time || "13:00",
+          is_four_punch_enabled: assignedSite.is_four_punch_enabled ?? true,
+        });
+      } else if (mainBranch) {
+        // Employee is stationed at their Main Branch Office (e.g. Pinex Agro)
+        setBranch({
+          name: mainBranch.name || "Main Branch",
+          latitude: mainBranch.latitude ?? null,
+          longitude: mainBranch.longitude ?? null,
+          geofence_radius_m: mainBranch.geofence_radius_m || 100,
+          work_start_time: mainBranch.work_start_time || "08:00",
+          work_end_time: mainBranch.work_end_time || "17:00",
+          break_start_time: "12:00",
+          break_end_time: "13:00",
+          is_four_punch_enabled: false,
+        });
+      } else {
+        setBranch(null);
       }
 
-      const effectiveBranch: BranchGeofence = {
-        name: site?.name ? `${site.name} (${mainBranch?.name || "Site"})` : mainBranch?.name || "Office",
-        latitude: lat,
-        longitude: lng,
-        geofence_radius_m: site?.geofence_radius_m ?? mainBranch?.geofence_radius_m ?? 100,
-        work_start_time: site?.work_start_time || mainBranch?.work_start_time || null,
-        work_end_time: site?.work_end_time || mainBranch?.work_end_time || null,
-        break_start_time: site?.break_start_time || null,
-        break_end_time: site?.break_end_time || null,
-        is_four_punch_enabled: site?.is_four_punch_enabled ?? true,
-      };
-
-      setBranch(effectiveBranch);
       setBranchLoading(false);
     })();
   }, [employeeId]);

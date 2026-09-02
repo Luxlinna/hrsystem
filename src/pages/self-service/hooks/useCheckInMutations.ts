@@ -63,13 +63,6 @@ export function useCheckInMutations({
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  const geofence = useGeofenceCheckIn({
-    branch,
-    branchLoading,
-    onWithinRange: () => clockActions.handleClockIn(),
-    showToast,
-  });
-
   const clockActions = useClockInOutActions({
     employeeId,
     employeeName,
@@ -86,9 +79,16 @@ export function useCheckInMutations({
     setNotes,
     earlyCheckoutReason,
     setEarlyCheckoutReason,
-    resetCheckInFlow: geofence.resetCheckInFlow,
+    resetCheckInFlow: () => geofence.resetCheckInFlow(),
     showToast,
     loadRecords,
+  });
+
+  const geofence = useGeofenceCheckIn({
+    branch,
+    branchLoading,
+    onWithinRange: () => clockActions.handleClockIn(),
+    showToast,
   });
 
   const handleRequestClockIn = useCallback(() => {
@@ -101,39 +101,34 @@ export function useCheckInMutations({
     await clockActions.handleClockIn();
   }, [clockActions]);
 
-  const autoStartedRef = useRef(false);
+  // Auto check-in handler when query param triggers
+  const autoStartHandled = useRef(false);
   useEffect(() => {
-    if (!autoStart || loading || branchLoading || autoStartedRef.current || todayRecord?.clock_in || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
-    autoStartedRef.current = true;
+    if (!autoStart || autoStartHandled.current || loading || branchLoading || isCheckedIn || isCheckedOut) return;
+    autoStartHandled.current = true;
     handleRequestClockIn();
-  }, [autoStart, loading, branchLoading, todayRecord, todayOutsideWork, handleRequestClockIn]);
+  }, [autoStart, loading, branchLoading, isCheckedIn, isCheckedOut, handleRequestClockIn]);
 
-  const autoCheckedOutRef = useRef(false);
+  // Auto check-out handler when query param triggers
+  const autoOutHandled = useRef(false);
   useEffect(() => {
-    if (loading || autoCheckedOutRef.current || !isCheckedIn || isCheckedOut || (todayOutsideWork && todayOutsideWork.work_status !== "checked_out")) return;
-    const isSat = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
-    const autoCheckoutThreshold = isSat ? 13 * 60 : 18 * 60;
-    const nowMin = zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay;
-    const shouldAutoCheckoutByTime = nowMin >= autoCheckoutThreshold;
-    const shouldAutoCheckoutByParam = !!autoCheckOut && !isEarlyCheckoutNow;
-
-    if (shouldAutoCheckoutByTime || shouldAutoCheckoutByParam) {
-      autoCheckedOutRef.current = true;
-      clockActions.handleClockOut();
+    if (!autoCheckOut || autoOutHandled.current || loading || !isCheckedIn || isCheckedOut) return;
+    autoOutHandled.current = true;
+    if (isEarlyCheckoutNow) {
+      setEarlyCheckoutReason("Auto check-out triggered via quick action");
     }
-  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, todayOutsideWork, currentTime, scheduleSettings.timezone, clockActions]);
+    clockActions.handleClockOut();
+  }, [autoCheckOut, loading, isCheckedIn, isCheckedOut, isEarlyCheckoutNow, clockActions]);
 
   return {
-    processing: clockActions.processing,
     toast,
     notes,
     setNotes,
     earlyCheckoutReason,
     setEarlyCheckoutReason,
+    processing: clockActions.processing,
     checkInStep: geofence.checkInStep,
     checkInMessage: geofence.checkInMessage,
-    checkInDistance: geofence.checkInDistance,
-    checkInAccuracy: geofence.checkInAccuracy,
     handleRequestClockIn,
     handleConfirmClockIn,
     handleClockIn: clockActions.handleClockIn,

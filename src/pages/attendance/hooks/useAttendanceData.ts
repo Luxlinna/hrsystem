@@ -5,7 +5,7 @@ import { useBranchScope } from "@/context/BranchContext";
 import { toast } from "@/components/Toast";
 import type { Employee, AttendanceRecord, WorkLocation } from "../types";
 
-export function useAttendanceData(isLeader: boolean) {
+export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean = false) {
   const { user } = useAuth();
   const { targetBranch, isPartnerBranchBlocked, userBranchName, userBranchId } = useBranchScope();
 
@@ -22,7 +22,7 @@ export function useAttendanceData(isLeader: boolean) {
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if ((isPartnerBranchBlocked && !canViewAllBranches) || !targetBranch) {
       setRecords([]);
       setEmployees([]);
       setWorkLocations([]);
@@ -42,11 +42,11 @@ export function useAttendanceData(isLeader: boolean) {
     setLoading(true);
     try {
       if (isLeader) {
+        // Fetch all employees belonging to the selected branch
         const { data: team, error: empErr } = await supabase
           .from("employees")
           .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id")
           .is("deleted_at", null)
-          .eq("status", "active")
           .eq("branch_id", targetBranch)
           .order("first_name");
         if (empErr) console.warn("Error fetching attendance employees:", empErr);
@@ -123,7 +123,7 @@ export function useAttendanceData(isLeader: boolean) {
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch, isLeader, myEmployee, user?.email]);
+  }, [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, myEmployee, user?.email]);
 
   return {
     records,

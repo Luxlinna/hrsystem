@@ -96,6 +96,9 @@ export default function AttendancePage() {
         departments={filters.departments}
         filterDepartment={filters.filterDepartment}
         setFilterDepartment={filters.setFilterDepartment}
+        employees={data.employees}
+        filterEmployeeId={filters.filterEmployeeId}
+        setFilterEmployeeId={filters.setFilterEmployeeId}
         filterStatus={filters.filterStatus}
         setFilterStatus={filters.setFilterStatus}
         workLocations={data.workLocations}
