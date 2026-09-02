@@ -1,0 +1,45 @@
+export const STATUS_COLOR: Record<string, string> = {
+  approved: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  completed: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  pending: "bg-amber-50 text-amber-700 border border-amber-200/70",
+  rejected: "bg-red-50 text-red-700 border border-red-200/70",
+  cancelled: "bg-gray-100 text-gray-600 border border-gray-200/70",
+  paid: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  processed: "bg-sky-50 text-sky-700 border border-sky-200/70",
+  active: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  open: "bg-amber-50 text-amber-700 border border-amber-200/70",
+  scheduled: "bg-blue-50 text-blue-700 border border-blue-200/70",
+  filled: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  hired: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  interview: "bg-sky-50 text-sky-700 border border-sky-200/70",
+  screening: "bg-violet-50 text-violet-700 border border-violet-200/70",
+  document: "bg-amber-50 text-amber-700 border border-amber-200/70",
+  it_setup: "bg-blue-50 text-blue-700 border border-blue-200/70",
+  training: "bg-purple-50 text-purple-700 border border-purple-200/70",
+  complete: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  ontime: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  present: "bg-emerald-50 text-emerald-700 border border-emerald-200/70",
+  late: "bg-amber-50 text-amber-700 border border-amber-200/70",
+  absent: "bg-rose-50 text-rose-700 border border-rose-200/70",
+  remote: "bg-sky-50 text-sky-700 border border-sky-200/70",
+  "half day": "bg-orange-50 text-orange-700 border border-orange-200/70",
+  holiday: "bg-purple-50 text-purple-700 border border-purple-200/70",
+  deleted: "bg-rose-50 text-rose-700 border border-rose-300 font-bold",
+};
+
+export const ATTENDANCE_STATUS_LABEL: Record<string, string> = {
+  ontime: "on time",
+  present: "on time",
+  late: "late",
+  absent: "absent",
+  remote: "remote",
+  wfh: "remote",
+  half_day: "half day",
+  holiday: "holiday",
+};
+
+export const EXPORT_FORMAT_LABEL: Record<string, string> = {
+  pdf: "PDF",
+  csv: "CSV",
+  xlsx: "Excel",
+};
