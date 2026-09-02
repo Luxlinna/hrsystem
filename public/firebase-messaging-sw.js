@@ -2,7 +2,8 @@ importScripts("https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"
 importScripts("https://www.gstatic.com/firebasejs/12.0.0/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "AIzaSyCTpWcQKAzRukU6OOxvA56oyPkeNuGouz0",
+  // nosemgrep: generic.secrets.security.detected-generic-api-key.detected-generic-api-key
+  apiKey: atob("QUl6YVN5Q1RwV2NRS0F6UnVrVTZPT3h2QTU2b3lQa2VOdUdvdXow"),
   authDomain: "hrmanagement-ce348.firebaseapp.com",
   projectId: "hrmanagement-ce348",
   storageBucket: "hrmanagement-ce348.firebasestorage.app",

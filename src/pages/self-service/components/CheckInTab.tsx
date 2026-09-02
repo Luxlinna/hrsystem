@@ -28,6 +28,9 @@ interface BranchGeofence {
   geofence_radius_m: number;
   work_start_time: string | null;
   work_end_time: string | null;
+  break_start_time?: string | null;
+  break_end_time?: string | null;
+  is_four_punch_enabled?: boolean;
 }
 
 interface Props {
@@ -164,8 +167,12 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
   // branches have no Saturday fields of their own.
   const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
   const daySchedule = getScheduleForDate(scheduleSettings);
-  const workStartTime = assignedShift?.start_time || (!isSaturday && branch?.work_start_time) || daySchedule?.startTime || globalWorkStartTime || "08:00";
-  const workEndTime = assignedShift?.end_time || (!isSaturday && branch?.work_end_time) || daySchedule?.endTime || (isSaturday ? "12:00" : "17:00");
+  const siteOrBranchStartTime = branch?.work_start_time ? branch.work_start_time.slice(0, 5) : null;
+  const siteOrBranchEndTime = branch?.work_end_time ? branch.work_end_time.slice(0, 5) : null;
+  const workStartTime = assignedShift?.start_time || (!isSaturday && siteOrBranchStartTime) || daySchedule?.startTime || globalWorkStartTime || "08:00";
+  const workEndTime = assignedShift?.end_time || (!isSaturday && siteOrBranchEndTime) || daySchedule?.endTime || (isSaturday ? "12:00" : "17:00");
+  const breakStartTime = branch?.break_start_time ? branch.break_start_time.slice(0, 5) : scheduleSettings.breakStartTime;
+  const breakEndTime = branch?.break_end_time ? branch.break_end_time.slice(0, 5) : scheduleSettings.breakEndTime;
 
   const loadRecords = async () => {
     if (!employeeId) return;
@@ -201,25 +208,28 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
         .select(`
           branch_id, default_work_location_id,
           branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
-          work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time)
+          work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled)
         `)
         .eq("id", employeeId)
         .maybeSingle();
 
       const mainBranch = (data as any)?.branches;
-      const site = (data as any)?.work_locations;
+      let site = (data as any)?.work_locations;
 
       let wlId = (data as any)?.default_work_location_id || null;
       if (!wlId && (data as any)?.branch_id) {
         const { data: defaultSite } = await supabase
           .from("work_locations")
-          .select("id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time")
+          .select("id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled")
           .eq("branch_id", (data as any).branch_id)
           .is("deleted_at", null)
           .order("is_default", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (defaultSite) wlId = defaultSite.id;
+        if (defaultSite) {
+          wlId = defaultSite.id;
+          site = defaultSite;
+        }
       }
       setDefaultWorkLocationId(wlId);
 
@@ -248,6 +258,9 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
         geofence_radius_m: site?.geofence_radius_m ?? mainBranch?.geofence_radius_m ?? 100,
         work_start_time: site?.work_start_time || mainBranch?.work_start_time || null,
         work_end_time: site?.work_end_time || mainBranch?.work_end_time || null,
+        break_start_time: site?.break_start_time || null,
+        break_end_time: site?.break_end_time || null,
+        is_four_punch_enabled: site?.is_four_punch_enabled ?? true,
       };
 
       setBranch(effectiveBranch);
@@ -388,8 +401,8 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     // exact even when the device sits in a different timezone.
     const [ciH, ciM, ciS] = (todayRecord.clock_in || "00:00:00").split(":").map(Number);
     const clockInTime = todayRecord.clock_in ? zonedTimeToInstant(today, ciH, ciM, ciS, scheduleSettings.timezone) : null;
-    // Deduct the unpaid break (e.g. 12:00–13:00) so hours reflect actual work time.
-    const hoursWorked = clockInTime ? computeHoursWorked(clockInTime, now, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime) : null;
+    // Deduct the unpaid break (e.g. 11:30–13:00 or 12:00–13:00) so hours reflect actual work time.
+    const hoursWorked = clockInTime ? computeHoursWorked(clockInTime, now, breakStartTime, breakEndTime) : null;
 
     const isSat = zonedDayOfWeek(now, scheduleSettings.timezone) === 6;
     const defaultEndMin = isSat ? 12 * 60 : 17 * 60; // 12:00 PM Sat, 5:00 PM Mon-Fri
@@ -505,7 +518,7 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     if (!isCheckedIn || isCheckedOut || !todayRecord?.clock_in) return 0;
     const [ciH, ciM, ciS] = todayRecord.clock_in.split(":").map(Number);
     const start = zonedTimeToInstant(today, ciH, ciM, ciS, scheduleSettings.timezone);
-    return computeHoursWorked(start, currentTime, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime);
+    return computeHoursWorked(start, currentTime, breakStartTime, breakEndTime);
   })();
 
   // How far through the scheduled shift we currently are.

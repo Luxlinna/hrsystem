@@ -119,8 +119,10 @@ export function useClockInOutActions({
 
     const [ciH, ciM, ciS] = (todayRecord.clock_in || "00:00:00").split(":").map(Number);
     const clockInTime = todayRecord.clock_in ? zonedTimeToInstant(today, ciH, ciM, ciS, scheduleSettings.timezone) : null;
+    const effectiveBreakStart = branch?.break_start_time?.slice(0, 5) || scheduleSettings.breakStartTime;
+    const effectiveBreakEnd = branch?.break_end_time?.slice(0, 5) || scheduleSettings.breakEndTime;
     const hoursWorked = clockInTime
-      ? computeHoursWorked(clockInTime, now, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime)
+      ? computeHoursWorked(clockInTime, now, effectiveBreakStart, effectiveBreakEnd)
       : null;
 
     const isSaturday = zonedDayOfWeek(now, scheduleSettings.timezone) === 6;

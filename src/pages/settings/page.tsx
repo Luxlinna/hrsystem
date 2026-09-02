@@ -16,6 +16,10 @@ export default function Settings() {
     loading,
     saving,
     edited,
+    settingsScope,
+    setSettingsScope,
+    visibleBranches,
+    currentBranchOrSite,
     getVal,
     hasChanges,
     updateValue,
@@ -57,6 +61,10 @@ export default function Settings() {
           saveAllGeneral={saveAllGeneral}
           saving={saving}
           edited={edited}
+          settingsScope={settingsScope}
+          setSettingsScope={setSettingsScope}
+          visibleBranches={visibleBranches}
+          currentBranchOrSite={currentBranchOrSite}
         />
       )}
 

@@ -139,25 +139,28 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
         .select(`
           branch_id, default_work_location_id,
           branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
-          work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time)
+          work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled)
         `)
         .eq("id", employeeId)
         .maybeSingle();
 
       const mainBranch = (data as any)?.branches;
-      const site = (data as any)?.work_locations;
+      let site = (data as any)?.work_locations;
 
       let wlId = (data as any)?.default_work_location_id || null;
       if (!wlId && (data as any)?.branch_id) {
         const { data: defaultSite } = await supabase
           .from("work_locations")
-          .select("id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time")
+          .select("id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled")
           .eq("branch_id", (data as any).branch_id)
           .is("deleted_at", null)
           .order("is_default", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (defaultSite) wlId = defaultSite.id;
+        if (defaultSite) {
+          wlId = defaultSite.id;
+          site = defaultSite;
+        }
       }
       setDefaultWorkLocationId(wlId);
 
@@ -188,6 +191,9 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
         geofence_radius_m: site?.geofence_radius_m ?? mainBranch?.geofence_radius_m ?? 100,
         work_start_time: site?.work_start_time || mainBranch?.work_start_time || null,
         work_end_time: site?.work_end_time || mainBranch?.work_end_time || null,
+        break_start_time: site?.break_start_time || null,
+        break_end_time: site?.break_end_time || null,
+        is_four_punch_enabled: site?.is_four_punch_enabled ?? true,
       };
 
       setBranch(effectiveBranch);
@@ -197,10 +203,14 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
 
   const isSaturday = zonedDayOfWeek(currentTime, scheduleSettings.timezone) === 6;
   const daySchedule = getScheduleForDate(scheduleSettings);
+  const siteOrBranchStartTime = branch?.work_start_time ? branch.work_start_time.slice(0, 5) : null;
+  const siteOrBranchEndTime = branch?.work_end_time ? branch.work_end_time.slice(0, 5) : null;
   const workStartTime =
-    assignedShift?.start_time || (!isSaturday && branch?.work_start_time) || daySchedule?.startTime || globalWorkStartTime || "08:00";
+    assignedShift?.start_time || (!isSaturday && siteOrBranchStartTime) || daySchedule?.startTime || globalWorkStartTime || "08:00";
   const workEndTime =
-    assignedShift?.end_time || (!isSaturday && branch?.work_end_time) || daySchedule?.endTime || (isSaturday ? "12:00" : "17:00");
+    assignedShift?.end_time || (!isSaturday && siteOrBranchEndTime) || daySchedule?.endTime || (isSaturday ? "12:00" : "17:00");
+  const breakStartTime = branch?.break_start_time ? branch.break_start_time.slice(0, 5) : scheduleSettings.breakStartTime;
+  const breakEndTime = branch?.break_end_time ? branch.break_end_time.slice(0, 5) : scheduleSettings.breakEndTime;
 
   return {
     records,
@@ -218,6 +228,8 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
     daySchedule,
     workStartTime,
     workEndTime,
+    breakStartTime,
+    breakEndTime,
     loadRecords,
   };
 }

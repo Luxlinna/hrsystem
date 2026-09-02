@@ -16,6 +16,8 @@ interface UseCheckInCalculationsProps {
   };
   workStartTime: string;
   workEndTime: string | null;
+  breakStartTime?: string;
+  breakEndTime?: string;
 }
 
 export function useCheckInCalculations({
@@ -26,6 +28,8 @@ export function useCheckInCalculations({
   scheduleSettings,
   workStartTime,
   workEndTime,
+  breakStartTime,
+  breakEndTime,
 }: UseCheckInCalculationsProps) {
   const isCheckedIn = !!todayRecord?.clock_in;
   const isCheckedOut = !!(todayRecord?.clock_in && todayRecord?.clock_out);
@@ -62,7 +66,9 @@ export function useCheckInCalculations({
     if (!isCheckedIn || isCheckedOut || !todayRecord?.clock_in) return 0;
     const [ciH, ciM, ciS] = todayRecord.clock_in.split(":").map(Number);
     const start = zonedTimeToInstant(today, ciH, ciM, ciS, scheduleSettings.timezone);
-    return computeHoursWorked(start, currentTime, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime);
+    const effectiveBreakStart = breakStartTime || scheduleSettings.breakStartTime;
+    const effectiveBreakEnd = breakEndTime || scheduleSettings.breakEndTime;
+    return computeHoursWorked(start, currentTime, effectiveBreakStart, effectiveBreakEnd);
   })();
 
   const shiftProgress = (() => {

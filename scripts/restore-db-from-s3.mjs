@@ -118,7 +118,7 @@ async function runRestore() {
         const psqlProcess = spawn(
           "psql",
           [SUPABASE_DB_URL, "-f", localSqlPath],
-          { stdio: "inherit", shell: true }
+          { stdio: "inherit", shell: false }
         );
 
         psqlProcess.on("error", (err) => {

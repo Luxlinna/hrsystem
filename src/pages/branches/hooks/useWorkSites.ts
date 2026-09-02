@@ -69,6 +69,15 @@ export function useWorkSites(branchId: string) {
   const handleSubmitSite = async (formData: WorkSiteFormState) => {
     setSavingSite(true);
 
+    const formatTimeSeconds = (t?: string, defaultVal = "08:00:00") => {
+      if (!t || !t.trim()) return defaultVal;
+      const parts = t.trim().split(":");
+      const h = (parts[0] || "00").padStart(2, "0");
+      const m = (parts[1] || "00").padStart(2, "0");
+      const s = (parts[2] || "00").padStart(2, "0");
+      return `${h}:${m}:${s}`;
+    };
+
     const payload = {
       branch_id: branchId,
       name: formData.name.trim(),
@@ -76,10 +85,10 @@ export function useWorkSites(branchId: string) {
       latitude: formData.latitude.trim() ? parseFloat(formData.latitude) : null,
       longitude: formData.longitude.trim() ? parseFloat(formData.longitude) : null,
       geofence_radius_m: parseInt(formData.geofence_radius_m || "100", 10) || 100,
-      work_start_time: formData.work_start_time ? `${formData.work_start_time}:00` : "07:30:00",
-      work_end_time: formData.work_end_time ? `${formData.work_end_time}:00` : "17:00:00",
-      break_start_time: formData.break_start_time ? `${formData.break_start_time}:00` : "11:30:00",
-      break_end_time: formData.break_end_time ? `${formData.break_end_time}:00` : "13:00:00",
+      work_start_time: formatTimeSeconds(formData.work_start_time, "07:30:00"),
+      work_end_time: formatTimeSeconds(formData.work_end_time, "17:00:00"),
+      break_start_time: formatTimeSeconds(formData.break_start_time, "11:30:00"),
+      break_end_time: formatTimeSeconds(formData.break_end_time, "13:00:00"),
       is_four_punch_enabled: formData.is_four_punch_enabled,
     };
 

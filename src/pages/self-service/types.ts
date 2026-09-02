@@ -35,6 +35,9 @@ export interface BranchGeofence {
   geofence_radius_m: number;
   work_start_time: string | null;
   work_end_time: string | null;
+  break_start_time?: string | null;
+  break_end_time?: string | null;
+  is_four_punch_enabled?: boolean;
 }
 
 export interface OutsideWorkTask {

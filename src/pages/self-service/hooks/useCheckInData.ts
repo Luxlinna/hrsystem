@@ -20,6 +20,8 @@ export function useCheckInData({ employeeId, employeeName, autoStart, autoCheckO
     scheduleSettings: data.scheduleSettings,
     workStartTime: data.workStartTime,
     workEndTime: data.workEndTime,
+    breakStartTime: data.breakStartTime,
+    breakEndTime: data.breakEndTime,
   });
 
   const mutations = useCheckInMutations({

@@ -36,25 +36,20 @@ export async function syncCheckInAttendance(
     startH = sh;
     startM = sm;
   } else {
-    // Fallback to employee's branch work_start_time if available
+    // Check employee's assigned work site or branch work_start_time
     const { data: empData } = await supabase
       .from("employees")
-      .select("branch_id, default_work_location_id, branches(work_start_time)")
+      .select("branch_id, default_work_location_id, branches(work_start_time), work_locations:default_work_location_id(id, work_start_time)")
       .eq("id", employeeId)
       .maybeSingle();
 
-    const branchStartTime = (empData as any)?.branches?.work_start_time;
-    if (branchStartTime) {
-      const [bh, bm] = branchStartTime.split(":").map(Number);
-      startH = bh;
-      startM = bm;
-    }
-
+    let siteStartTime = (empData as any)?.work_locations?.work_start_time;
     let wlId = (empData as any)?.default_work_location_id || null;
+
     if (!wlId && (empData as any)?.branch_id) {
       const { data: defaultSite } = await supabase
         .from("work_locations")
-        .select("id")
+        .select("id, work_start_time")
         .eq("branch_id", (empData as any).branch_id)
         .eq("is_default", true)
         .is("deleted_at", null)
@@ -62,18 +57,29 @@ export async function syncCheckInAttendance(
 
       if (defaultSite) {
         wlId = defaultSite.id;
+        siteStartTime = defaultSite.work_start_time;
       } else {
         const { data: firstSite } = await supabase
           .from("work_locations")
-          .select("id")
+          .select("id, work_start_time")
           .eq("branch_id", (empData as any).branch_id)
           .is("deleted_at", null)
           .limit(1)
           .maybeSingle();
-        if (firstSite) wlId = firstSite.id;
+        if (firstSite) {
+          wlId = firstSite.id;
+          siteStartTime = firstSite.work_start_time;
+        }
       }
     }
     workLocationId = wlId;
+
+    const effectiveStartTime = siteStartTime || (empData as any)?.branches?.work_start_time;
+    if (effectiveStartTime) {
+      const [bh, bm] = effectiveStartTime.split(":").map(Number);
+      startH = bh;
+      startM = bm;
+    }
   }
 
   const lateMinutes = Math.max(0, now.getHours() * 60 + now.getMinutes() - (startH * 60 + startM));

@@ -134,7 +134,7 @@ export const EditAttendanceModal = memo(function EditAttendanceModal({
                 <option value="">— Not specified —</option>
                 {workLocations.map((wl) => (
                   <option key={wl.id} value={wl.id}>
-                    {wl.name}{wl.is_default ? " (Default)" : ""}
+                    {wl.name}{wl.is_default ? " (Default)" : ""}{wl.work_start_time ? ` · ${wl.work_start_time.slice(0, 5)}–${wl.work_end_time ? wl.work_end_time.slice(0, 5) : ""}` : ""}
                   </option>
                 ))}
               </select>

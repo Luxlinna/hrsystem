@@ -196,7 +196,7 @@ export async function processZkPunchRecord(punch) {
   );
 
   if (upsertErr) {
-    console.error(`❌ Failed to update attendance record for ${employeeName}:`, upsertErr.message);
+    console.error("❌ Failed to update attendance record for", employeeName, ":", upsertErr.message);
   }
 
   // 4. Log raw punch for auditing

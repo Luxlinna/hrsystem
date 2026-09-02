@@ -13,14 +13,15 @@ export function useBranchData(userEmail?: string | null) {
   const fetchBranches = useCallback(async () => {
     const { data: branchesData } = await supabase
       .from("branches")
-      .select("id, name, location, status")
+      .select("id, name, location, status, work_start_time, work_end_time")
       .is("deleted_at", null)
       .order("name");
 
     const { data: locationsData } = await supabase
       .from("work_locations")
-      .select("id, name, branch_id, description")
-      .is("deleted_at", null);
+      .select("id, name, branch_id, description, is_default, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled")
+      .is("deleted_at", null)
+      .order("is_default", { ascending: false });
 
     if (branchesData) {
       const sitesList = (locationsData || []).map((loc) => ({
@@ -30,11 +31,27 @@ export function useBranchData(userEmail?: string | null) {
         status: "active",
         branch_id: loc.branch_id,
         is_site: true as const,
+        work_start_time: loc.work_start_time,
+        work_end_time: loc.work_end_time,
+        break_start_time: loc.break_start_time,
+        break_end_time: loc.break_end_time,
+        is_four_punch_enabled: loc.is_four_punch_enabled ?? true,
       }));
 
-      const sortedBranches = [...branchesData].sort((a, b) =>
-        (a.name || "").localeCompare(b.name || "")
-      );
+      const sortedBranches = [...branchesData]
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+        .map((b) => ({
+          id: b.id,
+          name: b.name,
+          location: b.location,
+          status: b.status,
+          is_site: false as const,
+          work_start_time: b.work_start_time || null,
+          work_end_time: b.work_end_time || null,
+          break_start_time: null,
+          break_end_time: null,
+          is_four_punch_enabled: false,
+        }));
 
       const combined: BranchInfo[] = [...sortedBranches, ...sitesList];
       setBranches(combined);

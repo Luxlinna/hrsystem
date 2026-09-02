@@ -32,7 +32,7 @@ export function useAttendanceData(isLeader: boolean) {
 
     const { data: wlData } = await supabase
       .from("work_locations")
-      .select("id, branch_id, name, description, is_default")
+      .select("id, branch_id, name, description, is_default, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled")
       .eq("branch_id", targetBranch)
       .is("deleted_at", null)
       .order("is_default", { ascending: false })

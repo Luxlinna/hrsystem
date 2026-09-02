@@ -12,12 +12,16 @@ interface BranchGeofence {
   latitude: number | null;
   longitude: number | null;
   geofence_radius_m: number;
+  work_start_time?: string | null;
+  work_end_time?: string | null;
+  break_start_time?: string | null;
+  break_end_time?: string | null;
 }
 
 type Mode = "checkin" | "checkout" | "auto_checkout" | "outside_warning" | "returned_notice";
 
 // Check-in window in the morning
-const CHECKIN_WINDOW = { startMin: 7 * 60, endMin: 11 * 60 + 59 };
+const CHECKIN_WINDOW = { startMin: 6 * 60, endMin: 11 * 60 + 59 };
 
 export default function GeofenceCheckInAlert() {
   const { user } = useAuth();
@@ -43,12 +47,41 @@ export default function GeofenceCheckInAlert() {
 
       const { data: employee } = await supabase
         .from("employees")
-        .select("id, first_name, last_name, branches(name, latitude, longitude, geofence_radius_m)")
+        .select(`
+          id, first_name, last_name, branch_id, default_work_location_id,
+          branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
+          work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time)
+        `)
         .eq("email", user.email)
         .maybeSingle();
       if (cancelled || !employee) return;
 
-      const branch = (employee as any).branches as BranchGeofence | undefined;
+      const mainBranch = (employee as any).branches;
+      let site = (employee as any).work_locations;
+
+      if (!site && (employee as any).branch_id) {
+        const { data: defaultSite } = await supabase
+          .from("work_locations")
+          .select("id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time")
+          .eq("branch_id", (employee as any).branch_id)
+          .is("deleted_at", null)
+          .order("is_default", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (defaultSite) site = defaultSite;
+      }
+
+      const branch: BranchGeofence = {
+        name: site?.name ? `${site.name} (${mainBranch?.name || "Site"})` : mainBranch?.name || "Office",
+        latitude: site?.latitude ?? mainBranch?.latitude ?? null,
+        longitude: site?.longitude ?? mainBranch?.longitude ?? null,
+        geofence_radius_m: site?.geofence_radius_m ?? mainBranch?.geofence_radius_m ?? 100,
+        work_start_time: site?.work_start_time || mainBranch?.work_start_time || null,
+        work_end_time: site?.work_end_time || mainBranch?.work_end_time || null,
+        break_start_time: site?.break_start_time || null,
+        break_end_time: site?.break_end_time || null,
+      };
+
       const employeeName = `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || user.email || "Employee";
 
       // Skip alerts if employee has outside work scheduled or active today
@@ -99,12 +132,33 @@ export default function GeofenceCheckInAlert() {
       const nowZ = zonedParts(new Date(), scheduleSettings.timezone);
       const isSaturday = zonedDayOfWeek(new Date(), scheduleSettings.timezone) === 6;
 
-      // Monday-Friday: Alert at 5:00 PM (17:00), Auto-checkout at 6:00 PM (18:00)
-      // Saturday: Alert at 12:00 PM (12:00), Auto-checkout at 1:00 PM (13:00)
-      const checkoutAlertMin = isSaturday ? 12 * 60 : 17 * 60;
-      const autoCheckoutThresholdMin = isSaturday ? 13 * 60 : 18 * 60;
-      const shiftEndLabel = isSaturday ? "12:00 PM" : "5:00 PM";
-      const autoCheckoutLabel = isSaturday ? "1:00 PM" : "6:00 PM";
+      // Determine shift end time from site/branch schedule or system defaults
+      const toMinutes = (timeStr?: string) => {
+        if (!timeStr) return 0;
+        const [h, m] = timeStr.split(":").map(Number);
+        return (h || 0) * 60 + (m || 0);
+      };
+
+      let endMinutes = isSaturday ? (toMinutes(scheduleSettings.saturdayEndTime) || 12 * 60) : (toMinutes(scheduleSettings.workEndTime) || 17 * 60);
+      if (!isSaturday && branch.work_end_time) {
+        endMinutes = toMinutes(branch.work_end_time);
+      }
+
+      const checkoutAlertMin = endMinutes;
+      const autoCheckoutThresholdMin = endMinutes + 60; // Auto checkout 60m after shift ends
+
+      const formatMinToLabel = (mins: number) => {
+        const h = Math.floor(mins / 60) % 24;
+        const m = mins % 60;
+        const ampm = h >= 12 ? "PM" : "AM";
+        const h12 = h % 12 || 12;
+        return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+      };
+
+      const shiftEndLabel = formatMinToLabel(endMinutes);
+      const autoCheckoutLabel = formatMinToLabel(autoCheckoutThresholdMin);
+      const siteBreakStart = branch.break_start_time?.slice(0, 5) || scheduleSettings.breakStartTime;
+      const siteBreakEnd = branch.break_end_time?.slice(0, 5) || scheduleSettings.breakEndTime;
 
       // 1. AUTOMATIC CHECKOUT: If user forgot to checkout and threshold is reached (only once per day)
       if (hasClockedIn && !hasClockedOut && nowZ.minutesOfDay >= autoCheckoutThresholdMin && !autoCheckedOutRef.current && !localStorage.getItem(dedupeKey("auto_checkout"))) {
@@ -114,7 +168,7 @@ export default function GeofenceCheckInAlert() {
         const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
         const [ciH, ciM, ciS] = (todayRecord.clock_in || "08:00:00").split(":").map(Number);
         const clockInInstant = zonedTimeToInstant(today, ciH, ciM, ciS, scheduleSettings.timezone);
-        const hoursWorked = computeHoursWorked(clockInInstant, now, scheduleSettings.breakStartTime, scheduleSettings.breakEndTime);
+        const hoursWorked = computeHoursWorked(clockInInstant, now, siteBreakStart, siteBreakEnd);
 
         const autoNote = todayRecord.notes
           ? `${todayRecord.notes}\nAuto checkout at ${autoCheckoutLabel} (forgot to check out at ${shiftEndLabel})`
@@ -141,18 +195,14 @@ export default function GeofenceCheckInAlert() {
         return;
       }
 
-      // 2. CHECK-OUT TIME ALERT (Strictly ONCE per day: 5:00 PM on Mon-Fri, 12:00 PM on Sat)
+      // 2. CHECK-OUT TIME ALERT (Strictly ONCE per day at shift end time)
       if (hasClockedIn && !hasClockedOut && nowZ.minutesOfDay >= checkoutAlertMin && nowZ.minutesOfDay < autoCheckoutThresholdMin) {
         if (!alertedModesRef.current.has("checkout_time") && !localStorage.getItem(dedupeKey("checkout_time"))) {
           alertedModesRef.current.add("checkout_time");
           localStorage.setItem(dedupeKey("checkout_time"), "1");
 
-          const checkoutTitle = isSaturday
-            ? "🔔 Saturday Shift Ended (12:00 PM)"
-            : "🔔 Time to Check Out (5:00 PM)";
-          const checkoutMsg = isSaturday
-            ? "Saturday half-day shift ended at 12:00 PM. Please remember to check out."
-            : "Work hours ended at 5:00 PM. Please remember to check out.";
+          const checkoutTitle = `🔔 Time to Check Out (${shiftEndLabel})`;
+          const checkoutMsg = `Shift ended at ${shiftEndLabel}. Please remember to check out.`;
 
           setAlertState({
             branchName: branch?.name,

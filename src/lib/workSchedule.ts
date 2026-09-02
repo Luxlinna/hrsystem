@@ -32,19 +32,34 @@ export const settingsFromRows = (rows: { key: string; value: string }[]): WorkSc
   return { workingDays: workingDays.length ? workingDays : DEFAULT_WORK_SCHEDULE.workingDays, workStartTime: values.work_start_time || "08:00", workEndTime: values.work_end_time || "17:00", saturdayStartTime: values.saturday_start_time || "08:00", saturdayEndTime: values.saturday_end_time || "12:00", breakStartTime: values.break_start_time || "12:00", breakEndTime: values.break_end_time || "13:00", lateGraceMinutes: Number(values.late_grace_minutes ?? 15), earlyLeaveGraceMinutes: Number(values.early_leave_grace_minutes ?? 15), checkoutReminderMinutes: Number(values.checkout_reminder_minutes ?? 15), timezone: values.timezone || DEFAULT_TIMEZONE };
 };
 
-export const getCheckoutReminderWindow = (date = new Date(), timezone = DEFAULT_TIMEZONE) => {
+export const getCheckoutReminderWindow = (date = new Date(), timezone = DEFAULT_TIMEZONE, customEndTime?: string | null) => {
   const dow = zonedDayOfWeek(date, timezone);
-  const startMin = dow === 6 ? 12 * 60 : 17 * 60;
-  const endMin = dow === 6 ? 13 * 60 : 18 * 60;
-  return { startMin, endMin };
+  let endMin = dow === 6 ? 12 * 60 : 17 * 60;
+  if (dow !== 6 && customEndTime) {
+    const [h, m] = customEndTime.split(":").map(Number);
+    endMin = (h || 17) * 60 + (m || 0);
+  }
+  return { startMin: endMin, endMin: endMin + 60 };
 };
 
-export const getAutoCheckoutThresholdMinutes = (date = new Date(), timezone = DEFAULT_TIMEZONE) => {
+export const getAutoCheckoutThresholdMinutes = (date = new Date(), timezone = DEFAULT_TIMEZONE, customEndTime?: string | null) => {
   const dow = zonedDayOfWeek(date, timezone);
-  return dow === 6 ? 13 * 60 : 18 * 60;
+  if (dow === 6) return 13 * 60;
+  if (customEndTime) {
+    const [h, m] = customEndTime.split(":").map(Number);
+    return (h || 17) * 60 + (m || 0) + 60;
+  }
+  return 18 * 60;
 };
 
-export const getShiftEndLabel = (date = new Date(), timezone = DEFAULT_TIMEZONE) => {
+export const getShiftEndLabel = (date = new Date(), timezone = DEFAULT_TIMEZONE, customEndTime?: string | null) => {
   const dow = zonedDayOfWeek(date, timezone);
-  return dow === 6 ? "12:00 PM" : "5:00 PM";
+  if (dow === 6) return "12:00 PM";
+  if (customEndTime) {
+    const [h, m] = customEndTime.split(":").map(Number);
+    const ampm = (h || 17) >= 12 ? "PM" : "AM";
+    const h12 = (h || 17) % 12 || 12;
+    return `${h12}:${String(m || 0).padStart(2, "0")} ${ampm}`;
+  }
+  return "5:00 PM";
 };

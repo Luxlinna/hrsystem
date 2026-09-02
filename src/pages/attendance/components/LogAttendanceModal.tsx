@@ -31,10 +31,21 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
   useEffect(() => {
     if (!newRecord.employee_id) return;
     const emp = employees.find((e) => e.id === newRecord.employee_id);
-    if (emp?.default_work_location_id && !newRecord.work_location_id) {
-      setNewRecord((p) => ({ ...p, work_location_id: emp.default_work_location_id! }));
-    }
-  }, [newRecord.employee_id, employees, newRecord.work_location_id, setNewRecord]);
+    const targetWlId = newRecord.work_location_id || emp?.default_work_location_id;
+    const wl = workLocations.find((l) => l.id === targetWlId) || (workLocations.length > 0 ? (workLocations.find((l) => l.is_default) || workLocations[0]) : null);
+
+    setNewRecord((p) => {
+      const start = wl?.work_start_time ? wl.work_start_time.slice(0, 5) : p.clock_in || "08:00";
+      const end = wl?.work_end_time ? wl.work_end_time.slice(0, 5) : p.clock_out || "17:00";
+      const shouldUpdateTimes = !p.clock_in || p.clock_in === "08:00";
+      return {
+        ...p,
+        work_location_id: p.work_location_id || wl?.id || "",
+        clock_in: shouldUpdateTimes && wl?.work_start_time ? start : (p.clock_in || "08:00"),
+        clock_out: shouldUpdateTimes && wl?.work_end_time ? end : (p.clock_out || "17:00"),
+      };
+    });
+  }, [newRecord.employee_id, employees, workLocations, setNewRecord]);
 
   if (!isOpen) return null;
 
@@ -121,12 +132,25 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
               </label>
               <select
                 value={newRecord.work_location_id}
-                onChange={(e) => setNewRecord({ ...newRecord, work_location_id: e.target.value })}
+                onChange={(e) => {
+                  const wlId = e.target.value;
+                  const wl = workLocations.find((l) => l.id === wlId);
+                  const start = wl?.work_start_time ? wl.work_start_time.slice(0, 5) : newRecord.clock_in || "08:00";
+                  const end = wl?.work_end_time ? wl.work_end_time.slice(0, 5) : newRecord.clock_out || "17:00";
+                  setNewRecord({
+                    ...newRecord,
+                    work_location_id: wlId,
+                    clock_in: wl?.work_start_time ? start : newRecord.clock_in,
+                    clock_out: wl?.work_end_time ? end : newRecord.clock_out,
+                  });
+                }}
                 className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
               >
                 <option value="">— Select work site —</option>
                 {workLocations.map((wl) => (
-                  <option key={wl.id} value={wl.id}>{wl.name}{wl.is_default ? " (Default)" : ""}</option>
+                  <option key={wl.id} value={wl.id}>
+                    {wl.name}{wl.is_default ? " (Default)" : ""}{wl.work_start_time ? ` · ${wl.work_start_time.slice(0, 5)}–${wl.work_end_time ? wl.work_end_time.slice(0, 5) : ""}` : ""}
+                  </option>
                 ))}
               </select>
             </div>
