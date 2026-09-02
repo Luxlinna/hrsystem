@@ -1,6 +1,9 @@
-import { memo, useState, useMemo } from "react";
+import React, { memo, useState, useMemo } from "react";
 import type { Course, Enrollment } from "../../types";
 import { FORMAT_CONFIG } from "../../constants";
+import { CalendarStatsCards } from "./calendar/CalendarStatsCards";
+import { CalendarDayModal, type CalendarEvent } from "./calendar/CalendarDayModal";
+import { CalendarDayCell } from "./calendar/CalendarDayCell";
 
 interface TrainingCalendarViewProps {
   courses: Course[];
@@ -9,19 +12,6 @@ interface TrainingCalendarViewProps {
   onSelectCourse: (c: Course) => void;
   onEnroll: (courseId: string, defaultDueDate?: string) => void;
   onNewCourse?: (initialDate?: string) => void;
-}
-
-interface CalendarEvent {
-  id: string;
-  date: string;
-  type: "due" | "completed";
-  title: string;
-  subtitle: string;
-  status?: string;
-  course?: Course;
-  enrollment?: Enrollment;
-  isOverdue?: boolean;
-  isDueSoon?: boolean;
 }
 
 export const TrainingCalendarView = memo(function TrainingCalendarView({
@@ -37,21 +27,13 @@ export const TrainingCalendarView = memo(function TrainingCalendarView({
   const [selectedDayEvents, setSelectedDayEvents] = useState<{ date: string; events: CalendarEvent[] } | null>(null);
 
   const year = currentDate.getFullYear();
-  const month = currentDate.getMonth(); // 0-indexed
+  const month = currentDate.getMonth();
 
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
-
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
-
-  const handleToday = () => {
-    setCurrentDate(new Date());
-  };
+  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const handleToday = () => setCurrentDate(new Date());
 
   // Compile all calendar events
   const allEvents = useMemo(() => {
@@ -99,154 +81,110 @@ export const TrainingCalendarView = memo(function TrainingCalendarView({
       }
     });
 
-    return events;
-  }, [enrollments, todayStr]);
-
-  // Filter events
-  const filteredEvents = useMemo(() => {
-    return allEvents.filter((ev) => {
-      if (filterType === "due") return ev.type === "due" && !ev.isOverdue;
-      if (filterType === "expired") return ev.type === "due" && ev.isOverdue;
-      if (filterType === "completed") return ev.type === "completed";
-      return true;
+    // 3. Standalone scheduled course dates
+    courses.forEach((c) => {
+      if (c.scheduled_date) {
+        events.push({
+          id: `course-${c.id}`,
+          date: c.scheduled_date.slice(0, 10),
+          type: "due",
+          title: `Class: ${c.title}`,
+          subtitle: `${FORMAT_CONFIG[c.format || "in-person"].label} · ${c.instructor || "Self-Paced"}`,
+          status: c.status,
+          course: c,
+        });
+      }
     });
+
+    return events;
+  }, [enrollments, courses, todayStr]);
+
+  // Filter events based on selected filter pill
+  const filteredEvents = useMemo(() => {
+    if (filterType === "all") return allEvents;
+    if (filterType === "due") return allEvents.filter((e) => e.type === "due" && !e.isOverdue);
+    if (filterType === "expired") return allEvents.filter((e) => e.isOverdue);
+    if (filterType === "completed") return allEvents.filter((e) => e.type === "completed");
+    return allEvents;
   }, [allEvents, filterType]);
 
-  // Map events by date YYYY-MM-DD
-  const eventsByDate = useMemo(() => {
-    const map = new Map<string, CalendarEvent[]>();
-    filteredEvents.forEach((ev) => {
-      const arr = map.get(ev.date) || [];
-      arr.push(ev);
-      map.set(ev.date, arr);
-    });
-    return map;
-  }, [filteredEvents]);
-
-  // Calendar Grid generation
+  // Generate calendar grid days (including prev/next month buffer days for full 7-col grid)
   const calendarDays = useMemo(() => {
-    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Sun
-    const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
-    const prevMonthDays = new Date(year, month, 0).getDate();
+    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 is Sunday
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
 
-    const days: {
-      dayNum: number;
-      dateStr: string;
-      isCurrentMonth: boolean;
-      isToday: boolean;
-      events: CalendarEvent[];
-    }[] = [];
+    const days = [];
 
-    // Leading days from previous month
+    // Previous month filler days
     for (let i = firstDayIndex - 1; i >= 0; i--) {
-      const d = prevMonthDays - i;
-      const prevMonth = month === 0 ? 11 : month - 1;
-      const prevYear = month === 0 ? year - 1 : year;
-      const dateStr = `${prevYear}-${String(prevMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const dayNum = prevMonthLastDay - i;
+      const d = new Date(year, month - 1, dayNum);
+      const dateStr = d.toISOString().slice(0, 10);
       days.push({
-        dayNum: d,
+        date: d,
         dateStr,
+        dayNum,
         isCurrentMonth: false,
         isToday: dateStr === todayStr,
-        events: eventsByDate.get(dateStr) || [],
+        events: filteredEvents.filter((e) => e.date === dateStr),
       });
     }
 
-    // Days in current month
-    for (let d = 1; d <= totalDaysInMonth; d++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    // Current month days
+    for (let i = 1; i <= lastDayOfMonth; i++) {
+      const d = new Date(year, month, i);
+      const dateStr = d.toISOString().slice(0, 10);
       days.push({
-        dayNum: d,
+        date: d,
         dateStr,
+        dayNum: i,
         isCurrentMonth: true,
         isToday: dateStr === todayStr,
-        events: eventsByDate.get(dateStr) || [],
+        events: filteredEvents.filter((e) => e.date === dateStr),
       });
     }
 
-    // Trailing days to fill 35 or 42 grid cells
-    const remaining = 35 - days.length >= 0 ? 35 - days.length : 42 - days.length;
-    for (let d = 1; d <= remaining; d++) {
-      const nextMonth = month === 11 ? 0 : month + 1;
-      const nextYear = month === 11 ? year + 1 : year;
-      const dateStr = `${nextYear}-${String(nextMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    // Next month filler days (fill up to complete last week row)
+    const remainingCols = (7 - (days.length % 7)) % 7;
+    for (let i = 1; i <= remainingCols; i++) {
+      const d = new Date(year, month + 1, i);
+      const dateStr = d.toISOString().slice(0, 10);
       days.push({
-        dayNum: d,
+        date: d,
         dateStr,
+        dayNum: i,
         isCurrentMonth: false,
         isToday: dateStr === todayStr,
-        events: eventsByDate.get(dateStr) || [],
+        events: filteredEvents.filter((e) => e.date === dateStr),
       });
     }
 
     return days;
-  }, [year, month, todayStr, eventsByDate]);
+  }, [year, month, todayStr, filteredEvents]);
 
-  // Key KPI stats
-  const expiredCount = useMemo(() => allEvents.filter((e) => e.type === "due" && e.isOverdue).length, [allEvents]);
-  const dueSoonCount = useMemo(() => allEvents.filter((e) => e.type === "due" && e.isDueSoon).length, [allEvents]);
-  const upcomingCompletions = useMemo(() => allEvents.filter((e) => e.type === "completed").length, [allEvents]);
+  // Quick summaries for current month KPI cards
+  const scheduledCount = filteredEvents.length;
+  const expiredCount = allEvents.filter((e) => e.isOverdue).length;
+  const dueSoonCount = allEvents.filter((e) => e.isDueSoon).length;
+  const upcomingCompletions = allEvents.filter((e) => e.type === "completed").length;
 
-  const monthLabel = currentDate.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const monthLabel = new Date(year, month, 1).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & KPI Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        <div
-          onClick={() => setFilterType((prev) => (prev === "expired" ? "all" : "expired"))}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            filterType === "expired"
-              ? "bg-rose-50 border-rose-300 ring-2 ring-rose-500/20 shadow-xs"
-              : "bg-white border-gray-100 hover:border-gray-200 shadow-2xs"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Expired / Overdue
-            </span>
-            <span className="w-2 h-2 rounded-full bg-rose-500" />
-          </div>
-          <p className="text-2xl font-extrabold text-rose-600 mt-1">{expiredCount}</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Trainings past deadline</p>
-        </div>
-
-        <div
-          onClick={() => setFilterType((prev) => (prev === "due" ? "all" : "due"))}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            filterType === "due"
-              ? "bg-amber-50 border-amber-300 ring-2 ring-amber-500/20 shadow-xs"
-              : "bg-white border-gray-100 hover:border-gray-200 shadow-2xs"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Due Within 7 Days
-            </span>
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
-          </div>
-          <p className="text-2xl font-extrabold text-amber-600 mt-1">{dueSoonCount}</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Approaching completion date</p>
-        </div>
-
-        <div
-          onClick={() => setFilterType((prev) => (prev === "completed" ? "all" : "completed"))}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-            filterType === "completed"
-              ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-500/20 shadow-xs"
-              : "bg-white border-gray-100 hover:border-gray-200 shadow-2xs"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Completed / Certified
-            </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-          </div>
-          <p className="text-2xl font-extrabold text-emerald-600 mt-1">{upcomingCompletions}</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Mastery achievements</p>
-        </div>
-      </div>
+      {/* Overview Stat Cards */}
+      <CalendarStatsCards
+        filterType={filterType}
+        setFilterType={setFilterType}
+        scheduledCount={scheduledCount}
+        expiredCount={expiredCount}
+        dueSoonCount={dueSoonCount}
+        upcomingCompletions={upcomingCompletions}
+      />
 
       {/* Calendar Navigation Bar */}
       <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -344,190 +282,27 @@ export const TrainingCalendarView = memo(function TrainingCalendarView({
         {/* Days Cells Grid */}
         <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-gray-100">
           {calendarDays.map((day, idx) => (
-            <div
+            <CalendarDayCell
               key={`${day.dateStr}-${idx}`}
-              onClick={(e) => {
-                // If user clicks the cell container (not an event pill)
-                if (e.target === e.currentTarget && canManage && onNewCourse) {
-                  onNewCourse(day.dateStr);
-                }
-              }}
-              className={`min-h-[115px] p-2 flex flex-col justify-between transition-colors group/day ${
-                canManage ? "cursor-pointer hover:bg-slate-50/70" : ""
-              } ${day.isCurrentMonth ? "bg-white" : "bg-gray-50/40 opacity-60"} ${
-                day.isToday ? "bg-blue-50/30" : ""
-              }`}
-              title={canManage ? `Click to schedule a training on ${day.dateStr}` : undefined}
-            >
-              {/* Day Number Header & Add Button */}
-              <div className="flex items-center justify-between mb-1.5 pointer-events-auto">
-                <span
-                  className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${
-                    day.isToday
-                      ? "bg-[#253C7D] text-white shadow-2xs font-extrabold"
-                      : day.isCurrentMonth
-                      ? "text-gray-800"
-                      : "text-gray-400"
-                  }`}
-                >
-                  {day.dayNum}
-                </span>
-
-                <div className="flex items-center gap-1">
-                  {day.events.length > 0 && (
-                    <span className="text-[10px] font-bold text-gray-400">
-                      {day.events.length} {day.events.length === 1 ? "item" : "items"}
-                    </span>
-                  )}
-                  {canManage && onNewCourse && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onNewCourse(day.dateStr);
-                      }}
-                      title={`Schedule training on ${day.dateStr}`}
-                      className="opacity-0 group-hover/day:opacity-100 p-0.5 text-[#253C7D] hover:bg-blue-100/70 rounded transition-all cursor-pointer"
-                    >
-                      <i className="ri-add-line font-bold text-xs" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Events Stack on this Day */}
-              <div className="space-y-1 overflow-y-auto max-h-[85px] scrollbar-none flex-1">
-                {day.events.slice(0, 2).map((ev) => {
-                  let pillClass = "bg-blue-50 text-blue-800 border-blue-200/60";
-                  if (ev.type === "due") {
-                    pillClass = ev.isOverdue
-                      ? "bg-rose-100 text-rose-800 border-rose-300 font-bold"
-                      : ev.isDueSoon
-                      ? "bg-amber-100 text-amber-800 border-amber-300 font-bold"
-                      : "bg-sky-50 text-sky-800 border-sky-200";
-                  } else if (ev.type === "completed") {
-                    pillClass = "bg-emerald-50 text-emerald-800 border-emerald-200";
-                  }
-
-                  return (
-                    <div
-                      key={ev.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (ev.course) {
-                          onSelectCourse({
-                            ...ev.course,
-                            scheduled_date: ev.course.scheduled_date || ev.date,
-                          });
-                        }
-                      }}
-                      className={`p-1 rounded-md text-[10px] border leading-tight truncate cursor-pointer hover:opacity-90 transition-opacity ${pillClass}`}
-                      title={`${ev.title} — ${ev.subtitle}`}
-                    >
-                      <p className="font-bold truncate">{ev.title}</p>
-                      <p className="text-[9px] opacity-75 truncate">{ev.subtitle}</p>
-                    </div>
-                  );
-                })}
-
-                {day.events.length > 2 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedDayEvents({ date: day.dateStr, events: day.events });
-                    }}
-                    className="w-full text-center text-[10px] font-bold text-[#253C7D] hover:bg-blue-50 py-0.5 rounded cursor-pointer transition-colors"
-                  >
-                    +{day.events.length - 2} more
-                  </button>
-                )}
-              </div>
-            </div>
+              day={day}
+              idx={idx}
+              canManage={canManage}
+              onSelectCourse={onSelectCourse}
+              onNewCourse={onNewCourse}
+              onOpenMore={(dateStr, events) => setSelectedDayEvents({ date: dateStr, events })}
+            />
           ))}
         </div>
       </div>
 
       {/* Modal for Day Events Popup */}
-      {selectedDayEvents && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-2xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-gray-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <div>
-                <h3 className="text-base font-extrabold text-gray-900">
-                  Training Schedule &amp; Deadlines
-                </h3>
-                <p className="text-xs text-gray-500 font-medium">
-                  {new Date(selectedDayEvents.date).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedDayEvents(null)}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer"
-              >
-                <i className="ri-close-line text-lg" />
-              </button>
-            </div>
-
-            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-              {selectedDayEvents.events.map((ev) => (
-                <div
-                  key={ev.id}
-                  onClick={() => {
-                    if (ev.course) {
-                      onSelectCourse({
-                        ...ev.course,
-                        scheduled_date: ev.course.scheduled_date || ev.date,
-                      });
-                      setSelectedDayEvents(null);
-                    }
-                  }}
-                  className="p-3 rounded-xl border border-gray-100 hover:border-[#253C7D]/30 bg-gray-50/60 hover:bg-white transition-all cursor-pointer space-y-1"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-900">{ev.title}</span>
-                    {ev.type === "due" && (
-                      <span
-                        className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                          ev.isOverdue
-                            ? "bg-rose-100 text-rose-800"
-                            : ev.isDueSoon
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-sky-100 text-sky-800"
-                        }`}
-                      >
-                        {ev.isOverdue ? "EXPIRED / OVERDUE" : ev.isDueSoon ? "DUE SOON" : "SCHEDULED"}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500">{ev.subtitle}</p>
-                </div>
-              ))}
-            </div>
-
-            {canManage && onNewCourse && (
-              <div className="pt-3 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const dateToUse = selectedDayEvents.date;
-                    setSelectedDayEvents(null);
-                    onNewCourse(dateToUse);
-                  }}
-                  className="w-full py-2.5 bg-[#253C7D] text-white rounded-xl text-xs font-bold hover:bg-[#1E293B] transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <i className="ri-add-line font-bold text-sm" />
-                  Schedule Training Course on this Day
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <CalendarDayModal
+        selectedDayEvents={selectedDayEvents}
+        onClose={() => setSelectedDayEvents(null)}
+        onSelectCourse={onSelectCourse}
+        canManage={canManage}
+        onNewCourse={onNewCourse}
+      />
     </div>
   );
 });

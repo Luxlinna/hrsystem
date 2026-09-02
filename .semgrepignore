@@ -1,0 +1,11 @@
+# Build artifacts and dependencies
+node_modules/
+dist/
+dist-ssr/
+out/
+build/
+*.local
+.temp-backups/
+*.sql.gz
+package-lock.json
+public/assets/

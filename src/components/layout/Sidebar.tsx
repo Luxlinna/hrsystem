@@ -7,64 +7,7 @@ import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useTheme } from "@/context/ThemeContext";
 
-const navGroups = [
-  {
-    label: "Core",
-    items: [
-      { path: "/", label: "Dashboard", icon: "ri-dashboard-line", module: "dashboard" },
-      { path: "/employees", label: "Directory", icon: "ri-user-search-line", module: "employees" },
-      { path: "/branches", label: "Branches", icon: "ri-building-line", module: "branches" },
-      { path: "/analytics", label: "Analytics", icon: "ri-bar-chart-2-line", module: "analytics" },
-    ],
-  },
-  {
-    label: "Workforce",
-    items: [
-      { path: "/onboarding", label: "Onboarding", icon: "ri-user-add-line", module: "onboarding" },
-      { path: "/onboarding-checklist", label: "Checklists", icon: "ri-task-line", module: "onboarding-checklist" },
-      { path: "/leave", label: "Leave", icon: "ri-calendar-event-line", module: "leave" },
-      { path: "/leave-calendar", label: "Leave Calendar", icon: "ri-calendar-2-line", module: "leave-calendar" },
-      { path: "/shifts", label: "Shifts", icon: "ri-calendar-schedule-line", module: "shifts" },
-      { path: "/meeting-rooms", label: "Meeting Rooms", icon: "ri-door-open-line", module: "meeting-rooms" },
-      { path: "/tasks", label: "Tasks", icon: "ri-checkbox-multiple-line", module: "tasks" },
-      { path: "/hire", label: "Hire", icon: "ri-briefcase-line", module: "hire" },
-      { path: "/offboard", label: "Off Board", icon: "ri-user-unfollow-line", module: "offboard" },
-      { path: "/org-chart", label: "Org Chart", icon: "ri-organization-chart", module: "org-chart" },
-      { path: "/performance", label: "Performance", icon: "ri-star-line", module: "performance" },
-      { path: "/attendance", label: "Attendance", icon: "ri-fingerprint-line", module: "attendance" },
-      { path: "/training", label: "Training", icon: "ri-graduation-cap-line", module: "training" },
-      { path: "/disciplinary", label: "Disciplinary", icon: "ri-alert-line", module: "disciplinary" },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { path: "/payroll-module", label: "Payroll", icon: "ri-money-dollar-circle-line", module: "payroll" },
-      { path: "/payroll-approval", label: "Pay Approval", icon: "ri-file-check-line", module: "payroll-approval" },
-      { path: "/finance", label: "Finance", icon: "ri-bank-line", module: "finance" },
-      { path: "/it-management", label: "IT", icon: "ri-computer-line", module: "it-management" },
-      { path: "/benefits", label: "Benefits", icon: "ri-heart-pulse-line", module: "benefits" },
-      { path: "/tools", label: "Tools", icon: "ri-tools-line", module: "tools" },
-      { path: "/announcements", label: "Announcements", icon: "ri-megaphone-line", module: "announcements" },
-      { path: "/documents", label: "Documents", icon: "ri-folder-line", module: "documents" },
-    ],
-  },
-  {
-    label: "Insights",
-    items: [
-      { path: "/reports", label: "Reports", icon: "ri-file-chart-line", module: "reports" },
-      { path: "/audit-log", label: "Audit Log", icon: "ri-shield-check-line", module: "audit-log" },
-      { path: "/self-service", label: "Self-Service", icon: "ri-user-settings-line", module: "self-service" },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { path: "/admin?tab=users", label: "Admin Portal", icon: "ri-user-settings-line", module: "admin" },
-      { path: "/settings", label: "Settings", icon: "ri-settings-3-line", module: "settings" },
-    ],
-  },
-];
+import { DRAWER_GROUPS as navGroups } from "./topbar/constants";
 
 export default function Sidebar() {
   const location = useLocation();

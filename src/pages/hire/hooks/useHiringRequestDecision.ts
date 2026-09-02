@@ -2,8 +2,13 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
-import { notify } from "@/lib/notify";
-import { notifyTelegramEvent, escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
+import {
+  sendStage1BranchEndorsementNotify,
+  sendStage2HrReviewNotify,
+  sendStage3HrAdminApprovalNotify,
+  sendStage4ChairmanAuthorizedNotify,
+  sendRejectionNotify,
+} from "./hiringNotificationHelpers";
 import type { HiringRequest } from "../types";
 
 interface UseHiringRequestDecisionProps {
@@ -94,25 +99,8 @@ export function useHiringRequestDecision({
               .is("deleted_at", null)
               .maybeSingle();
 
-            await notify({
-              title: `📋 HR Manager Review Required (${targetRequest.title})`,
-              message: `${actorName} endorsed ${targetRequest.headcount}x ${targetRequest.title} from ${originatingBranch}. Forwarded to HR Manager for review.`,
-              type: "info",
-              source: "hire",
-              entityId: targetRequest.id,
-              branch_id: hrBranch?.id || null,
-            });
-
+            await sendStage1BranchEndorsementNotify(targetRequest, actorName, actorRole, originatingBranch, hrBranch?.id || null);
             toast("Endorsed", `Requisition endorsed by ${actorName} and forwarded to HR Manager.`, "success");
-
-            notifyTelegramEvent(
-              `🏢 <b>Branch Endorsement: ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)} · ${escapeTelegramHtml(originatingBranch)})</b>\n` +
-              `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)} (${targetRequest.headcount} opening${targetRequest.headcount > 1 ? "s" : ""})\n` +
-              `🏢 <b>Department:</b> ${escapeTelegramHtml(targetRequest.department)}\n` +
-              `📍 <b>Branch:</b> ${escapeTelegramHtml(originatingBranch)}\n` +
-              `⏩ <b>Next Step:</b> In HR Manager Review.`,
-              { text: "Review in HR Division", url: hrNexusUrl("/hire") }
-            );
           } else if (isStage2HrReview) {
             // Stage 2: HR Manager Review -> Forward to HR Division Admin
             const { error: reqErr } = await supabase
@@ -133,24 +121,8 @@ export function useHiringRequestDecision({
               .is("deleted_at", null)
               .maybeSingle();
 
-            await notify({
-              title: `📋 HR Division Admin Approval Required (${targetRequest.title})`,
-              message: `HR Manager ${actorName} reviewed and endorsed ${targetRequest.title} (${originatingBranch}). Awaiting HR Division Admin approval.`,
-              type: "info",
-              source: "hire",
-              entityId: targetRequest.id,
-              branch_id: hrBranch?.id || null,
-            });
-
+            await sendStage2HrReviewNotify(targetRequest, actorName, actorRole, currentBranch, originatingBranch, hrBranch?.id || null);
             toast("Reviewed", `Requisition reviewed by ${actorName} and forwarded to HR Admin.`, "success");
-
-            notifyTelegramEvent(
-              `📑 <b>HR Manager Review: ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)} · ${escapeTelegramHtml(currentBranch)})</b>\n` +
-              `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)} (${targetRequest.headcount} opening${targetRequest.headcount > 1 ? "s" : ""})\n` +
-              `📍 <b>Branch:</b> ${escapeTelegramHtml(originatingBranch)}\n` +
-              `⏩ <b>Next Step:</b> Awaiting HR Division Admin Approval.`,
-              { text: "Review as HR Admin", url: hrNexusUrl("/hire") }
-            );
           } else if (isStage3HrAdmin) {
             // Stage 3: HR Division Admin Approval -> Forward to Chairman
             const { error: reqErr } = await supabase
@@ -164,24 +136,8 @@ export function useHiringRequestDecision({
 
             if (reqErr) throw reqErr;
 
-            await notify({
-              title: `👑 Chairman Authorization Required (${targetRequest.title})`,
-              message: `HR Division Admin ${actorName} approved ${targetRequest.title} (${originatingBranch}). Awaiting Chairman final executive authorization.`,
-              type: "warning",
-              source: "hire",
-              entityId: targetRequest.id,
-              branch_id: null,
-            });
-
+            await sendStage3HrAdminApprovalNotify(targetRequest, actorName, actorRole, currentBranch, originatingBranch);
             toast("Approved", `Requisition approved by HR Admin ${actorName} and escalated to Chairman.`, "success");
-
-            notifyTelegramEvent(
-              `🏛️ <b>HR Admin Approval: ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)} · ${escapeTelegramHtml(currentBranch)})</b>\n` +
-              `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)} (${targetRequest.headcount} opening${targetRequest.headcount > 1 ? "s" : ""})\n` +
-              `📍 <b>Branch:</b> ${escapeTelegramHtml(originatingBranch)}\n` +
-              `⏩ <b>Next Step:</b> Awaiting Executive Chairman Final Authorization.`,
-              { text: "Review as Chairman", url: hrNexusUrl("/hire") }
-            );
           } else {
             // Stage 4: Chairman Executive Authorization -> Create live job posting & Complete
             const { data: jobData, error: jobErr } = await supabase
@@ -221,25 +177,8 @@ export function useHiringRequestDecision({
 
             if (reqErr) throw reqErr;
 
-            await notify({
-              title: `🎉 Requisition Authorized by Chairman: ${targetRequest.title}`,
-              message: `Chairman ${actorName} fully authorized the hiring request for ${originatingBranch}. Live recruitment posting is now active!`,
-              type: "success",
-              source: "hire",
-              entityId: targetRequest.id,
-              branch_id: targetRequest.branch_id || null,
-            });
-
+            await sendStage4ChairmanAuthorizedNotify(targetRequest, actorName, actorRole, originatingBranch);
             toast("Authorized & Published", `Chairman ${actorName} authorized live recruitment posting.`, "success");
-
-            notifyTelegramEvent(
-              `👑 <b>Authorized by Chairman: ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)})</b>\n` +
-              `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)} (${targetRequest.headcount} opening${targetRequest.headcount > 1 ? "s" : ""})\n` +
-              `🏢 <b>Department:</b> ${escapeTelegramHtml(targetRequest.department)}\n` +
-              `📍 <b>Branch:</b> ${escapeTelegramHtml(originatingBranch)}\n` +
-              `📢 <b>Outcome:</b> Live Job Opening published on recruitment portal.`,
-              { text: "View Live Job", url: hrNexusUrl("/hire") }
-            );
           }
         } else {
           // Rejection
@@ -256,28 +195,8 @@ export function useHiringRequestDecision({
           if (reqErr) throw reqErr;
 
           const branchName = targetRequest.branches?.name || "Headquarters";
-
-          // In-app alert back to the requesting branch
-          await notify({
-            title: `❌ Requisition Declined: ${targetRequest.title}`,
-            message: `Hiring requisition for ${branchName} was declined by ${actorName} (${actorRole}). Reason: ${rejectionReason.trim()}`,
-            type: "warning",
-            source: "hire",
-            entityId: targetRequest.id,
-            branch_id: targetRequest.branch_id || null,
-          });
-
+          await sendRejectionNotify(targetRequest, actorName, actorRole, rejectionReason.trim(), branchName);
           toast("Requisition Rejected", "Decision recorded and manager notified.", "info");
-
-          notifyTelegramEvent(
-            `❌ <b>Hiring Requisition Rejected (${escapeTelegramHtml(actorRole)})</b>\n` +
-            `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)}\n` +
-            `🏢 <b>Department:</b> ${escapeTelegramHtml(targetRequest.department)}\n` +
-            `📍 <b>Branch:</b> ${escapeTelegramHtml(branchName)}\n` +
-            `👤 <b>Reviewed By:</b> ${escapeTelegramHtml(actorName)}\n` +
-            `📝 <b>Reason:</b> ${escapeTelegramHtml(rejectionReason.trim())}`,
-            { text: "View Requisitions", url: hrNexusUrl("/hire") }
-          );
         }
 
         setDecisionModal(false);

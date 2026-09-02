@@ -1,4 +1,5 @@
 import type { RoleFormState } from "./types";
+import { SCOPE_HINTS } from "./scopeHints";
 
 export const ALL_MODULES = [
   { key: "dashboard", label: "Dashboard", icon: "ri-dashboard-line", group: "Core" },
@@ -42,29 +43,33 @@ export const COLORS = [
   "#2563EB", "#DB2777", "#EA580C", "#64748B", "#0369A1",
 ] as const;
 
-export const SCOPE_OVERRIDES = [
-  { group: "action", key: "leave_approve", label: "Can approve / reject leave requests", hint: "Off by default. Required to act on someone else's leave request. Enforced in the database, not just hidden in the UI — without it a role can still submit and cancel its own leave." },
-  { group: "action", key: "meeting_rooms_approve", label: "Can approve / reject meeting room bookings", hint: "Allows this role to approve, reject, and adjust requirements & refreshments for meeting room reservations across all branches." },
-  { group: "action", key: "hiring_requests_branch_approve", label: "Stage 1: Can approve branch hiring requests (Forward to HR)", hint: "Allows Branch Admins, Branch Managers, or branch leaders to endorse requisitions for their branch and route to HR Division." },
-  { group: "action", key: "hiring_requests_hr_review", label: "Stage 2: Can review requisitions in HR Division (Forward to HR Admin)", hint: "Allows HR Managers and HR Specialists to review and endorse incoming branch requisitions." },
-  { group: "action", key: "hiring_requests_hr_admin_approve", label: "Stage 3: Can approve requisitions in HR Division (Forward to Chairman)", hint: "Allows HR Division Branch Admin / Admin Manager to approve and escalate to Executive Chairman." },
-  { group: "action", key: "hiring_requests_chairman_approve", label: "Stage 4: Can perform final Chairman authorization & publish live jobs", hint: "Allows Chairman, Chairwoman, CEO, or Super Admin to authorize live recruitment postings." },
-  { group: "action", key: "employees_manage", label: "Can edit employee records (role, department, status, manager)", hint: "Off by default — this role can view the Employee Directory but profiles open read-only." },
-  { group: "action", key: "attendance_notify", label: "Receives attendance check-in / check-out notifications", hint: "Off by default. When on, this role gets notified on employee check-ins and check-outs — whether that's every clock event or only late/early exceptions is set globally in Settings → Notifications." },
-
-  { group: "visibility", key: "self_service_all_employees", label: "Can view/switch other employees in Self-Service", hint: "Off by default — this role only sees the employee record matching their own account email." },
-  { group: "visibility", key: "leave_view_all_employees", label: "Can view all employees' leave requests", hint: "Off by default — this role only sees and submits their own leave requests (the team calendar stays visible either way). Viewing does NOT grant approval — use \"Can approve / reject leave requests\" above for that." },
-  { group: "visibility", key: "leave_view_own_branch", label: "Can view their own branch's leave requests", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" leave is already on. Scopes to employees who share this person's branch. Viewing does NOT grant approval." },
-  { group: "visibility", key: "payroll_view_all_employees", label: "Can view all employees' payroll", hint: "Off by default — this role only sees their own payslip data." },
-  { group: "visibility", key: "attendance_view_all_employees", label: "Can view all employees' attendance records", hint: "Off by default — this role only sees their own attendance history." },
-  { group: "visibility", key: "attendance_view_own_branch", label: "Can view their own branch's attendance records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" attendance is already on." },
-  { group: "visibility", key: "performance_view_all_employees", label: "Can view/manage all employees' performance reviews", hint: "Off by default — this role only sees their own reviews and goals." },
-  { group: "visibility", key: "performance_view_own_branch", label: "Can view/manage their own branch's performance reviews", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" performance is already on." },
-  { group: "visibility", key: "disciplinary_view_all_employees", label: "Can view all employees' disciplinary records", hint: "Off by default — this role only sees their own records, if any." },
-  { group: "visibility", key: "disciplinary_view_own_branch", label: "Can view their own branch's disciplinary records", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" disciplinary is already on." },
-  { group: "visibility", key: "task_view_all_employees", label: "Can view/assign tasks for all employees", hint: "Off by default — this role only sees and manages their own tasks." },
-  { group: "visibility", key: "task_view_own_branch", label: "Can view/assign their own branch's tasks", hint: "For a branch/team-lead style role. Ignored if \"view all employees\" tasks is already on." },
+export const ACTION_OVERRIDES = [
+  { group: "action" as const, key: "leave_approve", label: "Can approve / reject leave requests", hint: SCOPE_HINTS.leave_approve },
+  { group: "action" as const, key: "meeting_rooms_approve", label: "Can approve / reject meeting room bookings", hint: SCOPE_HINTS.meeting_rooms_approve },
+  { group: "action" as const, key: "hiring_requests_branch_approve", label: "Stage 1: Can approve branch hiring requests (Forward to HR)", hint: SCOPE_HINTS.hiring_requests_branch_approve },
+  { group: "action" as const, key: "hiring_requests_hr_review", label: "Stage 2: Can review requisitions in HR Division (Forward to HR Admin)", hint: SCOPE_HINTS.hiring_requests_hr_review },
+  { group: "action" as const, key: "hiring_requests_hr_admin_approve", label: "Stage 3: Can approve requisitions in HR Division (Forward to Chairman)", hint: SCOPE_HINTS.hiring_requests_hr_admin_approve },
+  { group: "action" as const, key: "hiring_requests_chairman_approve", label: "Stage 4: Can perform final Chairman authorization & publish live jobs", hint: SCOPE_HINTS.hiring_requests_chairman_approve },
+  { group: "action" as const, key: "employees_manage", label: "Can edit employee records (role, department, status, manager)", hint: SCOPE_HINTS.employees_manage },
+  { group: "action" as const, key: "attendance_notify", label: "Receives attendance check-in / check-out notifications", hint: SCOPE_HINTS.attendance_notify },
 ] as const;
+
+export const VISIBILITY_OVERRIDES = [
+  { group: "visibility" as const, key: "self_service_all_employees", label: "Can view/switch other employees in Self-Service", hint: SCOPE_HINTS.self_service_all_employees },
+  { group: "visibility" as const, key: "leave_view_all_employees", label: "Can view all employees' leave requests", hint: SCOPE_HINTS.leave_view_all_employees },
+  { group: "visibility" as const, key: "leave_view_own_branch", label: "Can view their own branch's leave requests", hint: SCOPE_HINTS.leave_view_own_branch },
+  { group: "visibility" as const, key: "payroll_view_all_employees", label: "Can view all employees' payroll", hint: SCOPE_HINTS.payroll_view_all_employees },
+  { group: "visibility" as const, key: "attendance_view_all_employees", label: "Can view all employees' attendance records", hint: SCOPE_HINTS.attendance_view_all_employees },
+  { group: "visibility" as const, key: "attendance_view_own_branch", label: "Can view their own branch's attendance records", hint: SCOPE_HINTS.attendance_view_own_branch },
+  { group: "visibility" as const, key: "performance_view_all_employees", label: "Can view/manage all employees' performance reviews", hint: SCOPE_HINTS.performance_view_all_employees },
+  { group: "visibility" as const, key: "performance_view_own_branch", label: "Can view/manage their own branch's performance reviews", hint: SCOPE_HINTS.performance_view_own_branch },
+  { group: "visibility" as const, key: "disciplinary_view_all_employees", label: "Can view all employees' disciplinary records", hint: SCOPE_HINTS.disciplinary_view_all_employees },
+  { group: "visibility" as const, key: "disciplinary_view_own_branch", label: "Can view their own branch's disciplinary records", hint: SCOPE_HINTS.disciplinary_view_own_branch },
+  { group: "visibility" as const, key: "task_view_all_employees", label: "Can view/assign tasks for all employees", hint: SCOPE_HINTS.task_view_all_employees },
+  { group: "visibility" as const, key: "task_view_own_branch", label: "Can view/assign their own branch's tasks", hint: SCOPE_HINTS.task_view_own_branch },
+] as const;
+
+export const SCOPE_OVERRIDES = [...ACTION_OVERRIDES, ...VISIBILITY_OVERRIDES] as const;
 
 export const BLANK_ROLE: RoleFormState = {
   name: "",

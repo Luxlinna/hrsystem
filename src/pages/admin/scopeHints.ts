@@ -1,0 +1,23 @@
+export const SCOPE_HINTS: Record<string, string> = {
+  leave_approve: "Off by default. Required to act on someone else's leave request.",
+  meeting_rooms_approve: "Allows this role to approve, reject, and adjust meeting room bookings.",
+  hiring_requests_branch_approve: "Stage 1: Endorse requisitions for branch and route to HR.",
+  hiring_requests_hr_review: "Stage 2: Review and endorse incoming branch requisitions.",
+  hiring_requests_hr_admin_approve: "Stage 3: Approve and escalate to Executive Chairman.",
+  hiring_requests_chairman_approve: "Stage 4: Final executive authorization & live job postings.",
+  employees_manage: "Off by default — allows editing employee directory records.",
+  attendance_notify: "Off by default. Receives attendance check-in / check-out alerts.",
+
+  self_service_all_employees: "Off by default — only sees own account employee record.",
+  leave_view_all_employees: "Off by default — only sees own leave requests.",
+  leave_view_own_branch: "Scopes leave request viewing to own branch.",
+  payroll_view_all_employees: "Off by default — only sees own payroll data.",
+  attendance_view_all_employees: "Off by default — only sees own attendance history.",
+  attendance_view_own_branch: "Scopes attendance viewing to own branch.",
+  performance_view_all_employees: "Off by default — only sees own reviews and goals.",
+  performance_view_own_branch: "Scopes performance viewing to own branch.",
+  disciplinary_view_all_employees: "Off by default — only sees own disciplinary records.",
+  disciplinary_view_own_branch: "Scopes disciplinary viewing to own branch.",
+  task_view_all_employees: "Off by default — only sees own tasks.",
+  task_view_own_branch: "Scopes task viewing to own branch.",
+};

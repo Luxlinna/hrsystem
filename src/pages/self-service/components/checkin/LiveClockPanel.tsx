@@ -156,7 +156,7 @@ function CheckInActions(props: Props) {
           </div>
           <p className="text-[12px] text-white/80 leading-relaxed">
             {currentOutsideTask.work_status === "checked_in" ? (
-              <>You are currently checked in to <strong className="text-white font-semibold">{currentOutsideTask.title}</strong>. Check-out must be completed in Task Management with location & photos.</>
+              <>You are currently checked in to <strong className="text-white font-semibold">{currentOutsideTask.title}</strong>. Check-out must be completed in Task Management with location and photos.</>
             ) : (
               <>You have an outside work task scheduled for today (<strong className="text-white font-semibold">{currentOutsideTask.title}</strong>). Check-in and check-out must be performed in Task Management.</>
             )}
