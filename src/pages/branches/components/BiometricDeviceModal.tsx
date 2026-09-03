@@ -28,7 +28,7 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
     work_location_id: "",
   });
 
-  const cloudPushUrl = "https://blcvtbzwpwmqkphlcjji.supabase.co/functions/v1/zkteco-adms";
+  const cloudServerHost = "hrsystem-quit.onrender.com";
 
   useEffect(() => {
     if (editingDevice) {
@@ -53,8 +53,8 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
   }, [editingDevice, isOpen, sites]);
 
   const handleCopyCloudUrl = () => {
-    navigator.clipboard.writeText(cloudPushUrl);
-    toast("Copied", "ZKTeco Cloud ADMS Push URL copied to clipboard", "success");
+    navigator.clipboard.writeText(cloudServerHost);
+    toast("Copied", "ZKTeco Cloud ADMS Server Address copied to clipboard", "success");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -188,14 +188,14 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
                 onClick={handleCopyCloudUrl}
                 className="text-[10px] font-bold text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <i className="ri-file-copy-line" /> Copy URL
+                <i className="ri-file-copy-line" /> Copy Domain
               </button>
             </div>
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              In ZKTeco Menu: <strong>Comm. ➔ Cloud Server / ADMS</strong>. Enter this URL so remote province machines push scans automatically over Wi-Fi without needing a local computer.
+              In ZKTeco Menu: <strong>Comm. ➔ Cloud Server</strong>. Set <strong>Enable Domain Name: ON</strong>, enter this domain in <strong>Server Address</strong>, and turn <strong>Enable Proxy: OFF</strong>.
             </p>
             <div className="bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 text-[10px] text-slate-600 font-mono select-all truncate">
-              {cloudPushUrl}
+              {cloudServerHost}
             </div>
           </div>
         </div>

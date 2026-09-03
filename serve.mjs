@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
+import { handleZkAdmsRequest } from "./zkteco-adms-handler.mjs";
 
 const ROOT = join(import.meta.dirname, "out");
 const PORT = Number(process.env.PORT) || 3000;
@@ -41,6 +42,9 @@ async function resolveFile(urlPath) {
 
 const server = createServer(async (req, res) => {
   try {
+    const isAdms = await handleZkAdmsRequest(req, res);
+    if (isAdms) return;
+
     const url = new URL(req.url, `http://${req.headers.host}`);
     const requested = decodeURIComponent(url.pathname);
     const filePath = (await resolveFile(requested)) || join(ROOT, "index.html");

@@ -12,6 +12,7 @@ ON public.employees (biometric_user_id);
 CREATE TABLE IF NOT EXISTS public.biometric_devices (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   branch_id uuid REFERENCES public.branches(id) ON DELETE SET NULL,
+  work_location_id uuid REFERENCES public.work_locations(id) ON DELETE SET NULL,
   device_name text NOT NULL,
   device_serial text UNIQUE NOT NULL,
   device_ip text,
