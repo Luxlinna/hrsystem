@@ -296,20 +296,28 @@ export async function handleZkAdmsRequest(req, res) {
 
     const configResponse = [
       `GET OPTION FROM: ${sn || "ZKTeco"}`,
-      "ATTLOGStamp=None",
-      "OPERLOGStamp=None",
-      "ATTPHOTOStamp=None",
-      "ErrorDelay=60",
-      "Delay=10",
+      "Stamp=0",
+      "OpStamp=0",
+      "PhotoStamp=0",
+      "ATTLOGStamp=0",
+      "OPERLOGStamp=0",
+      "ATTPHOTOStamp=0",
+      "ErrorDelay=30",
+      "Delay=5",
       "TransTimes=00:00;14:00",
       "TransInterval=1",
       "TransFlag=1111000000",
       "TimeZone=7",
       "Realtime=1",
       "Encrypt=0",
-    ].join("\n");
+      "ServerVer=3.4.1",
+      "PushProtVer=3.2.0",
+    ].join("\r\n") + "\r\n";
 
-    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.writeHead(200, { 
+      "Content-Type": "text/plain; charset=utf-8",
+      "Content-Length": Buffer.byteLength(configResponse),
+    });
     res.end(configResponse);
     return true;
   }
@@ -324,6 +332,7 @@ export async function handleZkAdmsRequest(req, res) {
     req.on("end", async () => {
       try {
         console.log(`[ZKTeco ADMS] Data received from SN: ${sn}, Table: ${table || "ATTLOG"}`);
+        console.log(`[ZKTeco ADMS] Raw POST payload:\n${body}`);
 
         if (table === "ATTLOG" || !table) {
           const punches = parseAttLogLines(body, sn);
@@ -334,16 +343,16 @@ export async function handleZkAdmsRequest(req, res) {
           }
 
           res.writeHead(200, { "Content-Type": "text/plain" });
-          res.end(`OK: ${punches.length}`);
+          res.end(`OK: ${punches.length}\r\n`);
         } else {
           // Other tables (OPERLOG, USER, etc.)
           res.writeHead(200, { "Content-Type": "text/plain" });
-          res.end("OK");
+          res.end("OK\r\n");
         }
       } catch (err) {
         console.error("[ZKTeco ADMS] Error processing punch payload:", err);
         res.writeHead(200, { "Content-Type": "text/plain" });
-        res.end("OK");
+        res.end("OK\r\n");
       }
     });
 
