@@ -184,7 +184,7 @@ export async function processZkPunchRecord(punch) {
       employee_id: employee.id,
       date: dateStr,
       work_location_id: employee.default_work_location_id || null,
-      branch_id: employee.branch_id || null,
+      clock_in_branch_id: employee.branch_id || null,
       ...updatePayload,
     },
     { onConflict: "employee_id,date" }
