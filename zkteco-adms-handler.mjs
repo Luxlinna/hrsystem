@@ -269,15 +269,24 @@ export async function handleZkAdmsRequest(req, res) {
 
   // 1. Heartbeat & Command Polling: GET /iclock/getrequest
   if (pathname === "/iclock/getrequest") {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("OK");
+    console.log(`[ZKTeco ADMS] Heartbeat getrequest from SN: ${sn || "Unknown"}`);
+    
+    // Command the device to check and dump all stored attendance logs
+    const cmd = "C:1:CHECK\r\nC:2:DATA QUERY ATTLOG\r\n";
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end(cmd);
     return true;
   }
 
   // 2. Command Acknowledgment: POST /iclock/devicecmd
   if (pathname === "/iclock/devicecmd") {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("OK");
+    let cmdBody = "";
+    req.on("data", (chunk) => { cmdBody += chunk; });
+    req.on("end", () => {
+      console.log(`[ZKTeco ADMS] Devicecmd ACK from SN: ${sn}:`, cmdBody.trim());
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("OK\r\n");
+    });
     return true;
   }
 
