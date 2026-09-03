@@ -79,6 +79,21 @@ export async function processZkPunchRecord(punch) {
     return;
   }
 
+  // 1b. Fetch device info to guarantee strict branch isolation
+  const { data: device } = await supabase
+    .from("biometric_devices")
+    .select("id, branch_id, work_location_id, device_name")
+    .eq("device_serial", deviceSerial)
+    .maybeSingle();
+
+  // If the device is tied to a branch, verify the employee belongs to this exact branch!
+  if (device?.branch_id && employee.branch_id && employee.branch_id !== device.branch_id) {
+    console.warn(
+      `[ZKTeco ADMS] Punch ignored: Employee ${employee.first_name} ${employee.last_name} belongs to branch ${employee.branch_id}, but machine "${device.device_name}" is assigned to branch ${device.branch_id}.`
+    );
+    return;
+  }
+
   const employeeName = `${employee.first_name} ${employee.last_name}`;
   const site = employee.work_locations;
   const branch = employee.branches;

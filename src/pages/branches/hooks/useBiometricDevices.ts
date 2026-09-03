@@ -105,15 +105,23 @@ export function useBiometricDevices(branchId: string) {
 
     setSyncingDevice(dev.id);
     try {
-      // 1. Fetch active employees in this branch
-      const { data: emps, error: empErr } = await supabase
+      // 1. Fetch active employees in THIS branch ONLY
+      let query = supabase
         .from("employees")
-        .select("id, first_name, last_name, biometric_user_id, status")
+        .select("id, first_name, last_name, biometric_user_id, status, default_work_location_id")
         .eq("branch_id", branchId)
         .eq("status", "active");
 
+      // If this specific machine is assigned to a specific work site in this branch,
+      // sync only employees assigned to that work site (or general branch staff)
+      if (dev.work_location_id) {
+        query = query.or(`default_work_location_id.eq.${dev.work_location_id},default_work_location_id.is.null`);
+      }
+
+      const { data: emps, error: empErr } = await query;
+
       if (empErr || !emps || emps.length === 0) {
-        toast("No Employees", "No active employees found in this branch to sync.", "warning");
+        toast("No Employees", "No active employees found in this branch/site to sync.", "warning");
         return;
       }
 
