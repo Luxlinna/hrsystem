@@ -47,16 +47,23 @@ export async function processZkPunchRecord(punch) {
   const timeStr = punchDate.toTimeString().slice(0, 8); // HH:mm:ss
   const punchMinutes = toMin(timeStr);
 
-  // 1. Find employee by biometric_user_id or employee ID
-  const { data: employee, error: empErr } = await supabase
+  // 1. Find employee by biometric_user_id or employee ID (if valid UUID)
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(userId));
+  let empQuery = supabase
     .from("employees")
     .select(`
       id, first_name, last_name, branch_id, default_work_location_id,
       branches(name, work_start_time, work_end_time),
       work_locations:default_work_location_id(name, work_start_time, break_start_time, break_end_time, work_end_time, is_four_punch_enabled)
-    `)
-    .or(`biometric_user_id.eq.${userId},id.eq.${userId}`)
-    .maybeSingle();
+    `);
+
+  if (isUuid) {
+    empQuery = empQuery.or(`biometric_user_id.eq.${userId},id.eq.${userId}`);
+  } else {
+    empQuery = empQuery.eq("biometric_user_id", String(userId));
+  }
+
+  const { data: employee, error: empErr } = await empQuery.maybeSingle();
 
   if (empErr || !employee) {
     console.warn(`[ZKTeco ADMS] User ID [${userId}] is not mapped to any active employee in HR System.`);
