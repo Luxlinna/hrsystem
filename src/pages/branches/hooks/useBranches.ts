@@ -52,12 +52,15 @@ export function useBranches() {
     const requestId = ++detailRequestId.current;
     const { data } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, role, department, status, email")
+      .select("id, first_name, last_name, role, department, status, email, default_work_location_id, work_locations:default_work_location_id(id, name)")
       .eq("branch_id", branch.id)
       .is("deleted_at", null)
       .order("department");
     if (requestId !== detailRequestId.current) return;
-    const emps = data || [];
+    const emps = (data || []).map((x: any) => ({
+      ...x,
+      work_locations: Array.isArray(x.work_locations) ? x.work_locations[0] : x.work_locations || null,
+    })) as Employee[];
     setBranchEmployees(emps);
     setSelectedBranch((prev) => (prev ? { ...prev, employee_count: emps.length } : null));
     setEmpLoading(false);

@@ -92,9 +92,22 @@ export const EmployeesGridView = memo(function EmployeesGridView({
                 </div>
               )}
               {visibleColumns.branch && e.branches?.name && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <i className="ri-map-pin-line text-gray-400" />
-                  {e.branches.name}
+                <div className="flex items-center justify-between text-sm text-gray-600 gap-2">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <i className="ri-building-line text-gray-400 shrink-0" />
+                    <span className="truncate">{e.branches.name}</span>
+                  </div>
+                  {e.work_locations?.name ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded shrink-0">
+                      <i className="ri-map-pin-2-fill text-[9px] text-amber-500" />
+                      {e.work_locations.name}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-200/70 px-1.5 py-0.5 rounded shrink-0">
+                      <i className="ri-building-2-line text-[9px] text-blue-500" />
+                      Main Office
+                    </span>
+                  )}
                 </div>
               )}
             </div>

@@ -123,7 +123,11 @@ export function useEmployeesMutations({
         setForm(INITIAL_EMPLOYEE_FORM);
         loadEmployees();
       } catch (err: any) {
-        toast("Error", err.message || "Failed to add employee.", "error");
+        if (err?.message?.includes("employees_email_unique_idx") || err?.code === "23505") {
+          toast("Email Already Registered", `An employee with the email "${form.email}" already exists in the system. Please use a different email address.`, "error");
+        } else {
+          toast("Error", err.message || "Failed to add employee.", "error");
+        }
       } finally {
         setSubmitting(false);
       }

@@ -55,11 +55,25 @@ export const BranchStaffSection = memo(function BranchStaffSection({
                   <div className="divide-y divide-gray-50 p-1">
                     {emps.map((emp) => (
                       <div key={emp.id} className="p-2.5 flex items-center justify-between hover:bg-gray-50/50 rounded-lg transition-colors">
-                        <div>
-                          <Link to={`/employees/${emp.id}`} className="text-xs font-bold text-gray-800 hover:text-[#253C7D]">
+                        <div className="min-w-0">
+                          <Link to={`/employees/${emp.id}`} className="text-xs font-bold text-gray-800 hover:text-[#253C7D] truncate block">
                             {emp.first_name} {emp.last_name}
                           </Link>
-                          <p className="text-[11px] text-gray-400">{emp.role}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[11px] text-gray-400 truncate">{emp.role || "Staff"}</span>
+                            <span className="text-gray-300">·</span>
+                            {emp.work_locations?.name ? (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded shrink-0">
+                                <i className="ri-map-pin-2-fill text-[9px] text-amber-500" />
+                                {emp.work_locations.name}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded shrink-0">
+                                <i className="ri-building-2-line text-[9px] text-blue-500" />
+                                Main Office
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${emp.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
                           {emp.status}

@@ -74,7 +74,24 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
       {visibleColumns.role && <div className="text-sm text-gray-600 truncate">{e.role || "—"}</div>}
       {visibleColumns.department && <div className="text-sm text-gray-600 truncate">{e.department || "—"}</div>}
       {visibleColumns.branch && (
-        <div className="text-sm text-gray-600 truncate">{e.branches?.name || e.branch_id || "—"}</div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-gray-800 truncate leading-tight">
+            {e.branches?.name || e.branch_id || "—"}
+          </p>
+          <div className="mt-0.5">
+            {e.work_locations?.name ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
+                <i className="ri-map-pin-2-fill text-[9px] text-amber-500" />
+                {e.work_locations.name}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-200/70 px-1.5 py-0.5 rounded">
+                <i className="ri-building-2-line text-[9px] text-blue-500" />
+                Main Office
+              </span>
+            )}
+          </div>
+        </div>
       )}
       {visibleColumns.status && (
         <div>
