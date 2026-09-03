@@ -171,7 +171,7 @@ export function useClockInOutActions({
         branchName: branch?.name,
       });
     }
-  }, [todayOutsideWork, todayRecord, scheduleSettings, today, workEndTime, earlyCheckoutReason, showToast, loadRecords, employeeName, employeeId, branch?.name]);
+  }, [todayOutsideWork, todayRecord, scheduleSettings, today, workEndTime, earlyCheckoutReason, showToast, loadRecords, employeeName, employeeId, branch?.name, branch?.break_start_time, branch?.break_end_time]);
 
   return {
     processing,

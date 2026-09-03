@@ -45,7 +45,7 @@ export const LogAttendanceModal = memo(function LogAttendanceModal({
         clock_out: shouldUpdateTimes && wl?.work_end_time ? end : (p.clock_out || "17:00"),
       };
     });
-  }, [newRecord.employee_id, employees, workLocations, setNewRecord]);
+  }, [newRecord.employee_id, newRecord.work_location_id, employees, workLocations, setNewRecord]);
 
   if (!isOpen) return null;
 

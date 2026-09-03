@@ -39,7 +39,9 @@ export function useStationeryState() {
     try {
       const saved = localStorage.getItem(ITEMS_STORAGE_KEY);
       if (saved) return JSON.parse(saved);
-    } catch {}
+    } catch {
+      // Ignore JSON parse error
+    }
     return SAMPLE_STATIONERY_ITEMS;
   });
 
@@ -47,20 +49,26 @@ export function useStationeryState() {
     try {
       const saved = localStorage.getItem(REQUESTS_STORAGE_KEY);
       if (saved) return JSON.parse(saved);
-    } catch {}
+    } catch {
+      // Ignore JSON parse error
+    }
     return INITIAL_REQUESTS;
   });
 
   useEffect(() => {
     try {
       localStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(items));
-    } catch {}
+    } catch {
+      // Ignore localStorage write error
+    }
   }, [items]);
 
   useEffect(() => {
     try {
       localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(requests));
-    } catch {}
+    } catch {
+      // Ignore localStorage write error
+    }
   }, [requests]);
 
   return { items, setItems, requests, setRequests };
