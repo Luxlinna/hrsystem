@@ -19,12 +19,14 @@ export const BranchBiometricsSection = memo(function BranchBiometricsSection({
     editingDevice,
     saving,
     testingPing,
+    syncingDevice,
     openAddModal,
     openEditModal,
     closeModal,
     handleSaveDevice,
     handleDeleteDevice,
     handleTestPing,
+    handleSyncEmployeesToDevice,
   } = useBiometricDevices(branchId);
 
   const { sites } = useWorkSites(branchId);
@@ -107,6 +109,16 @@ export const BranchBiometricsSection = memo(function BranchBiometricsSection({
 
                   {canManage && (
                     <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSyncEmployeesToDevice(dev)}
+                        disabled={syncingDevice === dev.id}
+                        title="Sync branch employees to this machine"
+                        className="px-2 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50 rounded border border-emerald-200 cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                      >
+                        <i className={syncingDevice === dev.id ? "ri-loader-4-line animate-spin" : "ri-user-shared-line"} />
+                        {syncingDevice === dev.id ? "Syncing..." : "Sync Users"}
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleTestPing(dev)}

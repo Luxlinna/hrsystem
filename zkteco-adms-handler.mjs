@@ -277,11 +277,38 @@ export async function handleZkAdmsRequest(req, res) {
   // 1. Heartbeat & Command Polling: GET /iclock/getrequest
   if (pathname === "/iclock/getrequest") {
     console.log(`[ZKTeco ADMS] Heartbeat getrequest from SN: ${sn || "Unknown"}`);
-    
-    // Command the device to check and dump all stored attendance logs
-    const cmd = "C:1:CHECK\r\nC:2:DATA QUERY ATTLOG\r\n";
+
+    try {
+      // Check for pending device commands
+      const { data: pendingCmds } = await supabase
+        .from("biometric_device_commands")
+        .select("id, command")
+        .eq("device_serial", sn)
+        .eq("status", "pending")
+        .order("id", { ascending: true })
+        .limit(10);
+
+      if (pendingCmds && pendingCmds.length > 0) {
+        console.log(`[ZKTeco ADMS] Dispatching ${pendingCmds.length} commands to SN: ${sn}`);
+        const commandLines = pendingCmds.map(c => `C:${c.id}:${c.command}`).join("\r\n") + "\r\n";
+        
+        // Mark as sent
+        const cmdIds = pendingCmds.map(c => c.id);
+        await supabase
+          .from("biometric_device_commands")
+          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .in("id", cmdIds);
+
+        res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end(commandLines);
+        return true;
+      }
+    } catch (cmdErr) {
+      console.error("[ZKTeco ADMS] Error checking pending commands:", cmdErr);
+    }
+
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end(cmd);
+    res.end("OK\r\n");
     return true;
   }
 
@@ -289,8 +316,29 @@ export async function handleZkAdmsRequest(req, res) {
   if (pathname === "/iclock/devicecmd") {
     let cmdBody = "";
     req.on("data", (chunk) => { cmdBody += chunk; });
-    req.on("end", () => {
+    req.on("end", async () => {
       console.log(`[ZKTeco ADMS] Devicecmd ACK from SN: ${sn}:`, cmdBody.trim());
+      try {
+        // Parse acknowledgment: e.g. ID=101&Return=0
+        const lines = cmdBody.split("\n");
+        for (const line of lines) {
+          const match = line.match(/ID=(\d+)&Return=(-?\d+)/);
+          if (match) {
+            const cmdId = parseInt(match[1], 10);
+            const returnCode = parseInt(match[2], 10);
+            const status = returnCode === 0 ? "success" : "failed";
+            await supabase
+              .from("biometric_device_commands")
+              .update({
+                status,
+                completed_at: new Date().toISOString(),
+              })
+              .eq("id", cmdId);
+          }
+        }
+      } catch (ackErr) {
+        console.error("[ZKTeco ADMS] Error updating command status:", ackErr);
+      }
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end("OK\r\n");
     });

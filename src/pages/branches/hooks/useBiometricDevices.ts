@@ -95,6 +95,78 @@ export function useBiometricDevices(branchId: string) {
     fetchDevices();
   };
 
+  const [syncingDevice, setSyncingDevice] = useState<string | null>(null);
+
+  const handleSyncEmployeesToDevice = async (dev: BiometricDevice) => {
+    if (!dev.device_serial) {
+      toast("Error", "Device has no serial number configured", "error");
+      return;
+    }
+
+    setSyncingDevice(dev.id);
+    try {
+      // 1. Fetch active employees in this branch
+      const { data: emps, error: empErr } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, biometric_user_id, status")
+        .eq("branch_id", branchId)
+        .eq("status", "active");
+
+      if (empErr || !emps || emps.length === 0) {
+        toast("No Employees", "No active employees found in this branch to sync.", "warning");
+        return;
+      }
+
+      // 2. Find highest existing numeric biometric_user_id
+      let maxPin = 0;
+      emps.forEach((e) => {
+        const pin = parseInt(e.biometric_user_id || "0", 10);
+        if (!isNaN(pin) && pin > maxPin) maxPin = pin;
+      });
+
+      // 3. Prepare commands & auto-assign pins if missing
+      const commandsToInsert: { device_serial: string; command: string }[] = [];
+
+      for (const emp of emps) {
+        let pin = emp.biometric_user_id;
+        if (!pin || isNaN(parseInt(pin, 10))) {
+          maxPin += 1;
+          pin = String(maxPin);
+          await supabase.from("employees").update({ biometric_user_id: pin }).eq("id", emp.id);
+        }
+
+        const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || `User ${pin}`;
+        // Clean special characters for ZKTeco ASCII / UTF-8
+        const cleanName = fullName.replace(/[\t\r\n]/g, " ").slice(0, 24);
+
+        commandsToInsert.push({
+          device_serial: dev.device_serial,
+          command: `DATA UPDATE USERINFO PIN=${pin}\tName=${cleanName}\tPri=0\tPasswd=\tCard=\tGrp=1`,
+        });
+      }
+
+      // 4. Insert commands into queue
+      if (commandsToInsert.length > 0) {
+        const { error: cmdErr } = await supabase
+          .from("biometric_device_commands")
+          .insert(commandsToInsert);
+
+        if (cmdErr) throw cmdErr;
+
+        toast(
+          "Sync Queued!",
+          `Queued ${commandsToInsert.length} employees for ${dev.device_name}. Machine will download them automatically.`,
+          "success"
+        );
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Sync failed";
+      toast("Sync Failed", msg, "error");
+    } finally {
+      setSyncingDevice(null);
+    }
+  };
+
   const handleTestPing = async (dev: BiometricDevice) => {
     setTestingPing(dev.id);
     setTimeout(() => {
@@ -114,12 +186,14 @@ export function useBiometricDevices(branchId: string) {
     editingDevice,
     saving,
     testingPing,
+    syncingDevice,
     openAddModal,
     openEditModal,
     closeModal,
     handleSaveDevice,
     handleDeleteDevice,
     handleTestPing,
+    handleSyncEmployeesToDevice,
     refreshDevices: fetchDevices,
   };
 }
