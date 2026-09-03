@@ -11,6 +11,7 @@ export interface AuditLog {
   metadata: Record<string, unknown>;
   created_at: string;
   branch_id?: string | null;
+  branches?: { id?: string; name: string } | null;
 }
 
 export type ExportFormat = "csv" | "xlsx" | "pdf";

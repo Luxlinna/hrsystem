@@ -6,6 +6,7 @@ interface BiometricDeviceModalProps {
   isOpen: boolean;
   editingDevice: BiometricDevice | null;
   sites: WorkSite[];
+  branchName?: string;
   saving: boolean;
   onClose: () => void;
   onSubmit: (form: BiometricDeviceFormState) => void;
@@ -15,6 +16,7 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
   isOpen,
   editingDevice,
   sites,
+  branchName,
   saving,
   onClose,
   onSubmit,
@@ -130,7 +132,7 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
               onChange={(e) => setForm({ ...form, work_location_id: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#253C7D] cursor-pointer"
             >
-              <option value="">Main Branch Location</option>
+              <option value="">{branchName || "Main Branch Location"}</option>
               {sites.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

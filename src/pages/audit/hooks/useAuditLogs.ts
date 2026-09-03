@@ -16,7 +16,7 @@ export function useAuditLogs({
   dateFrom,
   dateTo,
 }: UseAuditLogsProps) {
-  const { targetBranch, isPartnerBranchBlocked, userBranchName, userBranchId } = useBranchScope();
+  const { isSuperAdmin, targetBranch, isPartnerBranchBlocked, userBranchName, userBranchId } = useBranchScope();
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +24,7 @@ export function useAuditLogs({
   const [newCount, setNewCount] = useState(0);
 
   const fetchLogs = useCallback(async () => {
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if (isPartnerBranchBlocked) {
       setLogs([]);
       setLoading(false);
       return;
@@ -33,32 +33,53 @@ export function useAuditLogs({
     setLoading(true);
     let q = supabase
       .from("audit_logs")
-      .select("*")
-      .eq("branch_id", targetBranch)
+      .select("*, branches(id, name)")
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(300);
+
+    // Filter by branch if a specific branch is selected or user is branch-scoped
+    if (targetBranch) {
+      q = q.eq("branch_id", targetBranch);
+    } else if (!isSuperAdmin && userBranchId) {
+      q = q.eq("branch_id", userBranchId);
+    }
 
     if (moduleFilter !== "all") q = q.eq("module", moduleFilter);
     if (actionFilter !== "all") q = q.eq("action", actionFilter);
     if (dateFrom) q = q.gte("created_at", dateFrom);
     if (dateTo) q = q.lte("created_at", dateTo + "T23:59:59");
-    const { data } = await q;
-    setLogs(data || []);
+    const { data, error } = await q;
+    if (error) console.error("Failed to fetch audit logs:", error);
+    setLogs((data as unknown as AuditLog[]) || []);
     setLoading(false);
-  }, [isPartnerBranchBlocked, targetBranch, moduleFilter, actionFilter, dateFrom, dateTo]);
+  }, [isPartnerBranchBlocked, targetBranch, isSuperAdmin, userBranchId, moduleFilter, actionFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
 
   useEffect(() => {
-    if (isPartnerBranchBlocked || !targetBranch) return;
+    if (isPartnerBranchBlocked) return;
 
     const channel = supabase
       .channel("audit-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_logs" }, (payload) => {
-        const newLog = payload.new as AuditLog;
-        if (newLog.branch_id === targetBranch) {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_logs" }, async (payload) => {
+        const newLogRaw = payload.new as AuditLog;
+        const effectiveBranch = targetBranch || (!isSuperAdmin ? userBranchId : null);
+        if (!effectiveBranch || newLogRaw.branch_id === effectiveBranch) {
+          let branchName: string | undefined;
+          if (newLogRaw.branch_id) {
+            const { data: b } = await supabase
+              .from("branches")
+              .select("name")
+              .eq("id", newLogRaw.branch_id)
+              .maybeSingle();
+            branchName = b?.name;
+          }
+          const newLog: AuditLog = {
+            ...newLogRaw,
+            branches: branchName ? { id: newLogRaw.branch_id!, name: branchName } : null,
+          };
           setLogs((prev) => [newLog, ...prev]);
           setNewCount((c) => c + 1);
           setTimeout(() => setNewCount((c) => Math.max(0, c - 1)), 5000);
@@ -71,7 +92,7 @@ export function useAuditLogs({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isPartnerBranchBlocked, targetBranch]);
+  }, [isPartnerBranchBlocked, targetBranch, isSuperAdmin, userBranchId]);
 
   return {
     logs,

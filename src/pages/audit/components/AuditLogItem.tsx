@@ -44,6 +44,12 @@ export const AuditLogItem = memo(function AuditLogItem({
             </span>
             <span className="text-xs text-gray-400">·</span>
             <span className="text-xs text-gray-500">{log.entity_type.replace(/_/g, " ")}</span>
+            {log.branches?.name && (
+              <span className="text-[10px] font-semibold bg-blue-50 text-[#253C7D] px-2 py-0.5 rounded flex items-center gap-1 border border-blue-100/80">
+                <i className="ri-building-line text-[10px]" />
+                {log.branches.name}
+              </span>
+            )}
           </div>
 
           <p className="text-sm text-gray-800 leading-snug">{log.description}</p>

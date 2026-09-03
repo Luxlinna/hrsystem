@@ -98,8 +98,15 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">Department</label>
           <select
-            value={form.department}
-            onChange={(e) => setForm({ ...form, department: e.target.value })}
+            value={DEPARTMENTS.slice(0, -1).includes(form.department) ? form.department : "Other"}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "Other") {
+                setForm({ ...form, department: "" });
+              } else {
+                setForm({ ...form, department: val });
+              }
+            }}
             className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white cursor-pointer"
           >
             {DEPARTMENTS.map((d) => (
@@ -108,6 +115,17 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
               </option>
             ))}
           </select>
+          {!DEPARTMENTS.slice(0, -1).includes(form.department) && (
+            <input
+              type="text"
+              required
+              placeholder="Type custom department name..."
+              value={form.department === "Other" ? "" : form.department}
+              onChange={(e) => setForm({ ...form, department: e.target.value })}
+              className="mt-2 w-full px-3.5 py-2 border border-blue-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-blue-50/40 placeholder-gray-400"
+              autoFocus
+            />
+          )}
         </div>
       </div>
 

@@ -155,7 +155,7 @@ function BranchDetailDrawerInner({
       <BranchWorkSitesSection branchId={branch.id} canManage={canManageThisBranch} />
 
       {/* Biometric Fingerprint Machines Subcomponent */}
-      <BranchBiometricsSection branchId={branch.id} canManage={canManageThisBranch} />
+      <BranchBiometricsSection branchId={branch.id} branchName={branch.name} canManage={canManageThisBranch} />
 
       {/* Staff Breakdown Subcomponent */}
       <BranchStaffSection deptGroups={deptGroups} empLoading={empLoading} />

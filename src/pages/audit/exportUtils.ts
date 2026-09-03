@@ -2,6 +2,7 @@ import type { AuditLog, ExportFormat } from "./types";
 
 export const getExportCols = () => [
   "Timestamp",
+  "Branch",
   "Module",
   "Action",
   "Entity Type",
@@ -13,6 +14,7 @@ export const getExportCols = () => [
 export const getExportRows = (logs: AuditLog[]) =>
   logs.map((l) => [
     new Date(l.created_at).toLocaleString(),
+    l.branches?.name || "All Branches",
     l.module,
     l.action,
     l.entity_type,

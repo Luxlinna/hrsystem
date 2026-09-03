@@ -11,6 +11,7 @@ export const DEPARTMENTS = [
   "Legal",
   "Executive",
   "Customer Service",
+  "Other",
 ];
 
 export const STATUS_OPTIONS = [

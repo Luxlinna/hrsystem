@@ -34,4 +34,5 @@ export const deptColors: Record<string, string> = {
   HR: "#EF4444",
   Engineering: "#3B82F6",
   Legal: "#6B7280",
+  Other: "#64748B",
 };

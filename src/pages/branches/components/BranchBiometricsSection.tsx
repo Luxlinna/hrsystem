@@ -5,11 +5,13 @@ import { BiometricDeviceModal } from "./BiometricDeviceModal";
 
 interface BranchBiometricsSectionProps {
   branchId: string;
+  branchName?: string;
   canManage: boolean;
 }
 
 export const BranchBiometricsSection = memo(function BranchBiometricsSection({
   branchId,
+  branchName,
   canManage,
 }: BranchBiometricsSectionProps) {
   const {
@@ -156,6 +158,7 @@ export const BranchBiometricsSection = memo(function BranchBiometricsSection({
         isOpen={modalOpen}
         editingDevice={editingDevice}
         sites={sites}
+        branchName={branchName}
         saving={saving}
         onClose={closeModal}
         onSubmit={handleSaveDevice}
