@@ -16,6 +16,7 @@ export function useEmployeesData({
 }: UseEmployeesDataProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [workSites, setWorkSites] = useState<{ id: string; name: string; branch_id: string; is_default?: boolean }[]>([]);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [managerEmails, setManagerEmails] = useState<Set<string>>(new Set());
   const [accountStatus, setAccountStatus] = useState<Record<string, AccountStatus>>({});
@@ -58,12 +59,28 @@ export function useEmployeesData({
     loadEmployees();
     if (isPartnerBranchBlocked || !targetBranch) {
       setBranches([]);
+      setWorkSites([]);
       return;
     }
 
-    supabase.from("branches").select("id, name").eq("id", targetBranch).order("name").then(({ data }) => {
-      setBranches(data || []);
-    });
+    supabase
+      .from("branches")
+      .select("id, name")
+      .is("deleted_at", null)
+      .order("name")
+      .then(({ data }) => {
+        setBranches((data as Branch[]) || []);
+      });
+
+    supabase
+      .from("work_locations")
+      .select("id, name, branch_id, is_default")
+      .is("deleted_at", null)
+      .order("is_default", { ascending: false })
+      .order("name")
+      .then(({ data }) => {
+        setWorkSites(data || []);
+      });
 
     supabase.from("app_roles").select("id, name, color").order("name").then(({ data }) => {
       setRoles(data || []);
@@ -114,6 +131,7 @@ export function useEmployeesData({
     employees,
     setEmployees,
     branches,
+    workSites,
     roles,
     managerEmails,
     accountStatus,

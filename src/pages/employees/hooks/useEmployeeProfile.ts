@@ -132,7 +132,7 @@ export function useEmployeeProfile(id: string | undefined) {
       .update({
         first_name: form.first_name,
         last_name: form.last_name,
-        email: form.email,
+        email: form.email?.trim() ? form.email.trim().toLowerCase() : null,
         phone: form.phone,
         role: form.role,
         department: form.department,

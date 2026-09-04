@@ -18,6 +18,7 @@ interface EmployeesFilterBarProps {
   setFilterAccount: (acc: string) => void;
   depts: (string | null | undefined)[];
   branches: Branch[];
+  workSites?: { id: string; name: string; branch_id: string }[];
   visibleColumns: VisibleColumns;
   setVisibleColumns: React.Dispatch<React.SetStateAction<VisibleColumns>>;
   viewMode: ViewMode;
@@ -42,6 +43,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
   setFilterAccount,
   depts,
   branches,
+  workSites = [],
   visibleColumns,
   setVisibleColumns,
   viewMode,
@@ -141,12 +143,34 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
             onChange={(e) => setFilterBranch(e.target.value)}
             className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:border-transparent cursor-pointer"
           >
-            <option value="">All Branches</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
+            <option value="">All Branches & Sites</option>
+            {branches
+              .filter((b) => !b.is_site && !b.id.startsWith("site:"))
+              .map((b) => {
+                const subSites = workSites.filter((s) => s.branch_id === b.id);
+                if (subSites.length === 0) {
+                  return (
+                    <option key={b.id} value={`branch:${b.id}`}>
+                      {b.name}
+                    </option>
+                  );
+                }
+                return (
+                  <optgroup key={b.id} label={b.name}>
+                    <option value={`branch:${b.id}`}>
+                      {b.name} (All Locations)
+                    </option>
+                    <option value={`main:${b.id}`}>
+                      ↳ Main Office Only
+                    </option>
+                    {subSites.map((s) => (
+                      <option key={s.id} value={`site:${s.id}`}>
+                        ↳ {s.name} (Sub-Branch)
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
           </select>
           <select
             value={filterAccount}

@@ -8,6 +8,8 @@ interface UseEmployeesFiltersProps {
   managerEmails: Set<string>;
   accountStatus: Record<string, AccountStatus>;
   canManage: boolean;
+  workSites?: { id: string; name: string; branch_id: string; is_default?: boolean }[];
+  currentBranchName?: string;
 }
 
 export function useEmployeesFilters({
@@ -15,11 +17,14 @@ export function useEmployeesFilters({
   managerEmails,
   accountStatus,
   canManage,
+  workSites = [],
+  currentBranchName,
 }: UseEmployeesFiltersProps) {
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterBranch, setFilterBranch] = useState("");
+  const [filterWorkLocation, setFilterWorkLocation] = useState<string>("all");
   const [filterAccount, setFilterAccount] = useState("");
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -29,6 +34,25 @@ export function useEmployeesFilters({
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>(INITIAL_VISIBLE_COLUMNS);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+
+  const employeeLocations = useMemo(() => {
+    if (!workSites || workSites.length === 0) return [];
+    const mainCount = employees.filter((e) => !e.default_work_location_id).length;
+    return [
+      {
+        id: "main",
+        name: currentBranchName ? `${currentBranchName} (Main)` : "Main Office",
+        count: mainCount,
+        isMain: true,
+      },
+      ...workSites.map((ws) => ({
+        id: ws.id,
+        name: ws.name,
+        count: employees.filter((e) => e.default_work_location_id === ws.id).length,
+        isMain: false,
+      })),
+    ];
+  }, [workSites, employees, currentBranchName]);
 
   const depts = useMemo(() => Array.from(new Set(employees.map((e) => e.department).filter(Boolean))), [employees]);
   const branchCount = useMemo(() => new Set(employees.map((e) => e.branch_id).filter(Boolean)).size, [employees]);
@@ -63,7 +87,21 @@ export function useEmployeesFilters({
         const matchesSearch = !search || fullName.includes(q) || email.includes(q) || role.includes(q) || dept.includes(q);
         const matchesDept = !filterDept || e.department === filterDept;
         const matchesStatus = !filterStatus || e.status === filterStatus;
-        const matchesBranch = !filterBranch || e.branch_id === filterBranch;
+        let matchesBranch = true;
+        if (filterBranch) {
+          if (filterBranch.startsWith("site:")) {
+            const siteId = filterBranch.substring(5);
+            matchesBranch = e.default_work_location_id === siteId;
+          } else if (filterBranch.startsWith("main:")) {
+            const branchId = filterBranch.substring(5);
+            matchesBranch = e.branch_id === branchId && !e.default_work_location_id;
+          } else if (filterBranch.startsWith("branch:")) {
+            const branchId = filterBranch.substring(7);
+            matchesBranch = e.branch_id === branchId;
+          } else {
+            matchesBranch = e.branch_id === filterBranch;
+          }
+        }
         let matchesAccount = true;
         if (filterAccount) {
           const status = accountStatus[e.email];
@@ -71,7 +109,10 @@ export function useEmployeesFilters({
           else if (filterAccount === "invited") matchesAccount = !!status?.invited && !status?.hasAccount;
           else if (filterAccount === "no_account") matchesAccount = !status?.hasAccount && !status?.invited;
         }
-        return matchesSearch && matchesDept && matchesStatus && matchesBranch && matchesAccount;
+        const matchesLocation =
+          filterWorkLocation === "all" ||
+          (filterWorkLocation === "main" ? !e.default_work_location_id : e.default_work_location_id === filterWorkLocation);
+        return matchesSearch && matchesDept && matchesStatus && matchesBranch && matchesLocation && matchesAccount;
       })
       .sort((a, b) => {
         if (!sortField) return 0;
@@ -85,7 +126,7 @@ export function useEmployeesFilters({
         if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
         return 0;
       });
-  }, [employees, search, filterDept, filterStatus, filterBranch, filterAccount, sortField, sortDirection, accountStatus]);
+  }, [employees, search, filterDept, filterStatus, filterBranch, filterWorkLocation, filterAccount, sortField, sortDirection, accountStatus]);
 
   const empTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, empTotalPages);
@@ -133,13 +174,15 @@ export function useEmployeesFilters({
 
   useEffect(() => {
     setPage(1);
-  }, [search, filterDept, filterStatus, filterBranch, filterAccount]);
+  }, [search, filterDept, filterStatus, filterBranch, filterWorkLocation, filterAccount]);
 
   return {
     search, setSearch,
     filterDept, setFilterDept,
     filterStatus, setFilterStatus,
     filterBranch, setFilterBranch,
+    filterWorkLocation, setFilterWorkLocation,
+    employeeLocations,
     filterAccount, setFilterAccount,
     sortField, sortDirection,
     pageSize, setPageSize,

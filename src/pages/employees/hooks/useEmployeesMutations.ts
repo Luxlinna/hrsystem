@@ -76,22 +76,31 @@ export function useEmployeesMutations({
   const handleAddEmployee = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!form.first_name || !form.last_name || !form.email) {
-        toast("Required fields", "Please fill in first name, last name, and email.", "error");
+      if (!form.first_name?.trim() || !form.last_name?.trim()) {
+        toast("Required fields", "Please fill in first name and last name.", "error");
         return;
       }
       setSubmitting(true);
       try {
+        let resolvedBranch = form.branch_id || targetBranch || null;
+        let resolvedLocation = form.default_work_location_id || null;
+        if (resolvedBranch && resolvedBranch.startsWith("site:")) {
+          resolvedLocation = resolvedBranch.substring(5);
+          resolvedBranch = targetBranch || null;
+        }
+
+        const cleanEmail = form.email?.trim() ? form.email.trim().toLowerCase() : null;
+
         const payload = {
-          first_name: form.first_name,
-          last_name: form.last_name,
-          email: form.email.trim().toLowerCase(),
-          phone: form.phone || null,
-          role: form.role || "Staff",
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim(),
+          email: cleanEmail,
+          phone: form.phone?.trim() || null,
+          role: form.role?.trim() || "Staff",
           department: form.department,
           status: form.status,
-          branch_id: form.branch_id || targetBranch || null,
-          default_work_location_id: form.default_work_location_id || null,
+          branch_id: resolvedBranch,
+          default_work_location_id: resolvedLocation,
           join_date: form.join_date || new Date().toISOString().split("T")[0],
           reports_to: form.reports_to || null,
         };
@@ -107,7 +116,7 @@ export function useEmployeesMutations({
           entityId: newEmp.id,
           actorName,
           actorRole: roleName,
-          description: `Added new employee ${form.first_name} ${form.last_name}`,
+          description: `Added new employee ${form.first_name} ${form.last_name}${cleanEmail ? ` (${cleanEmail})` : " (Biometric only)"}`,
         });
 
         await notify({
@@ -123,7 +132,7 @@ export function useEmployeesMutations({
         setForm(INITIAL_EMPLOYEE_FORM);
         loadEmployees();
       } catch (err: any) {
-        if (err?.message?.includes("employees_email_unique_idx") || err?.code === "23505") {
+        if ((err?.message?.includes("employees_email_unique_idx") || err?.code === "23505") && form.email) {
           toast("Email Already Registered", `An employee with the email "${form.email}" already exists in the system. Please use a different email address.`, "error");
         } else {
           toast("Error", err.message || "Failed to add employee.", "error");

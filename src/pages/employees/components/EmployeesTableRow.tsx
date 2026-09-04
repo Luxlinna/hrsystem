@@ -67,7 +67,9 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
           <p className="text-sm font-bold text-gray-900 truncate">
             {e.first_name} {e.last_name}
           </p>
-          <p className="text-xs text-gray-500 truncate">{e.email}</p>
+          <p className="text-xs text-gray-500 truncate">
+            {e.email || <span className="text-gray-400 italic">No email (Biometric only)</span>}
+          </p>
         </div>
       </div>
 
@@ -75,18 +77,18 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
       {visibleColumns.department && <div className="text-sm text-gray-600 truncate">{e.department || "—"}</div>}
       {visibleColumns.branch && (
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-800 truncate leading-tight">
+          <p className="text-sm font-semibold text-gray-900 truncate">
             {e.branches?.name || e.branch_id || "—"}
           </p>
-          <div className="mt-0.5">
+          <div className="mt-0.5 flex items-center">
             {e.work_locations?.name ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
-                <i className="ri-map-pin-2-fill text-[9px] text-amber-500" />
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50/90 border border-amber-200/60 px-2 py-0.5 rounded-md whitespace-nowrap">
+                <i className="ri-map-pin-2-fill text-[10px] text-amber-500" />
                 {e.work_locations.name}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-200/70 px-1.5 py-0.5 rounded">
-                <i className="ri-building-2-line text-[9px] text-blue-500" />
+              <span className="inline-flex items-center gap-1 text-[11px] font-normal text-gray-400">
+                <i className="ri-building-line text-[10px] text-gray-400" />
                 Main Office
               </span>
             )}
@@ -107,7 +109,14 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
       )}
       {visibleColumns.account && (
         <div>
-          {hasAccount ? (
+          {!e.email ? (
+            <span
+              className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-md"
+              title="Biometric fingerprint machine only; cannot log into web portal"
+            >
+              <i className="ri-fingerprint-line text-slate-500" /> Biometric Only
+            </span>
+          ) : hasAccount ? (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
               <i className="ri-checkbox-circle-fill text-emerald-500" /> Active
             </span>
@@ -129,7 +138,7 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
       )}
       {visibleColumns.actions && canManage && (
         <div className="flex items-center justify-end gap-2" onClick={(ev) => ev.stopPropagation()}>
-          {!hasAccount && (
+          {!hasAccount && e.email && (
             <button
               type="button"
               onClick={(ev) => {

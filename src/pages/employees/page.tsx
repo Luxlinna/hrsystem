@@ -5,6 +5,7 @@ import { EmployeesFilterBar } from "./components/EmployeesFilterBar";
 import { SelectedActionsBar } from "./components/SelectedActionsBar";
 import { EmployeesTableView } from "./components/EmployeesTableView";
 import { EmployeesGridView } from "./components/EmployeesGridView";
+import { EmployeeWorkSitePills } from "./components/EmployeeWorkSitePills";
 import { Pagination } from "./components/Pagination";
 import { AddEmployeeModal } from "./components/AddEmployeeModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
@@ -14,8 +15,9 @@ import { INITIAL_EMPLOYEE_FORM } from "./constants";
 export default function EmployeesPage() {
   const {
     canManage, isSuperAdmin, isPartnerBranchBlocked, userBranchId, userBranchName,
-    targetBranch, branches, selectedBranchId, visibleBranches, search, setSearch,
+    targetBranch, branches, workSites, selectedBranchId, visibleBranches, search, setSearch,
     filterDept, setFilterDept, filterStatus, setFilterStatus, filterBranch, setFilterBranch,
+    filterWorkLocation, setFilterWorkLocation, employeeLocations,
     filterAccount, setFilterAccount, sortField, sortDirection, selectedIds, selectAll,
     pageSize, setPageSize, page, setPage, showAddModal, setShowAddModal, form, setForm,
     submitting, accountStatus, invitingId, deletingId, showFilters, setShowFilters,
@@ -73,6 +75,15 @@ export default function EmployeesPage() {
 
       <EmployeesStatsRow stats={stats} branchCount={branchCount} />
 
+      {employeeLocations.length > 0 && (
+        <EmployeeWorkSitePills
+          locations={employeeLocations}
+          totalCount={stats.total}
+          filterLocation={filterWorkLocation}
+          setFilterLocation={setFilterWorkLocation}
+        />
+      )}
+
       <EmployeesFilterBar
         search={search}
         setSearch={setSearch}
@@ -90,6 +101,7 @@ export default function EmployeesPage() {
         setFilterAccount={setFilterAccount}
         depts={depts}
         branches={branches}
+        workSites={workSites}
         visibleColumns={visibleColumns}
         setVisibleColumns={setVisibleColumns}
         viewMode={viewMode}

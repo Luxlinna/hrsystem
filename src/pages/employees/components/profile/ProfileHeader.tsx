@@ -108,10 +108,20 @@ export const ProfileHeader = memo(function ProfileHeader({
                   {employee.work_locations.name}
                 </span>
               )}
-              <span className="flex items-center gap-1">
-                <i className="ri-mail-line" />
-                {employee.email}
-              </span>
+              {employee.email ? (
+                <span className="flex items-center gap-1">
+                  <i className="ri-mail-line" />
+                  {employee.email}
+                </span>
+              ) : (
+                <span
+                  className="flex items-center gap-1 text-slate-600 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-md font-medium text-[11px]"
+                  title="Biometric fingerprint machine only; cannot log into web system"
+                >
+                  <i className="ri-fingerprint-line text-slate-500" />
+                  Biometric Only
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <i className="ri-phone-line" />
                 {employee.phone || "—"}

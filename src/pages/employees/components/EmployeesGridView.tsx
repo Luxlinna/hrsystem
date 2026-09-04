@@ -77,7 +77,9 @@ export const EmployeesGridView = memo(function EmployeesGridView({
             <h3 className="text-base font-semibold text-gray-900 mb-1">
               {e.first_name} {e.last_name}
             </h3>
-            <p className="text-sm text-gray-500 mb-3">{e.email}</p>
+            <p className="text-sm text-gray-500 mb-3 truncate">
+              {e.email || <span className="text-gray-400 italic text-xs">No email (Biometric only)</span>}
+            </p>
             <div className="space-y-2">
               {visibleColumns.role && e.role && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -92,19 +94,18 @@ export const EmployeesGridView = memo(function EmployeesGridView({
                 </div>
               )}
               {visibleColumns.branch && e.branches?.name && (
-                <div className="flex items-center justify-between text-sm text-gray-600 gap-2">
-                  <div className="flex items-center gap-1.5 truncate">
+                <div className="flex items-center justify-between text-sm text-gray-600 gap-2 pt-1 border-t border-gray-50">
+                  <div className="flex items-center gap-1.5 truncate font-medium">
                     <i className="ri-building-line text-gray-400 shrink-0" />
-                    <span className="truncate">{e.branches.name}</span>
+                    <span className="truncate text-gray-900 font-semibold">{e.branches.name}</span>
                   </div>
                   {e.work_locations?.name ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded shrink-0">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50/90 border border-amber-200/60 px-2 py-0.5 rounded-md shrink-0 whitespace-nowrap">
                       <i className="ri-map-pin-2-fill text-[9px] text-amber-500" />
                       {e.work_locations.name}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-200/70 px-1.5 py-0.5 rounded shrink-0">
-                      <i className="ri-building-2-line text-[9px] text-blue-500" />
+                    <span className="text-[11px] text-gray-400 font-normal shrink-0">
                       Main Office
                     </span>
                   )}
@@ -113,7 +114,15 @@ export const EmployeesGridView = memo(function EmployeesGridView({
             </div>
             {visibleColumns.account && (
               <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                {hasAccount ? (
+                {!e.email ? (
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-md"
+                    title="Biometric fingerprint machine only"
+                  >
+                    <i className="ri-fingerprint-line text-slate-500" />
+                    Biometric Only
+                  </span>
+                ) : hasAccount ? (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
                     <i className="ri-checkbox-circle-line" />
                     Active Account

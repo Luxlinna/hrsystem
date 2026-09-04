@@ -42,13 +42,27 @@ export function useEmployeesSelection({
   }, []);
 
   const bulkInvite = useCallback(async () => {
-    const toInvite = pagedEmployees.filter((e) => selectedIds.has(e.id));
+    const selected = pagedEmployees.filter((e) => selectedIds.has(e.id));
+    const toInvite = selected.filter((e) => !!e.email);
+
+    if (toInvite.length === 0) {
+      toast("No Email Found", "Selected employee(s) have no email address (biometric only).", "info");
+      return;
+    }
+
     let successCount = 0;
     for (const emp of toInvite) {
-      const ok = await inviteUser(emp.email, emp.first_name, emp.last_name, emp.role || "");
-      if (ok) successCount++;
+      if (emp.email) {
+        const ok = await inviteUser(emp.email, emp.first_name, emp.last_name, emp.role || "");
+        if (ok) successCount++;
+      }
     }
-    toast("Bulk Invites", `Sent ${successCount} of ${toInvite.length} invites.`, "success");
+    const skipped = selected.length - toInvite.length;
+    toast(
+      "Bulk Invites",
+      `Sent ${successCount} of ${toInvite.length} invites${skipped > 0 ? ` (${skipped} biometric-only skipped)` : ""}.`,
+      "success"
+    );
     setSelectedIds(new Set());
     setSelectAll(false);
   }, [pagedEmployees, selectedIds, inviteUser]);

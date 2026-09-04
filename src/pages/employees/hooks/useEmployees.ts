@@ -32,11 +32,15 @@ export function useEmployees() {
     selectedSiteId,
   });
 
+  const activeBranchSites = data.workSites.filter((ws) => !targetBranch || ws.branch_id === targetBranch);
+
   const filters = useEmployeesFilters({
     employees: data.employees,
     managerEmails: data.managerEmails,
     accountStatus: data.accountStatus,
     canManage,
+    workSites: activeBranchSites,
+    currentBranchName: userBranchName,
   });
 
   const mutations = useEmployeesMutations({
@@ -65,6 +69,7 @@ export function useEmployees() {
     userBranchName,
     targetBranch,
     branches: data.branches,
+    workSites: data.workSites,
     scopeBranches,
     selectedBranchId,
     visibleBranches,
@@ -76,6 +81,9 @@ export function useEmployees() {
     setFilterStatus: filters.setFilterStatus,
     filterBranch: filters.filterBranch,
     setFilterBranch: filters.setFilterBranch,
+    filterWorkLocation: filters.filterWorkLocation,
+    setFilterWorkLocation: filters.setFilterWorkLocation,
+    employeeLocations: filters.employeeLocations,
     filterAccount: filters.filterAccount,
     setFilterAccount: filters.setFilterAccount,
     sortField: filters.sortField,

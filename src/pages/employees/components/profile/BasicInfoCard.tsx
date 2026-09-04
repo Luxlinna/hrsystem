@@ -73,16 +73,21 @@ export const BasicInfoCard = memo(function BasicInfoCard({
           )}
         </div>
         <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Email</label>
+          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+            Email <span className="font-normal text-gray-400 lowercase">(optional)</span>
+          </label>
           {editing ? (
             <input
               type="email"
               value={form.email || ""}
+              placeholder="Optional (Biometric only)"
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
             />
           ) : (
-            <p className="text-[14px] text-gray-900">{employee.email}</p>
+            <p className="text-[14px] text-gray-900">
+              {employee.email || <span className="text-gray-400 italic text-xs">No email (Biometric only)</span>}
+            </p>
           )}
         </div>
         <div>
