@@ -47,7 +47,14 @@ export async function processZkPunchRecord(punch) {
   const timeStr = punchDate.toTimeString().slice(0, 8); // HH:mm:ss
   const punchMinutes = toMin(timeStr);
 
-  // 1. Find employee by biometric_user_id or employee ID (if valid UUID)
+  // 1a. Fetch device info first to guarantee branch context and isolation
+  const { data: device } = await supabase
+    .from("biometric_devices")
+    .select("id, branch_id, work_location_id, device_name")
+    .eq("device_serial", deviceSerial)
+    .maybeSingle();
+
+  // 1b. Find employee by biometric_user_id or employee ID (prioritizing the device's branch)
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(userId));
   let empQuery = supabase
     .from("employees")
@@ -56,6 +63,10 @@ export async function processZkPunchRecord(punch) {
       branches(name, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end),
       work_locations:default_work_location_id(name, work_start_time, break_start_time, break_end_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, is_four_punch_enabled, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end)
     `);
+
+  if (device?.branch_id) {
+    empQuery = empQuery.eq("branch_id", device.branch_id);
+  }
 
   if (isUuid) {
     empQuery = empQuery.or(`biometric_user_id.eq.${userId},id.eq.${userId}`);
@@ -66,7 +77,7 @@ export async function processZkPunchRecord(punch) {
   const { data: employee, error: empErr } = await empQuery.maybeSingle();
 
   if (empErr || !employee) {
-    console.warn(`[ZKTeco ADMS] User ID [${userId}] is not mapped to any active employee in HR System.`);
+    console.warn(`[ZKTeco ADMS] User ID [${userId}] is not mapped to any employee in branch [${device?.branch_id || "unassigned"}].`);
     // Still record raw punch for hardware auditing so no scan is lost
     await supabase.from("biometric_raw_logs").insert({
       device_serial: deviceSerial || "ZK-ADMS",
@@ -76,21 +87,6 @@ export async function processZkPunchRecord(punch) {
       verify_type: verifyType ?? 1,
       processed: false,
     });
-    return;
-  }
-
-  // 1b. Fetch device info to guarantee strict branch isolation
-  const { data: device } = await supabase
-    .from("biometric_devices")
-    .select("id, branch_id, work_location_id, device_name")
-    .eq("device_serial", deviceSerial)
-    .maybeSingle();
-
-  // If the device is tied to a branch, verify the employee belongs to this exact branch!
-  if (device?.branch_id && employee.branch_id && employee.branch_id !== device.branch_id) {
-    console.warn(
-      `[ZKTeco ADMS] Punch ignored: Employee ${employee.first_name} ${employee.last_name} belongs to branch ${employee.branch_id}, but machine "${device.device_name}" is assigned to branch ${device.branch_id}.`
-    );
     return;
   }
 
