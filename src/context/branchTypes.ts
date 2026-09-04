@@ -11,6 +11,14 @@ export interface BranchInfo {
   break_end_time?: string | null;
   late_grace_minutes?: number | null;
   early_leave_grace_minutes?: number | null;
+  morning_check_in_start?: string | null;
+  morning_check_in_end?: string | null;
+  morning_check_out_start?: string | null;
+  morning_check_out_end?: string | null;
+  afternoon_check_in_start?: string | null;
+  afternoon_check_in_end?: string | null;
+  afternoon_check_out_start?: string | null;
+  afternoon_check_out_end?: string | null;
   is_four_punch_enabled?: boolean;
 }
 

@@ -20,6 +20,10 @@ export function useWorkSites(branchId: string) {
         latitude, longitude, geofence_radius_m,
         work_start_time, work_end_time, break_start_time, break_end_time,
         late_grace_minutes, early_leave_grace_minutes,
+        morning_check_in_start, morning_check_in_end,
+        morning_check_out_start, morning_check_out_end,
+        afternoon_check_in_start, afternoon_check_in_end,
+        afternoon_check_out_start, afternoon_check_out_end,
         is_four_punch_enabled
       `)
       .eq("branch_id", branchId)
@@ -77,6 +81,14 @@ export function useWorkSites(branchId: string) {
       break_end_time: formatTimeSeconds(formData.break_end_time, "13:00:00"),
       late_grace_minutes: formData.late_grace_minutes?.trim() ? parseInt(formData.late_grace_minutes, 10) || 15 : 15,
       early_leave_grace_minutes: formData.early_leave_grace_minutes?.trim() ? parseInt(formData.early_leave_grace_minutes, 10) || 15 : 15,
+      morning_check_in_start: formatTimeSeconds(formData.morning_check_in_start, "06:00:00"),
+      morning_check_in_end: formatTimeSeconds(formData.morning_check_in_end, "09:00:00"),
+      morning_check_out_start: formatTimeSeconds(formData.morning_check_out_start, "10:00:00"),
+      morning_check_out_end: formatTimeSeconds(formData.morning_check_out_end, "12:00:00"),
+      afternoon_check_in_start: formatTimeSeconds(formData.afternoon_check_in_start, "12:00:00"),
+      afternoon_check_in_end: formatTimeSeconds(formData.afternoon_check_in_end, "14:00:00"),
+      afternoon_check_out_start: formatTimeSeconds(formData.afternoon_check_out_start, "16:00:00"),
+      afternoon_check_out_end: formatTimeSeconds(formData.afternoon_check_out_end, "18:00:00"),
       is_four_punch_enabled: formData.is_four_punch_enabled,
     };
 

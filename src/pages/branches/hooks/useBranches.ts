@@ -85,6 +85,14 @@ export function useBranches() {
       work_end_time: branch.work_end_time || "",
       late_grace_minutes: branch.late_grace_minutes != null ? String(branch.late_grace_minutes) : "15",
       early_leave_grace_minutes: branch.early_leave_grace_minutes != null ? String(branch.early_leave_grace_minutes) : "15",
+      morning_check_in_start: branch.morning_check_in_start ? branch.morning_check_in_start.slice(0, 5) : "06:00",
+      morning_check_in_end: branch.morning_check_in_end ? branch.morning_check_in_end.slice(0, 5) : "09:00",
+      morning_check_out_start: branch.morning_check_out_start ? branch.morning_check_out_start.slice(0, 5) : "10:00",
+      morning_check_out_end: branch.morning_check_out_end ? branch.morning_check_out_end.slice(0, 5) : "12:00",
+      afternoon_check_in_start: branch.afternoon_check_in_start ? branch.afternoon_check_in_start.slice(0, 5) : "12:00",
+      afternoon_check_in_end: branch.afternoon_check_in_end ? branch.afternoon_check_in_end.slice(0, 5) : "14:00",
+      afternoon_check_out_start: branch.afternoon_check_out_start ? branch.afternoon_check_out_start.slice(0, 5) : "16:00",
+      afternoon_check_out_end: branch.afternoon_check_out_end ? branch.afternoon_check_out_end.slice(0, 5) : "18:00",
     });
     location.setAddressLookup(branch.location || "");
     setShowAddModal(true);

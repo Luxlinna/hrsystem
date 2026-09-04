@@ -13,13 +13,13 @@ export function useBranchData(userEmail?: string | null) {
   const fetchBranches = useCallback(async () => {
     const { data: branchesData } = await supabase
       .from("branches")
-      .select("id, name, location, status, work_start_time, work_end_time")
+      .select("id, name, location, status, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end")
       .is("deleted_at", null)
       .order("name");
 
     const { data: locationsData } = await supabase
       .from("work_locations")
-      .select("id, name, branch_id, description, is_default, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled")
+      .select("id, name, branch_id, description, is_default, work_start_time, work_end_time, break_start_time, break_end_time, late_grace_minutes, early_leave_grace_minutes, is_four_punch_enabled, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end")
       .is("deleted_at", null)
       .order("is_default", { ascending: false });
 
@@ -35,6 +35,16 @@ export function useBranchData(userEmail?: string | null) {
         work_end_time: loc.work_end_time,
         break_start_time: loc.break_start_time,
         break_end_time: loc.break_end_time,
+        late_grace_minutes: loc.late_grace_minutes ?? 15,
+        early_leave_grace_minutes: loc.early_leave_grace_minutes ?? 15,
+        morning_check_in_start: loc.morning_check_in_start,
+        morning_check_in_end: loc.morning_check_in_end,
+        morning_check_out_start: loc.morning_check_out_start,
+        morning_check_out_end: loc.morning_check_out_end,
+        afternoon_check_in_start: loc.afternoon_check_in_start,
+        afternoon_check_in_end: loc.afternoon_check_in_end,
+        afternoon_check_out_start: loc.afternoon_check_out_start,
+        afternoon_check_out_end: loc.afternoon_check_out_end,
         is_four_punch_enabled: loc.is_four_punch_enabled ?? true,
       }));
 
@@ -50,6 +60,16 @@ export function useBranchData(userEmail?: string | null) {
           work_end_time: b.work_end_time || null,
           break_start_time: null,
           break_end_time: null,
+          late_grace_minutes: b.late_grace_minutes ?? 15,
+          early_leave_grace_minutes: b.early_leave_grace_minutes ?? 15,
+          morning_check_in_start: b.morning_check_in_start,
+          morning_check_in_end: b.morning_check_in_end,
+          morning_check_out_start: b.morning_check_out_start,
+          morning_check_out_end: b.morning_check_out_end,
+          afternoon_check_in_start: b.afternoon_check_in_start,
+          afternoon_check_in_end: b.afternoon_check_in_end,
+          afternoon_check_out_start: b.afternoon_check_out_start,
+          afternoon_check_out_end: b.afternoon_check_out_end,
           is_four_punch_enabled: false,
         }));
 

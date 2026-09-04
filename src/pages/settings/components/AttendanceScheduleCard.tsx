@@ -102,12 +102,54 @@ export function AttendanceScheduleCard({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {ATTENDANCE_SCHEDULE_KEYS.map((key) => {
-            const isSiteEditable = ["work_start_time", "work_end_time", "break_start_time", "break_end_time", "late_grace_minutes", "early_leave_grace_minutes"].includes(key);
-            const isBranchEditable = ["work_start_time", "work_end_time", "late_grace_minutes", "early_leave_grace_minutes"].includes(key);
+            const isSiteEditable = [
+              "work_start_time",
+              "work_end_time",
+              "break_start_time",
+              "break_end_time",
+              "late_grace_minutes",
+              "early_leave_grace_minutes",
+              "morning_check_in_start",
+              "morning_check_in_end",
+              "morning_check_out_start",
+              "morning_check_out_end",
+              "afternoon_check_in_start",
+              "afternoon_check_in_end",
+              "afternoon_check_out_start",
+              "afternoon_check_out_end",
+            ].includes(key);
+            const isBranchEditable = [
+              "work_start_time",
+              "work_end_time",
+              "late_grace_minutes",
+              "early_leave_grace_minutes",
+              "morning_check_in_start",
+              "morning_check_in_end",
+              "morning_check_out_start",
+              "morning_check_out_end",
+              "afternoon_check_in_start",
+              "afternoon_check_in_end",
+              "afternoon_check_out_start",
+              "afternoon_check_out_end",
+            ].includes(key);
             const isCustomField = isSiteOrBranch && (currentBranchOrSite.is_site ? isSiteEditable : isBranchEditable);
 
+            let helperText = "";
+            if (key === "work_start_time") helperText = "Shift start time. Scans before this are on-time, after are marked late.";
+            if (key === "morning_check_in_start") helperText = "Earliest biometric check-in accepted (e.g. 06:00 AM).";
+            if (key === "morning_check_in_end") helperText = "Latest check-in accepted (e.g. 09:00 AM). Scans after this are NOT recorded.";
+            if (key === "break_start_time") helperText = "Morning shift end / lunch start (e.g. 11:30 AM). Scans before this are early checkout.";
+            if (key === "morning_check_out_start") helperText = "Earliest morning checkout accepted (e.g. 10:00 AM).";
+            if (key === "morning_check_out_end") helperText = "Latest morning checkout accepted (e.g. 12:00 PM). Scans after this are NOT recorded.";
+            if (key === "break_end_time") helperText = "Afternoon shift start (e.g. 01:00 PM). Scans before this are on-time, after are marked late.";
+            if (key === "afternoon_check_in_start") helperText = "Earliest afternoon check-in accepted (e.g. 12:00 PM).";
+            if (key === "afternoon_check_in_end") helperText = "Latest afternoon check-in accepted (e.g. 02:00 PM). Scans after this are NOT recorded.";
+            if (key === "work_end_time") helperText = "Afternoon shift end time (e.g. 05:00 PM).";
+            if (key === "afternoon_check_out_start") helperText = "Earliest afternoon checkout accepted (e.g. 04:00 PM). Scans before shift end are early checkout.";
+            if (key === "afternoon_check_out_end") helperText = "Latest afternoon checkout accepted (e.g. 06:00 PM). Scans after this are NOT recorded.";
+
             return (
-              <div key={key} className={`min-w-0 p-3 rounded-xl border ${isCustomField ? "border-blue-200 bg-blue-50/30" : "border-gray-100 bg-white"}`}>
+              <div key={key} className={`min-w-0 p-3.5 rounded-xl border ${isCustomField ? "border-blue-200 bg-blue-50/30" : "border-gray-100 bg-white"}`}>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[12px] font-bold text-gray-800">
                     {keyLabels[key]}
@@ -123,10 +165,13 @@ export function AttendanceScheduleCard({
                     </span>
                   )}
                 </div>
+                {helperText && (
+                  <p className="text-[10px] text-gray-400 mb-1.5 leading-snug">{helperText}</p>
+                )}
                 <div className="flex gap-2 mt-1">
                   <input
                     type={
-                      key.includes("time")
+                      key.includes("time") || key.includes("start") || key.includes("end")
                         ? "time"
                         : key === "working_days"
                           ? "text"

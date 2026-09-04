@@ -83,6 +83,30 @@ export function useSettings() {
         if (key === "early_leave_grace_minutes" && currentBranchOrSite.early_leave_grace_minutes != null) {
           return String(currentBranchOrSite.early_leave_grace_minutes);
         }
+        if (key === "morning_check_in_start" && currentBranchOrSite.morning_check_in_start) {
+          return currentBranchOrSite.morning_check_in_start.slice(0, 5);
+        }
+        if (key === "morning_check_in_end" && currentBranchOrSite.morning_check_in_end) {
+          return currentBranchOrSite.morning_check_in_end.slice(0, 5);
+        }
+        if (key === "morning_check_out_start" && currentBranchOrSite.morning_check_out_start) {
+          return currentBranchOrSite.morning_check_out_start.slice(0, 5);
+        }
+        if (key === "morning_check_out_end" && currentBranchOrSite.morning_check_out_end) {
+          return currentBranchOrSite.morning_check_out_end.slice(0, 5);
+        }
+        if (key === "afternoon_check_in_start" && currentBranchOrSite.afternoon_check_in_start) {
+          return currentBranchOrSite.afternoon_check_in_start.slice(0, 5);
+        }
+        if (key === "afternoon_check_in_end" && currentBranchOrSite.afternoon_check_in_end) {
+          return currentBranchOrSite.afternoon_check_in_end.slice(0, 5);
+        }
+        if (key === "afternoon_check_out_start" && currentBranchOrSite.afternoon_check_out_start) {
+          return currentBranchOrSite.afternoon_check_out_start.slice(0, 5);
+        }
+        if (key === "afternoon_check_out_end" && currentBranchOrSite.afternoon_check_out_end) {
+          return currentBranchOrSite.afternoon_check_out_end.slice(0, 5);
+        }
         if (key === "is_four_punch_enabled" && currentBranchOrSite.is_four_punch_enabled !== undefined) {
           return String(currentBranchOrSite.is_four_punch_enabled);
         }
@@ -123,6 +147,14 @@ export function useSettings() {
         "break_end_time",
         "late_grace_minutes",
         "early_leave_grace_minutes",
+        "morning_check_in_start",
+        "morning_check_in_end",
+        "morning_check_out_start",
+        "morning_check_out_end",
+        "afternoon_check_in_start",
+        "afternoon_check_in_end",
+        "afternoon_check_out_start",
+        "afternoon_check_out_end",
         "is_four_punch_enabled",
       ];
 
@@ -158,13 +190,22 @@ export function useSettings() {
         return;
       }
 
-      if (
-        isBranchScope &&
-        (key === "work_start_time" ||
-          key === "work_end_time" ||
-          key === "late_grace_minutes" ||
-          key === "early_leave_grace_minutes")
-      ) {
+      const branchScheduleKeys = [
+        "work_start_time",
+        "work_end_time",
+        "late_grace_minutes",
+        "early_leave_grace_minutes",
+        "morning_check_in_start",
+        "morning_check_in_end",
+        "morning_check_out_start",
+        "morning_check_out_end",
+        "afternoon_check_in_start",
+        "afternoon_check_in_end",
+        "afternoon_check_out_start",
+        "afternoon_check_out_end",
+      ];
+
+      if (isBranchScope && branchScheduleKeys.includes(key)) {
         const updateVal =
           key === "late_grace_minutes" || key === "early_leave_grace_minutes"
             ? parseInt(val, 10) || 15
@@ -233,6 +274,21 @@ export function useSettings() {
       const isSiteScope = currentBranchOrSite?.is_site && settingsScope.startsWith("site:");
       const isBranchScope = currentBranchOrSite && !currentBranchOrSite.is_site && settingsScope !== "all";
 
+      const timeFieldKeys = [
+        "work_start_time",
+        "work_end_time",
+        "break_start_time",
+        "break_end_time",
+        "morning_check_in_start",
+        "morning_check_in_end",
+        "morning_check_out_start",
+        "morning_check_out_end",
+        "afternoon_check_in_start",
+        "afternoon_check_in_end",
+        "afternoon_check_out_start",
+        "afternoon_check_out_end",
+      ];
+
       if (isSiteScope) {
         const siteId = settingsScope.substring(5);
         const sitePayload: Record<string, any> = {};
@@ -241,7 +297,9 @@ export function useSettings() {
         for (const key of changed) {
           if (key === "is_four_punch_enabled") {
             sitePayload.is_four_punch_enabled = edited[key] === "true";
-          } else if (["work_start_time", "work_end_time", "break_start_time", "break_end_time"].includes(key)) {
+          } else if (key === "late_grace_minutes" || key === "early_leave_grace_minutes") {
+            sitePayload[key] = parseInt(edited[key], 10) || 15;
+          } else if (timeFieldKeys.includes(key)) {
             sitePayload[key] = formatTimeSeconds(edited[key]);
           } else {
             systemKeys.push(key);
@@ -273,7 +331,9 @@ export function useSettings() {
         const systemKeys: string[] = [];
 
         for (const key of changed) {
-          if (["work_start_time", "work_end_time"].includes(key)) {
+          if (key === "late_grace_minutes" || key === "early_leave_grace_minutes") {
+            branchPayload[key] = parseInt(edited[key], 10) || 15;
+          } else if (timeFieldKeys.includes(key)) {
             branchPayload[key] = formatTimeSeconds(edited[key]);
           } else {
             systemKeys.push(key);

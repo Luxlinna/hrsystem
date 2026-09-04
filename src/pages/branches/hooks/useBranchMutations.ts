@@ -60,6 +60,14 @@ export function useBranchMutations({
       const work_end_time = form.work_end_time.trim() || null;
       const late_grace_minutes = form.late_grace_minutes.trim() ? Math.max(0, parseInt(form.late_grace_minutes, 10) || 0) : 15;
       const early_leave_grace_minutes = form.early_leave_grace_minutes.trim() ? Math.max(0, parseInt(form.early_leave_grace_minutes, 10) || 0) : 15;
+      const morning_check_in_start = form.morning_check_in_start?.trim() ? form.morning_check_in_start.trim() + ":00" : "06:00:00";
+      const morning_check_in_end = form.morning_check_in_end?.trim() ? form.morning_check_in_end.trim() + ":00" : "09:00:00";
+      const morning_check_out_start = form.morning_check_out_start?.trim() ? form.morning_check_out_start.trim() + ":00" : "10:00:00";
+      const morning_check_out_end = form.morning_check_out_end?.trim() ? form.morning_check_out_end.trim() + ":00" : "12:00:00";
+      const afternoon_check_in_start = form.afternoon_check_in_start?.trim() ? form.afternoon_check_in_start.trim() + ":00" : "12:00:00";
+      const afternoon_check_in_end = form.afternoon_check_in_end?.trim() ? form.afternoon_check_in_end.trim() + ":00" : "14:00:00";
+      const afternoon_check_out_start = form.afternoon_check_out_start?.trim() ? form.afternoon_check_out_start.trim() + ":00" : "16:00:00";
+      const afternoon_check_out_end = form.afternoon_check_out_end?.trim() ? form.afternoon_check_out_end.trim() + ":00" : "18:00:00";
       let entityId: string | null = editingBranchId;
 
       if (editingBranchId) {
@@ -77,6 +85,14 @@ export function useBranchMutations({
             work_end_time,
             late_grace_minutes,
             early_leave_grace_minutes,
+            morning_check_in_start,
+            morning_check_in_end,
+            morning_check_out_start,
+            morning_check_out_end,
+            afternoon_check_in_start,
+            afternoon_check_in_end,
+            afternoon_check_out_start,
+            afternoon_check_out_end,
           })
           .eq("id", editingBranchId);
         if (error) {
@@ -99,6 +115,14 @@ export function useBranchMutations({
             work_end_time,
             late_grace_minutes,
             early_leave_grace_minutes,
+            morning_check_in_start,
+            morning_check_in_end,
+            morning_check_out_start,
+            morning_check_out_end,
+            afternoon_check_in_start,
+            afternoon_check_in_end,
+            afternoon_check_out_start,
+            afternoon_check_out_end,
           })
           .select("id")
           .single();

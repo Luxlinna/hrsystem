@@ -11,7 +11,7 @@ export function useBranchesData() {
       supabase
         .from("branches")
         .select(
-          "id, name, location, manager_name, employee_count, status, created_at, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, deleted_at, deleted_by"
+          "id, name, location, manager_name, employee_count, status, created_at, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end, deleted_at, deleted_by"
         )
         .is("deleted_at", null),
       supabase

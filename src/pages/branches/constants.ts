@@ -27,4 +27,12 @@ export const INITIAL_BRANCH_FORM: BranchFormState = {
   work_end_time: "",
   late_grace_minutes: "15",
   early_leave_grace_minutes: "15",
+  morning_check_in_start: "06:00",
+  morning_check_in_end: "09:00",
+  morning_check_out_start: "10:00",
+  morning_check_out_end: "12:00",
+  afternoon_check_in_start: "12:00",
+  afternoon_check_in_end: "14:00",
+  afternoon_check_out_start: "16:00",
+  afternoon_check_out_end: "18:00",
 };
