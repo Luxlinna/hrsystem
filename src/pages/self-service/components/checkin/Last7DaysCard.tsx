@@ -45,8 +45,8 @@ export function Last7DaysCard({
           const dayName = dt.toLocaleDateString("en-US", { weekday: "short" });
           const dayNum = dt.getDate();
           const isT = d === today;
-          const isLate = (rec?.late_minutes || 0) > scheduleSettings.lateGraceMinutes;
-          const isEarly = !!rec?.clock_out && (rec?.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes;
+          const isLate = rec?.status === "late" || (rec?.late_minutes || 0) > 0;
+          const isEarly = !!rec?.clock_out && (rec?.early_leave_minutes || 0) > 0;
 
           const dotColor =
             rec?.status === "absent" ? "bg-rose-400" :

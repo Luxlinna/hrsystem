@@ -44,7 +44,9 @@ export function useCheckInCalculations({
       const [endH, endM] = workEndTime.split(":").map(Number);
       endMinutes = endH * 60 + endM;
     }
-    return Math.max(0, endMinutes - zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay);
+    const rawEarly = Math.max(0, endMinutes - zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay);
+    const grace = scheduleSettings.earlyLeaveGraceMinutes ?? 15;
+    return rawEarly > grace ? rawEarly - grace : 0;
   })();
   const isEarlyCheckoutNow = earlyCheckoutMinutesNow > 0;
 
@@ -53,7 +55,7 @@ export function useCheckInCalculations({
   ).length;
   const lateCount = records.filter((r) => r.status === "late").length;
   const earlyLeaveCount = records.filter(
-    (r) => (r.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes
+    (r) => (r.early_leave_minutes || 0) > 0
   ).length;
   const absentCount = records.filter((r) => r.status === "absent").length;
   const totalHours = records.reduce((s, r) => s + (r.hours_worked || 0), 0);

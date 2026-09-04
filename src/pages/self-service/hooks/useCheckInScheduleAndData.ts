@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { addDaysYMD, todayYMD, zonedDayOfWeek } from "@/lib/date";
 import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows } from "@/lib/workSchedule";
@@ -22,6 +22,7 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
   const [todayOutsideWork, setTodayOutsideWork] = useState<OutsideWorkTask | null>(null);
   const [assignedShift, setAssignedShift] = useState<{ start_time: string; end_time: string; name: string } | null>(null);
   const [defaultWorkLocationId, setDefaultWorkLocationId] = useState<string | null>(null);
+  const hasLoadedOnce = useRef(false);
 
   const today = todayYMD();
 
@@ -40,9 +41,11 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
     });
   }, []);
 
-  const loadRecords = useCallback(async () => {
+  const loadRecords = useCallback(async (isInitial = false) => {
     if (!employeeId) return;
-    setLoading(true);
+    if (isInitial && !hasLoadedOnce.current) {
+      setLoading(true);
+    }
     const fromDate = addDaysYMD(today, -30);
     const { data } = await supabase
       .from("attendance_records")
@@ -54,17 +57,18 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
     const all = data || [];
     setRecords(all);
     setTodayRecord(all.find((r) => r.date === today) || null);
+    hasLoadedOnce.current = true;
     setLoading(false);
   }, [employeeId, today]);
 
   useEffect(() => {
     if (!employeeId) return;
-    loadRecords();
+    loadRecords(true);
 
-    // Polling fallback every 8 seconds so scans by biometric machines immediately appear
+    // Silent background polling fallback every 15 seconds
     const pollInterval = setInterval(() => {
-      loadRecords();
-    }, 8000);
+      loadRecords(false);
+    }, 15000);
 
     // Supabase Realtime subscription on attendance_records for this employee
     const channel = supabase
@@ -78,7 +82,7 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
           filter: `employee_id=eq.${employeeId}`,
         },
         () => {
-          loadRecords();
+          loadRecords(false);
         }
       )
       .subscribe();

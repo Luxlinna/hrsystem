@@ -67,9 +67,10 @@ export function useClockInOutActions({
     const nowZ = zonedParts(now, scheduleSettings.timezone);
     const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
     const [startH, startM] = workStartTime.split(":").map(Number);
-    const lateMinutes = Math.max(0, nowZ.minutesOfDay - (startH * 60 + startM));
+    const rawLateMinutes = Math.max(0, nowZ.minutesOfDay - (startH * 60 + startM));
     const effectiveLateGrace = branch?.late_grace_minutes ?? scheduleSettings.lateGraceMinutes ?? 15;
-    const isLate = lateMinutes > effectiveLateGrace;
+    const isLate = rawLateMinutes > effectiveLateGrace;
+    const lateMinutes = isLate ? rawLateMinutes - effectiveLateGrace : 0;
     const status = isLate ? "late" : "ontime";
 
     const { error } = await supabase.from("attendance_records").upsert(
@@ -91,9 +92,9 @@ export function useClockInOutActions({
       showToast("error", "Failed to check in. Please try again.");
     } else {
       const lateMessage = isLate
-        ? ` — ${lateMinutes} min late`
-        : lateMinutes > 0
-        ? ` — On time (${lateMinutes}m within grace chance)`
+        ? ` — Late by ${lateMinutes}m (${rawLateMinutes}m after start, ${effectiveLateGrace}m grace)`
+        : rawLateMinutes > 0
+        ? ` — On time (${rawLateMinutes}m within grace chance)`
         : " — On time!";
       showToast(
         "success",
@@ -136,16 +137,17 @@ export function useClockInOutActions({
     const isSaturday = zonedDayOfWeek(now, scheduleSettings.timezone) === 6;
     const defaultEndMin = isSaturday ? 12 * 60 : 17 * 60; // 12:00 PM Sat, 5:00 PM Mon-Fri
 
-    let earlyLeaveMinutes = 0;
+    let rawEarlyMinutes = 0;
     if (workEndTime) {
       const [endH, endM] = workEndTime.split(":").map(Number);
-      earlyLeaveMinutes = Math.max(0, endH * 60 + endM - nowZ.minutesOfDay);
+      rawEarlyMinutes = Math.max(0, endH * 60 + endM - nowZ.minutesOfDay);
     } else {
-      earlyLeaveMinutes = Math.max(0, defaultEndMin - nowZ.minutesOfDay);
+      rawEarlyMinutes = Math.max(0, defaultEndMin - nowZ.minutesOfDay);
     }
 
     const effectiveEarlyGrace = branch?.early_leave_grace_minutes ?? scheduleSettings.earlyLeaveGraceMinutes ?? 15;
-    const isEarlyLeave = earlyLeaveMinutes > effectiveEarlyGrace;
+    const isEarlyLeave = rawEarlyMinutes > effectiveEarlyGrace;
+    const earlyLeaveMinutes = isEarlyLeave ? rawEarlyMinutes - effectiveEarlyGrace : 0;
     const requiresReason = isEarlyLeave;
     if (requiresReason && !earlyCheckoutReason.trim()) {
       showToast("error", "Please enter a reason before checking out early.");

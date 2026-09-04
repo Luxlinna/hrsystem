@@ -93,8 +93,8 @@ export function AttendanceHistoryCard({
                 <span className="text-right">Status</span>
               </div>
               {records.map((r) => {
-                const isLate = (r.late_minutes || 0) > scheduleSettings.lateGraceMinutes;
-                const isEarly = !!r.clock_out && (r.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes;
+                const isLate = r.status === "late" || (r.late_minutes || 0) > 0;
+                const isEarly = !!r.clock_out && (r.early_leave_minutes || 0) > 0;
                 const dt = new Date(r.date);
                 return (
                   <div

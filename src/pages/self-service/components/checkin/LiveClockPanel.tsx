@@ -46,14 +46,30 @@ export function LiveClockPanel(props: Props) {
 }
 
 function LiveClock({ currentTime, timezone }: Pick<Props, "currentTime" | "timezone">) {
+  const safeTime = (() => {
+    try {
+      return currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: timezone || "Asia/Phnom_Penh" });
+    } catch {
+      return currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+  })();
+
+  const safeDate = (() => {
+    try {
+      return currentTime.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: timezone || "Asia/Phnom_Penh" });
+    } catch {
+      return currentTime.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    }
+  })();
+
   return (
     <div className="lg:pr-7 lg:border-r lg:border-white/15">
       <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Live Clock</p>
       <p className="text-4xl font-bold font-mono tracking-tight tabular-nums">
-        {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: timezone })}
+        {safeTime}
       </p>
       <p className="text-white/70 text-[12px] mt-1">
-        {currentTime.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: timezone })}
+        {safeDate}
       </p>
     </div>
   );
@@ -108,7 +124,7 @@ function ShiftSnapshot(props: Props) {
           <p className="text-[15px] font-bold tabular-nums mt-0.5">
             {todayRecord?.clock_in?.slice(0, 5) || (activeOutsideWork?.work_checked_in_at ? new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—")}
           </p>
-          {(todayRecord?.late_minutes || 0) > scheduleSettings.lateGraceMinutes && (
+          {(todayRecord?.status === "late" || (todayRecord?.late_minutes || 0) > 0) && (
             <p className="text-amber-200 text-[10px] font-semibold mt-0.5">{todayRecord?.late_minutes}m late</p>
           )}
         </div>
@@ -117,7 +133,7 @@ function ShiftSnapshot(props: Props) {
           <p className="text-[15px] font-bold tabular-nums mt-0.5">
             {todayRecord?.clock_out?.slice(0, 5) || "—"}
           </p>
-          {(todayRecord?.early_leave_minutes || 0) > scheduleSettings.earlyLeaveGraceMinutes && (
+          {(todayRecord?.early_leave_minutes || 0) > 0 && (
             <p className="text-orange-200 text-[10px] font-semibold mt-0.5">{todayRecord?.early_leave_minutes}m early</p>
           )}
         </div>
@@ -293,7 +309,7 @@ function CheckInActions(props: Props) {
               </div>
               <p className="text-[11px] text-white/90 leading-snug">
                 Arrival confirmed at <strong className="text-emerald-200 font-bold">{todayRecord?.clock_in?.slice(0, 5)}</strong>
-                {(todayRecord?.late_minutes || 0) <= (scheduleSettings?.lateGraceMinutes ?? 15) ? (
+                {todayRecord?.status !== "late" && (todayRecord?.late_minutes || 0) === 0 ? (
                   <span className="text-emerald-300 font-semibold ml-1">✓ On Time</span>
                 ) : (
                   <span className="text-amber-200 font-semibold ml-1">({todayRecord?.late_minutes}m late)</span>

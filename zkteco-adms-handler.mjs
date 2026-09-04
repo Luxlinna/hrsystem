@@ -123,8 +123,9 @@ export async function processZkPunchRecord(punch) {
   if (!is4Punch) {
     // Standard 2-Punch Mode
     if (!existingRecord || !existingRecord.clock_in) {
-      const lateMinutes = Math.max(0, punchMinutes - startMin);
-      const isLate = lateMinutes > lateGraceMin;
+      const rawLateMinutes = Math.max(0, punchMinutes - startMin);
+      const isLate = rawLateMinutes > lateGraceMin;
+      const lateMinutes = isLate ? rawLateMinutes - lateGraceMin : 0;
       updatePayload = {
         clock_in: timeStr,
         status: isLate ? "late" : "ontime",
@@ -136,7 +137,9 @@ export async function processZkPunchRecord(punch) {
       const ciMin = toMin(existingRecord.clock_in);
       const breakDuration = Math.max(0, breakEndMin - breakStartMin);
       const hoursWorked = Math.max(0, parseFloat(((punchMinutes - ciMin - breakDuration) / 60).toFixed(2)));
-      const earlyLeaveMinutes = Math.max(0, endMin - punchMinutes);
+      const rawEarlyLeaveMinutes = Math.max(0, endMin - punchMinutes);
+      const isEarly = rawEarlyLeaveMinutes > earlyGraceMin;
+      const earlyLeaveMinutes = isEarly ? rawEarlyLeaveMinutes - earlyGraceMin : 0;
 
       updatePayload = {
         clock_out: timeStr,
@@ -152,8 +155,9 @@ export async function processZkPunchRecord(punch) {
 
     if (!existingRecord || (!existingRecord.clock_in && punchMinutes < midMorningBreak)) {
       // 1. Morning Check-In (~07:30 AM)
-      const lateMinutes = Math.max(0, punchMinutes - startMin);
-      const isLate = lateMinutes > lateGraceMin;
+      const rawLateMinutes = Math.max(0, punchMinutes - startMin);
+      const isLate = rawLateMinutes > lateGraceMin;
+      const lateMinutes = isLate ? rawLateMinutes - lateGraceMin : 0;
       updatePayload = {
         clock_in: timeStr,
         status: isLate ? "late" : "ontime",
@@ -163,7 +167,9 @@ export async function processZkPunchRecord(punch) {
       console.log(`[ZKTeco ADMS] [PUNCH 1: MORNING IN] ${employeeName} at ${timeStr}`);
     } else if (punchMinutes >= midMorningBreak && punchMinutes < breakEndMin && !existingRecord?.break_out) {
       // 2. Lunch Out (~11:30 AM)
-      const morningEarlyLeave = Math.max(0, breakStartMin - punchMinutes);
+      const rawMorningEarlyLeave = Math.max(0, breakStartMin - punchMinutes);
+      const isEarly = rawMorningEarlyLeave > earlyGraceMin;
+      const morningEarlyLeave = isEarly ? rawMorningEarlyLeave - earlyGraceMin : 0;
       updatePayload = {
         break_out: timeStr,
         early_leave_minutes: morningEarlyLeave,
@@ -185,7 +191,9 @@ export async function processZkPunchRecord(punch) {
       const morningSessionHours = Math.max(0, (p2Min - p1Min) / 60);
       const afternoonSessionHours = Math.max(0, (p4Min - p3Min) / 60);
       const totalHours = parseFloat((morningSessionHours + afternoonSessionHours).toFixed(2));
-      const earlyLeaveMinutes = Math.max(0, endMin - punchMinutes);
+      const rawEarlyLeaveMinutes = Math.max(0, endMin - punchMinutes);
+      const isEarly = rawEarlyLeaveMinutes > earlyGraceMin;
+      const earlyLeaveMinutes = isEarly ? rawEarlyLeaveMinutes - earlyGraceMin : 0;
 
       updatePayload = {
         clock_out: timeStr,
