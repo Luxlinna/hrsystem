@@ -105,12 +105,13 @@ export function useBiometricDevices(branchId: string) {
 
     setSyncingDevice(dev.id);
     try {
-      // 1. Fetch active employees in THIS branch ONLY
+      // 1. Fetch active employees in THIS branch ONLY (excluding deleted employees)
       let query = supabase
         .from("employees")
         .select("id, first_name, last_name, biometric_user_id, status, default_work_location_id")
         .eq("branch_id", branchId)
-        .eq("status", "active");
+        .eq("status", "active")
+        .is("deleted_at", null);
 
       // If this specific machine is assigned to a specific work site in this branch,
       // sync only employees assigned to that work site (or general branch staff)
@@ -134,6 +135,25 @@ export function useBiometricDevices(branchId: string) {
 
       // 3. Prepare commands & auto-assign pins if missing
       const commandsToInsert: { device_serial: string; command: string }[] = [];
+
+      // Automatically delete any removed/inactive employees from the machine
+      const { data: deletedEmps } = await supabase
+        .from("employees")
+        .select("biometric_user_id")
+        .eq("branch_id", branchId)
+        .not("deleted_at", "is", null)
+        .not("biometric_user_id", "is", null);
+
+      if (deletedEmps && deletedEmps.length > 0) {
+        for (const de of deletedEmps) {
+          if (de.biometric_user_id) {
+            commandsToInsert.push({
+              device_serial: dev.device_serial,
+              command: `DATA DELETE USERINFO PIN=${de.biometric_user_id}`,
+            });
+          }
+        }
+      }
 
       for (const emp of emps) {
         let pin = emp.biometric_user_id;
@@ -163,7 +183,7 @@ export function useBiometricDevices(branchId: string) {
 
         toast(
           "Sync Queued!",
-          `Queued ${commandsToInsert.length} employees for ${dev.device_name}. Machine will download them automatically.`,
+          `Queued ${emps.length} active employees for ${dev.device_name}. Machine will download them automatically.`,
           "success"
         );
       }
