@@ -37,6 +37,8 @@ export interface BranchGeofence {
   work_end_time: string | null;
   break_start_time?: string | null;
   break_end_time?: string | null;
+  late_grace_minutes?: number | null;
+  early_leave_grace_minutes?: number | null;
   is_four_punch_enabled?: boolean;
 }
 

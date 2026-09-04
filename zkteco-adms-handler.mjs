@@ -53,8 +53,8 @@ export async function processZkPunchRecord(punch) {
     .from("employees")
     .select(`
       id, first_name, last_name, branch_id, default_work_location_id,
-      branches(name, work_start_time, work_end_time),
-      work_locations:default_work_location_id(name, work_start_time, break_start_time, break_end_time, work_end_time, is_four_punch_enabled)
+      branches(name, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes),
+      work_locations:default_work_location_id(name, work_start_time, break_start_time, break_end_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, is_four_punch_enabled)
     `);
 
   if (isUuid) {
@@ -103,6 +103,7 @@ export async function processZkPunchRecord(punch) {
   const breakEndTime = site?.break_end_time || "13:00:00";
   const workEndTime = site?.work_end_time || branch?.work_end_time || "17:00:00";
   const is4Punch = site?.is_four_punch_enabled ?? true;
+  const lateGraceMin = site?.late_grace_minutes ?? branch?.late_grace_minutes ?? 15;
 
   const startMin = toMin(workStartTime);
   const breakStartMin = toMin(breakStartTime);
@@ -123,9 +124,10 @@ export async function processZkPunchRecord(punch) {
     // Standard 2-Punch Mode
     if (!existingRecord || !existingRecord.clock_in) {
       const lateMinutes = Math.max(0, punchMinutes - startMin);
+      const isLate = lateMinutes > lateGraceMin;
       updatePayload = {
         clock_in: timeStr,
-        status: lateMinutes > 0 ? "late" : "ontime",
+        status: isLate ? "late" : "ontime",
         late_minutes: lateMinutes,
         notes: `ZKTeco Cloud (${deviceSerial || "ADMS"})`,
       };
@@ -151,9 +153,10 @@ export async function processZkPunchRecord(punch) {
     if (!existingRecord || (!existingRecord.clock_in && punchMinutes < midMorningBreak)) {
       // 1. Morning Check-In (~07:30 AM)
       const lateMinutes = Math.max(0, punchMinutes - startMin);
+      const isLate = lateMinutes > lateGraceMin;
       updatePayload = {
         clock_in: timeStr,
-        status: lateMinutes > 0 ? "late" : "ontime",
+        status: isLate ? "late" : "ontime",
         late_minutes: lateMinutes,
         notes: `ZKTeco 4-Punch (${site?.name || branch?.name || "Branch"})`,
       };

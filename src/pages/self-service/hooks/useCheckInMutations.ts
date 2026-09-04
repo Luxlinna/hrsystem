@@ -16,6 +16,7 @@ interface UseCheckInMutationsProps {
   branchLoading: boolean;
   scheduleSettings: {
     timezone: string;
+    lateGraceMinutes: number;
     earlyLeaveGraceMinutes: number;
     breakStartTime: string;
     breakEndTime: string;

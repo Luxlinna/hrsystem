@@ -27,6 +27,7 @@ export const WorkSiteScheduleSection = memo(function WorkSiteScheduleSection({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
+          <label className="block text-[11px] text-gray-600 mb-1 font-semibold">Start Time (Check-In)</label>
           <input
             type="time"
             value={form.work_start_time}
@@ -36,6 +37,7 @@ export const WorkSiteScheduleSection = memo(function WorkSiteScheduleSection({
           <p className="text-[11px] text-gray-400 mt-1">Start time — check-ins after this count as late</p>
         </div>
         <div>
+          <label className="block text-[11px] text-gray-600 mb-1 font-semibold">End Time (Check-Out)</label>
           <input
             type="time"
             value={form.work_end_time}
@@ -43,6 +45,41 @@ export const WorkSiteScheduleSection = memo(function WorkSiteScheduleSection({
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
           />
           <p className="text-[11px] text-gray-400 mt-1">End time — check-outs before this count as early</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-blue-50/40 p-3 rounded-xl border border-blue-100">
+        <div>
+          <label className="block text-[11px] text-[#253C7D] mb-1 font-bold">Late Arrival Grace (Minutes)</label>
+          <div className="relative">
+            <input
+              type="number"
+              min="0"
+              max="120"
+              value={form.late_grace_minutes}
+              onChange={(e) => setForm({ ...form, late_grace_minutes: e.target.value })}
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#253C7D]"
+              placeholder="15"
+            />
+            <span className="absolute right-3 top-2 text-[10px] text-gray-400">mins grace</span>
+          </div>
+          <p className="text-[10px] text-gray-500 mt-1">Chance given to employee arriving late before marked late</p>
+        </div>
+        <div>
+          <label className="block text-[11px] text-[#253C7D] mb-1 font-bold">Early Departure Grace (Minutes)</label>
+          <div className="relative">
+            <input
+              type="number"
+              min="0"
+              max="120"
+              value={form.early_leave_grace_minutes}
+              onChange={(e) => setForm({ ...form, early_leave_grace_minutes: e.target.value })}
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#253C7D]"
+              placeholder="15"
+            />
+            <span className="absolute right-3 top-2 text-[10px] text-gray-400">mins grace</span>
+          </div>
+          <p className="text-[10px] text-gray-500 mt-1">Tolerance window before shift end without early violation</p>
         </div>
       </div>
 

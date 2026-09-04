@@ -58,6 +58,8 @@ export function useBranchMutations({
       const geofence_radius_m = form.geofence_radius_m.trim() ? Number(form.geofence_radius_m) : 100;
       const work_start_time = form.work_start_time.trim() || null;
       const work_end_time = form.work_end_time.trim() || null;
+      const late_grace_minutes = form.late_grace_minutes.trim() ? Math.max(0, parseInt(form.late_grace_minutes, 10) || 0) : 15;
+      const early_leave_grace_minutes = form.early_leave_grace_minutes.trim() ? Math.max(0, parseInt(form.early_leave_grace_minutes, 10) || 0) : 15;
       let entityId: string | null = editingBranchId;
 
       if (editingBranchId) {
@@ -73,6 +75,8 @@ export function useBranchMutations({
             geofence_radius_m,
             work_start_time,
             work_end_time,
+            late_grace_minutes,
+            early_leave_grace_minutes,
           })
           .eq("id", editingBranchId);
         if (error) {
@@ -93,6 +97,8 @@ export function useBranchMutations({
             geofence_radius_m,
             work_start_time,
             work_end_time,
+            late_grace_minutes,
+            early_leave_grace_minutes,
           })
           .select("id")
           .single();

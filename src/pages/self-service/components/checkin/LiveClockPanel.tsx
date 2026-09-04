@@ -67,15 +67,29 @@ function ShiftSnapshot(props: Props) {
 
   const hasOutsideToday = todayOutsideWork && todayOutsideWork.work_status !== "checked_out";
 
+  const isBiometricCheckIn = Boolean(
+    todayRecord?.notes?.toLowerCase().includes("zkteco") ||
+    todayRecord?.notes?.toLowerCase().includes("biometric") ||
+    todayRecord?.notes?.toLowerCase().includes("fingerprint")
+  );
+
   return (
-    <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
-      <div className="flex items-center justify-between text-[11px] font-semibold text-white/75 mb-2">
-        <span>Today's Shift</span>
-        <span>{scheduleSettings.timezone?.replace("_", " ") || "Cambodia"}</span>
+    <div className="bg-white/10 backdrop-blur rounded-2xl p-3 sm:p-4 border border-white/15 flex-1 min-w-0">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2">
+          <p className="text-white/80 text-xs font-semibold">Today's Shift</p>
+          {isBiometricCheckIn && (
+            <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 border border-emerald-400/30">
+              <i className="ri-fingerprint-line text-xs" />
+              Biometric Scan
+            </span>
+          )}
+        </div>
+        <p className="text-white/55 text-[11px] truncate">{scheduleSettings.timezone?.replace("_", " ") || "Local"}</p>
       </div>
 
       {shiftProgress !== null && (
-        <div className="relative h-2 rounded-full bg-white/15 overflow-hidden mb-3">
+        <div className="relative h-1.5 rounded-full bg-white/20 overflow-hidden mb-3">
           <div
             className="absolute inset-y-0 left-0 rounded-full bg-white/80 transition-all duration-1000"
             style={{ width: `${shiftProgress}%` }}
@@ -85,7 +99,12 @@ function ShiftSnapshot(props: Props) {
 
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-white/10 backdrop-blur rounded-xl px-3 py-2 border border-white/15">
-          <p className="text-white/55 text-[10px] font-bold uppercase tracking-wider">In</p>
+          <div className="flex items-center justify-between">
+            <p className="text-white/55 text-[10px] font-bold uppercase tracking-wider">In</p>
+            {isBiometricCheckIn && (
+              <i className="ri-fingerprint-line text-emerald-300 text-xs" title="Scanned on Biometric Terminal" />
+            )}
+          </div>
           <p className="text-[15px] font-bold tabular-nums mt-0.5">
             {todayRecord?.clock_in?.slice(0, 5) || (activeOutsideWork?.work_checked_in_at ? new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—")}
           </p>
@@ -134,11 +153,16 @@ function CheckInActions(props: Props) {
   const {
     activeOutsideWork, todayOutsideWork, isCheckedIn, isCheckedOut, checkInStep, checkInMessage, processing,
     notes, setNotes, earlyCheckoutReason, setEarlyCheckoutReason, earlyCheckoutMinutesNow,
-    isEarlyCheckoutNow, branch, branchLoading, todayRecord, onRequestClockIn, onConfirmClockIn, onClockOut, onResetCheckInFlow,
+    isEarlyCheckoutNow, branch, branchLoading, todayRecord, scheduleSettings, onRequestClockIn, onConfirmClockIn, onClockOut, onResetCheckInFlow,
   } = props;
 
   const currentOutsideTask = todayOutsideWork || activeOutsideWork;
   const hasOutsideToday = !!(currentOutsideTask && currentOutsideTask.work_status !== "checked_out");
+  const isBiometricCheckIn = Boolean(
+    todayRecord?.notes?.toLowerCase().includes("zkteco") ||
+    todayRecord?.notes?.toLowerCase().includes("biometric") ||
+    todayRecord?.notes?.toLowerCase().includes("fingerprint")
+  );
 
   return (
     <div className="flex flex-col gap-2 lg:w-72">
@@ -254,6 +278,30 @@ function CheckInActions(props: Props) {
 
       {!hasOutsideToday && isCheckedIn && !isCheckedOut && (
         <div className="space-y-2">
+          {isBiometricCheckIn && (
+            <div className="bg-white/15 border border-emerald-400/30 rounded-xl px-4 py-3 space-y-1.5 backdrop-blur">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-emerald-400/20 text-emerald-300 flex items-center justify-center shrink-0">
+                  <i className="ri-fingerprint-line text-sm" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-white">Checked in via Fingerprint</p>
+                  <p className="text-white/70 text-[10px]">
+                    {todayRecord?.notes || "Terminal scan recorded"}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[11px] text-white/90 leading-snug">
+                Arrival confirmed at <strong className="text-emerald-200 font-bold">{todayRecord?.clock_in?.slice(0, 5)}</strong>
+                {(todayRecord?.late_minutes || 0) <= (scheduleSettings?.lateGraceMinutes ?? 15) ? (
+                  <span className="text-emerald-300 font-semibold ml-1">✓ On Time</span>
+                ) : (
+                  <span className="text-amber-200 font-semibold ml-1">({todayRecord?.late_minutes}m late)</span>
+                )}.
+              </p>
+            </div>
+          )}
+
           {isEarlyCheckoutNow && (
             <div className="space-y-1">
               <div className="bg-amber-400/20 border border-amber-200/40 rounded-xl px-4 py-3">
@@ -279,6 +327,11 @@ function CheckInActions(props: Props) {
             <i className="ri-logout-box-r-line text-lg" />
             {processing ? "Checking out..." : "Check Out"}
           </button>
+          {isBiometricCheckIn && (
+            <p className="text-white/60 text-[10px] text-center">
+              You can also scan your fingerprint on the terminal to check out.
+            </p>
+          )}
         </div>
       )}
 

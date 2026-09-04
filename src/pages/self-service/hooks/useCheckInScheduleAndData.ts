@@ -58,8 +58,36 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
   }, [employeeId, today]);
 
   useEffect(() => {
+    if (!employeeId) return;
     loadRecords();
-  }, [loadRecords]);
+
+    // Polling fallback every 8 seconds so scans by biometric machines immediately appear
+    const pollInterval = setInterval(() => {
+      loadRecords();
+    }, 8000);
+
+    // Supabase Realtime subscription on attendance_records for this employee
+    const channel = supabase
+      .channel(`attendance_emp_${employeeId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "attendance_records",
+          filter: `employee_id=eq.${employeeId}`,
+        },
+        () => {
+          loadRecords();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(pollInterval);
+      supabase.removeChannel(channel);
+    };
+  }, [employeeId, loadRecords]);
 
   useEffect(() => {
     if (!employeeId) return;
@@ -139,8 +167,8 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
         .from("employees")
         .select(`
           branch_id, default_work_location_id,
-          branches(id, name, location, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
-          work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled)
+          branches(id, name, location, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes),
+          work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, late_grace_minutes, early_leave_grace_minutes, is_four_punch_enabled)
         `)
         .eq("id", employeeId)
         .maybeSingle();
@@ -162,6 +190,8 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
           work_end_time: assignedSite.work_end_time || "17:00",
           break_start_time: assignedSite.break_start_time || "11:30",
           break_end_time: assignedSite.break_end_time || "13:00",
+          late_grace_minutes: assignedSite.late_grace_minutes ?? mainBranch?.late_grace_minutes ?? 15,
+          early_leave_grace_minutes: assignedSite.early_leave_grace_minutes ?? mainBranch?.early_leave_grace_minutes ?? 15,
           is_four_punch_enabled: assignedSite.is_four_punch_enabled ?? true,
         });
       } else if (mainBranch) {
@@ -175,6 +205,8 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
           work_end_time: mainBranch.work_end_time || "17:00",
           break_start_time: "12:00",
           break_end_time: "13:00",
+          late_grace_minutes: mainBranch.late_grace_minutes ?? 15,
+          early_leave_grace_minutes: mainBranch.early_leave_grace_minutes ?? 15,
           is_four_punch_enabled: false,
         });
       } else {
@@ -196,6 +228,15 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
   const breakStartTime = branch?.break_start_time ? branch.break_start_time.slice(0, 5) : scheduleSettings.breakStartTime;
   const breakEndTime = branch?.break_end_time ? branch.break_end_time.slice(0, 5) : scheduleSettings.breakEndTime;
 
+  const effectiveLateGraceMinutes = branch?.late_grace_minutes != null ? branch.late_grace_minutes : scheduleSettings.lateGraceMinutes;
+  const effectiveEarlyLeaveGraceMinutes = branch?.early_leave_grace_minutes != null ? branch.early_leave_grace_minutes : scheduleSettings.earlyLeaveGraceMinutes;
+
+  const effectiveScheduleSettings = useMemo(() => ({
+    ...scheduleSettings,
+    lateGraceMinutes: effectiveLateGraceMinutes,
+    earlyLeaveGraceMinutes: effectiveEarlyLeaveGraceMinutes,
+  }), [scheduleSettings, effectiveLateGraceMinutes, effectiveEarlyLeaveGraceMinutes]);
+
   return {
     records,
     todayRecord,
@@ -203,7 +244,7 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
     currentTime,
     branch,
     branchLoading,
-    scheduleSettings,
+    scheduleSettings: effectiveScheduleSettings,
     activeOutsideWork,
     todayOutsideWork,
     assignedShift,

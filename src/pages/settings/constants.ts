@@ -61,6 +61,7 @@ export const EVENT_LABELS = [
 ];
 
 export const ATTENDANCE_SCHEDULE_KEYS = [
+  "work_start_time",
   "work_end_time",
   "break_start_time",
   "break_end_time",

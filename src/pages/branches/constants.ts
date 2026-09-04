@@ -25,4 +25,6 @@ export const INITIAL_BRANCH_FORM: BranchFormState = {
   geofence_radius_m: "100",
   work_start_time: "",
   work_end_time: "",
+  late_grace_minutes: "15",
+  early_leave_grace_minutes: "15",
 };

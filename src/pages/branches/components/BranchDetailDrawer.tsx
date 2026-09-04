@@ -151,6 +151,65 @@ function BranchDetailDrawerInner({
         )}
       </div>
 
+      {/* Schedule & Grace Policy Section */}
+      <div className="p-5 border-b border-gray-100 bg-gray-50/50">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <i className="ri-time-line text-[#253C7D] text-sm" />
+            <h3 className="text-[12px] font-bold text-gray-700 uppercase tracking-wider">
+              Schedule & Grace Policy
+            </h3>
+          </div>
+          {canManageThisBranch && (
+            <button
+              onClick={() => onOpenEditModal(branch)}
+              className="text-[11px] font-bold text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer bg-white px-2 py-1 rounded-md border border-gray-200 shadow-2xs"
+              title="Adjust check-in/out and grace minutes"
+            >
+              <i className="ri-edit-line text-xs" />
+              Adjust
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="bg-white p-3 rounded-xl border border-gray-200/80 shadow-2xs">
+            <div className="flex items-center gap-1.5 text-[#253C7D] mb-1">
+              <i className="ri-login-circle-line text-xs" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Check-In</span>
+            </div>
+            <p className="text-sm font-bold text-gray-900">
+              {branch.work_start_time ? branch.work_start_time.slice(0, 5) : "08:00"}
+            </p>
+            <p className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+              <i className="ri-shield-check-line text-xs shrink-0" />
+              <span>+{branch.late_grace_minutes ?? 15}m late chance</span>
+            </p>
+          </div>
+
+          <div className="bg-white p-3 rounded-xl border border-gray-200/80 shadow-2xs">
+            <div className="flex items-center gap-1.5 text-[#253C7D] mb-1">
+              <i className="ri-logout-circle-line text-xs" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Check-Out</span>
+            </div>
+            <p className="text-sm font-bold text-gray-900">
+              {branch.work_end_time ? branch.work_end_time.slice(0, 5) : "17:00"}
+            </p>
+            <p className="text-[11px] text-indigo-600 font-semibold mt-1 flex items-center gap-1">
+              <i className="ri-timer-line text-xs shrink-0" />
+              <span>{branch.early_leave_grace_minutes ?? 15}m early grace</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-2.5 text-[11px] text-gray-500 bg-white/80 p-2.5 rounded-lg border border-gray-100 flex items-start gap-1.5">
+          <i className="ri-information-line text-[#253C7D] text-xs mt-0.5 shrink-0" />
+          <span>
+            Employees arriving within <strong className="text-gray-700 font-semibold">{branch.late_grace_minutes ?? 15} mins</strong> after check-in are granted a chance and marked On Time.
+          </span>
+        </div>
+      </div>
+
       {/* Work Sites Subcomponent */}
       <BranchWorkSitesSection branchId={branch.id} canManage={canManageThisBranch} />
 

@@ -11,6 +11,8 @@ export interface Branch {
   geofence_radius_m: number | null;
   work_start_time: string | null;
   work_end_time: string | null;
+  late_grace_minutes: number | null;
+  early_leave_grace_minutes: number | null;
   deleted_at: string | null;
   deleted_by: string | null;
 }
@@ -37,6 +39,8 @@ export interface BranchFormState {
   geofence_radius_m: string;
   work_start_time: string;
   work_end_time: string;
+  late_grace_minutes: string;
+  early_leave_grace_minutes: string;
 }
 
 export interface WorkSite {
@@ -52,6 +56,8 @@ export interface WorkSite {
   work_end_time: string | null;
   break_start_time: string | null;
   break_end_time: string | null;
+  late_grace_minutes: number | null;
+  early_leave_grace_minutes: number | null;
   is_four_punch_enabled: boolean;
 }
 
@@ -65,6 +71,8 @@ export interface WorkSiteFormState {
   work_end_time: string;
   break_start_time: string;
   break_end_time: string;
+  late_grace_minutes: string;
+  early_leave_grace_minutes: string;
   is_four_punch_enabled: boolean;
 }
 

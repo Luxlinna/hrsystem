@@ -31,6 +31,8 @@ export const WorkSiteModal = memo(function WorkSiteModal({
     work_end_time: "17:00",
     break_start_time: "11:30",
     break_end_time: "13:00",
+    late_grace_minutes: "15",
+    early_leave_grace_minutes: "15",
     is_four_punch_enabled: true,
   });
 
@@ -56,6 +58,8 @@ export const WorkSiteModal = memo(function WorkSiteModal({
         work_end_time: editingSite.work_end_time?.slice(0, 5) || "17:00",
         break_start_time: editingSite.break_start_time?.slice(0, 5) || "11:30",
         break_end_time: editingSite.break_end_time?.slice(0, 5) || "13:00",
+        late_grace_minutes: editingSite.late_grace_minutes != null ? String(editingSite.late_grace_minutes) : "15",
+        early_leave_grace_minutes: editingSite.early_leave_grace_minutes != null ? String(editingSite.early_leave_grace_minutes) : "15",
         is_four_punch_enabled: editingSite.is_four_punch_enabled ?? true,
       });
       setAddressLookup(editingSite.description || "");
@@ -70,6 +74,8 @@ export const WorkSiteModal = memo(function WorkSiteModal({
         work_end_time: "17:00",
         break_start_time: "11:30",
         break_end_time: "13:00",
+        late_grace_minutes: "15",
+        early_leave_grace_minutes: "15",
         is_four_punch_enabled: true,
       });
       setAddressLookup("");

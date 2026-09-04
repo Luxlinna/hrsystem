@@ -13,6 +13,7 @@ interface UseClockInOutActionsProps {
   branch: BranchGeofence | null;
   scheduleSettings: {
     timezone: string;
+    lateGraceMinutes: number;
     earlyLeaveGraceMinutes: number;
     breakStartTime: string;
     breakEndTime: string;
@@ -67,7 +68,9 @@ export function useClockInOutActions({
     const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
     const [startH, startM] = workStartTime.split(":").map(Number);
     const lateMinutes = Math.max(0, nowZ.minutesOfDay - (startH * 60 + startM));
-    const status = lateMinutes > 0 ? "late" : "ontime";
+    const effectiveLateGrace = branch?.late_grace_minutes ?? scheduleSettings.lateGraceMinutes ?? 15;
+    const isLate = lateMinutes > effectiveLateGrace;
+    const status = isLate ? "late" : "ontime";
 
     const { error } = await supabase.from("attendance_records").upsert(
       {
@@ -87,9 +90,14 @@ export function useClockInOutActions({
     if (error) {
       showToast("error", "Failed to check in. Please try again.");
     } else {
+      const lateMessage = isLate
+        ? ` — ${lateMinutes} min late`
+        : lateMinutes > 0
+        ? ` — On time (${lateMinutes}m within grace chance)`
+        : " — On time!";
       showToast(
         "success",
-        `Checked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMinutes > 0 ? ` — ${lateMinutes} min late` : " — On time!"}`
+        `Checked in at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${lateMessage}`
       );
       setNotes("");
       setEarlyCheckoutReason("");
@@ -98,14 +106,14 @@ export function useClockInOutActions({
         employeeName,
         employeeId,
         type: "in",
-        isException: lateMinutes > 0,
-        exceptionMinutes: lateMinutes,
+        isException: isLate,
+        exceptionMinutes: isLate ? lateMinutes : 0,
         date: today,
         time: timeStr,
         branchName: branch?.name,
       });
     }
-  }, [todayOutsideWork, daySchedule, scheduleSettings.timezone, workStartTime, employeeId, today, notes, defaultWorkLocationId, resetCheckInFlow, showToast, setNotes, setEarlyCheckoutReason, loadRecords, employeeName, branch?.name]);
+  }, [todayOutsideWork, daySchedule, scheduleSettings, workStartTime, employeeId, today, notes, defaultWorkLocationId, resetCheckInFlow, showToast, setNotes, setEarlyCheckoutReason, loadRecords, employeeName, branch]);
 
   const handleClockOut = useCallback(async () => {
     if (todayOutsideWork && todayOutsideWork.work_status !== "checked_out") {
@@ -136,7 +144,9 @@ export function useClockInOutActions({
       earlyLeaveMinutes = Math.max(0, defaultEndMin - nowZ.minutesOfDay);
     }
 
-    const requiresReason = earlyLeaveMinutes > 0;
+    const effectiveEarlyGrace = branch?.early_leave_grace_minutes ?? scheduleSettings.earlyLeaveGraceMinutes ?? 15;
+    const isEarlyLeave = earlyLeaveMinutes > effectiveEarlyGrace;
+    const requiresReason = isEarlyLeave;
     if (requiresReason && !earlyCheckoutReason.trim()) {
       showToast("error", "Please enter a reason before checking out early.");
       return;
@@ -157,21 +167,21 @@ export function useClockInOutActions({
       showToast("error", "Failed to check out. Please try again.");
     } else {
       const hrs = hoursWorked ? `${Math.floor(hoursWorked)}h ${Math.round((hoursWorked % 1) * 60)}m worked` : "";
-      const earlyNote = earlyLeaveMinutes > 0 ? ` — ${earlyLeaveMinutes} min early` : "";
+      const earlyNote = isEarlyLeave ? ` — ${earlyLeaveMinutes} min early` : "";
       showToast("success", `Checked out at ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${hrs ? ` — ${hrs}` : ""}${earlyNote}`);
       loadRecords();
       notifyAttendanceEvent({
         employeeName,
         employeeId,
         type: "out",
-        isException: earlyLeaveMinutes > 0,
-        exceptionMinutes: earlyLeaveMinutes,
+        isException: isEarlyLeave,
+        exceptionMinutes: isEarlyLeave ? earlyLeaveMinutes : 0,
         date: today,
         time: timeStr,
         branchName: branch?.name,
       });
     }
-  }, [todayOutsideWork, todayRecord, scheduleSettings, today, workEndTime, earlyCheckoutReason, showToast, loadRecords, employeeName, employeeId, branch?.name, branch?.break_start_time, branch?.break_end_time]);
+  }, [todayOutsideWork, todayRecord, scheduleSettings, today, workEndTime, earlyCheckoutReason, showToast, loadRecords, employeeName, employeeId, branch]);
 
   return {
     processing,

@@ -102,8 +102,8 @@ export function AttendanceScheduleCard({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {ATTENDANCE_SCHEDULE_KEYS.map((key) => {
-            const isSiteEditable = ["work_end_time", "break_start_time", "break_end_time"].includes(key);
-            const isBranchEditable = ["work_end_time"].includes(key);
+            const isSiteEditable = ["work_start_time", "work_end_time", "break_start_time", "break_end_time", "late_grace_minutes", "early_leave_grace_minutes"].includes(key);
+            const isBranchEditable = ["work_start_time", "work_end_time", "late_grace_minutes", "early_leave_grace_minutes"].includes(key);
             const isCustomField = isSiteOrBranch && (currentBranchOrSite.is_site ? isSiteEditable : isBranchEditable);
 
             return (
@@ -114,7 +114,7 @@ export function AttendanceScheduleCard({
                   </label>
                   {isCustomField && (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-[#253C7D]">
-                      Site Custom
+                      {currentBranchOrSite.is_site ? "Site Custom" : "Branch Custom"}
                     </span>
                   )}
                   {isSiteOrBranch && !isCustomField && (

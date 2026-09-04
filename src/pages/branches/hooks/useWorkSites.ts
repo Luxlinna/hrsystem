@@ -1,23 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import type { WorkSiteFormState } from "../types";
-
-export interface WorkSite {
-  id: string;
-  branch_id: string;
-  name: string;
-  description: string | null;
-  is_default: boolean;
-  latitude: number | null;
-  longitude: number | null;
-  geofence_radius_m: number;
-  work_start_time: string | null;
-  work_end_time: string | null;
-  break_start_time: string | null;
-  break_end_time: string | null;
-  is_four_punch_enabled: boolean;
-}
+import type { WorkSite, WorkSiteFormState } from "../types";
+export type { WorkSite };
 
 export function useWorkSites(branchId: string) {
   const [sites, setSites] = useState<WorkSite[]>([]);
@@ -34,6 +19,7 @@ export function useWorkSites(branchId: string) {
         id, branch_id, name, description, is_default,
         latitude, longitude, geofence_radius_m,
         work_start_time, work_end_time, break_start_time, break_end_time,
+        late_grace_minutes, early_leave_grace_minutes,
         is_four_punch_enabled
       `)
       .eq("branch_id", branchId)
@@ -89,6 +75,8 @@ export function useWorkSites(branchId: string) {
       work_end_time: formatTimeSeconds(formData.work_end_time, "17:00:00"),
       break_start_time: formatTimeSeconds(formData.break_start_time, "11:30:00"),
       break_end_time: formatTimeSeconds(formData.break_end_time, "13:00:00"),
+      late_grace_minutes: formData.late_grace_minutes?.trim() ? parseInt(formData.late_grace_minutes, 10) || 15 : 15,
+      early_leave_grace_minutes: formData.early_leave_grace_minutes?.trim() ? parseInt(formData.early_leave_grace_minutes, 10) || 15 : 15,
       is_four_punch_enabled: formData.is_four_punch_enabled,
     };
 

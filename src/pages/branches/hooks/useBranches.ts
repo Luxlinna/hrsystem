@@ -83,6 +83,8 @@ export function useBranches() {
       geofence_radius_m: branch.geofence_radius_m != null ? String(branch.geofence_radius_m) : "100",
       work_start_time: branch.work_start_time || "",
       work_end_time: branch.work_end_time || "",
+      late_grace_minutes: branch.late_grace_minutes != null ? String(branch.late_grace_minutes) : "15",
+      early_leave_grace_minutes: branch.early_leave_grace_minutes != null ? String(branch.early_leave_grace_minutes) : "15",
     });
     location.setAddressLookup(branch.location || "");
     setShowAddModal(true);

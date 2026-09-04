@@ -77,6 +77,12 @@ export function useSettings() {
         if (key === "break_end_time" && currentBranchOrSite.break_end_time) {
           return currentBranchOrSite.break_end_time.slice(0, 5);
         }
+        if (key === "late_grace_minutes" && currentBranchOrSite.late_grace_minutes != null) {
+          return String(currentBranchOrSite.late_grace_minutes);
+        }
+        if (key === "early_leave_grace_minutes" && currentBranchOrSite.early_leave_grace_minutes != null) {
+          return String(currentBranchOrSite.early_leave_grace_minutes);
+        }
         if (key === "is_four_punch_enabled" && currentBranchOrSite.is_four_punch_enabled !== undefined) {
           return String(currentBranchOrSite.is_four_punch_enabled);
         }
@@ -110,13 +116,23 @@ export function useSettings() {
       const isSiteScope = currentBranchOrSite?.is_site && settingsScope.startsWith("site:");
       const isBranchScope = currentBranchOrSite && !currentBranchOrSite.is_site && settingsScope !== "all";
 
-      const scheduleKeys = ["work_start_time", "work_end_time", "break_start_time", "break_end_time", "is_four_punch_enabled"];
+      const scheduleKeys = [
+        "work_start_time",
+        "work_end_time",
+        "break_start_time",
+        "break_end_time",
+        "late_grace_minutes",
+        "early_leave_grace_minutes",
+        "is_four_punch_enabled",
+      ];
 
       if (isSiteScope && scheduleKeys.includes(key)) {
         const siteId = settingsScope.substring(5);
         const updatePayload: Record<string, any> = {};
         if (key === "is_four_punch_enabled") {
           updatePayload.is_four_punch_enabled = val === "true";
+        } else if (key === "late_grace_minutes" || key === "early_leave_grace_minutes") {
+          updatePayload[key] = parseInt(val, 10) || 15;
         } else {
           updatePayload[key] = formatTimeSeconds(val);
         }
@@ -142,10 +158,21 @@ export function useSettings() {
         return;
       }
 
-      if (isBranchScope && (key === "work_start_time" || key === "work_end_time")) {
+      if (
+        isBranchScope &&
+        (key === "work_start_time" ||
+          key === "work_end_time" ||
+          key === "late_grace_minutes" ||
+          key === "early_leave_grace_minutes")
+      ) {
+        const updateVal =
+          key === "late_grace_minutes" || key === "early_leave_grace_minutes"
+            ? parseInt(val, 10) || 15
+            : formatTimeSeconds(val);
+
         const { error } = await supabase
           .from("branches")
-          .update({ [key]: formatTimeSeconds(val) })
+          .update({ [key]: updateVal })
           .eq("id", settingsScope);
 
         setSaving(false);
