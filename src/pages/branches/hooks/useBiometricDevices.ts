@@ -105,18 +105,18 @@ export function useBiometricDevices(branchId: string) {
 
     setSyncingDevice(dev.id);
     try {
-      // 1. Fetch active employees in THIS branch ONLY (excluding deleted employees)
+      // 1. Fetch employees in THIS branch ONLY (excluding deleted & terminated employees)
       let query = supabase
         .from("employees")
         .select("id, first_name, last_name, biometric_user_id, status, default_work_location_id")
         .eq("branch_id", branchId)
-        .eq("status", "active")
+        .in("status", ["active", "onboarding", "probation"])
         .is("deleted_at", null);
 
       // If this specific machine is assigned to a specific work site in this branch,
-      // sync only employees assigned to that work site (or general branch staff)
+      // sync only employees assigned to that work site
       if (dev.work_location_id) {
-        query = query.or(`default_work_location_id.eq.${dev.work_location_id},default_work_location_id.is.null`);
+        query = query.eq("default_work_location_id", dev.work_location_id);
       }
 
       const { data: emps, error: empErr } = await query;
@@ -183,7 +183,7 @@ export function useBiometricDevices(branchId: string) {
 
         toast(
           "Sync Queued!",
-          `Queued ${emps.length} active employees for ${dev.device_name}. Machine will download them automatically.`,
+          `Queued ${emps.length} employees for ${dev.device_name}. Machine will download them automatically.`,
           "success"
         );
       }
