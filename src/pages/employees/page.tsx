@@ -8,6 +8,7 @@ import { EmployeesGridView } from "./components/EmployeesGridView";
 import { EmployeeWorkSitePills } from "./components/EmployeeWorkSitePills";
 import { Pagination } from "./components/Pagination";
 import { AddEmployeeModal } from "./components/AddEmployeeModal";
+import { SetUpPhoneAccountModal } from "./components/SetUpPhoneAccountModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useEmployees } from "./hooks/useEmployees";
 import { INITIAL_EMPLOYEE_FORM } from "./constants";
@@ -25,7 +26,8 @@ export default function EmployeesPage() {
     setViewMode, depts, branchCount, managers, stats, filtered, empTotalPages,
     empPageStart, empPageEnd, pagedEmployees, tableGridStyle, handleSort, handleSelectAll,
     handleSelectOne, bulkInvite, bulkDelete, handleExportCSV, handleAddEmployee,
-    inviteUser, deleteEmployee,
+    inviteUser, phoneAccountEmployee, setPhoneAccountEmployee, setUpPhoneUser,
+    deleteEmployee, roles,
   } = useEmployees();
 
   const handleOpenAddModal = useCallback(() => {
@@ -136,6 +138,7 @@ export default function EmployeesPage() {
             onSelectOne={handleSelectOne}
             onSort={handleSort}
             onInvite={handleInviteEmployee}
+            onSetUpPhoneAccount={setPhoneAccountEmployee}
             onDelete={deleteEmployee}
           />
         ) : (
@@ -146,8 +149,11 @@ export default function EmployeesPage() {
             selectedIds={selectedIds}
             visibleColumns={visibleColumns}
             canManage={canManage}
+            invitingId={invitingId}
             deletingId={deletingId}
             onSelectOne={handleSelectOne}
+            onInvite={handleInviteEmployee}
+            onSetUpPhoneAccount={setPhoneAccountEmployee}
             onDelete={deleteEmployee}
           />
         )}
@@ -184,6 +190,14 @@ export default function EmployeesPage() {
         isSuperAdmin={isSuperAdmin}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddEmployee}
+      />
+
+      <SetUpPhoneAccountModal
+        employee={phoneAccountEmployee}
+        roles={roles}
+        isOpen={Boolean(phoneAccountEmployee)}
+        onClose={() => setPhoneAccountEmployee(null)}
+        onSubmit={setUpPhoneUser}
       />
     </div>
   );

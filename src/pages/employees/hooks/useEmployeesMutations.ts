@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
-import { sendUserInvite } from "@/pages/admin/api";
+import { sendUserInvite, createPhoneUserAccount } from "@/pages/admin/api";
 import { INITIAL_EMPLOYEE_FORM } from "../constants";
 import type { Employee, EmployeeFormState, AppRole } from "../types";
 
@@ -23,6 +23,7 @@ export function useEmployeesMutations({
   loadEmployees,
 }: UseEmployeesMutationsProps) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [phoneAccountEmployee, setPhoneAccountEmployee] = useState<Employee | null>(null);
   const [form, setForm] = useState<EmployeeFormState>(INITIAL_EMPLOYEE_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [invitingId, setInvitingId] = useState<string | null>(null);
@@ -71,6 +72,49 @@ export function useEmployeesMutations({
       }
     },
     [roles, actorName, roleName, loadEmployees]
+  );
+
+  const setUpPhoneUser = useCallback(
+    async (data: {
+      employeeId: string;
+      phone: string;
+      password: string;
+      displayName: string;
+      roleId?: string | number | null;
+    }) => {
+      try {
+        const { res, result } = await createPhoneUserAccount({
+          employeeId: data.employeeId,
+          phone: data.phone,
+          password: data.password,
+          displayName: data.displayName,
+          roleId: data.roleId || null,
+        });
+
+        if (!res.ok || result.error) {
+          const detailMsg = [result.error, result.detail].filter(Boolean).join(" — ");
+          toast("Setup Failed", detailMsg || "Could not set up phone account.", "error");
+          return false;
+        }
+
+        toast("Account Created", `Account successfully created for ${data.displayName}`, "success");
+        await logActivity({
+          module: "employees",
+          action: "created",
+          entityType: "employee",
+          entityId: data.employeeId,
+          actorName,
+          actorRole: roleName,
+          description: `Set up phone account and password for ${data.displayName} (${data.phone})`,
+        });
+        loadEmployees();
+        return true;
+      } catch (err: any) {
+        toast("Error", err.message || "Failed to set up account.", "error");
+        return false;
+      }
+    },
+    [actorName, roleName, loadEmployees]
   );
 
   const handleAddEmployee = useCallback(
@@ -203,6 +247,8 @@ export function useEmployeesMutations({
   return {
     showAddModal,
     setShowAddModal,
+    phoneAccountEmployee,
+    setPhoneAccountEmployee,
     form,
     setForm,
     submitting,
@@ -210,6 +256,7 @@ export function useEmployeesMutations({
     deletingId,
     handleAddEmployee,
     inviteUser,
+    setUpPhoneUser,
     deleteEmployee,
   };
 }

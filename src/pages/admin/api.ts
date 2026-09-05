@@ -119,6 +119,32 @@ export async function sendUserInvite(payload: {
   return { res, result: await readFunctionJson(res) };
 }
 
+export async function createPhoneUserAccount(payload: {
+  employeeId?: string;
+  phone: string;
+  password: string;
+  displayName: string;
+  roleId?: string | number | null;
+}) {
+  const accessToken = await getFreshAccessToken();
+  const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/create-phone-user`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+      "apikey": import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      employee_id: payload.employeeId || null,
+      phone: payload.phone,
+      password: payload.password,
+      display_name: payload.displayName,
+      role_id: payload.roleId || null,
+    }),
+  });
+  return { res, result: await readFunctionJson(res) };
+}
+
 export async function handlePasswordResetEdgeAction(requestId: string, action: "approve" | "reject") {
   const accessToken = await getFreshAccessToken();
   if (!accessToken) throw new Error("Not authenticated");

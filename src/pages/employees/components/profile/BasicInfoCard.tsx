@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { Employee, ReportEntry } from "../../types";
+import { isPhoneSyntheticEmail } from "@/lib/phoneUtils";
 
 interface BasicInfoCardProps {
   employee: Employee;
@@ -79,14 +80,20 @@ export const BasicInfoCard = memo(function BasicInfoCard({
           {editing ? (
             <input
               type="email"
-              value={form.email || ""}
-              placeholder="Optional (Biometric only)"
+              value={isPhoneSyntheticEmail(form.email) ? "" : form.email || ""}
+              placeholder="Email address (or leave empty if using phone)"
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
             />
           ) : (
             <p className="text-[14px] text-gray-900">
-              {employee.email || <span className="text-gray-400 italic text-xs">No email (Biometric only)</span>}
+              {employee.email && !isPhoneSyntheticEmail(employee.email) ? (
+                employee.email
+              ) : employee.phone ? (
+                <span className="text-gray-500 italic text-xs">Uses phone number for login</span>
+              ) : (
+                <span className="text-gray-400 italic text-xs">No email (Biometric only)</span>
+              )}
             </p>
           )}
         </div>

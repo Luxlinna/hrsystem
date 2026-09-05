@@ -19,6 +19,7 @@ interface EmployeesTableViewProps {
   onSelectOne: (id: string) => void;
   onSort: (field: SortField) => void;
   onInvite: (e: Employee) => void;
+  onSetUpPhoneAccount?: (e: Employee) => void;
   onDelete: (e: Employee) => void;
 }
 
@@ -39,6 +40,7 @@ export const EmployeesTableView = memo(function EmployeesTableView({
   onSelectOne,
   onSort,
   onInvite,
+  onSetUpPhoneAccount,
   onDelete,
 }: EmployeesTableViewProps) {
   return (
@@ -115,23 +117,31 @@ export const EmployeesTableView = memo(function EmployeesTableView({
       </div>
 
       {/* Table Rows */}
-      {employees.map((e) => (
-        <EmployeesTableRow
-          key={e.id}
-          employee={e}
-          accountStatus={accountStatus[e.email]}
-          biometricDevices={biometricDevices}
-          isSelected={selectedIds.has(e.id)}
-          visibleColumns={visibleColumns}
-          canManage={canManage}
-          invitingId={invitingId}
-          deletingId={deletingId}
-          tableGridStyle={tableGridStyle}
-          onSelectOne={onSelectOne}
-          onInvite={onInvite}
-          onDelete={onDelete}
-        />
-      ))}
+      {employees.map((e) => {
+        const empStatus =
+          (e.email && accountStatus[e.email.toLowerCase()]) ||
+          (e.phone && accountStatus[e.phone]) ||
+          undefined;
+
+        return (
+          <EmployeesTableRow
+            key={e.id}
+            employee={e}
+            accountStatus={empStatus}
+            biometricDevices={biometricDevices}
+            isSelected={selectedIds.has(e.id)}
+            visibleColumns={visibleColumns}
+            canManage={canManage}
+            invitingId={invitingId}
+            deletingId={deletingId}
+            tableGridStyle={tableGridStyle}
+            onSelectOne={onSelectOne}
+            onInvite={onInvite}
+            onSetUpPhoneAccount={onSetUpPhoneAccount}
+            onDelete={onDelete}
+          />
+        );
+      })}
     </>
   );
 });

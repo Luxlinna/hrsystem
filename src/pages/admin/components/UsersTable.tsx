@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { AppRole, UserAssignment } from "../types";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 
 interface UsersTableProps {
   displayedUsers: UserAssignment[];
@@ -74,7 +75,16 @@ export const UsersTable = memo(function UsersTable({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
+                <p className="text-xs text-gray-400 truncate mt-0.5">
+                  {isPhoneSyntheticEmail(user.email) ? (
+                    <span className="inline-flex items-center gap-1 text-gray-600 font-medium">
+                      <i className="ri-phone-line text-gray-400 text-[11px]" />
+                      {syntheticEmailToPhone(user.email)}
+                    </span>
+                  ) : (
+                    user.email
+                  )}
+                </p>
               </div>
               <div className="flex items-center gap-2.5 flex-wrap">
                 {canModifyUser ? (
@@ -83,23 +93,26 @@ export const UsersTable = memo(function UsersTable({
                     onChange={(e) => onUpdateUserRole(user, e.target.value ? parseInt(e.target.value) : null)}
                     className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
                   >
-                    <option value="">No role (no access)</option>
-                    {assignableRoles.map((r) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
+                    <option value="">No Role</option>
+                    {assignableRoles.map((role) => (
+                      <option key={role.id} value={role.id}>{role.name}</option>
                     ))}
                   </select>
                 ) : (
-                  <span className="text-xs text-gray-500 font-medium px-2 py-1 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-xs font-medium text-gray-500 px-3 py-1.5 bg-gray-100 rounded-lg">
                     {user.app_roles?.name || "Super Admin"}
                   </span>
                 )}
-                {user.app_roles && (
-                  <span
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white shrink-0 shadow-2xs"
-                    style={{ backgroundColor: user.app_roles.color }}
+
+                {canModifyUser && !isPhoneSyntheticEmail(user.email) && (
+                  <button
+                    onClick={() => onResendInvite(user)}
+                    disabled={invitingUserId === user.id}
+                    title={isUnconfirmed ? "Resend invitation email" : "User already confirmed their account"}
+                    className="p-1.5 text-gray-400 hover:text-[#253C7D] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {user.app_roles.name}
-                  </span>
+                    <i className={`ri-${invitingUserId === user.id ? "loader-4-line animate-spin" : isUnconfirmed ? "mail-send-line" : "mail-check-line"} text-base`} />
+                  </button>
                 )}
                 {user.user_id && isUnconfirmed && (
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0 whitespace-nowrap">

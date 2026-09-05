@@ -45,7 +45,7 @@ export function useLogin() {
         navigate("/");
       }
     } catch (err: any) {
-      setError(err.message || "Invalid email or password");
+      setError(err.message || "Invalid email, phone number, or password");
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,7 @@ import type { User } from "@supabase/supabase-js";
 import { supabase, markSessionAlive } from "@/lib/supabase";
 import type { AuthContextType } from "./authTypes";
 import { checkDeviceRemembered, setDeviceRemembered, clearDeviceRemembered } from "./authTypes";
+import { isPhoneIdentifier, isPhoneSyntheticEmail, phoneToSyntheticEmail } from "@/lib/phoneUtils";
 
 export type { AuthContextType };
 
@@ -37,16 +38,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
       setLoading(false);
-      if (data.session?.access_token) {
-        supabase.realtime.setAuth(data.session.access_token);
-        markSessionAlive();
-      }
+      supabase.realtime.setAuth(session?.access_token ?? null);
+      if (session) markSessionAlive();
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
       supabase.realtime.setAuth(session?.access_token ?? null);
@@ -74,17 +75,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data?.error) throw new Error(data.error);
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ otpRequired: boolean }> => {
-    if (checkDeviceRemembered(email)) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+  const login = async (identifier: string, password: string): Promise<{ otpRequired: boolean }> => {
+    const raw = (identifier || "").trim();
+    const isPhone = isPhoneIdentifier(raw) || isPhoneSyntheticEmail(raw);
+    const resolvedEmail = isPhone
+      ? (isPhoneSyntheticEmail(raw) ? raw.toLowerCase() : phoneToSyntheticEmail(raw))
+      : raw.toLowerCase();
+
+    if (isPhone || checkDeviceRemembered(resolvedEmail)) {
+      const { error } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
+      if (error) {
+        if (isPhone && (error.message.includes("Invalid login credentials") || error.status === 400)) {
+          throw new Error("Invalid phone number or password");
+        }
+        throw error;
+      }
+      setDeviceRemembered(resolvedEmail);
       return { otpRequired: false };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
     if (error) throw error;
 
-    await sendOTP(email);
+    await sendOTP(resolvedEmail);
     await supabase.auth.signOut();
     return { otpRequired: true };
   };

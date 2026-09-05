@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { phoneToSyntheticEmail, isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 import type { Employee, Branch, AppRole, AccountStatus, BiometricDeviceRef } from "../types";
 
 interface UseEmployeesDataProps {
@@ -110,25 +111,37 @@ export function useEmployeesData({
   }, [loadEmployees, isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
-    const emails = employees.map((e) => e.email?.trim().toLowerCase()).filter(Boolean);
-    if (emails.length === 0) {
+    const identifiers = employees
+      .flatMap((e) => [
+        e.email?.trim().toLowerCase(),
+        e.phone ? phoneToSyntheticEmail(e.phone) : null,
+      ])
+      .filter(Boolean) as string[];
+
+    if (identifiers.length === 0) {
       setAccountStatus({});
       return;
     }
     supabase
       .from("user_role_assignments")
       .select("email, user_id, role_id")
-      .in("email", emails)
+      .in("email", identifiers)
       .is("deleted_at", null)
       .not("role_id", "is", null)
       .then(({ data }) => {
         const statusMap: Record<string, AccountStatus> = {};
         (data || []).forEach((row: any) => {
           if (row.email) {
-            statusMap[row.email.toLowerCase()] = {
+            const key = row.email.toLowerCase();
+            const status: AccountStatus = {
               invited: true,
               hasAccount: Boolean(row.user_id),
             };
+            statusMap[key] = status;
+            if (isPhoneSyntheticEmail(key)) {
+              const rawPhone = syntheticEmailToPhone(key);
+              statusMap[rawPhone] = status;
+            }
           }
         });
         setAccountStatus(statusMap);

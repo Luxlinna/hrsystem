@@ -129,6 +129,10 @@ export function useEmployees() {
     handleExportCSV: filters.handleExportCSV,
     handleAddEmployee: mutations.handleAddEmployee,
     inviteUser: mutations.inviteUser,
+    phoneAccountEmployee: mutations.phoneAccountEmployee,
+    setPhoneAccountEmployee: mutations.setPhoneAccountEmployee,
+    setUpPhoneUser: mutations.setUpPhoneUser,
     deleteEmployee: mutations.deleteEmployee,
+    roles: data.roles,
   };
 }

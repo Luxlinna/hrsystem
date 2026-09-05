@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import { Link } from "react-router-dom";
+import { isPhoneIdentifier } from "@/lib/phoneUtils";
 
 interface PasswordLoginFormProps {
   email: string;
@@ -22,19 +23,28 @@ export const PasswordLoginForm = memo(function PasswordLoginForm({
   loading,
   onSubmit,
 }: PasswordLoginFormProps) {
+  const isPhone = isPhoneIdentifier(email);
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Email</label>
+        <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
+          Email or Phone Number
+        </label>
         <div className="relative">
-          <i className="ri-mail-line absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-gray-400 pointer-events-none" />
+          <i
+            className={`absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-gray-400 pointer-events-none ${
+              isPhone ? "ri-phone-line" : "ri-mail-line"
+            }`}
+          />
           <input
-            type="email"
+            type="text"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
-            placeholder="admin@hrmops.com"
+            placeholder="admin@hrmops.com or 012 345 678"
+            autoComplete="username"
           />
         </div>
       </div>
@@ -55,6 +65,7 @@ export const PasswordLoginForm = memo(function PasswordLoginForm({
             onChange={(e) => setPassword(e.target.value)}
             className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-gray-200 text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]/20 transition-all"
             placeholder="Enter your password"
+            autoComplete="current-password"
           />
           <button
             type="button"

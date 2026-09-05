@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { Employee, AccountStatus, VisibleColumns, BiometricDeviceRef } from "../types";
 import { isEmployeeBiometricEligible } from "../types";
 import { getStatusMeta } from "../constants";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 
 interface EmployeesGridViewProps {
   employees: Employee[];
@@ -11,8 +12,11 @@ interface EmployeesGridViewProps {
   selectedIds: Set<string>;
   visibleColumns: VisibleColumns;
   canManage: boolean;
+  invitingId?: string | null;
   deletingId: string | null;
   onSelectOne: (id: string) => void;
+  onInvite?: (e: Employee) => void;
+  onSetUpPhoneAccount?: (e: Employee) => void;
   onDelete: (e: Employee) => void;
 }
 
@@ -23,18 +27,28 @@ export const EmployeesGridView = memo(function EmployeesGridView({
   selectedIds,
   visibleColumns,
   canManage,
+  invitingId,
   deletingId,
   onSelectOne,
+  onInvite,
+  onSetUpPhoneAccount,
   onDelete,
 }: EmployeesGridViewProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
       {employees.map((e) => {
-        const acc = accountStatus[e.email];
+        const acc =
+          (e.email && accountStatus[e.email.toLowerCase()]) ||
+          (e.phone && accountStatus[e.phone]) ||
+          undefined;
         const isInvited = acc?.invited;
         const hasAccount = acc?.hasAccount;
         const isSelected = selectedIds.has(e.id);
         const isBiometricEligible = isEmployeeBiometricEligible(e, biometricDevices);
+        const hasRealEmail = Boolean(e.email && !isPhoneSyntheticEmail(e.email));
+        const effectivePhone = e.phone || (e.email && isPhoneSyntheticEmail(e.email) ? syntheticEmailToPhone(e.email) : null);
+        const hasContact = hasRealEmail || Boolean(effectivePhone);
+
         return (
           <Link
             key={e.id}
@@ -82,12 +96,12 @@ export const EmployeesGridView = memo(function EmployeesGridView({
               {e.first_name} {e.last_name}
             </h3>
             <p className="text-sm text-gray-500 mb-3 truncate">
-              {e.email ? (
+              {hasRealEmail ? (
                 e.email
-              ) : e.phone ? (
+              ) : effectivePhone ? (
                 <span className="text-gray-700 font-medium inline-flex items-center gap-1">
                   <i className="ri-phone-line text-gray-400 text-xs" />
-                  {e.phone}
+                  {effectivePhone}
                 </span>
               ) : isBiometricEligible ? (
                 <span className="text-gray-400 italic text-xs">No contact (Biometric only)</span>
@@ -139,7 +153,7 @@ export const EmployeesGridView = memo(function EmployeesGridView({
                     <i className="ri-mail-send-line" />
                     Invited
                   </span>
-                ) : !e.email && isBiometricEligible ? (
+                ) : !hasContact && isBiometricEligible ? (
                   <span
                     className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-md"
                     title="Biometric fingerprint machine only"
@@ -151,17 +165,51 @@ export const EmployeesGridView = memo(function EmployeesGridView({
                   <span className="text-xs text-gray-400">No Account</span>
                 )}
                 {canManage && (
-                  <button
-                    type="button"
-                    onClick={(ev) => {
-                      ev.preventDefault();
-                      onDelete(e);
-                    }}
-                    disabled={deletingId === e.id}
-                    className="text-xs text-rose-600 hover:text-rose-700 disabled:opacity-60 cursor-pointer"
-                  >
-                    <i className="ri-delete-bin-line" />
-                  </button>
+                  <div className="flex items-center gap-1.5" onClick={(ev) => ev.stopPropagation()}>
+                    {!hasAccount && (
+                      hasRealEmail && onInvite ? (
+                        <button
+                          type="button"
+                          onClick={(ev) => {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            onInvite(e);
+                          }}
+                          disabled={invitingId === e.email}
+                          className="p-1 text-gray-400 hover:text-[#253C7D] rounded-lg transition-colors cursor-pointer"
+                          title={isInvited ? "Resend Invite" : "Send Account Invite"}
+                        >
+                          <i className={`ri-${invitingId === e.email ? "loader-4-line animate-spin" : isInvited ? "mail-send-line" : "user-add-line"} text-base`} />
+                        </button>
+                      ) : effectivePhone && onSetUpPhoneAccount ? (
+                        <button
+                          type="button"
+                          onClick={(ev) => {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            onSetUpPhoneAccount(e);
+                          }}
+                          className="p-1 text-[#253C7D] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Set Up Phone Account & Password"
+                        >
+                          <i className="ri-key-2-line text-base" />
+                        </button>
+                      ) : null
+                    )}
+                    <button
+                      type="button"
+                      onClick={(ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        onDelete(e);
+                      }}
+                      disabled={deletingId === e.id}
+                      className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                      title="Delete Employee"
+                    >
+                      <i className={`ri-${deletingId === e.id ? "loader-4-line animate-spin" : "delete-bin-line"} text-base`} />
+                    </button>
+                  </div>
                 )}
               </div>
             )}
