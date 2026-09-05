@@ -6,11 +6,45 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const PHONE_EMAIL_DOMAIN = "@phone.hrmsystem.local";
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function normalizePhone(phone: string): string {
+  let digits = (phone || "").replace(/\D/g, "");
+  if (digits.startsWith("855") && digits.length >= 11) {
+    digits = "0" + digits.slice(3);
+  }
+  return digits;
+}
+
+function toE164(phone: string): string {
+  let digits = (phone || "").replace(/\D/g, "");
+  if (digits.startsWith("855")) {
+    return `+${digits}`;
+  }
+  if (digits.startsWith("0")) {
+    return `+855${digits.slice(1)}`;
+  }
+  if (phone.trim().startsWith("+")) {
+    return `+${digits}`;
+  }
+  return `+855${digits}`;
+}
+
+function isPhoneSyntheticEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return email.toLowerCase().endsWith(PHONE_EMAIL_DOMAIN);
+}
+
+function syntheticEmailToPhone(email?: string | null): string {
+  if (!email || !isPhoneSyntheticEmail(email)) return email || "";
+  return email.slice(0, -PHONE_EMAIL_DOMAIN.length);
 }
 
 function generateOTP(): string {
@@ -54,14 +88,20 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
     const body = await req.json();
-    const email: string = body?.email;
+    const rawIdentifier: string = (body?.email || body?.identifier || "").trim();
 
-    if (!email || typeof email !== "string") {
-      return json({ error: "Email is required" }, 400);
+    if (!rawIdentifier) {
+      return json({ error: "Email or phone number is required" }, 400);
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const isPhone = isPhoneSyntheticEmail(rawIdentifier) || !rawIdentifier.includes("@");
+    const normalizedEmail = isPhone
+      ? (isPhoneSyntheticEmail(rawIdentifier)
+          ? rawIdentifier.toLowerCase()
+          : `${normalizePhone(rawIdentifier)}${PHONE_EMAIL_DOMAIN}`)
+      : rawIdentifier.toLowerCase();
 
+    // Look up user in auth.users by normalized synthetic email / regular email
     const userRes = await fetch(
       `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(normalizedEmail)}`,
       {
@@ -76,9 +116,12 @@ Deno.serve(async (req: Request) => {
     const user = userList?.users?.[0];
 
     if (!user) {
-      return json({ error: "No account found with this email" }, 404);
+      return json({
+        error: isPhone ? "No account found with this phone number" : "No account found with this email",
+      }, 404);
     }
 
+    // Clear existing unverified OTPs for this identifier
     await admin.from("email_otps").delete().eq("email", normalizedEmail).eq("verified", false);
 
     const otp = generateOTP();
@@ -99,6 +142,106 @@ Deno.serve(async (req: Request) => {
 
     await admin.rpc("cleanup_expired_otps");
 
+    if (isPhone) {
+      const cleanPhone = syntheticEmailToPhone(normalizedEmail);
+      const e164Phone = toE164(cleanPhone);
+      const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
+
+      // 1. Check if user already connected their Telegram
+      let chatId = user.user_metadata?.telegram_chat_id;
+
+      // Also check fallback in system_settings
+      if (!chatId) {
+        const phoneVariants = [
+          `tg_chat_${cleanPhone}`,
+          `tg_chat_0${cleanPhone}`,
+          `tg_chat_${cleanPhone.replace(/^0+/, "")}`,
+        ];
+        const { data: settings } = await admin
+          .from("system_settings")
+          .select("key, value")
+          .in("key", phoneVariants)
+          .limit(1);
+
+        if (settings && settings.length > 0 && settings[0].value) {
+          chatId = settings[0].value;
+          // Backfill user_metadata
+          await admin.auth.admin.updateUserById(user.id, {
+            user_metadata: {
+              ...user.user_metadata,
+              telegram_chat_id: String(chatId),
+            },
+          });
+        }
+      }
+
+      // 2. If Telegram is connected, dispatch OTP via Telegram Bot (100% Free)
+      if (chatId && botToken) {
+        const botRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `🔐 <b>HRM_OPS Sign-In Code</b>\n\nYour verification code is: <code>${otp}</code>\n\n⏱ This code expires in ${OTP_EXPIRY_MINUTES} minutes.\n⚠️ Do not share this code with anyone.`,
+            parse_mode: "HTML",
+          }),
+        });
+
+        const botData = await botRes.json();
+        if (botData.ok) {
+          return json({
+            success: true,
+            channel: "telegram_bot",
+            phone: e164Phone,
+            message: "Verification code sent to your Telegram (@HRM_OPS_bot)",
+          });
+        }
+        console.error("Telegram bot sendMessage failed:", botData);
+      }
+
+      // 3. Optional fallback to Telegram Gateway if configured and has balance
+      const tgGatewayToken = Deno.env.get("TELEGRAM_GATEWAY_TOKEN");
+      if (tgGatewayToken) {
+        try {
+          const tgRes = await fetch("https://gatewayapi.telegram.org/sendVerificationMessage", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${tgGatewayToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              phone_number: e164Phone,
+              code: otp,
+              ttl: OTP_EXPIRY_MINUTES * 60,
+            }),
+          });
+
+          const tgData = await tgRes.json();
+          if (tgRes.ok && tgData.ok) {
+            return json({
+              success: true,
+              channel: "telegram_gateway",
+              phone: e164Phone,
+              message: "Verification code sent directly to your Telegram app",
+            });
+          }
+          console.warn("Telegram Gateway attempt failed:", tgData);
+        } catch (gwErr) {
+          console.warn("Telegram Gateway call error:", gwErr);
+        }
+      }
+
+      // 4. If Telegram is not connected yet, return actionable guidance
+      return json({
+        error: "telegram_not_connected",
+        bot_username: "HRM_OPS_bot",
+        bot_url: "https://t.me/HRM_OPS_bot?start=connect",
+        phone: e164Phone,
+        message: "Your Telegram is not connected yet. Click the link below to connect with @HRM_OPS_bot and receive your code for free.",
+      }, 400);
+    }
+
+    // Normal email delivery
     const emailHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -131,7 +274,7 @@ Deno.serve(async (req: Request) => {
       html: emailHtml,
     });
 
-    return json({ success: true, message: "OTP sent successfully" });
+    return json({ success: true, channel: "email", message: "OTP sent successfully" });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     console.error("Send OTP error:", err);

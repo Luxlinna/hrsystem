@@ -57,22 +57,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const sendOTP = useCallback(async (email: string) => {
+  const sendOTP = useCallback(async (identifier: string) => {
+    const raw = (identifier || "").trim();
+    const isPhone = isPhoneIdentifier(raw) || isPhoneSyntheticEmail(raw);
+    const resolvedEmail = isPhone
+      ? (isPhoneSyntheticEmail(raw) ? raw.toLowerCase() : phoneToSyntheticEmail(raw))
+      : raw.toLowerCase();
+
     const { data, error } = await supabase.functions.invoke("send-otp", {
-      body: { email },
+      body: { email: resolvedEmail },
     });
     if (error) {
       let detail = data?.error;
-      if (!detail && error.context instanceof Response) {
+      let botUrl = data?.bot_url;
+      let msg = data?.message;
+      if (error.context instanceof Response) {
         try {
           const body = await error.context.json();
-          detail = body?.error;
+          detail = body?.error || detail;
+          botUrl = body?.bot_url || botUrl;
+          msg = body?.message || msg;
         } catch { /* non-JSON */ }
       }
-      const msg = detail || error.message || "Failed to send OTP";
-      throw new Error(msg);
+      const errObj: any = new Error(msg || detail || error.message || "Failed to send OTP");
+      if (detail === "telegram_not_connected" || msg?.includes("Telegram is not connected")) {
+        errObj.telegramNotConnected = true;
+        errObj.botUrl = botUrl || "https://t.me/HRM_OPS_bot?start=connect";
+      }
+      throw errObj;
     }
-    if (data?.error) throw new Error(data.error);
+    if (data?.error) {
+      const errObj: any = new Error(data.message || data.error);
+      if (data.error === "telegram_not_connected" || data.message?.includes("Telegram is not connected")) {
+        errObj.telegramNotConnected = true;
+        errObj.botUrl = data.bot_url || "https://t.me/HRM_OPS_bot?start=connect";
+      }
+      throw errObj;
+    }
   }, []);
 
   const login = async (identifier: string, password: string): Promise<{ otpRequired: boolean }> => {
@@ -82,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ? (isPhoneSyntheticEmail(raw) ? raw.toLowerCase() : phoneToSyntheticEmail(raw))
       : raw.toLowerCase();
 
-    if (isPhone || checkDeviceRemembered(resolvedEmail)) {
+    if (checkDeviceRemembered(resolvedEmail)) {
       const { error } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
       if (error) {
         if (isPhone && (error.message.includes("Invalid login credentials") || error.status === 400)) {
@@ -90,21 +111,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         throw error;
       }
-      setDeviceRemembered(resolvedEmail);
       return { otpRequired: false };
     }
 
     const { error } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
-    if (error) throw error;
+    if (error) {
+      if (isPhone && (error.message.includes("Invalid login credentials") || error.status === 400)) {
+        throw new Error("Invalid phone number or password");
+      }
+      throw error;
+    }
 
-    await sendOTP(resolvedEmail);
+    try {
+      await sendOTP(resolvedEmail);
+    } catch (otpErr) {
+      await supabase.auth.signOut().catch(() => {});
+      throw otpErr;
+    }
+
     await supabase.auth.signOut();
     return { otpRequired: true };
   };
 
-  const verifyOTP = useCallback(async (email: string, otp: string, password: string, rememberDevice: boolean) => {
+  const verifyOTP = useCallback(async (identifier: string, otp: string, password: string, rememberDevice: boolean) => {
+    const raw = (identifier || "").trim();
+    const isPhone = isPhoneIdentifier(raw) || isPhoneSyntheticEmail(raw);
+    const resolvedEmail = isPhone
+      ? (isPhoneSyntheticEmail(raw) ? raw.toLowerCase() : phoneToSyntheticEmail(raw))
+      : raw.toLowerCase();
+
     const { data, error } = await supabase.functions.invoke("verify-otp", {
-      body: { email, otp },
+      body: { email: resolvedEmail, otp },
     });
     if (error) {
       let detail = data?.error;
@@ -119,11 +156,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data?.error) throw new Error(data.error);
 
     await supabase.auth.signOut().catch(() => {});
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
     if (signInError) throw new Error(signInError.message);
 
     if (rememberDevice) {
-      setDeviceRemembered(email);
+      setDeviceRemembered(resolvedEmail);
     }
   }, []);
 

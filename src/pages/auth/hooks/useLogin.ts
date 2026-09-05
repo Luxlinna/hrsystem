@@ -14,6 +14,7 @@ export function useLogin() {
   const [loading, setLoading] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(true);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [telegramBotUrl, setTelegramBotUrl] = useState<string | null>(null);
   const otpInputRef = useRef<(HTMLInputElement | null)[]>([]);
   const { login, sendOTP, verifyOTP } = useAuth();
   const navigate = useNavigate();
@@ -32,11 +33,12 @@ export function useLogin() {
     }
   }, [step]);
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePasswordSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError("");
     setLoading(true);
     try {
+      setTelegramBotUrl(null);
       const result = await login(email, password);
       if (result.otpRequired) {
         setStep("otp");
@@ -45,7 +47,12 @@ export function useLogin() {
         navigate("/");
       }
     } catch (err: any) {
-      setError(err.message || "Invalid email, phone number, or password");
+      if (err.telegramNotConnected || err.botUrl || err.message?.includes("Telegram is not connected")) {
+        setTelegramBotUrl(err.botUrl || "https://t.me/HRM_OPS_bot?start=connect");
+        setError("");
+      } else {
+        setError(err.message || "Invalid email, phone number, or password");
+      }
     } finally {
       setLoading(false);
     }
@@ -95,11 +102,16 @@ export function useLogin() {
     setError("");
     try {
       await sendOTP(email);
+      setTelegramBotUrl(null);
       setResendCooldown(30);
       setOtp(["", "", "", "", "", ""]);
       otpInputRef.current[0]?.focus();
     } catch (err: any) {
-      setError(err.message || "Failed to resend code");
+      if (err.telegramNotConnected || err.botUrl) {
+        setTelegramBotUrl(err.botUrl || "https://t.me/HRM_OPS_bot?start=connect");
+      } else {
+        setError(err.message || "Failed to resend code");
+      }
     }
   };
 
@@ -108,6 +120,7 @@ export function useLogin() {
     setOtp(["", "", "", "", "", ""]);
     setError("");
     setPassword("");
+    setTelegramBotUrl(null);
   };
 
   return {
@@ -124,6 +137,8 @@ export function useLogin() {
     rememberDevice,
     setRememberDevice,
     resendCooldown,
+    telegramBotUrl,
+    setTelegramBotUrl,
     otpInputRef,
     handlePasswordSubmit,
     handleOtpChange,

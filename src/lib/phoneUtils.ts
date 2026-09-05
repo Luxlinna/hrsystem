@@ -19,6 +19,41 @@ export function normalizePhone(phone: string): string {
 }
 
 /**
+ * Converts a national or raw phone number to international E.164 format (+855...).
+ */
+export function formatE164(phone: string): string {
+  let digits = (phone || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("855")) {
+    return `+${digits}`;
+  }
+  if (digits.startsWith("0")) {
+    return `+855${digits.slice(1)}`;
+  }
+  if (phone.trim().startsWith("+")) {
+    return `+${digits}`;
+  }
+  return `+855${digits}`;
+}
+
+/**
+ * Formats an E.164 or national phone for neat visual display (e.g. +855 88 244 6786).
+ */
+export function formatDisplayPhone(phone: string): string {
+  const e164 = formatE164(phone);
+  if (e164.startsWith("+855") && e164.length >= 12) {
+    // +855 XX XXX XXX or +855 XXX XXX XXX
+    const rest = e164.slice(4);
+    if (rest.length === 8) {
+      return `+855 ${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5)}`;
+    } else if (rest.length === 9) {
+      return `+855 ${rest.slice(0, 3)} ${rest.slice(3, 6)} ${rest.slice(6)}`;
+    }
+  }
+  return e164 || phone;
+}
+
+/**
  * Checks if an input string is a phone number rather than an email address.
  */
 export function isPhoneIdentifier(input: string): boolean {

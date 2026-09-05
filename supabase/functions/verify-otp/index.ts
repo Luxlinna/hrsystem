@@ -35,13 +35,24 @@ Deno.serve(async (req) => {
     const { email, otp } = await req.json();
 
     if (!email || typeof email !== "string") {
-      return json({ error: "Email is required" }, 400);
+      return json({ error: "Email or phone number is required" }, 400);
     }
     if (!otp || typeof otp !== "string") {
       return json({ error: "OTP code is required" }, 400);
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const raw = email.trim();
+    const PHONE_EMAIL_DOMAIN = "@phone.hrmsystem.local";
+    const isPhone = raw.toLowerCase().endsWith(PHONE_EMAIL_DOMAIN) || !raw.includes("@");
+    
+    let normalizedEmail = raw.toLowerCase();
+    if (isPhone && !raw.toLowerCase().endsWith(PHONE_EMAIL_DOMAIN)) {
+      let digits = raw.replace(/\D/g, "");
+      if (digits.startsWith("855") && digits.length >= 11) {
+        digits = "0" + digits.slice(3);
+      }
+      normalizedEmail = `${digits}${PHONE_EMAIL_DOMAIN}`;
+    }
     const submittedOtp = otp.trim();
 
     // Find the latest unverified, non-expired OTP
