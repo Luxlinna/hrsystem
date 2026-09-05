@@ -159,35 +159,20 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
       )}
       {visibleColumns.actions && canManage && (
         <div className="flex items-center justify-end gap-2" onClick={(ev) => ev.stopPropagation()}>
-          {!hasAccount && (
-            hasRealEmail ? (
-              <button
-                type="button"
-                onClick={(ev) => {
-                  ev.preventDefault();
-                  ev.stopPropagation();
-                  onInvite(e);
-                }}
-                disabled={invitingId === e.email}
-                className="p-2 text-gray-400 hover:text-[#253C7D] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                title={isInvited ? "Resend Invite" : "Send Account Invite"}
-              >
-                <i className={`ri-${invitingId === e.email ? "loader-4-line animate-spin" : isInvited ? "mail-send-line" : "user-add-line"} text-lg`} />
-              </button>
-            ) : effectivePhone && onSetUpPhoneAccount ? (
-              <button
-                type="button"
-                onClick={(ev) => {
-                  ev.preventDefault();
-                  ev.stopPropagation();
-                  onSetUpPhoneAccount(e);
-                }}
-                className="p-2 text-[#253C7D] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                title="Set Up Phone Account & Password"
-              >
-                <i className="ri-key-2-line text-lg" />
-              </button>
-            ) : null
+          {!hasAccount && hasRealEmail && (
+            <button
+              type="button"
+              onClick={(ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                onInvite(e);
+              }}
+              disabled={invitingId === e.email}
+              className="p-2 text-gray-400 hover:text-[#253C7D] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+              title={isInvited ? "Resend Invite" : "Send Account Invite"}
+            >
+              <i className={`ri-${invitingId === e.email ? "loader-4-line animate-spin" : isInvited ? "mail-send-line" : "user-add-line"} text-lg`} />
+            </button>
           )}
           <button
             type="button"

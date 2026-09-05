@@ -166,35 +166,20 @@ export const EmployeesGridView = memo(function EmployeesGridView({
                 )}
                 {canManage && (
                   <div className="flex items-center gap-1.5" onClick={(ev) => ev.stopPropagation()}>
-                    {!hasAccount && (
-                      hasRealEmail && onInvite ? (
-                        <button
-                          type="button"
-                          onClick={(ev) => {
-                            ev.preventDefault();
-                            ev.stopPropagation();
-                            onInvite(e);
-                          }}
-                          disabled={invitingId === e.email}
-                          className="p-1 text-gray-400 hover:text-[#253C7D] rounded-lg transition-colors cursor-pointer"
-                          title={isInvited ? "Resend Invite" : "Send Account Invite"}
-                        >
-                          <i className={`ri-${invitingId === e.email ? "loader-4-line animate-spin" : isInvited ? "mail-send-line" : "user-add-line"} text-base`} />
-                        </button>
-                      ) : effectivePhone && onSetUpPhoneAccount ? (
-                        <button
-                          type="button"
-                          onClick={(ev) => {
-                            ev.preventDefault();
-                            ev.stopPropagation();
-                            onSetUpPhoneAccount(e);
-                          }}
-                          className="p-1 text-[#253C7D] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                          title="Set Up Phone Account & Password"
-                        >
-                          <i className="ri-key-2-line text-base" />
-                        </button>
-                      ) : null
+                    {!hasAccount && hasRealEmail && onInvite && (
+                      <button
+                        type="button"
+                        onClick={(ev) => {
+                          ev.preventDefault();
+                          ev.stopPropagation();
+                          onInvite(e);
+                        }}
+                        disabled={invitingId === e.email}
+                        className="p-1 text-gray-400 hover:text-[#253C7D] rounded-lg transition-colors cursor-pointer"
+                        title={isInvited ? "Resend Invite" : "Send Account Invite"}
+                      >
+                        <i className={`ri-${invitingId === e.email ? "loader-4-line animate-spin" : isInvited ? "mail-send-line" : "user-add-line"} text-base`} />
+                      </button>
                     )}
                     <button
                       type="button"
