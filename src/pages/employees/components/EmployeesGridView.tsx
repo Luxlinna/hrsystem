@@ -1,11 +1,13 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import type { Employee, AccountStatus, VisibleColumns } from "../types";
+import type { Employee, AccountStatus, VisibleColumns, BiometricDeviceRef } from "../types";
+import { isEmployeeBiometricEligible } from "../types";
 import { getStatusMeta } from "../constants";
 
 interface EmployeesGridViewProps {
   employees: Employee[];
   accountStatus: Record<string, AccountStatus>;
+  biometricDevices?: BiometricDeviceRef[];
   selectedIds: Set<string>;
   visibleColumns: VisibleColumns;
   canManage: boolean;
@@ -17,6 +19,7 @@ interface EmployeesGridViewProps {
 export const EmployeesGridView = memo(function EmployeesGridView({
   employees,
   accountStatus,
+  biometricDevices = [],
   selectedIds,
   visibleColumns,
   canManage,
@@ -31,6 +34,7 @@ export const EmployeesGridView = memo(function EmployeesGridView({
         const isInvited = acc?.invited;
         const hasAccount = acc?.hasAccount;
         const isSelected = selectedIds.has(e.id);
+        const isBiometricEligible = isEmployeeBiometricEligible(e, biometricDevices);
         return (
           <Link
             key={e.id}
@@ -85,8 +89,10 @@ export const EmployeesGridView = memo(function EmployeesGridView({
                   <i className="ri-phone-line text-gray-400 text-xs" />
                   {e.phone}
                 </span>
-              ) : (
+              ) : isBiometricEligible ? (
                 <span className="text-gray-400 italic text-xs">No contact (Biometric only)</span>
+              ) : (
+                <span className="text-gray-400 italic text-xs">No contact info</span>
               )}
             </p>
             <div className="space-y-2">
@@ -123,15 +129,7 @@ export const EmployeesGridView = memo(function EmployeesGridView({
             </div>
             {visibleColumns.account && (
               <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                {!e.email ? (
-                  <span
-                    className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-md"
-                    title="Biometric fingerprint machine only"
-                  >
-                    <i className="ri-fingerprint-line text-slate-500" />
-                    Biometric Only
-                  </span>
-                ) : hasAccount ? (
+                {hasAccount ? (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
                     <i className="ri-checkbox-circle-line" />
                     Active Account
@@ -140,6 +138,14 @@ export const EmployeesGridView = memo(function EmployeesGridView({
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-[#253C7D]">
                     <i className="ri-mail-send-line" />
                     Invited
+                  </span>
+                ) : !e.email && isBiometricEligible ? (
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-md"
+                    title="Biometric fingerprint machine only"
+                  >
+                    <i className="ri-fingerprint-line text-slate-500" />
+                    Biometric Only
                   </span>
                 ) : (
                   <span className="text-xs text-gray-400">No Account</span>

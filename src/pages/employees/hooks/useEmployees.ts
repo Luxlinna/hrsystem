@@ -70,6 +70,7 @@ export function useEmployees() {
     targetBranch,
     branches: data.branches,
     workSites: data.workSites,
+    biometricDevices: data.biometricDevices,
     scopeBranches,
     selectedBranchId,
     visibleBranches,

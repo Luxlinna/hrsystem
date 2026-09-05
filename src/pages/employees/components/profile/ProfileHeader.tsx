@@ -7,6 +7,7 @@ interface ProfileHeaderProps {
   employee: Employee;
   canEdit: boolean;
   editing: boolean;
+  hasBiometric?: boolean;
   uploadingAvatar: boolean;
   onToggleEditing: () => void;
   onUploadAvatar: (file: File) => void;
@@ -16,6 +17,7 @@ export const ProfileHeader = memo(function ProfileHeader({
   employee,
   canEdit,
   editing,
+  hasBiometric = false,
   uploadingAvatar,
   onToggleEditing,
   onUploadAvatar,
@@ -113,7 +115,7 @@ export const ProfileHeader = memo(function ProfileHeader({
                   <i className="ri-mail-line" />
                   {employee.email}
                 </span>
-              ) : (
+              ) : hasBiometric ? (
                 <span
                   className="flex items-center gap-1 text-slate-600 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-md font-medium text-[11px]"
                   title="Biometric fingerprint machine only; cannot log into web system"
@@ -121,7 +123,7 @@ export const ProfileHeader = memo(function ProfileHeader({
                   <i className="ri-fingerprint-line text-slate-500" />
                   Biometric Only
                 </span>
-              )}
+              ) : null}
               <span className="flex items-center gap-1">
                 <i className="ri-phone-line" />
                 {employee.phone || "—"}

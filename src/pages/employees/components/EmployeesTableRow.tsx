@@ -1,11 +1,13 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import type { Employee, AccountStatus, VisibleColumns } from "../types";
+import type { Employee, AccountStatus, VisibleColumns, BiometricDeviceRef } from "../types";
+import { isEmployeeBiometricEligible } from "../types";
 import { getStatusMeta } from "../constants";
 
 interface EmployeesTableRowProps {
   employee: Employee;
   accountStatus?: AccountStatus;
+  biometricDevices?: BiometricDeviceRef[];
   isSelected: boolean;
   visibleColumns: VisibleColumns;
   canManage: boolean;
@@ -20,6 +22,7 @@ interface EmployeesTableRowProps {
 export const EmployeesTableRow = memo(function EmployeesTableRow({
   employee: e,
   accountStatus: acc,
+  biometricDevices = [],
   isSelected,
   visibleColumns,
   canManage,
@@ -32,6 +35,7 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
 }: EmployeesTableRowProps) {
   const isInvited = acc?.invited;
   const hasAccount = acc?.hasAccount;
+  const isBiometricEligible = isEmployeeBiometricEligible(e, biometricDevices);
 
   return (
     <Link
@@ -75,8 +79,10 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
                 <i className="ri-phone-line text-gray-400 text-[11px]" />
                 {e.phone}
               </span>
-            ) : (
+            ) : isBiometricEligible ? (
               <span className="text-gray-400 italic">No contact (Biometric only)</span>
+            ) : (
+              <span className="text-gray-400 italic">No contact info</span>
             )}
           </p>
         </div>
@@ -118,20 +124,20 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
       )}
       {visibleColumns.account && (
         <div>
-          {!e.email ? (
-            <span
-              className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-md"
-              title="Biometric fingerprint machine only; cannot log into web portal"
-            >
-              <i className="ri-fingerprint-line text-slate-500" /> Biometric Only
-            </span>
-          ) : hasAccount ? (
+          {hasAccount ? (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
               <i className="ri-checkbox-circle-fill text-emerald-500" /> Active
             </span>
           ) : isInvited ? (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
               <i className="ri-time-line text-amber-500" /> Invited
+            </span>
+          ) : !e.email && isBiometricEligible ? (
+            <span
+              className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-md"
+              title="Biometric fingerprint machine only; cannot log into web portal"
+            >
+              <i className="ri-fingerprint-line text-slate-500" /> Biometric Only
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">

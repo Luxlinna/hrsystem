@@ -34,6 +34,26 @@ export interface AccountStatus {
   hasAccount: boolean;
 }
 
+export interface BiometricDeviceRef {
+  id?: string;
+  branch_id?: string | null;
+  work_location_id?: string | null;
+}
+
+export function isEmployeeBiometricEligible(
+  employee: Employee,
+  devices: BiometricDeviceRef[]
+): boolean {
+  if (!employee?.branch_id || !devices || devices.length === 0) return false;
+  return devices.some((dev) => {
+    if (dev.branch_id !== employee.branch_id) return false;
+    if (employee.default_work_location_id) {
+      return dev.work_location_id === employee.default_work_location_id || !dev.work_location_id;
+    }
+    return !dev.work_location_id;
+  });
+}
+
 export interface EmployeeFormState {
   first_name: string;
   last_name: string;

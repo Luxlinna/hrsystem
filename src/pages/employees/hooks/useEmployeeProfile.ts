@@ -28,6 +28,7 @@ export function useEmployeeProfile(id: string | undefined) {
 
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [workSites, setWorkSites] = useState<{ id: string; name: string; branch_id: string }[]>([]);
+  const [hasBiometricDevice, setHasBiometricDevice] = useState(false);
 
   useEffect(() => {
     supabase.from("branches").select("id, name").is("deleted_at", null).order("name").then(({ data }) => {
@@ -57,6 +58,28 @@ export function useEmployeeProfile(id: string | undefined) {
 
     setEmployee(emp as Employee);
     setForm(emp as Employee);
+
+    if (emp.branch_id) {
+      supabase
+        .from("biometric_devices")
+        .select("id, branch_id, work_location_id")
+        .eq("branch_id", emp.branch_id)
+        .then(({ data }) => {
+          if (!data || data.length === 0) {
+            setHasBiometricDevice(false);
+            return;
+          }
+          const matches = data.some((dev: any) => {
+            if (emp.default_work_location_id) {
+              return dev.work_location_id === emp.default_work_location_id || !dev.work_location_id;
+            }
+            return !dev.work_location_id;
+          });
+          setHasBiometricDevice(matches);
+        });
+    } else {
+      setHasBiometricDevice(false);
+    }
 
     // Load manager
     if (emp.reports_to) {
@@ -198,6 +221,7 @@ export function useEmployeeProfile(id: string | undefined) {
     allEmployees,
     branches,
     workSites,
+    hasBiometricDevice,
     saveChanges,
     uploadAvatar,
   };

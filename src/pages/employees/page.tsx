@@ -15,7 +15,7 @@ import { INITIAL_EMPLOYEE_FORM } from "./constants";
 export default function EmployeesPage() {
   const {
     canManage, isSuperAdmin, isPartnerBranchBlocked, userBranchId, userBranchName,
-    targetBranch, branches, workSites, selectedBranchId, visibleBranches, search, setSearch,
+    targetBranch, branches, workSites, biometricDevices, selectedBranchId, visibleBranches, search, setSearch,
     filterDept, setFilterDept, filterStatus, setFilterStatus, filterBranch, setFilterBranch,
     filterWorkLocation, setFilterWorkLocation, employeeLocations,
     filterAccount, setFilterAccount, sortField, sortDirection, selectedIds, selectAll,
@@ -122,6 +122,7 @@ export default function EmployeesPage() {
           <EmployeesTableView
             employees={pagedEmployees}
             accountStatus={accountStatus}
+            biometricDevices={biometricDevices}
             selectedIds={selectedIds}
             selectAll={selectAll}
             visibleColumns={visibleColumns}
@@ -141,6 +142,7 @@ export default function EmployeesPage() {
           <EmployeesGridView
             employees={pagedEmployees}
             accountStatus={accountStatus}
+            biometricDevices={biometricDevices}
             selectedIds={selectedIds}
             visibleColumns={visibleColumns}
             canManage={canManage}

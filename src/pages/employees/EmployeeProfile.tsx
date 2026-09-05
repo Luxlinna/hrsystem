@@ -27,6 +27,7 @@ export default function EmployeeProfile() {
     allEmployees,
     branches,
     workSites,
+    hasBiometricDevice,
     saveChanges,
     uploadAvatar,
   } = useEmployeeProfile(id);
@@ -62,6 +63,7 @@ export default function EmployeeProfile() {
         employee={employee}
         canEdit={canEdit}
         editing={editing}
+        hasBiometric={hasBiometricDevice}
         uploadingAvatar={uploadingAvatar}
         onToggleEditing={handleToggleEditing}
         onUploadAvatar={uploadAvatar}

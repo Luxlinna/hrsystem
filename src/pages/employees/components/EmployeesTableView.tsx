@@ -1,10 +1,11 @@
 import { memo } from "react";
-import type { Employee, AccountStatus, VisibleColumns, SortField, SortDirection } from "../types";
+import type { Employee, AccountStatus, VisibleColumns, SortField, SortDirection, BiometricDeviceRef } from "../types";
 import { EmployeesTableRow } from "./EmployeesTableRow";
 
 interface EmployeesTableViewProps {
   employees: Employee[];
   accountStatus: Record<string, AccountStatus>;
+  biometricDevices?: BiometricDeviceRef[];
   selectedIds: Set<string>;
   selectAll: boolean;
   visibleColumns: VisibleColumns;
@@ -24,6 +25,7 @@ interface EmployeesTableViewProps {
 export const EmployeesTableView = memo(function EmployeesTableView({
   employees,
   accountStatus,
+  biometricDevices = [],
   selectedIds,
   selectAll,
   visibleColumns,
@@ -118,6 +120,7 @@ export const EmployeesTableView = memo(function EmployeesTableView({
           key={e.id}
           employee={e}
           accountStatus={accountStatus[e.email]}
+          biometricDevices={biometricDevices}
           isSelected={selectedIds.has(e.id)}
           visibleColumns={visibleColumns}
           canManage={canManage}

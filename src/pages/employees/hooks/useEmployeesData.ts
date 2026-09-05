@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import type { Employee, Branch, AppRole, AccountStatus } from "../types";
+import type { Employee, Branch, AppRole, AccountStatus, BiometricDeviceRef } from "../types";
 
 interface UseEmployeesDataProps {
   isPartnerBranchBlocked: boolean;
@@ -20,6 +20,7 @@ export function useEmployeesData({
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [managerEmails, setManagerEmails] = useState<Set<string>>(new Set());
   const [accountStatus, setAccountStatus] = useState<Record<string, AccountStatus>>({});
+  const [biometricDevices, setBiometricDevices] = useState<BiometricDeviceRef[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadEmployees = useCallback(() => {
@@ -99,6 +100,13 @@ export function useEmployeesData({
         });
         setManagerEmails(emails);
       });
+
+    supabase
+      .from("biometric_devices")
+      .select("id, branch_id, work_location_id")
+      .then(({ data }) => {
+        setBiometricDevices((data as BiometricDeviceRef[]) || []);
+      });
   }, [loadEmployees, isPartnerBranchBlocked, targetBranch]);
 
   useEffect(() => {
@@ -135,6 +143,7 @@ export function useEmployeesData({
     roles,
     managerEmails,
     accountStatus,
+    biometricDevices,
     loading,
     loadEmployees,
   };
