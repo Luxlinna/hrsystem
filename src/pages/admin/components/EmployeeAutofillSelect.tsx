@@ -4,6 +4,7 @@ import type { DirectoryEmployee } from "../types";
 interface EmployeeAutofillSelectProps {
   employees: DirectoryEmployee[];
   selectedEmployeeEmail: string;
+  accountType?: "email" | "phone";
   onSelectEmployee: (emp: DirectoryEmployee) => void;
   onClearSelection: () => void;
 }
@@ -11,6 +12,7 @@ interface EmployeeAutofillSelectProps {
 export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
   employees,
   selectedEmployeeEmail,
+  accountType = "email",
   onSelectEmployee,
   onClearSelection,
 }: EmployeeAutofillSelectProps) {
@@ -34,22 +36,43 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
     return employees.filter((emp) => {
       const name = `${emp.first_name || ""} ${emp.last_name || ""}`.toLowerCase();
       const email = (emp.email || "").toLowerCase();
+      const phone = (emp.phone || "").toLowerCase();
       const role = (emp.role || "").toLowerCase();
       const dept = (emp.department || "").toLowerCase();
       const branch = (emp.branch_name || "").toLowerCase();
-      return name.includes(q) || email.includes(q) || role.includes(q) || dept.includes(q) || branch.includes(q);
+      const site = (emp.site_name || "").toLowerCase();
+      return (
+        name.includes(q) ||
+        email.includes(q) ||
+        phone.includes(q) ||
+        role.includes(q) ||
+        dept.includes(q) ||
+        branch.includes(q) ||
+        site.includes(q)
+      );
     });
   }, [employees, searchQuery]);
 
   const selectedEmployee = useMemo(() => {
-    return employees.find((e) => e.email.toLowerCase() === selectedEmployeeEmail.toLowerCase()) || null;
+    if (!selectedEmployeeEmail) return null;
+    const target = selectedEmployeeEmail.toLowerCase().trim();
+    return (
+      employees.find(
+        (e) =>
+          (e.email && e.email.toLowerCase() === target) ||
+          (e.phone && e.phone.toLowerCase() === target) ||
+          e.id === selectedEmployeeEmail
+      ) || null
+    );
   }, [employees, selectedEmployeeEmail]);
 
   return (
     <div className="relative" ref={dropdownRef}>
       <label className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center justify-between">
         <span>Autofill Employee</span>
-        <span className="text-[11px] font-normal text-gray-400">({employees.length} in directory)</span>
+        <span className="text-[11px] font-normal text-gray-400">
+          ({employees.length} {accountType === "phone" ? "with phone" : "with email"})
+        </span>
       </label>
 
       {selectedEmployee ? (
@@ -58,8 +81,14 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
             <p className="font-semibold text-gray-900 truncate text-xs">
               {selectedEmployee.first_name} {selectedEmployee.last_name}
             </p>
-            <p className="text-[10px] text-[#253C7D] truncate font-medium">
-              {selectedEmployee.branch_name || "Headquarters"}
+            <p className="text-[10px] text-[#253C7D] truncate font-medium flex items-center gap-1">
+              <span>{selectedEmployee.branch_name || "Headquarters"}</span>
+              {selectedEmployee.site_name && (
+                <>
+                  <span>•</span>
+                  <span className="text-emerald-700">{selectedEmployee.site_name}</span>
+                </>
+              )}
             </p>
           </div>
           <button
@@ -82,7 +111,11 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
               setSearchQuery(e.target.value);
               setIsDropdownOpen(true);
             }}
-            placeholder="Search name, branch..."
+            placeholder={
+              accountType === "phone"
+                ? "Search name, phone, site..."
+                : "Search name, email, branch..."
+            }
             className="w-full pl-10 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all h-[42px]"
           />
           <button
@@ -98,18 +131,20 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
       {isDropdownOpen && !selectedEmployee && (
         <div className="absolute left-0 top-full mt-1.5 w-[380px] max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-gray-200/90 py-2 z-50 max-h-72 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
           <div className="px-3.5 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1 flex items-center justify-between">
-            <span>Employee Directory</span>
+            <span>Branch Employees</span>
             <span className="text-[10px] text-[#253C7D] font-semibold">{filteredEmployees.length} Found</span>
           </div>
           {filteredEmployees.length === 0 ? (
             <div className="px-4 py-6 text-center text-xs text-gray-400">
               <i className="ri-user-unfollow-line text-2xl text-gray-300 mb-1 block" />
-              No matching employee found
+              {accountType === "phone"
+                ? "No branch employees with a valid phone number"
+                : "No branch employees with a valid email"}
             </div>
           ) : (
             filteredEmployees.map((emp) => (
               <button
-                key={emp.email}
+                key={emp.id || emp.email || emp.phone}
                 type="button"
                 onClick={() => {
                   onSelectEmployee(emp);
@@ -125,17 +160,40 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
                   <p className="text-xs font-bold text-gray-900 truncate">
                     {emp.first_name} {emp.last_name}
                   </p>
-                  <p className="text-[11px] text-gray-400 truncate">{emp.email}</p>
+                  <p className="text-[11px] text-gray-500 truncate mt-0.5">
+                    {accountType === "phone" && emp.phone ? (
+                      <span className="text-gray-900 font-semibold inline-flex items-center gap-1 bg-blue-50/80 border border-blue-100/80 px-2 py-0.5 rounded-md text-[11px]">
+                        <i className="ri-phone-fill text-[#253C7D] text-[10px]" />
+                        {emp.phone}
+                      </span>
+                    ) : emp.email ? (
+                      <span className="text-gray-600 inline-flex items-center gap-1">
+                        <i className="ri-mail-line text-gray-400 text-[10px]" />
+                        {emp.email}
+                      </span>
+                    ) : emp.phone ? (
+                      <span className="text-gray-700 font-medium inline-flex items-center gap-1">
+                        <i className="ri-phone-line text-[10px] text-gray-400" />
+                        {emp.phone}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 italic">No contact info</span>
+                    )}
+                  </p>
                 </div>
                 <div className="flex flex-col items-end shrink-0 gap-0.5">
                   <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-[#253C7D] border border-blue-100 whitespace-nowrap">
                     {emp.branch_name || "Headquarters"}
                   </span>
-                  {emp.role && (
+                  {emp.site_name ? (
+                    <span className="text-[9px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                      {emp.site_name}
+                    </span>
+                  ) : emp.role ? (
                     <span className="text-[9px] text-gray-400 truncate max-w-[100px]">
                       {emp.role}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </button>
             ))

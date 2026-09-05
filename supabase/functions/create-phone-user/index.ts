@@ -22,6 +22,11 @@ function normalizePhone(phone: string): string {
   return digits;
 }
 
+function isPhoneSyntheticEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return email.toLowerCase().endsWith(PHONE_EMAIL_DOMAIN);
+}
+
 function isBootstrapAdminEmail(email?: string | null) {
   const bootstrapEmails = (Deno.env.get("BOOTSTRAP_ADMIN_EMAILS") || "admin@hrmops.com")
     .split(",")
@@ -148,11 +153,34 @@ Deno.serve(async (req) => {
       return json({ error: "Could not retrieve user ID" }, 500);
     }
 
-    // Upsert user_role_assignments
-    const { error: roleAssignError } = await admin
+    // Safe insert or update into user_role_assignments
+    const { data: existingAssignment } = await admin
       .from("user_role_assignments")
-      .upsert(
-        {
+      .select("id")
+      .ilike("email", syntheticEmail)
+      .maybeSingle();
+
+    if (existingAssignment?.id) {
+      const { error: roleUpdateError } = await admin
+        .from("user_role_assignments")
+        .update({
+          user_id: userId,
+          display_name: displayName,
+          role_id: parsedRoleId,
+          deleted_at: null,
+          deleted_by: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingAssignment.id);
+
+      if (roleUpdateError) {
+        console.error("user_role_assignments update error:", roleUpdateError);
+        throw roleUpdateError;
+      }
+    } else {
+      const { error: roleInsertError } = await admin
+        .from("user_role_assignments")
+        .insert({
           email: syntheticEmail,
           user_id: userId,
           display_name: displayName,
@@ -160,22 +188,29 @@ Deno.serve(async (req) => {
           deleted_at: null,
           deleted_by: null,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: "email" }
-      );
+        });
 
-    if (roleAssignError) {
-      console.error("user_role_assignments upsert error:", roleAssignError);
+      if (roleInsertError) {
+        console.error("user_role_assignments insert error:", roleInsertError);
+        throw roleInsertError;
+      }
     }
 
-    // Link in employees table if employee_id provided
+    // Link in employees table if employee_id provided or matching employee found
     if (employee_id) {
+      const { data: currentEmp } = await admin
+        .from("employees")
+        .select("id, email, phone")
+        .eq("id", employee_id)
+        .maybeSingle();
+
+      const updatePayload: Record<string, any> = { phone: cleanDigits };
+      if (!currentEmp?.email || isPhoneSyntheticEmail(currentEmp.email)) {
+        updatePayload.email = syntheticEmail;
+      }
       const { error: empError } = await admin
         .from("employees")
-        .update({
-          email: syntheticEmail,
-          phone: cleanDigits,
-        })
+        .update(updatePayload)
         .eq("id", employee_id);
 
       if (empError) {
@@ -183,21 +218,23 @@ Deno.serve(async (req) => {
       }
     } else {
       // If no employee_id, check if employee exists with this phone or email
-      const { data: matchingEmp } = await admin
+      const { data: matchingEmps } = await admin
         .from("employees")
-        .select("id")
-        .or(`phone.eq.${cleanDigits},email.eq.${syntheticEmail}`)
+        .select("id, email, phone")
+        .or(`phone.eq.${cleanDigits},email.eq.${syntheticEmail},phone.eq.${phone}`)
         .is("deleted_at", null)
-        .maybeSingle();
+        .limit(1);
 
-      if (matchingEmp?.id) {
+      if (matchingEmps && matchingEmps.length > 0) {
+        const emp = matchingEmps[0];
+        const updatePayload: Record<string, any> = { phone: cleanDigits };
+        if (!emp.email || isPhoneSyntheticEmail(emp.email)) {
+          updatePayload.email = syntheticEmail;
+        }
         await admin
           .from("employees")
-          .update({
-            email: syntheticEmail,
-            phone: cleanDigits,
-          })
-          .eq("id", matchingEmp.id);
+          .update(updatePayload)
+          .eq("id", emp.id);
       }
     }
 

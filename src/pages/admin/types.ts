@@ -53,7 +53,8 @@ export interface AuthAccountsResult {
 
 export interface DirectoryEmployee {
   id: string;
-  email: string;
+  email: string | null;
+  phone?: string | null;
   first_name: string | null;
   last_name: string | null;
   role: string | null;
@@ -104,6 +105,10 @@ export interface RoleFormState {
 
 export interface NewUserState {
   email: string;
+  phone?: string;
+  accountType?: "email" | "phone";
+  password?: string;
+  employee_id?: string;
   display_name: string;
   role_id: string;
   sendInvite: boolean;

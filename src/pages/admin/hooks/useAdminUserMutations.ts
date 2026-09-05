@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { invalidatePermissionsCache } from "@/hooks/usePermissions";
 import type { AppRole, NewUserState, UserAssignment } from "../types";
-import { getInviteError, manageUserRole, sendUserInvite } from "../api";
+import { getInviteError, manageUserRole, sendUserInvite, createPhoneUserAccount } from "../api";
 
 interface UseAdminUserMutationsProps {
   users: UserAssignment[];
@@ -24,7 +24,7 @@ export function useAdminUserMutations({
   loadData,
 }: UseAdminUserMutationsProps) {
   const [showAddUser, setShowAddUser] = useState(false);
-  const [newUser, setNewUser] = useState<NewUserState>({ email: "", display_name: "", role_id: "", sendInvite: true });
+  const [newUser, setNewUser] = useState<NewUserState>({ email: "", phone: "", display_name: "", role_id: "", sendInvite: true });
   const [selectedEmployeeEmail, setSelectedEmployeeEmail] = useState("");
   const [savingUser, setSavingUser] = useState(false);
   const [invitingUserId, setInvitingUserId] = useState<number | null>(null);
@@ -48,6 +48,48 @@ export function useAdminUserMutations({
   }, [users, showToast, loadData]);
 
   const saveNewUser = useCallback(async () => {
+    const isPhoneAccount = newUser.accountType === "phone" || (!newUser.email && Boolean(newUser.phone));
+
+    if (isPhoneAccount) {
+      const phone = (newUser.phone || "").trim();
+      if (!phone) {
+        showToast("Phone number is required", "err");
+        return;
+      }
+      if (!newUser.password || newUser.password.length < 6) {
+        showToast("Password must be at least 6 characters long", "err");
+        return;
+      }
+
+      setSavingUser(true);
+      try {
+        const { res, result } = await createPhoneUserAccount({
+          employeeId: newUser.employee_id,
+          phone,
+          password: newUser.password,
+          displayName: newUser.display_name?.trim() || `Staff ${phone}`,
+          roleId: newUser.role_id || null,
+        });
+
+        setSavingUser(false);
+        if (!res.ok || result.error) {
+          showToast(result.error || "Failed to create phone account", "err");
+          return;
+        }
+
+        showToast("Phone account created successfully!");
+        setShowAddUser(false);
+        setNewUser({ email: "", phone: "", password: "", display_name: "", role_id: "", sendInvite: true });
+        setSelectedEmployeeEmail("");
+        loadData();
+        return;
+      } catch (err: any) {
+        setSavingUser(false);
+        showToast(err.message || "Failed to create phone account", "err");
+        return;
+      }
+    }
+
     if (!newUser.email.trim()) { showToast("Email is required", "err"); return; }
     setSavingUser(true);
 
@@ -85,7 +127,7 @@ export function useAdminUserMutations({
     }
 
     setShowAddUser(false);
-    setNewUser({ email: "", display_name: "", role_id: "", sendInvite: true });
+    setNewUser({ email: "", phone: "", password: "", display_name: "", role_id: "", sendInvite: true });
     setSelectedEmployeeEmail("");
     loadData();
   }, [newUser, showToast, loadData]);

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { UserAssignment } from "../types";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 
 interface BranchOption {
   id: string;
@@ -38,10 +39,11 @@ export function useUsersTabFilter(
         const q = searchQuery.toLowerCase().trim();
         const name = (u.display_name || "").toLowerCase();
         const email = (u.email || "").toLowerCase();
+        const phone = isPhoneSyntheticEmail(u.email) ? syntheticEmailToPhone(u.email).toLowerCase() : "";
         const role = (u.app_roles?.name || "").toLowerCase();
         const branch = (u.branch_name || "").toLowerCase();
         const site = (u.site_name || "").toLowerCase();
-        return name.includes(q) || email.includes(q) || role.includes(q) || branch.includes(q) || site.includes(q);
+        return name.includes(q) || email.includes(q) || phone.includes(q) || role.includes(q) || branch.includes(q) || site.includes(q);
       }
       return true;
     });

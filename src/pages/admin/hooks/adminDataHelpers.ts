@@ -1,4 +1,5 @@
 import type { DirectoryEmployee, UserAssignment } from "../types";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone, normalizePhone } from "@/lib/phoneUtils";
 
 export function sortBranchesList(branches: { id: string; name: string }[]) {
   return [...branches].sort((a, b) => {
@@ -19,7 +20,11 @@ export function buildEnrichedAssignments(
   branchesList: any[]
 ): UserAssignment[] {
   return activeAssignments.map((assignmentUser) => {
-    const emp = assignmentUser.email ? employeeMap.get(assignmentUser.email.toLowerCase()) : null;
+    let emp = assignmentUser.email ? employeeMap.get(assignmentUser.email.toLowerCase()) : null;
+    if (!emp && assignmentUser.email && isPhoneSyntheticEmail(assignmentUser.email)) {
+      const p = syntheticEmailToPhone(assignmentUser.email);
+      emp = employeeMap.get(p) || employeeMap.get(normalizePhone(p));
+    }
     const bName = emp?.branches ? (emp.branches as any).name : null;
     const site = emp?.default_work_location_id ? locationsMap.get(emp.default_work_location_id) : null;
     return {
@@ -42,7 +47,8 @@ export function buildEnrichedEmployees(
     const site = e.default_work_location_id ? locationsMap.get(e.default_work_location_id) : null;
     return {
       id: e.id,
-      email: e.email,
+      email: e.email || null,
+      phone: e.phone || null,
       first_name: e.first_name,
       last_name: e.last_name,
       role: e.role,

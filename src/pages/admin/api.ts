@@ -80,7 +80,11 @@ export async function manageUserRole(
       const { error } = await supabase.from("user_role_assignments").update({ role_id: roleId ?? null, updated_at: new Date().toISOString() }).eq("id", assignmentId);
       if (error) throw new Error(error.message || err.message || "Failed to update user role");
     } else if (action === "update_role" && email) {
-      const { error } = await supabase.from("user_role_assignments").upsert({ email: email.toLowerCase(), display_name: displayName || null, role_id: roleId ?? null, updated_at: new Date().toISOString() }, { onConflict: "email" });
+      const normEmail = email.toLowerCase();
+      const { data: existing } = await supabase.from("user_role_assignments").select("id").ilike("email", normEmail).maybeSingle();
+      const { error } = existing
+        ? await supabase.from("user_role_assignments").update({ display_name: displayName || null, role_id: roleId ?? null, updated_at: new Date().toISOString() }).eq("id", existing.id)
+        : await supabase.from("user_role_assignments").insert({ email: normEmail, display_name: displayName || null, role_id: roleId ?? null, updated_at: new Date().toISOString() });
       if (error) throw new Error(error.message || err.message || "Failed to update user role");
     } else if (action === "delete_assignment" && assignmentId && assignmentId > 0) {
       const { data: { user } } = await supabase.auth.getUser();
@@ -88,7 +92,11 @@ export async function manageUserRole(
       if (error) throw new Error(error.message || err.message || "Failed to remove user");
     } else if (action === "delete_assignment" && email) {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("user_role_assignments").upsert({ email: email.toLowerCase(), display_name: displayName || null, deleted_at: new Date().toISOString(), deleted_by: user?.email || null, role_id: null, updated_at: new Date().toISOString() }, { onConflict: "email" });
+      const normEmail = email.toLowerCase();
+      const { data: existing } = await supabase.from("user_role_assignments").select("id").ilike("email", normEmail).maybeSingle();
+      const { error } = existing
+        ? await supabase.from("user_role_assignments").update({ deleted_at: new Date().toISOString(), deleted_by: user?.email || null, role_id: null, updated_at: new Date().toISOString() }).eq("id", existing.id)
+        : await supabase.from("user_role_assignments").insert({ email: normEmail, display_name: displayName || null, deleted_at: new Date().toISOString(), deleted_by: user?.email || null, role_id: null, updated_at: new Date().toISOString() });
       if (error) throw new Error(error.message || err.message || "Failed to remove user");
     } else {
       throw err;
