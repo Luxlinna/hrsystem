@@ -147,11 +147,14 @@ Deno.serve(async (req: Request) => {
       const e164Phone = toE164(cleanPhone);
       const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
 
-      // 1. Check if user already connected their Telegram
-      let chatId = user.user_metadata?.telegram_chat_id;
+      // Get user display name for clean message display
+      const displayName = user.user_metadata?.display_name || (user.user_metadata?.first_name 
+        ? `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`.trim()
+        : cleanPhone);
 
-      // Also check fallback in system_settings
-      if (!chatId) {
+      // 1. Check if user has personal Telegram connected
+      let userChatId = user.user_metadata?.telegram_chat_id;
+      if (!userChatId) {
         const phoneVariants = [
           `tg_chat_${cleanPhone}`,
           `tg_chat_0${cleanPhone}`,
@@ -164,39 +167,70 @@ Deno.serve(async (req: Request) => {
           .limit(1);
 
         if (settings && settings.length > 0 && settings[0].value) {
-          chatId = settings[0].value;
-          // Backfill user_metadata
+          userChatId = settings[0].value;
           await admin.auth.admin.updateUserById(user.id, {
             user_metadata: {
               ...user.user_metadata,
-              telegram_chat_id: String(chatId),
+              telegram_chat_id: String(userChatId),
             },
           });
         }
       }
 
-      // 2. If Telegram is connected, dispatch OTP via Telegram Bot (100% Free)
-      if (chatId && botToken) {
-        const botRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      // 2. Check for configured Telegram Group ID
+      let groupChatId = Deno.env.get("TELEGRAM_CHAT_ID");
+      const { data: groupSetting } = await admin
+        .from("system_settings")
+        .select("value")
+        .eq("key", "telegram_group_chat_id")
+        .maybeSingle();
+      if (groupSetting?.value) {
+        groupChatId = groupSetting.value;
+      }
+
+      let sentCount = 0;
+
+      // Send to personal Telegram if connected
+      if (userChatId && botToken) {
+        const userRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            chat_id: chatId,
+            chat_id: userChatId,
             text: `🔐 <b>HRM_OPS Sign-In Code</b>\n\nYour verification code is: <code>${otp}</code>\n\n⏱ This code expires in ${OTP_EXPIRY_MINUTES} minutes.\n⚠️ Do not share this code with anyone.`,
             parse_mode: "HTML",
           }),
         });
+        const userData = await userRes.json();
+        if (userData.ok) sentCount++;
+      }
 
-        const botData = await botRes.json();
-        if (botData.ok) {
-          return json({
-            success: true,
-            channel: "telegram_bot",
-            phone: e164Phone,
-            message: "Verification code sent to your Telegram (@HRM_OPS_bot)",
-          });
+      // Send to Telegram Group
+      if (groupChatId && botToken) {
+        const groupRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: groupChatId,
+            text: `🔐 <b>HRM_OPS Login Verification Code</b>\n\n👤 <b>User:</b> ${displayName}\n📱 <b>Phone:</b> ${e164Phone}\n🔑 <b>Verification Code:</b> <code>${otp}</code>\n\n⏱ Expires in ${OTP_EXPIRY_MINUTES} minutes.`,
+            parse_mode: "HTML",
+          }),
+        });
+        const groupData = await groupRes.json();
+        if (groupData.ok) {
+          sentCount++;
+        } else {
+          console.error("Failed to send OTP to Telegram group:", groupData);
         }
-        console.error("Telegram bot sendMessage failed:", botData);
+      }
+
+      if (sentCount > 0) {
+        return json({
+          success: true,
+          channel: "telegram",
+          phone: e164Phone,
+          message: "Verification code sent to Telegram",
+        });
       }
 
       // 3. Optional fallback to Telegram Gateway if configured and has balance
@@ -231,13 +265,13 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // 4. If Telegram is not connected yet, return actionable guidance
+      // 4. If neither personal chat nor group is ready:
       return json({
         error: "telegram_not_connected",
         bot_username: "HRM_OPS_bot",
         bot_url: "https://t.me/HRM_OPS_bot?start=connect",
         phone: e164Phone,
-        message: "Your Telegram is not connected yet. Click the link below to connect with @HRM_OPS_bot and receive your code for free.",
+        message: "Telegram is not connected yet. Open @HRM_OPS_bot or send /start in your Telegram group.",
       }, 400);
     }
 

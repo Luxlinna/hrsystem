@@ -43,12 +43,12 @@ export const OtpVerificationForm = memo(function OtpVerificationForm({
             <div className="w-14 h-14 bg-[#229ED9]/10 rounded-full flex items-center justify-center mx-auto mb-3 text-[#229ED9]">
               <i className="ri-telegram-fill text-3xl" />
             </div>
-            <p className="text-[13px] text-gray-600">We sent a 6-digit code directly to your Telegram</p>
+            <p className="text-[13px] text-gray-600">We sent a 6-digit verification code to Telegram</p>
             <p className="text-[15px] font-semibold text-gray-900 mt-1 flex items-center justify-center gap-1.5">
               <i className="ri-telegram-line text-[#229ED9]" />
               <span>{displayTarget}</span>
             </p>
-            <p className="text-[11px] text-gray-400 mt-1">Open your Telegram app to view the verification message</p>
+            <p className="text-[11px] text-gray-400 mt-1">Check your Telegram app or group messages</p>
           </>
         ) : (
           <>
