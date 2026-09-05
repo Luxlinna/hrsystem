@@ -123,11 +123,16 @@ Deno.serve(async (req) => {
       console.error("Failed to link user_id in user_role_assignments:", linkError);
     }
 
+    const defaultRedirectUrl = "https://hrsystem-quit.onrender.com/reset-password";
+    const resolvedRedirectTo = (!redirect_to || redirect_to.includes("localhost") || redirect_to.includes("127.0.0.1") || redirect_to.includes("supabase.co"))
+      ? defaultRedirectUrl
+      : redirect_to;
+
     const { data: linkData, error: linkGenError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email,
       options: {
-        redirectTo: redirect_to || `${new URL(req.url).origin}/auth/reset-password`,
+        redirectTo: resolvedRedirectTo,
       },
     });
 

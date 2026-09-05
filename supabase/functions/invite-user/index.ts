@@ -111,14 +111,17 @@ Deno.serve(async (req) => {
       // Skip auth user creation; jump straight to generating a fresh link.
       const userId = existing.user_id;
 
+      const defaultRedirectUrl = "https://hrsystem-quit.onrender.com/reset-password";
+      const resolvedRedirectTo = (!redirect_to || redirect_to.includes("localhost") || redirect_to.includes("127.0.0.1") || redirect_to.includes("supabase.co"))
+        ? defaultRedirectUrl
+        : redirect_to;
+
       const { data: linkData, error: generateLinkError } =
         await supabaseAdmin.auth.admin.generateLink({
           type: "recovery",
           email,
           options: {
-            redirectTo:
-              redirect_to ||
-              `${new URL(req.url).origin}/auth/reset-password`,
+            redirectTo: resolvedRedirectTo,
           },
         });
 
@@ -237,11 +240,16 @@ Deno.serve(async (req) => {
       console.error("Failed to link user_id in user_role_assignments:", linkError);
     }
 
+    const defaultRedirectUrl = "https://hrsystem-quit.onrender.com/reset-password";
+    const resolvedRedirectTo = (!redirect_to || redirect_to.includes("localhost") || redirect_to.includes("127.0.0.1") || redirect_to.includes("supabase.co"))
+      ? defaultRedirectUrl
+      : redirect_to;
+
     const { data: linkData, error: generateLinkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email,
       options: {
-        redirectTo: redirect_to || `${new URL(req.url).origin}/auth/reset-password`,
+        redirectTo: resolvedRedirectTo,
       },
     });
 
