@@ -7,5 +7,20 @@ build/
 *.local
 .temp-backups/
 *.sql.gz
+*.sql.bak
+*.dump
 package-lock.json
 public/assets/
+
+# Sensitive files and configs
+.env*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*serviceAccount*.json
+*firebase-adminsdk*.json
+credentials.json
+supabase/.temp*
+supabase/query.sql

@@ -1,17 +1,43 @@
-node_modules
-dist
-out
-dist-ssr
+# Dependencies & build outputs
+node_modules/
+dist/
+dist-ssr/
+out/
 *.local
 
+# Environment variables & secrets
 .env
 .env.*
+.env.local
+.env.*.local
+.env.keys
+.env.vault
 !.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.keystore
+*serviceAccount*.json
+*firebase-adminsdk*.json
+credentials.json
+client_secret*.json
 
-.DS_Store
-.claude
-
-supabase/.temp
-supabase/.branches
-.temp-backups
+# Supabase, functions & backups
+.temp*
+.branches*
+functions/.env*
+.temp-backups/
 *.sql.gz
+*.sql.bak
+*.dump
+*.tar.gz
+query.sql
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.idea/
+.claude/
