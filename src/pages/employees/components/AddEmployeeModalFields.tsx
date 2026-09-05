@@ -91,8 +91,7 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="block text-xs font-bold text-gray-700">
-              {contactType === "email" ? "Email" : "Phone"}{" "}
-              <span className="text-gray-400 font-normal">(Optional)</span>
+              {contactType === "email" ? "Email" : "Phone Number"}
             </label>
             <div className="flex items-center bg-gray-100 p-0.5 rounded-lg text-[10px] font-semibold">
               <button
@@ -144,15 +143,13 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
               className="w-full pl-9 pr-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D]"
               placeholder={
                 contactType === "email"
-                  ? "john@company.com (leave empty if none)"
-                  : "+855 12 345 678 or (555) 000-0000"
+                  ? "john@company.com"
+                  : "+855 12 345 678 or +1 (555) 000-0000"
               }
             />
           </div>
-          <p className="text-[10px] text-gray-400 mt-1">
-            {contactType === "email"
-              ? "Optional for workers using fingerprint machines. Staff without an email cannot log into the web system."
-              : "Optional for workers using phone or fingerprint machines instead of email."}
+          <p className="text-[10px] text-gray-500 mt-1">
+            Skip if employee has neither. Staff without an email or phone number cannot log in or use this system.
           </p>
         </div>
 

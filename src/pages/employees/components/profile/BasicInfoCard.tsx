@@ -74,7 +74,7 @@ export const BasicInfoCard = memo(function BasicInfoCard({
         </div>
         <div>
           <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Email <span className="font-normal text-gray-400 lowercase">(optional)</span>
+            Email
           </label>
           {editing ? (
             <input
