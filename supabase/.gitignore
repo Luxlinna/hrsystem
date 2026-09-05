@@ -9,3 +9,7 @@
 
 # Edge Function secrets (do not commit)
 functions/.env
+node_modules
+dist
+out
+dist-ssr
