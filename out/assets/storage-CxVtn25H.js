@@ -1,0 +1,2 @@
+import{l as e}from"./AuthContext-C1S8E-D1.js";import{i as t}from"./s3-storage-DGaAjLw9.js";async function n(n,r,i){try{let e=await t(i,n);if(e?.url)return e.url}catch(e){console.warn(`AWS S3 upload failed, falling back to Supabase Storage:`,e)}let{error:a}=await e.storage.from(n).upload(r,i,{upsert:!0,cacheControl:`3600`});if(a)throw a;let{data:o}=e.storage.from(n).getPublicUrl(r);return o.publicUrl}export{n as t};
+//# sourceMappingURL=storage-CxVtn25H.js.map

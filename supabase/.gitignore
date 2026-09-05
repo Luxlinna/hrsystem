@@ -1,15 +1,17 @@
-# Supabase
-.branches
-.temp
-
-# dotenvx
-.env.keys
-.env.local
-.env.*.local
-
-# Edge Function secrets (do not commit)
-functions/.env
 node_modules
 dist
 out
 dist-ssr
+*.local
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
+.claude
+
+supabase/.temp
+supabase/.branches
+.temp-backups
+*.sql.gz
