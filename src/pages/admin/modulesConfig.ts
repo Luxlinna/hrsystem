@@ -1,7 +1,7 @@
 export const ALL_MODULES = [
   { key: "dashboard", label: "Dashboard", icon: "ri-dashboard-line", group: "Core" },
   { key: "employees", label: "Employees", icon: "ri-user-search-line", group: "Core" },
-  { key: "branches", label: "Branches", icon: "ri-building-line", group: "Core" },
+  { key: "branches", label: "BU", icon: "ri-building-line", group: "Core" },
   { key: "analytics", label: "Analytics", icon: "ri-bar-chart-2-line", group: "Core" },
   { key: "onboarding", label: "Onboarding", icon: "ri-user-add-line", group: "Workforce" },
   { key: "onboarding-checklist", label: "Onboarding Checklist", icon: "ri-task-line", group: "Workforce" },

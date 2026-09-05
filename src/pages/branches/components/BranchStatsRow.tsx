@@ -12,11 +12,11 @@ export const BranchStatsRow = memo(function BranchStatsRow({
   totalEmployees,
 }: BranchStatsRowProps) {
   const stats = [
-    { label: "Total Branches", value: totalBranches, icon: "ri-building-2-line", color: "#253C7D" },
+    { label: "Total BU", value: totalBranches, icon: "ri-building-2-line", color: "#253C7D" },
     { label: "Active", value: activeBranches, icon: "ri-checkbox-circle-line", color: "#059669" },
     { label: "Total Employees", value: totalEmployees.toLocaleString(), icon: "ri-user-3-line", color: "#7C3AED" },
     {
-      label: "Avg per Branch",
+      label: "Avg per BU",
       value: Math.round(totalEmployees / Math.max(totalBranches, 1)),
       icon: "ri-group-line",
       color: "#D97706",

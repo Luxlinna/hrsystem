@@ -60,7 +60,7 @@ function BranchDetailDrawerInner({
               <button
                 onClick={() => onOpenEditModal(branch)}
                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
-                title="Edit branch"
+                title="Edit BU"
               >
                 <i className="ri-edit-line text-white text-sm" />
               </button>
@@ -69,7 +69,7 @@ function BranchDetailDrawerInner({
               <button
                 onClick={() => onDeleteBranch(branch)}
                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20 hover:bg-red-500/80 transition-colors cursor-pointer"
-                title="Delete branch"
+                title="Delete BU"
               >
                 <i className="ri-delete-bin-line text-white text-sm" />
               </button>
@@ -146,7 +146,7 @@ function BranchDetailDrawerInner({
             }`}
           >
             <i className={branch.status === "active" ? "ri-close-circle-line mr-1" : "ri-checkbox-circle-line mr-1"} />
-            {branch.status === "active" ? "Deactivate Branch" : "Reactivate Branch"}
+            {branch.status === "active" ? "Deactivate BU" : "Reactivate BU"}
           </button>
         )}
       </div>

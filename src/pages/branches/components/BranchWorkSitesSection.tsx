@@ -32,7 +32,7 @@ export const BranchWorkSitesSection = memo(function BranchWorkSitesSection({
     <div className="p-5 border-b border-gray-100">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-          <i className="ri-building-2-line" /> Work Sites
+          <i className="ri-map-pin-2-line" /> Branch Sites
           {sites.length > 0 && (
             <span className="bg-[#253C7D]/10 text-[#253C7D] text-[10px] font-bold px-1.5 py-0.5 rounded-full">
               {sites.length}
@@ -45,23 +45,23 @@ export const BranchWorkSitesSection = memo(function BranchWorkSitesSection({
             onClick={openAddModal}
             className="text-[11px] font-semibold text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer"
           >
-            <i className="ri-add-line" /> Add Site
+            <i className="ri-add-line" /> Add Branch Site
           </button>
         )}
       </div>
 
       {sitesLoading ? (
-        <p className="text-xs text-gray-400 py-2">Loading work sites...</p>
+        <p className="text-xs text-gray-400 py-2">Loading branch sites...</p>
       ) : sites.length === 0 ? (
         <div className="p-4 rounded-xl border border-dashed border-gray-200 text-center">
-          <p className="text-xs text-gray-400 italic">No work sites configured for this branch.</p>
+          <p className="text-xs text-gray-400 italic">No branch sites configured for this BU.</p>
           {canManage && (
             <button
               type="button"
               onClick={openAddModal}
               className="mt-2 text-xs font-semibold text-[#253C7D] hover:underline cursor-pointer"
             >
-              + Add first site (e.g. Kampong Thom Site)
+              + Add first branch site (e.g. Kampong Thom Site)
             </button>
           )}
         </div>

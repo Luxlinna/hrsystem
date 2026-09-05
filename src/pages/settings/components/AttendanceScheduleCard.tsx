@@ -1,5 +1,5 @@
 import { BranchInfo } from "@/context/branchTypes";
-import { keyLabels, ATTENDANCE_SCHEDULE_KEYS } from "../constants";
+import { keyLabels } from "../constants";
 
 interface AttendanceScheduleCardProps {
   getVal: (key: string) => string;
@@ -26,6 +26,118 @@ export function AttendanceScheduleCard({
 }: AttendanceScheduleCardProps) {
   const isSiteOrBranch = settingsScope !== "all" && currentBranchOrSite;
 
+  const CORE_SCHEDULE_KEYS = [
+    "working_days",
+    "work_start_time",
+    "work_end_time",
+    "break_start_time",
+    "break_end_time",
+    "late_grace_minutes",
+    "early_leave_grace_minutes",
+    "saturday_start_time",
+    "saturday_end_time",
+    "checkout_reminder_minutes",
+  ];
+
+  const renderField = (key: string, customBg?: string) => {
+    const isSiteEditable = [
+      "work_start_time",
+      "work_end_time",
+      "break_start_time",
+      "break_end_time",
+      "late_grace_minutes",
+      "early_leave_grace_minutes",
+      "morning_check_in_start",
+      "morning_check_in_end",
+      "morning_check_out_start",
+      "morning_check_out_end",
+      "afternoon_check_in_start",
+      "afternoon_check_in_end",
+      "afternoon_check_out_start",
+      "afternoon_check_out_end",
+    ].includes(key);
+    const isBranchEditable = [
+      "work_start_time",
+      "work_end_time",
+      "late_grace_minutes",
+      "early_leave_grace_minutes",
+      "morning_check_in_start",
+      "morning_check_in_end",
+      "morning_check_out_start",
+      "morning_check_out_end",
+      "afternoon_check_in_start",
+      "afternoon_check_in_end",
+      "afternoon_check_out_start",
+      "afternoon_check_out_end",
+    ].includes(key);
+    const isCustomField = isSiteOrBranch && (currentBranchOrSite.is_site ? isSiteEditable : isBranchEditable);
+
+    let helperText = "";
+    if (key === "work_start_time") helperText = "Shift start time. Scans before this are on-time, after are marked late.";
+    if (key === "morning_check_in_start") helperText = "Earliest biometric check-in accepted (e.g. 06:00 AM).";
+    if (key === "morning_check_in_end") helperText = "Latest check-in accepted (e.g. 09:00 AM). Scans after this are NOT recorded.";
+    if (key === "break_start_time") helperText = "Morning shift end / lunch start (e.g. 11:30 AM). Scans before this are early checkout.";
+    if (key === "morning_check_out_start") helperText = "Earliest morning checkout accepted (e.g. 10:00 AM).";
+    if (key === "morning_check_out_end") helperText = "Latest morning checkout accepted (e.g. 12:00 PM). Scans after this are NOT recorded.";
+    if (key === "break_end_time") helperText = "Afternoon shift start (e.g. 01:00 PM). Scans before this are on-time, after are marked late.";
+    if (key === "afternoon_check_in_start") helperText = "Earliest afternoon check-in accepted (e.g. 12:00 PM).";
+    if (key === "afternoon_check_in_end") helperText = "Latest afternoon check-in accepted (e.g. 02:00 PM). Scans after this are NOT recorded.";
+    if (key === "work_end_time") helperText = "Afternoon shift end time (e.g. 05:00 PM).";
+    if (key === "afternoon_check_out_start") helperText = "Earliest afternoon checkout accepted (e.g. 04:00 PM). Scans before shift end are early checkout.";
+    if (key === "afternoon_check_out_end") helperText = "Latest afternoon checkout accepted (e.g. 06:00 PM). Scans after this are NOT recorded.";
+
+    return (
+      <div
+        key={key}
+        className={`min-w-0 p-3.5 rounded-xl border ${
+          isCustomField ? "border-blue-200 bg-blue-50/40" : customBg || "border-gray-100 bg-white"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-[12px] font-bold text-gray-800">
+            {keyLabels[key]}
+          </label>
+          {isCustomField && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-[#253C7D]">
+              {currentBranchOrSite.is_site ? "Site Custom" : "BU Custom"}
+            </span>
+          )}
+          {isSiteOrBranch && !isCustomField && (
+            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+              Company Default
+            </span>
+          )}
+        </div>
+        {helperText && (
+          <p className="text-[10px] text-gray-400 mb-1.5 leading-snug">{helperText}</p>
+        )}
+        <div className="flex gap-2 mt-1">
+          <input
+            type={
+              key.includes("time") || key.includes("start") || key.includes("end")
+                ? "time"
+                : key === "working_days"
+                  ? "text"
+                  : "number"
+            }
+            value={getVal(key)}
+            onChange={(e) => updateValue(key, e.target.value)}
+            className="min-w-0 flex-1 px-3.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#253C7D]"
+          />
+          {edited[key] !== undefined && saveSetting && (
+            <button
+              onClick={() => saveSetting(key)}
+              disabled={saving}
+              className="px-3 py-1.5 bg-[#253C7D] text-white text-xs font-bold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 shrink-0 cursor-pointer"
+            >
+              Save
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full border border-[#253C7D]/30 bg-white rounded-2xl overflow-hidden shadow-xs transition-all">
       {/* Header with Scope Switcher */}
@@ -43,14 +155,14 @@ export function AttendanceScheduleCard({
               </h3>
               {isSiteOrBranch && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30">
-                  {currentBranchOrSite.is_site ? "Work Site Override" : "Branch Override"}
+                  {currentBranchOrSite.is_site ? "Branch Site Override" : "BU Override"}
                 </span>
               )}
             </div>
             <p className="text-[12px] text-white/80 mt-0.5">
               {isSiteOrBranch
-                ? `Custom working hours and lunch break for ${currentBranchOrSite.name}. Overrides company defaults.`
-                : "Default working days, shift hours, lunch break, and grace periods for the whole company."}
+                ? `Custom working hours, grace periods, and biometric scan windows for ${currentBranchOrSite.name}. Overrides company defaults.`
+                : "Default working days, shift hours, lunch break, grace periods, and biometric scan windows for the whole company."}
             </p>
           </div>
         </div>
@@ -69,7 +181,7 @@ export function AttendanceScheduleCard({
               <option value="all">🏢 Company-Wide Defaults</option>
               {visibleBranches.map((b) => (
                 <option key={b.id} value={b.id}>
-                  {b.is_site ? `📍 Site: ${b.name}` : `🏢 Branch: ${b.name}`}
+                  {b.is_site ? `📍 Site: ${b.name}` : `🏢 BU: ${b.name}`}
                 </option>
               ))}
             </select>
@@ -77,7 +189,7 @@ export function AttendanceScheduleCard({
         )}
       </div>
 
-      <div className="p-5 sm:p-6 space-y-5">
+      <div className="p-5 sm:p-6 space-y-6">
         {/* If editing a site, highlight 4-punch mode toggle */}
         {isSiteOrBranch && currentBranchOrSite.is_site && (
           <div className="flex items-center justify-between p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-xl">
@@ -100,100 +212,60 @@ export function AttendanceScheduleCard({
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {ATTENDANCE_SCHEDULE_KEYS.map((key) => {
-            const isSiteEditable = [
-              "work_start_time",
-              "work_end_time",
-              "break_start_time",
-              "break_end_time",
-              "late_grace_minutes",
-              "early_leave_grace_minutes",
+        {/* 1. Core Working Hours & Grace Periods */}
+        <div>
+          <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <i className="ri-time-line text-[#253C7D]" /> Working Hours & Grace Periods
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {CORE_SCHEDULE_KEYS.map((key) => renderField(key))}
+          </div>
+        </div>
+
+        {/* 2. Morning Biometric Scan Windows */}
+        <div className="bg-amber-50/60 p-4 sm:p-5 rounded-2xl border border-amber-200/70 space-y-3.5">
+          <div className="flex items-center gap-2">
+            <i className="ri-shield-time-line text-amber-700 text-base" />
+            <div>
+              <h4 className="text-[12px] font-bold text-amber-900 uppercase tracking-wider">
+                Morning Biometric Scan Windows
+              </h4>
+              <p className="text-[11px] text-amber-700">
+                Strict scan filter: Machine scans outside these windows will NOT be recorded.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {[
               "morning_check_in_start",
               "morning_check_in_end",
               "morning_check_out_start",
               "morning_check_out_end",
+            ].map((k) => renderField(k, "border-amber-200/60 bg-white"))}
+          </div>
+        </div>
+
+        {/* 3. Afternoon Biometric Scan Windows */}
+        <div className="bg-indigo-50/60 p-4 sm:p-5 rounded-2xl border border-indigo-200/70 space-y-3.5">
+          <div className="flex items-center gap-2">
+            <i className="ri-time-line text-indigo-700 text-base" />
+            <div>
+              <h4 className="text-[12px] font-bold text-indigo-900 uppercase tracking-wider">
+                Afternoon Biometric Scan Windows
+              </h4>
+              <p className="text-[11px] text-indigo-700">
+                Strict scan filter: Machine scans outside these windows will NOT be recorded.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {[
               "afternoon_check_in_start",
               "afternoon_check_in_end",
               "afternoon_check_out_start",
               "afternoon_check_out_end",
-            ].includes(key);
-            const isBranchEditable = [
-              "work_start_time",
-              "work_end_time",
-              "late_grace_minutes",
-              "early_leave_grace_minutes",
-              "morning_check_in_start",
-              "morning_check_in_end",
-              "morning_check_out_start",
-              "morning_check_out_end",
-              "afternoon_check_in_start",
-              "afternoon_check_in_end",
-              "afternoon_check_out_start",
-              "afternoon_check_out_end",
-            ].includes(key);
-            const isCustomField = isSiteOrBranch && (currentBranchOrSite.is_site ? isSiteEditable : isBranchEditable);
-
-            let helperText = "";
-            if (key === "work_start_time") helperText = "Shift start time. Scans before this are on-time, after are marked late.";
-            if (key === "morning_check_in_start") helperText = "Earliest biometric check-in accepted (e.g. 06:00 AM).";
-            if (key === "morning_check_in_end") helperText = "Latest check-in accepted (e.g. 09:00 AM). Scans after this are NOT recorded.";
-            if (key === "break_start_time") helperText = "Morning shift end / lunch start (e.g. 11:30 AM). Scans before this are early checkout.";
-            if (key === "morning_check_out_start") helperText = "Earliest morning checkout accepted (e.g. 10:00 AM).";
-            if (key === "morning_check_out_end") helperText = "Latest morning checkout accepted (e.g. 12:00 PM). Scans after this are NOT recorded.";
-            if (key === "break_end_time") helperText = "Afternoon shift start (e.g. 01:00 PM). Scans before this are on-time, after are marked late.";
-            if (key === "afternoon_check_in_start") helperText = "Earliest afternoon check-in accepted (e.g. 12:00 PM).";
-            if (key === "afternoon_check_in_end") helperText = "Latest afternoon check-in accepted (e.g. 02:00 PM). Scans after this are NOT recorded.";
-            if (key === "work_end_time") helperText = "Afternoon shift end time (e.g. 05:00 PM).";
-            if (key === "afternoon_check_out_start") helperText = "Earliest afternoon checkout accepted (e.g. 04:00 PM). Scans before shift end are early checkout.";
-            if (key === "afternoon_check_out_end") helperText = "Latest afternoon checkout accepted (e.g. 06:00 PM). Scans after this are NOT recorded.";
-
-            return (
-              <div key={key} className={`min-w-0 p-3.5 rounded-xl border ${isCustomField ? "border-blue-200 bg-blue-50/30" : "border-gray-100 bg-white"}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[12px] font-bold text-gray-800">
-                    {keyLabels[key]}
-                  </label>
-                  {isCustomField && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-[#253C7D]">
-                      {currentBranchOrSite.is_site ? "Site Custom" : "Branch Custom"}
-                    </span>
-                  )}
-                  {isSiteOrBranch && !isCustomField && (
-                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
-                      Company Default
-                    </span>
-                  )}
-                </div>
-                {helperText && (
-                  <p className="text-[10px] text-gray-400 mb-1.5 leading-snug">{helperText}</p>
-                )}
-                <div className="flex gap-2 mt-1">
-                  <input
-                    type={
-                      key.includes("time") || key.includes("start") || key.includes("end")
-                        ? "time"
-                        : key === "working_days"
-                          ? "text"
-                          : "number"
-                    }
-                    value={getVal(key)}
-                    onChange={(e) => updateValue(key, e.target.value)}
-                    className="min-w-0 flex-1 px-3.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#253C7D]"
-                  />
-                  {edited[key] !== undefined && saveSetting && (
-                    <button
-                      onClick={() => saveSetting(key)}
-                      disabled={saving}
-                      className="px-3 py-1.5 bg-[#253C7D] text-white text-xs font-bold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 shrink-0 cursor-pointer"
-                    >
-                      Save
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+            ].map((k) => renderField(k, "border-indigo-200/60 bg-white"))}
+          </div>
         </div>
 
         <p className="text-[11px] text-gray-500 border-t border-gray-100 pt-4 leading-relaxed">

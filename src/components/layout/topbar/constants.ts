@@ -23,7 +23,7 @@ export interface DrawerGroup {
 const CORE_ITEMS: DrawerItem[] = [
   { path: "/", label: "Dashboard", sublabel: "Main overview", icon: "ri-dashboard-line", module: "dashboard" },
   { path: "/employees", label: "Directory", sublabel: "Browse all staff", icon: "ri-user-search-line", module: "employees" },
-  { path: "/branches", label: "Branches", sublabel: "10 branches", icon: "ri-building-line", module: "branches" },
+  { path: "/branches", label: "BU", sublabel: "Business Unique / Units", icon: "ri-building-line", module: "branches" },
   { path: "/analytics", label: "Analytics", sublabel: "Charts & insights", icon: "ri-bar-chart-2-line", module: "analytics" },
 ];
 

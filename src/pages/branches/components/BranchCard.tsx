@@ -52,7 +52,7 @@ export const BranchCard = memo(function BranchCard({
                 onDelete(branch);
               }}
               className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
-              title="Delete branch"
+              title="Delete BU"
             >
               <i className="ri-delete-bin-line text-xs" />
             </button>

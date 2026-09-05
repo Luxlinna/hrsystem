@@ -46,10 +46,10 @@ export const BranchModal = memo(function BranchModal({
         <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
           <div>
             <h2 className="text-[16px] font-bold text-gray-900">
-              {editingBranchId ? "Edit Branch" : "Add New Branch"}
+              {editingBranchId ? "Edit Business Unit (BU)" : "Add New Business Unit (BU)"}
             </h2>
             <p className="text-[12px] text-gray-500 mt-0.5">
-              {editingBranchId ? "Update this branch's details" : "Create a new office or branch location"}
+              {editingBranchId ? "Update this Business Unit's details" : "Create a new Business Unit location"}
             </p>
           </div>
           <button
@@ -64,13 +64,13 @@ export const BranchModal = memo(function BranchModal({
         <div className="p-6 space-y-5 overflow-y-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch Name *</label>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Business Unit (BU) Name *</label>
               <input
                 type="text"
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g., West Branch - Los Angeles"
+                placeholder="e.g., Pinex Agro or Phnom Penh Head Office"
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
               />
             </div>
@@ -81,12 +81,12 @@ export const BranchModal = memo(function BranchModal({
                 required
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
-                placeholder="e.g., Los Angeles, CA"
+                placeholder="e.g., Phnom Penh, Cambodia"
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
               />
             </div>
             <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch Manager *</label>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Manager *</label>
               <input
                 type="text"
                 required
@@ -198,134 +198,12 @@ export const BranchModal = memo(function BranchModal({
               </div>
             </div>
 
-            {/* Morning Scan Windows */}
-            <div className="bg-amber-50/60 p-3.5 rounded-xl border border-amber-200/70 space-y-3">
-              <div className="flex items-center gap-2">
-                <i className="ri-shield-time-line text-amber-700 text-sm" />
-                <div>
-                  <h5 className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">Morning Biometric Scan Windows</h5>
-                  <p className="text-[10px] text-amber-700">Strict scan filter: Machine scans outside these windows will NOT be recorded.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-amber-900 mb-1">
-                    Check-In Window Start (Earliest)
-                  </label>
-                  <input
-                    type="time"
-                    value={form.morning_check_in_start || "06:00"}
-                    onChange={(e) => setForm({ ...form, morning_check_in_start: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-amber-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <p className="text-[9px] text-amber-600 mt-0.5">Default 06:00 AM</p>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-amber-900 mb-1">
-                    Check-In Window End (Latest Cutoff)
-                  </label>
-                  <input
-                    type="time"
-                    value={form.morning_check_in_end || "09:00"}
-                    onChange={(e) => setForm({ ...form, morning_check_in_end: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-amber-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <p className="text-[9px] text-amber-600 mt-0.5">Default 09:00 AM. Scans after are rejected.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-amber-200/50">
-                <div>
-                  <label className="block text-[10px] font-bold text-amber-900 mb-1">
-                    Morning Check-Out Window Start
-                  </label>
-                  <input
-                    type="time"
-                    value={form.morning_check_out_start || "10:00"}
-                    onChange={(e) => setForm({ ...form, morning_check_out_start: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-amber-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <p className="text-[9px] text-amber-600 mt-0.5">Default 10:00 AM</p>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-amber-900 mb-1">
-                    Morning Check-Out Window End
-                  </label>
-                  <input
-                    type="time"
-                    value={form.morning_check_out_end || "12:00"}
-                    onChange={(e) => setForm({ ...form, morning_check_out_end: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-amber-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <p className="text-[9px] text-amber-600 mt-0.5">Default 12:00 PM. Scans after are rejected.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Afternoon Scan Windows */}
-            <div className="bg-indigo-50/60 p-3.5 rounded-xl border border-indigo-200/70 space-y-3">
-              <div className="flex items-center gap-2">
-                <i className="ri-time-line text-indigo-700 text-sm" />
-                <div>
-                  <h5 className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider">Afternoon Biometric Scan Windows</h5>
-                  <p className="text-[10px] text-indigo-700">Strict scan filter: Machine scans outside these windows will NOT be recorded.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-indigo-900 mb-1">
-                    Afternoon Check-In Window Start (Earliest)
-                  </label>
-                  <input
-                    type="time"
-                    value={form.afternoon_check_in_start || "12:00"}
-                    onChange={(e) => setForm({ ...form, afternoon_check_in_start: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-indigo-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <p className="text-[9px] text-indigo-600 mt-0.5">Default 12:00 PM</p>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-indigo-900 mb-1">
-                    Afternoon Check-In Window End (Latest Cutoff)
-                  </label>
-                  <input
-                    type="time"
-                    value={form.afternoon_check_in_end || "14:00"}
-                    onChange={(e) => setForm({ ...form, afternoon_check_in_end: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-indigo-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <p className="text-[9px] text-indigo-600 mt-0.5">Default 02:00 PM. Scans after are rejected.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-indigo-200/50">
-                <div>
-                  <label className="block text-[10px] font-bold text-indigo-900 mb-1">
-                    Afternoon Check-Out Window Start
-                  </label>
-                  <input
-                    type="time"
-                    value={form.afternoon_check_out_start || "16:00"}
-                    onChange={(e) => setForm({ ...form, afternoon_check_out_start: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-indigo-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <p className="text-[9px] text-indigo-600 mt-0.5">Default 04:00 PM. Scans before 05:00 PM are early leave.</p>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-indigo-900 mb-1">
-                    Afternoon Check-Out Window End
-                  </label>
-                  <input
-                    type="time"
-                    value={form.afternoon_check_out_end || "18:00"}
-                    onChange={(e) => setForm({ ...form, afternoon_check_out_end: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-indigo-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#253C7D]"
-                  />
-                  <p className="text-[9px] text-indigo-600 mt-0.5">Default 06:00 PM. Scans after are rejected.</p>
-                </div>
-              </div>
+            <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 flex items-start gap-2.5">
+              <i className="ri-information-line text-[#253C7D] text-base shrink-0 mt-0.5" />
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                Biometric morning and afternoon scan windows are configured under{" "}
+                <span className="font-semibold text-[#253C7D]">Settings → Attendance Schedule</span>.
+              </p>
             </div>
           </div>
         </div>
@@ -343,7 +221,7 @@ export const BranchModal = memo(function BranchModal({
             disabled={submitting}
             className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-60 cursor-pointer"
           >
-            {submitting ? "Saving..." : editingBranchId ? "Save Changes" : "Create Branch"}
+            {submitting ? "Saving..." : editingBranchId ? "Save Changes" : "Create BU"}
           </button>
         </div>
       </form>

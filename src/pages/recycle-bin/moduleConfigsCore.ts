@@ -3,11 +3,11 @@ import type { ModuleConfig } from "./types";
 export const CORE_MODULES: ModuleConfig[] = [
   {
     table: "branches",
-    name: "Branches",
+    name: "BU",
     icon: "ri-building-2-line",
     select: "id, name, location, manager_name, status, deleted_at, deleted_by",
     label: (r) => r.name,
-    detail: (r) => `Branch · ${r.location} · ${r.status}`,
+    detail: (r) => `BU · ${r.location} · ${r.status}`,
     applyBranchFilter: (q, b) => q.eq("id", b),
   },
   {

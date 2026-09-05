@@ -126,10 +126,10 @@ export const WorkSiteModal = memo(function WorkSiteModal({
         <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
           <div>
             <h2 className="text-[16px] font-bold text-gray-900">
-              {editingSite ? "Edit Work Site" : "Add New Work Site"}
+              {editingSite ? "Edit Branch Site" : "Add New Branch Site"}
             </h2>
             <p className="text-[12px] text-gray-500 mt-0.5">
-              {editingSite ? "Update site location, geofence and attendance rules" : "Create a new branch site, farm, or factory"}
+              {editingSite ? "Update branch site location, geofence and attendance rules" : "Create a new branch site, farm, or factory"}
             </p>
           </div>
           <button
@@ -144,7 +144,7 @@ export const WorkSiteModal = memo(function WorkSiteModal({
         <div className="p-6 space-y-5 overflow-y-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Site Name *</label>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch Site Name *</label>
               <input
                 type="text"
                 required

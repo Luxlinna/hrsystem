@@ -41,7 +41,7 @@ export function BranchesSection() {
     return (
       <div className="flex items-center gap-2 text-gray-400">
         <div className="w-4 h-4 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
-        <span className="text-[13px]">Loading branches...</span>
+        <span className="text-[13px]">Loading BU...</span>
       </div>
     );
   }
@@ -65,7 +65,7 @@ export function BranchesSection() {
           to="/branches"
           className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors whitespace-nowrap"
         >
-          Manage in Branch Module
+          Manage in BU Module
         </Link>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

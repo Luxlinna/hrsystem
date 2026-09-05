@@ -124,15 +124,15 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
             </div>
           </div>
 
-          {/* Assigned Work Site */}
+          {/* Assigned Branch Site */}
           <div>
-            <label className="block text-[11px] font-semibold text-gray-700 mb-1">Assigned Work Site</label>
+            <label className="block text-[11px] font-semibold text-gray-700 mb-1">Assigned Branch Site</label>
             <select
               value={form.work_location_id}
               onChange={(e) => setForm({ ...form, work_location_id: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#253C7D] cursor-pointer"
             >
-              <option value="">{branchName || "Main Branch Location"}</option>
+              <option value="">{branchName || "Main BU Location"}</option>
               {sites.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

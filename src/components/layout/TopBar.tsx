@@ -109,7 +109,7 @@ export default function TopBar() {
               )}
               {can("branches") && (
                 <Link to="/branches" className={`text-[13px] font-medium ${textColor} transition-colors`}>
-                  Branches
+                  BU
                 </Link>
               )}
               {can("analytics") && (
@@ -144,9 +144,9 @@ export default function TopBar() {
                   value={selectedBranchId}
                   onChange={(e) => setSelectedBranchId(e.target.value)}
                   className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer max-w-[150px] truncate"
-                  title="Select branch or site"
+                  title="Select BU or branch site"
                 >
-                  {visibleBranches.length === 0 && <option value="">No Branches</option>}
+                  {visibleBranches.length === 0 && <option value="">No BU</option>}
                   {visibleBranches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.is_site ? `↳ ${b.name} (Site)` : b.name}

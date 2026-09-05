@@ -10,7 +10,7 @@ export const SETTINGS_SECTIONS = [
   { key: "appearance", label: "Appearance" },
   { key: "notifications", label: "Notifications" },
   { key: "permissions", label: "Permissions" },
-  { key: "branches", label: "Branches" },
+  { key: "branches", label: "BU" },
   { key: "integrations", label: "Integrations" },
 ];
 

@@ -37,11 +37,11 @@ export function useBranchMutations({
     async (form: BranchFormState) => {
       if (!form.name || !form.location || !form.manager_name) return;
       if (!editingBranchId && !canCreateBranch) {
-        toast("Access Denied", "Only Super Admin can create new branches.", "error");
+        toast("Access Denied", "Only Super Admin can create new BUs.", "error");
         return;
       }
       if (editingBranchId && isBranchAdmin && userBranchId && editingBranchId !== userBranchId) {
-        toast("Access Denied", "You can only manage your own branch.", "error");
+        toast("Access Denied", "You can only manage your own BU.", "error");
         return;
       }
       setSubmitting(true);
@@ -96,7 +96,7 @@ export function useBranchMutations({
           })
           .eq("id", editingBranchId);
         if (error) {
-          toast("Error", error.message || "Failed to update branch", "error");
+          toast("Error", error.message || "Failed to update BU", "error");
           setSubmitting(false);
           return;
         }
@@ -127,7 +127,7 @@ export function useBranchMutations({
           .select("id")
           .single();
         if (error) {
-          toast("Error", error.message || "Failed to create branch", "error");
+          toast("Error", error.message || "Failed to create BU", "error");
           setSubmitting(false);
           return;
         }
@@ -141,14 +141,14 @@ export function useBranchMutations({
         entityId: entityId || undefined,
         actorName,
         actorRole: roleName,
-        description: `${editingBranchId ? "Updated" : "Created"} branch "${form.name}" in ${form.location}`,
+        description: `${editingBranchId ? "Updated" : "Created"} BU "${form.name}" in ${form.location}`,
       });
 
       setSubmitting(false);
       setShowAddModal(false);
       setEditingBranchId(null);
       await loadBranches();
-      toast("Success", editingBranchId ? "Branch updated successfully" : "Branch created successfully", "success");
+      toast("Success", editingBranchId ? "BU updated successfully" : "BU created successfully", "success");
     },
     [canCreateBranch, editingBranchId, isBranchAdmin, userBranchId, actorName, roleName, loadBranches, setShowAddModal, setEditingBranchId]
   );
@@ -158,7 +158,7 @@ export function useBranchMutations({
       const nextStatus = branch.status === "active" ? "inactive" : "active";
       const { error } = await supabase.from("branches").update({ status: nextStatus }).eq("id", branch.id);
       if (error) {
-        toast("Error", error.message || "Failed to update branch status", "error");
+        toast("Error", error.message || "Failed to update BU status", "error");
         return;
       }
       await logActivity({
@@ -168,26 +168,26 @@ export function useBranchMutations({
         entityId: branch.id,
         actorName,
         actorRole: roleName,
-        description: `Changed branch "${branch.name}" status from ${branch.status} to ${nextStatus}`,
+        description: `Changed BU "${branch.name}" status from ${branch.status} to ${nextStatus}`,
       });
       if (selectedBranch?.id === branch.id) {
         setSelectedBranch({ ...selectedBranch, status: nextStatus });
       }
       await loadBranches();
-      toast("Status updated", `Branch "${branch.name}" is now ${nextStatus}`, "success");
+      toast("Status updated", `BU "${branch.name}" is now ${nextStatus}`, "success");
     },
     [actorName, roleName, selectedBranch, setSelectedBranch, loadBranches]
   );
 
   const handleDeleteBranch = useCallback(
     async (branch: Branch) => {
-      if (!confirm(`Are you sure you want to move branch "${branch.name}" to Recycle Bin?`)) return;
+      if (!confirm(`Are you sure you want to move BU "${branch.name}" to Recycle Bin?`)) return;
       const { error } = await supabase
         .from("branches")
         .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
         .eq("id", branch.id);
       if (error) {
-        toast("Error", error.message || "Failed to delete branch", "error");
+        toast("Error", error.message || "Failed to delete BU", "error");
         return;
       }
       await logActivity({

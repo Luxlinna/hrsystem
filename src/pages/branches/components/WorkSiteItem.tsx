@@ -30,7 +30,7 @@ export const WorkSiteItem = memo(function WorkSiteItem({
           <span className="font-bold text-gray-900 text-[13px]">{site.name}</span>
           {site.is_default && (
             <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              Default Site
+              Default Branch Site
             </span>
           )}
           {site.is_four_punch_enabled && (
@@ -77,7 +77,7 @@ export const WorkSiteItem = memo(function WorkSiteItem({
           <button
             type="button"
             onClick={() => onEdit(site)}
-            title="Edit site geofence and schedule"
+            title="Edit branch site geofence and schedule"
             className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-[#253C7D] hover:bg-blue-50 cursor-pointer transition-colors"
           >
             <i className="ri-edit-line text-sm" />
@@ -85,7 +85,7 @@ export const WorkSiteItem = memo(function WorkSiteItem({
           <button
             type="button"
             onClick={() => onDeleteSite(site)}
-            title="Remove site"
+            title="Remove branch site"
             className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors"
           >
             <i className="ri-delete-bin-line text-sm" />

@@ -144,7 +144,7 @@ const MobileDrawer = memo(function MobileDrawer({
                 onChange={(e) => setSelectedBranchId(e.target.value)}
                 className="w-full bg-[#262626] text-white border border-white/15 rounded-xl px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-blue-500 cursor-pointer"
               >
-                {visibleBranches.length === 0 && <option value="">No Branches</option>}
+                {visibleBranches.length === 0 && <option value="">No BU</option>}
                 {visibleBranches.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.is_site ? `↳ ${b.name} (Site)` : b.name}
