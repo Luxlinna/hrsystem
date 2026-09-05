@@ -78,7 +78,16 @@ export const EmployeesGridView = memo(function EmployeesGridView({
               {e.first_name} {e.last_name}
             </h3>
             <p className="text-sm text-gray-500 mb-3 truncate">
-              {e.email || <span className="text-gray-400 italic text-xs">No email (Biometric only)</span>}
+              {e.email ? (
+                e.email
+              ) : e.phone ? (
+                <span className="text-gray-700 font-medium inline-flex items-center gap-1">
+                  <i className="ri-phone-line text-gray-400 text-xs" />
+                  {e.phone}
+                </span>
+              ) : (
+                <span className="text-gray-400 italic text-xs">No contact (Biometric only)</span>
+              )}
             </p>
             <div className="space-y-2">
               {visibleColumns.role && e.role && (

@@ -68,7 +68,16 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
             {e.first_name} {e.last_name}
           </p>
           <p className="text-xs text-gray-500 truncate">
-            {e.email || <span className="text-gray-400 italic">No email (Biometric only)</span>}
+            {e.email ? (
+              e.email
+            ) : e.phone ? (
+              <span className="text-gray-700 font-medium inline-flex items-center gap-1">
+                <i className="ri-phone-line text-gray-400 text-[11px]" />
+                {e.phone}
+              </span>
+            ) : (
+              <span className="text-gray-400 italic">No contact (Biometric only)</span>
+            )}
           </p>
         </div>
       </div>

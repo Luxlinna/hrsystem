@@ -89,13 +89,23 @@ export function useEmployeesMutations({
           resolvedBranch = targetBranch || null;
         }
 
-        const cleanEmail = form.email?.trim() ? form.email.trim().toLowerCase() : null;
+        let cleanEmail = form.email?.trim() ? form.email.trim().toLowerCase() : null;
+        let cleanPhone = form.phone?.trim() || null;
+
+        // Auto-detect if user typed phone into email or email into phone
+        if (cleanEmail && !cleanEmail.includes("@") && /\d/.test(cleanEmail)) {
+          if (!cleanPhone) cleanPhone = cleanEmail;
+          cleanEmail = null;
+        } else if (cleanPhone && cleanPhone.includes("@")) {
+          if (!cleanEmail) cleanEmail = cleanPhone.toLowerCase();
+          cleanPhone = null;
+        }
 
         const payload = {
           first_name: form.first_name.trim(),
           last_name: form.last_name.trim(),
           email: cleanEmail,
-          phone: form.phone?.trim() || null,
+          phone: cleanPhone,
           role: form.role?.trim() || "Staff",
           department: form.department,
           status: form.status,
@@ -116,7 +126,7 @@ export function useEmployeesMutations({
           entityId: newEmp.id,
           actorName,
           actorRole: roleName,
-          description: `Added new employee ${form.first_name} ${form.last_name}${cleanEmail ? ` (${cleanEmail})` : " (Biometric only)"}`,
+          description: `Added new employee ${form.first_name} ${form.last_name}${cleanEmail ? ` (${cleanEmail})` : cleanPhone ? ` (${cleanPhone})` : " (Biometric only)"}`,
         });
 
         await notify({

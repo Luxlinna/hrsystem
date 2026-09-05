@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
 import type { Branch, Employee, EmployeeFormState } from "../types";
 import { DEPARTMENTS, STATUS_OPTIONS } from "../constants";
 
@@ -34,6 +34,31 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
     branches.find((b) => b.id === form.branch_id)?.name ||
     "OPS sulotion";
 
+  const [contactType, setContactType] = useState<"email" | "phone">(() =>
+    form.phone && !form.email ? "phone" : "email"
+  );
+
+  useEffect(() => {
+    if (form.phone && !form.email) {
+      setContactType("phone");
+    } else if (form.email && !form.phone) {
+      setContactType("email");
+    }
+  }, [form.email, form.phone]);
+
+  const handleSwitchContactType = (type: "email" | "phone") => {
+    setContactType(type);
+    if (type === "phone") {
+      if (form.email && !form.phone) {
+        setForm((prev) => ({ ...prev, phone: prev.email, email: "" }));
+      }
+    } else {
+      if (form.phone && !form.email) {
+        setForm((prev) => ({ ...prev, email: prev.phone, phone: "" }));
+      }
+    }
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -62,37 +87,75 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Single Contact Field (Email or Phone) */}
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="block text-xs font-bold text-gray-700">
-              Email <span className="text-gray-400 font-normal">(Optional)</span>
+              {contactType === "email" ? "Email" : "Phone"}{" "}
+              <span className="text-gray-400 font-normal">(Optional)</span>
             </label>
-            <span className="text-[10px] text-gray-400">Biometric / No Device</span>
+            <div className="flex items-center bg-gray-100 p-0.5 rounded-lg text-[10px] font-semibold">
+              <button
+                type="button"
+                onClick={() => handleSwitchContactType("email")}
+                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                  contactType === "email"
+                    ? "bg-white text-[#253C7D] shadow-xs font-bold"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <i className="ri-mail-line text-[11px]" />
+                <span>Email</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSwitchContactType("phone")}
+                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                  contactType === "phone"
+                    ? "bg-white text-[#253C7D] shadow-xs font-bold"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <i className="ri-phone-line text-[11px]" />
+                <span>Phone</span>
+              </button>
+            </div>
           </div>
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D]"
-            placeholder="john@company.com (leave empty if none)"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+              <i className={contactType === "email" ? "ri-mail-line text-xs" : "ri-phone-line text-xs"} />
+            </div>
+            <input
+              type={contactType === "email" ? "email" : "tel"}
+              value={contactType === "email" ? form.email : form.phone}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (contactType === "phone") {
+                  if (val.includes("@")) {
+                    setContactType("email");
+                    setForm((prev) => ({ ...prev, email: val, phone: "" }));
+                  } else {
+                    setForm((prev) => ({ ...prev, phone: val, email: "" }));
+                  }
+                } else {
+                  setForm((prev) => ({ ...prev, email: val, phone: "" }));
+                }
+              }}
+              className="w-full pl-9 pr-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D]"
+              placeholder={
+                contactType === "email"
+                  ? "john@company.com (leave empty if none)"
+                  : "+855 12 345 678 or (555) 000-0000"
+              }
+            />
+          </div>
           <p className="text-[10px] text-gray-400 mt-1">
-            Optional for workers using fingerprint machines. Staff without an email cannot log into the web system.
+            {contactType === "email"
+              ? "Optional for workers using fingerprint machines. Staff without an email cannot log into the web system."
+              : "Optional for workers using phone or fingerprint machines instead of email."}
           </p>
         </div>
-        <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">Phone</label>
-          <input
-            type="tel"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D]"
-            placeholder="+1 (555) 000-0000"
-          />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">Job Title / Role</label>
           <input
@@ -103,6 +166,9 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
             className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D]"
           />
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">Department</label>
           <select
@@ -133,6 +199,25 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
               className="mt-2 w-full px-3.5 py-2 border border-blue-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-blue-50/40 placeholder-gray-400"
               autoFocus
             />
+          )}
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Reports To</label>
+          <select
+            value={form.reports_to}
+            onChange={(e) => setForm({ ...form, reports_to: e.target.value })}
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white cursor-pointer"
+          >
+            <option value="">No manager</option>
+            {managers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.first_name} {m.last_name} ({m.role})
+              </option>
+            ))}
+          </select>
+          {managers.length === 0 && (
+            <p className="text-[11px] text-gray-400 mt-1">No managers are available in the directory.</p>
           )}
         </div>
       </div>
@@ -228,24 +313,6 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">Reports To</label>
-          <select
-            value={form.reports_to}
-            onChange={(e) => setForm({ ...form, reports_to: e.target.value })}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white cursor-pointer"
-          >
-            <option value="">No manager</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.first_name} {m.last_name} ({m.role})
-              </option>
-            ))}
-          </select>
-          {managers.length === 0 && (
-            <p className="text-[11px] text-gray-400 mt-1">No managers are available in the directory.</p>
-          )}
-        </div>
-        <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">Status</label>
           <select
             value={form.status}
@@ -259,9 +326,6 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
             ))}
           </select>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">Join Date</label>
           <input

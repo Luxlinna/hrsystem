@@ -81,10 +81,17 @@ export function useEmployeesFilters({
       .filter((e) => {
         const fullName = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
         const email = (e.email || "").toLowerCase();
+        const phone = (e.phone || "").toLowerCase();
         const role = (e.role || "").toLowerCase();
         const dept = (e.department || "").toLowerCase();
         const q = search.toLowerCase();
-        const matchesSearch = !search || fullName.includes(q) || email.includes(q) || role.includes(q) || dept.includes(q);
+        const matchesSearch =
+          !search ||
+          fullName.includes(q) ||
+          email.includes(q) ||
+          phone.includes(q) ||
+          role.includes(q) ||
+          dept.includes(q);
         const matchesDept = !filterDept || e.department === filterDept;
         const matchesStatus = !filterStatus || e.status === filterStatus;
         let matchesBranch = true;
@@ -121,6 +128,9 @@ export function useEmployeesFilters({
         if (sortField === "first_name") {
           aVal = `${a.first_name} ${a.last_name}`;
           bVal = `${b.first_name} ${b.last_name}`;
+        } else if (sortField === "email") {
+          aVal = a.email || a.phone || "";
+          bVal = b.email || b.phone || "";
         }
         if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
         if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
