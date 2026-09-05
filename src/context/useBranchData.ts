@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { BranchInfo } from "./branchTypes";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export function useBranchData(userEmail?: string | null) {
   const [branches, setBranches] = useState<BranchInfo[]>([]);
@@ -87,15 +88,17 @@ export function useBranchData(userEmail?: string | null) {
       setLoading(false);
       return;
     }
-    const cleanEmail = userEmail.trim().toLowerCase();
-    const { data } = await supabase
-      .from("employees")
-      .select(`
-        id, branch_id, default_work_location_id,
-        branches(id, name),
-        work_locations:default_work_location_id(id, name)
-      `)
-      .ilike("email", cleanEmail)
+    const empQuery = applyUserEmployeeFilter(
+      supabase
+        .from("employees")
+        .select(`
+          id, branch_id, default_work_location_id,
+          branches(id, name),
+          work_locations:default_work_location_id(id, name)
+        `),
+      userEmail
+    );
+    const { data } = await empQuery
       .is("deleted_at", null)
       .maybeSingle();
 

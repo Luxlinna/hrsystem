@@ -7,6 +7,7 @@ import type { MeetingRoom, Booking, BookingEmployee } from "../types";
 import { ROOM_FLOORS, ROOM_AMENITIES, DEFAULT_AMENITIES } from "../constants";
 import { toYMD } from "../roomUtils";
 import { decodeCourseDescription } from "@/pages/training/components/modals/courseModalUtils";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export function useMeetingRoomsData(selectedDate: string) {
   const { user } = useAuth();
@@ -108,10 +109,13 @@ export function useMeetingRoomsData(selectedDate: string) {
       setEmployeeId("");
       return;
     }
-    supabase
-      .from("employees")
-      .select("id, first_name, last_name, department, role, avatar_url, email, branch_id")
-      .eq("email", user.email)
+    const empQuery = applyUserEmployeeFilter(
+      supabase
+        .from("employees")
+        .select("id, first_name, last_name, department, role, avatar_url, email, branch_id"),
+      user.email
+    );
+    empQuery
       .eq("branch_id", targetBranch)
       .maybeSingle()
       .then(({ data }) => {

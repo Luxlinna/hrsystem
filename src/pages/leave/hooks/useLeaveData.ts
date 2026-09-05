@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import type { LeaveRequest, Employee, LeaveTypePolicy } from "../types";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export function normalizeLeaveRequest(r: LeaveRequest): LeaveRequest {
   const isCancelled =
@@ -44,11 +45,13 @@ export function useLeaveData() {
         return;
       }
 
-      const { data: me } = await supabase
-        .from("employees")
-        .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to")
-        .eq("email", user.email)
-        .maybeSingle();
+      const meQuery = applyUserEmployeeFilter(
+        supabase
+          .from("employees")
+          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email, reports_to"),
+        user.email
+      );
+      const { data: me } = await meQuery.maybeSingle();
       setMyEmployee(me);
 
       if (me?.reports_to) {

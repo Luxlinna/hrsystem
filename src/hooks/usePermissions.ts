@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import type { UserRole, UsePermissionsReturn } from "./permissions/types";
 import { isBootstrapAdminEmail, bootstrapAdminRole } from "./permissions/bootstrapUtils";
 import { fetchRoleFromFunction, toUserRole } from "./permissions/roleUtils";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export type { UserRole, UsePermissionsReturn };
 export { isBootstrapAdminEmail };
@@ -32,10 +33,13 @@ export function usePermissions(): UsePermissionsReturn {
     const cleanEmail = currentUser.email?.trim().toLowerCase() || "";
 
     // 2. Employee Directory Status Check:
-    const { data: empCheck } = await supabase
-      .from("employees")
-      .select("id, status, deleted_at, branch_id, branches(id, status, deleted_at)")
-      .ilike("email", cleanEmail)
+    const empCheckQuery = applyUserEmployeeFilter(
+      supabase
+        .from("employees")
+        .select("id, status, deleted_at, branch_id, branches(id, status, deleted_at)"),
+      currentUser.email
+    );
+    const { data: empCheck } = await empCheckQuery
       .is("deleted_at", null)
       .maybeSingle();
 

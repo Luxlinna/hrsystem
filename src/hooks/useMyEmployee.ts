@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export interface MyEmployee {
   id: string;
@@ -46,10 +47,13 @@ export function useMyEmployee(): UseMyEmployeeReturn {
 
   const fetchEmployee = useCallback(async (email: string) => {
     setLoading(true);
-    const { data } = await supabase
-      .from("employees")
-      .select("id, first_name, last_name, role, department, avatar_url")
-      .ilike("email", email.trim().toLowerCase())
+    const empQuery = applyUserEmployeeFilter(
+      supabase
+        .from("employees")
+        .select("id, first_name, last_name, role, department, avatar_url"),
+      email
+    );
+    const { data } = await empQuery
       .is("deleted_at", null)
       .maybeSingle();
 

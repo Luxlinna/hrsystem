@@ -6,6 +6,7 @@ import { useOnboardingData } from "./useOnboardingData";
 import { useOnboardingCalculations } from "./useOnboardingCalculations";
 import { useOnboardingFilters } from "./useOnboardingFilters";
 import { useOnboardingMutations } from "./useOnboardingMutations";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export function useOnboarding() {
   const { user } = useAuth();
@@ -15,10 +16,13 @@ export function useOnboarding() {
 
   useEffect(() => {
     if (!user?.email) return;
-    supabase
-      .from("employees")
-      .select("first_name, last_name, role")
-      .eq("email", user.email)
+    const empQuery = applyUserEmployeeFilter(
+      supabase
+        .from("employees")
+        .select("first_name, last_name, role"),
+      user.email
+    );
+    empQuery
       .maybeSingle()
       .then(({ data }) => {
         if (data && (data.first_name || data.last_name)) {

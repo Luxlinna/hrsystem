@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import type { LeaveRequest, Employee } from "../types";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export function normalizeLeave(l: LeaveRequest): LeaveRequest {
   const isCancelled =
@@ -40,11 +41,13 @@ export function useLeaveCalendarData() {
       }
 
       let myEmp: Employee | null = null;
-      const { data: me } = await supabase
-        .from("employees")
-        .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email")
-        .eq("email", user.email)
-        .maybeSingle();
+      const meQuery = applyUserEmployeeFilter(
+        supabase
+          .from("employees")
+          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email"),
+        user.email
+      );
+      const { data: me } = await meQuery.maybeSingle();
       myEmp = me;
       setMyEmployee(me);
 

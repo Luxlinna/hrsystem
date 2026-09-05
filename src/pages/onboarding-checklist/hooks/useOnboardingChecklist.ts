@@ -5,6 +5,7 @@ import { useChecklistData } from "./useChecklistData";
 import { useChecklistCalculations } from "./useChecklistCalculations";
 import { useChecklistFilters } from "./useChecklistFilters";
 import { useChecklistMutations } from "./useChecklistMutations";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export function useOnboardingChecklist() {
   const { user } = useAuth();
@@ -12,10 +13,13 @@ export function useOnboardingChecklist() {
 
   useEffect(() => {
     if (!user?.email) return;
-    supabase
-      .from("employees")
-      .select("first_name, last_name, role")
-      .eq("email", user.email)
+    const empQuery = applyUserEmployeeFilter(
+      supabase
+        .from("employees")
+        .select("first_name, last_name, role"),
+      user.email
+    );
+    empQuery
       .maybeSingle()
       .then(({ data }) => {
         if (data && (data.first_name || data.last_name)) {

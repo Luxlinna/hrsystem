@@ -5,6 +5,7 @@ import { usePermissions, isBootstrapAdminEmail } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import { WORKABLE_STATUSES } from "../constants";
 import type { Task, Employee } from "../types";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export function useTasksData() {
   const { user } = useAuth();
@@ -23,10 +24,13 @@ export function useTasksData() {
       setCurrentEmployeeId(null);
       return;
     }
-    const { data } = await supabase
-      .from("employees")
-      .select("id, branch_id")
-      .eq("email", user.email)
+    const empQuery = applyUserEmployeeFilter(
+      supabase
+        .from("employees")
+        .select("id, branch_id"),
+      user.email
+    );
+    const { data } = await empQuery
       .eq("branch_id", targetBranch)
       .maybeSingle();
     if (data) setCurrentEmployeeId(data.id);

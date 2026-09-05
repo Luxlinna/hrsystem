@@ -5,6 +5,7 @@ import { todayYMD } from "@/lib/date";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { Employee } from "../types";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 import { SELF_SERVICE_TABS } from "../constants";
 
 export function useSelfServiceData() {
@@ -36,11 +37,13 @@ export function useSelfServiceData() {
     if (!user?.email) { setLoading(false); return; }
 
     (async () => {
-      const cleanEmail = user.email.trim().toLowerCase();
-      const { data } = await supabase
-        .from("employees")
-        .select("id, first_name, last_name, role, department, status, join_date, email, phone, avatar_url, reports_to, branch_id, branches(name)")
-        .ilike("email", cleanEmail)
+      const empQuery = applyUserEmployeeFilter(
+        supabase
+          .from("employees")
+          .select("id, first_name, last_name, role, department, status, join_date, email, phone, avatar_url, reports_to, branch_id, branches(name)"),
+        user.email
+      );
+      const { data } = await empQuery
         .is("deleted_at", null)
         .maybeSingle();
 

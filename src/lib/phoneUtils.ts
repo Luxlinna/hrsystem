@@ -105,3 +105,23 @@ export function getDisplayContact(email?: string | null, phone?: string | null):
   }
   return "—";
 }
+
+/**
+ * Applies an email/phone filter to a Supabase query on the `employees` table.
+ * If the user's account email is a synthetic phone email (e.g. 0968293478@phone.hrmsystem.local),
+ * it queries by both the synthetic email and the various phone digit representations.
+ * Otherwise, it filters by the user's standard email address.
+ */
+export function applyUserEmployeeFilter<T>(query: T, userEmail?: string | null): T {
+  if (!userEmail) return query;
+  const cleanEmail = userEmail.trim().toLowerCase();
+  if (isPhoneSyntheticEmail(cleanEmail)) {
+    const rawPhone = syntheticEmailToPhone(cleanEmail);
+    const noZero = rawPhone.replace(/^0+/, "");
+    const withZero = `0${noZero}`;
+    return (query as any).or(
+      `email.ilike.${cleanEmail},phone.eq.${withZero},phone.eq.${noZero},phone.eq.+855${noZero}`
+    );
+  }
+  return (query as any).ilike("email", cleanEmail);
+}

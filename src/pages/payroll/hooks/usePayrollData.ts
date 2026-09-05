@@ -5,6 +5,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
 import type { Employee, PayrollRecord, BranchPayrollPolicy, Branch } from "../types";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 import { DEFAULT_BRANCH_PAYROLL_POLICY } from "../constants";
 
 export function usePayrollData(
@@ -114,11 +115,13 @@ export function usePayrollData(
         // Individual staff self-service view
         let empRecord = myEmployee;
         if (!empRecord && user?.email) {
-          const { data: me } = await supabase
-            .from("employees")
-            .select("id, first_name, last_name, role, department, avatar_url, branch_id")
-            .eq("email", user.email)
-            .maybeSingle();
+          const meQuery = applyUserEmployeeFilter(
+            supabase
+              .from("employees")
+              .select("id, first_name, last_name, role, department, avatar_url, branch_id"),
+            user.email
+          );
+          const { data: me } = await meQuery.maybeSingle();
           if (me) empRecord = me as any;
         }
 

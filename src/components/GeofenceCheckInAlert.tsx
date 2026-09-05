@@ -6,6 +6,7 @@ import { todayYMD, zonedParts, zonedDayOfWeek, zonedTimeToInstant } from "@/lib/
 import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows, computeHoursWorked } from "@/lib/workSchedule";
 import { useAuth } from "@/context/AuthContext";
 import { notifyGeofenceEvent } from "@/lib/attendanceNotify";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 interface BranchGeofence {
   name: string;
@@ -45,15 +46,17 @@ export default function GeofenceCheckInAlert() {
       const today = todayYMD();
       const dedupeKey = (m: string) => `att_alert_${m}_${user.id}_${today}`;
 
-      const { data: employee } = await supabase
-        .from("employees")
-        .select(`
-          id, first_name, last_name, branch_id, default_work_location_id,
-          branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
-          work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time)
-        `)
-        .eq("email", user.email)
-        .maybeSingle();
+      const empQuery = applyUserEmployeeFilter(
+        supabase
+          .from("employees")
+          .select(`
+            id, first_name, last_name, branch_id, default_work_location_id,
+            branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
+            work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time)
+          `),
+        user.email
+      );
+      const { data: employee } = await empQuery.maybeSingle();
       if (cancelled || !employee) return;
 
       const mainBranch = (employee as any).branches;

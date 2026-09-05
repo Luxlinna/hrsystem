@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { todayYMD } from "@/lib/date";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 interface MyEmployee {
   id: string;
@@ -34,11 +35,13 @@ export default function SelfServiceHome() {
   useEffect(() => {
     if (!user?.email) return;
     (async () => {
-      const { data: emp } = await supabase
-        .from("employees")
-        .select("id, first_name, last_name, role, department, avatar_url, branches(name)")
-        .eq("email", user.email)
-        .maybeSingle();
+      const empQuery = applyUserEmployeeFilter(
+        supabase
+          .from("employees")
+          .select("id, first_name, last_name, role, department, avatar_url, branches(name)"),
+        user.email
+      );
+      const { data: emp } = await empQuery.maybeSingle();
 
       const myEmp = emp as unknown as MyEmployee | null;
       setMe(myEmp);

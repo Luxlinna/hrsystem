@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useBranchScope } from "@/context/BranchContext";
 import { toast } from "@/components/Toast";
 import type { Employee, AttendanceRecord, WorkLocation } from "../types";
+import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean = false) {
   const { user } = useAuth();
@@ -80,10 +81,13 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
       } else {
         let empRecord = myEmployee;
         if (!empRecord && user?.email) {
-          const { data: me } = await supabase
-            .from("employees")
-            .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id")
-            .eq("email", user.email)
+          const meQuery = applyUserEmployeeFilter(
+            supabase
+              .from("employees")
+              .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id"),
+            user.email
+          );
+          const { data: me } = await meQuery
             .eq("branch_id", targetBranch)
             .is("deleted_at", null)
             .maybeSingle();
