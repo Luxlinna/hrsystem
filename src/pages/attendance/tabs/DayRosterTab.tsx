@@ -139,6 +139,18 @@ export const DayRosterTab = memo(function DayRosterTab({
                         <span className="text-gray-500 text-[11px]">Check In:</span>
                         <span className="font-bold text-gray-900">{formatTime(rRecord.clock_in)}</span>
                       </div>
+                      {rRecord.break_out && (
+                        <div className="flex items-center justify-between text-amber-700">
+                          <span className="text-[11px] font-semibold">Lunch Out:</span>
+                          <span className="font-bold">{formatTime(rRecord.break_out)}</span>
+                        </div>
+                      )}
+                      {rRecord.break_in && (
+                        <div className="flex items-center justify-between text-indigo-700">
+                          <span className="text-[11px] font-semibold">Lunch In:</span>
+                          <span className="font-bold">{formatTime(rRecord.break_in)}</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
                         <span className="text-gray-500 text-[11px]">Check Out:</span>
                         <span className="font-bold text-gray-900">
@@ -152,11 +164,13 @@ export const DayRosterTab = memo(function DayRosterTab({
                           )}
                         </span>
                       </div>
-                      {rRecord.clock_in && rRecord.clock_out && (
+                      {(rRecord.hours_worked || (rRecord.clock_in && rRecord.clock_out)) && (
                         <div className="flex items-center justify-between pt-1 border-t border-gray-200/60">
                           <span className="text-gray-500 text-[11px]">Worked:</span>
                           <span className="font-bold text-[#253C7D]">
-                            {calcHours(rRecord.clock_in, rRecord.clock_out)}
+                            {rRecord.hours_worked && rRecord.hours_worked > 0
+                              ? `${rRecord.hours_worked}h`
+                              : calcHours(rRecord.clock_in, rRecord.clock_out)}
                           </span>
                         </div>
                       )}

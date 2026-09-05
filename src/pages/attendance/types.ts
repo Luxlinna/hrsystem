@@ -29,12 +29,15 @@ export interface AttendanceRecord {
   date: string;
   clock_in: string | null;
   clock_out: string | null;
+  break_out?: string | null;
+  break_in?: string | null;
+  hours_worked?: number | null;
   status: "ontime" | "present" | "absent" | "late" | "half_day" | "remote" | "holiday";
   late_minutes: number;
   early_leave_minutes?: number | null;
   notes: string | null;
   work_location_id?: string | null;
-  work_location?: { id: string; name: string } | null;
+  work_location?: { id: string; name: string; is_four_punch_enabled?: boolean } | null;
   employees?: Employee;
 }
 
@@ -43,6 +46,8 @@ export interface NewRecordForm {
   date: string;
   clock_in: string;
   clock_out: string;
+  break_out?: string;
+  break_in?: string;
   status: string;
   late_minutes: number;
   notes: string;

@@ -46,22 +46,47 @@ export const RecordDetailsBody = memo(function RecordDetailsBody({
       </div>
 
       {/* Check In / Out Time Matrix */}
-      <div className="grid grid-cols-2 gap-3.5">
-        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check In</span>
-          <p className="text-lg font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_in)}</p>
+      {selectedRecord.break_out || selectedRecord.break_in ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">1. Morning In</span>
+            <p className="text-base font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_in)}</p>
+          </div>
+          <div className="p-3.5 bg-amber-50/60 rounded-2xl border border-amber-100">
+            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">2. Lunch Out</span>
+            <p className="text-base font-black text-amber-900 mt-1">{formatTime(selectedRecord.break_out)}</p>
+          </div>
+          <div className="p-3.5 bg-indigo-50/60 rounded-2xl border border-indigo-100">
+            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">3. Lunch In</span>
+            <p className="text-base font-black text-indigo-900 mt-1">{formatTime(selectedRecord.break_in)}</p>
+          </div>
+          <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">4. Final Out</span>
+            <p className="text-base font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_out)}</p>
+          </div>
         </div>
-        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check Out</span>
-          <p className="text-lg font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_out)}</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-3.5">
+          <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check In</span>
+            <p className="text-lg font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_in)}</p>
+          </div>
+          <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check Out</span>
+            <p className="text-lg font-black text-gray-900 mt-1">{formatTime(selectedRecord.clock_out)}</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Hours Summary Card */}
       <div className="p-4 bg-[#253C7D]/5 border border-[#253C7D]/15 rounded-2xl flex items-center justify-between">
         <div>
           <span className="text-[10px] font-bold text-[#253C7D] uppercase tracking-wider block">Shift Total Duration</span>
-          <p className="text-xl font-black text-[#253C7D] mt-0.5">{calcHours(selectedRecord.clock_in, selectedRecord.clock_out)}</p>
+          <p className="text-xl font-black text-[#253C7D] mt-0.5">
+            {selectedRecord.hours_worked && selectedRecord.hours_worked > 0
+              ? `${selectedRecord.hours_worked}h`
+              : calcHours(selectedRecord.clock_in, selectedRecord.clock_out)}
+          </p>
         </div>
         <div className="w-10 h-10 rounded-xl bg-[#253C7D] text-white flex items-center justify-center">
           <i className="ri-hourglass-2-line text-lg" />

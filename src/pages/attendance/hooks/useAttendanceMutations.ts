@@ -41,6 +41,8 @@ export function useAttendanceMutations({
       date: newRecord.date,
       clock_in: newRecord.clock_in || null,
       clock_out: newRecord.clock_out || null,
+      break_out: newRecord.break_out || null,
+      break_in: newRecord.break_in || null,
       status: newRecord.status,
       late_minutes: newRecord.status === "late" ? newRecord.late_minutes : 0,
       notes: newRecord.notes ? newRecord.notes.trim() : null,
@@ -79,6 +81,8 @@ export function useAttendanceMutations({
       .update({
         clock_in: editingRecord.clock_in || null,
         clock_out: editingRecord.clock_out || null,
+        break_out: editingRecord.break_out || null,
+        break_in: editingRecord.break_in || null,
         status: editingRecord.status,
         late_minutes: editingRecord.status === "late" ? editingRecord.late_minutes : 0,
         notes: editingRecord.notes ? editingRecord.notes.trim() : null,

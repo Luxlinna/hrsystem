@@ -58,23 +58,48 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 bg-slate-50/70 p-3 rounded-2xl border border-gray-100 mb-3 text-center">
-                <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check In</span>
-                  <p className="font-extrabold text-gray-800 text-xs mt-0.5">{formatTime(r.clock_in)}</p>
+              {r.break_out || r.break_in ? (
+                <div className="grid grid-cols-4 gap-1.5 bg-slate-50/70 p-2.5 rounded-2xl border border-gray-100 mb-3 text-center">
+                  <div>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">In</span>
+                    <p className="font-extrabold text-gray-800 text-[11px] mt-0.5">{formatTime(r.clock_in)}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wider block">L.Out</span>
+                    <p className="font-extrabold text-amber-800 text-[11px] mt-0.5">{formatTime(r.break_out)}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider block">L.In</span>
+                    <p className="font-extrabold text-indigo-800 text-[11px] mt-0.5">{formatTime(r.break_in)}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Out</span>
+                    {isWorkingNow ? (
+                      <p className="font-bold text-sky-600 text-[11px] mt-0.5">Now</p>
+                    ) : (
+                      <p className="font-extrabold text-gray-800 text-[11px] mt-0.5">{formatTime(r.clock_out)}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check Out</span>
-                  {isWorkingNow ? (
-                    <p className="font-bold text-sky-600 text-xs mt-0.5 flex items-center justify-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-                      Working
-                    </p>
-                  ) : (
-                    <p className="font-extrabold text-gray-800 text-xs mt-0.5">{formatTime(r.clock_out)}</p>
-                  )}
+              ) : (
+                <div className="grid grid-cols-2 gap-2 bg-slate-50/70 p-3 rounded-2xl border border-gray-100 mb-3 text-center">
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check In</span>
+                    <p className="font-extrabold text-gray-800 text-xs mt-0.5">{formatTime(r.clock_in)}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Check Out</span>
+                    {isWorkingNow ? (
+                      <p className="font-bold text-sky-600 text-xs mt-0.5 flex items-center justify-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+                        Working
+                      </p>
+                    ) : (
+                      <p className="font-extrabold text-gray-800 text-xs mt-0.5">{formatTime(r.clock_out)}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {r.work_location?.name && (
                 <div className="mb-2 flex items-center justify-between text-[11px]">
@@ -96,7 +121,9 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
 
             <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-2">
-                <span className="font-black text-[#253C7D]">{calcHours(r.clock_in, r.clock_out)}</span>
+                <span className="font-black text-[#253C7D]">
+                  {r.hours_worked && r.hours_worked > 0 ? `${r.hours_worked}h` : calcHours(r.clock_in, r.clock_out)}
+                </span>
                 <span className="text-[11px] text-gray-400">
                   {new Date(r.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </span>

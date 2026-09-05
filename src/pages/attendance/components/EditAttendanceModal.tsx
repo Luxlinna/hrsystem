@@ -100,6 +100,31 @@ export const EditAttendanceModal = memo(function EditAttendanceModal({
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-3.5">
+            <div>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                Lunch Out (Break Out)
+              </label>
+              <input
+                type="time"
+                value={editingRecord.break_out || ""}
+                onChange={(e) => setEditingRecord({ ...editingRecord, break_out: e.target.value || null })}
+                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                Lunch In (Break In)
+              </label>
+              <input
+                type="time"
+                value={editingRecord.break_in || ""}
+                onChange={(e) => setEditingRecord({ ...editingRecord, break_in: e.target.value || null })}
+                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
+              />
+            </div>
+          </div>
+
           {editingRecord.status === "late" && (
             <div>
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
