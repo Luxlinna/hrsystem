@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Notification, NotificationGroup } from "../types";
 import { isToday } from "../notificationUtils";
 import { canSeeNotification } from "@/lib/notificationRoutes";
