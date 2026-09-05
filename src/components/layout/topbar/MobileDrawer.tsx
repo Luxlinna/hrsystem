@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/context/ThemeContext";
 import { useBranchScope } from "@/context/BranchContext";
 import { DRAWER_GROUPS } from "./constants";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 
 interface MobileDrawerProps {
   open: boolean;
@@ -53,6 +54,11 @@ const MobileDrawer = memo(function MobileDrawer({
   const isDragging = useRef(false);
   const [dragX, setDragX] = React.useState(0);
 
+  const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const displayContact = isPhoneSyntheticEmail(userEmail)
+    ? formatDisplayPhone(syntheticEmailToPhone(userEmail))
+    : userEmail;
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchCurrentX.current = e.touches[0].clientX;
@@ -86,8 +92,6 @@ const MobileDrawer = memo(function MobileDrawer({
       ],
     });
   }
-
-  const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   if (!open) return null;
 
@@ -203,7 +207,7 @@ const MobileDrawer = memo(function MobileDrawer({
               }
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-semibold text-white truncate">{displayName}</p>
-                <p className="text-[11px] text-gray-500 truncate">{userEmail}</p>
+                <p className="text-[11px] text-gray-500 truncate">{displayContact}</p>
               </div>
             </Link>
             <button

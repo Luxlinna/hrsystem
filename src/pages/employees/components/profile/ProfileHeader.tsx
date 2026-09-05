@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { Employee } from "../../types";
 import { getProfileStatusMeta } from "../../constants";
+import { isPhoneSyntheticEmail } from "@/lib/phoneUtils";
 
 interface ProfileHeaderProps {
   employee: Employee;
@@ -110,7 +111,7 @@ export const ProfileHeader = memo(function ProfileHeader({
                   {employee.work_locations.name}
                 </span>
               )}
-              {employee.email ? (
+              {employee.email && !isPhoneSyntheticEmail(employee.email) ? (
                 <span className="flex items-center gap-1">
                   <i className="ri-mail-line" />
                   {employee.email}

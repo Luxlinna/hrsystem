@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { MyEmployee } from "../types";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 
 interface ProfileAccountFormProps {
   displayName: string;
@@ -38,6 +39,9 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
   savingPassword,
   onChangePassword,
 }: ProfileAccountFormProps) {
+  const isPhone = isPhoneSyntheticEmail(email);
+  const displayLogin = isPhone ? formatDisplayPhone(syntheticEmailToPhone(email)) : (email || "");
+
   return (
     <div className="space-y-10">
       {/* Display name */}
@@ -62,16 +66,18 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
         </div>
       </div>
 
-      {/* Email — read only */}
+      {/* Account Login (Email or Phone) — read only */}
       <div>
         <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
-          Email Address
+          {isPhone ? "Login Phone Number" : "Email Address"}
         </label>
-        <div className="mt-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-500">
-          {email}
+        <div className="mt-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 font-medium">
+          {displayLogin}
         </div>
         <p className="text-[11px] text-gray-400 mt-1.5">
-          Contact an admin to change the email on your account.
+          {isPhone
+            ? "Contact an admin to change the login phone number on your account."
+            : "Contact an admin to change the email on your account."}
         </p>
       </div>
 
@@ -79,7 +85,7 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
       {employee && (
         <div>
           <label className="text-[12px] font-semibold text-gray-700 uppercase tracking-wider">
-            Phone Number
+            {isPhone ? "Contact Phone (HR Record)" : "Phone Number"}
           </label>
           <div className="flex gap-2 mt-1">
             <input

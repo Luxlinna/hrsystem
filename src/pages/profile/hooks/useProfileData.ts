@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 import type { MyEmployee, DirectReport } from "../types";
 
 export function useProfileData() {
@@ -20,17 +21,26 @@ export function useProfileData() {
   useEffect(() => {
     if (!user?.email) return;
     (async () => {
-      const { data: emp } = await supabase
+      const isPhone = isPhoneSyntheticEmail(user.email);
+      const cleanPhone = isPhone ? syntheticEmailToPhone(user.email) : null;
+
+      let empQuery = supabase
         .from("employees")
         .select(
           "id, first_name, last_name, role, department, status, join_date, phone, reports_to, branches(name)"
-        )
-        .eq("email", user.email)
-        .maybeSingle();
+        );
+
+      if (isPhone && cleanPhone) {
+        empQuery = empQuery.or(`email.eq.${user.email},phone.eq.${cleanPhone},phone.eq.0${cleanPhone}`);
+      } else {
+        empQuery = empQuery.eq("email", user.email);
+      }
+
+      const { data: emp } = await empQuery.is("deleted_at", null).maybeSingle();
 
       const myEmp = emp as unknown as MyEmployee | null;
       setEmployee(myEmp);
-      setPhone(myEmp?.phone || "");
+      setPhone(myEmp?.phone || (cleanPhone ? formatDisplayPhone(cleanPhone) : ""));
 
       // Sync display name from employees table (HR database is source of truth)
       if (myEmp?.first_name || myEmp?.last_name) {

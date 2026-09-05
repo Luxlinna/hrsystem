@@ -205,8 +205,8 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       const updatePayload: Record<string, any> = { phone: cleanDigits };
-      if (!currentEmp?.email || isPhoneSyntheticEmail(currentEmp.email)) {
-        updatePayload.email = syntheticEmail;
+      if (isPhoneSyntheticEmail(currentEmp?.email)) {
+        updatePayload.email = null;
       }
       const { error: empError } = await admin
         .from("employees")
@@ -221,15 +221,15 @@ Deno.serve(async (req) => {
       const { data: matchingEmps } = await admin
         .from("employees")
         .select("id, email, phone")
-        .or(`phone.eq.${cleanDigits},email.eq.${syntheticEmail},phone.eq.${phone}`)
+        .or(`phone.eq.${cleanDigits},phone.eq.${phone}`)
         .is("deleted_at", null)
         .limit(1);
 
       if (matchingEmps && matchingEmps.length > 0) {
         const emp = matchingEmps[0];
         const updatePayload: Record<string, any> = { phone: cleanDigits };
-        if (!emp.email || isPhoneSyntheticEmail(emp.email)) {
-          updatePayload.email = syntheticEmail;
+        if (isPhoneSyntheticEmail(emp.email)) {
+          updatePayload.email = null;
         }
         await admin
           .from("employees")

@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 
 interface ProfileAvatarSectionProps {
   avatarUrl?: string;
@@ -29,6 +30,9 @@ export const ProfileAvatarSection = memo(function ProfileAvatarSection({
   onEditAvatar,
   onRemoveAvatar,
 }: ProfileAvatarSectionProps) {
+  const isPhone = isPhoneSyntheticEmail(email);
+  const displayContact = isPhone ? formatDisplayPhone(syntheticEmailToPhone(email)) : email;
+
   return (
     <div className="flex items-center gap-5">
       <div className="flex flex-col items-center gap-2">
@@ -63,9 +67,11 @@ export const ProfileAvatarSection = memo(function ProfileAvatarSection({
 
           {editMenuOpen && (
             <>
-              {/* Click-outside backdrop */}
-              <div className="fixed inset-0 z-40" onClick={() => setEditMenuOpen(false)} />
-              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50 overflow-hidden animate-in fade-in duration-100">
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setEditMenuOpen(false)}
+              />
+              <div className="absolute top-full left-0 mt-1 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
                 <button
                   onClick={() => {
                     setEditMenuOpen(false);
@@ -115,8 +121,11 @@ export const ProfileAvatarSection = memo(function ProfileAvatarSection({
         />
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-900">{displayName || email}</p>
-        <p className="text-[12px] text-gray-500">{email}</p>
+        <p className="text-sm font-semibold text-gray-900">{displayName || displayContact}</p>
+        <p className="text-[12px] text-gray-500 flex items-center gap-1">
+          {isPhone && <i className="ri-phone-line text-gray-400 text-[11px]" />}
+          <span>{displayContact}</span>
+        </p>
         {savingCrop && <p className="text-[11px] text-[#253C7D] mt-1 font-medium">Uploading photo...</p>}
         {removingAvatar && <p className="text-[11px] text-[#253C7D] mt-1 font-medium">Removing photo...</p>}
       </div>

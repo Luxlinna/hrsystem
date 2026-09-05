@@ -1,6 +1,7 @@
 import { memo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useClickOutside } from "./useClickOutside";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 
 interface ProfileDropdownProps {
   open: boolean;
@@ -37,6 +38,9 @@ const ProfileDropdown = memo(function ProfileDropdown({
   useClickOutside([containerRef], () => onOpenChange(false));
 
   const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const displayContact = isPhoneSyntheticEmail(userEmail)
+    ? formatDisplayPhone(syntheticEmailToPhone(userEmail))
+    : userEmail;
 
   const close = () => onOpenChange(false);
 
@@ -62,7 +66,7 @@ const ProfileDropdown = memo(function ProfileDropdown({
           {/* User header */}
           <div className="px-4 py-3 border-b border-gray-100">
             <p className="text-[13px] font-semibold text-gray-900">{displayName}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5 truncate">{userEmail}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5 truncate">{displayContact}</p>
           </div>
 
           {/* Menu items */}

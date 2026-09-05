@@ -1,3 +1,5 @@
+import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
+
 export const fmtDateTime = (iso?: string | null): string =>
   iso
     ? new Date(iso).toLocaleString("en-US", {
@@ -14,10 +16,12 @@ export const calculateTenure = (joinDate?: string | null): number | null =>
     ? Math.floor((Date.now() - new Date(joinDate).getTime()) / (365.25 * 86400000))
     : null;
 
-export const getUserInitials = (displayName?: string, email?: string): string =>
-  (displayName || email || "?")
+export const getUserInitials = (displayName?: string, email?: string): string => {
+  const fallback = isPhoneSyntheticEmail(email) ? syntheticEmailToPhone(email) : email;
+  return (displayName || fallback || "?")
     .split(" ")
     .map((n) => n[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
+};

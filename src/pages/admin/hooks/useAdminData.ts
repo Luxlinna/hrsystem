@@ -45,7 +45,7 @@ export function useAdminData() {
 
     const [rolesRes, usersRes, employeesRes, resetRequestsRes, authAccountsResult, branchesRes, locationsRes] = await Promise.all([
       supabase.from("app_roles").select("*").order("id"),
-      supabase.from("user_role_assignments").select("*, app_roles(id, name, color, is_admin)").is("deleted_at", null).order("created_at", { ascending: false }),
+      supabase.from("user_role_assignments").select("*, app_roles(id, name, color, is_admin)").order("created_at", { ascending: false }),
       empQuery,
       supabase.from("password_reset_requests").select("id, email, status, requested_at, acted_at").is("deleted_at", null).order("requested_at", { ascending: false }).limit(50),
       authAccountsPromise,
@@ -65,7 +65,27 @@ export function useAdminData() {
     });
     setBranches(combinedBranches);
 
-    const activeAssignments: UserAssignment[] = (usersRes.data || []).filter((u: any) => !u.deleted_at);
+    const allAssignments = (usersRes.data || []) as any[];
+    const activeAssignments: UserAssignment[] = allAssignments.filter((u: any) => !u.deleted_at);
+    const deletedAssignments = allAssignments.filter((u: any) => Boolean(u.deleted_at));
+
+    const deletedEmails = new Set(deletedAssignments.map((u: any) => u.email?.toLowerCase().trim()).filter(Boolean));
+    const deletedUserIds = new Set(deletedAssignments.map((u: any) => u.user_id).filter(Boolean));
+
+    const isDeletedAccount = (email?: string | null, userId?: string | null): boolean => {
+      if (userId && deletedUserIds.has(userId)) return true;
+      if (!email) return false;
+      const clean = email.toLowerCase().trim();
+      if (deletedEmails.has(clean)) return true;
+      if (isPhoneSyntheticEmail(clean)) {
+        const rawPhone = syntheticEmailToPhone(clean);
+        if (deletedEmails.has(rawPhone)) return true;
+        const normalized = normalizePhone(rawPhone);
+        if (deletedEmails.has(normalized)) return true;
+      }
+      return false;
+    };
+
     const employeeMap = new Map();
     (employeesRes.data || []).forEach((e: any) => {
       if (e.email) {
@@ -106,9 +126,16 @@ export function useAdminData() {
       }
     });
 
-    // Synthesize entries for any auth user without a user_role_assignments row so admins see them
+    // Synthesize entries for any active auth user without a user_role_assignments row,
+    // strictly excluding accounts that have been moved to the Recycle Bin (deleted_at is set)
     const unassignedAuthAccounts: UserAssignment[] = (authAccountsResult.accounts || [])
-      .filter((a) => a.email && !assignedEmails.has(a.email.toLowerCase()))
+      .filter((a) => {
+        if (!a.email) return false;
+        const emailLower = a.email.toLowerCase().trim();
+        if (assignedEmails.has(emailLower)) return false;
+        if (isDeletedAccount(emailLower, a.id)) return false;
+        return true;
+      })
       .map((a, idx) => ({
         id: -1000 - idx,
         user_id: a.id,

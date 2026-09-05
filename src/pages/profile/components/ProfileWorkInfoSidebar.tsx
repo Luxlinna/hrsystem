@@ -3,6 +3,7 @@ import type { MyEmployee, DirectReport } from "../types";
 import { STATUS_STYLES } from "../constants";
 import { fmtDateTime } from "../profileUtils";
 import { ProfileDirectReportsList } from "./ProfileDirectReportsList";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 
 interface ProfileWorkInfoSidebarProps {
   role: { name: string; color: string } | null;
@@ -117,7 +118,12 @@ export const ProfileWorkInfoSidebar = memo(function ProfileWorkInfoSidebar({
           </div>
         ) : (
           <p className="text-[13px] text-gray-400 mt-1.5">
-            We couldn't find an employee record matching your account email ({email}).
+            We couldn't find an employee record matching your account{" "}
+            {isPhoneSyntheticEmail(email) ? "phone" : "email"} (
+            {isPhoneSyntheticEmail(email)
+              ? formatDisplayPhone(syntheticEmailToPhone(email))
+              : email}
+            ).
           </p>
         )}
       </div>
