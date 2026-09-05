@@ -1,6 +1,7 @@
 import { NotificationsHeader } from "./components/NotificationsHeader";
 import { NotificationsKpiRow } from "./components/NotificationsKpiRow";
 import { NotificationsFilterBar } from "./components/NotificationsFilterBar";
+import { NotificationsBulkActionBar } from "./components/NotificationsBulkActionBar";
 import { NotificationsGroupList } from "./components/NotificationsGroupList";
 import { NotificationsEmptyState } from "./components/NotificationsEmptyState";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
@@ -30,12 +31,22 @@ export default function Notifications() {
     loadNotifications,
     markRead,
     markAllRead,
+    markSelectedRead,
     deleteNotification,
+    deleteSelected,
     openNotification,
     isNavigable,
     isPartnerBranchBlocked,
     userBranchName,
     userBranchId,
+    selectedIds,
+    allSelected,
+    isIndeterminate,
+    selectedCount,
+    toggleSelect,
+    toggleSelectAll,
+    clearSelection,
+    filtered,
   } = useNotifications();
 
   if (loading || permLoading) {
@@ -100,10 +111,30 @@ export default function Notifications() {
         sources={sources}
       />
 
+      {/* Bulk Selection & Action Toolbar (like Recycle Bin) */}
+      <NotificationsBulkActionBar
+        totalCount={filtered.length}
+        selectedCount={selectedCount}
+        allSelected={allSelected}
+        isIndeterminate={isIndeterminate}
+        onToggleSelectAll={toggleSelectAll}
+        onClearSelection={clearSelection}
+        onMarkSelectedRead={() => {
+          markSelectedRead(Array.from(selectedIds));
+          clearSelection();
+        }}
+        onDeleteSelected={() => {
+          deleteSelected(Array.from(selectedIds));
+          clearSelection();
+        }}
+      />
+
       {/* Chronological Notifications List */}
       <NotificationsGroupList
         groups={groups}
         isNavigable={isNavigable}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
         onOpenNotification={openNotification}
         onMarkRead={markRead}
         onDeleteNotification={deleteNotification}

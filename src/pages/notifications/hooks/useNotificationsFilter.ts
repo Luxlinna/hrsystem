@@ -74,11 +74,50 @@ export function useNotificationsFilter(notifs: Notification[], userId?: string) 
     ].filter((g) => g.items.length > 0);
   }, [filtered]);
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Clean up selectedIds if items no longer exist
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const validIds = new Set(filtered.map((n) => n.id));
+      const next = new Set<string>();
+      prev.forEach((id) => {
+        if (validIds.has(id)) next.add(id);
+      });
+      return next.size !== prev.size ? next : prev;
+    });
+  }, [filtered]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const allSelected = filtered.length > 0 && filtered.every((n) => selectedIds.has(n.id));
+  const isIndeterminate = selectedIds.size > 0 && !allSelected;
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      const allCurrent = filtered.length > 0 && filtered.every((n) => prev.has(n.id));
+      if (allCurrent) return new Set();
+      return new Set(filtered.map((n) => n.id));
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
   const resetFilters = () => {
     setFilter("all");
     setSourceFilter("");
     setSearch("");
     setTodayOnly(false);
+    setSelectedIds(new Set());
   };
 
   const sources = useMemo(
@@ -108,5 +147,12 @@ export function useNotificationsFilter(notifs: Notification[], userId?: string) 
     resetFilters,
     sources,
     filtersActive,
+    selectedIds,
+    allSelected,
+    isIndeterminate,
+    selectedCount: selectedIds.size,
+    toggleSelect,
+    toggleSelectAll,
+    clearSelection,
   };
 }

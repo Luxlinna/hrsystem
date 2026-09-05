@@ -6,6 +6,8 @@ import { relativeTime } from "../notificationUtils";
 interface NotificationCardProps {
   notification: Notification;
   isNavigable: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
   onOpenNotification: (n: Notification) => void;
   onMarkRead: (id: string) => void;
   onDeleteNotification: (id: string) => void;
@@ -14,6 +16,8 @@ interface NotificationCardProps {
 export const NotificationCard = memo(function NotificationCard({
   notification,
   isNavigable,
+  isSelected = false,
+  onToggleSelect,
   onOpenNotification,
   onMarkRead,
   onDeleteNotification,
@@ -23,14 +27,31 @@ export const NotificationCard = memo(function NotificationCard({
   return (
     <div
       onClick={() => onOpenNotification(notification)}
-      className={`group flex items-start gap-4 p-4 rounded-2xl border shadow-2xs transition-all relative overflow-hidden ${
+      className={`group flex items-start gap-3.5 p-4 rounded-2xl border shadow-2xs transition-all relative overflow-hidden ${
         isNavigable ? "cursor-pointer" : "cursor-default"
       } ${
-        !notification.is_read
+        isSelected
+          ? "bg-blue-50/40 border-[#253C7D]/30 ring-1 ring-[#253C7D]/20 shadow-xs"
+          : !notification.is_read
           ? "bg-white border-gray-200/80 hover:shadow-xs"
           : "bg-white/60 border-gray-100 hover:bg-white hover:shadow-xs"
       }`}
     >
+      {/* Selection Checkbox */}
+      {onToggleSelect && (
+        <div
+          className="shrink-0 pt-2.5 -ml-0.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect(notification.id)}
+            className="w-4 h-4 rounded text-[#253C7D] border-gray-300 focus:ring-[#253C7D] cursor-pointer"
+          />
+        </div>
+      )}
+
       {/* Unread Left Border Accent */}
       {!notification.is_read && (
         <div className={`absolute left-0 top-0 bottom-0 w-1 ${cfg.accent}`} />

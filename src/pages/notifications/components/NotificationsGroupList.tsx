@@ -5,6 +5,8 @@ import { NotificationCard } from "./NotificationCard";
 interface NotificationsGroupListProps {
   groups: NotificationGroup[];
   isNavigable: (n: Notification) => boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
   onOpenNotification: (n: Notification) => void;
   onMarkRead: (id: string) => void;
   onDeleteNotification: (id: string) => void;
@@ -13,6 +15,8 @@ interface NotificationsGroupListProps {
 export const NotificationsGroupList = memo(function NotificationsGroupList({
   groups,
   isNavigable,
+  selectedIds,
+  onToggleSelect,
   onOpenNotification,
   onMarkRead,
   onDeleteNotification,
@@ -36,6 +40,8 @@ export const NotificationsGroupList = memo(function NotificationsGroupList({
                 key={n.id}
                 notification={n}
                 isNavigable={isNavigable(n)}
+                isSelected={selectedIds ? selectedIds.has(n.id) : false}
+                onToggleSelect={onToggleSelect}
                 onOpenNotification={onOpenNotification}
                 onMarkRead={onMarkRead}
                 onDeleteNotification={onDeleteNotification}

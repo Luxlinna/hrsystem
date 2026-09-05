@@ -30,6 +30,16 @@ function publish(next: UnreadRow[]) {
   listeners.forEach((notify) => notify(sharedRows));
 }
 
+export function clearAllUnreadNotifications() {
+  publish([]);
+}
+
+export function refreshUnreadNotifications() {
+  if (sharedUserId) {
+    loadUnread(sharedUserId, sharedBranchId);
+  }
+}
+
 /**
  * Fetches only unread rows, so the count covers the whole backlog rather than
  * whatever fits in a capped page of recent notifications.
@@ -43,8 +53,6 @@ async function loadUnread(userId: string, branchId: string | null) {
 
   if (branchId) {
     q = q.or(`branch_id.is.null,branch_id.eq.${branchId}`);
-  } else {
-    q = q.is("branch_id", null);
   }
 
   const { data, error } = await q;
@@ -135,7 +143,7 @@ function connect(userId: string, branchId: string | null) {
 export function useUnreadNotifications() {
   const { user } = useAuth();
   const { can, loading: permsLoading } = usePermissions();
-  const { userBranchId } = useBranchScope();
+  const { targetBranch } = useBranchScope();
   const [rows, setRows] = useState<UnreadRow[]>(sharedRows);
 
   useEffect(() => {
@@ -147,7 +155,7 @@ export function useUnreadNotifications() {
 
     listeners.add(setRows);
     subscriberCount++;
-    connect(userId, userBranchId);
+    connect(userId, targetBranch || null);
     setRows(sharedRows);
 
     return () => {
@@ -155,7 +163,7 @@ export function useUnreadNotifications() {
       subscriberCount--;
       if (subscriberCount === 0) disconnect();
     };
-  }, [user?.id, userBranchId]);
+  }, [user?.id, targetBranch]);
 
   const unreadCount = useMemo(() => {
     // Until permissions resolve, `can` denies everything — showing 0 briefly

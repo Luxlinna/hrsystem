@@ -9,6 +9,7 @@ export function useNotifications() {
     setNotifs: data.setNotifs,
     visibleNotifs: filters.visibleNotifs,
     can: filters.can,
+    userId: data.user?.id,
   });
 
   return {
