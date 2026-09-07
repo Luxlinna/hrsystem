@@ -130,9 +130,11 @@ export async function sendUserInvite(payload: {
 export async function createPhoneUserAccount(payload: {
   employeeId?: string;
   phone: string;
-  password: string;
+  password?: string;
   displayName: string;
   roleId?: string | number | null;
+  sendInvite?: boolean;
+  redirectTo?: string;
 }) {
   const accessToken = await getFreshAccessToken();
   const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/create-phone-user`, {
@@ -145,9 +147,11 @@ export async function createPhoneUserAccount(payload: {
     body: JSON.stringify({
       employee_id: payload.employeeId || null,
       phone: payload.phone,
-      password: payload.password,
+      password: payload.password || null,
       display_name: payload.displayName,
       role_id: payload.roleId || null,
+      send_invite: payload.sendInvite ?? false,
+      redirect_to: payload.redirectTo || `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
     }),
   });
   return { res, result: await readFunctionJson(res) };

@@ -44,6 +44,7 @@ export interface AuthAccount {
   display_name: string | null;
   email_confirmed_at: string | null;
   confirmed_at: string | null;
+  invite_pending?: boolean;
 }
 
 export interface AuthAccountsResult {

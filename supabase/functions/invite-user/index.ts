@@ -13,6 +13,13 @@ function json(body: unknown, status = 200) {
   });
 }
 
+const PHONE_EMAIL_DOMAIN = "@phone.hrmsystem.local";
+
+function isPhoneSyntheticEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return email.toLowerCase().endsWith(PHONE_EMAIL_DOMAIN);
+}
+
 function getTransporter() {
   return nodemailer.createTransport({
     host: Deno.env.get("SMTP_HOST") || "smtp.gmail.com",
@@ -129,6 +136,16 @@ Deno.serve(async (req) => {
 
       const inviteLink = linkData.properties.action_link;
       const resolvedName = display_name || authUserData?.user?.user_metadata?.display_name || email.split("@")[0];
+
+      if (isPhoneSyntheticEmail(email)) {
+        return json({
+          success: true,
+          message: "Invitation link generated successfully",
+          invite_link: inviteLink,
+          channel: "telegram",
+          user: { id: userId, email },
+        });
+      }
 
       const emailHtml = buildInviteEmail(resolvedName, inviteLink);
 
@@ -251,6 +268,17 @@ Deno.serve(async (req) => {
     }
 
     const inviteLink = linkData.properties.action_link;
+
+    if (isPhoneSyntheticEmail(email)) {
+      return json({
+        success: true,
+        message: "Invitation link generated successfully",
+        invite_link: inviteLink,
+        channel: "telegram",
+        user: userData?.user ?? { id: userId, email },
+      });
+    }
+
     const emailHtml = buildInviteEmail(display_name || email.split("@")[0], inviteLink);
 
     let emailSent = false;

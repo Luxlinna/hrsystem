@@ -36,6 +36,7 @@ export function useResetPassword() {
     setLoading(true);
     try {
       await updatePassword(password);
+      await supabase.auth.updateUser({ data: { invite_pending: false } }).catch(() => {});
       navigate("/", { replace: true });
     } catch (err: any) {
       setError(err.message || "Failed to update password");

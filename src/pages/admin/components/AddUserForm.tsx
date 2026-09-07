@@ -205,7 +205,8 @@ export const AddUserForm = memo(function AddUserForm({
   const isSubmitDisabled =
     savingUser ||
     (accountType === "email" && !newUser.email?.trim()) ||
-    (accountType === "phone" && (!newUser.phone?.trim() || (newUser.password || "").length < 6));
+    (accountType === "phone" &&
+      (!newUser.phone?.trim() || (!newUser.sendInvite && (newUser.password || "").length < 6)));
 
   return (
     <div className="bg-gradient-to-b from-[#253C7D]/8 to-white border border-[#253C7D]/20 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-1 duration-200">
@@ -273,10 +274,31 @@ export const AddUserForm = memo(function AddUserForm({
             <span className="text-xs text-gray-700 font-medium">Send setup link via Gmail</span>
           </label>
         ) : (
-          <span className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md font-medium flex items-center gap-1">
-            <i className="ri-key-2-line text-amber-600" />
-            Admin creates password for phone login
-          </span>
+          <div className="flex items-center gap-4 flex-wrap">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="radio"
+                name="phoneAccountMode"
+                checked={newUser.sendInvite}
+                onChange={() => setNewUser((p) => ({ ...p, sendInvite: true }))}
+                className="w-3.5 h-3.5 cursor-pointer accent-[#229ED9]"
+              />
+              <span className="text-xs text-gray-800 font-semibold flex items-center gap-1">
+                <i className="ri-telegram-fill text-[#229ED9] text-sm" />
+                Invite via Telegram
+              </span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="radio"
+                name="phoneAccountMode"
+                checked={!newUser.sendInvite}
+                onChange={() => setNewUser((p) => ({ ...p, sendInvite: false }))}
+                className="w-3.5 h-3.5 cursor-pointer accent-[#253C7D]"
+              />
+              <span className="text-xs text-gray-600 font-medium">Set password manually</span>
+            </label>
+          </div>
         )}
       </div>
 
@@ -339,41 +361,57 @@ export const AddUserForm = memo(function AddUserForm({
         </div>
       </div>
 
-      {/* Password field for Phone accounts */}
+      {/* Password field or Telegram Invite Banner for Phone accounts */}
       {accountType === "phone" && (
-        <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-gray-800">Initial Password *</label>
-            <button
-              type="button"
-              onClick={generateRandomPassword}
-              className="text-[11px] font-bold text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <i className="ri-magic-line text-xs" />
-              <span>Auto-Generate</span>
-            </button>
+        newUser.sendInvite ? (
+          <div className="p-4 bg-sky-50/70 border border-sky-200/80 rounded-xl space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-sky-950">
+              <i className="ri-telegram-fill text-[#229ED9] text-base" />
+              <span>1-Click Telegram Setup Link</span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                Free $0.00
+              </span>
+            </div>
+            <p className="text-[11px] text-sky-850 leading-relaxed">
+              A secure 24-hour setup link will be generated. You can share it directly to{" "}
+              <strong>{newUser.phone || "the employee"}</strong> on Telegram in 1 click so they can create their own password safely.
+            </p>
           </div>
-          <div className="relative max-w-md">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={newUser.password || ""}
-              onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))}
-              placeholder="Minimum 6 characters"
-              className="w-full pl-3.5 pr-10 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-            >
-              <i className={showPassword ? "ri-eye-off-line text-sm" : "ri-eye-line text-sm"} />
-            </button>
+        ) : (
+          <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-800">Initial Password *</label>
+              <button
+                type="button"
+                onClick={generateRandomPassword}
+                className="text-[11px] font-bold text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <i className="ri-magic-line text-xs" />
+                <span>Auto-Generate</span>
+              </button>
+            </div>
+            <div className="relative max-w-md">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={newUser.password || ""}
+                onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))}
+                placeholder="Minimum 6 characters"
+                className="w-full pl-3.5 pr-10 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <i className={showPassword ? "ri-eye-off-line text-sm" : "ri-eye-line text-sm"} />
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-500">
+              Share this password with the staff member. They will sign in using their phone number{" "}
+              <strong>{newUser.phone || "..."}</strong> and this password.
+            </p>
           </div>
-          <p className="text-[11px] text-gray-500">
-            Share this password with the staff member. They will sign in using their phone number{" "}
-            <strong>{newUser.phone || "..."}</strong> and this password.
-          </p>
-        </div>
+        )
       )}
 
       {/* Buttons */}
@@ -397,10 +435,17 @@ export const AddUserForm = memo(function AddUserForm({
               <span>Saving...</span>
             </>
           ) : accountType === "phone" ? (
-            <>
-              <i className="ri-shield-keyhole-line text-sm" />
-              <span>Create Phone Account</span>
-            </>
+            newUser.sendInvite ? (
+              <>
+                <i className="ri-telegram-fill text-sm" />
+                <span>Invite via Telegram</span>
+              </>
+            ) : (
+              <>
+                <i className="ri-shield-keyhole-line text-sm" />
+                <span>Create Phone Account</span>
+              </>
+            )
           ) : newUser.sendInvite ? (
             <>
               <i className="ri-check-line text-sm" />

@@ -5,6 +5,7 @@ import { RolesTab } from "./components/RolesTab";
 import { UsersTab } from "./components/UsersTab";
 import { PasswordResetsTab } from "./components/PasswordResetsTab";
 import { RoleFormModal } from "./components/RoleFormModal";
+import { TelegramInviteModal } from "@/components/modals/TelegramInviteModal";
 
 export default function AdminPortal() {
   const admin = useAdmin();
@@ -102,6 +103,18 @@ export default function AdminPortal() {
             isSuperAdmin={admin.isSuperAdmin}
             onSaveRole={admin.roles.saveRole}
           />
+
+          {/* Telegram Invite Modal */}
+          {admin.users.telegramInviteModal && (
+            <TelegramInviteModal
+              isOpen={admin.users.telegramInviteModal.isOpen}
+              onClose={() => admin.users.setTelegramInviteModal(null)}
+              employeeName={admin.users.telegramInviteModal.employeeName}
+              phone={admin.users.telegramInviteModal.phone}
+              inviteLink={admin.users.telegramInviteModal.inviteLink}
+              roleName={admin.users.telegramInviteModal.roleName}
+            />
+          )}
         </>
       )}
     </div>

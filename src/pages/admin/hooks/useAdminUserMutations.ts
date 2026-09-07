@@ -1,8 +1,17 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { invalidatePermissionsCache } from "@/hooks/usePermissions";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 import type { AppRole, NewUserState, UserAssignment } from "../types";
 import { getInviteError, manageUserRole, sendUserInvite, createPhoneUserAccount } from "../api";
+
+export interface TelegramInviteModalState {
+  isOpen: boolean;
+  employeeName: string;
+  phone: string;
+  inviteLink: string;
+  roleName?: string;
+}
 
 interface UseAdminUserMutationsProps {
   users: UserAssignment[];
@@ -28,6 +37,7 @@ export function useAdminUserMutations({
   const [selectedEmployeeEmail, setSelectedEmployeeEmail] = useState("");
   const [savingUser, setSavingUser] = useState(false);
   const [invitingUserId, setInvitingUserId] = useState<number | null>(null);
+  const [telegramInviteModal, setTelegramInviteModal] = useState<TelegramInviteModalState | null>(null);
 
   const addCurrentUser = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -56,19 +66,22 @@ export function useAdminUserMutations({
         showToast("Phone number is required", "err");
         return;
       }
-      if (!newUser.password || newUser.password.length < 6) {
+      if (!newUser.sendInvite && (!newUser.password || newUser.password.length < 6)) {
         showToast("Password must be at least 6 characters long", "err");
         return;
       }
 
       setSavingUser(true);
       try {
+        const displayName = newUser.display_name?.trim() || `Staff ${phone}`;
+        const matchedRole = roles.find((r) => String(r.id) === String(newUser.role_id));
         const { res, result } = await createPhoneUserAccount({
           employeeId: newUser.employee_id,
           phone,
           password: newUser.password,
-          displayName: newUser.display_name?.trim() || `Staff ${phone}`,
+          displayName,
           roleId: newUser.role_id || null,
+          sendInvite: newUser.sendInvite,
         });
 
         setSavingUser(false);
@@ -77,7 +90,19 @@ export function useAdminUserMutations({
           return;
         }
 
-        showToast("Phone account created successfully!");
+        if (newUser.sendInvite && result.invite_link) {
+          setTelegramInviteModal({
+            isOpen: true,
+            employeeName: displayName,
+            phone,
+            inviteLink: result.invite_link,
+            roleName: matchedRole?.name,
+          });
+          showToast("Telegram setup link created!");
+        } else {
+          showToast("Phone account created successfully!");
+        }
+
         setShowAddUser(false);
         setNewUser({ email: "", phone: "", password: "", display_name: "", role_id: "", sendInvite: true });
         setSelectedEmployeeEmail("");
@@ -134,11 +159,32 @@ export function useAdminUserMutations({
 
   const resendInvite = useCallback(async (user: UserAssignment) => {
     setInvitingUserId(user.id);
+    const isPhone = isPhoneSyntheticEmail(user.email);
     try {
-      const { res, result } = await sendUserInvite({ email: user.email, display_name: user.display_name, role_id: user.role_id ? String(user.role_id) : null });
+      const { res, result } = await sendUserInvite({
+        email: user.email,
+        display_name: user.display_name,
+        role_id: user.role_id ? String(user.role_id) : null,
+      });
       setInvitingUserId(null);
-      if (!res.ok || result.error) { showToast(getInviteError(result), "err"); return; }
-      showToast("Invite sent!");
+      if (!res.ok || result.error) {
+        showToast(getInviteError(result), "err");
+        return;
+      }
+
+      if (isPhone && result.invite_link) {
+        const phone = syntheticEmailToPhone(user.email);
+        setTelegramInviteModal({
+          isOpen: true,
+          employeeName: user.display_name || `Staff ${phone}`,
+          phone,
+          inviteLink: result.invite_link,
+          roleName: user.app_roles?.name,
+        });
+        showToast("Telegram setup link ready!");
+      } else {
+        showToast("Invite sent!");
+      }
     } catch (err: any) {
       setInvitingUserId(null);
       showToast(err.message || "Failed to resend invite", "err");
@@ -209,5 +255,7 @@ export function useAdminUserMutations({
     resendInvite,
     updateUserRole,
     removeUser,
+    telegramInviteModal,
+    setTelegramInviteModal,
   };
 }

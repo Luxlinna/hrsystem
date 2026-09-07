@@ -77,17 +77,21 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       users.push(
-        ...data.users.map((user) => ({
-          id: user.id,
-          email: user.email,
-          display_name:
-            user.user_metadata?.display_name ||
-            user.user_metadata?.full_name ||
-            null,
-          created_at: user.created_at,
-          email_confirmed_at: user.email_confirmed_at ?? null,
-          confirmed_at: (user as any).confirmed_at ?? null,
-        }))
+        ...data.users.map((user) => {
+          const isInvitePending = Boolean(user.user_metadata?.invite_pending);
+          return {
+            id: user.id,
+            email: user.email,
+            display_name:
+              user.user_metadata?.display_name ||
+              user.user_metadata?.full_name ||
+              null,
+            created_at: user.created_at,
+            email_confirmed_at: isInvitePending ? null : (user.email_confirmed_at ?? null),
+            confirmed_at: isInvitePending ? null : ((user as any).confirmed_at ?? null),
+            invite_pending: isInvitePending,
+          };
+        })
       );
 
       if (data.users.length < perPage) break;

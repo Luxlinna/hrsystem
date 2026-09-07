@@ -4,6 +4,7 @@ import { OverviewGrid } from "./components/OverviewGrid";
 import { TabsNav } from "./components/TabsNav";
 import { TabContent } from "./components/TabContent";
 import { SelfServiceExportMenu } from "./components/SelfServiceExportMenu";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 
 export default function SelfServicePage() {
   const {
@@ -39,7 +40,10 @@ export default function SelfServicePage() {
           <i className="ri-user-search-line text-3xl text-gray-300 mb-3 block" />
           <h2 className="text-lg font-bold text-gray-900">No employee record found</h2>
           <p className="text-sm text-gray-500 mt-1">
-            We couldn't find an employee record matching your account email ({user?.email}). Ask HR to link your profile.
+            We couldn't find an employee record matching your account{" "}
+            {isPhoneSyntheticEmail(user?.email)
+              ? `phone number (${formatDisplayPhone(syntheticEmailToPhone(user?.email))})`
+              : `email (${user?.email})`}. Ask HR to link your profile.
           </p>
         </div>
       </div>

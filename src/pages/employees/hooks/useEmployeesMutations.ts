@@ -78,9 +78,10 @@ export function useEmployeesMutations({
     async (data: {
       employeeId: string;
       phone: string;
-      password: string;
+      password?: string;
       displayName: string;
       roleId?: string | number | null;
+      sendInvite?: boolean;
     }) => {
       try {
         const { res, result } = await createPhoneUserAccount({
@@ -89,6 +90,7 @@ export function useEmployeesMutations({
           password: data.password,
           displayName: data.displayName,
           roleId: data.roleId || null,
+          sendInvite: data.sendInvite,
         });
 
         if (!res.ok || result.error) {
@@ -97,7 +99,13 @@ export function useEmployeesMutations({
           return false;
         }
 
-        toast("Account Created", `Account successfully created for ${data.displayName}`, "success");
+        toast(
+          data.sendInvite ? "Invite Ready" : "Account Created",
+          data.sendInvite
+            ? `Telegram invite link generated for ${data.displayName}`
+            : `Account successfully created for ${data.displayName}`,
+          "success"
+        );
         await logActivity({
           module: "employees",
           action: "created",
@@ -105,10 +113,12 @@ export function useEmployeesMutations({
           entityId: data.employeeId,
           actorName,
           actorRole: roleName,
-          description: `Set up phone account and password for ${data.displayName} (${data.phone})`,
+          description: data.sendInvite
+            ? `Generated Telegram setup invite for ${data.displayName} (${data.phone})`
+            : `Set up phone account and password for ${data.displayName} (${data.phone})`,
         });
         loadEmployees();
-        return true;
+        return result.invite_link ? (result.invite_link as string) : true;
       } catch (err: any) {
         toast("Error", err.message || "Failed to set up account.", "error");
         return false;

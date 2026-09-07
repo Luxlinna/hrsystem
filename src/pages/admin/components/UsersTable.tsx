@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import type { AppRole, UserAssignment } from "../types";
-import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 import { createPhoneUserAccount } from "../api";
 
 interface UsersTableProps {
@@ -128,6 +128,10 @@ export const UsersTable = memo(function UsersTable({
             const isPhoneUser = isPhoneSyntheticEmail(user.email);
             const hasConfirmedAccount = Boolean(user.user_id && !isUnconfirmed);
             const hasRoleAssigned = Boolean(user.role_id);
+            const phoneDigits = isPhoneUser ? syntheticEmailToPhone(user.email) : "";
+            const cleanPhoneFormatted = isPhoneUser ? formatDisplayPhone(phoneDigits) : "";
+            const displayNameText = user.display_name || (isPhoneUser ? `Staff (${cleanPhoneFormatted})` : user.email);
+            const initials = (user.display_name || phoneDigits || user.email || "U").slice(0, 2).toUpperCase();
 
             return (
               <div
@@ -137,12 +141,12 @@ export const UsersTable = memo(function UsersTable({
                 {/* User Info & Identity */}
                 <div className="flex items-center gap-3.5 min-w-[240px] flex-1">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#253C7D] to-blue-600 flex items-center justify-center text-white text-[12px] font-bold shrink-0 shadow-2xs">
-                    {(user.display_name || user.email).slice(0, 2).toUpperCase()}
+                    {initials}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-bold text-gray-900 truncate">
-                        {user.display_name || user.email}
+                        {displayNameText}
                       </p>
                       {isSuperUser && (
                         <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
@@ -164,7 +168,7 @@ export const UsersTable = memo(function UsersTable({
                       {isPhoneUser ? (
                         <span className="inline-flex items-center gap-1 text-gray-700 font-semibold">
                           <i className="ri-phone-fill text-[#253C7D] text-[11px]" />
-                          {syntheticEmailToPhone(user.email)}
+                          {cleanPhoneFormatted}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-gray-600">
@@ -236,16 +240,33 @@ export const UsersTable = memo(function UsersTable({
                     </span>
                   )}
 
-                  {/* Phone user password reset / setup button */}
+                  {/* Phone user actions: Telegram Invite & Manual Password */}
                   {canModifyUser && isPhoneUser && (
-                    <button
-                      type="button"
-                      onClick={() => handleOpenPhoneModal(user)}
-                      title="Reset or set phone account password"
-                      className="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#253C7D] transition-colors cursor-pointer shrink-0 shadow-2xs"
-                    >
-                      <i className="ri-key-2-line text-base" />
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onResendInvite(user)}
+                        disabled={invitingUserId === user.id}
+                        title="Telegram invite & setup link"
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-sky-50 hover:bg-sky-100 text-[#229ED9] transition-colors cursor-pointer shrink-0 shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <i
+                          className={`ri-${
+                            invitingUserId === user.id
+                              ? "loader-4-line animate-spin"
+                              : "telegram-fill"
+                          } text-base`}
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPhoneModal(user)}
+                        title="Reset or set phone account password manually"
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#253C7D] transition-colors cursor-pointer shrink-0 shadow-2xs"
+                      >
+                        <i className="ri-key-2-line text-base" />
+                      </button>
+                    </>
                   )}
 
                   {/* Email resend invite button */}

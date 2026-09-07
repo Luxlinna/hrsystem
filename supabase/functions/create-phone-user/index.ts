@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { employee_id, phone, password, display_name, role_id } = body;
+    const { employee_id, phone, password, display_name, role_id, send_invite, redirect_to } = body;
 
     if (!phone || typeof phone !== "string" || !phone.trim()) {
       return json({ error: "Phone number is required" }, 400);
@@ -99,7 +99,19 @@ Deno.serve(async (req) => {
       return json({ error: "Please enter a valid phone number (minimum 6 digits)" }, 400);
     }
 
-    if (!password || typeof password !== "string" || password.length < 6) {
+    const isInviteMode = Boolean(send_invite);
+
+    // If invite mode, password is optional (auto-generate secure random password)
+    let userPassword = (password || "").trim();
+    if (!userPassword) {
+      if (!isInviteMode) {
+        return json({ error: "Password must be at least 6 characters long" }, 400);
+      }
+      // Generate secure 16-char random password
+      const randBytes = new Uint8Array(16);
+      crypto.getRandomValues(randBytes);
+      userPassword = "P#" + Array.from(randBytes, (b) => b.toString(36)).join("").slice(0, 14);
+    } else if (userPassword.length < 6) {
       return json({ error: "Password must be at least 6 characters long" }, 400);
     }
 
@@ -117,28 +129,35 @@ Deno.serve(async (req) => {
 
     if (existingUser) {
       userId = existingUser.id;
-      // Update password & metadata
-      const { error: updateAuthError } = await admin.auth.admin.updateUserById(userId, {
-        password,
-        email_confirm: true,
+      // Update metadata (and password if specified or not in invite-only mode)
+      const updatePayload: Record<string, any> = {
         user_metadata: {
           ...existingUser.user_metadata,
           display_name: displayName,
           phone: cleanDigits,
           is_phone_account: true,
+          invite_pending: isInviteMode,
         },
-      });
+      };
+      if (isInviteMode) {
+        updatePayload.email_confirm = false;
+      } else if (password && password.length >= 6) {
+        updatePayload.password = password;
+        updatePayload.email_confirm = true;
+      }
+      const { error: updateAuthError } = await admin.auth.admin.updateUserById(userId, updatePayload);
       if (updateAuthError) throw updateAuthError;
     } else {
       // Create new auth user
       const { data: createData, error: createError } = await admin.auth.admin.createUser({
         email: syntheticEmail,
-        password,
-        email_confirm: true,
+        password: userPassword,
+        email_confirm: !isInviteMode,
         user_metadata: {
           display_name: displayName,
           phone: cleanDigits,
           is_phone_account: true,
+          invite_pending: isInviteMode,
         },
       });
 
@@ -238,9 +257,28 @@ Deno.serve(async (req) => {
       }
     }
 
+    let inviteLink: string | null = null;
+    if (isInviteMode || redirect_to) {
+      const targetRedirect = redirect_to || "https://localhost:5173/reset-password";
+      const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+        type: "recovery",
+        email: syntheticEmail,
+        options: {
+          redirectTo: targetRedirect,
+        },
+      });
+
+      if (linkError) {
+        console.error("Generate recovery link error:", linkError);
+      } else {
+        inviteLink = linkData?.properties?.action_link || null;
+      }
+    }
+
     return json({
       success: true,
-      message: "Phone user account set up successfully",
+      message: isInviteMode ? "Phone user invitation link generated" : "Phone user account set up successfully",
+      invite_link: inviteLink,
       user: {
         id: userId,
         phone: cleanDigits,

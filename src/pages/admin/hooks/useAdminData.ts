@@ -148,7 +148,11 @@ export function useAdminData() {
     const combinedAssignments = [...activeAssignments, ...unassignedAuthAccounts];
     const enrichedAssignments = buildEnrichedAssignments(combinedAssignments, employeeMap, locationsMap, branchesList);
 
-    const unconfirmed = new Set<string>((authAccountsResult.accounts || []).filter((a) => a.email && !a.email_confirmed_at && !a.confirmed_at).map((a) => a.email!.toLowerCase()));
+    const unconfirmed = new Set<string>(
+      (authAccountsResult.accounts || [])
+        .filter((a) => a.email && (!a.email_confirmed_at || !a.confirmed_at || a.invite_pending))
+        .map((a) => a.email!.toLowerCase())
+    );
     const branchEmployeeEmails = new Set(
       (employeesRes.data || []).flatMap((e: any) => [
         e.email?.toLowerCase(),
