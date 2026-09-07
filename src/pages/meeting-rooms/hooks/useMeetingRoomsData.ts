@@ -117,8 +117,9 @@ export function useMeetingRoomsData(selectedDate: string) {
     );
     empQuery
       .eq("branch_id", targetBranch)
-      .maybeSingle()
-      .then(({ data }) => {
+      .limit(1)
+      .then(({ data: rows }) => {
+        const data = rows && rows.length > 0 ? rows[0] : null;
         if (data) {
           setEmployeeId(data.id);
           setCurrentEmployee({

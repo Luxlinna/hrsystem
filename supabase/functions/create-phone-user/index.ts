@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
         },
       };
       if (isInviteMode) {
-        updatePayload.email_confirm = false;
+        updatePayload.email_confirm = true;
       } else if (password && password.length >= 6) {
         updatePayload.password = password;
         updatePayload.email_confirm = true;
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
       const { data: createData, error: createError } = await admin.auth.admin.createUser({
         email: syntheticEmail,
         password: userPassword,
-        email_confirm: !isInviteMode,
+        email_confirm: true,
         user_metadata: {
           display_name: displayName,
           phone: cleanDigits,
@@ -259,7 +259,7 @@ Deno.serve(async (req) => {
 
     let inviteLink: string | null = null;
     if (isInviteMode || redirect_to) {
-      const targetRedirect = redirect_to || "https://localhost:5173/reset-password";
+      const targetRedirect = redirect_to || "http://localhost:3000/reset-password";
       const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
         type: "recovery",
         email: syntheticEmail,
@@ -270,6 +270,9 @@ Deno.serve(async (req) => {
 
       if (linkError) {
         console.error("Generate recovery link error:", linkError);
+      } else if (linkData?.properties?.hashed_token) {
+        const cleanBase = targetRedirect.split("?")[0].replace(/\/$/, "");
+        inviteLink = `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`;
       } else {
         inviteLink = linkData?.properties?.action_link || null;
       }

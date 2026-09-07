@@ -12,11 +12,26 @@ function json(body: unknown, status = 200) {
   });
 }
 
+const PHONE_EMAIL_DOMAIN = "@phone.hrmsystem.local";
+
+function normalizePhone(phone: string): string {
+  let digits = (phone || "").replace(/\D/g, "");
+  if (digits.startsWith("855") && digits.length >= 11) {
+    digits = "0" + digits.slice(3);
+  }
+  return digits;
+}
+
+function isPhoneInput(val: string): boolean {
+  const digits = (val || "").replace(/\D/g, "");
+  return !val.includes("@") && digits.length >= 8;
+}
+
 async function findUserByEmail(admin: any, email: string) {
   for (let page = 1; page <= 20; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
     if (error) throw error;
-    const user = data.users.find((item: any) => item.email?.toLowerCase() === email);
+    const user = data.users.find((item: any) => item.email?.toLowerCase() === email.toLowerCase());
     if (user) return user;
     if (data.users.length < 1000) break;
   }
@@ -30,14 +45,25 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
-    const { email } = await req.json();
+    const { email, identifier } = await req.json();
+    const rawInput = (identifier || email || "").trim();
 
-    if (!email || typeof email !== "string") {
-      return json({ error: "Email is required" }, 400);
+    if (!rawInput || typeof rawInput !== "string") {
+      return json({ error: "Phone number or email is required" }, 400);
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const generic = { success: true, message: "Your request has been submitted to an administrator for approval. Once approved, you will receive a password reset link via email." };
+    const isPhone = isPhoneInput(rawInput);
+    const cleanDigits = isPhone ? normalizePhone(rawInput) : "";
+    const normalizedEmail = isPhone
+      ? `${cleanDigits}${PHONE_EMAIL_DOMAIN}`
+      : rawInput.toLowerCase().trim();
+
+    const generic = {
+      success: true,
+      message: isPhone
+        ? "Your request has been submitted to an administrator. Once approved, you will receive a new setup link via Telegram."
+        : "Your request has been submitted to an administrator for approval. Once approved, you will receive a password reset link via email."
+    };
     const authUser = await findUserByEmail(admin, normalizedEmail);
 
     if (!authUser) return json(generic);
@@ -70,6 +96,7 @@ Deno.serve(async (req) => {
       .is("deleted_at", null)
       .not("user_id", "is", null);
 
+    const contactDisplay = isPhone ? `Phone: ${cleanDigits}` : normalizedEmail;
     const adminNotifications = (admins || [])
       .filter((row: any) => {
         const role = Array.isArray(row.app_roles) ? row.app_roles[0] : row.app_roles;
@@ -77,7 +104,7 @@ Deno.serve(async (req) => {
       })
       .map((row: any) => ({
         title: "Password Reset Approval Needed",
-        message: `${normalizedEmail} requested approval to reset their password.`,
+        message: `${contactDisplay} requested approval to reset their password.`,
         type: "warning",
         source: "password_reset",
         entity_id: requestId,

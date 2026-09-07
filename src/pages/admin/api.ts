@@ -104,10 +104,18 @@ export async function manageUserRole(
   }
 }
 
+function getAppResetPasswordRedirectUrl(): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}/reset-password`;
+  }
+  return `${(import.meta.env.VITE_APP_URL || "").replace(/\/$/, "")}/reset-password`;
+}
+
 export async function sendUserInvite(payload: {
   email: string;
   display_name: string | null;
   role_id: string | null;
+  redirectTo?: string;
 }) {
   const accessToken = await getFreshAccessToken();
   const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/invite-user`, {
@@ -121,7 +129,7 @@ export async function sendUserInvite(payload: {
       email: payload.email,
       display_name: payload.display_name,
       role_id: payload.role_id || null,
-      redirect_to: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
+      redirect_to: payload.redirectTo || getAppResetPasswordRedirectUrl(),
     }),
   });
   return { res, result: await readFunctionJson(res) };
@@ -151,7 +159,7 @@ export async function createPhoneUserAccount(payload: {
       display_name: payload.displayName,
       role_id: payload.roleId || null,
       send_invite: payload.sendInvite ?? false,
-      redirect_to: payload.redirectTo || `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
+      redirect_to: payload.redirectTo || getAppResetPasswordRedirectUrl(),
     }),
   });
   return { res, result: await readFunctionJson(res) };

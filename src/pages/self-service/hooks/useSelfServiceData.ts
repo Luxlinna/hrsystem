@@ -5,7 +5,7 @@ import { todayYMD } from "@/lib/date";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { Employee } from "../types";
-import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
+import { applyUserEmployeeFilter, isPhoneSyntheticEmail } from "@/lib/phoneUtils";
 import { SELF_SERVICE_TABS } from "../constants";
 
 export function useSelfServiceData() {
@@ -43,11 +43,18 @@ export function useSelfServiceData() {
           .select("id, first_name, last_name, role, department, status, join_date, email, phone, avatar_url, reports_to, branch_id, branches(name)"),
         user.email
       );
-      const { data } = await empQuery
+      const { data: rows } = await empQuery
         .is("deleted_at", null)
-        .maybeSingle();
+        .limit(5);
 
-      const emp = data as unknown as Employee | null;
+      let emp: Employee | null = null;
+      if (rows && rows.length > 0) {
+        if (isPhoneSyntheticEmail(user.email)) {
+          emp = (rows.find((r: any) => !r.email || isPhoneSyntheticEmail(r.email)) || rows[0]) as unknown as Employee;
+        } else {
+          emp = (rows.find((r: any) => r.email?.toLowerCase() === user.email.toLowerCase()) || rows[0]) as unknown as Employee;
+        }
+      }
       if (emp) {
         setSelectedEmployee(emp);
         if (emp.reports_to) {

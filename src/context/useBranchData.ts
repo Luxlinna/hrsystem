@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { BranchInfo } from "./branchTypes";
-import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
+import { applyUserEmployeeFilter, isPhoneSyntheticEmail } from "@/lib/phoneUtils";
 
 export function useBranchData(userEmail?: string | null) {
   const [branches, setBranches] = useState<BranchInfo[]>([]);
@@ -98,9 +98,18 @@ export function useBranchData(userEmail?: string | null) {
         `),
       userEmail
     );
-    const { data } = await empQuery
+    const { data: rows } = await empQuery
       .is("deleted_at", null)
-      .maybeSingle();
+      .limit(5);
+
+    let data: any = null;
+    if (rows && rows.length > 0) {
+      if (isPhoneSyntheticEmail(userEmail)) {
+        data = rows.find((r: any) => !r.email || isPhoneSyntheticEmail(r.email)) || rows[0];
+      } else {
+        data = rows.find((r: any) => r.email?.toLowerCase() === userEmail?.toLowerCase()) || rows[0];
+      }
+    }
 
     if (data?.branch_id) {
       setUserBranchId(data.branch_id);

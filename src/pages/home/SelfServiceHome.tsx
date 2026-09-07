@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { todayYMD } from "@/lib/date";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
+import { applyUserEmployeeFilter, isPhoneSyntheticEmail } from "@/lib/phoneUtils";
 
 interface MyEmployee {
   id: string;
@@ -41,7 +41,10 @@ export default function SelfServiceHome() {
           .select("id, first_name, last_name, role, department, avatar_url, branches(name)"),
         user.email
       );
-      const { data: emp } = await empQuery.maybeSingle();
+      const { data: rows } = await empQuery.limit(5);
+      const emp = rows && rows.length > 0
+        ? ((isPhoneSyntheticEmail(user.email) ? rows.find((r: any) => !r.email || isPhoneSyntheticEmail(r.email)) : rows.find((r: any) => r.email?.toLowerCase() === user.email.toLowerCase())) || rows[0])
+        : null;
 
       const myEmp = emp as unknown as MyEmployee | null;
       setMe(myEmp);

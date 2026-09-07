@@ -98,11 +98,12 @@ Deno.serve(async (req) => {
         return json({ error: "Could not verify account status" }, 500);
       }
 
-      const isConfirmed =
-        !!authUserData?.user?.email_confirmed_at ||
-        !!authUserData?.user?.confirmed_at;
+      const isPhone = isPhoneSyntheticEmail(email);
+      const isConfirmed = isPhone
+        ? !authUserData?.user?.user_metadata?.invite_pending
+        : (!!authUserData?.user?.email_confirmed_at || !!authUserData?.user?.confirmed_at);
 
-      if (isConfirmed) {
+      if (isConfirmed && !isPhone) {
         return json({ error: "User already has an active account" }, 400);
       }
 
@@ -117,6 +118,16 @@ Deno.serve(async (req) => {
 
       // Skip auth user creation; jump straight to generating a fresh link.
       const userId = existing.user_id;
+
+      if (isPhoneSyntheticEmail(email)) {
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+          email_confirm: true,
+          user_metadata: {
+            ...authUserData?.user?.user_metadata,
+            invite_pending: true,
+          },
+        });
+      }
 
       const { data: linkData, error: generateLinkError } =
         await supabaseAdmin.auth.admin.generateLink({
@@ -138,10 +149,15 @@ Deno.serve(async (req) => {
       const resolvedName = display_name || authUserData?.user?.user_metadata?.display_name || email.split("@")[0];
 
       if (isPhoneSyntheticEmail(email)) {
+        const cleanBase = (redirect_to || "http://localhost:3000/reset-password").split("?")[0].replace(/\/$/, "");
+        const safeLink = linkData?.properties?.hashed_token
+          ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
+          : inviteLink;
+
         return json({
           success: true,
           message: "Invitation link generated successfully",
-          invite_link: inviteLink,
+          invite_link: safeLink,
           channel: "telegram",
           user: { id: userId, email },
         });
@@ -203,11 +219,13 @@ Deno.serve(async (req) => {
     let createUserError = null;
 
     try {
+      const isPhoneSynthetic = isPhoneSyntheticEmail(email);
       const result = await supabaseAdmin.auth.admin.createUser({
         email,
-        email_confirm: false,
+        email_confirm: isPhoneSynthetic,
         user_metadata: {
           display_name: display_name || email.split("@")[0],
+          invite_pending: isPhoneSynthetic,
         },
       });
       userData = result.data;
@@ -270,10 +288,15 @@ Deno.serve(async (req) => {
     const inviteLink = linkData.properties.action_link;
 
     if (isPhoneSyntheticEmail(email)) {
+      const cleanBase = (redirect_to || "http://localhost:3000/reset-password").split("?")[0].replace(/\/$/, "");
+      const safeLink = linkData?.properties?.hashed_token
+        ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
+        : inviteLink;
+
       return json({
         success: true,
         message: "Invitation link generated successfully",
-        invite_link: inviteLink,
+        invite_link: safeLink,
         channel: "telegram",
         user: userData?.user ?? { id: userId, email },
       });

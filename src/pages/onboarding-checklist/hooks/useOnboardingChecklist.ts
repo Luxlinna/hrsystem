@@ -20,8 +20,9 @@ export function useOnboardingChecklist() {
       user.email
     );
     empQuery
-      .maybeSingle()
-      .then(({ data }) => {
+      .limit(1)
+      .then(({ data: rows }) => {
+        const data = rows && rows.length > 0 ? rows[0] : null;
         if (data && (data.first_name || data.last_name)) {
           setCurrentEmployeeName(`${data.first_name} ${data.last_name}`.trim());
         }

@@ -30,9 +30,10 @@ export function useTasksData() {
         .select("id, branch_id"),
       user.email
     );
-    const { data } = await empQuery
+    const { data: rows } = await empQuery
       .eq("branch_id", targetBranch)
-      .maybeSingle();
+      .limit(1);
+    const data = rows && rows.length > 0 ? rows[0] : null;
     if (data) setCurrentEmployeeId(data.id);
   }, [user?.email, isPartnerBranchBlocked, targetBranch]);
 

@@ -53,10 +53,11 @@ export function useMyEmployee(): UseMyEmployeeReturn {
         .select("id, first_name, last_name, role, department, avatar_url"),
       email
     );
-    const { data } = await empQuery
+    const { data: rows } = await empQuery
       .is("deleted_at", null)
-      .maybeSingle();
+      .limit(1);
 
+    const data = rows && rows.length > 0 ? rows[0] : null;
     cachedEmployee = (data as MyEmployee) || null;
     cachedEmail = email;
     setEmployee(cachedEmployee);

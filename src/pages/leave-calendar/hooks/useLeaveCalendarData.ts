@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import type { LeaveRequest, Employee } from "../types";
-import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
+import { applyUserEmployeeFilter, isPhoneSyntheticEmail } from "@/lib/phoneUtils";
 
 export function normalizeLeave(l: LeaveRequest): LeaveRequest {
   const isCancelled =
@@ -47,7 +47,10 @@ export function useLeaveCalendarData() {
           .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, branch_id, email"),
         user.email
       );
-      const { data: me } = await meQuery.maybeSingle();
+      const { data: rows } = await meQuery.limit(5);
+      const me = rows && rows.length > 0
+        ? ((isPhoneSyntheticEmail(user.email) ? rows.find((r: any) => !r.email || isPhoneSyntheticEmail(r.email)) : rows.find((r: any) => r.email?.toLowerCase() === user.email.toLowerCase())) || rows[0])
+        : null;
       myEmp = me;
       setMyEmployee(me);
 

@@ -39,9 +39,15 @@ export function usePermissions(): UsePermissionsReturn {
         .select("id, status, deleted_at, branch_id, branches(id, status, deleted_at)"),
       currentUser.email
     );
-    const { data: empCheck } = await empCheckQuery
+    const { data: empCheckRows } = await empCheckQuery
       .is("deleted_at", null)
-      .maybeSingle();
+      .limit(5);
+
+    // Prefer active employee if multiple match (e.g. test records with duplicate phone)
+    const activeEmp = empCheckRows?.find(
+      (e) => e.status !== "inactive" && e.status !== "terminated"
+    );
+    const empCheck = activeEmp || empCheckRows?.[0] || null;
 
     const isEmpInactive = empCheck && (empCheck.status === "inactive" || empCheck.status === "terminated");
     const isBranchInvalid =
@@ -161,6 +167,7 @@ export function usePermissions(): UsePermissionsReturn {
       if (role.allowed_modules.includes("*")) return true;
       const roleName = (role.name || "").trim().toLowerCase();
       if (/branch\s*admin/i.test(roleName)) return true;
+      if (module === "dashboard" || module === "home") return true;
       return role.allowed_modules.includes(module);
     },
     [loading, role]

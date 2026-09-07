@@ -47,10 +47,10 @@ export const OnboardingFilterBar = memo(function OnboardingFilterBar({
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               viewMode === "kanban" ? "bg-white text-[#253C7D] shadow-xs" : "text-gray-600"
             }`}
-            title="Kanban Board"
+            title="Stage Board View"
           >
-            <i className="ri-kanban-view" />
-            <span className="hidden sm:inline">Kanban</span>
+            <i className="ri-layout-column-line" />
+            <span className="hidden sm:inline">Board</span>
           </button>
           <button
             onClick={() => setViewMode("table")}
