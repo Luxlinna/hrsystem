@@ -129,14 +129,17 @@ Deno.serve(async (req) => {
         });
       }
 
+      const defaultRedirectUrl = Deno.env.get("APP_URL") || "https://hrsystem-quit.onrender.com/reset-password";
+      const resolvedRedirectTo = (!redirect_to || redirect_to.includes("localhost") || redirect_to.includes("127.0.0.1") || redirect_to.includes("supabase.co"))
+        ? defaultRedirectUrl
+        : redirect_to;
+
       const { data: linkData, error: generateLinkError } =
         await supabaseAdmin.auth.admin.generateLink({
           type: "recovery",
           email,
           options: {
-            redirectTo:
-              redirect_to ||
-              `${new URL(req.url).origin}/auth/reset-password`,
+            redirectTo: resolvedRedirectTo,
           },
         });
 
@@ -149,8 +152,7 @@ Deno.serve(async (req) => {
       const resolvedName = display_name || authUserData?.user?.user_metadata?.display_name || email.split("@")[0];
 
       if (isPhoneSyntheticEmail(email)) {
-        const defaultAppUrl = Deno.env.get("APP_URL") || "https://hrsystem-quit.onrender.com";
-        const cleanBase = (redirect_to || `${defaultAppUrl.replace(/\/$/, "")}/reset-password`).split("?")[0].replace(/\/$/, "");
+        const cleanBase = resolvedRedirectTo.split("?")[0].replace(/\/$/, "");
         const safeLink = linkData?.properties?.hashed_token
           ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
           : inviteLink;
@@ -273,11 +275,16 @@ Deno.serve(async (req) => {
       console.error("Failed to link user_id in user_role_assignments:", linkError);
     }
 
+    const defaultRedirectUrl = "https://hrsystem-quit.onrender.com/reset-password";
+    const resolvedRedirectTo = (!redirect_to || redirect_to.includes("localhost") || redirect_to.includes("127.0.0.1") || redirect_to.includes("supabase.co"))
+      ? defaultRedirectUrl
+      : redirect_to;
+
     const { data: linkData, error: generateLinkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email,
       options: {
-        redirectTo: redirect_to || `${new URL(req.url).origin}/auth/reset-password`,
+        redirectTo: resolvedRedirectTo,
       },
     });
 
