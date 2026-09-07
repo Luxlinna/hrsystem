@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Employee, TreeNode } from "../types";
 import { buildTree, subtreeMatchesFilters } from "../orgChartUtils";
+import { toast } from "@/components/Toast";
 
 export function useOrgChartTree(
   employees: Employee[],
@@ -10,21 +11,20 @@ export function useOrgChartTree(
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
+  // Check whether any employee in the current branch has subordinates
+  const hasExpandableNodes = useMemo(() => {
+    const ids = new Set(employees.map((e) => e.id));
+    return employees.some((e) => e.reports_to && ids.has(e.reports_to));
+  }, [employees]);
+
+  // Initial setup: on load or branch change, start with roots expanded
   useEffect(() => {
     if (employees.length > 0) {
       const empIds = new Set(employees.map((e) => e.id));
       const topLevel = employees.filter((e) => !e.reports_to || !empIds.has(e.reports_to));
-      setExpandedIds((prev) => {
-        const next = new Set(prev);
-        let added = false;
-        for (const e of topLevel) {
-          if (!next.has(e.id) && !next.has(`collapsed_${e.id}`)) {
-            next.add(e.id);
-            added = true;
-          }
-        }
-        return added ? next : prev;
-      });
+      setExpandedIds(new Set(topLevel.map((e) => e.id)));
+    } else {
+      setExpandedIds(new Set());
     }
   }, [employees]);
 
@@ -37,10 +37,7 @@ export function useOrgChartTree(
           n.children.some((c) => subtreeMatchesFilters(c, searchTerm, deptFilter));
         return {
           ...n,
-          expanded:
-            expandedIds.has(n.id) ||
-            (n.depth < 1 && !expandedIds.has(`collapsed_${n.id}`)) ||
-            forceExpand,
+          expanded: expandedIds.has(n.id) || forceExpand,
           children: applyExpanded(n.children),
         };
       });
@@ -52,23 +49,48 @@ export function useOrgChartTree(
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
-        next.add(`collapsed_${id}`);
       } else {
         next.add(id);
-        next.delete(`collapsed_${id}`);
       }
       return next;
     });
   }, []);
 
   const expandAll = useCallback(() => {
-    setExpandedIds(new Set(employees.map((e) => e.id)));
+    // Expand every node that has subordinates
+    const parentIds = new Set<string>();
+    employees.forEach((e) => {
+      if (employees.some((sub) => sub.reports_to === e.id)) {
+        parentIds.add(e.id);
+      }
+    });
+
+    if (parentIds.size === 0) {
+      toast(
+        "Hierarchy Info",
+        "All employee cards are already shown at top level. Assign managers in Directory List to build reporting teams.",
+        "info"
+      );
+      return;
+    }
+
+    setExpandedIds(parentIds);
+    toast("Organization Chart", `Expanded all ${parentIds.size} team${parentIds.size > 1 ? "s" : ""}.`, "success");
   }, [employees]);
 
   const collapseAll = useCallback(() => {
-    const topLevel = employees.filter((e) => !e.reports_to);
-    setExpandedIds(new Set(topLevel.map((e) => e.id)));
-  }, [employees]);
+    if (!hasExpandableNodes) {
+      toast(
+        "Hierarchy Info",
+        "No subordinate reporting branches to collapse. All employees are already at top level.",
+        "info"
+      );
+      return;
+    }
+
+    setExpandedIds(new Set());
+    toast("Organization Chart", "Collapsed all subordinate branches.", "success");
+  }, [hasExpandableNodes]);
 
   return {
     tree,
@@ -77,5 +99,6 @@ export function useOrgChartTree(
     toggleNode,
     expandAll,
     collapseAll,
+    hasExpandableNodes,
   };
 }

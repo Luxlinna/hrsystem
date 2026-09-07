@@ -19,26 +19,26 @@ export const OrgChartListView = memo(function OrgChartListView({
   getDirectReports,
 }: OrgChartListViewProps) {
   return (
-    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
+    <div className="border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs dark:bg-slate-900 transition-colors">
       <table className="w-full text-left">
         <thead>
-          <tr className="bg-gray-50">
-            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Employee</th>
-            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Department</th>
-            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Reports To</th>
-            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Direct Reports</th>
-            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+          <tr className="bg-gray-50 dark:bg-slate-800/80">
+            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Employee</th>
+            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Department</th>
+            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Reports To</th>
+            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Direct Reports</th>
+            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
           {employees.map((emp) => {
             const manager = getManager(emp.reports_to);
             const reports = getDirectReports(emp.id);
             const deptColor = DEPT_COLORS[emp.department] || "bg-gray-400";
 
             return (
-              <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+              <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-slate-850/60 transition-colors">
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
                     {emp.avatar_url ? (
@@ -49,10 +49,10 @@ export const OrgChartListView = memo(function OrgChartListView({
                       </div>
                     )}
                     <div>
-                      <Link to={`/employees/${emp.id}`} className="text-[13px] font-semibold text-gray-900 hover:text-[#253C7D] transition-colors">
+                      <Link to={`/employees/${emp.id}`} className="text-[13px] font-semibold text-gray-900 dark:text-slate-100 hover:text-[#253C7D] dark:hover:text-sky-400 transition-colors">
                         {emp.first_name} {emp.last_name}
                       </Link>
-                      <p className="text-[11px] text-gray-500">{emp.role}</p>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400">{emp.role}</p>
                     </div>
                   </div>
                 </td>
@@ -63,30 +63,30 @@ export const OrgChartListView = memo(function OrgChartListView({
                   </span>
                 </td>
 
-                <td className="px-5 py-3 text-[13px] text-gray-600">
+                <td className="px-5 py-3 text-[13px] text-gray-600 dark:text-slate-300">
                   {manager ? (
-                    <Link to={`/employees/${manager.id}`} className="hover:text-[#253C7D] transition-colors">
+                    <Link to={`/employees/${manager.id}`} className="hover:text-[#253C7D] dark:hover:text-sky-400 transition-colors">
                       {manager.first_name} {manager.last_name}
                     </Link>
                   ) : (
-                    <span className="text-gray-400">— Top level</span>
+                    <span className="text-gray-400 dark:text-slate-500">— Top level</span>
                   )}
                 </td>
 
-                <td className="px-5 py-3 text-[13px] text-gray-600">
+                <td className="px-5 py-3 text-[13px] text-gray-600 dark:text-slate-300">
                   {reports.length > 0 ? (
-                    <span className="text-[#253C7D] font-semibold">
+                    <span className="text-[#253C7D] dark:text-sky-400 font-semibold">
                       {reports.length} person{reports.length > 1 ? "s" : ""}
                     </span>
                   ) : (
-                    <span className="text-gray-400">None</span>
+                    <span className="text-gray-400 dark:text-slate-500">None</span>
                   )}
                 </td>
 
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-1.5">
                     <span className={`w-1.5 h-1.5 rounded-full ${emp.status === "active" ? "bg-green-500" : "bg-amber-500"}`} />
-                    <span className="text-[12px] text-gray-600 capitalize">{emp.status}</span>
+                    <span className="text-[12px] text-gray-600 dark:text-slate-300 capitalize">{emp.status}</span>
                   </div>
                 </td>
 
@@ -94,12 +94,12 @@ export const OrgChartListView = memo(function OrgChartListView({
                   {canEditManager ? (
                     <button
                       onClick={() => onOpenEditManager(emp)}
-                      className="px-2.5 py-1.5 text-[11px] font-semibold text-[#253C7D] border border-[#253C7D]/20 rounded-lg hover:bg-[#253C7D]/5 transition-colors whitespace-nowrap cursor-pointer"
+                      className="px-2.5 py-1.5 text-[11px] font-semibold text-[#253C7D] dark:text-sky-300 border border-[#253C7D]/20 dark:border-sky-800/60 rounded-lg hover:bg-[#253C7D]/5 dark:hover:bg-sky-950/40 transition-colors whitespace-nowrap cursor-pointer"
                     >
                       Edit Manager
                     </button>
                   ) : (
-                    <span className="text-[11px] text-gray-300">—</span>
+                    <span className="text-[11px] text-gray-300 dark:text-slate-600">—</span>
                   )}
                 </td>
               </tr>

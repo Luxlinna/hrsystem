@@ -19,6 +19,7 @@ export default function OrgChart() {
     branches,
     loading,
     tree,
+    hasExpandableNodes,
     toggleNode,
     expandAll,
     collapseAll,
@@ -55,15 +56,15 @@ export default function OrgChart() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-slate-950">
+        <div className="w-10 h-10 border-2 border-[#253C7D] dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (isPartnerBranchBlocked) {
     return (
-      <div className="p-6 lg:p-10 min-h-screen bg-[#F8F9FB] dark:bg-slate-900 font-sans">
+      <div className="p-6 lg:p-10 min-h-screen bg-[#F8F9FB] dark:bg-slate-950 font-sans transition-colors">
         <OrgChartHeader
           employeeCount={0}
           deptCount={0}
@@ -71,6 +72,7 @@ export default function OrgChart() {
           setViewMode={setViewMode}
           onExpandAll={() => {}}
           onCollapseAll={() => {}}
+          hasExpandableNodes={false}
         />
         <PartnerBranchPrivacyShield
           moduleName="Organization Chart"
@@ -82,7 +84,7 @@ export default function OrgChart() {
   }
 
   return (
-    <div className="p-6 lg:p-10 min-h-screen bg-[#F8F9FB] dark:bg-slate-900 font-sans">
+    <div className="p-6 lg:p-10 min-h-screen bg-[#F8F9FB] dark:bg-slate-950 font-sans transition-colors">
       {/* Header */}
       <OrgChartHeader
         employeeCount={employees.length}
@@ -92,6 +94,7 @@ export default function OrgChart() {
         setViewMode={setViewMode}
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
+        hasExpandableNodes={hasExpandableNodes}
         employees={employees}
       />
 
@@ -107,7 +110,7 @@ export default function OrgChart() {
 
       {/* View 1: Tree View */}
       {viewMode === "tree" && (
-        <div className="bg-white rounded-3xl border border-gray-200/80 p-6 sm:p-8 shadow-2xs">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-200/80 dark:border-slate-800 p-6 sm:p-8 shadow-2xs transition-colors">
           <OrgChartView
             tree={tree}
             searchTerm={searchTerm}

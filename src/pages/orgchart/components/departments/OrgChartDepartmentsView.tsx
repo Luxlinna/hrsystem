@@ -84,9 +84,9 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
 
   if (filteredGroups.length === 0) {
     return (
-      <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 p-8 shadow-2xs">
-        <i className="ri-team-line text-4xl text-gray-300 mb-3 block" />
-        <p className="text-sm font-semibold text-gray-600">No departments match your filter.</p>
+      <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 p-8 shadow-2xs">
+        <i className="ri-team-line text-4xl text-gray-300 dark:text-slate-600 mb-3 block" />
+        <p className="text-sm font-semibold text-gray-600 dark:text-slate-300">No departments match your filter.</p>
       </div>
     );
   }
@@ -99,15 +99,15 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
         return (
           <div
             key={group.department}
-            className="bg-white rounded-3xl border border-gray-200/80 shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col"
+            className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col"
           >
             {/* Department Card Header */}
-            <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 via-white to-transparent flex items-center justify-between">
+            <div className="p-5 border-b border-gray-100 dark:border-slate-800 bg-gradient-to-r from-gray-50 via-white to-transparent dark:from-slate-800/80 dark:via-slate-900 dark:to-transparent flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`w-3.5 h-3.5 rounded-full ${deptColor}`} />
-                <h3 className="text-base font-bold text-gray-900">{group.department}</h3>
+                <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">{group.department}</h3>
               </div>
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
                 {group.total} {group.total === 1 ? "Member" : "Members"}
               </span>
             </div>
@@ -116,7 +116,7 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
               {/* Department Leads Section */}
               {group.leads.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <p className="text-[11px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                     <i className="ri-shield-star-line text-amber-500 text-xs" />
                     Department Leadership
                   </p>
@@ -125,14 +125,14 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
                       <div
                         key={lead.id}
                         onClick={() => onSelectEmployee(lead)}
-                        className="p-3 rounded-2xl bg-amber-50/50 border border-amber-200/60 hover:bg-amber-50 transition-all cursor-pointer flex items-center justify-between"
+                        className="p-3 rounded-2xl bg-amber-50/50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/60 hover:bg-amber-50 dark:hover:bg-amber-950/70 transition-all cursor-pointer flex items-center justify-between"
                       >
                         <div className="flex items-center gap-3">
                           {lead.avatar_url ? (
                             <img
                               src={lead.avatar_url}
                               alt=""
-                              className="w-10 h-10 rounded-full object-cover border border-amber-200 shadow-2xs"
+                              className="w-10 h-10 rounded-full object-cover border border-amber-200 dark:border-amber-700/60 shadow-2xs"
                             />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-[#253C7D] text-white font-bold text-xs flex items-center justify-center">
@@ -141,13 +141,13 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
                             </div>
                           )}
                           <div>
-                            <p className="text-xs font-bold text-gray-900">
+                            <p className="text-xs font-bold text-gray-900 dark:text-slate-100">
                               {lead.first_name} {lead.last_name}
                             </p>
-                            <p className="text-[11px] text-amber-900 font-medium">{lead.role}</p>
+                            <p className="text-[11px] text-amber-900 dark:text-amber-200 font-medium">{lead.role}</p>
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-200/60 dark:border-amber-800/60">
                           Lead
                         </span>
                       </div>
@@ -158,18 +158,18 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
 
               {/* Department Staff Members */}
               <div>
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                <p className="text-[11px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider mb-2">
                   Team Members ({group.members.length})
                 </p>
                 {group.members.length === 0 ? (
-                  <p className="text-xs text-gray-400 italic">No additional staff in this department</p>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 italic">No additional staff in this department</p>
                 ) : (
                   <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                     {group.members.map((member) => (
                       <div
                         key={member.id}
                         onClick={() => onSelectEmployee(member)}
-                        className="p-2.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all cursor-pointer flex items-center justify-between"
+                        className="p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800/80 border border-transparent hover:border-gray-200 dark:hover:border-slate-700 transition-all cursor-pointer flex items-center justify-between"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           {member.avatar_url ? (
@@ -179,23 +179,23 @@ export const OrgChartDepartmentsView = memo(function OrgChartDepartmentsView({
                               className="w-8 h-8 rounded-full object-cover shrink-0"
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] flex items-center justify-center shrink-0">
                               {member.first_name?.[0]}
                               {member.last_name?.[0]}
                             </div>
                           )}
                           <div className="truncate">
-                            <p className="text-xs font-semibold text-gray-900 truncate">
+                            <p className="text-xs font-semibold text-gray-900 dark:text-slate-100 truncate">
                               {member.first_name} {member.last_name}
                             </p>
-                            <p className="text-[11px] text-gray-500 truncate">{member.role}</p>
+                            <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">{member.role}</p>
                           </div>
                         </div>
 
                         <Link
                           to={`/employees/${member.id}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-7 h-7 rounded-lg hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-700 shrink-0"
+                          className="w-7 h-7 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 shrink-0 cursor-pointer"
                           title="View Profile"
                         >
                           <i className="ri-external-link-line text-xs" />

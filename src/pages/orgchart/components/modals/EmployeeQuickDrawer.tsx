@@ -27,7 +27,7 @@ export const EmployeeQuickDrawer = memo(function EmployeeQuickDrawer({
   const reportsCount = getDirectReports(selectedEmployee.id).length;
 
   return (
-    <div className="fixed bottom-6 right-6 bg-white rounded-2xl border border-gray-200 p-5 w-72 z-40 shadow-xl animate-in slide-in-from-bottom-5 duration-150">
+    <div className="fixed bottom-6 right-6 bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 p-5 w-72 z-40 shadow-xl animate-in slide-in-from-bottom-5 duration-150 transition-colors">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           {selectedEmployee.avatar_url ? (
@@ -43,37 +43,37 @@ export const EmployeeQuickDrawer = memo(function EmployeeQuickDrawer({
             </div>
           )}
           <div>
-            <p className="text-[13px] font-bold text-gray-900">
+            <p className="text-[13px] font-bold text-gray-900 dark:text-slate-100">
               {selectedEmployee.first_name} {selectedEmployee.last_name}
             </p>
-            <p className="text-[11px] text-gray-500">{selectedEmployee.role}</p>
+            <p className="text-[11px] text-gray-500 dark:text-slate-400">{selectedEmployee.role}</p>
           </div>
         </div>
 
         <button
           onClick={onClose}
-          className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 cursor-pointer"
+          className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 dark:text-slate-400 cursor-pointer"
         >
-          <i className="ri-close-line text-gray-400 text-sm" />
+          <i className="ri-close-line text-sm" />
         </button>
       </div>
 
       <div className="space-y-2 mb-4">
         <div className="flex justify-between">
-          <span className="text-[11px] text-gray-400">Department</span>
-          <span className="text-[11px] font-semibold text-gray-700">
+          <span className="text-[11px] text-gray-400 dark:text-slate-500">Department</span>
+          <span className="text-[11px] font-semibold text-gray-700 dark:text-slate-200">
             {selectedEmployee.department}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[11px] text-gray-400">Direct Reports</span>
-          <span className="text-[11px] font-semibold text-[#253C7D]">
+          <span className="text-[11px] text-gray-400 dark:text-slate-500">Direct Reports</span>
+          <span className="text-[11px] font-semibold text-[#253C7D] dark:text-sky-400">
             {reportsCount}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[11px] text-gray-400">Reports To</span>
-          <span className="text-[11px] font-semibold text-gray-700">
+          <span className="text-[11px] text-gray-400 dark:text-slate-500">Reports To</span>
+          <span className="text-[11px] font-semibold text-gray-700 dark:text-slate-200">
             {manager ? `${manager.first_name} ${manager.last_name}` : "No manager"}
           </span>
         </div>
@@ -82,14 +82,14 @@ export const EmployeeQuickDrawer = memo(function EmployeeQuickDrawer({
       <div className="flex gap-2">
         <Link
           to={`/employees/${selectedEmployee.id}`}
-          className="flex-1 py-2 text-center text-[11px] font-semibold text-[#253C7D] border border-[#253C7D]/20 rounded-lg hover:bg-[#253C7D]/5 transition-colors whitespace-nowrap"
+          className="flex-1 py-2 text-center text-[11px] font-semibold text-[#253C7D] dark:text-sky-300 border border-[#253C7D]/20 dark:border-sky-800/60 rounded-lg hover:bg-[#253C7D]/5 dark:hover:bg-sky-950/40 transition-colors whitespace-nowrap"
         >
           View Profile
         </Link>
         {canEditManager && (
           <button
             onClick={() => onOpenEditManager(selectedEmployee)}
-            className="flex-1 py-2 text-[11px] font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer"
+            className="flex-1 py-2 text-[11px] font-semibold text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap cursor-pointer"
           >
             Edit Manager
           </button>
