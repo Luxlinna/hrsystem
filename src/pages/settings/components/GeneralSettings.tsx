@@ -50,7 +50,7 @@ export function GeneralSettings({
     <div className="w-full max-w-none space-y-5">
       {/* Active Branch Site Schedule Notice & Scope Switcher */}
       {currentBranchOrSite && (
-        <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-white border border-blue-200/80 rounded-2xl p-4 sm:p-5 shadow-xs">
+        <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-white dark:from-blue-950/40 dark:via-slate-900 dark:to-indigo-950/20 border border-blue-200/80 dark:border-blue-900/60 rounded-2xl p-4 sm:p-5 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-[#253C7D] text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -58,24 +58,24 @@ export function GeneralSettings({
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[14px] font-extrabold text-gray-900">
+                  <span className="text-[14px] font-extrabold text-gray-900 dark:text-slate-100">
                     {currentBranchOrSite.name}
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-[#253C7D] border border-blue-200">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/80 text-[#253C7D] dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                     {currentBranchOrSite.is_site ? "Work Site Override" : "Branch Location"}
                   </span>
                   {currentBranchOrSite.is_four_punch_enabled && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                       4-Punch Mode Active
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-4 text-xs text-gray-600 mt-1.5 flex-wrap font-medium">
+                <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-slate-300 mt-1.5 flex-wrap font-medium">
                   {currentBranchOrSite.work_start_time && (
                     <span className="flex items-center gap-1.5">
-                      <i className="ri-time-line text-[#253C7D]" />
+                      <i className="ri-time-line text-[#253C7D] dark:text-sky-400" />
                       Work Hours:{" "}
-                      <strong className="text-gray-900 font-bold">
+                      <strong className="text-gray-900 dark:text-slate-100 font-bold">
                         {formatClock(currentBranchOrSite.work_start_time)}
                         {currentBranchOrSite.work_end_time ? ` – ${formatClock(currentBranchOrSite.work_end_time)}` : ""}
                       </strong>
@@ -83,16 +83,16 @@ export function GeneralSettings({
                   )}
                   {currentBranchOrSite.break_start_time && (
                     <span className="flex items-center gap-1.5">
-                      <i className="ri-restaurant-line text-amber-600" />
+                      <i className="ri-restaurant-line text-amber-600 dark:text-amber-400" />
                       Lunch Break:{" "}
-                      <strong className="text-gray-900 font-bold">
+                      <strong className="text-gray-900 dark:text-slate-100 font-bold">
                         {formatClock(currentBranchOrSite.break_start_time)}
                         {currentBranchOrSite.break_end_time ? ` – ${formatClock(currentBranchOrSite.break_end_time)}` : ""}
                       </strong>
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">
+                <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1.5 leading-relaxed">
                   Employees at this location follow these site-specific hours. You can adjust them directly in the <strong>Attendance Schedule</strong> card below.
                 </p>
               </div>
@@ -100,7 +100,7 @@ export function GeneralSettings({
 
             <Link
               to="/branches"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-gray-50 text-[#253C7D] border border-blue-200 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 self-start sm:self-center cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-[#253C7D] dark:text-sky-300 border border-blue-200 dark:border-slate-700 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 self-start sm:self-center cursor-pointer"
             >
               <i className="ri-settings-4-line" /> Manage Branch Sites
             </Link>
@@ -242,7 +242,7 @@ export function GeneralSettings({
         <button
           onClick={saveAllGeneral}
           disabled={saving}
-          className="px-6 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
+          className="px-6 py-2.5 bg-[#253C7D] dark:bg-blue-600 text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] dark:hover:bg-blue-700 transition-colors disabled:opacity-40 whitespace-nowrap cursor-pointer"
         >
           {saving ? "Saving..." : "Save All Changes"}
         </button>

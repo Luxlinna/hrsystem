@@ -63,14 +63,14 @@ export const BranchStaffSection = memo(function BranchStaffSection({
                             <span className="text-[11px] text-gray-400 truncate">{emp.role || "Staff"}</span>
                             <span className="text-gray-300">·</span>
                             {emp.work_locations?.name ? (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded shrink-0">
-                                <i className="ri-map-pin-2-fill text-[9px] text-amber-500" />
-                                {emp.work_locations.name}
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800/60 px-1.5 py-0.5 rounded shrink-0 shadow-2xs">
+                                <i className="ri-map-pin-2-fill text-[9px] text-emerald-500 dark:text-emerald-400" />
+                                <span>{emp.work_locations.name}</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded shrink-0">
-                                <i className="ri-building-2-line text-[9px] text-blue-500" />
-                                Main Office
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 border border-blue-200/60 dark:border-blue-800/60 px-1.5 py-0.5 rounded shrink-0">
+                                <i className="ri-building-2-line text-[9px] text-blue-500 dark:text-blue-400" />
+                                <span>Main Office</span>
                               </span>
                             )}
                           </div>

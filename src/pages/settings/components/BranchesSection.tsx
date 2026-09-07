@@ -56,14 +56,14 @@ export function BranchesSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-4">
-          <span className="text-[13px] text-gray-500">
-            <strong className="text-gray-900">{activeBranches.length}</strong>{" "}
+          <span className="text-[13px] text-gray-500 dark:text-slate-400">
+            <strong className="text-gray-900 dark:text-slate-100">{activeBranches.length}</strong>{" "}
             active &middot; {totalEmployees.toLocaleString()} total employees
           </span>
         </div>
         <Link
           to="/branches"
-          className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors whitespace-nowrap"
+          className="px-4 py-2 bg-[#253C7D] dark:bg-blue-600 text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] dark:hover:bg-blue-700 transition-colors whitespace-nowrap cursor-pointer"
         >
           Manage in BU Module
         </Link>
@@ -72,26 +72,26 @@ export function BranchesSection() {
         {branches.map((b) => (
           <div
             key={b.id}
-            className="border border-gray-100 rounded-xl p-5 flex items-start justify-between hover:border-[#253C7D]/20 transition-colors"
+            className="border border-gray-100 dark:border-slate-800 rounded-xl p-5 flex items-start justify-between hover:border-[#253C7D]/20 dark:hover:border-blue-500/30 dark:bg-slate-900/60 transition-colors"
           >
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 flex items-center justify-center shrink-0 mt-0.5">
-                <i className="ri-building-line text-[#253C7D] text-sm w-5 h-5 flex items-center justify-center" />
+              <div className="w-9 h-9 rounded-lg bg-[#253C7D]/10 dark:bg-[#253C7D]/30 flex items-center justify-center shrink-0 mt-0.5">
+                <i className="ri-building-line text-[#253C7D] dark:text-sky-300 text-sm w-5 h-5 flex items-center justify-center" />
               </div>
               <div>
-                <p className="text-[14px] font-semibold text-gray-900">
+                <p className="text-[14px] font-semibold text-gray-900 dark:text-slate-100">
                   {b.name}
                 </p>
-                <p className="text-[12px] text-gray-500">{b.location}</p>
+                <p className="text-[12px] text-gray-500 dark:text-slate-400">{b.location}</p>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-[11px] text-gray-400">
+                  <span className="text-[11px] text-gray-400 dark:text-slate-500">
                     {b.employee_count || 0} employees
                   </span>
                   <span
                     className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                       b.status === "active"
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-gray-100 text-gray-500"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border dark:border-emerald-800/60"
+                        : "bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-300"
                     }`}
                   >
                     {b.status}
@@ -101,7 +101,7 @@ export function BranchesSection() {
             </div>
             <Link
               to="/branches"
-              className="px-3 py-1.5 border border-gray-200 text-gray-700 text-[11px] font-medium rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap shrink-0"
+              className="px-3 py-1.5 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 text-[11px] font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap shrink-0"
             >
               View
             </Link>

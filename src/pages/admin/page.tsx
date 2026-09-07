@@ -11,12 +11,12 @@ export default function AdminPortal() {
   const admin = useAdmin();
 
   return (
-    <div className="min-h-screen bg-[#F8F8F7] p-4 md:p-6">
+    <div className="min-h-screen bg-[#F8F8F7] dark:bg-slate-950 p-4 md:p-6">
       {/* Toast Notification */}
       {admin.toast && (
         <div
-          className={`fixed top-5 right-5 z-50 text-white text-sm px-4 py-3 rounded-xl ${
-            admin.toast.type === "ok" ? "bg-gray-900" : "bg-red-600"
+          className={`fixed top-5 right-5 z-50 text-white text-sm px-4 py-3 rounded-xl shadow-lg ${
+            admin.toast.type === "ok" ? "bg-gray-900 dark:bg-slate-800" : "bg-red-600 dark:bg-rose-700"
           }`}
         >
           {admin.toast.msg}

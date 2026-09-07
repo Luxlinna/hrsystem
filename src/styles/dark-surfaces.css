@@ -181,4 +181,15 @@
   html.dark .bg-\[\#29ABE2\]\/20 {
     background-color: rgb(41 171 226 / 0.16) !important;
   }
+
+  html.dark select {
+    color-scheme: dark !important;
+  }
+
+  html.dark option,
+  html.dark optgroup {
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+  }
 }
+

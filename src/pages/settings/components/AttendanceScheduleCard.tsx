@@ -90,26 +90,28 @@ export function AttendanceScheduleCard({
       <div
         key={key}
         className={`min-w-0 p-3.5 rounded-xl border ${
-          isCustomField ? "border-blue-200 bg-blue-50/40" : customBg || "border-gray-100 bg-white"
+          isCustomField
+            ? "border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/30"
+            : customBg || "border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800/60"
         }`}
       >
         <div className="flex items-center justify-between mb-1">
-          <label className="text-[12px] font-bold text-gray-800">
+          <label className="text-[12px] font-bold text-gray-800 dark:text-slate-200">
             {keyLabels[key]}
           </label>
           {isCustomField && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-[#253C7D]">
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/80 text-[#253C7D] dark:text-blue-300">
               {currentBranchOrSite.is_site ? "Site Custom" : "BU Custom"}
             </span>
           )}
           {isSiteOrBranch && !isCustomField && (
-            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300">
               Company Default
             </span>
           )}
         </div>
         {helperText && (
-          <p className="text-[10px] text-gray-400 mb-1.5 leading-snug">{helperText}</p>
+          <p className="text-[10px] text-gray-400 dark:text-slate-400 mb-1.5 leading-snug">{helperText}</p>
         )}
         <div className="flex gap-2 mt-1">
           <input
@@ -122,13 +124,13 @@ export function AttendanceScheduleCard({
             }
             value={getVal(key)}
             onChange={(e) => updateValue(key, e.target.value)}
-            className="min-w-0 flex-1 px-3.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#253C7D]"
+            className="min-w-0 flex-1 px-3.5 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-gray-900 dark:text-slate-100 focus:outline-none focus:border-[#253C7D] dark:focus:border-blue-500"
           />
           {edited[key] !== undefined && saveSetting && (
             <button
               onClick={() => saveSetting(key)}
               disabled={saving}
-              className="px-3 py-1.5 bg-[#253C7D] text-white text-xs font-bold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 shrink-0 cursor-pointer"
+              className="px-3 py-1.5 bg-[#253C7D] dark:bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-[#1F336A] dark:hover:bg-blue-700 transition-colors disabled:opacity-40 shrink-0 cursor-pointer"
             >
               Save
             </button>
@@ -139,11 +141,11 @@ export function AttendanceScheduleCard({
   };
 
   return (
-    <div className="w-full border border-[#253C7D]/30 bg-white rounded-2xl overflow-hidden shadow-xs transition-all">
+    <div className="w-full border border-[#253C7D]/30 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-xs transition-all">
       {/* Header with Scope Switcher */}
-      <div className="bg-[#253C7D] text-white p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-[#253C7D] dark:bg-[#1d2f60] text-white p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white text-[#253C7D] flex items-center justify-center shrink-0 shadow-xs font-bold">
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-[#253C7D] dark:text-sky-300 flex items-center justify-center shrink-0 shadow-xs font-bold">
             <i className="ri-calendar-schedule-line text-lg" />
           </div>
           <div>
@@ -176,7 +178,7 @@ export function AttendanceScheduleCard({
             <select
               value={settingsScope}
               onChange={(e) => setSettingsScope(e.target.value)}
-              className="px-3.5 py-2 bg-white text-[#253C7D] rounded-xl text-xs font-bold border border-white/20 shadow-xs focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer"
+              className="px-3.5 py-2 bg-white dark:bg-slate-800 text-[#253C7D] dark:text-sky-300 rounded-xl text-xs font-bold border border-white/20 dark:border-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer"
             >
               <option value="all">🏢 Company-Wide Defaults</option>
               {visibleBranches.map((b) => (
@@ -192,12 +194,12 @@ export function AttendanceScheduleCard({
       <div className="p-5 sm:p-6 space-y-6">
         {/* If editing a site, highlight 4-punch mode toggle */}
         {isSiteOrBranch && currentBranchOrSite.is_site && (
-          <div className="flex items-center justify-between p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-xl">
+          <div className="flex items-center justify-between p-3.5 bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl">
             <div className="flex items-center gap-2.5">
-              <i className="ri-fingerprint-line text-indigo-700 text-base" />
+              <i className="ri-fingerprint-line text-indigo-700 dark:text-indigo-400 text-base" />
               <div>
-                <span className="text-xs font-bold text-gray-900">4-Punch Attendance Mode</span>
-                <p className="text-[11px] text-gray-500">Requires 4 daily scans: Morning In, Lunch Out, Lunch In, Evening Out</p>
+                <span className="text-xs font-bold text-gray-900 dark:text-slate-100">4-Punch Attendance Mode</span>
+                <p className="text-[11px] text-gray-500 dark:text-slate-400">Requires 4 daily scans: Morning In, Lunch Out, Lunch In, Evening Out</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -207,15 +209,15 @@ export function AttendanceScheduleCard({
                 onChange={(e) => updateValue("is_four_punch_enabled", String(e.target.checked))}
                 className="sr-only peer"
               />
-              <div className="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#253C7D]"></div>
+              <div className="w-9 h-5 bg-gray-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#253C7D] dark:peer-checked:bg-blue-600"></div>
             </label>
           </div>
         )}
 
         {/* 1. Core Working Hours & Grace Periods */}
         <div>
-          <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <i className="ri-time-line text-[#253C7D]" /> Working Hours & Grace Periods
+          <h4 className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <i className="ri-time-line text-[#253C7D] dark:text-sky-400" /> Working Hours & Grace Periods
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {CORE_SCHEDULE_KEYS.map((key) => renderField(key))}
@@ -223,14 +225,14 @@ export function AttendanceScheduleCard({
         </div>
 
         {/* 2. Morning Biometric Scan Windows */}
-        <div className="bg-amber-50/60 p-4 sm:p-5 rounded-2xl border border-amber-200/70 space-y-3.5">
+        <div className="bg-amber-50/60 dark:bg-amber-950/30 p-4 sm:p-5 rounded-2xl border border-amber-200/70 dark:border-amber-900/50 space-y-3.5">
           <div className="flex items-center gap-2">
-            <i className="ri-shield-time-line text-amber-700 text-base" />
+            <i className="ri-shield-time-line text-amber-700 dark:text-amber-400 text-base" />
             <div>
-              <h4 className="text-[12px] font-bold text-amber-900 uppercase tracking-wider">
+              <h4 className="text-[12px] font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider">
                 Morning Biometric Scan Windows
               </h4>
-              <p className="text-[11px] text-amber-700">
+              <p className="text-[11px] text-amber-700 dark:text-amber-300/90">
                 Strict scan filter: Machine scans outside these windows will NOT be recorded.
               </p>
             </div>
@@ -241,19 +243,19 @@ export function AttendanceScheduleCard({
               "morning_check_in_end",
               "morning_check_out_start",
               "morning_check_out_end",
-            ].map((k) => renderField(k, "border-amber-200/60 bg-white"))}
+            ].map((k) => renderField(k, "border-amber-200/60 dark:border-amber-900/60 bg-white dark:bg-slate-900"))}
           </div>
         </div>
 
         {/* 3. Afternoon Biometric Scan Windows */}
-        <div className="bg-indigo-50/60 p-4 sm:p-5 rounded-2xl border border-indigo-200/70 space-y-3.5">
+        <div className="bg-indigo-50/60 dark:bg-indigo-950/30 p-4 sm:p-5 rounded-2xl border border-indigo-200/70 dark:border-indigo-900/50 space-y-3.5">
           <div className="flex items-center gap-2">
-            <i className="ri-time-line text-indigo-700 text-base" />
+            <i className="ri-time-line text-indigo-700 dark:text-indigo-400 text-base" />
             <div>
-              <h4 className="text-[12px] font-bold text-indigo-900 uppercase tracking-wider">
+              <h4 className="text-[12px] font-bold text-indigo-900 dark:text-indigo-200 uppercase tracking-wider">
                 Afternoon Biometric Scan Windows
               </h4>
-              <p className="text-[11px] text-indigo-700">
+              <p className="text-[11px] text-indigo-700 dark:text-indigo-300/90">
                 Strict scan filter: Machine scans outside these windows will NOT be recorded.
               </p>
             </div>
@@ -264,11 +266,11 @@ export function AttendanceScheduleCard({
               "afternoon_check_in_end",
               "afternoon_check_out_start",
               "afternoon_check_out_end",
-            ].map((k) => renderField(k, "border-indigo-200/60 bg-white"))}
+            ].map((k) => renderField(k, "border-indigo-200/60 dark:border-indigo-900/60 bg-white dark:bg-slate-900"))}
           </div>
         </div>
 
-        <p className="text-[11px] text-gray-500 border-t border-gray-100 pt-4 leading-relaxed">
+        <p className="text-[11px] text-gray-500 dark:text-slate-400 border-t border-gray-100 dark:border-slate-800 pt-4 leading-relaxed">
           {isSiteOrBranch ? (
             <>
               ✨ You are currently configuring working hours specifically for <strong>{currentBranchOrSite.name}</strong>. All employees assigned to this location will follow these exact schedule and break rules.
@@ -276,8 +278,8 @@ export function AttendanceScheduleCard({
           ) : (
             <>
               Working days use day numbers: Sunday 0, Monday 1 through Saturday 6. Example:{" "}
-              <strong className="text-gray-800 font-bold">1,2,3,4,5</strong> for Monday–Friday, or{" "}
-              <strong className="text-gray-800 font-bold">1,2,3,4,5,6</strong> to add Saturday half-day. Break hours are deducted from worked hours calculation.
+              <strong className="text-gray-800 dark:text-slate-200 font-bold">1,2,3,4,5</strong> for Monday–Friday, or{" "}
+              <strong className="text-gray-800 dark:text-slate-200 font-bold">1,2,3,4,5,6</strong> to add Saturday half-day. Break hours are deducted from worked hours calculation.
             </>
           )}
         </p>

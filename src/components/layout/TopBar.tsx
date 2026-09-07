@@ -21,6 +21,7 @@ import MobileDrawer        from "./topbar/MobileDrawer";
 import GlobalSearch        from "./topbar/GlobalSearch";
 import NotificationDropdown from "./topbar/NotificationDropdown";
 import ProfileDropdown     from "./topbar/ProfileDropdown";
+import { BranchSwitcherDropdown } from "./topbar/BranchSwitcherDropdown";
 
 export default function TopBar() {
   const location = useLocation();
@@ -70,7 +71,7 @@ export default function TopBar() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  const textColor = "text-gray-600 hover:text-gray-900";
+  const textColor = "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white";
 
   return (
     <>
@@ -88,17 +89,17 @@ export default function TopBar() {
         canOpenRecycleBin={canOpenRecycleBin}
       />
 
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all duration-300">
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 transition-all duration-300">
         <div className="flex items-center justify-between px-4 lg:px-8 py-3">
 
           {/* Left — hamburger + desktop nav links */}
           <div className="flex items-center gap-4">
             <button
-              className="lg:hidden p-2 rounded-md hover:bg-black/5 cursor-pointer"
+              className="lg:hidden p-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Open menu"
             >
-              <i className="ri-menu-line text-lg text-gray-700" />
+              <i className="ri-menu-line text-lg text-gray-700 dark:text-slate-200" />
             </button>
 
             <nav className="hidden md:flex items-center gap-5" aria-label="Primary">
@@ -138,33 +139,22 @@ export default function TopBar() {
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Global Branch/Site Switcher */}
             {(isSuperAdmin || (isBranchAdmin && visibleBranches.length > 1)) ? (
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors shadow-2xs">
-                <i className="ri-building-line text-[#253C7D] text-sm" />
-                <select
-                  value={selectedBranchId}
-                  onChange={(e) => setSelectedBranchId(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer max-w-[150px] truncate"
-                  title="Select BU or branch site"
-                >
-                  {visibleBranches.length === 0 && <option value="">No BU</option>}
-                  {visibleBranches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.is_site ? `↳ ${b.name} (Site)` : b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <BranchSwitcherDropdown
+                visibleBranches={visibleBranches}
+                selectedBranchId={selectedBranchId}
+                onSelectBranch={setSelectedBranchId}
+              />
             ) : (
               /* Branch Admin / Employee Branch & Site Badge */
               (userSiteName || userBranchName) && (
                 <div
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-[11px] font-bold shadow-2xs"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-[11px] font-bold shadow-2xs"
                   title={`Work Site: ${userSiteName || userBranchName}${userSiteName && userBranchName ? ` (${userBranchName})` : ""}`}
                 >
-                  <i className="ri-map-pin-2-fill text-xs text-emerald-600" />
+                  <i className="ri-map-pin-2-fill text-xs text-emerald-600 dark:text-emerald-400" />
                   <span className="max-w-[150px] truncate">{userSiteName || userBranchName}</span>
                   {userSiteName && userBranchName && (
-                    <span className="text-[10px] text-emerald-700/80 font-normal">({userBranchName})</span>
+                    <span className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 font-normal">({userBranchName})</span>
                   )}
                 </div>
               )
@@ -173,7 +163,7 @@ export default function TopBar() {
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-black/5 transition-all cursor-pointer flex items-center justify-center"
+              className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center"
               title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
               aria-label="Toggle theme"
             >

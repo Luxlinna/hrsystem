@@ -21,10 +21,10 @@ export function SettingsNav({ active, onChange }: SettingsNavProps) {
         <button
           key={s.key}
           onClick={() => onChange(s.key)}
-          className={`px-4 py-2 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap ${
+          className={`px-4 py-2 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
             active === s.key
-              ? "bg-[#253C7D] text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-[#253C7D] dark:bg-blue-600 text-white shadow-xs"
+              : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700"
           }`}
         >
           {s.label}

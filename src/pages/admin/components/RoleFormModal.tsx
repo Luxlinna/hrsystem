@@ -31,33 +31,33 @@ export const RoleFormModal = memo(function RoleFormModal({
     <>
       <div className="fixed inset-0 bg-black/40 z-50" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
-        <div className="bg-white rounded-2xl w-full max-w-2xl my-8">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h3 className="text-base font-bold text-gray-900">{editingRole ? "Edit Role" : "Create New Role"}</h3>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 cursor-pointer">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl my-8 border border-transparent dark:border-slate-800 shadow-2xl">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-800">
+            <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">{editingRole ? "Edit Role" : "Create New Role"}</h3>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 dark:text-slate-400 cursor-pointer">
               <i className="ri-close-line" />
             </button>
           </div>
           <div className="p-6 space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Role Name *</label>
+                <label className="text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1.5 block">Role Name *</label>
                 <input
                   value={roleForm.name}
                   onChange={(e) => setRoleForm((p) => ({ ...p, name: e.target.value }))}
                   placeholder="e.g. HR Analyst"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Color</label>
+                <label className="text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1.5 block">Color</label>
                 <div className="flex flex-wrap gap-2">
                   {COLORS.map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setRoleForm((p) => ({ ...p, color: c }))}
-                      className={`w-7 h-7 rounded-lg cursor-pointer transition-all ${roleForm.color === c ? "ring-2 ring-offset-1 ring-gray-400 scale-110" : ""}`}
+                      className={`w-7 h-7 rounded-lg cursor-pointer transition-all ${roleForm.color === c ? "ring-2 ring-offset-1 ring-gray-400 dark:ring-offset-slate-900 scale-110" : ""}`}
                       style={{ backgroundColor: c }}
                     />
                   ))}
@@ -65,16 +65,16 @@ export const RoleFormModal = memo(function RoleFormModal({
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Description</label>
+              <label className="text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1.5 block">Description</label>
               <input
                 value={roleForm.description}
                 onChange={(e) => setRoleForm((p) => ({ ...p, description: e.target.value }))}
                 placeholder="Brief description of this role..."
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
               />
             </div>
             {isSuperAdmin && (
-              <div className="flex items-center gap-3 p-3 bg-[#253C7D]/5 rounded-xl">
+              <div className="flex items-center gap-3 p-3 bg-[#253C7D]/5 dark:bg-[#253C7D]/20 border border-transparent dark:border-blue-900/40 rounded-xl">
                 <input
                   type="checkbox"
                   id="is_admin"
@@ -82,7 +82,7 @@ export const RoleFormModal = memo(function RoleFormModal({
                   onChange={(e) => setRoleForm((p) => ({ ...p, is_admin: e.target.checked }))}
                   className="w-4 h-4 rounded cursor-pointer accent-[#253C7D]"
                 />
-                <label htmlFor="is_admin" className="text-sm font-medium text-gray-800 cursor-pointer">
+                <label htmlFor="is_admin" className="text-sm font-medium text-gray-800 dark:text-slate-200 cursor-pointer">
                   Super Admin — grant full access to ALL modules across all branches
                 </label>
               </div>
@@ -92,17 +92,17 @@ export const RoleFormModal = memo(function RoleFormModal({
 
             {!roleForm.is_admin && <RoleModulesSection roleForm={roleForm} setRoleForm={setRoleForm} />}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg cursor-pointer"
+                className="px-4 py-2 text-sm text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
               >Cancel</button>
               <button
                 type="button"
                 onClick={onSaveRole}
                 disabled={savingRole}
-                className="flex items-center gap-2 px-5 py-2 bg-[#253C7D] text-white rounded-lg text-sm hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer whitespace-nowrap"
+                className="flex items-center gap-2 px-5 py-2 bg-[#253C7D] dark:bg-blue-600 text-white rounded-lg text-sm hover:bg-[#1F336A] dark:hover:bg-blue-700 disabled:opacity-60 cursor-pointer whitespace-nowrap"
               >
                 {savingRole ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <i className="ri-save-line" />}
                 {editingRole ? "Update Role" : "Create Role"}

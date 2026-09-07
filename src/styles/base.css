@@ -26,6 +26,13 @@
     background-color: #111827;
     border-color: #334155;
     color: #e5e7eb;
+    color-scheme: dark;
+  }
+
+  html.dark option,
+  html.dark optgroup {
+    background-color: #111827 !important;
+    color: #f8fafc !important;
   }
 
   html.dark input::placeholder,

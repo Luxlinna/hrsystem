@@ -34,18 +34,18 @@ export const RoleScopeSection = memo(function RoleScopeSection({
         return (
           <div key={section.group}>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-gray-600">{section.title}</label>
+              <label className="text-xs font-semibold text-gray-600 dark:text-slate-300">{section.title}</label>
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                   grantedCount > 0
-                    ? "bg-[#253C7D]/10 text-[#253C7D]"
-                    : "bg-gray-100 text-gray-500"
+                    ? "bg-[#253C7D]/10 text-[#253C7D] dark:bg-blue-950/60 dark:text-blue-300"
+                    : "bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400"
                 }`}
               >
                 {grantedCount} / {items.length} granted
               </span>
             </div>
-            <p className="text-[11px] text-gray-500 mb-2">{section.caption}</p>
+            <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-2">{section.caption}</p>
 
             <div className={`space-y-2 pr-1 ${isAction ? "" : "max-h-56 overflow-y-auto"}`}>
               {items.map((o) => {
@@ -55,8 +55,8 @@ export const RoleScopeSection = memo(function RoleScopeSection({
                     key={o.key}
                     className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
                       checked
-                        ? "bg-[#253C7D]/5 border-[#253C7D]/25"
-                        : "bg-gray-50 border-gray-200"
+                        ? "bg-[#253C7D]/5 border-[#253C7D]/25 dark:bg-blue-950/30 dark:border-blue-800/50"
+                        : "bg-gray-50 border-gray-200 dark:bg-slate-800/50 dark:border-slate-800"
                     }`}
                   >
                     <input
@@ -66,9 +66,9 @@ export const RoleScopeSection = memo(function RoleScopeSection({
                       onChange={(e) => setRoleForm((p) => ({ ...p, [o.key]: e.target.checked }))}
                       className="w-4 h-4 mt-0.5 rounded cursor-pointer accent-[#253C7D] shrink-0"
                     />
-                    <label htmlFor={o.key} className="text-sm font-medium text-gray-800 cursor-pointer">
+                    <label htmlFor={o.key} className="text-sm font-medium text-gray-800 dark:text-slate-200 cursor-pointer">
                       {o.label}
-                      <span className="block text-xs font-normal text-gray-500 mt-0.5">{o.hint}</span>
+                      <span className="block text-xs font-normal text-gray-500 dark:text-slate-400 mt-0.5">{o.hint}</span>
                     </label>
                   </div>
                 );

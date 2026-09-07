@@ -30,19 +30,19 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-slate-950">
+        <div className="w-10 h-10 border-2 border-[#253C7D] dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 lg:p-10 min-h-screen bg-white">
+    <div className="p-6 lg:p-10 min-h-screen bg-white dark:bg-slate-950 transition-colors">
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">
+        <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A] dark:text-slate-100">
           System Settings
         </h1>
-        <p className="text-[13px] text-gray-500 mt-1">
+        <p className="text-[13px] text-gray-500 dark:text-slate-400 mt-1">
           Configure HR platform preferences — all changes are saved to the
           database
         </p>

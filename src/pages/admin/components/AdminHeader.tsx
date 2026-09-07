@@ -17,17 +17,17 @@ export const AdminHeader = memo(function AdminHeader({
         </div>
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
               {isSuperAdmin ? "Super Admin Portal" : "Branch Admin Portal"}
             </h1>
             {!isSuperAdmin && userBranchName && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 flex items-center gap-1">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#253C7D]/10 dark:bg-sky-950/60 text-[#253C7D] dark:text-sky-300 border border-[#253C7D]/20 dark:border-sky-800/50 flex items-center gap-1">
                 <i className="ri-map-pin-2-fill text-xs" />
                 {userBranchName}
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-slate-400">
             {isSuperAdmin
               ? "Manage organizational roles, system permissions, and user accounts across all branches"
               : `Manage and invite staff accounts, assign roles, and review password resets for ${userBranchName || "your branch"}`}

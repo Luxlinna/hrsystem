@@ -98,18 +98,21 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
       {visibleColumns.department && <div className="text-sm text-gray-600 truncate">{e.department || "—"}</div>}
       {visibleColumns.branch && (
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">
+          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
             {e.branches?.name || e.branch_id || "—"}
           </p>
-          <div className="mt-0.5 flex items-center">
+          <div className="mt-1 flex items-center">
             {e.work_locations?.name ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50/90 border border-amber-200/60 px-2 py-0.5 rounded-md whitespace-nowrap">
-                <i className="ri-map-pin-2-fill text-[10px] text-amber-500" />
-                {e.work_locations.name}
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800/60 px-2 py-0.5 rounded-lg whitespace-nowrap shadow-2xs">
+                <i className="ri-map-pin-2-fill text-[10px] text-emerald-500 dark:text-emerald-400 shrink-0" />
+                <span>{e.work_locations.name}</span>
+                <span className="text-[9px] uppercase tracking-wider font-extrabold px-1 py-0.2 rounded bg-emerald-100/70 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
+                  Site
+                </span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-[11px] font-normal text-gray-400">
-                <i className="ri-building-line text-[10px] text-gray-400" />
+              <span className="inline-flex items-center gap-1 text-[11px] font-normal text-gray-400 dark:text-slate-500">
+                <i className="ri-building-line text-[10px]" />
                 Main Office
               </span>
             )}

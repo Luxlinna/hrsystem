@@ -41,9 +41,9 @@ export function PermissionsSection() {
   }
 
   return (
-    <div className="border border-gray-100 rounded-xl overflow-x-auto">
+    <div className="border border-gray-100 dark:border-slate-800 rounded-xl overflow-x-auto dark:bg-slate-900/60">
       <div className="min-w-[500px]">
-        <div className="grid grid-cols-5 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+        <div className="grid grid-cols-5 bg-gray-50 dark:bg-slate-800/80 px-5 py-3 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
           <span>Role</span>
           {PERMISSION_COLUMNS.map((c) => (
             <span key={c.key}>{c.label}</span>
@@ -52,13 +52,13 @@ export function PermissionsSection() {
         {roles.map((r) => (
           <div
             key={r.id}
-            className="grid grid-cols-5 px-5 py-4 border-t border-gray-50 items-center"
+            className="grid grid-cols-5 px-5 py-4 border-t border-gray-50 dark:border-slate-800 items-center"
           >
-            <span className="text-[13px] font-medium text-gray-900">
+            <span className="text-[13px] font-medium text-gray-900 dark:text-slate-100">
               {r.name}
             </span>
             {PERMISSION_COLUMNS.map((c) => (
-              <span key={c.key} className="text-[13px] text-gray-600">
+              <span key={c.key} className="text-[13px] text-gray-600 dark:text-slate-400">
                 {r.is_admin || r.allowed_modules.includes("*")
                   ? "Full"
                   : r.allowed_modules.includes(c.key)
@@ -69,10 +69,10 @@ export function PermissionsSection() {
           </div>
         ))}
       </div>
-      <div className="px-5 py-3 border-t border-gray-50 bg-gray-50/50">
+      <div className="px-5 py-3 border-t border-gray-50 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/40">
         <Link
           to="/admin"
-          className="text-[12px] text-[#253C7D] font-semibold hover:underline"
+          className="text-[12px] text-[#253C7D] dark:text-sky-400 font-semibold hover:underline"
         >
           Manage roles in Admin Portal →
         </Link>

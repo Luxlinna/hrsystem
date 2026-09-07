@@ -47,22 +47,22 @@ export function NotificationsSettings({
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[13px] font-semibold text-gray-700">
+        <p className="text-[13px] font-semibold text-gray-700 dark:text-slate-200">
           Configure which events trigger email and push notifications
         </p>
         {hasChanges(notifKeys) && (
           <button
             onClick={saveAllNotifications}
             disabled={saving}
-            className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 whitespace-nowrap"
+            className="px-4 py-2 bg-[#253C7D] dark:bg-blue-600 text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] dark:hover:bg-blue-700 transition-colors disabled:opacity-40 whitespace-nowrap cursor-pointer"
           >
             {saving ? "Saving..." : "Save All"}
           </button>
         )}
       </div>
 
-      <div className="border border-gray-100 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-3 bg-gray-50 px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+      <div className="border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden">
+        <div className="grid grid-cols-3 bg-gray-50 dark:bg-slate-800/80 px-5 py-3 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
           <span>Event</span>
           <span className="text-center">Email</span>
           <span className="text-center">Push</span>
@@ -79,31 +79,31 @@ export function NotificationsSettings({
           return (
             <div
               key={label}
-              className="grid grid-cols-3 px-5 py-3.5 border-t border-gray-50 items-center"
+              className="grid grid-cols-3 px-5 py-3.5 border-t border-gray-50 dark:border-slate-800 items-center dark:bg-slate-900/60"
             >
-              <span className="text-[13px] text-gray-700">{label}</span>
+              <span className="text-[13px] text-gray-700 dark:text-slate-200">{label}</span>
               <div className="flex justify-center">
-                <label className="flex items-center gap-1.5 text-[12px] text-gray-500 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-[12px] text-gray-500 dark:text-slate-400 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={getVal(emailKey) === "true"}
                     onChange={(e) =>
                       updateValue(emailKey, String(e.target.checked))
                     }
-                    className="w-4 h-4 rounded border-gray-300 text-[#253C7D]"
+                    className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
                   />
                   Email
                 </label>
               </div>
               <div className="flex justify-center">
-                <label className="flex items-center gap-1.5 text-[12px] text-gray-500 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-[12px] text-gray-500 dark:text-slate-400 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={getVal(pushKey) === "true"}
                     onChange={(e) =>
                       updateValue(pushKey, String(e.target.checked))
                     }
-                    className="w-4 h-4 rounded border-gray-300 text-[#253C7D]"
+                    className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
                   />
                   Push
                 </label>
@@ -114,11 +114,11 @@ export function NotificationsSettings({
       </div>
 
       {/* Attendance notify scope */}
-      <div className="border border-gray-100 rounded-xl p-5">
-        <label className="text-[13px] font-semibold text-gray-700">
+      <div className="border border-gray-100 dark:border-slate-800 rounded-xl p-5 dark:bg-slate-900/60">
+        <label className="text-[13px] font-semibold text-gray-700 dark:text-slate-200">
           Attendance check-in / check-out notifications
         </label>
-        <p className="text-[11px] text-gray-500 mt-0.5 mb-3">
+        <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 mb-3">
           Who receives these is set per-role in Admin Portal → Roles ("Receives
           attendance check-in / check-out notifications"). This controls how
           often they fire for whoever is opted in.
@@ -129,22 +129,22 @@ export function NotificationsSettings({
             onChange={(e) =>
               updateValue("attendance_notify_scope", e.target.value)
             }
-            className="flex-1 px-4 py-2.5 bg-white border-2 border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-[#253C7D]"
+            className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-lg text-[13px] text-gray-900 dark:text-slate-100 focus:outline-none focus:border-[#253C7D] dark:focus:border-blue-500"
           >
-            <option value="exceptions">
+            <option value="exceptions" className="dark:bg-slate-800">
               Only late check-ins / early check-outs
             </option>
-            <option value="all">Every check-in and check-out</option>
+            <option value="all" className="dark:bg-slate-800">Every check-in and check-out</option>
           </select>
         </div>
       </div>
 
       {/* Telegram notifications */}
-      <div className="border border-gray-100 rounded-xl p-5">
-        <label className="text-[13px] font-semibold text-gray-700">
+      <div className="border border-gray-100 dark:border-slate-800 rounded-xl p-5 dark:bg-slate-900/60">
+        <label className="text-[13px] font-semibold text-gray-700 dark:text-slate-200">
           Telegram group notifications
         </label>
-        <p className="text-[11px] text-gray-500 mt-0.5 mb-3">
+        <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 mb-3">
           Posts HR events to a Telegram group: attendance exceptions only (late
           check-in, early checkout — never routine on-time events, regardless of
           the scope setting above), leave requests and approvals, meeting room
@@ -153,7 +153,7 @@ export function NotificationsSettings({
           Edge Function.
         </p>
         <div className="flex items-center gap-3 flex-wrap">
-          <label className="flex items-center gap-1.5 text-[12px] text-gray-600 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-[12px] text-gray-600 dark:text-slate-300 cursor-pointer">
             <input
               type="checkbox"
               checked={getVal("telegram_notify_enabled") === "true"}
@@ -163,14 +163,14 @@ export function NotificationsSettings({
                   String(e.target.checked)
                 )
               }
-              className="w-4 h-4 rounded border-gray-300 text-[#253C7D]"
+              className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
             />
             Enabled
           </label>
           <button
             onClick={handleTestTelegram}
             disabled={testingTelegram}
-            className="ml-auto px-4 py-2 border-2 border-gray-200 text-gray-600 text-[12px] font-semibold rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-40 whitespace-nowrap"
+            className="ml-auto px-4 py-2 border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 text-[12px] font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 whitespace-nowrap cursor-pointer"
           >
             {testingTelegram ? "Sending…" : "Send test message"}
           </button>

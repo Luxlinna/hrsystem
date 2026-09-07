@@ -24,11 +24,11 @@ export const RolesTab = memo(function RolesTab({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">{roles.length} roles defined</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400">{roles.length} roles defined</p>
         {canManageRoles && (
           <button
             onClick={onOpenNewRole}
-            className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] text-white rounded-xl text-sm hover:bg-[#1F336A] transition-colors cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 bg-[#253C7D] hover:bg-[#1F336A] text-white rounded-xl text-sm transition-colors cursor-pointer whitespace-nowrap shadow-2xs"
           >
             <i className="ri-add-line" />
             New Role
@@ -42,69 +42,71 @@ export const RolesTab = memo(function RolesTab({
           const canEditThisRole = canManageRoles && (isSuperAdmin || !isSuperRole);
 
           return (
-            <div key={role.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-2xs">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: role.color + "20" }}>
-                    <i className={`${role.is_admin ? "ri-shield-star-line" : "ri-shield-user-line"} text-lg`} style={{ color: role.color }} />
+            <div key={role.id} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: role.color + "20" }}>
+                      <i className={`${role.is_admin ? "ri-shield-star-line" : "ri-shield-user-line"} text-lg`} style={{ color: role.color }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 dark:text-slate-100">{role.name}</p>
+                      {role.is_admin ? (
+                        <span className="text-[10px] font-semibold text-[#253C7D] dark:text-sky-300 bg-[#253C7D]/10 dark:bg-sky-950/60 px-2 py-0.5 rounded-full border border-transparent dark:border-sky-800/40">Full Access</span>
+                      ) : (
+                        <span className="text-[11px] text-gray-400 dark:text-slate-500">{role.allowed_modules.length} modules</span>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{role.name}</p>
-                    {role.is_admin ? (
-                      <span className="text-[10px] font-semibold text-[#253C7D] bg-[#253C7D]/10 px-2 py-0.5 rounded-full">Full Access</span>
-                    ) : (
-                      <span className="text-[11px] text-gray-400">{role.allowed_modules.length} modules</span>
-                    )}
-                  </div>
-                </div>
-                {canEditThisRole ? (
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => onOpenEditRole(role)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 cursor-pointer"
-                      title="Edit role permissions"
-                    >
-                      <i className="ri-edit-line text-sm" />
-                    </button>
-                    {!isSuperRole && (
+                  {canEditThisRole ? (
+                    <div className="flex gap-1.5">
                       <button
-                        onClick={() => onDeleteRole(role.id)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-400 cursor-pointer"
-                        title="Delete role"
+                        onClick={() => onOpenEditRole(role)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400 cursor-pointer transition-colors"
+                        title="Edit role permissions"
                       >
-                        <i className="ri-delete-bin-line text-sm" />
+                        <i className="ri-edit-line text-sm" />
                       </button>
+                      {!isSuperRole && (
+                        <button
+                          onClick={() => onDeleteRole(role.id)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 dark:bg-rose-950/40 hover:bg-red-100 dark:hover:bg-rose-900/40 text-red-500 dark:text-rose-400 cursor-pointer transition-colors"
+                          title="Delete role"
+                        >
+                          <i className="ri-delete-bin-line text-sm" />
+                        </button>
+                      )}
+                    </div>
+                  ) : isSuperRole && !isSuperAdmin ? (
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <i className="ri-lock-fill text-[11px]" />
+                      Protected
+                    </span>
+                  ) : null}
+                </div>
+                {role.description && (
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mb-3">{role.description}</p>
+                )}
+                {!role.is_admin && role.allowed_modules.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {role.allowed_modules.slice(0, 6).map((m) => {
+                      const mod = ALL_MODULES.find((x) => x.key === m);
+                      return (
+                        <span key={m} className="text-[10px] bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-300 border border-transparent dark:border-slate-700 px-2 py-0.5 rounded-md font-medium">
+                          {mod?.label || m}
+                        </span>
+                      );
+                    })}
+                    {role.allowed_modules.length > 6 && (
+                      <span className="text-[10px] text-gray-400 dark:text-slate-500 font-medium">+{role.allowed_modules.length - 6} more</span>
                     )}
                   </div>
-                ) : isSuperRole && !isSuperAdmin ? (
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <i className="ri-lock-fill text-[11px]" />
-                    Protected
-                  </span>
-                ) : null}
+                )}
               </div>
-              {role.description && (
-                <p className="text-xs text-gray-500 mb-3">{role.description}</p>
-              )}
-              {!role.is_admin && role.allowed_modules.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {role.allowed_modules.slice(0, 6).map((m) => {
-                    const mod = ALL_MODULES.find((x) => x.key === m);
-                    return (
-                      <span key={m} className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-md font-medium">
-                        {mod?.label || m}
-                      </span>
-                    );
-                  })}
-                  {role.allowed_modules.length > 6 && (
-                    <span className="text-[10px] text-gray-400 font-medium">+{role.allowed_modules.length - 6} more</span>
-                  )}
-                </div>
-              )}
               {/* User count with this role */}
-              <div className="mt-3 pt-3 border-t border-gray-50 flex items-center gap-1.5">
-                <i className="ri-user-line text-gray-400 text-xs" />
-                <span className="text-[11px] text-gray-400">
+              <div className="mt-3 pt-3 border-t border-gray-50 dark:border-slate-800 flex items-center gap-1.5">
+                <i className="ri-user-line text-gray-400 dark:text-slate-500 text-xs" />
+                <span className="text-[11px] text-gray-400 dark:text-slate-500">
                   {users.filter((u) => u.role_id === role.id).length} user{users.filter((u) => u.role_id === role.id).length !== 1 ? "s" : ""}
                 </span>
               </div>

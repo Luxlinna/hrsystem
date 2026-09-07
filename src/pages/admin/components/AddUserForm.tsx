@@ -209,39 +209,39 @@ export const AddUserForm = memo(function AddUserForm({
       (!newUser.phone?.trim() || (!newUser.sendInvite && (newUser.password || "").length < 6)));
 
   return (
-    <div className="bg-gradient-to-b from-[#253C7D]/8 to-white border border-[#253C7D]/20 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-1 duration-200">
+    <div className="bg-gradient-to-b from-[#253C7D]/8 to-white dark:from-[#253C7D]/20 dark:to-slate-900 border border-[#253C7D]/20 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-1 duration-200">
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-[#253C7D]/10">
+      <div className="flex items-center justify-between pb-3 border-b border-[#253C7D]/10 dark:border-slate-800">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#253C7D] text-white flex items-center justify-center text-base shadow-xs">
             <i className="ri-user-add-line" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-gray-900">Provision User Account</h4>
-            <p className="text-xs text-gray-500">Pick an employee from directory for instant autofill, or enter account details manually.</p>
+            <h4 className="text-sm font-bold text-gray-900 dark:text-slate-100">Provision User Account</h4>
+            <p className="text-xs text-gray-500 dark:text-slate-400">Pick an employee from directory for instant autofill, or enter account details manually.</p>
           </div>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+          className="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
         >
           <i className="ri-close-line text-lg" />
         </button>
       </div>
 
       {/* Account Type Selector & Instructions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white/90 border border-gray-200/90 rounded-xl shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white/90 dark:bg-slate-800/80 border border-gray-200/90 dark:border-slate-700 rounded-xl shadow-2xs">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-gray-700">Account Type:</span>
-          <div className="flex items-center bg-gray-100 p-0.5 rounded-lg text-xs font-medium">
+          <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">Account Type:</span>
+          <div className="flex items-center bg-gray-100 dark:bg-slate-700 p-0.5 rounded-lg text-xs font-medium">
             <button
               type="button"
               onClick={() => handleSwitchAccountType("email")}
               className={`px-3 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
                 accountType === "email"
-                  ? "bg-white text-[#253C7D] shadow-xs font-bold"
-                  : "text-gray-500 hover:text-gray-800"
+                  ? "bg-white dark:bg-slate-800 text-[#253C7D] dark:text-sky-300 shadow-xs font-bold"
+                  : "text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200"
               }`}
             >
               <i className="ri-mail-line text-xs" />
@@ -252,8 +252,8 @@ export const AddUserForm = memo(function AddUserForm({
               onClick={() => handleSwitchAccountType("phone")}
               className={`px-3 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
                 accountType === "phone"
-                  ? "bg-white text-[#253C7D] shadow-xs font-bold"
-                  : "text-gray-500 hover:text-gray-800"
+                  ? "bg-white dark:bg-slate-800 text-[#253C7D] dark:text-sky-300 shadow-xs font-bold"
+                  : "text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200"
               }`}
             >
               <i className="ri-phone-line text-xs" />
@@ -271,7 +271,7 @@ export const AddUserForm = memo(function AddUserForm({
               onChange={(e) => setNewUser((p) => ({ ...p, sendInvite: e.target.checked }))}
               className="w-4 h-4 rounded cursor-pointer accent-[#253C7D]"
             />
-            <span className="text-xs text-gray-700 font-medium">Send setup link via Gmail</span>
+            <span className="text-xs text-gray-700 dark:text-slate-300 font-medium">Send setup link via Gmail</span>
           </label>
         ) : (
           <div className="flex items-center gap-4 flex-wrap">
@@ -283,7 +283,7 @@ export const AddUserForm = memo(function AddUserForm({
                 onChange={() => setNewUser((p) => ({ ...p, sendInvite: true }))}
                 className="w-3.5 h-3.5 cursor-pointer accent-[#229ED9]"
               />
-              <span className="text-xs text-gray-800 font-semibold flex items-center gap-1">
+              <span className="text-xs text-gray-800 dark:text-slate-200 font-semibold flex items-center gap-1">
                 <i className="ri-telegram-fill text-[#229ED9] text-sm" />
                 Invite via Telegram
               </span>
@@ -296,7 +296,7 @@ export const AddUserForm = memo(function AddUserForm({
                 onChange={() => setNewUser((p) => ({ ...p, sendInvite: false }))}
                 className="w-3.5 h-3.5 cursor-pointer accent-[#253C7D]"
               />
-              <span className="text-xs text-gray-600 font-medium">Set password manually</span>
+              <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">Set password manually</span>
             </label>
           </div>
         )}
@@ -314,42 +314,42 @@ export const AddUserForm = memo(function AddUserForm({
 
         {accountType === "email" ? (
           <div>
-            <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Email *</label>
+            <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1.5 block">Email *</label>
             <input
               value={newUser.email || ""}
               onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))}
               placeholder="user@company.com"
-              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all h-[42px]"
+              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 focus:border-[#253C7D] dark:focus:border-sky-500 transition-all h-[42px]"
             />
           </div>
         ) : (
           <div>
-            <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Phone Number *</label>
+            <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1.5 block">Phone Number *</label>
             <input
               value={newUser.phone || ""}
               onChange={(e) => setNewUser((p) => ({ ...p, phone: e.target.value }))}
               placeholder="012 345 678"
-              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all h-[42px]"
+              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 focus:border-[#253C7D] dark:focus:border-sky-500 transition-all h-[42px]"
             />
           </div>
         )}
 
         <div>
-          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Display Name</label>
+          <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1.5 block">Display Name</label>
           <input
             value={newUser.display_name || ""}
             onChange={(e) => setNewUser((p) => ({ ...p, display_name: e.target.value }))}
             placeholder="Full Name"
-            className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all h-[42px]"
+            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 focus:border-[#253C7D] dark:focus:border-sky-500 transition-all h-[42px]"
           />
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Assign Role</label>
+          <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1.5 block">Assign Role</label>
           <select
             value={newUser.role_id || ""}
             onChange={(e) => setNewUser((p) => ({ ...p, role_id: e.target.value }))}
-            className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all cursor-pointer h-[42px]"
+            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 focus:border-[#253C7D] dark:focus:border-sky-500 transition-all cursor-pointer h-[42px]"
           >
             <option value="">No role (no access until assigned)</option>
             {roles.map((r) => (
@@ -364,27 +364,27 @@ export const AddUserForm = memo(function AddUserForm({
       {/* Password field or Telegram Invite Banner for Phone accounts */}
       {accountType === "phone" && (
         newUser.sendInvite ? (
-          <div className="p-4 bg-sky-50/70 border border-sky-200/80 rounded-xl space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-sky-950">
+          <div className="p-4 bg-sky-50/70 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/60 rounded-xl space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-sky-950 dark:text-sky-200">
               <i className="ri-telegram-fill text-[#229ED9] text-base" />
               <span>1-Click Telegram Setup Link</span>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/80 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-transparent dark:border-emerald-800/50">
                 Free $0.00
               </span>
             </div>
-            <p className="text-[11px] text-sky-850 leading-relaxed">
+            <p className="text-[11px] text-sky-900 dark:text-sky-300 leading-relaxed">
               A secure 24-hour setup link will be generated. You can share it directly to{" "}
               <strong>{newUser.phone || "the employee"}</strong> on Telegram in 1 click so they can create their own password safely.
             </p>
           </div>
         ) : (
-          <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-2">
+          <div className="p-4 bg-blue-50/50 dark:bg-slate-800/60 border border-blue-100 dark:border-slate-700 rounded-xl space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-gray-800">Initial Password *</label>
+              <label className="text-xs font-bold text-gray-800 dark:text-slate-200">Initial Password *</label>
               <button
                 type="button"
                 onClick={generateRandomPassword}
-                className="text-[11px] font-bold text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-[11px] font-bold text-[#253C7D] dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <i className="ri-magic-line text-xs" />
                 <span>Auto-Generate</span>
@@ -396,17 +396,17 @@ export const AddUserForm = memo(function AddUserForm({
                 value={newUser.password || ""}
                 onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))}
                 placeholder="Minimum 6 characters"
-                className="w-full pl-3.5 pr-10 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all"
+                className="w-full pl-3.5 pr-10 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 focus:border-[#253C7D] dark:focus:border-sky-500 transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
               >
                 <i className={showPassword ? "ri-eye-off-line text-sm" : "ri-eye-line text-sm"} />
               </button>
             </div>
-            <p className="text-[11px] text-gray-500">
+            <p className="text-[11px] text-gray-500 dark:text-slate-400">
               Share this password with the staff member. They will sign in using their phone number{" "}
               <strong>{newUser.phone || "..."}</strong> and this password.
             </p>
@@ -419,7 +419,7 @@ export const AddUserForm = memo(function AddUserForm({
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2 text-xs font-semibold text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+          className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-slate-300 hover:text-gray-800 dark:hover:text-white bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
         >
           Cancel
         </button>

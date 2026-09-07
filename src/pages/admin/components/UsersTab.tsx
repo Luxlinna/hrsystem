@@ -80,10 +80,10 @@ export const UsersTab = memo(function UsersTab({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-gray-900">
+          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
             {displayedUsers.length} {displayedUsers.length === 1 ? "User" : "Users"} Listed
             {filterBranch !== "all" && (
-              <span className="text-xs font-normal text-gray-500 ml-1.5">
+              <span className="text-xs font-normal text-gray-500 dark:text-slate-400 ml-1.5">
                 (filtered from {scopedTotal} total)
               </span>
             )}
@@ -93,7 +93,7 @@ export const UsersTab = memo(function UsersTab({
           <button
             type="button"
             onClick={onAddCurrentUser}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-200 transition-colors cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-xl text-xs font-semibold hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-user-add-line" />
             Add Me
@@ -101,7 +101,7 @@ export const UsersTab = memo(function UsersTab({
           <button
             type="button"
             onClick={() => setShowAddUser(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#253C7D] text-white rounded-xl text-xs font-semibold hover:bg-[#1E3064] transition-colors cursor-pointer whitespace-nowrap shadow-2xs"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shadow-2xs"
           >
             <i className="ri-add-line" />
             Add User
@@ -121,11 +121,11 @@ export const UsersTab = memo(function UsersTab({
       />
 
       {userLoadError && (
-        <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex gap-3 text-red-700">
+        <div className="bg-red-50 dark:bg-rose-950/40 border border-red-100 dark:border-rose-900/50 rounded-xl p-4 flex gap-3 text-red-700 dark:text-rose-300">
           <i className="ri-error-warning-line text-lg shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold">Could not fetch Supabase Auth accounts</p>
-            <p className="text-xs mt-1">{userLoadError}</p>
+            <p className="text-xs mt-1 text-red-600 dark:text-rose-400">{userLoadError}</p>
           </div>
         </div>
       )}
@@ -158,11 +158,11 @@ export const UsersTab = memo(function UsersTab({
         onRemoveUser={onRemoveUser}
       />
 
-      <div className="bg-amber-50/70 border border-amber-100 rounded-xl p-4 flex gap-3">
-        <i className="ri-information-line text-amber-500 text-lg shrink-0 mt-0.5" />
+      <div className="bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-900/50 rounded-xl p-4 flex gap-3 shadow-2xs">
+        <i className="ri-information-line text-amber-500 dark:text-amber-400 text-lg shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-amber-800">Branch & Role Management</p>
-          <p className="text-xs text-amber-700 mt-1">
+          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Branch & Role Management</p>
+          <p className="text-xs text-amber-750 dark:text-amber-300/80 mt-1 leading-relaxed">
             Super Admins can view and manage users across all branches or filter by a specific branch. Users are matched by their email and automatically inherit their assigned branch from the Employee Directory.
           </p>
         </div>

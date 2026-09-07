@@ -24,13 +24,15 @@ export const AdminNavTabs = memo(function AdminNavTabs({
   ];
 
   return (
-    <div className="flex items-center gap-1 bg-white border border-gray-100 rounded-xl p-1 mb-6 w-fit max-w-full overflow-x-auto">
+    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-1 mb-6 w-fit max-w-full overflow-x-auto shadow-2xs">
       {tabs.map((t) => (
         <button
           key={t.id}
           onClick={() => setActiveTab(t.id as AdminTab)}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === t.id ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-700"
+            activeTab === t.id
+              ? "bg-gray-900 dark:bg-slate-800 text-white shadow-xs font-semibold"
+              : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/60"
           }`}
         >
           <i className={t.icon} />
@@ -38,7 +40,9 @@ export const AdminNavTabs = memo(function AdminNavTabs({
           {"count" in t && (t.count ?? 0) > 0 && (
             <span
               className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                activeTab === t.id ? "bg-white text-gray-900" : "bg-rose-100 text-rose-700"
+                activeTab === t.id
+                  ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                  : "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300"
               }`}
             >
               {t.count}
