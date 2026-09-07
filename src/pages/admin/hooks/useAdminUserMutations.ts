@@ -155,7 +155,7 @@ export function useAdminUserMutations({
     setNewUser({ email: "", phone: "", password: "", display_name: "", role_id: "", sendInvite: true });
     setSelectedEmployeeEmail("");
     loadData();
-  }, [newUser, showToast, loadData]);
+  }, [newUser, roles, showToast, loadData]);
 
   const resendInvite = useCallback(async (user: UserAssignment) => {
     setInvitingUserId(user.id);

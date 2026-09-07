@@ -149,7 +149,8 @@ Deno.serve(async (req) => {
       const resolvedName = display_name || authUserData?.user?.user_metadata?.display_name || email.split("@")[0];
 
       if (isPhoneSyntheticEmail(email)) {
-        const cleanBase = (redirect_to || "http://localhost:3000/reset-password").split("?")[0].replace(/\/$/, "");
+        const defaultAppUrl = Deno.env.get("APP_URL") || "https://hrsystem-quit.onrender.com";
+        const cleanBase = (redirect_to || `${defaultAppUrl.replace(/\/$/, "")}/reset-password`).split("?")[0].replace(/\/$/, "");
         const safeLink = linkData?.properties?.hashed_token
           ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
           : inviteLink;
