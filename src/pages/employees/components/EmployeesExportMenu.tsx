@@ -1,31 +1,20 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
-import type { AttendanceRecord, EmployeeSummaryItem, AttendanceTabKey } from "../types";
-import {
-  exportAttendanceRecordsPDF,
-  exportAttendanceRecordsXLSX,
-  exportAttendanceRecordsCSV,
-  exportAttendanceSummaryPDF,
-  exportAttendanceSummaryXLSX,
-  exportAttendanceSummaryCSV,
-} from "../exportUtils";
+import type { Employee, AccountStatus } from "../types";
+import { exportEmployeesPDF, exportEmployeesXLSX, exportEmployeesCSV } from "../exportUtils";
 
-interface AttendanceExportMenuProps {
-  activeTab: AttendanceTabKey;
-  records: AttendanceRecord[];
-  summaries: EmployeeSummaryItem[];
-  isFourPunchMode?: boolean;
+interface EmployeesExportMenuProps {
+  employees: Employee[];
+  accountStatus?: Record<string, AccountStatus>;
   disabled?: boolean;
 }
 
 type Format = "pdf" | "xlsx" | "csv";
 
-export const AttendanceExportMenu = memo(function AttendanceExportMenu({
-  activeTab,
-  records,
-  summaries,
-  isFourPunchMode = false,
+export const EmployeesExportMenu = memo(function EmployeesExportMenu({
+  employees,
+  accountStatus = {},
   disabled = false,
-}: AttendanceExportMenuProps) {
+}: EmployeesExportMenuProps) {
   const [open, setOpen] = useState(false);
   const [exporting, setExporting] = useState<Format | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -45,57 +34,42 @@ export const AttendanceExportMenu = memo(function AttendanceExportMenu({
       setExporting(fmt);
       setOpen(false);
       try {
-        if (activeTab === "summary" || activeTab === "live") {
-          if (fmt === "pdf") exportAttendanceSummaryPDF(summaries);
-          else if (fmt === "xlsx") await exportAttendanceSummaryXLSX(summaries);
-          else if (fmt === "csv") exportAttendanceSummaryCSV(summaries);
-        } else {
-          // Default: records / matrix
-          if (fmt === "pdf") exportAttendanceRecordsPDF(records, "Time & Attendance Records Report", isFourPunchMode);
-          else if (fmt === "xlsx") await exportAttendanceRecordsXLSX(records, isFourPunchMode);
-          else if (fmt === "csv") exportAttendanceRecordsCSV(records, isFourPunchMode);
+        if (fmt === "pdf") {
+          exportEmployeesPDF(employees, accountStatus);
+        } else if (fmt === "xlsx") {
+          await exportEmployeesXLSX(employees, accountStatus);
+        } else if (fmt === "csv") {
+          exportEmployeesCSV(employees, accountStatus);
         }
       } finally {
         setTimeout(() => setExporting(null), 700);
       }
     },
-    [activeTab, records, summaries, isFourPunchMode]
+    [employees, accountStatus]
   );
-
-  const getRecordCount = () => {
-    if (activeTab === "summary" || activeTab === "live") {
-      return `${summaries.length} members`;
-    }
-    return `${records.length} logs`;
-  };
-
-  const getScopeLabel = () => {
-    if (activeTab === "summary" || activeTab === "live") return "Attendance Scorecard";
-    return isFourPunchMode ? "4-Punch Attendance" : "Attendance Records";
-  };
 
   const exportOptions = [
     {
       fmt: "pdf" as Format,
-      label: `PDF ${getScopeLabel()}`,
+      label: "PDF Directory Report",
       ext: ".pdf",
-      desc: isFourPunchMode ? "Print-ready report with 4-punch scans & metrics" : "Print-ready summary with check-in metrics & table",
+      desc: "Print-ready summary with headcount KPIs & status badges",
       icon: "ri-file-pdf-line",
       color: "text-rose-600 bg-rose-50 group-hover:bg-rose-100",
     },
     {
       fmt: "xlsx" as Format,
-      label: `Excel ${getScopeLabel()}`,
+      label: "Excel Master Register",
       ext: ".xlsx",
-      desc: isFourPunchMode ? "Detailed multi-session 4-punch workbook" : "Detailed timesheet and check-in spreadsheet",
+      desc: "Multi-column structured employee workbook",
       icon: "ri-file-excel-2-line",
       color: "text-emerald-600 bg-emerald-50 group-hover:bg-emerald-100",
     },
     {
       fmt: "csv" as Format,
-      label: `CSV ${getScopeLabel()}`,
+      label: "CSV Dataset",
       ext: ".csv",
-      desc: isFourPunchMode ? "Raw 4-punch session attendance CSV dataset" : "Raw comma-separated attendance log file",
+      desc: "Raw comma-separated workforce data records",
       icon: "ri-file-text-line",
       color: "text-blue-600 bg-blue-50 group-hover:bg-blue-100",
     },
@@ -106,26 +80,26 @@ export const AttendanceExportMenu = memo(function AttendanceExportMenu({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        disabled={disabled}
-        className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200/80 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 cursor-pointer active:scale-98 whitespace-nowrap"
+        disabled={disabled || employees.length === 0}
+        className="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all cursor-pointer shadow-2xs active:scale-98 disabled:opacity-50"
       >
         {exporting ? (
           <span className="w-3.5 h-3.5 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
         ) : (
-          <i className="ri-download-2-line text-sm text-[#253C7D]" />
+          <i className="ri-download-line text-lg text-[#253C7D]" />
         )}
         <span>{exporting ? "Exporting..." : "Export"}</span>
         <i className={`ri-arrow-down-s-line text-xs transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && (
+      {open && employees.length > 0 && (
         <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
           <div className="px-3 py-1.5 border-b border-gray-100 mb-1 flex items-center justify-between">
             <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
-              {getScopeLabel()}
+              Workforce Directory
             </span>
             <span className="text-[10px] font-bold text-gray-400">
-              {getRecordCount()}
+              {employees.length} Staff
             </span>
           </div>
 

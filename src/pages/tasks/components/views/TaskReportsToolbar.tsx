@@ -3,6 +3,7 @@ import type { Task } from "../../types";
 import {
   exportTasksXLSX,
   exportTasksPDF,
+  exportTasksCSV,
 } from "../../exportUtils";
 
 interface TaskReportsToolbarProps {
@@ -76,16 +77,22 @@ export const TaskReportsToolbar = memo(function TaskReportsToolbar({
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => exportTasksPDF(dateFilteredTasks, "all_workforce_tasks.pdf")}
+            className="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <i className="ri-file-pdf-line text-sm" /> PDF
+          </button>
+          <button
             onClick={() => exportTasksXLSX(dateFilteredTasks, "all_workforce_tasks.xlsx")}
-            className="px-3.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <i className="ri-file-excel-line text-sm" /> Excel
           </button>
           <button
-            onClick={() => exportTasksPDF(dateFilteredTasks, "all_workforce_tasks.pdf")}
-            className="px-3.5 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            onClick={() => exportTasksCSV(dateFilteredTasks, "all_workforce_tasks.csv")}
+            className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <i className="ri-file-pdf-line text-sm" /> PDF
+            <i className="ri-file-text-line text-sm" /> CSV
           </button>
         </div>
       </div>

@@ -13,6 +13,7 @@ interface AttendanceHeaderProps {
   onOpenLogModal: () => void;
   records?: AttendanceRecord[];
   summaries?: EmployeeSummaryItem[];
+  isFourPunchMode?: boolean;
 }
 
 export const AttendanceHeader = memo(function AttendanceHeader({
@@ -24,6 +25,7 @@ export const AttendanceHeader = memo(function AttendanceHeader({
   onOpenLogModal,
   records = [],
   summaries = [],
+  isFourPunchMode = false,
 }: AttendanceHeaderProps) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
@@ -78,6 +80,7 @@ export const AttendanceHeader = memo(function AttendanceHeader({
           activeTab={activeTab}
           records={records}
           summaries={summaries}
+          isFourPunchMode={isFourPunchMode}
         />
 
         {/* Manual Log Button (Can choose any old date) */}

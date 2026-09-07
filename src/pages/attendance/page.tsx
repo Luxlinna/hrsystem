@@ -57,6 +57,7 @@ export default function AttendancePage() {
         onOpenLogModal={openLogModal}
         records={filters.filteredRecords.length > 0 ? filters.filteredRecords : data.records}
         summaries={metrics.employeeSummary || []}
+        isFourPunchMode={isFourPunchMode}
       />
 
       <SelfCheckInBanner myEmployee={data.myEmployee} myTodayRecord={myTodayRecord} />

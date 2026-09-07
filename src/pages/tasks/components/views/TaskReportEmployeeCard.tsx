@@ -5,6 +5,7 @@ import { initials } from "../../taskUtils";
 import {
   exportTasksXLSX,
   exportTasksPDF,
+  exportTasksCSV,
 } from "../../exportUtils";
 
 export interface EmployeeReportData {
@@ -60,18 +61,24 @@ export const TaskReportEmployeeCard = memo(function TaskReportEmployeeCard({
           </button>
 
           {activeExportMenu === emp.id && (
-            <div className="absolute right-0 top-9 w-36 bg-white rounded-2xl shadow-xl border border-gray-100 p-1.5 z-30 space-y-1 animate-in zoom-in-95 duration-100">
-              <button
-                onClick={() => { exportTasksXLSX(empTasks, `${empName}_tasks.xlsx`); setActiveExportMenu(null); }}
-                className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <i className="ri-file-excel-line" /> Excel
-              </button>
+            <div className="absolute right-0 top-9 w-40 bg-white rounded-2xl shadow-xl border border-gray-100 p-1.5 z-30 space-y-1 animate-in zoom-in-95 duration-100">
               <button
                 onClick={() => { exportTasksPDF(empTasks, `${empName} Tasks Report`); setActiveExportMenu(null); }}
-                className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-gray-700 hover:bg-rose-50 hover:text-rose-700 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-gray-700 hover:bg-rose-50 hover:text-rose-700 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
               >
-                <i className="ri-file-pdf-line" /> PDF
+                <i className="ri-file-pdf-line text-rose-600" /> PDF Document
+              </button>
+              <button
+                onClick={() => { exportTasksXLSX(empTasks, `${empName}_tasks.xlsx`); setActiveExportMenu(null); }}
+                className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <i className="ri-file-excel-line text-emerald-600" /> Excel Sheet
+              </button>
+              <button
+                onClick={() => { exportTasksCSV(empTasks, `${empName}_tasks.csv`); setActiveExportMenu(null); }}
+                className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <i className="ri-file-text-line text-blue-600" /> CSV Dataset
               </button>
             </div>
           )}

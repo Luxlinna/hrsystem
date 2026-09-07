@@ -1,5 +1,6 @@
 import { memo } from "react";
-import type { Branch, VisibleColumns, ViewMode } from "../types";
+import type { Branch, VisibleColumns, ViewMode, Employee, AccountStatus } from "../types";
+import { EmployeesExportMenu } from "./EmployeesExportMenu";
 
 interface EmployeesFilterBarProps {
   search: string;
@@ -23,7 +24,9 @@ interface EmployeesFilterBarProps {
   setVisibleColumns: React.Dispatch<React.SetStateAction<VisibleColumns>>;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
-  onExportCSV: () => void;
+  employees?: Employee[];
+  accountStatus?: Record<string, AccountStatus>;
+  onExportCSV?: () => void;
 }
 
 export const EmployeesFilterBar = memo(function EmployeesFilterBar({
@@ -48,6 +51,8 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
   setVisibleColumns,
   viewMode,
   setViewMode,
+  employees = [],
+  accountStatus = {},
   onExportCSV,
 }: EmployeesFilterBarProps) {
   const hasActiveFilters = Boolean(filterDept || filterStatus || filterBranch || filterAccount);
@@ -62,7 +67,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
             placeholder="Search employees by name, email, role..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:border-transparent transition-all"
+            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#253C7D] focus:border-transparent transition-all"
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -101,13 +106,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
               <i className="ri-grid-line text-lg" />
             </button>
           </div>
-          <button
-            onClick={onExportCSV}
-            className="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-all cursor-pointer"
-          >
-            <i className="ri-download-line text-lg" />
-            Export
-          </button>
+          <EmployeesExportMenu employees={employees} accountStatus={accountStatus} />
         </div>
       </div>
 

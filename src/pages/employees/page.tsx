@@ -108,7 +108,8 @@ export default function EmployeesPage() {
         setVisibleColumns={setVisibleColumns}
         viewMode={viewMode}
         setViewMode={setViewMode}
-        onExportCSV={handleExportCSV}
+        employees={filtered}
+        accountStatus={accountStatus}
       />
 
       <SelectedActionsBar
