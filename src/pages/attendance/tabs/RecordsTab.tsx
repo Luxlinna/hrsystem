@@ -10,6 +10,7 @@ interface RecordsTabProps {
   viewMode: ViewMode;
   todayYMD: string;
   canManage: boolean;
+  isFourPunchMode?: boolean;
   pageSize: number;
   setPageSize: (size: number) => void;
   page: number;
@@ -26,6 +27,7 @@ export const RecordsTab = memo(function RecordsTab({
   viewMode,
   todayYMD,
   canManage,
+  isFourPunchMode = false,
   pageSize,
   setPageSize,
   page,
@@ -56,6 +58,7 @@ export const RecordsTab = memo(function RecordsTab({
           records={pagedRecords}
           todayYMD={todayYMD}
           canManage={canManage}
+          isFourPunchMode={isFourPunchMode}
           onSelectRecord={onSelectRecord}
           onEditRecord={onEditRecord}
           onDeleteRecord={onDeleteRecord}
@@ -65,6 +68,7 @@ export const RecordsTab = memo(function RecordsTab({
           records={pagedRecords}
           todayYMD={todayYMD}
           canManage={canManage}
+          isFourPunchMode={isFourPunchMode}
           onSelectRecord={onSelectRecord}
           onEditRecord={onEditRecord}
           onDeleteRecord={onDeleteRecord}

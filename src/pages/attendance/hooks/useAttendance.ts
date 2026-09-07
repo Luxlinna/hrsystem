@@ -117,12 +117,36 @@ export function useAttendance() {
     }
   }, [mutations, editingRecord]);
 
+  const isFourPunchMode = useMemo(() => {
+    const devices = data.biometricDevices || [];
+    // Only branches with registered biometric fingerprint machine scan devices can use 4-punch mode
+    if (devices.length === 0) return false;
+
+    // If filtering by specific work location:
+    if (filters.filterWorkLocation && filters.filterWorkLocation !== "all") {
+      if (filters.filterWorkLocation === "main") {
+        return devices.some((d) => !d.work_location_id);
+      }
+      const site = data.workLocations.find((wl) => wl.id === filters.filterWorkLocation);
+      const siteAgreed = site ? Boolean(site.is_four_punch_enabled) : false;
+      const hasDevice = devices.some((d) => d.work_location_id === filters.filterWorkLocation);
+      return siteAgreed && hasDevice;
+    }
+
+    // When viewing all locations in a branch, check if the site with a machine explicitly agrees with 4 punches
+    const hasAgreed4PunchSite = data.workLocations.some(
+      (wl) => wl.is_four_punch_enabled && devices.some((d) => !d.work_location_id || d.work_location_id === wl.id)
+    );
+    return hasAgreed4PunchSite;
+  }, [data.biometricDevices, data.workLocations, filters.filterWorkLocation]);
+
   return {
     canManage,
     canViewAll,
     todayYMD,
     userBranchName,
     userBranchId,
+    isFourPunchMode,
     selectedRecord,
     setSelectedRecord,
     editingRecord,

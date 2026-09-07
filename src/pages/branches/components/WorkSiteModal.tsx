@@ -41,7 +41,7 @@ export const WorkSiteModal = memo(function WorkSiteModal({
     afternoon_check_in_end: "14:00",
     afternoon_check_out_start: "16:00",
     afternoon_check_out_end: "18:00",
-    is_four_punch_enabled: true,
+    is_four_punch_enabled: false,
   });
 
   const {
@@ -76,7 +76,7 @@ export const WorkSiteModal = memo(function WorkSiteModal({
         afternoon_check_in_end: editingSite.afternoon_check_in_end?.slice(0, 5) || "14:00",
         afternoon_check_out_start: editingSite.afternoon_check_out_start?.slice(0, 5) || "16:00",
         afternoon_check_out_end: editingSite.afternoon_check_out_end?.slice(0, 5) || "18:00",
-        is_four_punch_enabled: editingSite.is_four_punch_enabled ?? true,
+        is_four_punch_enabled: editingSite.is_four_punch_enabled ?? false,
       });
       setAddressLookup(editingSite.description || "");
     } else {
@@ -100,7 +100,7 @@ export const WorkSiteModal = memo(function WorkSiteModal({
         afternoon_check_in_end: "14:00",
         afternoon_check_out_start: "16:00",
         afternoon_check_out_end: "18:00",
-        is_four_punch_enabled: true,
+        is_four_punch_enabled: false,
       });
       setAddressLookup("");
     }

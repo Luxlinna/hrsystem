@@ -46,7 +46,7 @@ export function useBranchData(userEmail?: string | null) {
         afternoon_check_in_end: loc.afternoon_check_in_end,
         afternoon_check_out_start: loc.afternoon_check_out_start,
         afternoon_check_out_end: loc.afternoon_check_out_end,
-        is_four_punch_enabled: loc.is_four_punch_enabled ?? true,
+        is_four_punch_enabled: loc.is_four_punch_enabled ?? false,
       }));
 
       const sortedBranches = [...branchesData]

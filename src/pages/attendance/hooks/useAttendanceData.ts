@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useBranchScope } from "@/context/BranchContext";
 import { toast } from "@/components/Toast";
-import type { Employee, AttendanceRecord, WorkLocation } from "../types";
+import type { Employee, AttendanceRecord, WorkLocation, BiometricDevice } from "../types";
 import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
 export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean = false) {
@@ -14,6 +14,7 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
   const [workLocations, setWorkLocations] = useState<WorkLocation[]>([]);
+  const [biometricDevices, setBiometricDevices] = useState<BiometricDevice[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -27,6 +28,7 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
       setRecords([]);
       setEmployees([]);
       setWorkLocations([]);
+      setBiometricDevices([]);
       setLoading(false);
       return;
     }
@@ -39,6 +41,13 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
       .order("is_default", { ascending: false })
       .order("name");
     setWorkLocations((wlData as WorkLocation[]) || []);
+
+    // Fetch biometric fingerprint devices registered to this branch
+    const { data: bioData } = await supabase
+      .from("biometric_devices")
+      .select("id, branch_id, work_location_id, device_name, device_serial, status")
+      .eq("branch_id", targetBranch);
+    setBiometricDevices((bioData as BiometricDevice[]) || []);
 
     setLoading(true);
     try {
@@ -137,6 +146,7 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
     myEmployee,
     setMyEmployee,
     workLocations,
+    biometricDevices,
     loading,
     currentTime,
     targetBranch,

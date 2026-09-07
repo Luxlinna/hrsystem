@@ -6,6 +6,7 @@ interface AttendanceCardsViewProps {
   records: AttendanceRecord[];
   todayYMD: string;
   canManage: boolean;
+  isFourPunchMode?: boolean;
   onSelectRecord: (record: AttendanceRecord) => void;
   onEditRecord: (record: AttendanceRecord) => void;
   onDeleteRecord: (id: number) => void;
@@ -15,6 +16,7 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
   records,
   todayYMD,
   canManage,
+  isFourPunchMode = false,
   onSelectRecord,
   onEditRecord,
   onDeleteRecord,
@@ -58,7 +60,7 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
                 </span>
               </div>
 
-              {r.break_out || r.break_in ? (
+              {isFourPunchMode && (r.break_out || r.break_in) ? (
                 <div className="grid grid-cols-4 gap-1.5 bg-slate-50/70 p-2.5 rounded-2xl border border-gray-100 mb-3 text-center">
                   <div>
                     <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">In</span>

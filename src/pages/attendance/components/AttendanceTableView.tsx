@@ -6,6 +6,7 @@ interface AttendanceTableViewProps {
   records: AttendanceRecord[];
   todayYMD: string;
   canManage: boolean;
+  isFourPunchMode?: boolean;
   onSelectRecord: (record: AttendanceRecord) => void;
   onEditRecord: (record: AttendanceRecord) => void;
   onDeleteRecord: (id: number) => void;
@@ -15,14 +16,11 @@ export const AttendanceTableView = memo(function AttendanceTableView({
   records,
   todayYMD,
   canManage,
+  isFourPunchMode = false,
   onSelectRecord,
   onEditRecord,
   onDeleteRecord,
 }: AttendanceTableViewProps) {
-  // Detect if any records in the current view use 4-punch mode (or have lunch scans)
-  const isFourPunchMode = records.some(
-    (r) => r.break_out || r.break_in || r.work_location?.is_four_punch_enabled
-  );
 
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 shadow-2xs overflow-hidden">
@@ -105,21 +103,21 @@ export const AttendanceTableView = memo(function AttendanceTableView({
               let isPulse = false;
 
               if (isToday) {
-                if (r.break_out && !r.break_in) {
+                if (isFourPunchMode && r.break_out && !r.break_in) {
                   statusLabel = "Lunch Break";
                   statusBg = "bg-orange-50";
                   statusText = "text-orange-700";
                   statusBorder = "border-orange-200";
                   statusIcon = "ri-restaurant-line";
                   isPulse = true;
-                } else if (r.break_in && !r.clock_out) {
+                } else if (isFourPunchMode && r.break_in && !r.clock_out) {
                   statusLabel = "Working (PM)";
                   statusBg = "bg-sky-50";
                   statusText = "text-sky-700";
                   statusBorder = "border-sky-200";
                   statusIcon = "ri-time-line";
                   isPulse = true;
-                } else if (r.clock_in && !r.break_out && !r.clock_out) {
+                } else if (r.clock_in && !r.clock_out && (!isFourPunchMode || !r.break_out)) {
                   statusLabel = "Working Now";
                   statusBg = "bg-emerald-50";
                   statusText = "text-emerald-700";

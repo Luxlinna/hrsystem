@@ -196,7 +196,7 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
           break_end_time: assignedSite.break_end_time || "13:00",
           late_grace_minutes: assignedSite.late_grace_minutes ?? mainBranch?.late_grace_minutes ?? 15,
           early_leave_grace_minutes: assignedSite.early_leave_grace_minutes ?? mainBranch?.early_leave_grace_minutes ?? 15,
-          is_four_punch_enabled: assignedSite.is_four_punch_enabled ?? true,
+          is_four_punch_enabled: assignedSite.is_four_punch_enabled ?? false,
         });
       } else if (mainBranch) {
         // Employee is stationed at their Main Branch Office (e.g. Pinex Agro)

@@ -10,6 +10,15 @@ export interface Employee {
   default_work_location_id?: string | null;
 }
 
+export interface BiometricDevice {
+  id: string;
+  branch_id: string | null;
+  work_location_id: string | null;
+  device_name: string;
+  device_serial?: string;
+  status?: string;
+}
+
 export interface WorkLocation {
   id: string;
   branch_id: string;

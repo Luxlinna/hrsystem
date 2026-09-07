@@ -12,7 +12,7 @@ import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShi
 
 export default function AttendancePage() {
   const {
-    canManage, canViewAll, todayYMD, userBranchName, userBranchId,
+    canManage, canViewAll, todayYMD, userBranchName, userBranchId, isFourPunchMode,
     selectedRecord, setSelectedRecord, editingRecord, setEditingRecord,
     showLogModal, setShowLogModal, newRecord, setNewRecord,
     myTodayRecord, data, filters, metrics, mutations,
@@ -115,6 +115,7 @@ export default function AttendancePage() {
         viewMode={filters.viewMode}
         todayYMD={todayYMD}
         canManage={canManage}
+        isFourPunchMode={isFourPunchMode}
         pageSize={filters.pageSize}
         setPageSize={filters.setPageSize}
         page={filters.page}
