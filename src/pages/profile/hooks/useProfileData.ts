@@ -27,7 +27,7 @@ export function useProfileData() {
       let empQuery = supabase
         .from("employees")
         .select(
-          "id, first_name, last_name, role, department, status, join_date, phone, reports_to, branches(name)"
+          "id, first_name, last_name, role, department, status, join_date, phone, reports_to, branches(name), email"
         );
 
       if (isPhone && cleanPhone) {
@@ -36,9 +36,16 @@ export function useProfileData() {
         empQuery = empQuery.eq("email", user.email);
       }
 
-      const { data: emp } = await empQuery.is("deleted_at", null).maybeSingle();
+      const { data: rows } = await empQuery.is("deleted_at", null).limit(5);
 
-      const myEmp = emp as unknown as MyEmployee | null;
+      let myEmp: MyEmployee | null = null;
+      if (rows && rows.length > 0) {
+        if (isPhone) {
+          myEmp = (rows.find((r: any) => !r.email || isPhoneSyntheticEmail(r.email)) || rows[0]) as unknown as MyEmployee;
+        } else {
+          myEmp = (rows.find((r: any) => r.email?.toLowerCase() === user.email.toLowerCase()) || rows[0]) as unknown as MyEmployee;
+        }
+      }
       setEmployee(myEmp);
       setPhone(myEmp?.phone || (cleanPhone ? formatDisplayPhone(cleanPhone) : ""));
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
+import { applyUserEmployeeFilter, isPhoneSyntheticEmail } from "@/lib/phoneUtils";
 
 export interface MyEmployee {
   id: string;
@@ -34,8 +34,7 @@ const listeners = new Set<Listener>();
  * Resolves the signed-in user's own employee record (real name, role,
  * department, avatar) by matching auth email against employees.email.
  * Layout chrome (TopBar, Sidebar) should use this instead of trusting
- * Supabase Auth's user_metadata, which is editable independently of the
- * employees table and can drift (e.g. a stale display_name or avatar_url
+ * Supabase Auth's user_metadata, which can drift (e.g. a stale display_name or avatar_url
  * set at invite time).
  */
 export function useMyEmployee(): UseMyEmployeeReturn {
@@ -50,14 +49,21 @@ export function useMyEmployee(): UseMyEmployeeReturn {
     const empQuery = applyUserEmployeeFilter(
       supabase
         .from("employees")
-        .select("id, first_name, last_name, role, department, avatar_url"),
+        .select("id, first_name, last_name, role, department, avatar_url, email"),
       email
     );
     const { data: rows } = await empQuery
       .is("deleted_at", null)
-      .limit(1);
+      .limit(5);
 
-    const data = rows && rows.length > 0 ? rows[0] : null;
+    let data: any = null;
+    if (rows && rows.length > 0) {
+      if (isPhoneSyntheticEmail(email)) {
+        data = rows.find((r: any) => !r.email || isPhoneSyntheticEmail(r.email)) || rows[0];
+      } else {
+        data = rows.find((r: any) => r.email?.toLowerCase() === email.toLowerCase()) || rows[0];
+      }
+    }
     cachedEmployee = (data as MyEmployee) || null;
     cachedEmail = email;
     setEmployee(cachedEmployee);
