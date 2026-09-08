@@ -52,7 +52,10 @@ export const AddUserForm = memo(function AddUserForm({
       list = list.filter((emp) => {
         if (!emp.phone || typeof emp.phone !== "string") return false;
         const cleanDigits = emp.phone.replace(/\D/g, "");
-        return cleanDigits.length >= 6;
+        if (cleanDigits.length < 6) return false;
+        // Reject dummy test numbers
+        if (cleanDigits === "0987654321" || cleanDigits === "987654321" || cleanDigits === "123456789") return false;
+        return true;
       });
     } else {
       list = list.filter((emp) => {
