@@ -454,7 +454,7 @@ export async function handleZkAdmsRequest(req, res) {
     let cmdBody = "";
     req.on("data", (chunk) => { cmdBody += chunk; });
     req.on("end", async () => {
-      console.log(`[ZKTeco ADMS] Devicecmd ACK from SN: ${sn}:`, cmdBody.trim());
+      console.log("[ZKTeco ADMS] Devicecmd ACK from SN: %s:", sn, cmdBody.trim());
       try {
         // Parse acknowledgment: e.g. ID=101&Return=0
         const lines = cmdBody.split("\n");

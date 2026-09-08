@@ -11,14 +11,14 @@ function makeServer(port) {
         res.end("OK");
       }
     } catch (err) {
-      console.error(`[Local ADMS :${port}] Error:`, err);
+      console.error("[Local ADMS :%s] Error:", port, err);
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end("OK");
     }
   });
 
   server.on("error", (err) => {
-    console.warn(`[Local ADMS] Could not listen on port ${port}:`, err.message);
+    console.warn("[Local ADMS] Could not listen on port %s:", port, err.message);
   });
 
   server.listen(port, "0.0.0.0", () => {
