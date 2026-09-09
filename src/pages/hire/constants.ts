@@ -54,6 +54,20 @@ export const STAGE_CONFIG: Record<string, StageConfigItem> = {
 export const PIPELINE_STAGES = ["applied", "screening", "interview", "offer", "hired", "rejected"];
 export const STAGE_TIMELINE_ORDER = ["applied", "screening", "interview", "offer", "hired"];
 
+export const DEFAULT_DEPARTMENTS = [
+  "Operations",
+  "Finance",
+  "HR",
+  "Marketing",
+  "Sales",
+  "Engineering",
+  "IT",
+  "Legal",
+  "Executive",
+  "Customer Service",
+  "Other",
+];
+
 export const INITIAL_JOB_FORM: NewJobFormState = {
   title: "",
   department: "",

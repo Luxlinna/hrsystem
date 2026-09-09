@@ -1,5 +1,6 @@
-import { memo, useRef } from "react";
+import { memo, useRef, useState, useMemo } from "react";
 import type { Branch, Job, NewJobFormState } from "../../types";
+import { DEFAULT_DEPARTMENTS } from "../../constants";
 import { JobModalDescriptionEditor } from "./JobModalDescriptionEditor";
 import { JobModalSalaryAndMetaFields } from "./JobModalSalaryAndMetaFields";
 
@@ -25,6 +26,16 @@ export const JobModal = memo(function JobModal({
   onSubmit,
 }: JobModalProps) {
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const standardDepartments = useMemo(() => {
+    return DEFAULT_DEPARTMENTS.filter((d) => d !== "Other");
+  }, []);
+
+  const [isOtherDept, setIsOtherDept] = useState<boolean>(() => {
+    return !!form.department && !standardDepartments.includes(form.department);
+  });
+
+  const isCustomDept = isOtherDept || (!!form.department && !standardDepartments.includes(form.department));
 
   if (!isOpen) return null;
 
@@ -114,14 +125,43 @@ export const JobModal = memo(function JobModal({
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
                 Department <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 required
-                value={form.department}
-                onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
-                placeholder="e.g. Engineering, Sales"
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-              />
+                value={isCustomDept ? "Other" : form.department}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "Other") {
+                    setIsOtherDept(true);
+                    setForm((prev) => ({ ...prev, department: "" }));
+                  } else {
+                    setIsOtherDept(false);
+                    setForm((prev) => ({ ...prev, department: val }));
+                  }
+                }}
+                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              >
+                <option value="" disabled>Select Department *</option>
+                {standardDepartments.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+                <option value="Other">Other (Type custom department...)</option>
+              </select>
+
+              {isCustomDept && (
+                <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Type custom department name..."
+                    value={form.department}
+                    onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
+                    className="w-full px-3.5 py-2 bg-blue-50/40 border border-blue-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#253C7D] transition-all placeholder-gray-400"
+                    autoFocus
+                  />
+                </div>
+              )}
             </div>
 
             <div>

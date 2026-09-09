@@ -1,7 +1,8 @@
-import { memo, useEffect } from "react";
+import { memo, useEffect, useState, useMemo } from "react";
 import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
 import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
 import type { Branch, NewHiringRequestFormState } from "../../types";
+import { DEFAULT_DEPARTMENTS } from "../../constants";
 
 interface CreateHiringRequestFieldsProps {
   form: NewHiringRequestFormState;
@@ -27,6 +28,18 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
   userBranchName,
 }: CreateHiringRequestFieldsProps) {
   const isReplacement = form.position_type === "replacement";
+
+  // Standard departments without 'Other'
+  const standardDepartments = useMemo(() => {
+    const list = departments && departments.length > 0 ? departments : DEFAULT_DEPARTMENTS;
+    return list.filter((d) => d !== "Other");
+  }, [departments]);
+
+  const [isOtherDept, setIsOtherDept] = useState<boolean>(() => {
+    return !!form.department && !DEFAULT_DEPARTMENTS.filter((d) => d !== "Other").includes(form.department);
+  });
+
+  const isCustomDept = isOtherDept || (!!form.department && !standardDepartments.includes(form.department));
 
   // Separate parent Business Units and child work sites
   const parentBranches = branches.filter((b) => !b.is_site);
@@ -306,20 +319,43 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">Department *</label>
-            <input
-              type="text"
+            <select
               required
-              placeholder="e.g. Operations, IT, Finance, Marketing..."
-              list="req-departments"
-              value={form.department}
-              onChange={(e) => setForm({ ...form, department: e.target.value })}
-              className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#253C7D] transition-all font-medium"
-            />
-            <datalist id="req-departments">
-              {departments.map((d) => (
-                <option key={d} value={d} />
+              value={isCustomDept ? "Other" : form.department}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "Other") {
+                  setIsOtherDept(true);
+                  setForm((prev) => ({ ...prev, department: "" }));
+                } else {
+                  setIsOtherDept(false);
+                  setForm((prev) => ({ ...prev, department: val }));
+                }
+              }}
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#253C7D] transition-all font-medium cursor-pointer"
+            >
+              <option value="" disabled>Select Department *</option>
+              {standardDepartments.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
               ))}
-            </datalist>
+              <option value="Other">Other (Type custom department...)</option>
+            </select>
+
+            {isCustomDept && (
+              <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                <input
+                  type="text"
+                  required
+                  placeholder="Type custom department name..."
+                  value={form.department}
+                  onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
+                  className="w-full px-3.5 py-2 bg-blue-50/40 border border-blue-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#253C7D] transition-all font-medium placeholder-gray-400"
+                  autoFocus
+                />
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">Division (Optional)</label>

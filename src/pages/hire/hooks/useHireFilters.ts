@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { Job, Candidate, Interview, HireTab, Branch } from "../types";
-import { PIPELINE_STAGES } from "../constants";
+import { DEFAULT_DEPARTMENTS, PIPELINE_STAGES } from "../constants";
 
 export function useHireFilters(
   jobs: Job[],
@@ -43,10 +43,20 @@ export function useHireFilters(
   const [filterInterviewStatus, setFilterInterviewStatus] = useState<string>("all");
 
   const departments = useMemo(() => {
-    const set = new Set<string>();
-    jobs.forEach((j) => j.department && set.add(j.department));
-    candidates.forEach((c) => c.job_postings?.department && set.add(c.job_postings.department));
-    return Array.from(set).sort();
+    const standardDepts = DEFAULT_DEPARTMENTS.filter((d) => d !== "Other");
+    const customDepts = new Set<string>();
+    jobs.forEach((j) => {
+      if (j.department && !standardDepts.includes(j.department)) {
+        customDepts.add(j.department);
+      }
+    });
+    candidates.forEach((c) => {
+      const dept = c.job_postings?.department;
+      if (dept && !standardDepts.includes(dept)) {
+        customDepts.add(dept);
+      }
+    });
+    return [...standardDepts, ...Array.from(customDepts).sort()];
   }, [jobs, candidates]);
 
   const filteredJobs = useMemo(() => {
