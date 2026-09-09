@@ -42,16 +42,27 @@ Deno.serve(async (req) => {
       .eq("key", "telegram_notifications_chat_id")
       .maybeSingle();
 
+    // Fetch OTP chat ID so we can strictly forbid sending action notifications to the OTP group
+    const { data: otpSetting } = await admin
+      .from("system_settings")
+      .select("value")
+      .eq("key", "telegram_otp_chat_id")
+      .maybeSingle();
+    const otpChatId = (otpSetting?.value || "-5356924617").trim();
+
     if (notifSetting?.value && notifSetting.value.trim() !== "") {
       targetChatId = notifSetting.value.trim();
     } else {
-      // Fallback to legacy group or secret
+      // Check legacy setting ONLY if it does not match the OTP chat
       const { data: legacySetting } = await admin
         .from("system_settings")
         .select("value")
         .eq("key", "telegram_group_chat_id")
         .maybeSingle();
-      targetChatId = legacySetting?.value || Deno.env.get("TELEGRAM_CHAT_ID") || null;
+      const legVal = legacySetting?.value?.trim() || "";
+      if (legVal && legVal !== otpChatId && legVal !== "-5356924617") {
+        targetChatId = legVal;
+      }
     }
 
     // Require a signed-in caller or service role key
@@ -74,8 +85,22 @@ Deno.serve(async (req) => {
     const { message, buttonText, buttonUrl, chat_id } = body;
     if (!message || typeof message !== "string") return json({ error: "Missing message" }, 400);
 
-    const resolvedChatId = chat_id ? String(chat_id) : targetChatId;
+    const resolvedChatId = chat_id ? String(chat_id).trim() : targetChatId;
+
+    // HARD GUARD: NEVER EVER send action notifications to the OTP channel!
+    if (resolvedChatId && (resolvedChatId === otpChatId || resolvedChatId === "-5356924617")) {
+      console.warn(`[send-telegram-notification] Blocked: attempt to send action notification to OTP group (${resolvedChatId})`);
+      return json(
+        {
+          error: "Action notifications cannot be sent to the OTP group. Please link HRM_OPS_Notifications channel.",
+          blocked_otp_channel: true,
+        },
+        400
+      );
+    }
+
     if (!resolvedChatId) {
+      console.warn("[send-telegram-notification] Skipped: telegram_notifications_chat_id is not configured yet.");
       return json(
         { error: "Action notifications Telegram group is not configured yet. Please add @HRM_OPS_bot to HRM_OPS_Notifications and send /set_notifications in that group." },
         400

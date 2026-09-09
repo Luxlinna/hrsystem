@@ -53,6 +53,7 @@ export function useHire() {
     actorName, actorRole, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
     userBranchName,
     isAdmin, isSuperAdmin,
+    canChairmanApprove,
     loadData: data.loadData, branches: data.branches,
   });
 

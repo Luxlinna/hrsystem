@@ -43,13 +43,19 @@ Deno.serve(async (req: Request) => {
     const meRes = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
     const meData = await meRes.json();
 
+    const whInfoRes = await fetch(`https://api.telegram.org/bot${botToken}/getWebhookInfo`);
+    const whInfoData = await whInfoRes.json();
+
     let webhookStatus = null;
     if (url.searchParams.get("setup") === "webhook") {
       const webhookUrl = `${supabaseUrl}/functions/v1/telegram-bot`;
       const setRes = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: webhookUrl }),
+        body: JSON.stringify({
+          url: webhookUrl,
+          allowed_updates: ["message", "edited_message", "channel_post", "my_chat_member", "chat_member"],
+        }),
       });
       webhookStatus = await setRes.json();
     }
@@ -61,13 +67,17 @@ Deno.serve(async (req: Request) => {
       chatInfo = await cRes.json();
     }
 
-    const envChatId = Deno.env.get("TELEGRAM_CHAT_ID") || null;
+    const { data: dbSettings } = await admin
+      .from("system_settings")
+      .select("*")
+      .in("key", ["telegram_otp_chat_id", "telegram_notifications_chat_id", "telegram_group_chat_id", "telegram_notify_enabled"]);
 
     return json({
       ok: true,
       bot: meData?.result,
+      webhook_info: whInfoData?.result,
       webhook_setup: webhookStatus,
-      env_chat_id: envChatId,
+      db_settings: dbSettings,
       chat_info: chatInfo,
     });
   }
@@ -76,13 +86,13 @@ Deno.serve(async (req: Request) => {
   try {
     const update = await req.json();
 
-    // Case A: Bot added to a group or updated in a group
-    const chatMember = update?.my_chat_member;
+    // Case A: Bot added to a group/channel or updated in a group/channel
+    const chatMember = update?.my_chat_member || update?.chat_member;
     if (chatMember && chatMember.chat) {
       const gChatId = chatMember.chat.id;
       const gTitle = chatMember.chat.title || "";
       if (typeof gChatId === "number" && gChatId < 0) {
-        console.log(`[telegram-bot] Bot added/updated in group: ${gChatId} (${gTitle})`);
+        console.log(`[telegram-bot] Bot added/updated in group/channel: ${gChatId} (${gTitle})`);
         const lowerTitle = gTitle.toLowerCase();
         const isOtp = lowerTitle.includes("otp");
 
@@ -124,13 +134,13 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const message = update?.message;
+    const message = update?.message || update?.channel_post || update?.edited_message;
     if (!message) {
       return json({ ok: true });
     }
 
     const chatId = message.chat?.id;
-    const isGroup = message.chat?.type === "group" || message.chat?.type === "supergroup" || (typeof chatId === "number" && chatId < 0);
+    const isGroup = message.chat?.type === "group" || message.chat?.type === "supergroup" || message.chat?.type === "channel" || (typeof chatId === "number" && chatId < 0);
 
     // Case B: Any message sent in a group where the bot is a member
     if (isGroup) {
@@ -141,8 +151,8 @@ Deno.serve(async (req: Request) => {
 
       console.log(`[telegram-bot] Received group message in: ${chatId} (${gTitle}): ${text}`);
 
-      const wantsOtp = lowerText.startsWith("/set_otp") || lowerText.startsWith("/otp");
-      const wantsNotif = lowerText.startsWith("/set_notif") || lowerText.startsWith("/notif");
+      const wantsOtp = lowerText.includes("/set_otp") || lowerText.startsWith("/otp");
+      const wantsNotif = lowerText.includes("/set_notif") || lowerText.includes("/notif") || lowerText.includes("/set_notification");
 
       if (wantsOtp || (!wantsNotif && lowerTitle.includes("otp"))) {
         await admin.from("system_settings").upsert([
@@ -162,7 +172,7 @@ Deno.serve(async (req: Request) => {
         return json({ ok: true });
       }
 
-      if (wantsNotif || lowerTitle.includes("notif")) {
+      if (wantsNotif || lowerTitle.includes("notif") || lowerTitle.includes("ops_notification")) {
         await admin.from("system_settings").upsert({
           key: "telegram_notifications_chat_id",
           value: String(chatId),

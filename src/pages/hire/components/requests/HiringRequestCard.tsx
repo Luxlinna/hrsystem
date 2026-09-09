@@ -72,10 +72,10 @@ export const HiringRequestCard = memo(function HiringRequestCard({
     isStage2HrReview && (canHrReview || isSuperAdmin);
 
   const canActStage3 =
-    isStage3HrAdmin && (canHrAdminApprove || isSuperAdmin);
+    isStage3HrAdmin && canHrAdminApprove && !canChairmanApprove;
 
   const canActStage4 =
-    isStage4Chairman && (canChairmanApprove || isSuperAdmin);
+    (isStage4Chairman || isStage3HrAdmin) && (canChairmanApprove || isSuperAdmin);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -98,21 +98,16 @@ export const HiringRequestCard = memo(function HiringRequestCard({
           </span>
         );
       case "pending_chairman_review":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-300 animate-pulse">
-            <i className="ri-vip-crown-line text-sm" /> Awaiting Chairman Authorization
-          </span>
-        );
       case "pending_hr_admin_review":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300 animate-pulse">
-            <i className="ri-admin-line text-sm" /> Awaiting Admin Manager Approval
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-300 animate-pulse">
+            <i className="ri-vip-crown-line text-sm" /> Awaiting Chairwoman Authorization
           </span>
         );
       case "pending_hr_review":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-300 animate-pulse">
-            <i className="ri-user-star-line text-sm" /> In HR Manager Review
+            <i className="ri-user-star-line text-sm" /> In HR Review
           </span>
         );
       case "pending_branch_review":
@@ -282,14 +277,14 @@ export const HiringRequestCard = memo(function HiringRequestCard({
             </>
           )}
 
-          {/* Stage 4: Chairman Executive Final Authorization Action */}
+          {/* Stage 4: Chairwoman / Executive Final Authorization Action */}
           {canActStage4 && (
             <>
               <button
                 onClick={() => onOpenDecision(r, "approved")}
                 className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
               >
-                <i className="ri-vip-crown-line text-sm" /> Authorize & Publish Job
+                <i className="ri-vip-crown-line text-sm" /> Authorize & Go Live
               </button>
               <button
                 onClick={() => onOpenDecision(r, "rejected")}

@@ -65,8 +65,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
       total: requests.length,
       pendingBranch: requests.filter((r) => !r.status || r.status === "pending" || r.status === "pending_branch_review").length,
       pendingHr: requests.filter((r) => r.status === "pending_hr_review").length,
-      pendingHrAdmin: requests.filter((r) => r.status === "pending_hr_admin_review").length,
-      pendingChairman: requests.filter((r) => r.status === "pending_chairman_review").length,
+      pendingChairman: requests.filter((r) => r.status === "pending_chairman_review" || r.status === "pending_hr_admin_review").length,
       approved: requests.filter((r) => r.status === "approved").length,
     };
   }, [requests]);
@@ -76,6 +75,8 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
       if (statusFilter !== "all") {
         if (statusFilter === "pending") {
           if (r.status !== "pending" && r.status !== "pending_branch_review" && r.status !== undefined) return false;
+        } else if (statusFilter === "pending_chairman_review") {
+          if (r.status !== "pending_chairman_review" && r.status !== "pending_hr_admin_review") return false;
         } else if (r.status !== statusFilter) {
           return false;
         }
@@ -102,11 +103,11 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-[11px] font-bold tracking-wide uppercase text-blue-100 border border-white/10">
-                Pipeline: Branch Endorsement → HR Manager Review → HR Division Admin → Chairman Authorization
+                Pipeline: Manager Request → CEO/Director Endorsement → HR Review → Chairwoman Authorization (Go Live)
               </span>
               {isChairman && (
                 <span className="px-2.5 py-0.5 bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 rounded-full text-[11px] font-bold">
-                  Chairman Oversight View
+                  Chairwoman Oversight View
                 </span>
               )}
             </div>
@@ -114,7 +115,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
               Recruitment & Hiring Requisitions
             </h2>
             <p className="text-xs sm:text-sm text-blue-100/90 max-w-2xl leading-relaxed font-medium">
-              Enterprise Governance: Branch Manager request is endorsed by Branch Leadership, vetted by the HR Manager, approved by HR Division Admin, and authorized by the Executive Chairman.
+              Enterprise Governance: Requisition requested by Department Manager, endorsed by CEO/Director, vetted by HR, and authorized by Chairwoman to go live.
             </p>
           </div>
 
@@ -130,21 +131,17 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 mt-6 pt-6 border-t border-white/15 relative">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-6 border-t border-white/15 relative">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <p className="text-[10px] text-amber-200 font-bold uppercase tracking-wider">Branch Review</p>
+            <p className="text-[10px] text-amber-200 font-bold uppercase tracking-wider">CEO/Director Review</p>
             <p className="text-xl sm:text-2xl font-black text-amber-300 mt-1">{stats.pendingBranch}</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <p className="text-[10px] text-sky-200 font-bold uppercase tracking-wider">HR Manager Review</p>
+            <p className="text-[10px] text-sky-200 font-bold uppercase tracking-wider">HR Review</p>
             <p className="text-xl sm:text-2xl font-black text-sky-300 mt-1">{stats.pendingHr}</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <p className="text-[10px] text-purple-200 font-bold uppercase tracking-wider">HR Admin Approval</p>
-            <p className="text-xl sm:text-2xl font-black text-purple-300 mt-1">{stats.pendingHrAdmin}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <p className="text-[10px] text-orange-200 font-bold uppercase tracking-wider">Chairman Review</p>
+            <p className="text-[10px] text-orange-200 font-bold uppercase tracking-wider">Chairwoman Review</p>
             <p className="text-xl sm:text-2xl font-black text-orange-300 mt-1">{stats.pendingChairman}</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
@@ -163,23 +160,24 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search requisitions by role, department, branch, requester..."
-            className="w-full pl-8 pr-7 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium"
+            className="w-full pl-9 pr-4 py-2 bg-gray-50/80 rounded-xl text-xs text-gray-800 placeholder-gray-400 border border-gray-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 font-bold focus:outline-none focus:border-[#253C7D] cursor-pointer"
-        >
-          <option value="all">All Requisition Statuses ({stats.total})</option>
-          <option value="pending">Awaiting Branch Approval</option>
-          <option value="pending_hr_review">In HR Manager Review</option>
-          <option value="pending_hr_admin_review">Awaiting HR Admin Approval</option>
-          <option value="pending_chairman_review">Awaiting Chairman Authorization</option>
-          <option value="approved">Fully Approved & Job Live</option>
-          <option value="fulfilled">Position Hired / Closed</option>
-          <option value="rejected">Rejected</option>
-        </select>
+
+        <div className="flex items-center gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 bg-gray-50/80 rounded-xl text-xs font-semibold text-gray-700 border border-gray-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all cursor-pointer"
+          >
+            <option value="all">All Requisition Statuses ({stats.total})</option>
+            <option value="pending">Awaiting CEO/Director Endorsement</option>
+            <option value="pending_hr_review">In HR Review</option>
+            <option value="pending_chairman_review">Awaiting Chairwoman Authorization</option>
+            <option value="approved">Fully Approved & Job Live</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
       </div>
 
       {/* Requisitions List */}

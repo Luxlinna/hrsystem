@@ -34,23 +34,23 @@ export async function sendStage2HrReviewNotify(
   actorRole: string,
   currentBranch: string,
   originatingBranch: string,
-  hrBranchId: string | null
+  _hrBranchId?: string | null
 ) {
   await notify({
-    title: `📋 HR Division Admin Approval Required (${targetRequest.title})`,
-    message: `HR Manager ${actorName} reviewed and endorsed ${targetRequest.title} (${originatingBranch}). Awaiting HR Division Admin approval.`,
-    type: "info",
+    title: `👑 Chairwoman Authorization Required (${targetRequest.title})`,
+    message: `HR ${actorName} reviewed and endorsed ${targetRequest.title} (${originatingBranch}). Awaiting Chairwoman final authorization to go live.`,
+    type: "warning",
     source: "hire",
     entityId: targetRequest.id,
-    branch_id: hrBranchId,
+    branch_id: null,
   });
 
   notifyTelegramEvent(
-    `📑 <b>HR Manager Review: ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)} · ${escapeTelegramHtml(currentBranch)})</b>\n` +
+    `📑 <b>HR Review: ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)} · ${escapeTelegramHtml(currentBranch)})</b>\n` +
     `💼 <b>Position:</b> ${escapeTelegramHtml(targetRequest.title)} (${targetRequest.headcount} opening${targetRequest.headcount > 1 ? "s" : ""})\n` +
     `📍 <b>Branch:</b> ${escapeTelegramHtml(originatingBranch)}\n` +
-    `⏩ <b>Next Step:</b> Awaiting HR Division Admin Approval.`,
-    { text: "Review as HR Admin", url: hrNexusUrl("/hire") }
+    `⏩ <b>Next Step:</b> Awaiting Chairwoman Final Authorization to Go Live.`,
+    { text: "Review as Chairwoman", url: hrNexusUrl("/hire") }
   );
 }
 

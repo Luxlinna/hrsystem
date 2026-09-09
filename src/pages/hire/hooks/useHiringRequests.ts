@@ -16,6 +16,7 @@ interface UseHiringRequestsProps {
   userBranchName?: string | null;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  canChairmanApprove?: boolean;
   loadData: () => Promise<void>;
   branches?: Branch[];
 }
@@ -28,6 +29,7 @@ export function useHiringRequests({
   userBranchName,
   isAdmin = false,
   isSuperAdmin = false,
+  canChairmanApprove = false,
   loadData,
   branches = [],
 }: UseHiringRequestsProps) {
@@ -41,6 +43,8 @@ export function useHiringRequests({
     actorRole,
     userBranchName: userBranchName || undefined,
     loadData,
+    canChairmanApprove,
+    isSuperAdmin,
   });
 
   const openCreateRequest = useCallback((defaultBranchId?: string) => {
