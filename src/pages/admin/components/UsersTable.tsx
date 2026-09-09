@@ -219,22 +219,66 @@ export const UsersTable = memo(function UsersTable({
 
                 {/* Role Selector & Actions */}
                 <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-                  {canModifyUser ? (
-                    <select
-                      value={user.role_id || ""}
-                      onChange={(e) =>
-                        onUpdateUserRole(user, e.target.value ? parseInt(e.target.value) : null)
+                  {canModifyUser ? (() => {
+                    const userBranch = user.branch_id;
+                    const userSite = user.default_work_location_id;
+
+                    const relevant = assignableRoles.filter((r) => {
+                      if (user.role_id && r.id === user.role_id) return true;
+                      if (!r.branch_id && !r.work_location_id) return true;
+                      if (userBranch && r.branch_id === userBranch) {
+                        if (r.work_location_id) {
+                          return Boolean(userSite && r.work_location_id === userSite);
+                        }
+                        return true;
                       }
-                      className="px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/30 dark:focus:ring-sky-500/30 cursor-pointer shadow-2xs h-[34px]"
-                    >
-                      <option value="">No Role (No Access)</option>
-                      {assignableRoles.map((role) => (
-                        <option key={role.id} value={role.id}>
-                          {role.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
+                      if (!userBranch && isSuperAdmin) return true;
+                      return false;
+                    });
+
+                    const buRoles = relevant.filter((r) => Boolean(r.branch_id && !r.work_location_id));
+                    const siteRoles = relevant.filter((r) => Boolean(r.work_location_id));
+                    const globalRoles = relevant.filter((r) => !r.branch_id && !r.work_location_id);
+
+                    return (
+                      <select
+                        value={user.role_id || ""}
+                        onChange={(e) =>
+                          onUpdateUserRole(user, e.target.value ? parseInt(e.target.value) : null)
+                        }
+                        className="px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/30 dark:focus:ring-sky-500/30 cursor-pointer shadow-2xs h-[34px] max-w-[210px]"
+                      >
+                        <option value="">No Role (No Access)</option>
+                        {buRoles.length > 0 && (
+                          <optgroup label={`${user.branch_name || "BU"} Roles`}>
+                            {buRoles.map((role) => (
+                              <option key={role.id} value={role.id}>
+                                {role.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {siteRoles.length > 0 && (
+                          <optgroup label={`${user.site_name || "Site"} Roles`}>
+                            {siteRoles.map((role) => (
+                              <option key={role.id} value={role.id}>
+                                ↳ {role.name} (Site)
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {globalRoles.length > 0 && (
+                          <optgroup label="Global Roles">
+                            {globalRoles.map((role) => (
+                              <option key={role.id} value={role.id}>
+                                {role.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    );
+                  })() : (
                     <span className="text-xs font-medium text-gray-500 dark:text-slate-400 px-3 py-1.5 bg-gray-100 dark:bg-slate-800 rounded-xl">
                       {user.app_roles?.name || "Super Admin"}
                     </span>

@@ -4,6 +4,10 @@ export interface AppRole {
   description: string;
   color: string;
   is_admin: boolean;
+  branch_id?: string | null;
+  work_location_id?: string | null;
+  branch_name?: string | null;
+  site_name?: string | null;
   allowed_modules: string[];
   employees_manage: boolean;
   self_service_all_employees: boolean;
@@ -31,7 +35,7 @@ export interface UserAssignment {
   display_name: string | null;
   role_id: number | null;
   created_at: string;
-  app_roles?: { id: number; name: string; color: string; is_admin?: boolean } | null;
+  app_roles?: { id: number; name: string; color: string; is_admin?: boolean; branch_id?: string | null; work_location_id?: string | null } | null;
   branch_id?: string | null;
   branch_name?: string | null;
   default_work_location_id?: string | null;
@@ -85,6 +89,8 @@ export interface RoleFormState {
   description: string;
   color: string;
   is_admin: boolean;
+  branch_id?: string | null;
+  work_location_id?: string | null;
   allowed_modules: string[];
   employees_manage: boolean;
   self_service_all_employees: boolean;

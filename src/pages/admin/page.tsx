@@ -46,9 +46,15 @@ export default function AdminPortal() {
             <RolesTab
               roles={admin.data.roles}
               users={admin.data.users}
+              branches={admin.data.branches}
+              filterBranch={admin.filterBranch}
+              setFilterBranch={admin.setFilterBranch}
+              userBranchId={admin.userBranchId}
+              userBranchName={admin.userBranchName}
               isSuperAdmin={admin.isSuperAdmin}
               onOpenNewRole={admin.roles.openNewRole}
               onOpenEditRole={admin.roles.openEditRole}
+              onCloneRole={admin.roles.cloneRoleToBU}
               onDeleteRole={admin.roles.deleteRole}
             />
           )}
@@ -101,6 +107,9 @@ export default function AdminPortal() {
             setRoleForm={admin.roles.setRoleForm}
             savingRole={admin.roles.savingRole}
             isSuperAdmin={admin.isSuperAdmin}
+            branches={admin.data.branches}
+            userBranchId={admin.userBranchId}
+            userBranchName={admin.userBranchName}
             onSaveRole={admin.roles.saveRole}
           />
 

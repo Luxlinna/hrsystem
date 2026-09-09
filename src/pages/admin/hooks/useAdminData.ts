@@ -45,7 +45,7 @@ export function useAdminData() {
 
     const [rolesRes, usersRes, employeesRes, resetRequestsRes, authAccountsResult, branchesRes, locationsRes] = await Promise.all([
       supabase.from("app_roles").select("*").order("id"),
-      supabase.from("user_role_assignments").select("*, app_roles(id, name, color, is_admin)").order("created_at", { ascending: false }),
+      supabase.from("user_role_assignments").select("*, app_roles(id, name, color, is_admin, branch_id, work_location_id)").order("created_at", { ascending: false }),
       empQuery,
       supabase.from("password_reset_requests").select("id, email, status, requested_at, acted_at").is("deleted_at", null).order("requested_at", { ascending: false }).limit(50),
       authAccountsPromise,
@@ -64,6 +64,22 @@ export function useAdminData() {
       combinedBranches.push(...sitesList.filter((s) => s.branch_id === branch.id));
     });
     setBranches(combinedBranches);
+
+    const rawRoles = (rolesRes.data || []) as any[];
+    const enrichedRoles: AppRole[] = rawRoles.map((r) => {
+      const bName = r.branch_id ? branchesList.find((b) => b.id === r.branch_id)?.name : null;
+      const sName = r.work_location_id ? locationsMap.get(r.work_location_id)?.name : null;
+      return {
+        ...r,
+        branch_name: bName || null,
+        site_name: sName || null,
+      };
+    });
+
+    // If BU Admin, only show global roles or roles matching their BU
+    const visibleRoles = (!isSuperAdmin && effectiveBranch)
+      ? enrichedRoles.filter((r) => !r.branch_id || r.branch_id === effectiveBranch)
+      : enrichedRoles;
 
     const allAssignments = (usersRes.data || []) as any[];
     const activeAssignments: UserAssignment[] = allAssignments.filter((u: any) => !u.deleted_at);
@@ -168,7 +184,7 @@ export function useAdminData() {
     // Filter employees for autofill to those with contact info (email or phone)
     const actionableEmployees = (employeesRes.data || []).filter((e: any) => Boolean(e.email || e.phone));
 
-    setRoles(rolesRes.data || []);
+    setRoles(visibleRoles);
     setUsers(filteredUsers);
     setUnconfirmedEmails(unconfirmed);
     setEmployees(buildEnrichedEmployees(actionableEmployees, locationsMap, branchesList));

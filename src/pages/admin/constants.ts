@@ -42,6 +42,8 @@ export const BLANK_ROLE: RoleFormState = {
   description: "",
   color: "#253C7D",
   is_admin: false,
+  branch_id: null,
+  work_location_id: null,
   allowed_modules: [],
-  ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, false])) as unknown as Omit<RoleFormState, "name" | "description" | "color" | "is_admin" | "allowed_modules">,
+  ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, false])) as unknown as Omit<RoleFormState, "name" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
 };

@@ -11,7 +11,7 @@ import { useAdminPasswordResets } from "./useAdminPasswordResets";
 
 export function useAdmin() {
   const { user } = useAuth();
-  const { isSuperAdmin, isBranchAdmin, userBranchName, selectedBranchId } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, userBranchName, userBranchId, targetBranch, selectedBranchId } = useBranchScope();
   const [searchParams] = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
@@ -35,6 +35,9 @@ export function useAdmin() {
   const roles = useAdminRoleMutations({
     roles: data.roles,
     isSuperAdmin,
+    userBranchId,
+    targetBranch,
+    selectedBranchId,
     showToast,
     loadData: data.loadData,
   });
@@ -100,6 +103,7 @@ export function useAdmin() {
 
   return {
     isSuperAdmin,
+    userBranchId,
     userBranchName,
     activeTab,
     setActiveTab,

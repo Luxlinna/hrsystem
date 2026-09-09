@@ -203,6 +203,32 @@ export const AddUserForm = memo(function AddUserForm({
     setShowPassword(true);
   };
 
+  const selectedEmpObj = useMemo(() => {
+    if (!selectedEmployeeEmail && !newUser.employee_id) return null;
+    return (employees || []).find(
+      (e) =>
+        (selectedEmployeeEmail && e.email && e.email.toLowerCase() === selectedEmployeeEmail.toLowerCase()) ||
+        (selectedEmployeeEmail && e.phone && e.phone.trim() === selectedEmployeeEmail.trim()) ||
+        (newUser.employee_id && e.id === newUser.employee_id)
+    );
+  }, [selectedEmployeeEmail, employees, newUser.employee_id]);
+
+  const targetBranchId = selectedEmpObj?.branch_id || (filterBranch && filterBranch !== "all" && !filterBranch.startsWith("site:") ? filterBranch : null);
+  const targetSiteId = selectedEmpObj?.default_work_location_id || (filterBranch && filterBranch.startsWith("site:") ? filterBranch.substring(5) : null);
+
+  const { formBuRoles, formSiteRoles, formGlobalRoles } = useMemo(() => {
+    const buRoles = (roles || []).filter(
+      (r) => targetBranchId && r.branch_id === targetBranchId && !r.work_location_id
+    );
+    const siteRoles = (roles || []).filter(
+      (r) => targetSiteId && r.work_location_id === targetSiteId
+    );
+    const globalRoles = (roles || []).filter(
+      (r) => !r.branch_id && !r.work_location_id
+    );
+    return { formBuRoles: buRoles, formSiteRoles: siteRoles, formGlobalRoles: globalRoles };
+  }, [roles, targetBranchId, targetSiteId]);
+
   if (!isOpen) return null;
 
   const isSubmitDisabled =
@@ -348,18 +374,39 @@ export const AddUserForm = memo(function AddUserForm({
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1.5 block">Assign Role</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 block">Assign Role</label>
+            {selectedEmpObj?.branch_name && (
+              <span className="text-[10px] text-blue-600 dark:text-sky-400 font-semibold">
+                Filtered: {selectedEmpObj.branch_name}
+              </span>
+            )}
+          </div>
           <select
             value={newUser.role_id || ""}
             onChange={(e) => setNewUser((p) => ({ ...p, role_id: e.target.value }))}
             className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 focus:border-[#253C7D] dark:focus:border-sky-500 transition-all cursor-pointer h-[42px]"
           >
             <option value="">No role (no access until assigned)</option>
-            {roles.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
+            {formBuRoles.length > 0 && (
+              <optgroup label={`${selectedEmpObj?.branch_name || "BU"} Roles`}>
+                {formBuRoles.map((r) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </optgroup>
+            )}
+            {formSiteRoles.length > 0 && (
+              <optgroup label={`${selectedEmpObj?.site_name || "Site"} Roles`}>
+                {formSiteRoles.map((r) => (
+                  <option key={r.id} value={r.id}>↳ {r.name} (Site)</option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label="Global Roles">
+              {formGlobalRoles.map((r) => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </optgroup>
           </select>
         </div>
       </div>
