@@ -68,12 +68,13 @@ export function useMeetingRoomsData(selectedDate: string) {
       return;
     }
 
-    // Rooms belonging to this branch, or all branches when in cross-branch HR Division scope
+    // Rooms belonging to this branch or shared company rooms (branch_id null),
+    // or all rooms when in cross-branch HR Division scope
     const roomsToEnrich = (data || []).filter((r: any) => {
-      if (canViewCrossBranch) {
+      if (canViewCrossBranch || !targetBranch) {
         return true;
       }
-      return r.branch_id === targetBranch;
+      return !r.branch_id || r.branch_id === targetBranch;
     });
 
     const enrichedRooms: MeetingRoom[] = roomsToEnrich.map((r: any) => {
@@ -185,10 +186,10 @@ export function useMeetingRoomsData(selectedDate: string) {
       .is("deleted_at", null);
 
     const roomsList = (dbRooms && dbRooms.length > 0 ? dbRooms : rooms).filter((r: any) => {
-      if (canViewCrossBranch) {
+      if (canViewCrossBranch || !targetBranch) {
         return true;
       }
-      return r.branch_id === targetBranch;
+      return !r.branch_id || r.branch_id === targetBranch;
     });
     const validRoomIds = new Set(roomsList.map((r: any) => r.id));
 
@@ -219,16 +220,23 @@ export function useMeetingRoomsData(selectedDate: string) {
         if (dateStr < from || dateStr > to) return;
 
         // Find room by matching name
-        const matchedRoom = roomsList.find((r: any) =>
-          r.name.trim().toLowerCase() === location.trim().toLowerCase()
-        );
+        const locLower = location.toLowerCase().trim();
+        const matchedRoom = roomsList.find((r: any) => {
+          const rNameLower = r.name.toLowerCase().trim();
+          return (
+            locLower === rNameLower ||
+            locLower.includes(rNameLower) ||
+            rNameLower.includes(locLower.split(" (")[0].trim())
+          );
+        });
 
         if (matchedRoom) {
           const alreadyInRoomBookings = (data || []).some(
             (b: any) =>
               b.room_id === matchedRoom.id &&
               b.date === dateStr &&
-              b.start_time === startTime
+              ((b.start_time || "").slice(0, 5) === (startTime || "").slice(0, 5) ||
+                (b.title && b.title.toLowerCase().includes(rawTc.title.toLowerCase())))
           );
           if (alreadyInRoomBookings) {
             return;
