@@ -5,8 +5,10 @@ export interface MeetingRoom {
   color: string;
   floor?: number;
   branch_id?: string | null;
+  branch_name?: string | null;
   deleted_at?: string | null;
   amenities?: string[];
+  branches?: { id: string; name: string } | null;
 }
 
 export interface BookingEmployee {

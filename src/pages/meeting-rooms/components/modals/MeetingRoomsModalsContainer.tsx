@@ -43,6 +43,8 @@ interface MeetingRoomsModalsContainerProps {
   branches?: any[];
   visibleBranches?: any[];
   isSuperAdmin?: boolean;
+  isHrDivision?: boolean;
+  isHrDivisionScope?: boolean;
 }
 
 export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsContainer({
@@ -78,6 +80,8 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
   branches,
   visibleBranches,
   isSuperAdmin,
+  isHrDivision,
+  isHrDivisionScope,
 }: MeetingRoomsModalsContainerProps) {
   return (
     <>
@@ -149,8 +153,8 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
         showToast={(type, msg) => showToast(type as any, msg)}
         branchId={targetBranch}
         branchName={effectiveBranchName || userBranchName || undefined}
-        branches={visibleBranches || branches}
-        isSuperAdmin={isSuperAdmin}
+        branches={branches || visibleBranches}
+        isSuperAdmin={isSuperAdmin || isHrDivision || isHrDivisionScope}
       />
     </>
   );

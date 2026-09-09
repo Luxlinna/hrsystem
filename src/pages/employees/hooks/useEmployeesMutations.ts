@@ -5,6 +5,7 @@ import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { sendUserInvite, createPhoneUserAccount } from "@/pages/admin/api";
 import { normalizePhone } from "@/lib/phoneUtils";
+import { startOnboardingForEmployee } from "@/lib/onboarding";
 import { INITIAL_EMPLOYEE_FORM } from "../constants";
 import type { Employee, EmployeeFormState, AppRole } from "../types";
 
@@ -221,6 +222,15 @@ export function useEmployeesMutations({
 
         const { data: newEmp, error } = await supabase.from("employees").insert(payload).select().single();
         if (error) throw error;
+
+        // Automatically initialize onboarding journey if created in onboarding status
+        if (form.status === "onboarding" && newEmp?.id) {
+          try {
+            await startOnboardingForEmployee(newEmp.id, actorName);
+          } catch (obErr) {
+            console.error("Failed to initialize onboarding journey for new employee:", obErr);
+          }
+        }
 
         toast("Success", `${form.first_name} ${form.last_name} has been added.`, "success");
         await logActivity({

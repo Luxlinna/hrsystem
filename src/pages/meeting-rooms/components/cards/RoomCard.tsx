@@ -33,9 +33,15 @@ export const RoomCard = memo(function RoomCard({
               <h4 className="font-black text-base text-gray-900">{room.name}</h4>
               <FloorBadge floor={roomFloor} size="sm" isVIP={isVIP} />
             </div>
-            <p className="text-xs text-gray-400 font-medium">
-              Capacity: <strong className="text-gray-700 font-bold">{room.capacity || "—"} people</strong>
-            </p>
+            <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500 font-medium">
+              <span>Capacity: <strong className="text-gray-700 font-bold">{room.capacity || "—"} people</strong></span>
+              {room.branch_name && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-blue-50 text-[#253C7D] border border-blue-200/60">
+                  <i className="ri-building-line text-xs" />
+                  {room.branch_name}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5">

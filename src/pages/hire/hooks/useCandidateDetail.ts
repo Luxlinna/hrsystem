@@ -10,6 +10,7 @@ import { uploadFileToS3, uploadMultipleFilesToS3 } from "@/lib/s3-storage";
 import type { Candidate, Interview, CandidateDocument, Job } from "../types";
 import { STAGE_CONFIG } from "../constants";
 import { useCandidateDetailFeedback } from "./useCandidateDetailFeedback";
+import { startOnboardingForCandidate } from "@/lib/onboarding";
 
 export function useCandidateDetail(id: string | undefined) {
   const { user } = useAuth();
@@ -93,7 +94,23 @@ export function useCandidateDetail(id: string | undefined) {
         return;
       }
       setCandidate((prev) => (prev ? { ...prev, stage } : prev));
-      toast("Stage Updated", `Candidate moved to ${STAGE_CONFIG[stage]?.label || stage}.`, "success");
+
+      if (stage === "hired") {
+        try {
+          const { error: obErr } = await startOnboardingForCandidate(id, actorName);
+          if (obErr) {
+            console.error("Failed to create onboarding request:", obErr);
+            toast("Warning", "Stage updated to Hired, but onboarding enrollment encountered an issue: " + (obErr.message || "Unknown error"), "warning");
+          } else {
+            toast("Enrolled in Onboarding", `${candidate.full_name} is now officially enrolled in the Onboarding pipeline.`, "success");
+          }
+        } catch (err: any) {
+          console.error("Failed to enroll in onboarding:", err);
+        }
+      } else {
+        toast("Stage Updated", `Candidate moved to ${STAGE_CONFIG[stage]?.label || stage}.`, "success");
+      }
+
       logActivity({
         module: "hire",
         action: stage === "hired" ? "processed" : stage === "rejected" ? "rejected" : "updated",

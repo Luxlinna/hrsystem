@@ -23,12 +23,19 @@ export function useMeetingRoomsData(selectedDate: string) {
     isPartnerBranchBlocked,
     visibleBranches,
     branches,
+    isHrDivision,
   } = useBranchScope();
+
+  const isHrDivisionSelected =
+    /hr|human\s*resource|headquarter/i.test(effectiveBranchName || "") ||
+    /hr|human\s*resource|headquarter/i.test(userBranchName || "");
+  const isHrDivisionScope = Boolean(isSuperAdmin || isHrDivision || isHrDivisionSelected);
 
   const canApprove = Boolean(
     (isAdmin ||
     isSuperAdmin ||
     isBranchAdmin ||
+    isHrDivisionScope ||
     role?.name === "Super Admin" ||
     /branch\s*admin|bu\s*.*admin|bu\s*ceo/i.test(role?.name || "") ||
     role?.name === "Admin" ||
@@ -51,7 +58,7 @@ export function useMeetingRoomsData(selectedDate: string) {
 
     const { data, error } = await supabase
       .from("meeting_rooms")
-      .select("id, name, capacity, color, floor, branch_id, deleted_at, amenities")
+      .select("id, name, capacity, color, floor, branch_id, deleted_at, amenities, branches(id, name)")
       .is("deleted_at", null)
       .order("capacity");
 
@@ -60,10 +67,13 @@ export function useMeetingRoomsData(selectedDate: string) {
       return;
     }
 
-    // Rooms belonging to this branch, plus legacy global rooms (branch_id is null)
-    const roomsToEnrich = (data || []).filter(
-      (r: any) => r.branch_id === targetBranch || !r.branch_id
-    );
+    // Rooms belonging to this branch, or all branches when in cross-branch HR Division scope
+    const roomsToEnrich = (data || []).filter((r: any) => {
+      if (isHrDivisionScope) {
+        return true;
+      }
+      return r.branch_id === targetBranch;
+    });
 
     const enrichedRooms: MeetingRoom[] = roomsToEnrich.map((r: any) => {
       const floor = r.floor || ROOM_FLOORS[r.name] || (r.name.toLowerCase().includes("vip") ? 5 : 3);
@@ -75,11 +85,12 @@ export function useMeetingRoomsData(selectedDate: string) {
         ...r,
         floor,
         amenities,
+        branch_name: r.branches?.name || undefined,
       };
     });
 
     setRooms(enrichedRooms);
-  }, [isPartnerBranchBlocked, targetBranch]);
+  }, [isPartnerBranchBlocked, targetBranch, isHrDivisionScope]);
 
   const deleteRoom = useCallback(async (roomId: string, roomName: string) => {
     if (!confirm(`Are you sure you want to remove room "${roomName}"?`)) return false;
@@ -104,7 +115,7 @@ export function useMeetingRoomsData(selectedDate: string) {
 
   // Fetch current user employee profile
   useEffect(() => {
-    if (!user?.email || isPartnerBranchBlocked || !targetBranch) {
+    if (!user?.email || isPartnerBranchBlocked) {
       setCurrentEmployee(null);
       setEmployeeId("");
       return;
@@ -116,10 +127,14 @@ export function useMeetingRoomsData(selectedDate: string) {
       user.email
     );
     empQuery
-      .eq("branch_id", targetBranch)
-      .limit(1)
+      .limit(5)
       .then(({ data: rows }) => {
-        const data = rows && rows.length > 0 ? rows[0] : null;
+        if (!rows || rows.length === 0) {
+          setCurrentEmployee(null);
+          setEmployeeId("");
+          return;
+        }
+        const data = (targetBranch ? rows.find((r: any) => r.branch_id === targetBranch) : null) || rows[0];
         if (data) {
           setEmployeeId(data.id);
           setCurrentEmployee({
@@ -130,6 +145,7 @@ export function useMeetingRoomsData(selectedDate: string) {
             role: data.role,
             avatar_url: data.avatar_url,
             email: data.email,
+            branch_id: data.branch_id,
           });
         }
       });
@@ -167,9 +183,12 @@ export function useMeetingRoomsData(selectedDate: string) {
       .select("*")
       .is("deleted_at", null);
 
-    const roomsList = (dbRooms && dbRooms.length > 0 ? dbRooms : rooms).filter(
-      (r: any) => !targetBranch || r.branch_id === targetBranch || !r.branch_id
-    );
+    const roomsList = (dbRooms && dbRooms.length > 0 ? dbRooms : rooms).filter((r: any) => {
+      if (isHrDivisionScope) {
+        return true;
+      }
+      return r.branch_id === targetBranch;
+    });
     const validRoomIds = new Set(roomsList.map((r: any) => r.id));
 
     if (error) {
@@ -224,6 +243,7 @@ export function useMeetingRoomsData(selectedDate: string) {
 
           // If branch filtering applies, ensure room or course matches targetBranch
           if (
+            !isHrDivisionScope &&
             targetBranch &&
             matchedRoom.branch_id &&
             matchedRoom.branch_id !== targetBranch &&
@@ -264,7 +284,7 @@ export function useMeetingRoomsData(selectedDate: string) {
       setBookings([...normalized, ...trainingBookings]);
     }
     setLoading(false);
-  }, [selectedDate, isPartnerBranchBlocked, targetBranch, rooms]);
+  }, [selectedDate, isPartnerBranchBlocked, targetBranch, rooms, isHrDivisionScope]);
 
   useEffect(() => {
     loadBookings();
@@ -292,6 +312,8 @@ export function useMeetingRoomsData(selectedDate: string) {
     role,
     isAdmin,
     isSuperAdmin,
+    isHrDivision,
+    isHrDivisionScope,
     isPartnerBranchBlocked,
     userBranchId,
     userBranchName,

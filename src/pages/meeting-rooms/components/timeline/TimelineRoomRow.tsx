@@ -31,11 +31,17 @@ export const TimelineRoomRow = memo(function TimelineRoomRow({
             <h4 className="font-bold text-sm text-gray-900 truncate">{room.name}</h4>
             <FloorBadge floor={roomFloor} size="sm" isVIP={isVIP} />
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+          <div className="flex items-center gap-2 text-xs text-gray-500 font-medium flex-wrap">
             <span className="flex items-center gap-1">
               <i className="ri-user-3-line text-xs text-gray-400" />
               Max {room.capacity || "—"} ppl
             </span>
+            {room.branch_name && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-50 text-[#253C7D] border border-blue-200/60">
+                <i className="ri-building-line text-[10px]" />
+                {room.branch_name}
+              </span>
+            )}
           </div>
         </div>
 

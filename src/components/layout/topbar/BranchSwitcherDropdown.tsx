@@ -22,10 +22,14 @@ export const BranchSwitcherDropdown = memo(function BranchSwitcherDropdown({
   const containerRef = useRef<HTMLDivElement>(null);
   useClickOutside([containerRef], () => setOpen(false));
 
-  const selectedBranch = visibleBranches.find((b) => b.id === selectedBranchId) || visibleBranches[0];
-  const displayName = selectedBranch
-    ? (selectedBranch.is_site ? `↳ ${selectedBranch.name} (Site)` : selectedBranch.name)
-    : "No BU";
+  const selectedBranch = selectedBranchId === "all"
+    ? null
+    : visibleBranches.find((b) => b.id === selectedBranchId) || visibleBranches[0];
+  const displayName = selectedBranchId === "all"
+    ? "All Branches"
+    : selectedBranch
+      ? (selectedBranch.is_site ? `↳ ${selectedBranch.name} (Site)` : selectedBranch.name)
+      : "No BU";
 
   return (
     <div className="relative hidden sm:inline-block" ref={containerRef}>
@@ -60,6 +64,25 @@ export const BranchSwitcherDropdown = memo(function BranchSwitcherDropdown({
           </div>
 
           <div className="max-h-64 overflow-y-auto space-y-0.5 py-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                onSelectBranch("all");
+                setOpen(false);
+              }}
+              className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs text-left transition-colors cursor-pointer ${
+                selectedBranchId === "all"
+                  ? "bg-blue-50/90 dark:bg-sky-950/60 text-[#253C7D] dark:text-sky-300 font-bold"
+                  : "text-gray-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/80 font-medium"
+              }`}
+            >
+              <i className="ri-community-line text-xs text-[#253C7D] dark:text-sky-400 shrink-0" />
+              <span className="truncate flex-1 font-bold">All Branches / All BUs</span>
+              {selectedBranchId === "all" && (
+                <i className="ri-check-line text-sm text-[#253C7D] dark:text-sky-400 shrink-0" />
+              )}
+            </button>
+
             {visibleBranches.length === 0 ? (
               <div className="px-3 py-2 text-xs text-gray-400 dark:text-slate-500 text-center">
                 No BU available

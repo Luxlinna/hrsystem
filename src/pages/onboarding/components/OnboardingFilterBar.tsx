@@ -10,6 +10,9 @@ interface OnboardingFilterBarProps {
   setStatusFilter: (s: string) => void;
   stageFilter: string;
   setStageFilter: (s: string) => void;
+  branchFilter?: string;
+  setBranchFilter?: (b: string) => void;
+  availableBranches?: { id: string; name: string }[];
   sortBy: "newest" | "name" | "progress" | "days";
   setSortBy: (s: "newest" | "name" | "progress" | "days") => void;
 }
@@ -23,6 +26,9 @@ export const OnboardingFilterBar = memo(function OnboardingFilterBar({
   setStatusFilter,
   stageFilter,
   setStageFilter,
+  branchFilter = "all",
+  setBranchFilter,
+  availableBranches = [],
   sortBy,
   setSortBy,
 }: OnboardingFilterBarProps) {
@@ -87,6 +93,23 @@ export const OnboardingFilterBar = memo(function OnboardingFilterBar({
 
       {/* Filter Dropdowns */}
       <div className="flex items-center gap-2 flex-wrap">
+        {/* Branch Filter (shown when multiple branches exist) */}
+        {availableBranches.length > 1 && setBranchFilter && (
+          <select
+            value={branchFilter}
+            onChange={(e) => setBranchFilter(e.target.value)}
+            className="px-2.5 py-1.5 bg-blue-50/80 border border-blue-200 rounded-xl text-xs text-[#253C7D] font-bold focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            title="Filter by branch / BU"
+          >
+            <option value="all">All Branches ({availableBranches.length})</option>
+            {availableBranches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        )}
+
         {/* Status Filter */}
         <select
           value={statusFilter}

@@ -9,15 +9,28 @@ export function useOnboardingFilters(
   const [viewMode, setViewMode] = useState<"cards" | "kanban" | "table">("cards");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [stageFilter, setStageFilter] = useState<string>("all");
+  const [branchFilter, setBranchFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<"newest" | "name" | "progress" | "days">("newest");
   const [expandedRequest, setExpandedRequest] = useState<string | null>(null);
+
+  // Available branches from current requests
+  const availableBranches = useMemo(() => {
+    const map = new Map<string, string>();
+    requests.forEach((r) => {
+      const bId = (r.employees as any)?.branch_id;
+      const bName = (r.employees as any)?.branches?.name;
+      if (bId && bName) map.set(bId, bName);
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [requests]);
 
   const filteredRequests = useMemo(() => {
     return requests
       .filter((r) => {
         if (statusFilter !== "all" && r.status !== statusFilter) return false;
         if (stageFilter !== "all" && r.stage !== stageFilter) return false;
+        if (branchFilter !== "all" && (r.employees as any)?.branch_id !== branchFilter) return false;
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();
           const fullName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.toLowerCase();
@@ -44,7 +57,7 @@ export function useOnboardingFilters(
         }
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
-  }, [requests, documents, statusFilter, stageFilter, searchQuery, sortBy]);
+  }, [requests, documents, statusFilter, stageFilter, branchFilter, searchQuery, sortBy]);
 
   return {
     viewMode,
@@ -53,6 +66,9 @@ export function useOnboardingFilters(
     setStatusFilter,
     stageFilter,
     setStageFilter,
+    branchFilter,
+    setBranchFilter,
+    availableBranches,
     searchQuery,
     setSearchQuery,
     sortBy,

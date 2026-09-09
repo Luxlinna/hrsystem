@@ -13,13 +13,19 @@ export function useHireData() {
     effectiveBranchId,
     userBranchId,
     userBranchName,
+    effectiveBranchName,
     targetBranch,
     isPartnerBranchBlocked,
     visibleBranches,
+    isHrDivision,
   } = useBranchScope();
   const { role, isAdmin } = usePermissions();
 
-  const isHrDivisionBranch = /hr|human\s*resource|headquarter/i.test(userBranchName || "") || isSuperAdmin;
+  const isHrDivisionBranch =
+    isSuperAdmin ||
+    isHrDivision ||
+    /hr|human\s*resource|headquarter/i.test(effectiveBranchName || "") ||
+    /hr|human\s*resource|headquarter/i.test(userBranchName || "");
   const canHrReview =
     !!role?.hiring_requests_hr_review ||
     /hr\s*manager|hr\s*staff|recruiter/i.test(role?.name || "") ||
@@ -34,7 +40,7 @@ export function useHireData() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    if (isPartnerBranchBlocked || (!isSuperAdmin && !userBranchId)) {
+    if (isPartnerBranchBlocked || (!isSuperAdmin && !isHrDivision && !userBranchId)) {
       setJobs([]);
       setCandidates([]);
       setInterviews([]);
@@ -52,11 +58,12 @@ export function useHireData() {
         .is("deleted_at", null)
         .order("posted_at", { ascending: false });
 
-      // HR Division, HR Reviewers, and SuperAdmins have enterprise-wide recruitment authority
-      // (managing jobs, candidates, interviews, and candidate files across all branches).
-      // Regular branch managers are scoped to their own branch's vacancies.
-      if (targetBranch && !isSuperAdmin && !canHrReview && !isHrDivisionBranch) {
-        jobQuery = jobQuery.or(`branch_id.eq.${targetBranch},branch_id.is.null`);
+      const isCrossBranchHR = Boolean(isSuperAdmin || isHrDivisionBranch);
+
+      // Only HR Division and SuperAdmins have enterprise-wide recruitment authority.
+      // Other BUs without HR Division are strictly restricted to their own branch's vacancies and requests.
+      if (!isCrossBranchHR && targetBranch) {
+        jobQuery = jobQuery.eq("branch_id", targetBranch);
       }
 
       const branchQuery = supabase.from("branches").select("id, name").is("deleted_at", null).order("name");
@@ -67,10 +74,8 @@ export function useHireData() {
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
-      // If user is not HR reviewer or SuperAdmin, scope to their branch.
-      // HR Division / HR reviewers see all branch requests requiring review.
-      if (targetBranch && !isSuperAdmin && !canHrReview && !isHrDivisionBranch) {
-        reqQuery = reqQuery.or(`branch_id.eq.${targetBranch},branch_id.is.null`);
+      if (!isCrossBranchHR && targetBranch) {
+        reqQuery = reqQuery.eq("branch_id", targetBranch);
       }
 
       let employeeQuery = supabase
@@ -79,15 +84,8 @@ export function useHireData() {
         .is("deleted_at", null)
         .order("first_name");
 
-      if (targetBranch && !isSuperAdmin && !canHrReview && !isHrDivisionBranch) {
-        const allowedBranchIds = visibleBranches && visibleBranches.length > 0
-          ? visibleBranches.map((b) => b.id).filter(Boolean)
-          : (userBranchId ? [userBranchId] : []);
-        if (allowedBranchIds.length > 0) {
-          employeeQuery = employeeQuery.in("branch_id", allowedBranchIds);
-        } else {
-          employeeQuery = employeeQuery.eq("branch_id", targetBranch);
-        }
+      if (!isCrossBranchHR && targetBranch) {
+        employeeQuery = employeeQuery.eq("branch_id", targetBranch);
       }
 
       const [{ data: j }, { data: c }, { data: i }, { data: b }, { data: hr }, { data: empData }] = await Promise.all([

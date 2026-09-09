@@ -10,6 +10,7 @@ export function useMeetingRoomsFilters(
 ) {
   const [selectedDate, setSelectedDate] = useState(toYMD(new Date()));
   const [viewMode, setViewMode] = useState<"timeline" | "month" | "cards">("timeline");
+  const [branchFilter, setBranchFilter] = useState<string>("all");
   const [filterFloor, setFilterFloor] = useState<string>("all");
   const [filterRoomId, setFilterRoomId] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -38,19 +39,23 @@ export function useMeetingRoomsFilters(
     return Array.from(set).sort((a, b) => a - b);
   }, [rooms]);
 
-  // Filtered rooms based on floor and selected room dropdown
+  // Filtered rooms based on branch, floor, and selected room dropdown
   const filteredRooms = useMemo(() => {
     return rooms.filter((r) => {
+      if (branchFilter !== "all" && r.branch_id !== branchFilter) return false;
       const fl = getRoomFloor(r);
       if (filterFloor !== "all" && String(fl) !== filterFloor) return false;
       if (filterRoomId !== "all" && r.id !== filterRoomId) return false;
       return true;
     });
-  }, [rooms, filterFloor, filterRoomId]);
+  }, [rooms, branchFilter, filterFloor, filterRoomId]);
+
+  const visibleRoomIds = useMemo(() => new Set(filteredRooms.map((r) => r.id)), [filteredRooms]);
 
   // Filtered bookings for the active date and search query / status tab
   const activeDateBookings = useMemo(() => {
     return bookings.filter((b) => {
+      if (!visibleRoomIds.has(b.room_id)) return false;
       if (b.date !== selectedDate) return false;
       if (b.status === "cancelled" || b.status === "rejected") return false;
 
@@ -105,6 +110,8 @@ export function useMeetingRoomsFilters(
     setSelectedDate,
     viewMode,
     setViewMode,
+    branchFilter,
+    setBranchFilter,
     filterFloor,
     setFilterFloor,
     filterRoomId,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/lib/supabase";
@@ -41,28 +41,15 @@ export function useOnboarding() {
       : "") ||
     (user?.email ? user.email.split("@")[0] : "Admin User");
 
-  // 1. Filters hook
-  const filters = useOnboardingFilters([], []);
-
-  // 2. Data hook
-  const data = useOnboardingData((id) => {
+  const highlightHandlerRef = useRef<(id: string) => void>(() => {});
+  const data = useOnboardingData((id) => highlightHandlerRef.current(id));
+  const filters = useOnboardingFilters(data.requests, data.documents);
+  highlightHandlerRef.current = (id: string) => {
     filters.setStatusFilter("all");
     filters.setStageFilter("all");
     filters.setExpandedRequest(id);
-  });
+  };
 
-  // Re-run filter hook with real requests and documents
-  const dynamicFilters = useOnboardingFilters(data.requests, data.documents);
-
-  // 3. Calculations hook
-  const calculations = useOnboardingCalculations(
-    data.requests,
-    data.documents,
-    data.employees,
-    ""
-  );
-
-  // 4. Mutations hook
   const mutations = useOnboardingMutations({
     requests: data.requests,
     documents: data.documents,
@@ -71,16 +58,17 @@ export function useOnboarding() {
     roleName: role?.name,
     loadData: data.loadData,
     setRequests: data.setRequests,
-    setExpandedRequest: dynamicFilters.setExpandedRequest,
-    getDocsForRequestAndStage: calculations.getDocsForRequestAndStage,
+    setExpandedRequest: filters.setExpandedRequest,
+    getDocsForRequestAndStage: (reqId: string, stageKey: string) =>
+      data.documents.filter((d) => d.onboarding_request_id === reqId && d.stage === stageKey),
   });
 
-  // Calculations with mutations' empSearch
-  const dynamicCalculations = useOnboardingCalculations(
+  const calculations = useOnboardingCalculations(
     data.requests,
     data.documents,
     data.employees,
-    mutations.empSearch
+    mutations.empSearch,
+    data.allRequests
   );
 
   return {
@@ -88,8 +76,8 @@ export function useOnboarding() {
     role,
     actorName,
     ...data,
-    ...dynamicFilters,
-    ...dynamicCalculations,
+    ...filters,
+    ...calculations,
     ...mutations,
   };
 }

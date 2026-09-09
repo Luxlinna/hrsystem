@@ -69,6 +69,9 @@ export default function Onboarding() {
         setStatusFilter={o.setStatusFilter}
         stageFilter={o.stageFilter}
         setStageFilter={o.setStageFilter}
+        branchFilter={o.branchFilter}
+        setBranchFilter={o.setBranchFilter}
+        availableBranches={o.isHrDivisionScope ? o.availableBranches : undefined}
         sortBy={o.sortBy}
         setSortBy={o.setSortBy}
       />

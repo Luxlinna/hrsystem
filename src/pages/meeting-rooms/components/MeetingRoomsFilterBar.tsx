@@ -6,6 +6,9 @@ interface MeetingRoomsFilterBarProps {
   selectedDate: string;
   onShiftDate: (days: number) => void;
   onJumpToToday: () => void;
+  branchFilter?: string;
+  setBranchFilter?: (branchId: string) => void;
+  availableBranches?: { id: string; name: string }[];
   filterFloor: string;
   setFilterFloor: (floor: string) => void;
   filterRoomId: string;
@@ -23,6 +26,9 @@ export const MeetingRoomsFilterBar = memo(function MeetingRoomsFilterBar({
   selectedDate,
   onShiftDate,
   onJumpToToday,
+  branchFilter = "all",
+  setBranchFilter,
+  availableBranches = [],
   filterFloor,
   setFilterFloor,
   filterRoomId,
@@ -148,7 +154,24 @@ export const MeetingRoomsFilterBar = memo(function MeetingRoomsFilterBar({
           })}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto flex-1 justify-end">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-1 justify-end flex-wrap">
+          {/* Branch Filter (for cross-branch HR Division & Super Admin) */}
+          {availableBranches && availableBranches.length > 1 && setBranchFilter && (
+            <select
+              value={branchFilter}
+              onChange={(e) => setBranchFilter(e.target.value)}
+              className="px-2.5 py-1 bg-blue-50/80 border border-blue-200 rounded-xl text-xs text-[#253C7D] font-bold focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              title="Filter rooms by branch"
+            >
+              <option value="all">All Branches ({availableBranches.length})</option>
+              {availableBranches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          )}
+
           {/* Room Selector */}
           <select
             value={filterRoomId}
@@ -158,7 +181,7 @@ export const MeetingRoomsFilterBar = memo(function MeetingRoomsFilterBar({
             <option value="all">All Rooms</option>
             {rooms.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.name} (Floor {r.floor || 3})
+                {r.name} (Floor {r.floor || 3}){r.branch_name ? ` · ${r.branch_name}` : ""}
               </option>
             ))}
           </select>

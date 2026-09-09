@@ -137,7 +137,7 @@ export default function TopBar() {
 
           {/* Right — branch switcher/indicator, theme toggle, notifications, profile */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Global Branch/Site Switcher */}
+            {/* Global Branch/Site Switcher (Super Admin only) */}
             {(isSuperAdmin || (isBranchAdmin && visibleBranches.length > 1)) ? (
               <BranchSwitcherDropdown
                 visibleBranches={visibleBranches}

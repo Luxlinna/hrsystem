@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { Link } from "react-router-dom";
 import type { Candidate } from "../../types";
 import { STAGE_CONFIG, PIPELINE_STAGES } from "../../constants";
 import { initials, formatDateTime } from "../../hireUtils";
@@ -129,9 +130,17 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
           </div>
 
           {isHired ? (
-            <span className="px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-300 text-xs font-bold flex items-center gap-1.5">
-              <i className="ri-checkbox-circle-fill text-emerald-600 text-sm" /> Hired
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-300 text-xs font-bold flex items-center gap-1.5">
+                <i className="ri-checkbox-circle-fill text-emerald-600 text-sm" /> Hired
+              </span>
+              <Link
+                to="/onboarding"
+                className="px-3.5 py-2 rounded-xl bg-[#253C7D] hover:bg-[#1b2b5a] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
+              >
+                <i className="ri-compass-3-line text-sm" /> View in Onboarding
+              </Link>
+            </div>
           ) : isRejected ? (
             <span className="px-3.5 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-300 text-xs font-bold flex items-center gap-1.5">
               <i className="ri-close-circle-fill text-rose-600 text-sm" /> Rejected
@@ -139,9 +148,9 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
           ) : (
             <button
               onClick={() => onUpdateStage("hired")}
-              className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
             >
-              <i className="ri-check-line text-sm" /> Mark as Hired
+              <i className="ri-user-received-2-line text-sm" /> Move to Onboarding
             </button>
           )}
         </div>

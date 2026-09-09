@@ -6,7 +6,8 @@ export function useOnboardingCalculations(
   requests: OnboardingRequest[],
   documents: OnboardingDoc[],
   employees: EmployeeOption[],
-  empSearch: string
+  empSearch: string,
+  allRequests?: OnboardingRequest[]
 ) {
   const getDocsForRequestAndStage = useCallback(
     (reqId: string, stageKey: string) =>
@@ -40,8 +41,8 @@ export function useOnboardingCalculations(
 
   // Eligible employees who have not been onboarded yet
   const onboardedEmployeeIds = useMemo(
-    () => new Set(requests.map((r) => r.employee_id)),
-    [requests]
+    () => new Set((allRequests || requests).map((r) => r.employee_id)),
+    [allRequests, requests]
   );
 
   const eligibleEmployees = useMemo(

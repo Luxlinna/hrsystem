@@ -53,7 +53,7 @@ export const WorkspaceSelectDropdown = memo(function WorkspaceSelectDropdown({
           <div className="min-w-0">
             <p className="text-xs font-bold text-gray-900 truncate">{selectedRoom.name}</p>
             <p className="text-[10px] text-gray-400 font-medium truncate">
-              Floor {selectedFloor} &middot; Max {selectedRoom.capacity || "—"} ppl
+              Floor {selectedFloor} &middot; Max {selectedRoom.capacity || "—"} ppl{selectedRoom.branch_name ? ` · ${selectedRoom.branch_name}` : ""}
             </p>
           </div>
         </div>
@@ -98,7 +98,7 @@ export const WorkspaceSelectDropdown = memo(function WorkspaceSelectDropdown({
                   <div className="min-w-0">
                     <p className="text-xs font-bold truncate">{r.name}</p>
                     <p className="text-[10px] text-gray-400 font-medium truncate">
-                      Floor {floor} &middot; Max {r.capacity || "—"} ppl
+                      Floor {floor} &middot; Max {r.capacity || "—"} ppl{r.branch_name ? ` · ${r.branch_name}` : ""}
                     </p>
                   </div>
                 </div>

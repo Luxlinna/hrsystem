@@ -87,6 +87,9 @@ export default function MeetingRoomsPage() {
         selectedDate={m.selectedDate}
         onShiftDate={m.shiftDate}
         onJumpToToday={m.jumpToToday}
+        branchFilter={m.branchFilter}
+        setBranchFilter={m.setBranchFilter}
+        availableBranches={m.isHrDivisionScope ? m.branches : undefined}
         filterFloor={m.filterFloor}
         setFilterFloor={m.setFilterFloor}
         filterRoomId={m.filterRoomId}
@@ -121,6 +124,7 @@ export default function MeetingRoomsPage() {
               onOpenBookModal={(room, start) => m.openBookModal(room, m.selectedDate, start)}
               onSelectBooking={m.setSelectedBooking}
               onResetFilters={() => {
+                m.setBranchFilter("all");
                 m.setFilterFloor("all");
                 m.setFilterRoomId("all");
                 m.setSearchQuery("");
@@ -153,6 +157,7 @@ export default function MeetingRoomsPage() {
               canManageRooms={m.canApprove}
               onDeleteRoom={m.deleteRoom}
               onResetFilters={() => {
+                m.setBranchFilter("all");
                 m.setFilterFloor("all");
                 m.setFilterRoomId("all");
                 m.setSearchQuery("");

@@ -81,9 +81,16 @@ export const StartOnboardingModal = memo(function StartOnboardingModal({
                         {initials(emp.first_name, emp.last_name)}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-extrabold text-xs text-gray-900 truncate">
-                          {emp.first_name} {emp.last_name}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-extrabold text-xs text-gray-900 truncate">
+                            {emp.first_name} {emp.last_name}
+                          </p>
+                          {emp.branches?.name && (
+                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold text-[9px] shrink-0">
+                              {emp.branches.name}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-gray-400 truncate">
                           {emp.role || "Team Member"} &middot; {emp.department || "General"}
                         </p>

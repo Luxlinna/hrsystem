@@ -39,6 +39,7 @@ export interface BranchContextType {
   isPartnerBranchBlocked: boolean;
   isSuperAdmin: boolean;
   isBranchAdmin: boolean;
+  isHrDivision: boolean;
   isBranchScoped: boolean;
   refreshBranches: () => Promise<void>;
 }

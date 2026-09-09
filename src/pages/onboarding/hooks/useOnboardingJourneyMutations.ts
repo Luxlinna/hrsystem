@@ -7,6 +7,7 @@ import { startOnboardingForEmployee } from "@/lib/onboarding";
 import type { OnboardingRequest, OnboardingDoc, EmployeeOption } from "../types";
 import { useOnboardingStageTransitions } from "./useOnboardingStageTransitions";
 import { buildDefaultDocumentInserts, buildDefaultTaskInserts } from "../onboardingUtils";
+import { useBranchScope } from "@/context/BranchContext";
 
 interface UseOnboardingJourneyMutationsProps {
   requests: OnboardingRequest[];
@@ -29,6 +30,7 @@ export function useOnboardingJourneyMutations({
   setRequests,
   setExpandedRequest,
 }: UseOnboardingJourneyMutationsProps) {
+  const { isSuperAdmin, selectedBranchId, setSelectedBranchId } = useBranchScope();
   const [showStartModal, setShowStartModal] = useState(false);
   const [startEmployeeId, setStartEmployeeId] = useState("");
   const [empSearch, setEmpSearch] = useState("");
@@ -76,7 +78,15 @@ export function useOnboardingJourneyMutations({
 
       const emp = employees.find((x) => x.id === startEmployeeId);
       const empName = emp ? `${emp.first_name} ${emp.last_name}` : "the employee";
+      const empBranchName = emp?.branches?.name || "";
+      const empBranchId = emp?.branch_id;
+
       toast("Journey Started", `Onboarding started for ${empName}`, "success");
+
+      if (empBranchId && selectedBranchId !== "all" && selectedBranchId !== empBranchId && isSuperAdmin) {
+        setSelectedBranchId(empBranchId);
+        toast("Branch Switched", `Switched to ${empBranchName || "branch"} to view ${empName}'s onboarding journey.`, "info");
+      }
 
       logActivity({
         module: "onboarding",
@@ -99,9 +109,10 @@ export function useOnboardingJourneyMutations({
       setStartEmployeeId("");
       setShowStartModal(false);
       setEmpSearch("");
+      setExpandedRequest(data.id);
       loadData();
     },
-    [startEmployeeId, requests, actorName, roleName, employees, loadData]
+    [startEmployeeId, requests, actorName, roleName, employees, loadData, isSuperAdmin, selectedBranchId, setSelectedBranchId, setExpandedRequest]
   );
 
   const handleDeleteRequest = useCallback(
@@ -110,14 +121,17 @@ export function useOnboardingJourneyMutations({
       if (!confirm(`Are you sure you want to remove the onboarding journey for ${empName}? This will delete this onboarding request and its documents.`)) return;
 
       try {
+        const now = new Date().toISOString();
         const [{ error }, { error: taskErr }] = await Promise.all([
-          supabase.from("onboarding_requests").update({ deleted_at: new Date().toISOString(), deleted_by: actorName }).eq("id", req.id),
-          supabase.from("onboarding_checklist_tasks").update({ deleted_at: new Date().toISOString(), deleted_by: actorName }).eq("onboarding_request_id", req.id),
+          supabase.from("onboarding_requests").update({ deleted_at: now, deleted_by: actorName }).eq("id", req.id),
+          supabase.from("onboarding_checklist_tasks").update({ deleted_at: now, deleted_by: actorName }).eq("onboarding_request_id", req.id),
+          supabase.from("onboarding_documents").update({ deleted_at: now }).eq("onboarding_request_id", req.id),
         ]);
 
         if (error || taskErr) {
           toast("Error", "Failed to delete onboarding record: " + (error?.message || taskErr?.message), "error");
         } else {
+          setRequests((prev) => prev.filter((r) => r.id !== req.id));
           toast("Record Deleted", `Onboarding record & checklist for ${empName} moved to Recycle Bin.`, "success");
           logActivity({
             module: "onboarding",

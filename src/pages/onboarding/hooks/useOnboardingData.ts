@@ -4,10 +4,28 @@ import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
 import type { OnboardingRequest, OnboardingDoc, EmployeeOption } from "../types";
 
+import { startOnboardingForCandidate, startOnboardingForEmployee } from "@/lib/onboarding";
+
 export function useOnboardingData(
   onHighlight: (id: string) => void
 ) {
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
+  const {
+    isSuperAdmin,
+    isBranchAdmin,
+    isHrDivision,
+    effectiveBranchId,
+    effectiveBranchName,
+    userBranchId,
+    userBranchName,
+    targetBranch,
+    isPartnerBranchBlocked
+  } = useBranchScope();
+
+  const isHrDivisionScope = Boolean(
+    isHrDivision ||
+    /hr\s*division|human\s*resource/i.test(effectiveBranchName || "") ||
+    /hr\s*division|human\s*resource/i.test(userBranchName || "")
+  );
 
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
@@ -18,7 +36,7 @@ export function useOnboardingData(
   const highlightId = searchParams.get("highlight");
 
   const loadData = useCallback(async () => {
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if (isPartnerBranchBlocked || (!isSuperAdmin && !isHrDivisionScope && !targetBranch)) {
       setRequests([]);
       setDocuments([]);
       setEmployees([]);
@@ -27,16 +45,23 @@ export function useOnboardingData(
     }
 
     try {
+      let empQuery = supabase
+        .from("employees")
+        .select("id, first_name, last_name, role, department, avatar_url, branch_id, branches(name)")
+        .is("deleted_at", null)
+        .order("first_name");
+
+      // HR Division and Super Admin can view/enroll employees across all branches.
+      // Other BUs without HR Division are strictly limited to their own branch.
+      if (!isSuperAdmin && !isHrDivisionScope && targetBranch) {
+        empQuery = empQuery.eq("branch_id", targetBranch);
+      }
+
       const [{ data: emps }, { data: ob }, { data: docs }] = await Promise.all([
-        supabase
-          .from("employees")
-          .select("id, first_name, last_name, role, department, avatar_url, branch_id, branches(name)")
-          .eq("branch_id", targetBranch)
-          .is("deleted_at", null)
-          .order("first_name"),
+        empQuery,
         supabase
           .from("onboarding_requests")
-          .select("*, employees(first_name, last_name, role, department, branch_id, branches(name), candidate_code, candidate_id, location, resume_url, resume_name)")
+          .select("*, employees(id, first_name, last_name, email, role, department, branch_id, branches(name), candidate_code, candidate_id, location, resume_url, resume_name)")
           .is("deleted_at", null)
           .order("created_at", { ascending: false }),
         supabase
@@ -52,9 +77,12 @@ export function useOnboardingData(
       }));
       const empIds = new Set(formattedEmps.map((e: any) => e.id));
 
-      const filteredRequests = ((ob || []) as unknown as OnboardingRequest[]).filter(
-        (r) => empIds.has(r.employee_id) || (r.employees as any)?.branch_id === targetBranch
-      );
+      const currentOb = ob || [];
+      const filteredRequests = (isSuperAdmin || isHrDivisionScope)
+        ? (currentOb as unknown as OnboardingRequest[])
+        : (currentOb as unknown as OnboardingRequest[]).filter(
+            (r) => (r.employees as any)?.branch_id === targetBranch
+          );
 
       const requestIds = new Set(filteredRequests.map((r) => r.id));
       const filteredDocs = (docs || []).filter((d) => requestIds.has(d.onboarding_request_id));
@@ -67,7 +95,7 @@ export function useOnboardingData(
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch]);
+  }, [isPartnerBranchBlocked, targetBranch, isSuperAdmin, isHrDivisionScope]);
 
   useEffect(() => {
     loadData();
@@ -82,19 +110,28 @@ export function useOnboardingData(
     };
   }, [loadData]);
 
-  // Scoped requests
+  // Scoped requests (page-level branch filtering is handled by useOnboardingFilters)
   const scopedRequests = useMemo(() => {
-    const targetBranch = effectiveBranchId || (isBranchAdmin ? userBranchId : null);
-    if (!targetBranch) return requests;
-    return requests.filter((r) => (r.employees as any)?.branch_id === targetBranch);
-  }, [requests, effectiveBranchId, isBranchAdmin, userBranchId]);
+    if (isSuperAdmin || isHrDivisionScope) {
+      return requests;
+    }
+    const target = targetBranch || userBranchId;
+    if (!target) return [];
+    return requests.filter((r) => {
+      const bId = (r.employees as any)?.branch_id;
+      return bId === target;
+    });
+  }, [requests, targetBranch, userBranchId, isSuperAdmin, isHrDivisionScope]);
 
   // Scoped employees
   const scopedEmployees = useMemo(() => {
-    const targetBranch = effectiveBranchId || (isBranchAdmin ? userBranchId : null);
-    if (!targetBranch) return employees;
-    return employees.filter((e: any) => e.branch_id === targetBranch);
-  }, [employees, effectiveBranchId, isBranchAdmin, userBranchId]);
+    if (isSuperAdmin || isHrDivisionScope) {
+      return employees;
+    }
+    const target = targetBranch || userBranchId;
+    if (!target) return [];
+    return employees.filter((e: any) => e.branch_id === target);
+  }, [employees, targetBranch, userBranchId, isSuperAdmin, isHrDivisionScope]);
 
   // Handle URL highlight param
   useEffect(() => {

@@ -6,8 +6,26 @@ import { toast } from "@/components/Toast";
 import type { OnboardingHire, ChecklistTask, StaffMember } from "../types";
 import { matchDocAndTask } from "../checklistUtils";
 
+import { startOnboardingForCandidate, startOnboardingForEmployee } from "@/lib/onboarding";
+
 export function useChecklistData() {
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
+  const {
+    isSuperAdmin,
+    isBranchAdmin,
+    isHrDivision,
+    effectiveBranchId,
+    effectiveBranchName,
+    userBranchId,
+    userBranchName,
+    targetBranch,
+    isPartnerBranchBlocked,
+  } = useBranchScope();
+
+  const isHrDivisionScope = Boolean(
+    isHrDivision ||
+    /hr\s*division|human\s*resource/i.test(effectiveBranchName || "") ||
+    /hr\s*division|human\s*resource/i.test(userBranchName || "")
+  );
 
   const [searchParams, setSearchParams] = useSearchParams();
   const targetHireParam = searchParams.get("hire") || searchParams.get("request_id") || searchParams.get("highlight");
@@ -19,7 +37,7 @@ export function useChecklistData() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if (isPartnerBranchBlocked || (!isSuperAdmin && !isHrDivisionScope && !targetBranch)) {
       setHires([]);
       setTasks([]);
       setStaff([]);
@@ -29,10 +47,22 @@ export function useChecklistData() {
     }
 
     try {
+      let currentHr: any[] = [];
+      let staffQuery = supabase
+        .from("employees")
+        .select("id, first_name, last_name, department, role, avatar_url, branch_id")
+        .eq("status", "active")
+        .is("deleted_at", null)
+        .order("first_name");
+
+      if (!isSuperAdmin && !isHrDivisionScope && targetBranch) {
+        staffQuery = staffQuery.eq("branch_id", targetBranch);
+      }
+
       const [{ data: hr }, { data: tk }, { data: st }, { data: docs }] = await Promise.all([
         supabase
           .from("onboarding_requests")
-          .select("*, employees(id, first_name, last_name, role, department, avatar_url, branch_id, branches(name), candidate_code, candidate_id, location, resume_url, resume_name, skills, languages, education, work_experience)")
+          .select("*, employees(id, first_name, last_name, email, role, department, avatar_url, branch_id, branches(name), candidate_code, candidate_id, location, resume_url, resume_name, skills, languages, education, work_experience)")
           .is("deleted_at", null)
           .order("created_at", { ascending: false }),
         supabase
@@ -40,20 +70,16 @@ export function useChecklistData() {
           .select("id, onboarding_request_id, task_name, description, category, assigned_to, assigned_to_role, due_date, completed, completed_at, completed_by, priority, sort_order")
           .is("deleted_at", null)
           .order("sort_order", { ascending: true }),
-        supabase
-          .from("employees")
-          .select("id, first_name, last_name, department, role, avatar_url, branch_id")
-          .eq("status", "active")
-          .eq("branch_id", targetBranch)
-          .is("deleted_at", null)
-          .order("first_name"),
+        staffQuery,
         supabase
           .from("onboarding_documents")
           .select("id, onboarding_request_id, document_name, status")
           .is("deleted_at", null),
       ]);
 
-      const formattedHires = (hr || [])
+      currentHr = hr || [];
+
+      const formattedHires = currentHr
         .map((h: any) => ({
           ...h,
           employees: h.employees
@@ -65,7 +91,12 @@ export function useChecklistData() {
               }
             : null,
         }))
-        .filter((h: any) => h.employees?.branch_id === targetBranch) as OnboardingHire[];
+        .filter((h: any) => {
+          if (isSuperAdmin || isHrDivisionScope) {
+            return true;
+          }
+          return h.employees?.branch_id === targetBranch;
+        }) as OnboardingHire[];
 
       // Keep checklist tasks synced with onboarding documents status retroactively
       const syncedTasks = (tk || []).map((t: any) => {
@@ -75,16 +106,6 @@ export function useChecklistData() {
         if (matchingDoc) {
           const docCompleted = matchingDoc.status === "complete";
           if (t.completed !== docCompleted) {
-            // Trigger background database update to keep them in sync
-            supabase
-              .from("onboarding_checklist_tasks")
-              .update({
-                completed: docCompleted,
-                completed_at: docCompleted ? new Date().toISOString() : null,
-                completed_by: docCompleted ? "Auto Sync" : null,
-              })
-              .eq("id", t.id)
-              .then();
             return {
               ...t,
               completed: docCompleted,
@@ -125,15 +146,15 @@ export function useChecklistData() {
     } finally {
       setLoading(false);
     }
-  }, [targetHireParam, isPartnerBranchBlocked, targetBranch]);
+  }, [targetHireParam, isPartnerBranchBlocked, targetBranch, isSuperAdmin]);
 
   useEffect(() => {
-    loadData();
+    loadData(false);
     const ch = supabase
       .channel("onboarding-checklist-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_checklist_tasks" }, () => loadData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_documents" }, () => loadData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_requests" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_checklist_tasks" }, () => loadData(true))
+      .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_documents" }, () => loadData(true))
+      .on("postgres_changes", { event: "*", schema: "public", table: "onboarding_requests" }, () => loadData(true))
       .subscribe();
 
     return () => {

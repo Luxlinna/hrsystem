@@ -81,11 +81,16 @@ export const PendingBookingsQueue = memo(function PendingBookingsQueue({
                     </span>
                     <FloorBadge floor={roomFloor} size="sm" isVIP={isVIP} />
                   </div>
-                  <p className="text-xs text-gray-600 font-medium mt-1 flex items-center gap-1.5">
+                  <p className="text-xs text-gray-600 font-medium mt-1 flex items-center gap-1.5 flex-wrap">
                     <i className="ri-door-open-line text-gray-400" />
                     <strong>{room?.name || "Meeting Room"}</strong>
                     <span className="text-gray-300">&bull;</span>
                     <span>Max {room?.capacity || "—"} ppl</span>
+                    {room?.branch_name && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100/80 text-amber-900 border border-amber-200 ml-1">
+                        {room.branch_name}
+                      </span>
+                    )}
                   </p>
                 </div>
 

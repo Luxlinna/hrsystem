@@ -4,6 +4,7 @@ import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { uploadFileToR2 } from "@/lib/r2-storage";
+import { startOnboardingForCandidate } from "@/lib/onboarding";
 import type { Candidate, Job, Interview } from "../types";
 
 interface UseHireActionsProps {
@@ -130,12 +131,17 @@ export function useHireActions({
     try {
       const { error } = await supabase.from("candidates").update({ stage }).eq("id", candidateId);
       if (error) throw error;
-      toast("Stage Updated", `Candidate moved to ${stage}.`, "success");
+      if (stage === "hired") {
+        await startOnboardingForCandidate(candidateId, actorName);
+        toast("Enrolled in Onboarding", "Candidate moved to Hired and enrolled in Onboarding pipeline.", "success");
+      } else {
+        toast("Stage Updated", `Candidate moved to ${stage}.`, "success");
+      }
       await loadData();
     } catch (err: any) {
       toast("Error", err.message || "Failed to update stage.", "error");
     }
-  }, [loadData]);
+  }, [loadData, actorName]);
 
   const rateCandidate = useCallback(async (candidateId: string, rating: number) => {
     try {
