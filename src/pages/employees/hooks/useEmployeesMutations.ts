@@ -4,6 +4,7 @@ import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { sendUserInvite, createPhoneUserAccount } from "@/pages/admin/api";
+import { normalizePhone } from "@/lib/phoneUtils";
 import { INITIAL_EMPLOYEE_FORM } from "../constants";
 import type { Employee, EmployeeFormState, AppRole } from "../types";
 
@@ -155,6 +156,55 @@ export function useEmployeesMutations({
           cleanPhone = null;
         }
 
+        // Check for duplicate phone number
+        if (cleanPhone) {
+          const normPhone = normalizePhone(cleanPhone);
+          if (normPhone && normPhone.length >= 6) {
+            const { data: existingPhoneRows } = await supabase
+              .from("employees")
+              .select("id, first_name, last_name, phone")
+              .is("deleted_at", null)
+              .or(`phone.ilike.%${normPhone}%,phone.eq.${cleanPhone}`)
+              .limit(10);
+
+            const dupPhoneEmp = (existingPhoneRows || []).find((e) => {
+              if (!e.phone) return false;
+              return normalizePhone(e.phone) === normPhone;
+            });
+
+            if (dupPhoneEmp) {
+              toast(
+                "Phone Number Already Registered",
+                `An employee (${dupPhoneEmp.first_name} ${dupPhoneEmp.last_name}) already has the phone number "${cleanPhone}". Duplicate phone numbers are not allowed.`,
+                "error"
+              );
+              setSubmitting(false);
+              return;
+            }
+          }
+        }
+
+        // Check for duplicate email
+        if (cleanEmail) {
+          const { data: existingEmailRows } = await supabase
+            .from("employees")
+            .select("id, first_name, last_name, email")
+            .is("deleted_at", null)
+            .ilike("email", cleanEmail)
+            .limit(1);
+
+          if (existingEmailRows && existingEmailRows.length > 0) {
+            const dupEmailEmp = existingEmailRows[0];
+            toast(
+              "Email Already Registered",
+              `An employee (${dupEmailEmp.first_name} ${dupEmailEmp.last_name}) already has the email "${cleanEmail}". Duplicate emails are not allowed.`,
+              "error"
+            );
+            setSubmitting(false);
+            return;
+          }
+        }
+
         const payload = {
           first_name: form.first_name.trim(),
           last_name: form.last_name.trim(),
@@ -196,7 +246,13 @@ export function useEmployeesMutations({
         setForm(INITIAL_EMPLOYEE_FORM);
         loadEmployees();
       } catch (err: any) {
-        if ((err?.message?.includes("employees_email_unique_idx") || err?.code === "23505") && form.email) {
+        if (err?.message?.includes("employees_phone_unique_idx") || (err?.code === "23505" && (err?.message?.includes("phone") || form.phone))) {
+          toast(
+            "Phone Number Already Registered",
+            `An employee with phone number "${form.phone}" already exists in the system. Duplicate phone numbers are not allowed.`,
+            "error"
+          );
+        } else if (err?.message?.includes("employees_email_unique_idx") || (err?.code === "23505" && form.email)) {
           toast("Email Already Registered", `An employee with the email "${form.email}" already exists in the system. Please use a different email address.`, "error");
         } else {
           toast("Error", err.message || "Failed to add employee.", "error");

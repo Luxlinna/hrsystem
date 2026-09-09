@@ -10,10 +10,11 @@ import { supabase } from "@/lib/supabase";
 // which does that check for you.
 export async function sendTelegramMessage(
   message: string,
-  button?: { text: string; url: string }
+  button?: { text: string; url: string },
+  chatId?: string
 ): Promise<void> {
   const { data, error } = await supabase.functions.invoke("send-telegram-notification", {
-    body: { message, buttonText: button?.text, buttonUrl: button?.url },
+    body: { message, buttonText: button?.text, buttonUrl: button?.url, chat_id: chatId },
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
@@ -33,10 +34,14 @@ export async function isTelegramNotifyEnabled(): Promise<boolean> {
 // in an HR workflow that already succeeded). Call it without awaiting —
 // same fire-and-forget pattern as the in-app `notify()` calls it sits next
 // to at each call site.
-export async function notifyTelegramEvent(message: string, button?: { text: string; url: string }): Promise<void> {
+export async function notifyTelegramEvent(
+  message: string,
+  button?: { text: string; url: string },
+  chatId?: string
+): Promise<void> {
   try {
     if (!(await isTelegramNotifyEnabled())) return;
-    await sendTelegramMessage(message, button);
+    await sendTelegramMessage(message, button, chatId);
   } catch (err) {
     console.warn("Telegram notify failed:", err);
   }

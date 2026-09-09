@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { notifyTelegramEvent, escapeTelegramHtml } from "./telegramNotify";
 
 export type NotificationType = "info" | "warning" | "success" | "error";
 export type NotificationSource =
@@ -31,6 +32,7 @@ export interface NotifyInput {
   recipientUserId?: string | null;
   branchId?: string | null;
   branch_id?: string | null;
+  skipTelegram?: boolean;
 }
 
 const VALID_TYPES: string[] = ["info", "warning", "success", "error"];
@@ -90,6 +92,12 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
     const { error } = await supabase.from("notifications").insert(payload);
 
     if (!error) {
+      if (!entry.skipTelegram) {
+        const icon = entry.type === "error" ? "🚨" : entry.type === "warning" ? "⚠️" : entry.type === "success" ? "✅" : "📢";
+        notifyTelegramEvent(
+          `${icon} <b>${escapeTelegramHtml(entry.title)}</b>\n\n${escapeTelegramHtml(entry.message)}`
+        ).catch(() => {});
+      }
       return true;
     }
 
@@ -105,6 +113,13 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
     if (fallbackRes.error) {
       console.error("Fallback notification also failed:", fallbackRes.error.message);
       return false;
+    }
+
+    if (!entry.skipTelegram) {
+      const icon = entry.type === "error" ? "🚨" : entry.type === "warning" ? "⚠️" : entry.type === "success" ? "✅" : "📢";
+      notifyTelegramEvent(
+        `${icon} <b>${escapeTelegramHtml(entry.title)}</b>\n\n${escapeTelegramHtml(entry.message)}`
+      ).catch(() => {});
     }
 
     return true;

@@ -5,6 +5,7 @@ import { uploadFile } from "@/lib/storage";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import { logActivity } from "@/lib/audit";
+import { normalizePhone } from "@/lib/phoneUtils";
 import type { Employee, ReportEntry } from "../types";
 
 export function useEmployeeProfile(id: string | undefined) {
@@ -150,13 +151,68 @@ export function useEmployeeProfile(id: string | undefined) {
   const saveChanges = useCallback(async () => {
     if (!id || !employee || !canEdit) return;
     setSaving(true);
+
+    const cleanEmail = form.email?.trim() ? form.email.trim().toLowerCase() : null;
+    const cleanPhone = form.phone?.trim() || null;
+
+    // Check duplicate phone
+    if (cleanPhone) {
+      const normPhone = normalizePhone(cleanPhone);
+      if (normPhone && normPhone.length >= 6) {
+        const { data: existingPhoneRows } = await supabase
+          .from("employees")
+          .select("id, first_name, last_name, phone")
+          .neq("id", id)
+          .is("deleted_at", null)
+          .or(`phone.ilike.%${normPhone}%,phone.eq.${cleanPhone}`)
+          .limit(10);
+
+        const dupPhoneEmp = (existingPhoneRows || []).find((e) => {
+          if (!e.phone) return false;
+          return normalizePhone(e.phone) === normPhone;
+        });
+
+        if (dupPhoneEmp) {
+          toast(
+            "Phone Number Already Registered",
+            `An employee (${dupPhoneEmp.first_name} ${dupPhoneEmp.last_name}) already has the phone number "${cleanPhone}". Duplicate phone numbers are not allowed.`,
+            "error"
+          );
+          setSaving(false);
+          return;
+        }
+      }
+    }
+
+    // Check duplicate email
+    if (cleanEmail) {
+      const { data: existingEmailRows } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, email")
+        .neq("id", id)
+        .is("deleted_at", null)
+        .ilike("email", cleanEmail)
+        .limit(1);
+
+      if (existingEmailRows && existingEmailRows.length > 0) {
+        const dupEmailEmp = existingEmailRows[0];
+        toast(
+          "Email Already Registered",
+          `An employee (${dupEmailEmp.first_name} ${dupEmailEmp.last_name}) already has the email "${cleanEmail}". Duplicate emails are not allowed.`,
+          "error"
+        );
+        setSaving(false);
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("employees")
       .update({
         first_name: form.first_name,
         last_name: form.last_name,
-        email: form.email?.trim() ? form.email.trim().toLowerCase() : null,
-        phone: form.phone,
+        email: cleanEmail,
+        phone: cleanPhone,
         role: form.role,
         department: form.department,
         branch_id: form.branch_id || null,
@@ -168,7 +224,17 @@ export function useEmployeeProfile(id: string | undefined) {
       .eq("id", id);
 
     if (error) {
-      toast("Error", error.message, "error");
+      if (error?.message?.includes("employees_phone_unique_idx") || (error?.code === "23505" && (error?.message?.includes("phone") || form.phone))) {
+        toast(
+          "Phone Number Already Registered",
+          `An employee with phone number "${form.phone}" already exists in the system. Duplicate phone numbers are not allowed.`,
+          "error"
+        );
+      } else if (error?.message?.includes("employees_email_unique_idx") || (error?.code === "23505" && form.email)) {
+        toast("Email Already Registered", `An employee with the email "${form.email}" already exists in the system. Please use a different email address.`, "error");
+      } else {
+        toast("Error", error.message, "error");
+      }
     } else {
       toast("Saved", "Employee profile updated successfully", "success");
       setEditing(false);

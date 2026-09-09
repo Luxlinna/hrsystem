@@ -54,10 +54,21 @@ Deno.serve(async (req: Request) => {
       webhookStatus = await setRes.json();
     }
 
+    let chatInfo = null;
+    const checkChat = url.searchParams.get("check_chat");
+    if (checkChat) {
+      const cRes = await fetch(`https://api.telegram.org/bot${botToken}/getChat?chat_id=${checkChat}`);
+      chatInfo = await cRes.json();
+    }
+
+    const envChatId = Deno.env.get("TELEGRAM_CHAT_ID") || null;
+
     return json({
       ok: true,
       bot: meData?.result,
       webhook_setup: webhookStatus,
+      env_chat_id: envChatId,
+      chat_info: chatInfo,
     });
   }
 
@@ -69,24 +80,45 @@ Deno.serve(async (req: Request) => {
     const chatMember = update?.my_chat_member;
     if (chatMember && chatMember.chat) {
       const gChatId = chatMember.chat.id;
+      const gTitle = chatMember.chat.title || "";
       if (typeof gChatId === "number" && gChatId < 0) {
-        console.log(`[telegram-bot] Bot added/updated in group: ${gChatId}`);
-        await admin.from("system_settings").upsert({
-          key: "telegram_group_chat_id",
-          value: String(gChatId),
-          type: "text",
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "key" });
+        console.log(`[telegram-bot] Bot added/updated in group: ${gChatId} (${gTitle})`);
+        const lowerTitle = gTitle.toLowerCase();
+        const isOtp = lowerTitle.includes("otp");
 
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: gChatId,
-            text: `🎉 <b>HRM_OPS Connected!</b>\n\nThis group has been registered. Login verification codes and HR event notifications will now be sent here.\n\n<b>Group ID:</b> <code>${gChatId}</code>`,
-            parse_mode: "HTML",
-          }),
-        });
+        if (isOtp) {
+          await admin.from("system_settings").upsert([
+            { key: "telegram_otp_chat_id", value: String(gChatId), type: "text", updated_at: new Date().toISOString() },
+            { key: "telegram_group_chat_id", value: String(gChatId), type: "text", updated_at: new Date().toISOString() },
+          ], { onConflict: "key" });
+
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: gChatId,
+              text: `🔐 <b>HRMsystem OTP Channel Connected!</b>\n\n<b>Group:</b> ${gTitle}\n<b>Group ID:</b> <code>${gChatId}</code>\n\n✅ <b>Only</b> login OTP verification codes will be sent to this group.`,
+              parse_mode: "HTML",
+            }),
+          });
+        } else {
+          await admin.from("system_settings").upsert({
+            key: "telegram_notifications_chat_id",
+            value: String(gChatId),
+            type: "text",
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "key" });
+
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: gChatId,
+              text: `📢 <b>HRM_OPS Action Notifications Connected!</b>\n\n<b>Group:</b> ${gTitle}\n<b>Group ID:</b> <code>${gChatId}</code>\n\n✅ All system & user action notifications (attendance, leave requests, employee updates, meeting rooms, etc.) will be sent to this group.\n\n<i>To switch channel role: type /set_otp or /set_notifications</i>`,
+              parse_mode: "HTML",
+            }),
+          });
+        }
 
         return json({ ok: true });
       }
@@ -102,22 +134,61 @@ Deno.serve(async (req: Request) => {
 
     // Case B: Any message sent in a group where the bot is a member
     if (isGroup) {
-      console.log(`[telegram-bot] Received group message in: ${chatId}`);
-      // Register or update this group's chat ID in system_settings
-      await admin.from("system_settings").upsert({
-        key: "telegram_group_chat_id",
-        value: String(chatId),
-        type: "text",
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "key" });
+      const gTitle = message.chat?.title || "";
+      const text = (message.text || "").trim();
+      const lowerText = text.toLowerCase();
+      const lowerTitle = gTitle.toLowerCase();
 
-      if (message.text && (message.text.includes("/start") || message.text.includes("/connect") || message.text.includes("/id"))) {
+      console.log(`[telegram-bot] Received group message in: ${chatId} (${gTitle}): ${text}`);
+
+      const wantsOtp = lowerText.startsWith("/set_otp") || lowerText.startsWith("/otp");
+      const wantsNotif = lowerText.startsWith("/set_notif") || lowerText.startsWith("/notif");
+
+      if (wantsOtp || (!wantsNotif && lowerTitle.includes("otp"))) {
+        await admin.from("system_settings").upsert([
+          { key: "telegram_otp_chat_id", value: String(chatId), type: "text", updated_at: new Date().toISOString() },
+          { key: "telegram_group_chat_id", value: String(chatId), type: "text", updated_at: new Date().toISOString() },
+        ], { onConflict: "key" });
+
         await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: `✅ <b>HRM_OPS Group Active!</b>\n\nThis group is connected to HRM_OPS.\n<b>Group Chat ID:</b> <code>${chatId}</code>\n\nLogin OTP codes will be posted here automatically.`,
+            text: `🔐 <b>HRMsystem OTP Channel Active!</b>\n\n<b>Group:</b> ${gTitle || "This group"}\n<b>Group ID:</b> <code>${chatId}</code>\n\n✅ <b>Only</b> login OTP verification codes will be delivered here.`,
+            parse_mode: "HTML",
+          }),
+        });
+        return json({ ok: true });
+      }
+
+      if (wantsNotif || lowerTitle.includes("notif")) {
+        await admin.from("system_settings").upsert({
+          key: "telegram_notifications_chat_id",
+          value: String(chatId),
+          type: "text",
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "key" });
+
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `📢 <b>HRM_OPS Notifications Channel Active!</b>\n\n<b>Group:</b> ${gTitle || "This group"}\n<b>Group ID:</b> <code>${chatId}</code>\n\n✅ All system & user action notifications (attendance, leave, employee updates, meeting rooms, etc.) will be delivered here.`,
+            parse_mode: "HTML",
+          }),
+        });
+        return json({ ok: true });
+      }
+
+      if (lowerText.includes("/id") || lowerText.includes("/status") || lowerText.includes("/start") || lowerText.includes("/help")) {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `ℹ️ <b>Group Details</b>\n\n<b>Title:</b> ${gTitle}\n<b>Group ID:</b> <code>${chatId}</code>\n\n<b>Commands:</b>\n• <code>/set_notifications</code> — Send all user action notifications here\n• <code>/set_otp</code> — Send only login OTP codes here`,
             parse_mode: "HTML",
           }),
         });

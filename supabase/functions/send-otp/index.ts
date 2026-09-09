@@ -177,15 +177,23 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // 2. Check for configured Telegram Group ID
-      let groupChatId = Deno.env.get("TELEGRAM_CHAT_ID");
-      const { data: groupSetting } = await admin
+      // 2. Check for configured Telegram Group ID specifically for OTP
+      let groupChatId: string | null = null;
+      const { data: otpSetting } = await admin
         .from("system_settings")
         .select("value")
-        .eq("key", "telegram_group_chat_id")
+        .eq("key", "telegram_otp_chat_id")
         .maybeSingle();
-      if (groupSetting?.value) {
-        groupChatId = groupSetting.value;
+
+      if (otpSetting?.value && otpSetting.value.trim() !== "") {
+        groupChatId = otpSetting.value.trim();
+      } else {
+        const { data: legacySetting } = await admin
+          .from("system_settings")
+          .select("value")
+          .eq("key", "telegram_group_chat_id")
+          .maybeSingle();
+        groupChatId = legacySetting?.value || Deno.env.get("TELEGRAM_CHAT_ID") || null;
       }
 
       let sentCount = 0;

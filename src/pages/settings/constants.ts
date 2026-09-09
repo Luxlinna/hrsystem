@@ -45,6 +45,8 @@ export const keyLabels: Record<string, string> = {
   attendance_notify_scope:
     "Attendance Check-in/Check-out Notification Scope",
   telegram_notify_enabled: "Telegram Group Notifications",
+  telegram_notifications_chat_id: "Action Notifications Telegram Group ID",
+  telegram_otp_chat_id: "OTP Telegram Group ID",
 };
 
 export const notificationKeys = [

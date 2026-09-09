@@ -22,27 +22,57 @@ export function NotificationsSettings({
   saving,
   edited,
 }: NotificationsSettingsProps) {
-  const [testingTelegram, setTestingTelegram] = useState(false);
+  const [testingNotifTelegram, setTestingNotifTelegram] = useState(false);
+  const [testingOtpTelegram, setTestingOtpTelegram] = useState(false);
 
-  const handleTestTelegram = async () => {
-    setTestingTelegram(true);
+  const handleTestNotifications = async () => {
+    setTestingNotifTelegram(true);
     try {
+      const chatId = getVal("telegram_notifications_chat_id") || undefined;
       await sendTelegramMessage(
-        "🧪 <b>Test message</b>\nTelegram notifications are connected to HR Nexus."
+        "📢 <b>HRM_OPS Notifications Test</b>\n\nUser action notifications (attendance, leave requests, employee updates, meeting rooms, etc.) are connected successfully!",
+        undefined,
+        chatId
       );
-      toast("Sent", "Test message posted to the Telegram group.", "success");
+      toast("Sent", "Test notification posted to the Notifications Telegram group.", "success");
     } catch (err: any) {
       toast(
         "Error",
-        err?.message || "Failed to send Telegram test message.",
+        err?.message || "Failed to send Telegram test message. Make sure the bot is in the group and /set_notifications has been run.",
         "error"
       );
     } finally {
-      setTestingTelegram(false);
+      setTestingNotifTelegram(false);
     }
   };
 
-  const notifKeys = notificationKeys.map((n) => n.key);
+  const handleTestOtp = async () => {
+    setTestingOtpTelegram(true);
+    try {
+      const chatId = getVal("telegram_otp_chat_id") || "-5356924617";
+      await sendTelegramMessage(
+        "🔐 <b>HRMsystem OTP Test</b>\n\nThis group is configured exclusively for login OTP codes.\nYour test verification code is: <code>123456</code>",
+        undefined,
+        chatId
+      );
+      toast("Sent", "Test OTP posted to the OTP Telegram group.", "success");
+    } catch (err: any) {
+      toast(
+        "Error",
+        err?.message || "Failed to send test OTP to Telegram group.",
+        "error"
+      );
+    } finally {
+      setTestingOtpTelegram(false);
+    }
+  };
+
+  const notifKeys = [
+    ...notificationKeys.map((n) => n.key),
+    "telegram_notify_enabled",
+    "telegram_notifications_chat_id",
+    "telegram_otp_chat_id",
+  ];
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -139,41 +169,109 @@ export function NotificationsSettings({
         </div>
       </div>
 
-      {/* Telegram notifications */}
-      <div className="border border-gray-100 dark:border-slate-800 rounded-xl p-5 dark:bg-slate-900/60">
-        <label className="text-[13px] font-semibold text-gray-700 dark:text-slate-200">
-          Telegram group notifications
-        </label>
-        <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 mb-3">
-          Posts HR events to a Telegram group: attendance exceptions only (late
-          check-in, early checkout — never routine on-time events, regardless of
-          the scope setting above), leave requests and approvals, meeting room
-          bookings, and new announcements. Requires TELEGRAM_BOT_TOKEN and
-          TELEGRAM_CHAT_ID to be set as secrets on the send-telegram-notification
-          Edge Function.
-        </p>
-        <div className="flex items-center gap-3 flex-wrap">
-          <label className="flex items-center gap-1.5 text-[12px] text-gray-600 dark:text-slate-300 cursor-pointer">
+      {/* Telegram channels */}
+      <div className="border border-gray-100 dark:border-slate-800 rounded-xl p-5 dark:bg-slate-900/60 space-y-6">
+        <div>
+          <div className="flex items-center justify-between">
+            <label className="text-[13px] font-semibold text-gray-700 dark:text-slate-200">
+              Telegram Channels & Bot Routing
+            </label>
+            <label className="flex items-center gap-1.5 text-[12px] text-gray-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={getVal("telegram_notify_enabled") === "true"}
+                onChange={(e) =>
+                  updateValue(
+                    "telegram_notify_enabled",
+                    String(e.target.checked)
+                  )
+                }
+                className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
+              />
+              Enable Telegram Integration
+            </label>
+          </div>
+          <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+            Routes system events and login OTP codes to dedicated Telegram groups via @HRM_OPS_bot.
+          </p>
+        </div>
+
+        {/* Channel 1: Action Notifications Group */}
+        <div className="bg-gray-50/80 dark:bg-slate-800/60 rounded-lg p-4 border border-gray-200/80 dark:border-slate-700 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">📢</span>
+              <div>
+                <span className="text-[12px] font-semibold text-gray-800 dark:text-slate-200">
+                  User Actions & System Notifications
+                </span>
+                <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded font-medium">
+                  HRM_OPS_Notifications
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleTestNotifications}
+              disabled={testingNotifTelegram || getVal("telegram_notify_enabled") !== "true"}
+              className="px-3 py-1.5 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[11px] font-semibold rounded-lg transition-colors disabled:opacity-40 cursor-pointer"
+            >
+              {testingNotifTelegram ? "Sending…" : "Send test notification"}
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-500 dark:text-slate-400">
+            Receives all non-OTP actions: employee updates, attendance, leave requests/approvals, onboarding milestones, tasks, and meeting rooms.
+          </p>
+          <div className="flex items-center gap-2">
             <input
-              type="checkbox"
-              checked={getVal("telegram_notify_enabled") === "true"}
-              onChange={(e) =>
-                updateValue(
-                  "telegram_notify_enabled",
-                  String(e.target.checked)
-                )
-              }
-              className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
+              type="text"
+              placeholder="e.g. -1001234567890 (auto-filled when typing in group)"
+              value={getVal("telegram_notifications_chat_id")}
+              onChange={(e) => updateValue("telegram_notifications_chat_id", e.target.value.trim())}
+              className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-[12px] text-gray-900 dark:text-slate-100 font-mono focus:outline-none focus:border-[#253C7D] dark:focus:border-blue-500"
             />
-            Enabled
-          </label>
-          <button
-            onClick={handleTestTelegram}
-            disabled={testingTelegram}
-            className="ml-auto px-4 py-2 border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 text-[12px] font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 whitespace-nowrap cursor-pointer"
-          >
-            {testingTelegram ? "Sending…" : "Send test message"}
-          </button>
+          </div>
+          <p className="text-[10px] text-gray-400 dark:text-slate-500">
+            💡 Quick setup: In your <b className="text-gray-600 dark:text-slate-300">HRM_OPS_Notifications</b> group with @HRM_OPS_bot, type <code className="bg-gray-200 dark:bg-slate-700 px-1 rounded">/set_notifications</code> or send any message to auto-link this group.
+          </p>
+        </div>
+
+        {/* Channel 2: OTP Bot Group */}
+        <div className="bg-gray-50/80 dark:bg-slate-800/60 rounded-lg p-4 border border-gray-200/80 dark:border-slate-700 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🔐</span>
+              <div>
+                <span className="text-[12px] font-semibold text-gray-800 dark:text-slate-200">
+                  Login OTP Verification Codes
+                </span>
+                <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 rounded font-medium">
+                  HRMsystem_OTP_code
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleTestOtp}
+              disabled={testingOtpTelegram}
+              className="px-3 py-1.5 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-[11px] font-semibold rounded-lg transition-colors disabled:opacity-40 cursor-pointer"
+            >
+              {testingOtpTelegram ? "Sending…" : "Send test OTP"}
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-500 dark:text-slate-400">
+            Reserved exclusively for 6-digit phone login OTP codes. Action notifications will never be sent here.
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="-5356924617"
+              value={getVal("telegram_otp_chat_id") || "-5356924617"}
+              onChange={(e) => updateValue("telegram_otp_chat_id", e.target.value.trim())}
+              className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-[12px] text-gray-900 dark:text-slate-100 font-mono focus:outline-none focus:border-[#253C7D] dark:focus:border-blue-500"
+            />
+          </div>
+          <p className="text-[10px] text-gray-400 dark:text-slate-500">
+            💡 Connected to group ID: <code className="bg-gray-200 dark:bg-slate-700 px-1 rounded">{getVal("telegram_otp_chat_id") || "-5356924617"}</code> (HRMsystem_OTP_code). Type <code className="bg-gray-200 dark:bg-slate-700 px-1 rounded">/set_otp</code> in the group anytime to re-verify.
+          </p>
         </div>
       </div>
     </div>

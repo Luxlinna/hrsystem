@@ -22,26 +22,65 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || anonKey;
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
-    const chatId = Deno.env.get("TELEGRAM_CHAT_ID");
 
-    if (!botToken || !chatId) {
+    if (!botToken) {
       return json(
-        { error: "Telegram notifications aren't configured yet (missing TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID)." },
+        { error: "Telegram notifications aren't configured yet (missing TELEGRAM_BOT_TOKEN)." },
         501
       );
     }
 
-    // Require a signed-in caller (same pattern as send-push-notification) —
-    // this endpoint posts into a shared group, so it shouldn't be callable
-    // anonymously even though the payload itself isn't sensitive.
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) return json({ error: "Not authenticated" }, 401);
+    const admin = createClient(supabaseUrl, serviceRoleKey);
 
-    const { message, buttonText, buttonUrl } = await req.json();
+    // Look up action notifications group chat ID
+    let targetChatId: string | null = null;
+    const { data: notifSetting } = await admin
+      .from("system_settings")
+      .select("value")
+      .eq("key", "telegram_notifications_chat_id")
+      .maybeSingle();
+
+    if (notifSetting?.value && notifSetting.value.trim() !== "") {
+      targetChatId = notifSetting.value.trim();
+    } else {
+      // Fallback to legacy group or secret
+      const { data: legacySetting } = await admin
+        .from("system_settings")
+        .select("value")
+        .eq("key", "telegram_group_chat_id")
+        .maybeSingle();
+      targetChatId = legacySetting?.value || Deno.env.get("TELEGRAM_CHAT_ID") || null;
+    }
+
+    // Require a signed-in caller or service role key
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    let isAuthorized = false;
+
+    const sKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SECRET_KEY");
+    if (sKey && token === sKey) {
+      isAuthorized = true;
+    } else {
+      const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (!userErr && userData?.user) isAuthorized = true;
+    }
+
+    if (!isAuthorized) return json({ error: "Not authenticated" }, 401);
+
+    const body = await req.json().catch(() => ({}));
+    const { message, buttonText, buttonUrl, chat_id } = body;
     if (!message || typeof message !== "string") return json({ error: "Missing message" }, 400);
+
+    const resolvedChatId = chat_id ? String(chat_id) : targetChatId;
+    if (!resolvedChatId) {
+      return json(
+        { error: "Action notifications Telegram group is not configured yet. Please add @HRM_OPS_bot to HRM_OPS_Notifications and send /set_notifications in that group." },
+        400
+      );
+    }
 
     // Optional inline "open in app" button — only attached when the caller
     // supplies both a label and an http(s) URL.
@@ -54,7 +93,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: chatId,
+        chat_id: resolvedChatId,
         text: message,
         parse_mode: "HTML",
         disable_web_page_preview: true,

@@ -220,6 +220,21 @@ Deno.serve(async (req) => {
 
     // Link in employees table if employee_id provided or matching employee found
     if (employee_id) {
+      const { data: duplicatePhoneEmp } = await admin
+        .from("employees")
+        .select("id, first_name, last_name, phone")
+        .neq("id", employee_id)
+        .is("deleted_at", null)
+        .or(`phone.eq.${cleanDigits},phone.eq.${phone}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (duplicatePhoneEmp) {
+        return json({
+          error: `Phone number ${phone} is already registered to another employee (${duplicatePhoneEmp.first_name} ${duplicatePhoneEmp.last_name}). Duplicate phone numbers are not allowed.`,
+        }, 400);
+      }
+
       const { data: currentEmp } = await admin
         .from("employees")
         .select("id, email, phone")
