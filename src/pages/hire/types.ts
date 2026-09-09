@@ -67,9 +67,21 @@ export type HireTab = "requests" | "jobs" | "candidates" | "interviews" | "pipel
 
 export interface HiringRequest {
   id: string;
+  requisition_id?: string;
   title: string;
   department: string;
+  division?: string | null;
+  company?: string | null;
+  business_unit?: string | null;
   branch_id: string | null;
+  position_type?: "new" | "replacement";
+  replacement_for_id?: string | null;
+  replacement_for_name?: string | null;
+  location?: string | null;
+  target_joining_date?: string | null;
+  job_description?: string | null;
+  hiring_manager_id?: string | null;
+  hiring_manager_name?: string | null;
   requested_by_id?: string | null;
   requested_by_name: string;
   requested_by_email?: string | null;
@@ -101,7 +113,18 @@ export interface HiringRequest {
 export interface NewHiringRequestFormState {
   title: string;
   department: string;
+  division: string;
+  company: string;
+  business_unit: string;
   branch_id: string;
+  position_type: "new" | "replacement";
+  replacement_for_id: string;
+  replacement_for_name: string;
+  location: string;
+  target_joining_date: string;
+  job_description: string;
+  hiring_manager_id: string;
+  hiring_manager_name: string;
   headcount: number;
   employment_type: string;
   salary_min: string;

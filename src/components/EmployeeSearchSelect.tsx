@@ -7,6 +7,7 @@ export interface SearchableEmployee {
   department?: string;
   role?: string;
   avatar_url?: string | null;
+  branch_id?: string | null;
 }
 
 interface Props {

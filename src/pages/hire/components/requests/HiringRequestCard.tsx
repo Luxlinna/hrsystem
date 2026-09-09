@@ -131,39 +131,92 @@ export const HiringRequestCard = memo(function HiringRequestCard({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="space-y-2 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
+            {r.requisition_id && (
+              <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-black bg-[#1B2B5A] text-white shadow-2xs tracking-wide">
+                {r.requisition_id}
+              </span>
+            )}
             <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase border ${getUrgencyBadge(r.urgency)}`}>
               {r.urgency}
             </span>
             {getStatusBadge(r.status)}
+            {r.position_type === "replacement" ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                <i className="ri-user-shared-line text-xs" /> Replacement{r.replacement_for_name ? `: ${r.replacement_for_name}` : ""}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                <i className="ri-sparkling-fill text-xs text-blue-500" /> New Position
+              </span>
+            )}
             <span className="text-xs text-gray-400 font-medium">
               Requested {formatDateTime(r.created_at)}
             </span>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 flex-wrap">
               {r.title}
               <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-extrabold">
                 {r.headcount} {r.headcount > 1 ? "Openings" : "Opening"}
               </span>
+              <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-semibold capitalize">
+                {r.employment_type}
+              </span>
             </h3>
-            <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 font-medium flex-wrap">
+
+            {/* Organization Master & Location */}
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500 font-medium flex-wrap">
+              {(r.company || r.business_unit) && (
+                <span className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 text-slate-700 font-semibold">
+                  <i className="ri-building-2-line text-slate-400" />
+                  {[r.company, r.business_unit].filter(Boolean).join(" · ")}
+                </span>
+              )}
+              {r.division && (
+                <span className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 text-slate-700">
+                  <i className="ri-node-tree text-slate-400" />
+                  {r.division}
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <i className="ri-building-line text-gray-400" />
                 {r.department}
               </span>
               <span className="flex items-center gap-1">
                 <i className="ri-map-pin-line text-gray-400" />
-                {r.branches?.name || "Headquarters"}
+                {r.location || r.branches?.name || "Headquarters"}
               </span>
-              <span className="flex items-center gap-1">
-                <i className="ri-user-follow-line text-gray-400" />
-                Requester: <strong className="text-gray-700">{r.requested_by_name}</strong>
-              </span>
+              {r.target_joining_date && (
+                <span className="flex items-center gap-1 text-indigo-700 font-semibold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
+                  <i className="ri-calendar-check-line text-indigo-500" />
+                  Target Joining: {new Date(r.target_joining_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              )}
               {(r.salary_min || r.salary_max) && (
-                <span className="flex items-center gap-1 text-emerald-700 font-bold">
+                <span className="flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                   <i className="ri-money-dollar-circle-line" />${Number(r.salary_min || 0).toLocaleString()} - $
                   {Number(r.salary_max || 0).toLocaleString()}
+                </span>
+              )}
+            </div>
+
+            {/* Named Stakeholders */}
+            <div className="flex items-center gap-4 mt-1.5 text-xs text-gray-600 flex-wrap">
+              <span className="flex items-center gap-1">
+                <i className="ri-user-follow-line text-gray-400" />
+                Requester: <strong className="text-gray-800">{r.requested_by_name}</strong>
+              </span>
+              {r.hiring_manager_name && (
+                <span className="flex items-center gap-1">
+                  <i className="ri-user-settings-line text-gray-400" />
+                  Hiring Manager: <strong className="text-gray-800">{r.hiring_manager_name}</strong>
+                </span>
+              )}
+              {r.hr_assigned_to_name && (
+                <span className="flex items-center gap-1">
+                  <i className="ri-user-received-line text-slate-500" />
+                  Assigned Recruiter: <strong className="text-gray-800">{r.hr_assigned_to_name}</strong>
                 </span>
               )}
             </div>
@@ -174,45 +227,42 @@ export const HiringRequestCard = memo(function HiringRequestCard({
             {r.branch_approved_by && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-medium">
                 <i className="ri-checkbox-circle-line text-amber-600" />
-                Branch Endorsed: <strong>{r.branch_approved_by}</strong>
+                CEO/Director Endorsed: <strong>{r.branch_approved_by}</strong>
                 {r.branch_approved_at && ` · ${formatDateTime(r.branch_approved_at)}`}
               </span>
             )}
             {r.hr_reviewed_by && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 font-medium">
                 <i className="ri-user-star-line text-sky-600" />
-                HR Manager Reviewed: <strong>{r.hr_reviewed_by}</strong>
+                HR Reviewed: <strong>{r.hr_reviewed_by}</strong>
                 {r.hr_reviewed_at && ` · ${formatDateTime(r.hr_reviewed_at)}`}
-              </span>
-            )}
-            {r.hr_admin_approved_by && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 text-purple-800 border border-purple-200 font-medium">
-                <i className="ri-admin-line text-purple-600" />
-                Admin Manager Approved: <strong>{r.hr_admin_approved_by}</strong>
-                {r.hr_admin_approved_at && ` · ${formatDateTime(r.hr_admin_approved_at)}`}
               </span>
             )}
             {r.chairman_approved_by && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
                 <i className="ri-vip-crown-line text-emerald-600" />
-                Chairman Authorized: <strong>{r.chairman_approved_by}</strong>
+                Chairwoman Authorized: <strong>{r.chairman_approved_by}</strong>
                 {r.chairman_approved_at && ` · ${formatDateTime(r.chairman_approved_at)}`}
-              </span>
-            )}
-            {r.hr_assigned_to_name && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 font-medium">
-                <i className="ri-user-received-line text-slate-500" />
-                Assigned Officer: <strong>{r.hr_assigned_to_name}</strong>
               </span>
             )}
           </div>
 
-          {r.justification && (
-            <div className="mt-2 p-3 bg-gray-50/80 rounded-2xl border border-gray-100 text-xs text-gray-600">
-              <strong className="text-gray-700 font-bold block mb-0.5">Manager Justification:</strong>
-              {r.justification}
-            </div>
-          )}
+          {/* Reason for Hiring & Job Description */}
+          <div className="space-y-2 mt-2">
+            {r.justification && (
+              <div className="p-3 bg-gray-50/80 rounded-2xl border border-gray-100 text-xs text-gray-600">
+                <strong className="text-gray-700 font-bold block mb-0.5">Reason for Hiring / Business Need:</strong>
+                {r.justification}
+              </div>
+            )}
+
+            {r.job_description && (
+              <div className="p-3 bg-blue-50/40 rounded-2xl border border-blue-100/60 text-xs text-gray-700">
+                <strong className="text-blue-900 font-bold block mb-0.5">Job Description & Key Requirements:</strong>
+                <p className="whitespace-pre-wrap">{r.job_description}</p>
+              </div>
+            )}
+          </div>
 
           {r.status === "rejected" && r.rejection_reason && (
             <div className="mt-2 p-3 bg-rose-50/70 rounded-2xl border border-rose-100 text-xs text-rose-800">

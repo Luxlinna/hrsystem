@@ -67,6 +67,10 @@ interface HireModalsContainerProps {
   submittingRequest: boolean;
   departments: string[];
   isSuperAdmin: boolean;
+  isBranchAdmin?: boolean;
+  userBranchId?: string | null;
+  userBranchName?: string | null;
+  employees?: any[];
   handleCreateRequest: (e: React.FormEvent) => void;
 
   decisionModal: boolean;
@@ -152,9 +156,13 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
         setForm={props.setRequestForm}
         branches={props.branches}
         departments={props.departments}
+        employees={props.employees}
         submitting={props.submittingRequest}
         onSubmit={props.handleCreateRequest}
         isSuperAdmin={props.isSuperAdmin}
+        isBranchAdmin={props.isBranchAdmin}
+        userBranchId={props.userBranchId}
+        userBranchName={props.userBranchName}
       />
 
       <DecisionHiringRequestModal

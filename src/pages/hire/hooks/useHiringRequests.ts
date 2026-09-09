@@ -13,9 +13,11 @@ interface UseHiringRequestsProps {
   actorRole: string;
   actorEmail?: string;
   myEmployeeId?: string;
+  userBranchId?: string | null;
   userBranchName?: string | null;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  isBranchAdmin?: boolean;
   canChairmanApprove?: boolean;
   loadData: () => Promise<void>;
   branches?: Branch[];
@@ -26,9 +28,11 @@ export function useHiringRequests({
   actorRole,
   actorEmail,
   myEmployeeId,
+  userBranchId,
   userBranchName,
   isAdmin = false,
   isSuperAdmin = false,
+  isBranchAdmin: _isBranchAdmin = false,
   canChairmanApprove = false,
   loadData,
   branches = [],
@@ -48,12 +52,18 @@ export function useHiringRequests({
   });
 
   const openCreateRequest = useCallback((defaultBranchId?: string) => {
+    const targetBranchId = defaultBranchId || userBranchId || "";
+    const matchedBranch = branches.find((b) => b.id === targetBranchId);
+    const resolvedBuName = userBranchName || matchedBranch?.name || "";
+
     setRequestForm({
       ...INITIAL_HIRING_REQUEST_FORM,
-      branch_id: defaultBranchId || "",
+      company: "UNI",
+      business_unit: resolvedBuName,
+      branch_id: targetBranchId,
     });
     setShowRequestModal(true);
-  }, []);
+  }, [branches, userBranchId, userBranchName]);
 
   const handleCreateRequest = useCallback(
     async (e: React.FormEvent) => {
@@ -68,12 +78,23 @@ export function useHiringRequests({
         const selectedBranchObj = branches.find((b) => b.id === requestForm.branch_id);
         const resolvedBranchId = selectedBranchObj?.is_site
           ? (selectedBranchObj.branch_id || null)
-          : (requestForm.branch_id || null);
+          : (requestForm.branch_id || userBranchId || null);
 
         const payload = {
           title: requestForm.title.trim(),
           department: requestForm.department.trim(),
+          division: requestForm.division?.trim() || null,
+          company: requestForm.company?.trim() || "UNI",
+          business_unit: requestForm.business_unit?.trim() || userBranchName || selectedBranchObj?.name || null,
           branch_id: resolvedBranchId,
+          position_type: requestForm.position_type || "new",
+          replacement_for_id: requestForm.position_type === "replacement" ? (requestForm.replacement_for_id || null) : null,
+          replacement_for_name: requestForm.position_type === "replacement" ? (requestForm.replacement_for_name || null) : null,
+          location: requestForm.location?.trim() || null,
+          target_joining_date: requestForm.target_joining_date || null,
+          job_description: requestForm.job_description?.trim() || null,
+          hiring_manager_id: requestForm.hiring_manager_id || null,
+          hiring_manager_name: requestForm.hiring_manager_name?.trim() || null,
           requested_by_id: myEmployeeId || null,
           requested_by_name: actorName,
           requested_by_email: actorEmail || null,
@@ -90,13 +111,14 @@ export function useHiringRequests({
         if (error) throw error;
 
         const branchName = data?.branches?.name || selectedBranchObj?.name || "Headquarters";
+        const reqCode = data?.requisition_id ? `[${data.requisition_id}] ` : "";
 
-        toast("Request Submitted", `Hiring request submitted for ${branchName} leadership review.`, "success");
+        toast("Request Submitted", `Requisition ${reqCode}submitted for ${branchName} leadership review.`, "success");
         setShowRequestModal(false);
 
         // 1. In-app notification to Branch Admin / Leadership in their own branch
         await notify({
-          title: `📋 New Requisition: ${payload.title}`,
+          title: `📋 New Requisition: ${reqCode}${payload.title}`,
           message: `${actorName} requested ${payload.headcount} headcount in ${payload.department} (${branchName}). Awaiting branch endorsement.`,
           type: "info",
           source: "hire",
@@ -112,20 +134,23 @@ export function useHiringRequests({
           entityId: data?.id,
           actorName,
           actorRole,
-          description: `Hiring requisition submitted: ${payload.headcount}x ${payload.title} (${payload.department}) for ${branchName}`,
+          description: `Hiring requisition submitted: ${reqCode}${payload.headcount}x ${payload.title} (${payload.department}) for ${branchName}`,
         });
 
-        // 3. Telegram notification targeting Branch Approvers first
+        // 3. Telegram notification
         notifyTelegramEvent(
-          `📋 <b>New Hiring Requisition Submitted</b>\n` +
-          `👤 <b>Requester (Manager):</b> ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)})\n` +
+          `📋 <b>New Hiring Requisition ${escapeTelegramHtml(reqCode)}</b>\n` +
           `💼 <b>Position:</b> ${escapeTelegramHtml(payload.title)} (${payload.headcount} opening${payload.headcount > 1 ? "s" : ""})\n` +
-          `🏢 <b>Department:</b> ${escapeTelegramHtml(payload.department)}\n` +
-          `📍 <b>Branch:</b> ${escapeTelegramHtml(branchName)}\n` +
-          `⚡ <b>Urgency:</b> ${escapeTelegramHtml(payload.urgency.toUpperCase())}\n` +
-          `🎯 <b>Action Required By:</b> Branch Admin / Branch Leadership (${escapeTelegramHtml(branchName)})\n` +
-          `ℹ️ <b>Status:</b> Round 1 — Awaiting Branch Endorsement`,
-          { text: "Review in Branch", url: hrNexusUrl("/hire") }
+          `🏷️ <b>Type:</b> ${payload.position_type === "replacement" ? `Replacement (for ${escapeTelegramHtml(payload.replacement_for_name || "Outgoing Staff")})` : "New Position"}\n` +
+          `🏢 <b>Department:</b> ${escapeTelegramHtml(payload.department)}${payload.division ? ` · ${escapeTelegramHtml(payload.division)}` : ""}\n` +
+          `📍 <b>Location/Branch:</b> ${escapeTelegramHtml(payload.location || branchName)}\n` +
+          `👤 <b>Requester:</b> ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)})\n` +
+          (payload.hiring_manager_name ? `👔 <b>Hiring Manager:</b> ${escapeTelegramHtml(payload.hiring_manager_name)}\n` : "") +
+          (payload.target_joining_date ? `📅 <b>Target Joining Date:</b> ${escapeTelegramHtml(payload.target_joining_date)}\n` : "") +
+          `⚡ <b>Priority:</b> ${escapeTelegramHtml(payload.urgency.toUpperCase())}\n` +
+          `🎯 <b>Next Action:</b> CEO / Director Endorsement\n` +
+          `ℹ️ <b>Status:</b> Round 1 — Awaiting Endorsement`,
+          { text: "Review Requisition", url: hrNexusUrl("/hire") }
         );
 
         await loadData();

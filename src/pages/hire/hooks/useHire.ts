@@ -51,8 +51,9 @@ export function useHire() {
   const filters = useHireFilters(data.jobs, data.candidates, data.interviews, data.branches);
   const requests = useHiringRequests({
     actorName, actorRole, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
+    userBranchId,
     userBranchName,
-    isAdmin, isSuperAdmin,
+    isAdmin, isSuperAdmin, isBranchAdmin,
     canChairmanApprove,
     loadData: data.loadData, branches: data.branches,
   });
@@ -102,11 +103,11 @@ export function useHire() {
   return {
     isPartnerBranchBlocked, userBranchName, userBranchId,
     actorName, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
-    jobs: data.jobs, candidates: data.candidates, interviews: data.interviews, branches: data.branches,
+    jobs: data.jobs, candidates: data.candidates, interviews: data.interviews, branches: data.branches, employees: data.employees,
     hiringRequests: data.hiringRequests, loading: data.loading, loadData: data.loadData,
     tab: filters.tab, setTab: filters.setTab,
     canRequest, canApprove, canBranchApprove, canHrReview, canHrAdminApprove, canChairmanApprove,
-    isHrDivisionBranch, isChairman, isSuperAdmin, isAdmin,
+    isHrDivisionBranch, isChairman, isSuperAdmin, isAdmin, isBranchAdmin,
     jobViewMode: filters.jobViewMode, setJobViewMode: filters.setJobViewMode,
     candidateViewMode: filters.candidateViewMode, setCandidateViewMode: filters.setCandidateViewMode,
     searchQuery: filters.searchQuery, setSearchQuery: filters.setSearchQuery,

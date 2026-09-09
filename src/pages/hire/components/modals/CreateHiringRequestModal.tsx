@@ -1,4 +1,5 @@
 import { memo } from "react";
+import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
 import type { Branch, NewHiringRequestFormState } from "../../types";
 import { CreateHiringRequestFields } from "./CreateHiringRequestFields";
 
@@ -9,9 +10,13 @@ interface CreateHiringRequestModalProps {
   setForm: React.Dispatch<React.SetStateAction<NewHiringRequestFormState>>;
   branches: Branch[];
   departments: string[];
+  employees?: SearchableEmployee[];
   submitting: boolean;
   onSubmit: (e: React.FormEvent) => void;
   isSuperAdmin?: boolean;
+  isBranchAdmin?: boolean;
+  userBranchId?: string | null;
+  userBranchName?: string | null;
 }
 
 export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
@@ -21,23 +26,27 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
   setForm,
   branches,
   departments,
+  employees = [],
   submitting,
   onSubmit,
   isSuperAdmin = true,
+  isBranchAdmin = false,
+  userBranchId,
+  userBranchName,
 }: CreateHiringRequestModalProps) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50/70 via-white to-transparent">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 mb-1">
-              <i className="ri-user-add-line" /> Manager Requisition
+              <i className="ri-file-list-3-line" /> Requisition Record
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Request New Employee</h2>
+            <h2 className="text-xl font-bold text-gray-900">New Hiring Requisition</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Submit a hiring requisition for CEO review and Chairman reporting
+              Submit a complete 17-field enterprise hiring requisition for executive review and live posting
             </p>
           </div>
           <button
@@ -55,7 +64,11 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
             setForm={setForm}
             branches={branches}
             departments={departments}
+            employees={employees}
             isSuperAdmin={isSuperAdmin}
+            isBranchAdmin={isBranchAdmin}
+            userBranchId={userBranchId}
+            userBranchName={userBranchName}
           />
 
           <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">

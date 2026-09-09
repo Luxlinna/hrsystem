@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useBranchScope } from "@/context/BranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
 import type { Job, Candidate, Interview, Branch, HiringRequest } from "../types";
 
 export function useHireData() {
@@ -29,6 +30,7 @@ export function useHireData() {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [hiringRequests, setHiringRequests] = useState<HiringRequest[]>([]);
+  const [employees, setEmployees] = useState<SearchableEmployee[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -71,7 +73,24 @@ export function useHireData() {
         reqQuery = reqQuery.or(`branch_id.eq.${targetBranch},branch_id.is.null`);
       }
 
-      const [{ data: j }, { data: c }, { data: i }, { data: b }, { data: hr }] = await Promise.all([
+      let employeeQuery = supabase
+        .from("employees")
+        .select("id, first_name, last_name, department, role, avatar_url, branch_id")
+        .is("deleted_at", null)
+        .order("first_name");
+
+      if (targetBranch && !isSuperAdmin && !canHrReview && !isHrDivisionBranch) {
+        const allowedBranchIds = visibleBranches && visibleBranches.length > 0
+          ? visibleBranches.map((b) => b.id).filter(Boolean)
+          : (userBranchId ? [userBranchId] : []);
+        if (allowedBranchIds.length > 0) {
+          employeeQuery = employeeQuery.in("branch_id", allowedBranchIds);
+        } else {
+          employeeQuery = employeeQuery.eq("branch_id", targetBranch);
+        }
+      }
+
+      const [{ data: j }, { data: c }, { data: i }, { data: b }, { data: hr }, { data: empData }] = await Promise.all([
         jobQuery,
         supabase
           .from("candidates")
@@ -87,6 +106,7 @@ export function useHireData() {
           .order("scheduled_at", { ascending: false }),
         branchQuery,
         reqQuery,
+        employeeQuery,
       ]);
 
       const rawJobs = (j as unknown as Job[]) || [];
@@ -117,6 +137,7 @@ export function useHireData() {
 
       setBranches(scopedList.length > 0 ? scopedList : allBranches);
       setHiringRequests((hr as unknown as HiringRequest[]) || []);
+      setEmployees((empData as unknown as SearchableEmployee[]) || []);
     } catch (err) {
       console.error("Error loading hire data:", err);
       toast("Error", "Failed to load recruitment data", "error");
@@ -143,6 +164,7 @@ export function useHireData() {
     branches,
     hiringRequests,
     setHiringRequests,
+    employees,
     loading,
     loadData,
   };
