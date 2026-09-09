@@ -170,16 +170,28 @@ export function useAdminData() {
         .map((a) => a.email!.toLowerCase())
     );
     const branchEmployeeEmails = new Set(
-      (employeesRes.data || []).flatMap((e: any) => [
-        e.email?.toLowerCase(),
-        e.phone ? phoneToSyntheticEmail(e.phone) : null,
-      ]).filter(Boolean)
+      (employeesRes.data || []).flatMap((e: any) => {
+        const list: (string | null)[] = [e.email?.toLowerCase()];
+        if (e.phone) {
+          list.push(phoneToSyntheticEmail(e.phone));
+          const digits = e.phone.replace(/\D/g, "");
+          list.push(`${digits}@phone.hrmsystem.local`);
+          if (digits.startsWith("855") && digits.length >= 11) {
+            list.push(`0${digits.slice(3)}@phone.hrmsystem.local`);
+          }
+        }
+        return list;
+      }).filter(Boolean)
     );
     if (user?.email) branchEmployeeEmails.add(user.email.toLowerCase());
 
-    const filteredUsers = (!isSuperAdmin && effectiveBranch) ? enrichedAssignments.filter((u) => branchEmployeeEmails.has(u.email?.toLowerCase())) : enrichedAssignments;
+    const filteredUsers = (!isSuperAdmin && effectiveBranch)
+      ? enrichedAssignments.filter((u) => u.branch_id === effectiveBranch || (u.email && branchEmployeeEmails.has(u.email.toLowerCase())))
+      : enrichedAssignments;
     const allResets = (resetRequestsRes.data || []) as PasswordResetRequest[];
-    const filteredResets = (!isSuperAdmin && effectiveBranch) ? allResets.filter((r) => branchEmployeeEmails.has(r.email?.toLowerCase())) : allResets;
+    const filteredResets = (!isSuperAdmin && effectiveBranch)
+      ? allResets.filter((r) => r.email && branchEmployeeEmails.has(r.email.toLowerCase()))
+      : allResets;
 
     // Filter employees for autofill to those with contact info (email or phone)
     const actionableEmployees = (employeesRes.data || []).filter((e: any) => Boolean(e.email || e.phone));

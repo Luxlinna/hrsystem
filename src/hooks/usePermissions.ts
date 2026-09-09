@@ -157,7 +157,9 @@ export function usePermissions(): UsePermissionsReturn {
     !loading &&
     !!role &&
     !role.is_admin &&
-    (/branch\s*admin/i.test(role.name?.trim() || "") || role.allowed_modules.includes("admin"));
+    (/(branch|bu)\s*.*admin/i.test(role.name?.trim() || "") ||
+      /(branch|bu)\s*ceo/i.test(role.name?.trim() || "") ||
+      role.allowed_modules.includes("admin"));
 
   const can = useCallback(
     (module: string): boolean => {
@@ -166,7 +168,7 @@ export function usePermissions(): UsePermissionsReturn {
       if (role.is_admin) return true;
       if (role.allowed_modules.includes("*")) return true;
       const roleName = (role.name || "").trim().toLowerCase();
-      if (/branch\s*admin/i.test(roleName)) return true;
+      if (/(branch|bu)\s*.*admin/i.test(roleName) || /(branch|bu)\s*ceo/i.test(roleName)) return true;
       if (module === "dashboard" || module === "home") return true;
       return role.allowed_modules.includes(module);
     },

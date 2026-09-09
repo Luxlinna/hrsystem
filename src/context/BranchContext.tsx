@@ -26,7 +26,11 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const isBranchAdmin = useMemo(() => {
     if (isSuperAdmin) return false;
     const roleName = (role?.name || "").trim().toLowerCase();
-    return /branch\s*admin/i.test(roleName);
+    return (
+      /(branch|bu)\s*.*admin/i.test(roleName) ||
+      /(branch|bu)\s*ceo/i.test(roleName) ||
+      (role?.allowed_modules.includes("admin") ?? false)
+    );
   }, [isSuperAdmin, role]);
 
   const selectedBranchId = useMemo(() => {

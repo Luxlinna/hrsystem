@@ -30,7 +30,7 @@ export function useMeetingRoomsData(selectedDate: string) {
     isSuperAdmin ||
     isBranchAdmin ||
     role?.name === "Super Admin" ||
-    role?.name === "Branch Admin" ||
+    /branch\s*admin|bu\s*.*admin|bu\s*ceo/i.test(role?.name || "") ||
     role?.name === "Admin" ||
     role?.name === "HR Manager" ||
     role?.meeting_rooms_approve) && !isPartnerBranchBlocked

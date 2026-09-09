@@ -65,7 +65,10 @@ Deno.serve(async (req) => {
       if (assignmentError) throw assignmentError;
 
       const role = assignment?.app_roles as { name?: string; is_admin?: boolean } | null;
-      if (!role?.is_admin && role?.name !== "Branch Admin") return json({ error: "Not authorized" }, 403);
+      const isAllowedBranchAdmin = Boolean(
+        role?.name && (/branch\s*admin|bu\s*.*admin|bu\s*ceo/i.test(role.name))
+      );
+      if (!role?.is_admin && !isAllowedBranchAdmin) return json({ error: "Not authorized" }, 403);
     }
 
     const users = [];
