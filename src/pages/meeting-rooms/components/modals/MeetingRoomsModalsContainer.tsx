@@ -153,8 +153,8 @@ export const MeetingRoomsModalsContainer = memo(function MeetingRoomsModalsConta
         showToast={(type, msg) => showToast(type as any, msg)}
         branchId={targetBranch}
         branchName={effectiveBranchName || userBranchName || undefined}
-        branches={branches || visibleBranches}
-        isSuperAdmin={isSuperAdmin || isHrDivision || isHrDivisionScope}
+        branches={isHrDivisionScope ? (branches || visibleBranches) : (branches || visibleBranches)?.filter((b: any) => b.id === targetBranch)}
+        isSuperAdmin={Boolean(isHrDivisionScope)}
       />
     </>
   );

@@ -26,16 +26,17 @@ export function useMeetingRoomsData(selectedDate: string) {
     isHrDivision,
   } = useBranchScope();
 
-  const isHrDivisionSelected =
-    /hr|human\s*resource|headquarter/i.test(effectiveBranchName || "") ||
-    /hr|human\s*resource|headquarter/i.test(userBranchName || "");
-  const isHrDivisionScope = Boolean(isSuperAdmin || isHrDivision || isHrDivisionSelected);
+  const isHrDivisionBranch =
+    /hr\s*division/i.test(effectiveBranchName || "") ||
+    Boolean(userBranchName && /hr\s*division/i.test(userBranchName) && (!effectiveBranchId || effectiveBranchId === userBranchId));
+  const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
+  const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
 
   const canApprove = Boolean(
     (isAdmin ||
     isSuperAdmin ||
     isBranchAdmin ||
-    isHrDivisionScope ||
+    canViewCrossBranch ||
     role?.name === "Super Admin" ||
     /branch\s*admin|bu\s*.*admin|bu\s*ceo/i.test(role?.name || "") ||
     role?.name === "Admin" ||
@@ -69,7 +70,7 @@ export function useMeetingRoomsData(selectedDate: string) {
 
     // Rooms belonging to this branch, or all branches when in cross-branch HR Division scope
     const roomsToEnrich = (data || []).filter((r: any) => {
-      if (isHrDivisionScope) {
+      if (canViewCrossBranch) {
         return true;
       }
       return r.branch_id === targetBranch;
@@ -90,7 +91,7 @@ export function useMeetingRoomsData(selectedDate: string) {
     });
 
     setRooms(enrichedRooms);
-  }, [isPartnerBranchBlocked, targetBranch, isHrDivisionScope]);
+  }, [isPartnerBranchBlocked, targetBranch, canViewCrossBranch]);
 
   const deleteRoom = useCallback(async (roomId: string, roomName: string) => {
     if (!confirm(`Are you sure you want to remove room "${roomName}"?`)) return false;
@@ -184,7 +185,7 @@ export function useMeetingRoomsData(selectedDate: string) {
       .is("deleted_at", null);
 
     const roomsList = (dbRooms && dbRooms.length > 0 ? dbRooms : rooms).filter((r: any) => {
-      if (isHrDivisionScope) {
+      if (canViewCrossBranch) {
         return true;
       }
       return r.branch_id === targetBranch;
@@ -218,24 +219,16 @@ export function useMeetingRoomsData(selectedDate: string) {
         if (dateStr < from || dateStr > to) return;
 
         // Find room by matching name
-        const locLower = location.toLowerCase().trim();
-        const matchedRoom = roomsList.find((r) => {
-          const rNameLower = r.name.toLowerCase().trim();
-          return (
-            locLower === rNameLower ||
-            locLower.includes(rNameLower) ||
-            rNameLower.includes(locLower.split(" (")[0].trim())
-          );
-        });
+        const matchedRoom = roomsList.find((r: any) =>
+          r.name.trim().toLowerCase() === location.trim().toLowerCase()
+        );
 
         if (matchedRoom) {
-          // If already in room_bookings table, keep the official record with its actual approval status
-          const alreadyInRoomBookings = normalized.some(
-            (b) =>
+          const alreadyInRoomBookings = (data || []).some(
+            (b: any) =>
               b.room_id === matchedRoom.id &&
               b.date === dateStr &&
-              ((b.start_time || "").slice(0, 5) === (startTime || "").slice(0, 5) ||
-                (b.title && b.title.toLowerCase().includes(rawTc.title.toLowerCase())))
+              b.start_time === startTime
           );
           if (alreadyInRoomBookings) {
             return;
@@ -243,7 +236,7 @@ export function useMeetingRoomsData(selectedDate: string) {
 
           // If branch filtering applies, ensure room or course matches targetBranch
           if (
-            !isHrDivisionScope &&
+            !canViewCrossBranch &&
             targetBranch &&
             matchedRoom.branch_id &&
             matchedRoom.branch_id !== targetBranch &&
@@ -284,7 +277,7 @@ export function useMeetingRoomsData(selectedDate: string) {
       setBookings([...normalized, ...trainingBookings]);
     }
     setLoading(false);
-  }, [selectedDate, isPartnerBranchBlocked, targetBranch, rooms, isHrDivisionScope]);
+  }, [selectedDate, isPartnerBranchBlocked, targetBranch, rooms, canViewCrossBranch]);
 
   useEffect(() => {
     loadBookings();
@@ -313,7 +306,8 @@ export function useMeetingRoomsData(selectedDate: string) {
     isAdmin,
     isSuperAdmin,
     isHrDivision,
-    isHrDivisionScope,
+    isHrDivisionScope: canViewCrossBranch,
+    canViewCrossBranch,
     isPartnerBranchBlocked,
     userBranchId,
     userBranchName,

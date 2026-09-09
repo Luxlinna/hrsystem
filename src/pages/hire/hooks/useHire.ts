@@ -13,7 +13,18 @@ import { useHireCandidateActions } from "./useHireCandidateActions";
 export function useHire() {
   const { user } = useAuth();
   const { role, isAdmin } = usePermissions();
-  const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, isPartnerBranchBlocked, selectedBranchId, targetBranch } = useBranchScope();
+  const {
+    isSuperAdmin,
+    isBranchAdmin,
+    effectiveBranchId,
+    effectiveBranchName,
+    userBranchId,
+    userBranchName,
+    isPartnerBranchBlocked,
+    selectedBranchId,
+    targetBranch,
+    isHrDivision,
+  } = useBranchScope();
   const { employee: myEmployee } = useMyEmployee();
 
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
@@ -21,7 +32,11 @@ export function useHire() {
   const roleNameLower = (role?.name || "").toLowerCase();
   const canRequest = true;
 
-  const isHrDivisionBranch = /hr|human\s*resource/i.test(userBranchName || "") || isSuperAdmin;
+  const isHrDivisionBranch =
+    /hr\s*division/i.test(effectiveBranchName || "") ||
+    Boolean(userBranchName && /hr\s*division/i.test(userBranchName) && (!effectiveBranchId || effectiveBranchId === userBranchId));
+  const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
+  const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
 
   const canBranchApprove =
     !!role?.hiring_requests_branch_approve ||
@@ -32,12 +47,12 @@ export function useHire() {
   const canHrReview =
     !!role?.hiring_requests_hr_review ||
     /hr\s*manager|recruiter|talent|hr\s*specialist|hr\s*officer|hr\s*staff/i.test(roleNameLower) ||
-    isSuperAdmin;
+    (canViewCrossBranch && isSuperAdmin);
 
   const canHrAdminApprove =
     !!role?.hiring_requests_hr_admin_approve ||
     /admin\s*manager|hr\s*admin|hr\s*director|head\s*of\s*hr/i.test(roleNameLower) ||
-    isSuperAdmin;
+    (canViewCrossBranch && isSuperAdmin);
 
   const canChairmanApprove =
     !!role?.hiring_requests_chairman_approve ||
@@ -107,7 +122,9 @@ export function useHire() {
     hiringRequests: data.hiringRequests, loading: data.loading, loadData: data.loadData,
     tab: filters.tab, setTab: filters.setTab,
     canRequest, canApprove, canBranchApprove, canHrReview, canHrAdminApprove, canChairmanApprove,
-    isHrDivisionBranch, isChairman, isSuperAdmin, isAdmin, isBranchAdmin,
+    isHrDivisionBranch: canViewCrossBranch,
+    canViewCrossBranch,
+    isChairman, isSuperAdmin, isAdmin, isBranchAdmin,
     jobViewMode: filters.jobViewMode, setJobViewMode: filters.setJobViewMode,
     candidateViewMode: filters.candidateViewMode, setCandidateViewMode: filters.setCandidateViewMode,
     searchQuery: filters.searchQuery, setSearchQuery: filters.setSearchQuery,

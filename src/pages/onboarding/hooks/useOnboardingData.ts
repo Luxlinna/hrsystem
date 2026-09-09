@@ -21,11 +21,11 @@ export function useOnboardingData(
     isPartnerBranchBlocked
   } = useBranchScope();
 
-  const isHrDivisionScope = Boolean(
-    isHrDivision ||
-    /hr\s*division|human\s*resource/i.test(effectiveBranchName || "") ||
-    /hr\s*division|human\s*resource/i.test(userBranchName || "")
-  );
+  const isHrDivisionBranch =
+    /hr\s*division/i.test(effectiveBranchName || "") ||
+    Boolean(userBranchName && /hr\s*division/i.test(userBranchName) && (!effectiveBranchId || effectiveBranchId === userBranchId));
+  const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
+  const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
 
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
@@ -36,7 +36,7 @@ export function useOnboardingData(
   const highlightId = searchParams.get("highlight");
 
   const loadData = useCallback(async () => {
-    if (isPartnerBranchBlocked || (!isSuperAdmin && !isHrDivisionScope && !targetBranch)) {
+    if (isPartnerBranchBlocked || (!canViewCrossBranch && !targetBranch)) {
       setRequests([]);
       setDocuments([]);
       setEmployees([]);
@@ -51,9 +51,9 @@ export function useOnboardingData(
         .is("deleted_at", null)
         .order("first_name");
 
-      // HR Division and Super Admin can view/enroll employees across all branches.
-      // Other BUs without HR Division are strictly limited to their own branch.
-      if (!isSuperAdmin && !isHrDivisionScope && targetBranch) {
+      // Only HR Division (or All Branches) can view/enroll employees across all branches.
+      // Other BUs (and when viewing another branch) are strictly limited to that branch.
+      if (!canViewCrossBranch && targetBranch) {
         empQuery = empQuery.eq("branch_id", targetBranch);
       }
 
@@ -78,7 +78,7 @@ export function useOnboardingData(
       const empIds = new Set(formattedEmps.map((e: any) => e.id));
 
       const currentOb = ob || [];
-      const filteredRequests = (isSuperAdmin || isHrDivisionScope)
+      const filteredRequests = canViewCrossBranch
         ? (currentOb as unknown as OnboardingRequest[])
         : (currentOb as unknown as OnboardingRequest[]).filter(
             (r) => (r.employees as any)?.branch_id === targetBranch
@@ -95,7 +95,7 @@ export function useOnboardingData(
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch, isSuperAdmin, isHrDivisionScope]);
+  }, [isPartnerBranchBlocked, targetBranch, canViewCrossBranch]);
 
   useEffect(() => {
     loadData();
@@ -110,9 +110,9 @@ export function useOnboardingData(
     };
   }, [loadData]);
 
-  // Scoped requests (page-level branch filtering is handled by useOnboardingFilters)
+  // Scoped requests: when viewing a specific branch, strictly scope to targetBranch
   const scopedRequests = useMemo(() => {
-    if (isSuperAdmin || isHrDivisionScope) {
+    if (canViewCrossBranch) {
       return requests;
     }
     const target = targetBranch || userBranchId;
@@ -121,17 +121,17 @@ export function useOnboardingData(
       const bId = (r.employees as any)?.branch_id;
       return bId === target;
     });
-  }, [requests, targetBranch, userBranchId, isSuperAdmin, isHrDivisionScope]);
+  }, [requests, targetBranch, userBranchId, canViewCrossBranch]);
 
-  // Scoped employees
+  // Scoped employees: when viewing a specific branch, strictly scope to targetBranch
   const scopedEmployees = useMemo(() => {
-    if (isSuperAdmin || isHrDivisionScope) {
+    if (canViewCrossBranch) {
       return employees;
     }
     const target = targetBranch || userBranchId;
     if (!target) return [];
     return employees.filter((e: any) => e.branch_id === target);
-  }, [employees, targetBranch, userBranchId, isSuperAdmin, isHrDivisionScope]);
+  }, [employees, targetBranch, userBranchId, canViewCrossBranch]);
 
   // Handle URL highlight param
   useEffect(() => {
@@ -151,6 +151,7 @@ export function useOnboardingData(
     userBranchId,
     userBranchName,
     targetBranch,
+    isHrDivisionScope: canViewCrossBranch,
     requests: scopedRequests,
     allRequests: requests,
     setRequests,

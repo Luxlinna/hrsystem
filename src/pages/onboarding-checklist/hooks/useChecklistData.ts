@@ -21,11 +21,11 @@ export function useChecklistData() {
     isPartnerBranchBlocked,
   } = useBranchScope();
 
-  const isHrDivisionScope = Boolean(
-    isHrDivision ||
-    /hr\s*division|human\s*resource/i.test(effectiveBranchName || "") ||
-    /hr\s*division|human\s*resource/i.test(userBranchName || "")
-  );
+  const isHrDivisionBranch =
+    /hr\s*division/i.test(effectiveBranchName || "") ||
+    Boolean(userBranchName && /hr\s*division/i.test(userBranchName) && (!effectiveBranchId || effectiveBranchId === userBranchId));
+  const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
+  const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
 
   const [searchParams, setSearchParams] = useSearchParams();
   const targetHireParam = searchParams.get("hire") || searchParams.get("request_id") || searchParams.get("highlight");
@@ -37,7 +37,7 @@ export function useChecklistData() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    if (isPartnerBranchBlocked || (!isSuperAdmin && !isHrDivisionScope && !targetBranch)) {
+    if (isPartnerBranchBlocked || (!canViewCrossBranch && !targetBranch)) {
       setHires([]);
       setTasks([]);
       setStaff([]);
@@ -55,7 +55,7 @@ export function useChecklistData() {
         .is("deleted_at", null)
         .order("first_name");
 
-      if (!isSuperAdmin && !isHrDivisionScope && targetBranch) {
+      if (!canViewCrossBranch && targetBranch) {
         staffQuery = staffQuery.eq("branch_id", targetBranch);
       }
 
@@ -92,7 +92,7 @@ export function useChecklistData() {
             : null,
         }))
         .filter((h: any) => {
-          if (isSuperAdmin || isHrDivisionScope) {
+          if (canViewCrossBranch) {
             return true;
           }
           return h.employees?.branch_id === targetBranch;
@@ -146,7 +146,7 @@ export function useChecklistData() {
     } finally {
       setLoading(false);
     }
-  }, [targetHireParam, isPartnerBranchBlocked, targetBranch, isSuperAdmin]);
+  }, [targetHireParam, isPartnerBranchBlocked, targetBranch, canViewCrossBranch]);
 
   useEffect(() => {
     loadData(false);
