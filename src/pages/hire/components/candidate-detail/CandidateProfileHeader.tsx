@@ -25,8 +25,13 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
           <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-[#172B4D] flex items-center justify-center text-white text-2xl sm:text-3xl font-black shrink-0 shadow-md">
             {initials(candidate.full_name)}
           </div>
-          <div className="space-y-2">
+            <div className="space-y-2">
             <div className="flex items-center gap-3 flex-wrap">
+              {candidate.candidate_code && (
+                <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-[#253C7D] font-mono font-extrabold text-xs tracking-wider">
+                  {candidate.candidate_code}
+                </span>
+              )}
               <h1 className="text-2xl sm:text-3xl font-black text-gray-900 capitalize tracking-tight">
                 {candidate.full_name}
               </h1>
@@ -51,16 +56,21 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
                   <i className="ri-briefcase-line text-gray-500" /> {candidate.job_postings.title}
                 </span>
               )}
-              {candidate.job_postings?.department && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-gray-100 font-bold text-gray-700">
-                  <i className="ri-building-line text-gray-500" /> {candidate.job_postings.department}
+              {candidate.location && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-50/70 border border-blue-100 font-bold text-blue-800">
+                  <i className="ri-map-pin-line text-blue-500" /> {candidate.location}
                 </span>
               )}
-              {candidate.job_postings?.branches?.name && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-gray-100 font-bold text-gray-700">
-                  <i className="ri-map-pin-line text-gray-500" /> {candidate.job_postings.branches.name}
+              {candidate.assigned_recruiter && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-purple-50 border border-purple-100 font-bold text-purple-700">
+                  <i className="ri-user-star-line text-purple-500" /> Recruiter: {candidate.assigned_recruiter.first_name} {candidate.assigned_recruiter.last_name}
                 </span>
               )}
+              {candidate.tags && candidate.tags.map((t) => (
+                <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 font-bold text-slate-700 text-[11px]">
+                  #{t}
+                </span>
+              ))}
             </div>
 
             {/* Contact Meta Row */}
@@ -73,6 +83,16 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
               {candidate.phone && (
                 <span className="flex items-center gap-1.5">
                   <i className="ri-phone-line text-gray-400" /> {candidate.phone}
+                </span>
+              )}
+              {candidate.expected_salary && (
+                <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                  <i className="ri-money-dollar-circle-line" /> ${candidate.expected_salary.toLocaleString()}/mo
+                </span>
+              )}
+              {candidate.notice_period && (
+                <span className="flex items-center gap-1.5 text-amber-700 font-medium">
+                  <i className="ri-time-line" /> {candidate.notice_period}
                 </span>
               )}
               <span className="flex items-center gap-1.5">

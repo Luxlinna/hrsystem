@@ -109,10 +109,44 @@ export const ProfileWorkInfoSidebar = memo(function ProfileWorkInfoSidebar({
                 )}
               </span>
             </div>
-            {managerName && (
+            {employee.candidate_code && (
+              <div className="flex items-center justify-between px-4 py-3 bg-blue-50/50">
+                <span className="text-[12px] text-gray-600 flex items-center gap-1.5 font-medium">
+                  <i className="ri-fingerprint-line text-[#253C7D]"></i>
+                  Candidate ID
+                </span>
+                <span className="text-[12px] font-bold text-[#253C7D] font-mono px-2 py-0.5 bg-white border border-blue-200/60 rounded">
+                  {employee.candidate_code}
+                </span>
+              </div>
+            )}
+            {employee.location && (
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-[12px] text-gray-500">Reports To</span>
-                <span className="text-[13px] font-medium text-gray-900 text-right">{managerName}</span>
+                <span className="text-[12px] text-gray-500">Location</span>
+                <span className="text-[13px] font-medium text-gray-900 text-right">
+                  {employee.location}
+                </span>
+              </div>
+            )}
+            {employee.notice_period && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-[12px] text-gray-500">Notice Period</span>
+                <span className="text-[13px] font-medium text-gray-900 text-right">
+                  {employee.notice_period}
+                </span>
+              </div>
+            )}
+            {employee.resume_url && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-[12px] text-gray-500">Resume / CV</span>
+                <a
+                  href={employee.resume_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[12px] font-semibold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                >
+                  <i className="ri-file-pdf-line"></i> View CV
+                </a>
               </div>
             )}
           </div>

@@ -1,5 +1,7 @@
 import { memo } from "react";
 import type { Candidate, Job, NewCandidateFormState } from "../../types";
+import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
+import { CANDIDATE_SOURCES, NOTICE_PERIOD_OPTIONS } from "../../constants";
 
 interface CandidateModalProps {
   isOpen: boolean;
@@ -7,6 +9,7 @@ interface CandidateModalProps {
   form: NewCandidateFormState;
   setForm: React.Dispatch<React.SetStateAction<NewCandidateFormState>>;
   jobs: Job[];
+  employees?: SearchableEmployee[];
   candidateFiles?: File[];
   setCandidateFiles?: React.Dispatch<React.SetStateAction<File[]>>;
   resumeFile?: File | null;
@@ -22,6 +25,7 @@ export const CandidateModal = memo(function CandidateModal({
   form,
   setForm,
   jobs,
+  employees = [],
   candidateFiles = [],
   setCandidateFiles,
   resumeFile,
@@ -68,20 +72,26 @@ export const CandidateModal = memo(function CandidateModal({
       onClick={() => !uploadingResume && onClose()}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100/80 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+        className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100/80 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150 max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center font-bold text-sm">
-              <i className={editingCandidate ? "ri-edit-line" : "ri-user-add-line"} />
+            <div className="w-9 h-9 rounded-xl bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center font-bold text-base">
+              <i className={editingCandidate ? "ri-user-settings-line" : "ri-user-add-line"} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-900">
-                {editingCandidate ? "Edit Candidate Profile" : "Add Candidate Application"}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-gray-900">
+                  {editingCandidate ? "Edit Candidate Master Profile" : "New Candidate Master Profile"}
+                </h3>
+                <span className="px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-mono font-bold">
+                  {editingCandidate?.candidate_code || "CAN-2026-XXXXXX (Auto)"}
+                </span>
+              </div>
               <p className="text-[11px] text-gray-400 mt-0.5">
-                {editingCandidate ? "Update candidate credentials" : "Track applicant in recruitment pipeline"}
+                Reusable candidate record across all current and future job applications
               </p>
             </div>
           </div>
@@ -95,94 +105,258 @@ export const CandidateModal = memo(function CandidateModal({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="p-5 sm:p-6 space-y-4">
-          <div>
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Full Name <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={form.full_name}
-              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-              placeholder="e.g. Sarah Jenkins"
-              className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Email Address <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="email"
-                required
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="sarah@example.com"
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-              />
+        {/* Form Body */}
+        <form onSubmit={onSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto">
+          {/* Section 1: Contact & Personal Info */}
+          <div className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 space-y-3">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+              <i className="ri-user-line text-[#253C7D]" />
+              <span>Contact & Identity</span>
             </div>
 
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+1 555-0199"
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-          </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Full Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={form.full_name}
+                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  placeholder="e.g. Sarah Jenkins"
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Target Vacancy <span className="text-rose-500">*</span>
-              </label>
-              <select
-                required
-                value={form.job_posting_id}
-                onChange={(e) => setForm({ ...form, job_posting_id: e.target.value })}
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
-              >
-                <option value="">Select a vacancy...</option>
-                {jobs.map((j) => (
-                  <option key={j.id} value={j.id}>
-                    {j.title} ({j.department})
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Location / City
+                </label>
+                <input
+                  type="text"
+                  value={form.location}
+                  onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  placeholder="e.g. Phnom Penh, Cambodia (or Remote)"
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+              </div>
 
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Sourcing Channel
-              </label>
-              <select
-                value={form.source}
-                onChange={(e) => setForm({ ...form, source: e.target.value })}
-                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
-              >
-                <option value="LinkedIn">LinkedIn</option>
-                <option value="Direct Website">Direct Website</option>
-                <option value="Employee Referral">Employee Referral</option>
-                <option value="Agency">Agency</option>
-                <option value="Job Board">Job Board</option>
-                <option value="Other">Other</option>
-              </select>
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Email Address <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="sarah@example.com"
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="+855 12 345 678"
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Multiple Documents / Files Upload (AWS S3) */}
+          {/* Section 2: Compensation & Availability */}
+          <div className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 space-y-3">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+              <i className="ri-money-dollar-circle-line text-emerald-600" />
+              <span>Compensation & Availability</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Expected Salary (USD / Month)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={form.expected_salary}
+                  onChange={(e) => setForm({ ...form, expected_salary: e.target.value })}
+                  placeholder="e.g. 1200"
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Notice Period
+                </label>
+                <select
+                  value={form.notice_period}
+                  onChange={(e) => setForm({ ...form, notice_period: e.target.value })}
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                >
+                  {NOTICE_PERIOD_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Professional Background */}
+          <div className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 space-y-3">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+              <i className="ri-graduation-cap-line text-purple-600" />
+              <span>Education, Experience & Skills</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Education Background
+                </label>
+                <input
+                  type="text"
+                  value={form.education}
+                  onChange={(e) => setForm({ ...form, education: e.target.value })}
+                  placeholder="e.g. B.S. Computer Science, RUPP"
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Work Experience Summary
+                </label>
+                <input
+                  type="text"
+                  value={form.work_experience}
+                  onChange={(e) => setForm({ ...form, work_experience: e.target.value })}
+                  placeholder="e.g. 4+ years as Full Stack Engineer at TechCorp"
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Core Skills (Comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={form.skills}
+                  onChange={(e) => setForm({ ...form, skills: e.target.value })}
+                  placeholder="e.g. React, Node.js, PostgreSQL, Docker"
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Languages Spoken
+                </label>
+                <input
+                  type="text"
+                  value={form.languages}
+                  onChange={(e) => setForm({ ...form, languages: e.target.value })}
+                  placeholder="e.g. English (Fluent), Khmer (Native)"
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Recruitment & Sourcing Details */}
+          <div className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 space-y-3">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+              <i className="ri-compass-3-line text-blue-600" />
+              <span>Sourcing Channel & Recruiter Assignment</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Target Vacancy <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={form.job_posting_id}
+                  onChange={(e) => setForm({ ...form, job_posting_id: e.target.value })}
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                >
+                  <option value="">Select a vacancy...</option>
+                  {jobs.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.title} ({j.department})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Sourcing Channel
+                </label>
+                <select
+                  value={form.source}
+                  onChange={(e) => setForm({ ...form, source: e.target.value })}
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                >
+                  {CANDIDATE_SOURCES.map((src) => (
+                    <option key={src} value={src}>
+                      {src}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Assigned Recruiter
+                </label>
+                <select
+                  value={form.assigned_recruiter_id}
+                  onChange={(e) => setForm({ ...form, assigned_recruiter_id: e.target.value })}
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+                >
+                  <option value="">Unassigned</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.first_name} {emp.last_name} ({emp.role || emp.department || "Staff"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Tags (e.g. #Senior, #FastTrack)
+                </label>
+                <input
+                  type="text"
+                  value={form.tags}
+                  onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                  placeholder="e.g. Senior, Urgent, Executive"
+                  className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:border-[#253C7D]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 5: Multiple Documents & CV Upload (AWS S3) */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                <span>Candidate Documents & Files</span>
+                <span>CV & Supporting Documents</span>
                 <span className="bg-amber-100 text-amber-800 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md">
                   AWS S3
                 </span>
@@ -190,9 +364,9 @@ export const CandidateModal = memo(function CandidateModal({
               <span className="text-[10px] text-gray-400 font-medium">Multiple files allowed</span>
             </div>
 
-            <label className="border-2 border-dashed border-gray-200 hover:border-[#253C7D] hover:bg-slate-50/60 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all">
+            <label className="border-2 border-dashed border-gray-200 hover:border-[#253C7D] hover:bg-slate-50/60 rounded-2xl p-3.5 flex flex-col items-center justify-center cursor-pointer transition-all">
               <i className="ri-upload-cloud-2-line text-2xl text-[#253C7D] mb-1" />
-              <p className="text-xs font-bold text-gray-700">Choose or drag candidate documents</p>
+              <p className="text-xs font-bold text-gray-700">Choose or drag candidate CV & files</p>
               <p className="text-[10px] text-gray-400 mt-0.5">Resume, Portfolio, Certificates, ID (.pdf, .docx, .png, .jpg)</p>
               <input
                 type="file"
@@ -203,9 +377,8 @@ export const CandidateModal = memo(function CandidateModal({
               />
             </label>
 
-            {/* Selected files preview */}
             {currentFiles.length > 0 && (
-              <div className="mt-2.5 space-y-1.5 max-h-36 overflow-y-auto pr-1">
+              <div className="mt-2.5 space-y-1.5 max-h-32 overflow-y-auto pr-1">
                 {currentFiles.map((file, idx) => (
                   <div
                     key={`${file.name}-${idx}`}
@@ -230,20 +403,22 @@ export const CandidateModal = memo(function CandidateModal({
             )}
           </div>
 
+          {/* Section 6: Recruiter Notes */}
           <div>
             <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Initial Notes & Evaluation
+              Recruiter Evaluation Notes
             </label>
             <textarea
               rows={2}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder="Candidate background notes, salary expectations, screening impression..."
+              placeholder="Candidate background notes, preliminary screening impressions, salary fit..."
               className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
             />
           </div>
 
-          <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+          {/* Action Buttons */}
+          <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2 shrink-0">
             <button
               type="button"
               onClick={onClose}
@@ -262,9 +437,9 @@ export const CandidateModal = memo(function CandidateModal({
                   <span>Uploading to AWS S3...</span>
                 </>
               ) : editingCandidate ? (
-                "Save Changes"
+                "Save Profile Changes"
               ) : (
-                "Add Candidate"
+                "Register Candidate"
               )}
             </button>
           </div>

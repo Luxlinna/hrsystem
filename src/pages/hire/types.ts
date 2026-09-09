@@ -31,12 +31,43 @@ export interface CandidateDocument {
   uploaded_at?: string;
 }
 
+export interface CandidateApplication {
+  id: string;
+  candidate_id: string;
+  job_posting_id?: string | null;
+  stage: string;
+  rating?: number | null;
+  source?: string | null;
+  applied_at: string;
+  outcome?: "in_progress" | "hired" | "rejected" | "withdrawn" | "on_hold";
+  outcome_notes?: string | null;
+  notes?: string | null;
+  job_postings?: {
+    id: string;
+    title: string;
+    department: string;
+    location?: string;
+    branches?: { name: string };
+  } | null;
+}
+
 export interface Candidate {
   id: string;
-  job_posting_id: string;
+  candidate_code?: string | null;
+  job_posting_id?: string | null;
   full_name: string;
   email: string;
   phone: string;
+  location?: string | null;
+  education?: string | null;
+  work_experience?: string | null;
+  skills?: string[] | null;
+  languages?: string[] | null;
+  expected_salary?: number | null;
+  notice_period?: string | null;
+  assigned_recruiter_id?: string | null;
+  assigned_recruiter?: { id: string; first_name: string; last_name: string; email?: string } | null;
+  tags?: string[] | null;
   source: string;
   stage: string;
   rating: number | null;
@@ -47,6 +78,7 @@ export interface Candidate {
   documents?: CandidateDocument[] | null;
   linkedin_url?: string | null;
   job_postings?: { id: string; title: string; department: string; branch_id?: string | null; branches?: { name: string } } | null;
+  applications?: CandidateApplication[];
 }
 
 export interface Interview {
@@ -158,6 +190,15 @@ export interface NewCandidateFormState {
   full_name: string;
   email: string;
   phone: string;
+  location: string;
+  education: string;
+  work_experience: string;
+  skills: string;
+  languages: string;
+  expected_salary: string;
+  notice_period: string;
+  assigned_recruiter_id: string;
+  tags: string;
   job_posting_id: string;
   source: string;
   notes: string;

@@ -103,10 +103,40 @@ export const INITIAL_HIRING_REQUEST_FORM: NewHiringRequestFormState = {
   urgency: "medium",
 };
 
+export const CANDIDATE_SOURCES = [
+  "LinkedIn",
+  "Telegram",
+  "Employee Referral",
+  "Walk-in",
+  "Direct Website",
+  "Job Board",
+  "Agency",
+  "Other",
+];
+
+export const NOTICE_PERIOD_OPTIONS = [
+  "Immediate",
+  "1 Week",
+  "2 Weeks",
+  "1 Month",
+  "2 Months",
+  "3 Months",
+  "Negotiable",
+];
+
 export const INITIAL_CANDIDATE_FORM: NewCandidateFormState = {
   full_name: "",
   email: "",
   phone: "",
+  location: "",
+  education: "",
+  work_experience: "",
+  skills: "",
+  languages: "",
+  expected_salary: "",
+  notice_period: "1 Month",
+  assigned_recruiter_id: "",
+  tags: "",
   job_posting_id: "",
   source: "LinkedIn",
   notes: "",

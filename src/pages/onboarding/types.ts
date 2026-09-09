@@ -13,6 +13,11 @@ export interface OnboardingRequest {
     role: string;
     department: string;
     branches?: { name: string } | null;
+    candidate_code?: string | null;
+    candidate_id?: string | null;
+    location?: string | null;
+    resume_url?: string | null;
+    resume_name?: string | null;
   } | null;
 }
 

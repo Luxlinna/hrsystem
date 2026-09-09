@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { uploadFileToS3, uploadMultipleFilesToS3 } from "@/lib/s3-storage";
+import { startOnboardingForEmployee } from "@/lib/onboarding";
 import type { Candidate, Job, Interview, CandidateDocument } from "../types";
 
 interface UseHireCandidateActionsProps {
@@ -86,11 +87,23 @@ export function useHireCandidateActions({
         const allDocs = [...existingDocs, ...newDocs];
         const primaryDoc = allDocs[0] || null;
 
+        const parseArray = (str?: string) =>
+          str ? str.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean) : [];
+
         const payload: any = {
           full_name: candidateForm.full_name,
           email: candidateForm.email,
           phone: candidateForm.phone || null,
-          job_posting_id: candidateForm.job_posting_id,
+          location: candidateForm.location || null,
+          education: candidateForm.education || null,
+          work_experience: candidateForm.work_experience || null,
+          skills: parseArray(candidateForm.skills),
+          languages: parseArray(candidateForm.languages),
+          expected_salary: candidateForm.expected_salary ? Number(candidateForm.expected_salary) : null,
+          notice_period: candidateForm.notice_period || null,
+          assigned_recruiter_id: candidateForm.assigned_recruiter_id || null,
+          tags: parseArray(candidateForm.tags),
+          job_posting_id: candidateForm.job_posting_id || null,
           source: candidateForm.source,
           notes: candidateForm.notes || null,
           documents: allDocs,
@@ -100,12 +113,22 @@ export function useHireCandidateActions({
         if (editingCandidate) {
           const { error } = await supabase.from("candidates").update(payload).eq("id", editingCandidate.id);
           if (error) throw error;
-          toast("Candidate Updated", `"${candidateForm.full_name}" saved with ${allDocs.length} file(s).`, "success");
+          toast("Candidate Profile Updated", `"${candidateForm.full_name}" master profile saved.`, "success");
         } else {
           payload.stage = "applied";
-          const { error } = await supabase.from("candidates").insert(payload);
+          const { data: newCand, error } = await supabase.from("candidates").insert(payload).select().single();
           if (error) throw error;
-          toast("Candidate Added", `"${candidateForm.full_name}" added with ${allDocs.length} file(s).`, "success");
+          if (newCand?.id && candidateForm.job_posting_id) {
+            await supabase.from("candidate_applications").insert({
+              candidate_id: newCand.id,
+              job_posting_id: candidateForm.job_posting_id,
+              stage: "applied",
+              source: candidateForm.source,
+              outcome: "in_progress",
+              notes: candidateForm.notes || null,
+            });
+          }
+          toast("Candidate Created", `"${candidateForm.full_name}" registered in Master Database.`, "success");
         }
         await loadData();
         return true;
@@ -165,13 +188,20 @@ export function useHireCandidateActions({
       setMovingToOnboarding(true);
       try {
         const job = jobs.find((j) => j.id === candidate.job_posting_id);
-        const nameParts = candidate.full_name.trim().split(" ");
+        const nameParts = candidate.full_name.trim().split(/\s+/);
         const isSite = branchId.startsWith("site:");
         const siteObj = isSite ? branches.find((b: any) => b.id === branchId) : null;
         const targetBranchId = isSite ? siteObj?.branch_id : branchId;
         const targetSiteId = isSite ? branchId.substring(5) : null;
 
-        const { error: empErr } = await supabase.from("employees").insert({
+        // Check if employee already exists with candidate email
+        const { data: existingEmp } = await supabase
+          .from("employees")
+          .select("id")
+          .eq("email", candidate.email)
+          .maybeSingle();
+
+        const employeePayload = {
           first_name: nameParts[0] || candidate.full_name,
           last_name: nameParts.slice(1).join(" ") || "-",
           email: candidate.email,
@@ -182,21 +212,64 @@ export function useHireCandidateActions({
           default_work_location_id: targetSiteId,
           status: "onboarding",
           join_date: joinDate,
-        });
-        if (empErr) throw empErr;
+          // Transfer full Candidate Master Database credentials to employee record
+          candidate_id: candidate.id,
+          candidate_code: candidate.candidate_code || null,
+          location: candidate.location || null,
+          education: candidate.education || null,
+          work_experience: candidate.work_experience || null,
+          skills: candidate.skills || [],
+          languages: candidate.languages || [],
+          expected_salary: candidate.expected_salary ? Number(candidate.expected_salary) : null,
+          notice_period: candidate.notice_period || null,
+          resume_url: candidate.resume_url || null,
+          resume_name: candidate.resume_name || null,
+        };
 
+        let employeeId: string;
+        if (existingEmp?.id) {
+          employeeId = existingEmp.id;
+          const { error: updErr } = await supabase
+            .from("employees")
+            .update(employeePayload)
+            .eq("id", employeeId);
+          if (updErr) throw updErr;
+        } else {
+          const { data: newEmp, error: empErr } = await supabase
+            .from("employees")
+            .insert(employeePayload)
+            .select()
+            .single();
+          if (empErr) throw empErr;
+          employeeId = newEmp.id;
+        }
+
+        // Initialize Onboarding Journey & Tasks for the employee
+        await startOnboardingForEmployee(employeeId, actorName);
+
+        // Update candidate stage to hired
         await supabase.from("candidates").update({ stage: "hired" }).eq("id", candidate.id);
-        toast("Moved to Onboarding", `${candidate.full_name} is now onboarding.`, "success");
+
+        // Update candidate applications history
+        if (candidate.job_posting_id) {
+          await supabase
+            .from("candidate_applications")
+            .update({ stage: "hired", outcome: "hired" })
+            .eq("candidate_id", candidate.id)
+            .eq("job_posting_id", candidate.job_posting_id);
+        }
+
+        toast("Moved to Onboarding", `${candidate.full_name} is now in onboarding with full credentials transferred.`, "success");
         await loadData();
         return true;
       } catch (err: any) {
-        toast("Error", err.message || "Failed to move candidate.", "error");
+        toast("Error", err.message || "Failed to move candidate to onboarding.", "error");
         return false;
       } finally {
         setMovingToOnboarding(false);
       }
     },
-    [jobs, branches, loadData, setMovingToOnboarding]
+    [jobs, branches, actorName, loadData, setMovingToOnboarding]
   );
 
   const handleSaveFeedback = useCallback(

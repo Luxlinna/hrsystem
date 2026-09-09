@@ -95,12 +95,16 @@ export function useHireFilters(
       if (filterDepartment !== "all" && c.job_postings?.department !== filterDepartment) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
+        const matchCode = (c.candidate_code || "").toLowerCase().includes(q);
         const matchName = c.full_name.toLowerCase().includes(q);
         const matchEmail = c.email.toLowerCase().includes(q);
         const matchPhone = (c.phone || "").toLowerCase().includes(q);
+        const matchLoc = (c.location || "").toLowerCase().includes(q);
         const matchJob = (c.job_postings?.title || "").toLowerCase().includes(q);
         const matchSource = (c.source || "").toLowerCase().includes(q);
-        if (!matchName && !matchEmail && !matchPhone && !matchJob && !matchSource) return false;
+        const matchRecruiter = `${c.assigned_recruiter?.first_name || ""} ${c.assigned_recruiter?.last_name || ""}`.toLowerCase().includes(q);
+        const matchSkills = (c.skills || []).some((s) => s.toLowerCase().includes(q));
+        if (!matchCode && !matchName && !matchEmail && !matchPhone && !matchLoc && !matchJob && !matchSource && !matchRecruiter && !matchSkills) return false;
       }
       return true;
     });

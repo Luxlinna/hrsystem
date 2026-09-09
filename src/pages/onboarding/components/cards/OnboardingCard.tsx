@@ -77,6 +77,12 @@ export const OnboardingCard = memo(function OnboardingCard({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-black text-sm text-gray-900 leading-tight">{fullName}</h3>
+              {emp?.candidate_code && (
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-blue-50 text-[#253C7D] border border-blue-200/60 inline-flex items-center gap-1">
+                  <i className="ri-fingerprint-line text-[11px]"></i>
+                  {emp.candidate_code}
+                </span>
+              )}
               <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
                 request.status === "pending" ? "bg-amber-100 text-amber-800" : "bg-blue-50 text-blue-700"
               }`}>
@@ -85,9 +91,20 @@ export const OnboardingCard = memo(function OnboardingCard({
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
                 Day {request.day_count}
               </span>
+              {emp?.resume_url && (
+                <a
+                  href={emp.resume_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60 hover:bg-rose-100 inline-flex items-center gap-1"
+                >
+                  <i className="ri-file-pdf-fill"></i> CV
+                </a>
+              )}
             </div>
             <p className="text-[11px] text-gray-400 font-semibold mt-1">
               {emp?.role || "Staff"} &middot; {emp?.department || "General"} &middot; {emp?.branches?.name || "HQ"}
+              {emp?.location && ` · ${emp.location}`}
             </p>
           </div>
         </div>

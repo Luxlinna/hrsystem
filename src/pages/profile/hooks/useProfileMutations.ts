@@ -1,6 +1,7 @@
 import type { MyEmployee } from "../types";
 import { useProfileAvatarMutations } from "./useProfileAvatarMutations";
 import { useProfileAccountMutations } from "./useProfileAccountMutations";
+import { useProfileProfessionalMutations } from "./useProfileProfessionalMutations";
 
 interface UseProfileMutationsProps {
   employee: MyEmployee | null;
@@ -21,6 +22,10 @@ export function useProfileMutations({
     setEmployee,
     displayName,
     phone,
+  });
+  const professionalMutations = useProfileProfessionalMutations({
+    employee,
+    setEmployee,
   });
 
   return {
@@ -47,5 +52,27 @@ export function useProfileMutations({
     handleSavePhone: accountMutations.handleSavePhone,
     handleSaveName: accountMutations.handleSaveName,
     handleChangePassword: accountMutations.handleChangePassword,
+
+    location: professionalMutations.location,
+    setLocation: professionalMutations.setLocation,
+    education: professionalMutations.education,
+    setEducation: professionalMutations.setEducation,
+    workExperience: professionalMutations.workExperience,
+    setWorkExperience: professionalMutations.setWorkExperience,
+    skills: professionalMutations.skills,
+    setSkills: professionalMutations.setSkills,
+    languages: professionalMutations.languages,
+    setLanguages: professionalMutations.setLanguages,
+    expectedSalary: professionalMutations.expectedSalary,
+    setExpectedSalary: professionalMutations.setExpectedSalary,
+    noticePeriod: professionalMutations.noticePeriod,
+    setNoticePeriod: professionalMutations.setNoticePeriod,
+    resumeUrl: professionalMutations.resumeUrl,
+    resumeName: professionalMutations.resumeName,
+    savingProfessional: professionalMutations.savingProfessional,
+    uploadingResume: professionalMutations.uploadingResume,
+    handleSaveProfessional: professionalMutations.handleSaveProfessional,
+    handleResumeUpload: professionalMutations.handleResumeUpload,
+    handleRemoveResume: professionalMutations.handleRemoveResume,
   };
 }

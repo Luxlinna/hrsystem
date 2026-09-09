@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { CandidateProfileHeader } from "./components/candidate-detail/CandidateProfileHeader";
+import { CandidateInfoCard } from "./components/candidate-detail/CandidateInfoCard";
+import { CandidateApplicationsCard } from "./components/candidate-detail/CandidateApplicationsCard";
 import { CandidateResumeCard } from "./components/candidate-detail/CandidateResumeCard";
 import { CandidateInterviewsCard } from "./components/candidate-detail/CandidateInterviewsCard";
-import { CandidateNotesCard } from "./components/candidate-detail/CandidateNotesCard";
 import { CandidateEvaluationWidget } from "./components/candidate-detail/CandidateEvaluationWidget";
 import { CandidateSourceWidget } from "./components/candidate-detail/CandidateSourceWidget";
 import { CandidatePipelineWidget } from "./components/candidate-detail/CandidatePipelineWidget";
@@ -46,6 +47,8 @@ export default function CandidateDetail() {
     handleSaveFeedback,
     handleScheduleInterview,
     deleteCandidate,
+    handleAddApplication,
+    jobs,
   } = useCandidateDetail(id);
 
   const avgScore = useMemo(() => {
@@ -118,7 +121,25 @@ export default function CandidateDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Primary Column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* 1. Resume & Candidate Documents (AWS S3) */}
+          {/* 1. Master Profile Details & Recruiter Notes */}
+          <CandidateInfoCard
+            candidate={candidate}
+            isEditingNotes={isEditingNotes}
+            setIsEditingNotes={setIsEditingNotes}
+            notesText={notesText}
+            setNotesText={setNotesText}
+            savingNotes={savingNotes}
+            onSaveNotes={handleSaveNotes}
+          />
+
+          {/* 2. Full Candidate History & Multi-Application Track */}
+          <CandidateApplicationsCard
+            candidate={candidate}
+            jobs={jobs}
+            onAddApplication={handleAddApplication}
+          />
+
+          {/* 3. Resume & Candidate Documents (AWS S3) */}
           <CandidateResumeCard
             candidate={candidate}
             uploadingResume={uploadingResume}
@@ -128,7 +149,7 @@ export default function CandidateDetail() {
             onDeleteDocument={deleteDocument}
           />
 
-          {/* 2. Interview History */}
+          {/* 4. Interview History */}
           <CandidateInterviewsCard
             interviews={interviews}
             avgScore={avgScore}
@@ -137,17 +158,6 @@ export default function CandidateDetail() {
               setFeedbackScore(iv.score || 5);
               setFeedbackText(iv.feedback || "");
             }}
-          />
-
-          {/* 3. Recruiter Notes */}
-          <CandidateNotesCard
-            candidate={candidate}
-            isEditingNotes={isEditingNotes}
-            setIsEditingNotes={setIsEditingNotes}
-            notesText={notesText}
-            setNotesText={setNotesText}
-            savingNotes={savingNotes}
-            onSaveNotes={handleSaveNotes}
           />
         </div>
 

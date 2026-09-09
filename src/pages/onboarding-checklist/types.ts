@@ -41,6 +41,17 @@ export interface OnboardingHire {
     department: string;
     avatar_url: string | null;
     branches?: { name: string } | null;
+    candidate_code?: string | null;
+    candidate_id?: string | null;
+    location?: string | null;
+    education?: string | null;
+    work_experience?: string | null;
+    skills?: string[] | null;
+    languages?: string[] | null;
+    expected_salary?: number | null;
+    notice_period?: string | null;
+    resume_url?: string | null;
+    resume_name?: string | null;
   } | null;
 }
 

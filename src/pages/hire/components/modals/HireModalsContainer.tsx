@@ -108,6 +108,7 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
         setResumeFile={props.setResumeFile}
         uploadingResume={props.uploadingResume}
         jobs={props.jobs}
+        employees={props.employees}
         onClose={() => props.setCandidateModal(false)}
         onSubmit={props.handleSaveCandidate}
       />

@@ -86,30 +86,46 @@ export function useCandidateMutations({
 
       let employeeId = existingEmp?.id as string | undefined;
 
+      const employeePayload = {
+        first_name,
+        last_name,
+        email: candidate.email,
+        phone: candidate.phone || null,
+        role: job?.title || null,
+        department: job?.department || null,
+        branch_id: branchId || null,
+        status: "onboarding",
+        join_date: joinDate,
+        // Transfer full Candidate Master Database credentials
+        candidate_id: candidate.id,
+        candidate_code: candidate.candidate_code || null,
+        location: candidate.location || null,
+        education: candidate.education || null,
+        work_experience: candidate.work_experience || null,
+        skills: candidate.skills || [],
+        languages: candidate.languages || [],
+        expected_salary: candidate.expected_salary ? Number(candidate.expected_salary) : null,
+        notice_period: candidate.notice_period || null,
+        resume_url: candidate.resume_url || null,
+        resume_name: candidate.resume_name || null,
+      };
+
       if (!employeeId) {
         const { data: newEmp, error: empError } = await supabase
           .from("employees")
-          .insert({
-            first_name,
-            last_name,
-            email: candidate.email,
-            phone: candidate.phone || null,
-            role: job?.title || null,
-            department: job?.department || null,
-            branch_id: branchId || null,
-            status: "onboarding",
-            join_date: joinDate,
-          })
+          .insert(employeePayload)
           .select()
           .single();
 
         if (empError) {
           setMovingToOnboarding(false);
-          toast("Error", "Failed to create employee record for onboarding", "error");
+          toast("Error", "Failed to create employee record for onboarding: " + empError.message, "error");
           return false;
         }
         employeeId = newEmp.id;
       } else {
+        await supabase.from("employees").update(employeePayload).eq("id", employeeId);
+
         const { data: existingRequest } = await supabase
           .from("onboarding_requests")
           .select("id")
@@ -122,6 +138,16 @@ export function useCandidateMutations({
         }
       }
 
+      // Mark candidate as hired & update application record
+      await supabase.from("candidates").update({ stage: "hired" }).eq("id", candidate.id);
+      if (candidate.job_posting_id) {
+        await supabase
+          .from("candidate_applications")
+          .update({ stage: "hired", outcome: "hired" })
+          .eq("candidate_id", candidate.id)
+          .eq("job_posting_id", candidate.job_posting_id);
+      }
+
       const { data, error } = await startOnboardingForEmployee(employeeId!, actorName);
       setMovingToOnboarding(false);
 
@@ -130,7 +156,7 @@ export function useCandidateMutations({
         return false;
       }
 
-      toast("Moved to Onboarding", `${candidate.full_name} has been added to the Onboarding module.`, "success");
+      toast("Moved to Onboarding", `${candidate.full_name} has been added to Onboarding with master credentials transferred.`, "success");
       logActivity({
         module: "onboarding",
         action: "created",

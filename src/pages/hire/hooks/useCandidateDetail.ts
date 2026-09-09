@@ -7,7 +7,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { logActivity } from "@/lib/audit";
 import { uploadFileToS3, uploadMultipleFilesToS3 } from "@/lib/s3-storage";
-import type { Candidate, Interview, CandidateDocument } from "../types";
+import type { Candidate, Interview, CandidateDocument, Job } from "../types";
 import { STAGE_CONFIG } from "../constants";
 import { useCandidateDetailFeedback } from "./useCandidateDetailFeedback";
 
@@ -20,6 +20,7 @@ export function useCandidateDetail(id: string | undefined) {
 
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [interviews, setInterviews] = useState<Interview[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingResume, setUploadingResume] = useState(false);
 
@@ -33,14 +34,39 @@ export function useCandidateDetail(id: string | undefined) {
   const loadCandidate = useCallback(async (cid: string) => {
     setLoading(true);
     const requestId = ++loadRequestId.current;
-    const [{ data: c }, { data: ivs }] = await Promise.all([
-      supabase.from("candidates").select("*, job_postings(id, title, department, branches(name))").eq("id", cid).is("deleted_at", null).maybeSingle(),
-      supabase.from("interviews").select("*, employees(first_name, last_name, avatar_url)").eq("candidate_id", cid).is("deleted_at", null).order("scheduled_at", { ascending: false }),
+    const [{ data: c }, { data: ivs }, { data: apps }, { data: j }] = await Promise.all([
+      supabase
+        .from("candidates")
+        .select("*, job_postings(id, title, department, branches(name)), assigned_recruiter:employees!assigned_recruiter_id(id, first_name, last_name, email)")
+        .eq("id", cid)
+        .is("deleted_at", null)
+        .maybeSingle(),
+      supabase
+        .from("interviews")
+        .select("*, employees(first_name, last_name, avatar_url)")
+        .eq("candidate_id", cid)
+        .is("deleted_at", null)
+        .order("scheduled_at", { ascending: false }),
+      supabase
+        .from("candidate_applications")
+        .select("*, job_postings(id, title, department, location, branches(name))")
+        .eq("candidate_id", cid)
+        .order("applied_at", { ascending: false }),
+      supabase
+        .from("job_postings")
+        .select("id, title, department, location")
+        .eq("status", "active")
+        .is("deleted_at", null)
+        .order("title"),
     ]);
 
     if (requestId !== loadRequestId.current) return;
     const cand = c as unknown as Candidate | null;
+    if (cand) {
+      cand.applications = (apps as any) || [];
+    }
     setCandidate(cand);
+    setJobs((j as unknown as Job[]) || []);
     if (cand) setNotesText(cand.notes || "");
     setInterviews((ivs as unknown as Interview[]) || []);
     setLoading(false);
@@ -211,6 +237,30 @@ export function useCandidateDetail(id: string | undefined) {
     navigate("/hire");
   }, [id, candidate, navigate]);
 
+  const handleAddApplication = useCallback(
+    async (jobPostingId: string, source?: string, notes?: string) => {
+      if (!id) return false;
+      try {
+        const { error } = await supabase.from("candidate_applications").insert({
+          candidate_id: id,
+          job_posting_id: jobPostingId,
+          stage: "applied",
+          source: source || candidate?.source || "Direct",
+          outcome: "in_progress",
+          notes: notes || null,
+        });
+        if (error) throw error;
+        toast("Application Created", "Candidate added to new vacancy pipeline.", "success");
+        await loadCandidate(id);
+        return true;
+      } catch (err: any) {
+        toast("Error", err.message || "Failed to create application", "error");
+        return false;
+      }
+    },
+    [id, candidate, loadCandidate]
+  );
+
   return {
     candidate,
     interviews,
@@ -242,6 +292,8 @@ export function useCandidateDetail(id: string | undefined) {
     deleteDocument,
     handleSaveNotes,
     deleteCandidate,
+    handleAddApplication,
+    jobs,
     handleScheduleInterview: feedback.handleScheduleInterview,
     handleSaveFeedback: feedback.handleSaveFeedback,
     navigate,

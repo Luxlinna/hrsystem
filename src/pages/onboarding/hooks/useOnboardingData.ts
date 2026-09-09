@@ -36,7 +36,7 @@ export function useOnboardingData(
           .order("first_name"),
         supabase
           .from("onboarding_requests")
-          .select("*, employees(first_name, last_name, role, department, branch_id, branches(name))")
+          .select("*, employees(first_name, last_name, role, department, branch_id, branches(name), candidate_code, candidate_id, location, resume_url, resume_name)")
           .is("deleted_at", null)
           .order("created_at", { ascending: false }),
         supabase

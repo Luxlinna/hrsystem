@@ -94,7 +94,7 @@ export function useHireData() {
         jobQuery,
         supabase
           .from("candidates")
-          .select("*, job_postings(id, title, department, branch_id)")
+          .select("*, job_postings(id, title, department, branch_id), assigned_recruiter:employees!assigned_recruiter_id(id, first_name, last_name, email)")
           .is("deleted_at", null)
           .order("applied_at", { ascending: false }),
         supabase

@@ -35,9 +35,16 @@ export const CandidateCard = memo(function CandidateCard({
               {initials(candidate.full_name)}
             </div>
             <div className="min-w-0">
-              <h4 className="font-extrabold text-sm text-gray-900 group-hover:text-[#253C7D] transition-colors truncate">
-                {candidate.full_name}
-              </h4>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {candidate.candidate_code && (
+                  <span className="text-[9px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                    {candidate.candidate_code}
+                  </span>
+                )}
+                <h4 className="font-extrabold text-sm text-gray-900 group-hover:text-[#253C7D] transition-colors truncate">
+                  {candidate.full_name}
+                </h4>
+              </div>
               <p className="text-[10px] text-gray-400 truncate font-semibold">
                 Applied {formatRelative(candidate.applied_at)}
               </p>
@@ -68,6 +75,27 @@ export const CandidateCard = memo(function CandidateCard({
             <span className="font-medium">{candidate.source}</span>
           </div>
         </div>
+
+        {/* Master Profile Badges */}
+        {(candidate.location || candidate.assigned_recruiter || (candidate.tags && candidate.tags.length > 0)) && (
+          <div className="flex items-center gap-1.5 flex-wrap text-[10px] mb-3">
+            {candidate.location && (
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium">
+                <i className="ri-map-pin-line mr-0.5 text-slate-400" /> {candidate.location}
+              </span>
+            )}
+            {candidate.assigned_recruiter && (
+              <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-semibold border border-purple-100">
+                Recruiter: {candidate.assigned_recruiter.first_name}
+              </span>
+            )}
+            {candidate.tags && candidate.tags.slice(0, 2).map((t) => (
+              <span key={t} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium border border-blue-100">
+                #{t}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Star Rating & Resume Link */}
         <div className="flex items-center justify-between text-xs mb-3">

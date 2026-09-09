@@ -74,6 +74,12 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-lg font-black text-gray-900 leading-tight">{hireName}</h2>
+              {emp?.candidate_code && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono bg-blue-50 text-[#253C7D] border border-blue-200/60 inline-flex items-center gap-1">
+                  <i className="ri-fingerprint-line text-[12px]"></i>
+                  {emp.candidate_code}
+                </span>
+              )}
               <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
                 isPending ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
               }`}>
@@ -82,9 +88,20 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
                 Stage: {selectedHire.stage}
               </span>
+              {emp?.resume_url && (
+                <a
+                  href={emp.resume_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60 hover:bg-rose-100 inline-flex items-center gap-1"
+                >
+                  <i className="ri-file-pdf-fill"></i> Candidate CV
+                </a>
+              )}
             </div>
             <p className="text-[11px] text-gray-400 font-semibold mt-1">
               Day {selectedHire.day_count} &middot; {emp?.role || "Staff"} &middot; {emp?.department || "HR"} &middot; {emp?.branches?.name || "Headquarters"}
+              {emp?.location && ` · ${emp.location}`}
             </p>
           </div>
         </div>

@@ -60,8 +60,9 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/70 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="px-5 py-3.5">Candidate Name</th>
+                <th className="px-5 py-3.5">Candidate ID & Name</th>
                 <th className="px-5 py-3.5">Target Job</th>
+                <th className="px-5 py-3.5">Recruiter</th>
                 <th className="px-5 py-3.5">Pipeline Stage</th>
                 <th className="px-5 py-3.5">Rating</th>
                 <th className="px-5 py-3.5">Applied</th>
@@ -80,12 +81,24 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
                           {initials(c.full_name)}
                         </div>
                         <div>
-                          <p className="font-extrabold text-gray-900 group-hover:text-[#253C7D] transition-colors">{c.full_name}</p>
-                          <p className="text-[10px] text-gray-400 font-medium">{c.email}</p>
+                          <div className="flex items-center gap-1.5">
+                            {c.candidate_code && (
+                              <span className="text-[9px] font-mono font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">
+                                {c.candidate_code}
+                              </span>
+                            )}
+                            <p className="font-extrabold text-gray-900 group-hover:text-[#253C7D] transition-colors">{c.full_name}</p>
+                          </div>
+                          <p className="text-[10px] text-gray-400 font-medium">
+                            {c.email} {c.location ? `• ${c.location}` : ""}
+                          </p>
                         </div>
                       </Link>
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap font-bold text-gray-700">{c.job_postings?.title || "Direct"}</td>
+                    <td className="px-5 py-3.5 whitespace-nowrap text-[11px] text-gray-600 font-medium">
+                      {c.assigned_recruiter ? `${c.assigned_recruiter.first_name} ${c.assigned_recruiter.last_name}` : "—"}
+                    </td>
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <select
                         value={c.stage}
