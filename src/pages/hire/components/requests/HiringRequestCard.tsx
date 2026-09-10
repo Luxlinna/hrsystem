@@ -51,9 +51,9 @@ export const HiringRequestCard = memo(function HiringRequestCard({
   const isStage3HrAdmin = r.status === "pending_hr_admin_review";
   const isStage4Chairman = r.status === "pending_chairman_review";
 
-  const canActStage1 = isStage1Branch && canBranchApprove && (isSuperAdmin || !r.branch_id || r.branch_id === userBranchId);
-  const canActStage2 = isStage2HrReview && (canHrReview || isSuperAdmin);
-  const canActStage3 = isStage3HrAdmin && (canHrAdminApprove || isSuperAdmin);
+  const canActStage1 = isStage1Branch && canBranchApprove && (!isOwner || isSuperAdmin) && (isSuperAdmin || !r.branch_id || r.branch_id === userBranchId);
+  const canActStage2 = isStage2HrReview && (canHrReview || isSuperAdmin) && (!isOwner || isSuperAdmin);
+  const canActStage3 = isStage3HrAdmin && (canHrAdminApprove || isSuperAdmin) && (!isOwner || isSuperAdmin);
   const canActStage4 = isStage4Chairman && (canChairmanApprove || isSuperAdmin);
 
   const recruiterName = r.assigned_recruiter_name || r.hr_assigned_to_name;
@@ -124,6 +124,12 @@ export const HiringRequestCard = memo(function HiringRequestCard({
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 font-medium">
                 <i className="ri-user-star-line text-sky-600" /> HR Reviewed: <strong>{r.hr_reviewed_by}</strong>
                 {r.hr_reviewed_at && ` · ${formatDateTime(r.hr_reviewed_at)}`}
+              </span>
+            )}
+            {r.hr_admin_approved_by && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 text-purple-800 border border-purple-200 font-medium">
+                <i className="ri-shield-star-line text-purple-600" /> HR Admin Approved: <strong>{r.hr_admin_approved_by}</strong>
+                {r.hr_admin_approved_at && ` · ${formatDateTime(r.hr_admin_approved_at)}`}
               </span>
             )}
             {r.chairman_approved_by && (

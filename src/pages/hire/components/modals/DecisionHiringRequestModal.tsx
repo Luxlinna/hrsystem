@@ -126,7 +126,7 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
                 <>Endorsing this requisition confirms HR review and forwards it to the <strong>HR Division Admin / Director</strong> for administrative sign-off.</>
               )}
               {isStage3HrAdmin && (
-                <>Approving this requisition provides HR Division clearance and escalates it to the <strong>Executive Chairman</strong> for final authorization.</>
+                <>Approving this requisition provides HR Division clearance and escalates it to the <strong>Chairwoman</strong> for final authorization.</>
               )}
               {isStage4Chairman && (
                 <>Authorizing this requisition completes the full 4-stage recruitment governance pipeline, marks it as <strong>Approved</strong>, and immediately creates a live <strong>Active Job Posting</strong>.</>

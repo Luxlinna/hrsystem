@@ -4,6 +4,7 @@ interface Stats {
   total: number;
   pendingBranch: number;
   pendingHr: number;
+  pendingHrAdmin: number;
   pendingChairman: number;
   approved: number;
 }
@@ -27,7 +28,7 @@ export const HiringRequestsHeader = memo(function HiringRequestsHeader({
         <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-[11px] font-bold tracking-wide uppercase text-blue-100 border border-white/10">
-              Pipeline: Manager Request → CEO/Director Endorsement → HR Review → Chairwoman Authorization (Go Live)
+              Pipeline: Request → CEO/Director Endorsement → HR Manager Review → HR Admin Director Approval → Chairwoman Authorization (Go Live)
             </span>
             {isChairman && (
               <span className="px-2.5 py-0.5 bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 rounded-full text-[11px] font-bold">
@@ -39,7 +40,7 @@ export const HiringRequestsHeader = memo(function HiringRequestsHeader({
             Recruitment & Hiring Requisitions
           </h2>
           <p className="text-xs sm:text-sm text-blue-100/90 max-w-2xl leading-relaxed font-medium">
-            Enterprise Governance: Requisition requested by Department Manager, endorsed by CEO/Director, vetted by HR, and authorized by Chairwoman to go live.
+            Enterprise Governance: Requisition requested by Manager, endorsed by CEO/Director, reviewed by HR Manager, approved by HR Admin Director, and authorized by Chairwoman to go live.
           </p>
         </div>
 
@@ -54,22 +55,26 @@ export const HiringRequestsHeader = memo(function HiringRequestsHeader({
         )}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-6 border-t border-white/15 relative">
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-          <p className="text-[10px] text-amber-200 font-bold uppercase tracking-wider">CEO/Director Review</p>
-          <p className="text-xl sm:text-2xl font-black text-amber-300 mt-1">{stats.pendingBranch}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6 pt-6 border-t border-white/15 relative">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15">
+          <p className="text-[10px] text-amber-200 font-bold uppercase tracking-wider">CEO/Director</p>
+          <p className="text-xl font-black text-amber-300 mt-1">{stats.pendingBranch}</p>
         </div>
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-          <p className="text-[10px] text-sky-200 font-bold uppercase tracking-wider">HR Review</p>
-          <p className="text-xl sm:text-2xl font-black text-sky-300 mt-1">{stats.pendingHr}</p>
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15">
+          <p className="text-[10px] text-sky-200 font-bold uppercase tracking-wider">HR Manager</p>
+          <p className="text-xl font-black text-sky-300 mt-1">{stats.pendingHr}</p>
         </div>
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-          <p className="text-[10px] text-orange-200 font-bold uppercase tracking-wider">Chairwoman Review</p>
-          <p className="text-xl sm:text-2xl font-black text-orange-300 mt-1">{stats.pendingChairman}</p>
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15">
+          <p className="text-[10px] text-purple-200 font-bold uppercase tracking-wider">HR Admin Director</p>
+          <p className="text-xl font-black text-purple-300 mt-1">{stats.pendingHrAdmin}</p>
         </div>
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15">
+          <p className="text-[10px] text-orange-200 font-bold uppercase tracking-wider">Chairwoman</p>
+          <p className="text-xl font-black text-orange-300 mt-1">{stats.pendingChairman}</p>
+        </div>
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15">
           <p className="text-[10px] text-emerald-200 font-bold uppercase tracking-wider">Live Active Jobs</p>
-          <p className="text-xl sm:text-2xl font-black text-emerald-300 mt-1">{stats.approved}</p>
+          <p className="text-xl font-black text-emerald-300 mt-1">{stats.approved}</p>
         </div>
       </div>
     </div>

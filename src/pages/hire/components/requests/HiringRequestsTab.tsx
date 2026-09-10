@@ -66,7 +66,8 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
       total: requests.length,
       pendingBranch: requests.filter((r) => !r.status || r.status === "pending" || r.status === "pending_branch_review").length,
       pendingHr: requests.filter((r) => r.status === "pending_hr_review").length,
-      pendingChairman: requests.filter((r) => r.status === "pending_chairman_review" || r.status === "pending_hr_admin_review").length,
+      pendingHrAdmin: requests.filter((r) => r.status === "pending_hr_admin_review").length,
+      pendingChairman: requests.filter((r) => r.status === "pending_chairman_review").length,
       approved: requests.filter((r) => r.status === "approved").length,
     };
   }, [requests]);
@@ -76,8 +77,6 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
       if (statusFilter !== "all") {
         if (statusFilter === "pending") {
           if (r.status !== "pending" && r.status !== "pending_branch_review" && r.status !== undefined) return false;
-        } else if (statusFilter === "pending_chairman_review") {
-          if (r.status !== "pending_chairman_review" && r.status !== "pending_hr_admin_review") return false;
         } else if (r.status !== statusFilter) {
           return false;
         }
@@ -125,10 +124,11 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
             className="px-3 py-2 bg-gray-50/80 rounded-xl text-xs font-semibold text-gray-700 border border-gray-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all cursor-pointer"
           >
             <option value="all">All Requisition Statuses ({stats.total})</option>
-            <option value="pending">Awaiting CEO/Director Endorsement</option>
-            <option value="pending_hr_review">In HR Review</option>
-            <option value="pending_chairman_review">Awaiting Chairwoman Authorization</option>
-            <option value="approved">Fully Approved & Job Live</option>
+            <option value="pending">Stage 1: Branch Endorsement ({stats.pendingBranch})</option>
+            <option value="pending_hr_review">Stage 2: HR Manager Review ({stats.pendingHr})</option>
+            <option value="pending_hr_admin_review">Stage 3: HR Admin Director Approval ({stats.pendingHrAdmin})</option>
+            <option value="pending_chairman_review">Stage 4: Chairwoman Authorization ({stats.pendingChairman})</option>
+            <option value="approved">Fully Approved & Job Live ({stats.approved})</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
