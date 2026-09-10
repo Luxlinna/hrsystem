@@ -29,7 +29,10 @@ interface HireModalsContainerProps {
   setResumeFile: (file: File | null) => void;
   uploadingResume: boolean;
   jobs: Job[];
+  candidates: Candidate[];
+  allCandidates?: Candidate[];
   handleSaveCandidate: (e: React.FormEvent) => void;
+  handleMergeCandidate?: (existingCandidateId: string) => Promise<boolean>;
 
   interviewModal: boolean;
   setInterviewModal: (val: boolean) => void;
@@ -37,7 +40,6 @@ interface HireModalsContainerProps {
   newInterview: NewInterviewFormState;
   setNewInterview: React.Dispatch<React.SetStateAction<NewInterviewFormState>>;
   schedulingInterview: boolean;
-  candidates: Candidate[];
   handleSaveInterview: (e: React.FormEvent) => void;
 
   onboardingModal: boolean;
@@ -70,6 +72,7 @@ interface HireModalsContainerProps {
   isBranchAdmin?: boolean;
   userBranchId?: string | null;
   userBranchName?: string | null;
+  isHrDivisionBranch?: boolean;
   employees?: any[];
   handleCreateRequest: (e: React.FormEvent) => void;
 
@@ -108,9 +111,14 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
         setResumeFile={props.setResumeFile}
         uploadingResume={props.uploadingResume}
         jobs={props.jobs}
+        candidates={props.candidates}
+        allCandidates={props.allCandidates || props.candidates}
         employees={props.employees}
+        branches={props.branches}
+        isHrDivisionBranch={Boolean(props.isHrDivisionBranch || /hr\s*division/i.test(props.userBranchName || "") || props.branches?.some(b => b.id === props.userBranchId && /hr\s*division/i.test(b.name)))}
         onClose={() => props.setCandidateModal(false)}
         onSubmit={props.handleSaveCandidate}
+        onMergeCandidate={props.handleMergeCandidate}
       />
 
       <InterviewModal

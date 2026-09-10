@@ -98,6 +98,14 @@ export function useHire() {
     if (await candidateActions.handleSaveCandidate(modals.newCandidate, modals.editingCandidate, modals.candidateFiles)) modals.setCandidateModal(false);
   }, [candidateActions, modals]);
 
+  const handleMergeCandidate = useCallback(async (existingCandidateId: string) => {
+    if (await candidateActions.handleMergeCandidate(existingCandidateId, modals.newCandidate, modals.candidateFiles)) {
+      modals.setCandidateModal(false);
+      return true;
+    }
+    return false;
+  }, [candidateActions, modals]);
+
   const handleSaveInterview = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (await candidateActions.handleSaveInterview(modals.newInterview, modals.editingInterview)) modals.setInterviewModal(false);
@@ -118,11 +126,11 @@ export function useHire() {
   return {
     isPartnerBranchBlocked, userBranchName, userBranchId,
     actorName, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
-    jobs: data.jobs, candidates: data.candidates, interviews: data.interviews, branches: data.branches, employees: data.employees,
+    jobs: data.jobs, candidates: data.candidates, allCandidates: data.allCandidates, interviews: data.interviews, branches: data.branches, employees: data.employees,
     hiringRequests: data.hiringRequests, loading: data.loading, loadData: data.loadData,
     tab: filters.tab, setTab: filters.setTab,
     canRequest, canApprove, canBranchApprove, canHrReview, canHrAdminApprove, canChairmanApprove,
-    isHrDivisionBranch: canViewCrossBranch,
+    isHrDivisionBranch,
     canViewCrossBranch,
     isChairman, isSuperAdmin, isAdmin, isBranchAdmin,
     jobViewMode: filters.jobViewMode, setJobViewMode: filters.setJobViewMode,
@@ -160,7 +168,7 @@ export function useHire() {
     openCreateJob: modals.openCreateJob, openEditJob: modals.openEditJob,
     openCreateCandidate: modals.openCreateCandidate, openEditCandidate: modals.openEditCandidate, openCreateInterview: modals.openCreateInterview,
     openEditInterview: modals.openEditInterview, openMoveToOnboarding: modals.openMoveToOnboarding, openFeedbackModal: modals.openFeedbackModal,
-    handleSaveJob, handleSaveCandidate, handleSaveInterview, closeJob: actions.closeJob, reopenJob: actions.reopenJob, deleteJob: actions.deleteJob,
+    handleSaveJob, handleSaveCandidate, handleMergeCandidate, handleSaveInterview, closeJob: actions.closeJob, reopenJob: actions.reopenJob, deleteJob: actions.deleteJob,
     updateCandidateStage: actions.updateCandidateStage, rateCandidate: actions.rateCandidate, deleteCandidate: actions.deleteCandidate,
     handleMoveToOnboarding, uploadCandidateResume: candidateActions.uploadCandidateResume, deleteInterview: actions.deleteInterview, handleSaveFeedback,
   };

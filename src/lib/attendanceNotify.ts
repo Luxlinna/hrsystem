@@ -58,7 +58,8 @@ export async function notifyAttendanceEvent(input: AttendanceNotifyInput) {
 
   const inAppScope = settingsMap.attendance_notify_scope === "all" ? "all" : "exceptions";
   const wantsInApp = inAppScope === "all" || input.isException;
-  const wantsTelegram = input.isException && settingsMap.telegram_notify_enabled === "true";
+  const isTelegramEnabled = settingsMap.telegram_notify_enabled === "true";
+  const wantsTelegram = isTelegramEnabled && (inAppScope === "all" || input.isException);
   if (!wantsInApp && !wantsTelegram) return;
 
   const action = input.type === "in" ? "checked in" : "checked out";
@@ -90,6 +91,7 @@ export async function notifyAttendanceEvent(input: AttendanceNotifyInput) {
             message,
             entityId: input.employeeId,
             recipientUserId: uid,
+            skipTelegram: true, // Prevents creating duplicate Telegram messages per recipient manager
           })
         )
       );
@@ -97,27 +99,37 @@ export async function notifyAttendanceEvent(input: AttendanceNotifyInput) {
   }
 
   if (wantsTelegram) {
-    // wantsTelegram implies input.isException — Telegram only ever fires
-    // for late check-ins / early checkouts, never routine on-time events.
-    const label = input.type === "in" ? "Late Check-in" : "Early Checkout";
-    const emoji = input.type === "in" ? "⏰" : "⚠️";
-
-    const lines = [`${emoji} <b>${label}</b>`, "", `👤 <b>Employee:</b> ${escapeHtml(input.employeeName)}`];
-    const dateLabel = formatDateLabel(input.date);
-    const timeLabel = formatTimeLabel(input.time);
-    if (dateLabel) lines.push(`📅 <b>Date:</b> ${dateLabel}`);
-    if (timeLabel) lines.push(`🕒 <b>Time:</b> ${timeLabel}`);
-    if (input.department) lines.push(`🗂 <b>Department:</b> ${escapeHtml(input.department)}`);
-    if (input.branchName) lines.push(`🏢 <b>Branch:</b> ${escapeHtml(input.branchName)}`);
-    lines.push(
-      `⚠️ <b>Status:</b> ${input.exceptionMinutes ?? 0} min ${input.type === "in" ? "late" : "early"}`
-    );
-
     const appUrl = (import.meta.env.VITE_APP_URL || "https://hrsystem-quit.onrender.com").replace(/\/$/, "");
-    // Fire-and-forget: a Telegram outage shouldn't block the clock-in/out flow.
-    sendTelegramMessage(lines.join("\n"), { text: "Open in HR Nexus", url: `${appUrl}/attendance` }).catch((err) =>
-      console.warn("Telegram attendance notify failed:", err)
-    );
+
+    if (input.isException) {
+      const label = input.type === "in" ? "Late Check-in" : "Early Checkout";
+      const emoji = input.type === "in" ? "⏰" : "⚠️";
+
+      const lines = [`${emoji} <b>${label}</b>`, "", `👤 <b>Employee:</b> ${escapeHtml(input.employeeName)}`];
+      const dateLabel = formatDateLabel(input.date);
+      const timeLabel = formatTimeLabel(input.time);
+      if (dateLabel) lines.push(`📅 <b>Date:</b> ${dateLabel}`);
+      if (timeLabel) lines.push(`🕒 <b>Time:</b> ${timeLabel}`);
+      if (input.department) lines.push(`🗂 <b>Department:</b> ${escapeHtml(input.department)}`);
+      if (input.branchName) lines.push(`🏢 <b>Branch:</b> ${escapeHtml(input.branchName)}`);
+      lines.push(
+        `⚠️ <b>Status:</b> ${input.exceptionMinutes ?? 0} min ${input.type === "in" ? "late" : "early"}`
+      );
+
+      sendTelegramMessage(lines.join("\n"), { text: "Open in HR Nexus", url: `${appUrl}/attendance` }).catch((err) =>
+        console.warn("Telegram attendance notify failed:", err)
+      );
+    } else {
+      // Exactly ONE Telegram alert for standard on-time check-in / check-out
+      const lines = [
+        `📢 <b>${escapeHtml(title)}</b>`,
+        "",
+        escapeHtml(message),
+      ];
+      sendTelegramMessage(lines.join("\n"), { text: "Open in HR Nexus", url: `${appUrl}/attendance` }).catch((err) =>
+        console.warn("Telegram attendance notify failed:", err)
+      );
+    }
   }
 }
 

@@ -101,6 +101,7 @@ export const CancellationReasonModal = memo(function CancellationReasonModal({
       title: `Meeting Room Booking ${isReject ? "Rejected" : "Cancelled"}`,
       message: `Your booking for ${targetRoom?.name} on ${booking.date} (${fmtTime(booking.start_time)}–${fmtTime(booking.end_time)}) was ${isReject ? "rejected" : "cancelled"}. Reason: ${finalReason}`,
       entityId: targetBookingId,
+      skipTelegram: true,
     });
 
     notifyTelegramEvent(

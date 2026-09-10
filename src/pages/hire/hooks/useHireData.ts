@@ -34,6 +34,7 @@ export function useHireData() {
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [allCandidates, setAllCandidates] = useState<Candidate[]>([]);
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [hiringRequests, setHiringRequests] = useState<HiringRequest[]>([]);
@@ -111,7 +112,8 @@ export function useHireData() {
       const rawJobs = (j as unknown as Job[]) || [];
       const jobIds = new Set(rawJobs.map((x) => x.id));
 
-      const filteredCandidates = ((c as unknown as Candidate[]) || []).filter(
+      const rawCandidates = (c as unknown as Candidate[]) || [];
+      const filteredCandidates = rawCandidates.filter(
         (cand) => cand.job_posting_id && jobIds.has(cand.job_posting_id)
       );
 
@@ -123,6 +125,7 @@ export function useHireData() {
 
       setJobs(rawJobs);
       setCandidates(filteredCandidates);
+      setAllCandidates(rawCandidates);
       setInterviews(filteredInterviews);
 
       const allBranches = visibleBranches && visibleBranches.length > 0
@@ -160,6 +163,7 @@ export function useHireData() {
     setJobs,
     candidates,
     setCandidates,
+    allCandidates,
     interviews,
     setInterviews,
     branches,

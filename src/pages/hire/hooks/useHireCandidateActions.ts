@@ -68,14 +68,51 @@ export function useHireCandidateActions({
 
         let newDocs: CandidateDocument[] = [];
         if (filesList.length > 0) {
-          const s3Items = await uploadMultipleFilesToS3(filesList, "candidates/documents");
-          newDocs = s3Items.map((item) => ({
-            name: item.name,
-            url: item.url,
-            size: item.size,
-            type: item.type,
-            uploaded_at: new Date().toISOString(),
-          }));
+          try {
+            const s3Items = await uploadMultipleFilesToS3(filesList, "candidates/documents");
+            newDocs = s3Items.map((item) => ({
+              name: item.name,
+              url: item.url,
+              size: item.size,
+              type: item.type,
+              uploaded_at: new Date().toISOString(),
+            }));
+          } catch (s3Err) {
+            console.warn("AWS S3 upload failed, attempting Supabase storage fallback:", s3Err);
+            for (const file of filesList) {
+              try {
+                const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+                const path = `resumes/${Date.now()}_${cleanName}`;
+                const { error: upErr } = await supabase.storage.from("candidates").upload(path, file, { upsert: true });
+                if (!upErr) {
+                  const { data } = supabase.storage.from("candidates").getPublicUrl(path);
+                  newDocs.push({
+                    name: file.name,
+                    url: data.publicUrl,
+                    size: file.size,
+                    type: file.type,
+                    uploaded_at: new Date().toISOString(),
+                  });
+                } else {
+                  newDocs.push({
+                    name: file.name,
+                    url: "",
+                    size: file.size,
+                    type: file.type,
+                    uploaded_at: new Date().toISOString(),
+                  });
+                }
+              } catch {
+                newDocs.push({
+                  name: file.name,
+                  url: "",
+                  size: file.size,
+                  type: file.type,
+                  uploaded_at: new Date().toISOString(),
+                });
+              }
+            }
+          }
         }
 
         const existingDocs: CandidateDocument[] = editingCandidate?.documents || (
@@ -291,9 +328,152 @@ export function useHireCandidateActions({
     [loadData, setSavingFeedback]
   );
 
+  const handleMergeCandidate = useCallback(
+    async (
+      existingCandidateId: string,
+      candidateForm: NewCandidateFormState,
+      candidateFiles: File[] = []
+    ): Promise<boolean> => {
+      setUploadingResume(true);
+      try {
+        const { data: existing, error: fetchErr } = await supabase
+          .from("candidates")
+          .select("*")
+          .eq("id", existingCandidateId)
+          .single();
+        if (fetchErr) throw fetchErr;
+
+        const newDocs: CandidateDocument[] = [];
+        for (const file of candidateFiles) {
+          try {
+            const url = await uploadToS3(file, "candidates");
+            newDocs.push({
+              name: file.name,
+              url,
+              size: file.size,
+              type: file.type,
+              uploaded_at: new Date().toISOString(),
+            });
+          } catch (uploadErr) {
+            console.warn("S3 Upload error for file, attempting Supabase storage fallback:", file.name, uploadErr);
+            try {
+              const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+              const path = `resumes/${Date.now()}_${cleanName}`;
+              const { error: upErr } = await supabase.storage.from("candidates").upload(path, file, { upsert: true });
+              if (!upErr) {
+                const { data } = supabase.storage.from("candidates").getPublicUrl(path);
+                newDocs.push({
+                  name: file.name,
+                  url: data.publicUrl,
+                  size: file.size,
+                  type: file.type,
+                  uploaded_at: new Date().toISOString(),
+                });
+              } else {
+                newDocs.push({
+                  name: file.name,
+                  url: "",
+                  size: file.size,
+                  type: file.type,
+                  uploaded_at: new Date().toISOString(),
+                });
+              }
+            } catch {
+              newDocs.push({
+                name: file.name,
+                url: "",
+                size: file.size,
+                type: file.type,
+                uploaded_at: new Date().toISOString(),
+              });
+            }
+          }
+        }
+
+        const existingDocs: CandidateDocument[] = existing?.documents || (
+          existing?.resume_url
+            ? [{ name: existing.resume_name || "Resume", url: existing.resume_url }]
+            : []
+        );
+
+        const allDocs = [...existingDocs, ...newDocs];
+        const latestResume = newDocs[0] || (existingDocs[0] || null);
+
+        const parseArray = (str?: string) =>
+          str ? str.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean) : [];
+
+        const mergedNotes = [
+          existing.notes,
+          `[Merged CV on ${new Date().toLocaleDateString()}]: ${candidateForm.notes || "New CV uploaded and merged."}`,
+        ].filter(Boolean).join("\n\n");
+
+        const updatePayload: any = {
+          documents: allDocs,
+          notes: mergedNotes,
+        };
+
+        if (latestResume) {
+          updatePayload.resume_url = latestResume.url;
+          updatePayload.resume_name = latestResume.name;
+        }
+
+        if (!existing.phone && candidateForm.phone) updatePayload.phone = candidateForm.phone;
+        if (!existing.location && candidateForm.location) updatePayload.location = candidateForm.location;
+        if (!existing.education && candidateForm.education) updatePayload.education = candidateForm.education;
+        if (!existing.work_experience && candidateForm.work_experience) updatePayload.work_experience = candidateForm.work_experience;
+
+        const existingSkills: string[] = existing.skills || [];
+        const newSkills = parseArray(candidateForm.skills);
+        const mergedSkills = Array.from(new Set([...existingSkills, ...newSkills]));
+        if (mergedSkills.length > 0) updatePayload.skills = mergedSkills;
+
+        const { error: updateErr } = await supabase
+          .from("candidates")
+          .update(updatePayload)
+          .eq("id", existingCandidateId);
+        if (updateErr) throw updateErr;
+
+        if (candidateForm.job_posting_id) {
+          const { data: existingApp } = await supabase
+            .from("candidate_applications")
+            .select("id")
+            .eq("candidate_id", existingCandidateId)
+            .eq("job_posting_id", candidateForm.job_posting_id)
+            .maybeSingle();
+
+          if (!existingApp) {
+            await supabase.from("candidate_applications").insert({
+              candidate_id: existingCandidateId,
+              job_posting_id: candidateForm.job_posting_id,
+              stage: existing.stage || "applied",
+              source: candidateForm.source,
+              outcome: "in_progress",
+              notes: `Applied via merged CV on ${new Date().toLocaleDateString()}`,
+            });
+          }
+        }
+
+        toast(
+          "Profiles Merged",
+          `Merged new CV into "${existing.full_name}"'s master record.`,
+          "success"
+        );
+        await loadData();
+        return true;
+      } catch (err: any) {
+        toast("Merge Failed", err.message || "Could not merge candidate profile.", "error");
+        return false;
+      } finally {
+        setUploadingResume(false);
+      }
+    },
+    [loadData, setUploadingResume]
+  );
+
   return {
     uploadCandidateResume,
     handleSaveCandidate,
+    handleMergeCandidate,
     handleSaveInterview,
     handleMoveToOnboarding,
     handleSaveFeedback,

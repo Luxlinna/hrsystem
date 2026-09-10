@@ -1,7 +1,10 @@
-import { memo } from "react";
-import type { Candidate, Job, NewCandidateFormState } from "../../types";
+import { memo, useMemo, useState } from "react";
+import type { Branch, Candidate, Job, NewCandidateFormState } from "../../types";
 import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
 import { CANDIDATE_SOURCES, NOTICE_PERIOD_OPTIONS } from "../../constants";
+import { extractCv, type ExtractedCvData } from "../../utils/cvExtractor";
+import { queryCandidateDuplicates, findDuplicateCandidate, type DuplicateMatchResult } from "../../utils/cvDuplicateMatcher";
+import { DuplicateCandidateWarningModal } from "./DuplicateCandidateWarningModal";
 
 interface CandidateModalProps {
   isOpen: boolean;
@@ -9,7 +12,11 @@ interface CandidateModalProps {
   form: NewCandidateFormState;
   setForm: React.Dispatch<React.SetStateAction<NewCandidateFormState>>;
   jobs: Job[];
+  candidates?: Candidate[];
+  allCandidates?: Candidate[];
   employees?: SearchableEmployee[];
+  branches?: Branch[];
+  isHrDivisionBranch?: boolean;
   candidateFiles?: File[];
   setCandidateFiles?: React.Dispatch<React.SetStateAction<File[]>>;
   resumeFile?: File | null;
@@ -17,6 +24,7 @@ interface CandidateModalProps {
   uploadingResume: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  onMergeCandidate?: (existingCandidateId: string) => Promise<boolean>;
 }
 
 export const CandidateModal = memo(function CandidateModal({
@@ -25,7 +33,11 @@ export const CandidateModal = memo(function CandidateModal({
   form,
   setForm,
   jobs,
+  candidates = [],
+  allCandidates = [],
   employees = [],
+  branches = [],
+  isHrDivisionBranch = false,
   candidateFiles = [],
   setCandidateFiles,
   resumeFile,
@@ -33,7 +45,62 @@ export const CandidateModal = memo(function CandidateModal({
   uploadingResume,
   onClose,
   onSubmit,
+  onMergeCandidate,
 }: CandidateModalProps) {
+  const [analyzingCv, setAnalyzingCv] = useState(false);
+  const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
+  const [duplicateMatchResult, setDuplicateMatchResult] = useState<DuplicateMatchResult | null>(null);
+  const [lastExtractedData, setLastExtractedData] = useState<ExtractedCvData | null>(null);
+  const [uploadedCvFile, setUploadedCvFile] = useState<File | null>(null);
+  const [merging, setMerging] = useState(false);
+  const [bypassDuplicateCheck, setBypassDuplicateCheck] = useState(false);
+
+  // Determine if the current candidate workflow is strictly HR Division BU
+  const isTargetHrDivision = useMemo(() => {
+    // If candidate has a target vacancy with a branch assigned, check that branch
+    if (form.job_posting_id) {
+      const job = jobs.find((j) => j.id === form.job_posting_id);
+      if (job && job.branch_id) {
+        const jobBranch = branches.find((b) => b.id === job.branch_id);
+        if (jobBranch) {
+          return /hr\s*division/i.test(jobBranch.name);
+        }
+      }
+    }
+    return Boolean(isHrDivisionBranch);
+  }, [form.job_posting_id, jobs, branches, isHrDivisionBranch]);
+
+  // Only employees belonging to HR Division or holding HR / Recruiter roles are eligible recruiters
+  const hrEmployees = useMemo(() => {
+    const hrBranchIds = new Set(
+      (branches || [])
+        .filter((b) => /hr\s*division|human\s*resource/i.test(b.name))
+        .map((b) => b.id)
+    );
+
+    return employees.filter((emp) => {
+      // Always retain if already assigned to this candidate so existing data is never hidden
+      if (form.assigned_recruiter_id && emp.id === form.assigned_recruiter_id) return true;
+
+      // 1. Employee is assigned to the "HR Division" branch
+      if (emp.branch_id && hrBranchIds.has(emp.branch_id)) return true;
+
+      // 2. Employee is in the HR department
+      const dept = (emp.department || "").trim().toLowerCase();
+      if (/^(hr|human\s*resources?|recruitment|talent|people)$/i.test(dept) || /hr\s*division/i.test(dept)) return true;
+
+      // 3. Employee has an HR / Recruiter / Super Admin role
+      const role = (emp.role || "").trim().toLowerCase();
+      if (/(^|\b)(hr|recruiter|recruitment|talent|human\s*resources?)(\b|$)/i.test(role) || /super\s*admin/i.test(role)) return true;
+
+      // 4. Employee name mentions HR Admin
+      const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.toLowerCase();
+      if (/hr\s*admin/i.test(fullName)) return true;
+
+      return false;
+    });
+  }, [employees, branches, form.assigned_recruiter_id]);
+
   if (!isOpen) return null;
 
   const currentFiles: File[] = candidateFiles.length > 0
@@ -42,13 +109,55 @@ export const CandidateModal = memo(function CandidateModal({
     ? [resumeFile]
     : [];
 
-  const handleAddFiles = (newFiles: FileList | null) => {
-    if (!newFiles) return;
+  const handleAddFiles = async (newFiles: FileList | null) => {
+    if (!newFiles || newFiles.length === 0) return;
     const fileList = Array.from(newFiles);
     if (setCandidateFiles) {
       setCandidateFiles((prev) => [...prev, ...fileList]);
     } else if (setResumeFile && fileList[0]) {
       setResumeFile(fileList[0]);
+    }
+
+    const primaryFile = fileList.find((f) => /\.(pdf|docx|txt|rtf)$/i.test(f.name)) || fileList[0];
+    if (primaryFile) {
+      setUploadedCvFile(primaryFile);
+      setAnalyzingCv(true);
+      try {
+        const extracted = await extractCv(primaryFile);
+        setLastExtractedData(extracted);
+
+        // Auto-fill form fields if currently empty
+        setForm((prev) => ({
+          ...prev,
+          full_name: prev.full_name || extracted.full_name || "",
+          email: prev.email || extracted.email || "",
+          phone: prev.phone || extracted.phone || "",
+          location: prev.location || extracted.location || "",
+          education: prev.education || extracted.education || "",
+          work_experience: prev.work_experience || extracted.work_experience || "",
+          skills: prev.skills || (extracted.skills ? extracted.skills.join(", ") : ""),
+          languages: prev.languages || (extracted.languages ? extracted.languages.join(", ") : ""),
+        }));
+
+        // Run duplicate detection against database candidates and compare with the newly uploaded CV
+        if (!bypassDuplicateCheck && !editingCandidate) {
+          const candidatePool = allCandidates.length > 0 ? allCandidates : candidates;
+          const match = await queryCandidateDuplicates(
+            primaryFile,
+            extracted,
+            candidatePool,
+            editingCandidate?.id
+          );
+          if (match.isDuplicate) {
+            setDuplicateMatchResult(match);
+            setDuplicateWarningOpen(true);
+          }
+        }
+      } catch (err) {
+        console.warn("CV extraction error:", err);
+      } finally {
+        setAnalyzingCv(false);
+      }
     }
   };
 
@@ -64,6 +173,57 @@ export const CandidateModal = memo(function CandidateModal({
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleViewCandidate = (candidateId: string) => {
+    window.open(`/hire?tab=candidates&highlight=${candidateId}`, "_blank");
+  };
+
+  const handleMerge = async (existingCandidateId: string) => {
+    if (!onMergeCandidate) return;
+    setMerging(true);
+    try {
+      const success = await onMergeCandidate(existingCandidateId);
+      if (success) {
+        setDuplicateWarningOpen(false);
+        onClose();
+      }
+    } finally {
+      setMerging(false);
+    }
+  };
+
+  const handleCreateNew = () => {
+    setBypassDuplicateCheck(true);
+    setDuplicateWarningOpen(false);
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bypassDuplicateCheck && !editingCandidate) {
+      const manualExtracted: ExtractedCvData = {
+        full_name: form.full_name,
+        email: form.email,
+        phone: form.phone,
+        education: form.education,
+        work_experience: form.work_experience,
+        skills: form.skills ? form.skills.split(/[,;\n]+/).map((s) => s.trim()) : [],
+      };
+      const candidatePool = allCandidates.length > 0 ? allCandidates : candidates;
+      const match = await queryCandidateDuplicates(
+        uploadedCvFile || (candidateFiles[0] ?? resumeFile ?? null),
+        manualExtracted,
+        candidatePool,
+        editingCandidate?.id
+      );
+      if (match.isDuplicate) {
+        setDuplicateMatchResult(match);
+        setLastExtractedData(manualExtracted);
+        setDuplicateWarningOpen(true);
+        return;
+      }
+    }
+    onSubmit(e);
   };
 
   return (
@@ -106,7 +266,7 @@ export const CandidateModal = memo(function CandidateModal({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={onSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto">
+        <form onSubmit={handleFormSubmit} className="p-6 space-y-6 overflow-y-auto">
           {/* Section 1: Contact & Personal Info */}
           <div className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 space-y-3">
             <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
@@ -321,7 +481,7 @@ export const CandidateModal = memo(function CandidateModal({
 
               <div>
                 <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                  Assigned Recruiter
+                  Assigned Recruiter (HR Division)
                 </label>
                 <select
                   value={form.assigned_recruiter_id}
@@ -329,9 +489,9 @@ export const CandidateModal = memo(function CandidateModal({
                   className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
                 >
                   <option value="">Unassigned</option>
-                  {employees.map((emp) => (
+                  {hrEmployees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name} ({emp.role || emp.department || "Staff"})
+                      {emp.first_name} {emp.last_name} ({emp.role || emp.department || "HR"})
                     </option>
                   ))}
                 </select>
@@ -360,6 +520,10 @@ export const CandidateModal = memo(function CandidateModal({
                 <span className="bg-amber-100 text-amber-800 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md">
                   AWS S3
                 </span>
+                <span className="bg-blue-50 text-blue-700 border border-blue-200/70 text-[9px] font-extrabold px-2 py-0.2 rounded-md flex items-center gap-1">
+                  <i className="ri-file-text-line text-blue-600" />
+                  Built-in CV Parser
+                </span>
               </label>
               <span className="text-[10px] text-gray-400 font-medium">Multiple files allowed</span>
             </div>
@@ -376,6 +540,22 @@ export const CandidateModal = memo(function CandidateModal({
                 className="hidden"
               />
             </label>
+
+            {analyzingCv && (
+              <div className="mt-2.5 p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#253C7D] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                  <i className="ri-loader-4-line animate-spin" />
+                </div>
+                <div className="text-xs">
+                  <p className="font-bold text-slate-900">
+                    Parsing CV & Checking Duplicate Candidates...
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Extracting candidate data and cross-referencing database records
+                  </p>
+                </div>
+              </div>
+            )}
 
             {currentFiles.length > 0 && (
               <div className="mt-2.5 space-y-1.5 max-h-32 overflow-y-auto pr-1">
@@ -445,6 +625,20 @@ export const CandidateModal = memo(function CandidateModal({
           </div>
         </form>
       </div>
+
+      {duplicateWarningOpen && duplicateMatchResult && (
+        <DuplicateCandidateWarningModal
+          isOpen={duplicateWarningOpen}
+          matchResult={duplicateMatchResult}
+          extractedData={lastExtractedData || {}}
+          newFile={uploadedCvFile}
+          onClose={() => setDuplicateWarningOpen(false)}
+          onViewCandidate={handleViewCandidate}
+          onMerge={handleMerge}
+          onCreateNew={handleCreateNew}
+          merging={merging}
+        />
+      )}
     </div>
   );
 });

@@ -33,6 +33,7 @@ export async function sendBookingNotification({
       title: "Meeting Room Booking Modified",
       message: `${empName} modified reservation for ${modalRoom.name} (${floorText}) on ${bookingForm.date} (${timeText}) "${bookingForm.title}".`,
       entityId: bookingId,
+      skipTelegram: true,
     });
 
     notifyTelegramEvent(
@@ -56,6 +57,7 @@ export async function sendBookingNotification({
       title: "New Meeting Room Booking Request",
       message: `${empName} requested ${modalRoom.name} (${floorText}) on ${bookingForm.date} (${timeText}) "${bookingForm.title}".`,
       entityId: bookingId,
+      skipTelegram: true,
     });
 
     notifyTelegramEvent(

@@ -150,6 +150,7 @@ export const ApprovalReviewModal = memo(function ApprovalReviewModal({
       title: "Meeting Room Booking Approved",
       message: `Your reservation for ${targetRoom?.name} on ${booking.date} (${fmtTime(booking.start_time)}–${fmtTime(booking.end_time)}) was approved.`,
       entityId: targetBookingId,
+      skipTelegram: true,
     });
 
     notifyTelegramEvent(

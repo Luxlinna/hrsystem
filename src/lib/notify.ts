@@ -92,7 +92,7 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
     const { error } = await supabase.from("notifications").insert(payload);
 
     if (!error) {
-      if (!entry.skipTelegram) {
+      if (!entry.skipTelegram && !entry.recipientUserId) {
         const icon = entry.type === "error" ? "🚨" : entry.type === "warning" ? "⚠️" : entry.type === "success" ? "✅" : "📢";
         notifyTelegramEvent(
           `${icon} <b>${escapeTelegramHtml(entry.title)}</b>\n\n${escapeTelegramHtml(entry.message)}`
@@ -115,7 +115,7 @@ export async function notify(entry: NotifyInput): Promise<boolean> {
       return false;
     }
 
-    if (!entry.skipTelegram) {
+    if (!entry.skipTelegram && !entry.recipientUserId) {
       const icon = entry.type === "error" ? "🚨" : entry.type === "warning" ? "⚠️" : entry.type === "success" ? "✅" : "📢";
       notifyTelegramEvent(
         `${icon} <b>${escapeTelegramHtml(entry.title)}</b>\n\n${escapeTelegramHtml(entry.message)}`

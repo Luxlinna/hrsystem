@@ -74,6 +74,7 @@ export function useLeaveApprovalDecision({
         title: `Leave Request ${isApprove ? "Approved" : "Rejected"}`,
         message: `Your ${selectedRequest.leave_type} leave (${selectedRequest.start_date} to ${selectedRequest.end_date}) was ${approvalAction} by ${actorName}`,
         entityId: selectedRequest.id,
+        skipTelegram: true,
       });
 
       notifyTelegramEvent(

@@ -18,17 +18,34 @@ export interface S3FileItem {
 }
 
 async function getUploadUrl(key: string, contentType: string): Promise<{ uploadUrl: string; publicUrl: string }> {
-  const { data: { session } } = await supabase.auth.getSession();
+  let { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    const refreshed = await supabase.auth.refreshSession();
+    session = refreshed.data.session;
+  }
   if (!session) throw new Error("Not authenticated");
 
-  const res = await fetch(`${FUNCTIONS_URL}/s3-upload`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ key, contentType }),
-  });
+  const anonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY || "";
+
+  const doFetch = (token: string) =>
+    fetch(`${FUNCTIONS_URL}/s3-upload`, {
+      method: "POST",
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ key, contentType }),
+    });
+
+  let res = await doFetch(session.access_token);
+  if (res.status === 401) {
+    const refreshed = await supabase.auth.refreshSession();
+    if (refreshed.data.session) {
+      session = refreshed.data.session;
+      res = await doFetch(session.access_token);
+    }
+  }
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to get upload URL");
@@ -36,17 +53,34 @@ async function getUploadUrl(key: string, contentType: string): Promise<{ uploadU
 }
 
 export async function deleteS3File(key: string): Promise<void> {
-  const { data: { session } } = await supabase.auth.getSession();
+  let { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    const refreshed = await supabase.auth.refreshSession();
+    session = refreshed.data.session;
+  }
   if (!session) throw new Error("Not authenticated");
 
-  const res = await fetch(`${FUNCTIONS_URL}/s3-delete`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ key }),
-  });
+  const anonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY || "";
+
+  const doFetch = (token: string) =>
+    fetch(`${FUNCTIONS_URL}/s3-delete`, {
+      method: "POST",
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ key }),
+    });
+
+  let res = await doFetch(session.access_token);
+  if (res.status === 401) {
+    const refreshed = await supabase.auth.refreshSession();
+    if (refreshed.data.session) {
+      session = refreshed.data.session;
+      res = await doFetch(session.access_token);
+    }
+  }
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to delete file");
