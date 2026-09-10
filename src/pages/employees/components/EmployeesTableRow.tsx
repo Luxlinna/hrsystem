@@ -4,6 +4,7 @@ import type { Employee, AccountStatus, VisibleColumns, BiometricDeviceRef } from
 import { isEmployeeBiometricEligible } from "../types";
 import { getStatusMeta } from "../constants";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface EmployeesTableRowProps {
   employee: Employee;
@@ -80,11 +81,11 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
             </p>
             {e.biometric_user_id && (
               <span
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/70 shrink-0"
-                title="ZKTeco Machine Fingerprint/Face ID"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 shrink-0"
+                title={`ZKTeco Machine Fingerprint/Face ID: ${e.biometric_user_id}`}
               >
                 <i className="ri-fingerprint-line text-[10px]" />
-                ID: {e.biometric_user_id}
+                {formatBiometricId(e.biometric_user_id, e.branches?.name)}
               </span>
             )}
           </div>

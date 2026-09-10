@@ -2,15 +2,18 @@ import { memo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Employee } from "../types";
 import { deptColors } from "../constants";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface BranchStaffSectionProps {
   deptGroups: Record<string, Employee[]>;
   empLoading: boolean;
+  branchName?: string;
 }
 
 export const BranchStaffSection = memo(function BranchStaffSection({
   deptGroups,
   empLoading,
+  branchName,
 }: BranchStaffSectionProps) {
   const [expandedDepts, setExpandedDepts] = useState<Record<string, boolean>>({});
 
@@ -62,11 +65,11 @@ export const BranchStaffSection = memo(function BranchStaffSection({
                             </Link>
                             {emp.biometric_user_id && (
                               <span
-                                className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/70 shrink-0"
-                                title="ZKTeco Machine Fingerprint/Face ID"
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 shrink-0"
+                                title={`ZKTeco Machine Fingerprint/Face ID: ${emp.biometric_user_id}`}
                               >
                                 <i className="ri-fingerprint-line text-[9px]" />
-                                PIN: {emp.biometric_user_id}
+                                {formatBiometricId(emp.biometric_user_id, branchName)}
                               </span>
                             )}
                           </div>

@@ -1,6 +1,7 @@
 import { memo, useState, useEffect } from "react";
 import type { Branch, Employee, EmployeeFormState } from "../types";
 import { DEPARTMENTS, STATUS_OPTIONS } from "../constants";
+import { formatBiometricId, extractMachinePin } from "@/lib/biometricUtils";
 
 export interface WorkLocation {
   id: string;
@@ -335,24 +336,37 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
       </div>
 
       {/* Biometric Machine ID */}
-      <div className="p-3.5 bg-indigo-50/50 border border-indigo-100 rounded-2xl">
-        <label className="block text-xs font-bold text-gray-800 mb-1 flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-[#253C7D]">
+      <div className="p-3.5 bg-indigo-50/50 border border-indigo-100 rounded-2xl space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block text-xs font-bold text-gray-800 flex items-center gap-1.5 text-[#253C7D]">
             <i className="ri-fingerprint-line text-sm" />
-            Biometric Machine User ID (PIN)
-          </span>
-          <span className="text-[10px] text-gray-400 font-normal">Optional</span>
-        </label>
+            BU Biometric Machine User ID (PIN)
+          </label>
+          <span className="text-[10px] text-gray-400 font-normal">Optional (Auto or Manual)</span>
+        </div>
         <input
           type="text"
           value={form.biometric_user_id || ""}
           onChange={(e) => setForm({ ...form, biometric_user_id: e.target.value })}
-          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D]"
-          placeholder="e.g. 24, 3085 (matches ZKTeco machine User ID)"
+          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#253C7D]"
+          placeholder="e.g. 001, 24, 090, 3085 (Machine PIN)"
         />
-        <p className="text-[10px] text-gray-500 mt-1">
-          If already registered on the fingerprint/face machine, enter their Machine User ID here to link attendance immediately.
-        </p>
+        {form.biometric_user_id?.trim() ? (
+          <div className="flex items-center gap-2 text-[11px] text-indigo-700 bg-white border border-indigo-100 px-2.5 py-1 rounded-lg">
+            <i className="ri-arrow-right-line text-xs" />
+            <span>
+              Format: <strong>{formatBiometricId(form.biometric_user_id, currentBranchName)}</strong>
+            </span>
+            <span className="text-gray-300">·</span>
+            <span className="text-gray-500">
+              Terminal PIN: <code>{extractMachinePin(form.biometric_user_id)}</code>
+            </span>
+          </div>
+        ) : (
+          <p className="text-[10px] text-gray-500">
+            Each BU has sequential IDs (e.g. <em>{currentBranchName} 001</em> to <em>090+</em>). Enter the machine PIN or leave blank to auto-assign upon sync.
+          </p>
+        )}
       </div>
     </>
   );

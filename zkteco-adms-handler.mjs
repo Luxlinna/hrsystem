@@ -68,10 +68,16 @@ export async function processZkPunchRecord(punch) {
     empQuery = empQuery.eq("branch_id", device.branch_id);
   }
 
+  const cleanId = String(userId).trim();
+  const numMatch = cleanId.match(/\d+/);
+  const numVal = numMatch ? parseInt(numMatch[0], 10) : NaN;
+  const rawNumStr = !isNaN(numVal) ? String(numVal) : cleanId;
+  const padded3Str = !isNaN(numVal) ? String(numVal).padStart(3, "0") : cleanId;
+
   if (isUuid) {
     empQuery = empQuery.or(`biometric_user_id.eq.${userId},id.eq.${userId}`);
   } else {
-    empQuery = empQuery.eq("biometric_user_id", String(userId));
+    empQuery = empQuery.or(`biometric_user_id.eq.${rawNumStr},biometric_user_id.eq.${padded3Str},biometric_user_id.ilike.%${padded3Str},biometric_user_id.ilike.% ${rawNumStr}`);
   }
 
   const { data: employee, error: empErr } = await empQuery.maybeSingle();

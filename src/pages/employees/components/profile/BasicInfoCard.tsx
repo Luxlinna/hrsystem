@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { Employee, ReportEntry } from "../../types";
 import { isPhoneSyntheticEmail } from "@/lib/phoneUtils";
+import { formatBiometricId, extractMachinePin } from "@/lib/biometricUtils";
 
 interface BasicInfoCardProps {
   employee: Employee;
@@ -263,33 +264,54 @@ export const BasicInfoCard = memo(function BasicInfoCard({
         </div>
 
         {/* Biometric Machine PIN / User ID */}
-        <div className="md:col-span-2 pt-2 border-t border-gray-100">
+        <div className="md:col-span-2 pt-3 border-t border-gray-100">
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-              Biometric Machine User ID (PIN)
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+              BU Biometric ID / Machine PIN
             </label>
-            <span className="text-[10px] text-gray-400">ZKTeco Fingerprint & Face Terminal ID</span>
+            <span className="text-[10px] text-gray-400">
+              Each BU has its own sequential ID (e.g. Pinex Agro 001 - 090)
+            </span>
           </div>
           {editing ? (
-            <div className="relative max-w-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                <i className="ri-fingerprint-line text-sm" />
+            <div className="space-y-1.5 max-w-md">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <i className="ri-fingerprint-line text-sm" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. 001, 24, 090, 3085..."
+                  value={form.biometric_user_id || ""}
+                  onChange={(e) => setForm({ ...form, biometric_user_id: e.target.value })}
+                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-[13px] font-mono font-bold focus:outline-none focus:border-[#253C7D]"
+                />
               </div>
-              <input
-                type="text"
-                placeholder="e.g. 24, 3085..."
-                value={form.biometric_user_id || ""}
-                onChange={(e) => setForm({ ...form, biometric_user_id: e.target.value })}
-                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-[13px] font-mono font-bold focus:outline-none focus:border-[#253C7D]"
-              />
+              {form.biometric_user_id?.trim() && (
+                <div className="flex items-center gap-2 text-[11px] text-indigo-700 bg-indigo-50/70 border border-indigo-100 px-2.5 py-1 rounded-md">
+                  <i className="ri-arrow-right-line text-xs" />
+                  <span>
+                    BU Format: <strong>{formatBiometricId(form.biometric_user_id, branches.find((b) => b.id === (form.branch_id || employee.branch_id))?.name || employee.branches?.name)}</strong>
+                  </span>
+                  <span className="text-gray-400">·</span>
+                  <span className="text-gray-600">
+                    Machine PIN: <code>{extractMachinePin(form.biometric_user_id)}</code>
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {employee.biometric_user_id ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20">
                   <i className="ri-fingerprint-line text-sm" />
-                  Machine PIN: {employee.biometric_user_id}
-                </span>
+                  <span className="text-xs font-mono font-bold">
+                    {formatBiometricId(employee.biometric_user_id, employee.branches?.name)}
+                  </span>
+                  <span className="text-[10px] bg-white text-gray-600 px-1.5 py-0.2 rounded border border-gray-200 font-mono">
+                    Terminal PIN: {extractMachinePin(employee.biometric_user_id)}
+                  </span>
+                </div>
               ) : (
                 <span className="text-[13px] text-gray-400 italic flex items-center gap-1">
                   <i className="ri-error-warning-line text-amber-500" />

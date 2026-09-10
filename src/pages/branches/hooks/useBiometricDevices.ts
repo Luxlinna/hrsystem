@@ -159,17 +159,18 @@ export function useBiometricDevices(branchId: string) {
         let pin = emp.biometric_user_id;
         if (!pin || isNaN(parseInt(pin, 10))) {
           maxPin += 1;
-          pin = String(maxPin);
+          pin = maxPin < 1000 ? String(maxPin).padStart(3, "0") : String(maxPin);
           await supabase.from("employees").update({ biometric_user_id: pin }).eq("id", emp.id);
         }
 
+        const numericPin = parseInt(pin, 10) || pin;
         const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || `User ${pin}`;
         // Clean special characters for ZKTeco ASCII / UTF-8
         const cleanName = fullName.replace(/[\t\r\n]/g, " ").slice(0, 24);
 
         commandsToInsert.push({
           device_serial: dev.device_serial,
-          command: `DATA UPDATE USERINFO PIN=${pin}\tName=${cleanName}\tPri=0\tPasswd=\tCard=\tGrp=1`,
+          command: `DATA UPDATE USERINFO PIN=${numericPin}\tName=${cleanName}\tPri=0\tPasswd=\tCard=\tGrp=1`,
         });
       }
 

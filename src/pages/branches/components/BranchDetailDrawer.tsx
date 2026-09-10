@@ -217,7 +217,7 @@ function BranchDetailDrawerInner({
       <BranchBiometricsSection branchId={branch.id} branchName={branch.name} canManage={canManageThisBranch} />
 
       {/* Staff Breakdown Subcomponent */}
-      <BranchStaffSection deptGroups={deptGroups} empLoading={empLoading} />
+      <BranchStaffSection deptGroups={deptGroups} empLoading={empLoading} branchName={branch.name} />
     </div>
   );
 }
