@@ -1,18 +1,21 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import type { OnboardingHire, ChecklistTask, TaskForm } from "../types";
+import type { OnboardingHire, ChecklistTask, TaskForm, StaffMember } from "../types";
+import { getHireName, notifyAssigneeOfChecklistTask } from "../checklistUtils";
 
 interface UseChecklistTaskFormMutationsProps {
   selectedHire: OnboardingHire | null;
   hireTasks: ChecklistTask[];
   loadData: () => Promise<void>;
+  staff?: StaffMember[];
 }
 
 export function useChecklistTaskFormMutations({
   selectedHire,
   hireTasks,
   loadData,
+  staff,
 }: UseChecklistTaskFormMutationsProps) {
   const [submitting, setSubmitting] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -37,20 +40,25 @@ export function useChecklistTaskFormMutations({
       if (!selectedHire || !taskForm.task_name.trim()) return;
 
       setSubmitting(true);
-      const { error } = await supabase.from("onboarding_checklist_tasks").insert([
-        {
-          onboarding_request_id: selectedHire.id,
-          task_name: taskForm.task_name.trim(),
-          description: taskForm.description.trim() || null,
-          category: taskForm.category,
-          assigned_to: taskForm.assigned_to.trim() || null,
-          assigned_to_role: taskForm.assigned_to_role.trim() || null,
-          due_date: taskForm.due_date || null,
-          priority: taskForm.priority,
-          sort_order: hireTasks.length + 1,
-          completed: false,
-        },
-      ]);
+      const assignedTo = taskForm.assigned_to.trim() || null;
+      const { data: inserted, error } = await supabase
+        .from("onboarding_checklist_tasks")
+        .insert([
+          {
+            onboarding_request_id: selectedHire.id,
+            task_name: taskForm.task_name.trim(),
+            description: taskForm.description.trim() || null,
+            category: taskForm.category,
+            assigned_to: assignedTo,
+            assigned_to_role: taskForm.assigned_to_role.trim() || null,
+            due_date: taskForm.due_date || null,
+            priority: taskForm.priority,
+            sort_order: hireTasks.length + 1,
+            completed: false,
+          },
+        ])
+        .select("id")
+        .maybeSingle();
 
       setSubmitting(false);
 
@@ -59,6 +67,18 @@ export function useChecklistTaskFormMutations({
       } else {
         toast("Task Added", "Checklist item added successfully", "success");
         setShowAddModal(false);
+
+        if (assignedTo) {
+          notifyAssigneeOfChecklistTask({
+            taskName: taskForm.task_name.trim(),
+            assignedTo,
+            hireName: getHireName(selectedHire),
+            dueDate: taskForm.due_date || null,
+            taskId: inserted?.id,
+            staffList: staff,
+          }).catch((err) => console.error("Assignment notification failed:", err));
+        }
+
         setTaskForm({
           task_name: "",
           description: "",
@@ -71,7 +91,7 @@ export function useChecklistTaskFormMutations({
         loadData();
       }
     },
-    [selectedHire, taskForm, hireTasks.length, loadData]
+    [selectedHire, taskForm, hireTasks.length, staff, loadData]
   );
 
   const handleEditTask = useCallback(
@@ -80,13 +100,16 @@ export function useChecklistTaskFormMutations({
       if (!selectedTask || !taskForm.task_name.trim()) return;
 
       setSubmitting(true);
+      const newAssignedTo = taskForm.assigned_to.trim() || null;
+      const wasAssignedTo = selectedTask.assigned_to;
+
       const { error } = await supabase
         .from("onboarding_checklist_tasks")
         .update({
           task_name: taskForm.task_name.trim(),
           description: taskForm.description.trim() || null,
           category: taskForm.category,
-          assigned_to: taskForm.assigned_to.trim() || null,
+          assigned_to: newAssignedTo,
           assigned_to_role: taskForm.assigned_to_role.trim() || null,
           due_date: taskForm.due_date || null,
           priority: taskForm.priority,
@@ -101,10 +124,23 @@ export function useChecklistTaskFormMutations({
         toast("Task Updated", "Changes saved successfully", "success");
         setShowEditModal(false);
         setSelectedTask(null);
+
+        // Alert notification on system to the employee account if newly assigned or reassigned
+        if (newAssignedTo && newAssignedTo !== wasAssignedTo) {
+          notifyAssigneeOfChecklistTask({
+            taskName: taskForm.task_name.trim(),
+            assignedTo: newAssignedTo,
+            hireName: getHireName(selectedHire),
+            dueDate: taskForm.due_date || null,
+            taskId: selectedTask.id,
+            staffList: staff,
+          }).catch((err) => console.error("Assignment notification failed:", err));
+        }
+
         loadData();
       }
     },
-    [selectedTask, taskForm, loadData]
+    [selectedTask, taskForm, selectedHire, staff, loadData]
   );
 
   const openEditModal = useCallback((task: ChecklistTask) => {

@@ -102,19 +102,21 @@ export const AddChecklistTaskModal = memo(function AddChecklistTaskModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                Assignee
+                Assignee (HR Division)
               </label>
               <input
                 type="text"
                 list="staff-assignees-add"
                 value={taskForm.assigned_to}
                 onChange={(e) => setTaskForm({ ...taskForm, assigned_to: e.target.value })}
-                placeholder="Select or enter person..."
+                placeholder="Select HR Division person..."
                 className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-medium focus:bg-white focus:outline-none focus:border-[#253C7D]"
               />
               <datalist id="staff-assignees-add">
                 {staff.map((s) => (
-                  <option key={s.id} value={`${s.first_name} ${s.last_name}`} />
+                  <option key={s.id} value={`${s.first_name} ${s.last_name}`}>
+                    {s.role ? `${s.role} • HR Division` : "HR Division"}
+                  </option>
                 ))}
               </datalist>
             </div>

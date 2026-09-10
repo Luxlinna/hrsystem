@@ -9,6 +9,7 @@ interface ChecklistHeaderProps {
   onOpenAddModal: () => void;
   onOpenExportModal: () => void;
   onOpenAuditLogs: () => void;
+  onOpenSetupRequirements?: () => void;
 }
 
 export const ChecklistHeader = memo(function ChecklistHeader({
@@ -18,6 +19,7 @@ export const ChecklistHeader = memo(function ChecklistHeader({
   onOpenAddModal,
   onOpenExportModal,
   onOpenAuditLogs,
+  onOpenSetupRequirements,
 }: ChecklistHeaderProps) {
   const hireName = getHireName(selectedHire);
 
@@ -43,6 +45,18 @@ export const ChecklistHeader = memo(function ChecklistHeader({
       </div>
 
       <div className="flex items-center gap-2.5 flex-wrap">
+        {onOpenSetupRequirements && (
+          <button
+            onClick={onOpenSetupRequirements}
+            disabled={!selectedHire}
+            className="px-3.5 py-2.5 bg-blue-50 border border-blue-200/80 hover:bg-blue-100 text-[#253C7D] rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+            title="Set up which requirements from Onboarding are needed for this employee"
+          >
+            <i className="ri-settings-4-line text-sm" />
+            <span>Set up Requirements</span>
+          </button>
+        )}
+
         <button
           onClick={onPopulateDefaultTasks}
           disabled={populatingDefaults || !selectedHire}

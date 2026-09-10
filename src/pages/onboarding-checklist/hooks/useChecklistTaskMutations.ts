@@ -2,8 +2,8 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
-import type { OnboardingHire, ChecklistTask } from "../types";
-import { getHireName, syncTaskWithOnboardingDocuments } from "../checklistUtils";
+import type { OnboardingHire, ChecklistTask, StaffMember } from "../types";
+import { getHireName, syncTaskWithOnboardingDocuments, notifyAssigneeOfChecklistTask } from "../checklistUtils";
 import { useChecklistTaskFormMutations } from "./useChecklistTaskFormMutations";
 import { useChecklistBatchActions } from "./useChecklistBatchActions";
 
@@ -14,6 +14,7 @@ interface UseChecklistTaskMutationsProps {
   isTaskLocked: (task: ChecklistTask) => boolean;
   loadData: () => Promise<void>;
   setTasks: React.Dispatch<React.SetStateAction<ChecklistTask[]>>;
+  staff?: StaffMember[];
 }
 
 export function useChecklistTaskMutations({
@@ -23,6 +24,7 @@ export function useChecklistTaskMutations({
   isTaskLocked,
   loadData,
   setTasks,
+  staff,
 }: UseChecklistTaskMutationsProps) {
   const [toggling, setToggling] = useState<string | null>(null);
 
@@ -30,6 +32,7 @@ export function useChecklistTaskMutations({
     selectedHire,
     hireTasks,
     loadData,
+    staff,
   });
 
   const batchActions = useChecklistBatchActions({
@@ -122,8 +125,17 @@ export function useChecklistTaskMutations({
         prev.map((t) => (t.id === task.id ? { ...t, assigned_to: completerName, assigned_to_role: "HR" } : t))
       );
       toast("Assigned", `Assigned to ${completerName}`, "success");
+
+      notifyAssigneeOfChecklistTask({
+        taskName: task.task_name,
+        assignedTo: completerName,
+        hireName: getHireName(selectedHire),
+        dueDate: task.due_date,
+        taskId: task.id,
+        staffList: staff,
+      }).catch((err) => console.error("Quick assign notification failed:", err));
     },
-    [completerName, setTasks]
+    [completerName, selectedHire, staff, setTasks]
   );
 
   const handleDeleteTask = useCallback(

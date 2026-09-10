@@ -51,6 +51,7 @@ export interface EmployeeOption {
   role: string;
   department: string;
   avatar_url?: string | null;
+  branch_id?: string | null;
   branches?: { name: string } | null;
 }
 

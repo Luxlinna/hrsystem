@@ -57,6 +57,7 @@ export function useOnboardingChecklist() {
     setTasks: data.setTasks,
     setSelectedHire: data.setSelectedHire,
     setHires: data.setHires,
+    staff: data.staff,
   });
 
   return {

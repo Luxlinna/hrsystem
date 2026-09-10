@@ -29,24 +29,63 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
       .eq("id", doc.id);
     if (error) {
       toast("Error", "Failed to update document status", "error");
-    } else {
-      const taskName = DOC_TO_TASK[doc.document_name];
-      if (taskName) {
+      return;
+    }
+
+    const taskName = DOC_TO_TASK[doc.document_name] || doc.document_name;
+
+    if (nextStatus === "complete") {
+      // Requirement selected: activate checklist task as pending verification
+      const { data: existingTask } = await supabase
+        .from("onboarding_checklist_tasks")
+        .select("id")
+        .eq("onboarding_request_id", request.id)
+        .eq("task_name", taskName)
+        .maybeSingle();
+
+      if (existingTask) {
         await supabase
           .from("onboarding_checklist_tasks")
           .update({
-            completed: nextStatus === "complete",
-            completed_at: nextStatus === "complete" ? new Date().toISOString() : null,
-            completed_by: nextStatus === "complete" ? "HR Admin" : null,
+            deleted_at: null,
+            completed: false,
+            completed_at: null,
+            completed_by: null,
           })
-          .eq("onboarding_request_id", request.id)
-          .eq("task_name", taskName)
-          .is("deleted_at", null);
+          .eq("id", existingTask.id);
+      } else {
+        const categoryMap: Record<string, string> = {
+          document: "documents",
+          it_setup: "it_setup",
+          training: "training",
+          complete: "general",
+        };
+        await supabase.from("onboarding_checklist_tasks").insert([
+          {
+            onboarding_request_id: request.id,
+            task_name: taskName,
+            description: doc.notes || `Requirement selected at Onboarding: ${doc.document_name}`,
+            category: categoryMap[doc.stage] || "documents",
+            priority: "medium",
+            completed: false,
+            due_date: doc.due_date ? doc.due_date.split("T")[0] : null,
+          },
+        ]);
       }
+      toast("Requirement Selected", `Added "${doc.document_name}" to verification checklist`, "success");
+    } else {
+      // Requirement unselected: soft delete from checklist tasks so it won't show
+      await supabase
+        .from("onboarding_checklist_tasks")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("onboarding_request_id", request.id)
+        .eq("task_name", taskName)
+        .is("deleted_at", null);
 
-      toast(nextStatus === "complete" ? "Item Completed" : "Item Reopened", "", "success");
-      onRefresh();
+      toast("Requirement Unchecked", `Removed "${doc.document_name}" from verification checklist`, "info");
     }
+
+    onRefresh();
   };
 
   const handleDelete = async () => {
@@ -58,6 +97,14 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
     if (error) {
       toast("Error", "Failed to delete item", "error");
     } else {
+      const taskName = DOC_TO_TASK[doc.document_name] || doc.document_name;
+      await supabase
+        .from("onboarding_checklist_tasks")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("onboarding_request_id", request.id)
+        .eq("task_name", taskName)
+        .is("deleted_at", null);
+
       toast("Deleted", "Item removed from checklist", "success");
       onRefresh();
     }

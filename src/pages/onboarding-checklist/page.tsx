@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChecklistHeader } from "./components/ChecklistHeader";
 import { CandidateDetailHeader } from "./components/CandidateDetailHeader";
 import { ChecklistStatsRow } from "./components/ChecklistStatsRow";
@@ -8,10 +9,13 @@ import { ChecklistListView } from "./components/views/ChecklistListView";
 import { ChecklistUrgencyView } from "./components/views/ChecklistUrgencyView";
 import { ChecklistModalsContainer } from "./components/ChecklistModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
+import { SetupRequirementsModal } from "@/components/modals/SetupRequirementsModal";
+import { getHireName } from "./checklistUtils";
 import { useOnboardingChecklist } from "./hooks/useOnboardingChecklist";
 
 export default function OnboardingChecklist() {
   const c = useOnboardingChecklist();
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false);
 
   if (c.loading) {
     return (
@@ -43,6 +47,7 @@ export default function OnboardingChecklist() {
         onOpenAddModal={() => c.setShowAddModal(true)}
         onOpenExportModal={() => c.setShowExportModal(true)}
         onOpenAuditLogs={c.loadHireAuditLogs}
+        onOpenSetupRequirements={() => setShowRequirementsModal(true)}
       />
 
       <CandidateDetailHeader
@@ -50,6 +55,7 @@ export default function OnboardingChecklist() {
         tasks={c.tasks}
         onOpenAddModal={() => c.setShowAddModal(true)}
         onOpenAuditLogs={c.loadHireAuditLogs}
+        onOpenSetupRequirements={() => setShowRequirementsModal(true)}
       />
 
       <ChecklistStatsRow
@@ -142,6 +148,16 @@ export default function OnboardingChecklist() {
         handleEditTask={c.handleEditTask}
         openEditModal={c.openEditModal}
       />
+
+      {c.selectedHire && (
+        <SetupRequirementsModal
+          isOpen={showRequirementsModal}
+          onClose={() => setShowRequirementsModal(false)}
+          onboardingRequestId={c.selectedHire.id}
+          employeeName={getHireName(c.selectedHire)}
+          onSaved={c.loadData}
+        />
+      )}
     </div>
   );
 }

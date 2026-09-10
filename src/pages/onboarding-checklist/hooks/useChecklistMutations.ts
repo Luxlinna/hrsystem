@@ -1,6 +1,6 @@
 import { useChecklistTaskMutations } from "./useChecklistTaskMutations";
 import { useChecklistHireMutations } from "./useChecklistHireMutations";
-import type { OnboardingHire, ChecklistTask } from "../types";
+import type { OnboardingHire, ChecklistTask, StaffMember } from "../types";
 
 interface UseChecklistMutationsProps {
   selectedHire: OnboardingHire | null;
@@ -11,6 +11,7 @@ interface UseChecklistMutationsProps {
   setTasks: React.Dispatch<React.SetStateAction<ChecklistTask[]>>;
   setSelectedHire: React.Dispatch<React.SetStateAction<OnboardingHire | null>>;
   setHires: React.Dispatch<React.SetStateAction<OnboardingHire[]>>;
+  staff?: StaffMember[];
 }
 
 export function useChecklistMutations({
@@ -22,6 +23,7 @@ export function useChecklistMutations({
   setTasks,
   setSelectedHire,
   setHires,
+  staff,
 }: UseChecklistMutationsProps) {
   const taskMutations = useChecklistTaskMutations({
     selectedHire,
@@ -30,6 +32,7 @@ export function useChecklistMutations({
     isTaskLocked,
     loadData,
     setTasks,
+    staff,
   });
 
   const hireMutations = useChecklistHireMutations({

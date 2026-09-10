@@ -14,6 +14,8 @@ interface OnboardingModalsContainerProps {
   eligibleEmployees: EmployeeOption[];
   starting: boolean;
   handleStartOnboarding: (e: React.FormEvent) => Promise<void>;
+  selectedDocNames?: string[];
+  setSelectedDocNames?: React.Dispatch<React.SetStateAction<string[]>>;
 
   showDocModal: boolean;
   setShowDocModal: (val: boolean) => void;
@@ -41,6 +43,8 @@ export const OnboardingModalsContainer = memo(function OnboardingModalsContainer
   eligibleEmployees,
   starting,
   handleStartOnboarding,
+  selectedDocNames,
+  setSelectedDocNames,
   showDocModal,
   setShowDocModal,
   selectedRequest,
@@ -67,6 +71,8 @@ export const OnboardingModalsContainer = memo(function OnboardingModalsContainer
         filteredEligibleEmployees={filteredEligibleEmployees}
         eligibleCount={eligibleEmployees.length}
         starting={starting}
+        selectedDocNames={selectedDocNames || []}
+        setSelectedDocNames={setSelectedDocNames}
         onSubmit={handleStartOnboarding}
       />
 

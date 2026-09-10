@@ -5,7 +5,7 @@ import { toast } from "@/components/Toast";
 import type { OnboardingRequest, OnboardingDoc, DocForm } from "../types";
 import { STAGES } from "../constants";
 import { formatDateTimeLocal } from "../onboardingUtils";
-import { STAGE_DEFAULT_DUE_DAYS } from "@/lib/onboarding";
+import { STAGE_DEFAULT_DUE_DAYS, DOC_TO_TASK } from "@/lib/onboarding";
 
 interface UseOnboardingDocMutationsProps {
   loadData: () => Promise<void>;
@@ -100,6 +100,25 @@ export function useOnboardingDocMutations({
     if (error) {
       toast("Error", editingDocId ? "Failed to save document" : "Failed to add checklist item", "error");
     } else {
+      if (!editingDocId && selectedRequest) {
+        const stageToCat: Record<string, string> = {
+          document: "documents",
+          it_setup: "it_setup",
+          training: "training",
+          complete: "general",
+        };
+        const taskName = DOC_TO_TASK[docForm.document_name.trim()] || docForm.document_name.trim();
+        supabase.from("onboarding_checklist_tasks").insert({
+          onboarding_request_id: selectedRequest.id,
+          task_name: taskName,
+          description: docForm.notes.trim() || null,
+          category: stageToCat[selectedStage] || "documents",
+          priority: "medium",
+          completed: false,
+          due_date: docForm.due_date ? new Date(docForm.due_date).toISOString().split("T")[0] : null,
+        }).then(() => {});
+      }
+
       toast("Saved", editingDocId ? "Document updated" : "Document added to checklist", "success");
       setDocForm({ document_name: "", notes: "", due_date: "" });
       setSelectedFileName(null);

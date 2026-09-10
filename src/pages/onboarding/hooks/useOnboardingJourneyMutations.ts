@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
-import { startOnboardingForEmployee } from "@/lib/onboarding";
+import { startOnboardingForEmployee, ONBOARDING_DOCUMENT_TEMPLATES } from "@/lib/onboarding";
 import type { OnboardingRequest, OnboardingDoc, EmployeeOption } from "../types";
 import { useOnboardingStageTransitions } from "./useOnboardingStageTransitions";
 import { buildDefaultDocumentInserts, buildDefaultTaskInserts } from "../onboardingUtils";
@@ -35,18 +35,21 @@ export function useOnboardingJourneyMutations({
   const [startEmployeeId, setStartEmployeeId] = useState("");
   const [empSearch, setEmpSearch] = useState("");
   const [starting, setStarting] = useState(false);
-
-  const transitions = useOnboardingStageTransitions({
-    actorName,
-    roleName,
-    setRequests,
-    setExpandedRequest,
+  const [selectedDocNames, setSelectedDocNames] = useState<string[]>(() => {
+    const all: string[] = [];
+    Object.values(ONBOARDING_DOCUMENT_TEMPLATES).forEach((list) => all.push(...list));
+    return all;
   });
+
+  const transitions = useOnboardingStageTransitions({ actorName, roleName, setRequests, setExpandedRequest });
 
   const openStartOnboarding = useCallback(() => {
     loadData();
     setStartEmployeeId("");
     setEmpSearch("");
+    const all: string[] = [];
+    Object.values(ONBOARDING_DOCUMENT_TEMPLATES).forEach((list) => all.push(...list));
+    setSelectedDocNames(all);
     setShowStartModal(true);
   }, [loadData]);
 
@@ -69,7 +72,7 @@ export function useOnboardingJourneyMutations({
         return;
       }
 
-      const { data, error } = await startOnboardingForEmployee(startEmployeeId, actorName);
+      const { data, error } = await startOnboardingForEmployee(startEmployeeId, actorName, selectedDocNames);
       setStarting(false);
       if (error) {
         toast("Error", "Failed to start onboarding journey", "error");
@@ -78,14 +81,11 @@ export function useOnboardingJourneyMutations({
 
       const emp = employees.find((x) => x.id === startEmployeeId);
       const empName = emp ? `${emp.first_name} ${emp.last_name}` : "the employee";
-      const empBranchName = emp?.branches?.name || "";
-      const empBranchId = emp?.branch_id;
-
       toast("Journey Started", `Onboarding started for ${empName}`, "success");
 
-      if (empBranchId && selectedBranchId !== "all" && selectedBranchId !== empBranchId && isSuperAdmin) {
-        setSelectedBranchId(empBranchId);
-        toast("Branch Switched", `Switched to ${empBranchName || "branch"} to view ${empName}'s onboarding journey.`, "info");
+      if (emp?.branch_id && selectedBranchId !== "all" && selectedBranchId !== emp.branch_id && isSuperAdmin) {
+        setSelectedBranchId(emp.branch_id);
+        toast("Branch Switched", `Switched to ${emp?.branches?.name || "branch"} to view ${empName}'s onboarding journey.`, "info");
       }
 
       logActivity({
@@ -112,7 +112,7 @@ export function useOnboardingJourneyMutations({
       setExpandedRequest(data.id);
       loadData();
     },
-    [startEmployeeId, requests, actorName, roleName, employees, loadData, isSuperAdmin, selectedBranchId, setSelectedBranchId, setExpandedRequest]
+    [startEmployeeId, requests, actorName, roleName, employees, loadData, isSuperAdmin, selectedBranchId, setSelectedBranchId, setExpandedRequest, selectedDocNames]
   );
 
   const handleDeleteRequest = useCallback(
@@ -193,5 +193,7 @@ export function useOnboardingJourneyMutations({
     advanceStage: transitions.advanceStage,
     regressStage: transitions.regressStage,
     completeOnboarding: transitions.completeOnboarding,
+    selectedDocNames,
+    setSelectedDocNames,
   };
 }

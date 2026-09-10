@@ -23,6 +23,11 @@ export interface StaffMember {
   department: string;
   role?: string;
   avatar_url?: string | null;
+  branch_id?: string;
+  branches?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 export interface OnboardingHire {

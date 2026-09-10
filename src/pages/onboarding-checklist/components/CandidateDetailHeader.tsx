@@ -9,6 +9,7 @@ interface CandidateDetailHeaderProps {
   tasks: ChecklistTask[];
   onOpenAddModal: () => void;
   onOpenAuditLogs: () => void;
+  onOpenSetupRequirements?: () => void;
 }
 
 export const CandidateDetailHeader = memo(function CandidateDetailHeader({
@@ -16,6 +17,7 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
   tasks,
   onOpenAddModal,
   onOpenAuditLogs,
+  onOpenSetupRequirements,
 }: CandidateDetailHeaderProps) {
   const navigate = useNavigate();
 
@@ -27,16 +29,13 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
   const stats = useMemo(() => {
     const total = hireTasks.length;
     const completed = hireTasks.filter((t) => t.completed).length;
-    const pending = total - completed;
-    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-    return { total, completed, pending, pct };
+    return { total, completed, pending: total - completed, pct: total > 0 ? Math.round((completed / total) * 100) : 0 };
   }, [hireTasks]);
 
   const stageStats = useMemo(() => {
     const getCount = (cat: string) => {
       const catTasks = hireTasks.filter((t) => t.category === cat);
-      const done = catTasks.filter((t) => t.completed).length;
-      return { done, total: catTasks.length };
+      return { done: catTasks.filter((t) => t.completed).length, total: catTasks.length };
     };
     return {
       documents: getCount("documents"),
@@ -53,9 +52,7 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
   const emp = selectedHire.employees;
   const isPending = selectedHire.status === "pending";
 
-  const handleOpenHub = () => {
-    navigate(`/onboarding?highlight=${selectedHire.id}`);
-  };
+  const handleOpenHub = () => navigate(`/onboarding?highlight=${selectedHire.id}`);
 
   const copyReport = () => {
     const reportText = `Onboarding Checklist Report for ${hireName}\nProgress: ${stats.pct}%\nCompleted: ${stats.completed}/${stats.total}\nStage: ${selectedHire.stage}`;
@@ -76,13 +73,11 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
               <h2 className="text-lg font-black text-gray-900 leading-tight">{hireName}</h2>
               {emp?.candidate_code && (
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono bg-blue-50 text-[#253C7D] border border-blue-200/60 inline-flex items-center gap-1">
-                  <i className="ri-fingerprint-line text-[12px]"></i>
+                  <i className="ri-fingerprint-line text-[12px]" />
                   {emp.candidate_code}
                 </span>
               )}
-              <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                isPending ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
-              }`}>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${isPending ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
                 {selectedHire.status}
               </span>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
@@ -95,7 +90,7 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
                   rel="noopener noreferrer"
                   className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60 hover:bg-rose-100 inline-flex items-center gap-1"
                 >
-                  <i className="ri-file-pdf-fill"></i> Candidate CV
+                  <i className="ri-file-pdf-fill" /> Candidate CV
                 </a>
               )}
             </div>
@@ -108,32 +103,27 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={onOpenAuditLogs}
-            className="px-3.5 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors cursor-pointer"
-          >
+          <button type="button" onClick={onOpenAuditLogs} className="px-3.5 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors cursor-pointer">
             View Details
           </button>
-          <button
-            type="button"
-            onClick={handleOpenHub}
-            className="px-3.5 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors cursor-pointer"
-          >
+          <button type="button" onClick={handleOpenHub} className="px-3.5 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors cursor-pointer">
             Open in Onboarding Hub
           </button>
-          <button
-            type="button"
-            onClick={copyReport}
-            className="px-3.5 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors cursor-pointer"
-          >
+          <button type="button" onClick={copyReport} className="px-3.5 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors cursor-pointer">
             Copy Report
           </button>
-          <button
-            type="button"
-            onClick={onOpenAddModal}
-            className="px-4 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
-          >
+          {onOpenSetupRequirements && (
+            <button
+              type="button"
+              onClick={onOpenSetupRequirements}
+              className="px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#253C7D] rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              title="Set up which requirements from Onboarding are needed for this employee"
+            >
+              <i className="ri-settings-4-line text-sm" />
+              <span>Set up Requirements</span>
+            </button>
+          )}
+          <button type="button" onClick={onOpenAddModal} className="px-4 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer">
             + Add Task
           </button>
         </div>
@@ -146,10 +136,7 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
           <span>{stats.pct}%</span>
         </div>
         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-            style={{ width: `${stats.pct}%` }}
-          />
+          <div className="h-full bg-emerald-500 rounded-full transition-all duration-300" style={{ width: `${stats.pct}%` }} />
         </div>
         <div className="flex items-center gap-3 text-[10px] font-black text-gray-400 uppercase tracking-wider">
           <span>Total: {stats.total}</span>
@@ -172,11 +159,7 @@ export const CandidateDetailHeader = memo(function CandidateDetailHeader({
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleOpenHub}
-            className="px-3.5 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-[11px] font-bold rounded-xl shadow-2xs whitespace-nowrap cursor-pointer"
-          >
+          <button type="button" onClick={handleOpenHub} className="px-3.5 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-[11px] font-bold rounded-xl shadow-2xs whitespace-nowrap cursor-pointer">
             Open in Onboarding Hub
           </button>
         </div>

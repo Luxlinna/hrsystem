@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { EmployeeOption } from "../../types";
 import { initials } from "../../onboardingUtils";
+import { StartOnboardingRequirementsPicker } from "./StartOnboardingRequirementsPicker";
 
 interface StartOnboardingModalProps {
   isOpen: boolean;
@@ -12,6 +13,8 @@ interface StartOnboardingModalProps {
   filteredEligibleEmployees: EmployeeOption[];
   eligibleCount: number;
   starting: boolean;
+  selectedDocNames?: string[];
+  setSelectedDocNames?: React.Dispatch<React.SetStateAction<string[]>>;
   onSubmit: (e: React.FormEvent) => Promise<void>;
 }
 
@@ -25,6 +28,8 @@ export const StartOnboardingModal = memo(function StartOnboardingModal({
   filteredEligibleEmployees,
   eligibleCount,
   starting,
+  selectedDocNames,
+  setSelectedDocNames,
   onSubmit,
 }: StartOnboardingModalProps) {
   if (!isOpen) return null;
@@ -111,15 +116,12 @@ export const StartOnboardingModal = memo(function StartOnboardingModal({
             </div>
           </div>
 
-          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 text-xs text-gray-500 space-y-1">
-            <p className="font-bold text-gray-800 flex items-center gap-1.5">
-              <i className="ri-magic-line text-[#253C7D]" />
-              Automatic Setup
-            </p>
-            <p className="text-[11px] leading-relaxed">
-              Upon starting, standard checklist items and departmental task assignments (Docs, IT hardware, orientation training) will be generated automatically.
-            </p>
-          </div>
+          {selectedDocNames && setSelectedDocNames && (
+            <StartOnboardingRequirementsPicker
+              selectedDocNames={selectedDocNames}
+              setSelectedDocNames={setSelectedDocNames}
+            />
+          )}
 
           <div className="pt-3 flex items-center justify-end gap-2.5">
             <button

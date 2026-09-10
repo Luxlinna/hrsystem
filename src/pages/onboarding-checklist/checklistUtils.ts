@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { notify } from "@/lib/notify";
 import { DOC_TO_TASK, TASK_TO_DOC } from "@/lib/onboarding";
 import type { OnboardingHire, ChecklistTask } from "./types";
 
@@ -70,6 +71,9 @@ export async function syncTaskWithOnboardingDocuments(
   completed: boolean
 ) {
   try {
+    // Only propagate completion forward; do not unselect the requirement from onboarding when marked pending
+    if (!completed) return;
+
     const { data: relatedDocs } = await supabase
       .from("onboarding_documents")
       .select("id, document_name")
@@ -80,11 +84,92 @@ export async function syncTaskWithOnboardingDocuments(
       for (const d of matchingDocs) {
         await supabase
           .from("onboarding_documents")
-          .update({ status: completed ? "complete" : "pending" })
+          .update({ status: "complete" })
           .eq("id", d.id);
       }
     }
   } catch (e) {
     console.error("Doc sync error:", e);
+  }
+}
+
+export async function notifyAssigneeOfChecklistTask({
+  taskName,
+  assignedTo,
+  hireName,
+  dueDate,
+  taskId,
+  staffList,
+}: {
+  taskName: string;
+  assignedTo: string;
+  hireName: string;
+  dueDate?: string | null;
+  taskId?: string;
+  staffList?: any[];
+}) {
+  if (!assignedTo || !assignedTo.trim()) return;
+  const targetName = assignedTo.trim();
+
+  try {
+    // 1. Locate staff member in provided list or database
+    let emp: any = staffList?.find(
+      (s: any) => `${s.first_name || ""} ${s.last_name || ""}`.trim().toLowerCase() === targetName.toLowerCase()
+    );
+
+    if (!emp || !emp.email) {
+      const parts = targetName.split(/\s+/);
+      const first = parts[0] || targetName;
+      const last = parts.slice(1).join(" ") || "";
+      let empQuery = supabase
+        .from("employees")
+        .select("id, email, phone, first_name, last_name, branch_id")
+        .ilike("first_name", `%${first}%`);
+      if (last) {
+        empQuery = empQuery.ilike("last_name", `%${last}%`);
+      }
+      const { data } = await empQuery.maybeSingle();
+      if (data) emp = data;
+    }
+
+    // 2. Lookup recipient user ID from user_role_assignments by email, phone, or display name
+    let recipientUserId: string | null = null;
+    const searchConditions: string[] = [];
+
+    if (emp?.email) {
+      searchConditions.push(`email.ilike.${emp.email.trim()}`);
+    }
+    if (emp?.phone) {
+      const cleanPhone = emp.phone.replace(/[^0-9]/g, "");
+      if (cleanPhone) {
+        searchConditions.push(`email.ilike.${cleanPhone}@phone.hrmsystem.local`);
+      }
+    }
+    searchConditions.push(`display_name.ilike.%${targetName}%`);
+
+    if (searchConditions.length > 0) {
+      const { data: uraList } = await supabase
+        .from("user_role_assignments")
+        .select("user_id, email, display_name")
+        .or(searchConditions.join(","))
+        .limit(1);
+
+      if (uraList && uraList.length > 0 && uraList[0].user_id) {
+        recipientUserId = uraList[0].user_id;
+      }
+    }
+
+    // 3. Dispatch system notification to employee account
+    await notify({
+      title: "New Checklist Task Assigned",
+      message: `You have been assigned to task: "${taskName}" for ${hireName}.${dueDate ? ` (Due: ${new Date(dueDate).toLocaleDateString()})` : ""}`,
+      type: "info",
+      source: "onboarding",
+      entityId: taskId || null,
+      recipientUserId: recipientUserId || null,
+      branchId: null, // deliver to employee without branch filter suppression
+    });
+  } catch (err) {
+    console.error("Failed to notify checklist task assignee:", err);
   }
 }
