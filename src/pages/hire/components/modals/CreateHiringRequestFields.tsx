@@ -5,6 +5,7 @@ import type { Branch, NewHiringRequestFormState } from "../../types";
 import { DEFAULT_DEPARTMENTS } from "../../constants";
 import { CreateHiringRequestOrgFields } from "./CreateHiringRequestOrgFields";
 import { CreateHiringRequestRoleFields } from "./CreateHiringRequestRoleFields";
+import { JobDescriptionFormFields } from "./JobDescriptionFormFields";
 
 interface CreateHiringRequestFieldsProps {
   form: NewHiringRequestFormState;
@@ -176,10 +177,7 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
           <label className="block text-xs font-semibold text-gray-700 mb-1">Reason for Hiring / Business Need *</label>
           <textarea rows={2} required placeholder="Explain business need..." value={form.justification} onChange={(e) => setForm({ ...form, justification: e.target.value })} className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium resize-none" />
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Job Description & Key Requirements</label>
-          <textarea rows={3} placeholder="Key role responsibilities, skills..." value={form.job_description} onChange={(e) => setForm({ ...form, job_description: e.target.value })} className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium resize-none" />
-        </div>
+        <JobDescriptionFormFields form={form} setForm={setForm} />
       </div>
     </div>
   );

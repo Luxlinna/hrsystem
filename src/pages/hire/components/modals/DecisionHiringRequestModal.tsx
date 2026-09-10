@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { HiringRequest } from "../../types";
 import { formatDateTime } from "../../hireUtils";
+import { RequisitionJobDescriptionView } from "../requests/RequisitionJobDescriptionView";
 
 interface DecisionHiringRequestModalProps {
   isOpen: boolean;
@@ -116,6 +117,8 @@ export const DecisionHiringRequestModal = memo(function DecisionHiringRequestMod
               )}
             </div>
           </div>
+
+          <RequisitionJobDescriptionView request={request} collapsible={true} defaultExpanded={false} />
 
           {isApprove ? (
             <p className="text-xs text-gray-600 leading-relaxed">

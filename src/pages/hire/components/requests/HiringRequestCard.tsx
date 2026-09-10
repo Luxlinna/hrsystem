@@ -4,6 +4,7 @@ import type { HiringRequest } from "../../types";
 import { formatDateTime } from "../../hireUtils";
 import { HiringRequestStatusBadges } from "./HiringRequestStatusBadges";
 import { HiringRequestCardActions } from "./HiringRequestCardActions";
+import { RequisitionJobDescriptionView } from "./RequisitionJobDescriptionView";
 
 interface HiringRequestCardProps {
   request: HiringRequest;
@@ -148,12 +149,7 @@ export const HiringRequestCard = memo(function HiringRequestCard({
                 {r.justification}
               </div>
             )}
-            {r.job_description && (
-              <div className="p-3 bg-blue-50/40 rounded-2xl border border-blue-100/60 text-xs text-gray-700">
-                <strong className="text-blue-900 font-bold block mb-0.5">Job Description & Requirements:</strong>
-                <p className="whitespace-pre-wrap">{r.job_description}</p>
-              </div>
-            )}
+            <RequisitionJobDescriptionView request={r} />
             {r.status === "rejected" && r.rejection_reason && (
               <div className="p-3 bg-rose-50/70 rounded-2xl border border-rose-100 text-xs text-rose-800">
                 <strong className="text-rose-900 font-bold block mb-0.5">Rejection Feedback / Reason:</strong>

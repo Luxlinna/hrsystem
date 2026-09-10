@@ -11,6 +11,12 @@ export interface NewHiringRequestFormState {
   location: string;
   target_joining_date: string;
   job_description: string;
+  jd_summary?: string;
+  jd_responsibilities?: string;
+  jd_requirements?: string;
+  jd_qualifications?: string;
+  jd_reporting_line?: string;
+  jd_template_id?: string;
   hiring_manager_id: string;
   hiring_manager_name: string;
   assigned_recruiter_id?: string;

@@ -124,6 +124,13 @@ export interface HiringRequest {
   location?: string | null;
   target_joining_date?: string | null;
   job_description?: string | null;
+  jd_summary?: string | null;
+  jd_responsibilities?: string | null;
+  jd_requirements?: string | null;
+  jd_qualifications?: string | null;
+  jd_reporting_line?: string | null;
+  jd_template_id?: string | null;
+  jd_version?: number;
   hiring_manager_id?: string | null;
   hiring_manager_name?: string | null;
   requested_by_id?: string | null;
@@ -164,6 +171,21 @@ export interface StageConfigItem {
   border: string;
   icon: string;
   hex: string;
+}
+
+export interface JobDescriptionTemplate {
+  id: string;
+  title: string;
+  department: string;
+  business_unit?: string | null;
+  job_summary: string;
+  responsibilities: string;
+  requirements: string;
+  qualifications: string;
+  reporting_line?: string | null;
+  version: number;
+  created_by_name?: string | null;
+  created_at?: string;
 }
 
 export * from "./formTypes";
