@@ -200,6 +200,8 @@ export default function CandidateDetail() {
           {/* 3. Pipeline Timeline (Vertical Stepper) */}
           <CandidatePipelineWidget
             currentStage={candidate.stage}
+            candidate={candidate}
+            interviews={interviews}
             onUpdateStage={updateStage}
           />
 

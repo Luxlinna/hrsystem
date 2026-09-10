@@ -109,24 +109,38 @@ export function checkInterviewStageProgressionGate(
     return { allowed: true };
   }
 
+  // 1. Prevent skipping stages ahead: candidate must proceed sequentially
+  if (targetIdx > currentIdx + 1 && targetStage !== "hired") {
+    const nextStage = STAGE_TIMELINE_ORDER[currentIdx + 1];
+    const nextLabel = STAGE_CONFIG[nextStage]?.label || nextStage;
+    const targetLabel = STAGE_CONFIG[normTarget]?.label || normTarget;
+    return {
+      allowed: false,
+      reason: `Cannot skip stages: Cannot jump directly to "${targetLabel}". You must advance sequentially through Stage ${currentIdx + 2}: "${nextLabel}".`,
+      blockingStage: nextStage,
+    };
+  }
+
+  // 2. Check all required interview stages that come before the target stage
   const interviewStages = ["hr_interview", "hiring_manager_interview", "final_interview"];
 
   for (const stg of interviewStages) {
     const stgIdx = STAGE_TIMELINE_ORDER.indexOf(stg);
-    if (targetIdx > stgIdx && currentIdx >= stgIdx) {
+    // If target is past this interview stage, both forms MUST be completed
+    if (targetIdx > stgIdx) {
       const scheduled = isStageInterviewScheduled(stg, interviews);
       const evaluated = isStageInterviewEvaluated(stg, candidate, interviews);
 
       if (!scheduled || !evaluated) {
         const stageName = STAGE_CONFIG[stg]?.label || stg;
         let missingForm: "schedule" | "evaluation" | "both" = "both";
-        let reason = `Cannot move to next stage: Both Interview Schedule Form and Evaluation Form must be completed for "${stageName}".`;
+        let reason = `Cannot advance past "${stageName}": Both Interview Schedule Form and Evaluation Form must be completed.`;
         if (!scheduled) {
           missingForm = "schedule";
-          reason = `Cannot move to next stage: Interview Schedule Form must be completed first for "${stageName}".`;
+          reason = `Cannot advance past "${stageName}": Interview Schedule Form must be completed first.`;
         } else if (!evaluated) {
           missingForm = "evaluation";
-          reason = `Cannot move to next stage: Interview Evaluation Form must be completed for "${stageName}".`;
+          reason = `Cannot advance past "${stageName}": Interview Evaluation Form must be completed.`;
         }
 
         return {

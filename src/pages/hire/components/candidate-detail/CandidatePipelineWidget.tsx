@@ -1,13 +1,19 @@
 import { memo } from "react";
+import type { Candidate, Interview } from "../../types";
 import { STAGE_CONFIG, STAGE_TIMELINE_ORDER } from "../../constants";
+import { isStageInterviewScheduled, isStageInterviewEvaluated } from "../../constants/evidenceConfig";
 
 interface CandidatePipelineWidgetProps {
   currentStage: string;
+  candidate?: Candidate | null;
+  interviews?: Interview[];
   onUpdateStage: (stage: string) => void;
 }
 
 export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
   currentStage,
+  candidate,
+  interviews = [],
   onUpdateStage,
 }: CandidatePipelineWidgetProps) {
   const normStage =
@@ -20,13 +26,21 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
         <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">
           PIPELINE TIMELINE
         </span>
-        <span className="text-[10px] text-gray-400 font-medium">Click step to jump</span>
+        <span className="text-[10px] text-gray-400 font-medium">Sequential progression</span>
       </div>
       <div className="space-y-0 relative pl-2">
         {STAGE_TIMELINE_ORDER.map((stage, idx) => {
           const isCurrent = normStage === stage;
-          const isPassed = currentIndex >= idx && normStage !== "rejected";
+          const isPassed = currentIndex > idx && normStage !== "rejected";
+          const isNext = idx === currentIndex + 1;
+          const isLocked = idx > currentIndex + 1;
           const isLast = idx === STAGE_TIMELINE_ORDER.length - 1;
+
+          const isInterviewStage = ["hr_interview", "hiring_manager_interview", "final_interview"].includes(stage);
+          const isFormVerified =
+            isInterviewStage && candidate
+              ? isStageInterviewScheduled(stage, interviews) && isStageInterviewEvaluated(stage, candidate, interviews)
+              : false;
 
           return (
             <div key={stage} className="relative flex items-start gap-3 pb-5 last:pb-0 group">
@@ -40,7 +54,10 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
               <button
                 type="button"
                 onClick={() => onUpdateStage(stage)}
-                className="flex items-center gap-3 cursor-pointer text-left relative z-10"
+                className={`flex items-center gap-3 text-left relative z-10 transition-opacity ${
+                  isLocked ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:opacity-90"
+                }`}
+                title={isLocked ? "Complete previous stages first" : undefined}
               >
                 <div
                   className={`w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
@@ -48,9 +65,13 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
                       ? "bg-[#172B4D] border-[#172B4D] ring-4 ring-[#172B4D]/20"
                       : isPassed
                       ? "bg-[#172B4D] border-[#172B4D]"
-                      : "bg-white border-gray-300 group-hover:border-gray-400"
+                      : isNext
+                      ? "bg-white border-[#172B4D] ring-2 ring-[#172B4D]/10"
+                      : "bg-white border-gray-300"
                   }`}
-                />
+                >
+                  {isPassed && <i className="ri-check-line text-[10px] text-white leading-none font-bold" />}
+                </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
                     className={`text-xs capitalize font-bold ${
@@ -58,23 +79,25 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
                         ? "text-[#172B4D] font-extrabold"
                         : isPassed
                         ? "text-gray-900"
+                        : isNext
+                        ? "text-gray-700"
                         : "text-gray-400"
                     }`}
                   >
                     {STAGE_CONFIG[stage]?.label || stage}
                   </span>
-                  {["hr_interview", "hiring_manager_interview", "final_interview"].includes(stage) && (
+                  {isInterviewStage && (
                     <span
                       className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded-md uppercase tracking-wider ${
-                        isCurrent
-                          ? "bg-purple-100 text-purple-800 border border-purple-200 animate-pulse"
-                          : isPassed
+                        isFormVerified
                           ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : isCurrent
+                          ? "bg-purple-100 text-purple-800 border border-purple-200 animate-pulse"
                           : "bg-gray-100 text-gray-400 border border-gray-200"
                       }`}
-                      title="Evaluation form required evidence for this stage"
+                      title={isFormVerified ? "Interview scheduled & evaluation verified" : "Evaluation form required"}
                     >
-                      {isPassed ? "Form Verified" : "Form Required"}
+                      {isFormVerified ? "Form Verified" : "Form Required"}
                     </span>
                   )}
                 </div>
