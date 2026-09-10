@@ -103,6 +103,7 @@ export const INITIAL_EMPLOYEE_FORM: EmployeeFormState = {
   join_date: new Date().toISOString().split("T")[0],
   reports_to: "",
   default_work_location_id: "",
+  biometric_user_id: "",
 };
 
 export const INITIAL_VISIBLE_COLUMNS: VisibleColumns = {

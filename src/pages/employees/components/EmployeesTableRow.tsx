@@ -74,10 +74,21 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
           )}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-bold text-gray-900 truncate">
-            {e.first_name} {e.last_name}
-          </p>
-          <p className="text-xs text-gray-500 truncate">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-sm font-bold text-gray-900 truncate">
+              {e.first_name} {e.last_name}
+            </p>
+            {e.biometric_user_id && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/70 shrink-0"
+                title="ZKTeco Machine Fingerprint/Face ID"
+              >
+                <i className="ri-fingerprint-line text-[10px]" />
+                ID: {e.biometric_user_id}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 truncate mt-0.5">
             {hasRealEmail ? (
               e.email
             ) : effectivePhone ? (

@@ -218,6 +218,7 @@ export function useEmployeesMutations({
           default_work_location_id: resolvedLocation,
           join_date: form.join_date || new Date().toISOString().split("T")[0],
           reports_to: form.reports_to || null,
+          biometric_user_id: form.biometric_user_id?.trim() || null,
         };
 
         const { data: newEmp, error } = await supabase.from("employees").insert(payload).select().single();

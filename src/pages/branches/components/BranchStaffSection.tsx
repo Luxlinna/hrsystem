@@ -56,9 +56,20 @@ export const BranchStaffSection = memo(function BranchStaffSection({
                     {emps.map((emp) => (
                       <div key={emp.id} className="p-2.5 flex items-center justify-between hover:bg-gray-50/50 rounded-lg transition-colors">
                         <div className="min-w-0">
-                          <Link to={`/employees/${emp.id}`} className="text-xs font-bold text-gray-800 hover:text-[#253C7D] truncate block">
-                            {emp.first_name} {emp.last_name}
-                          </Link>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link to={`/employees/${emp.id}`} className="text-xs font-bold text-gray-800 hover:text-[#253C7D] truncate">
+                              {emp.first_name} {emp.last_name}
+                            </Link>
+                            {emp.biometric_user_id && (
+                              <span
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/70 shrink-0"
+                                title="ZKTeco Machine Fingerprint/Face ID"
+                              >
+                                <i className="ri-fingerprint-line text-[9px]" />
+                                PIN: {emp.biometric_user_id}
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-[11px] text-gray-400 truncate">{emp.role || "Staff"}</span>
                             <span className="text-gray-300">·</span>

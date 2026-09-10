@@ -220,6 +220,7 @@ export function useEmployeeProfile(id: string | undefined) {
         status: form.status,
         join_date: form.join_date,
         reports_to: form.reports_to,
+        biometric_user_id: form.biometric_user_id?.trim() || null,
       })
       .eq("id", id);
 

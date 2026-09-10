@@ -92,9 +92,20 @@ export const EmployeesGridView = memo(function EmployeesGridView({
                 </span>
               )}
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-1">
-              {e.first_name} {e.last_name}
-            </h3>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="text-base font-semibold text-gray-900 truncate">
+                {e.first_name} {e.last_name}
+              </h3>
+              {e.biometric_user_id && (
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/70 shrink-0"
+                  title="ZKTeco Machine Fingerprint/Face ID"
+                >
+                  <i className="ri-fingerprint-line text-[10px]" />
+                  ID: {e.biometric_user_id}
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-500 mb-3 truncate">
               {hasRealEmail ? (
                 e.email

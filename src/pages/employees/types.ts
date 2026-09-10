@@ -14,6 +14,7 @@ export interface Employee {
   branches?: { name: string } | null;
   work_locations?: { name: string } | null;
   default_work_location_id?: string | null;
+  biometric_user_id?: string | null;
 }
 
 export interface Branch {
@@ -66,6 +67,7 @@ export interface EmployeeFormState {
   join_date: string;
   reports_to: string;
   default_work_location_id: string;
+  biometric_user_id?: string;
   send_invite?: boolean;
 }
 

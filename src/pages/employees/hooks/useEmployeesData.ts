@@ -33,7 +33,7 @@ export function useEmployeesData({
 
     let query = supabase
       .from("employees")
-      .select("id, first_name, last_name, email, phone, role, department, branch_id, status, join_date, reports_to, avatar_url, default_work_location_id, branches(name), work_locations:default_work_location_id(id, name)")
+      .select("id, first_name, last_name, email, phone, role, department, branch_id, status, join_date, reports_to, avatar_url, default_work_location_id, biometric_user_id, branches(name), work_locations:default_work_location_id(id, name)")
       .is("deleted_at", null)
       .eq("branch_id", targetBranch)
       .order("first_name");

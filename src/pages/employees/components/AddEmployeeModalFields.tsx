@@ -333,6 +333,27 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
           />
         </div>
       </div>
+
+      {/* Biometric Machine ID */}
+      <div className="p-3.5 bg-indigo-50/50 border border-indigo-100 rounded-2xl">
+        <label className="block text-xs font-bold text-gray-800 mb-1 flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-[#253C7D]">
+            <i className="ri-fingerprint-line text-sm" />
+            Biometric Machine User ID (PIN)
+          </span>
+          <span className="text-[10px] text-gray-400 font-normal">Optional</span>
+        </label>
+        <input
+          type="text"
+          value={form.biometric_user_id || ""}
+          onChange={(e) => setForm({ ...form, biometric_user_id: e.target.value })}
+          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#253C7D]"
+          placeholder="e.g. 24, 3085 (matches ZKTeco machine User ID)"
+        />
+        <p className="text-[10px] text-gray-500 mt-1">
+          If already registered on the fingerprint/face machine, enter their Machine User ID here to link attendance immediately.
+        </p>
+      </div>
     </>
   );
 });

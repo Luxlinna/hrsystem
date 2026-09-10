@@ -35,6 +35,7 @@ export interface Employee {
   email?: string;
   default_work_location_id?: string | null;
   work_locations?: { id: string; name: string } | null;
+  biometric_user_id?: string | null;
 }
 
 export interface BranchFormState {

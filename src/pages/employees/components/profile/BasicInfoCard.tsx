@@ -261,6 +261,44 @@ export const BasicInfoCard = memo(function BasicInfoCard({
             </div>
           )}
         </div>
+
+        {/* Biometric Machine PIN / User ID */}
+        <div className="md:col-span-2 pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+              Biometric Machine User ID (PIN)
+            </label>
+            <span className="text-[10px] text-gray-400">ZKTeco Fingerprint & Face Terminal ID</span>
+          </div>
+          {editing ? (
+            <div className="relative max-w-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <i className="ri-fingerprint-line text-sm" />
+              </div>
+              <input
+                type="text"
+                placeholder="e.g. 24, 3085..."
+                value={form.biometric_user_id || ""}
+                onChange={(e) => setForm({ ...form, biometric_user_id: e.target.value })}
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-[13px] font-mono font-bold focus:outline-none focus:border-[#253C7D]"
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              {employee.biometric_user_id ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                  <i className="ri-fingerprint-line text-sm" />
+                  Machine PIN: {employee.biometric_user_id}
+                </span>
+              ) : (
+                <span className="text-[13px] text-gray-400 italic flex items-center gap-1">
+                  <i className="ri-error-warning-line text-amber-500" />
+                  Not linked (No machine PIN assigned)
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
