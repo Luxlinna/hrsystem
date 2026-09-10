@@ -1,15 +1,8 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import { logActivity } from "@/lib/audit";
-import {
-  sendStage1BranchEndorsementNotify,
-  sendStage2HrReviewNotify,
-  sendStage3HrAdminApprovalNotify,
-  sendStage4ChairmanAuthorizedNotify,
-  sendRejectionNotify,
-} from "./hiringNotificationHelpers";
 import type { HiringRequest } from "../types";
+import { executeApprovalStep, executeRejectionStep } from "./hiringDecisionExecutors";
 
 interface UseHiringRequestDecisionProps {
   actorName: string;
@@ -49,13 +42,15 @@ export function useHiringRequestDecision({
           .update({
             hr_assigned_to_id: hrId,
             hr_assigned_to_name: hrName,
+            assigned_recruiter_id: hrId,
+            assigned_recruiter_name: hrName,
           })
           .eq("id", requestId);
         if (error) throw error;
-        toast("Assignee Updated", hrName ? `Assigned to ${hrName}.` : "Assignee cleared.", "success");
+        toast("Recruiter Updated", hrName ? `Assigned to ${hrName}.` : "Recruiter unassigned.", "success");
         await loadData();
       } catch (err: any) {
-        toast("Error", err.message || "Failed to update HR assignee", "error");
+        toast("Error", err.message || "Failed to update recruiter assignment", "error");
       }
     },
     [loadData]
@@ -79,127 +74,20 @@ export function useHiringRequestDecision({
 
       setProcessingDecision(true);
       try {
-        const status = targetRequest.status || "pending";
-        const isStage1Branch = status === "pending" || status === "pending_branch_review";
-        const isStage2HrReview = status === "pending_hr_review";
-        const isStage3HrAdmin = status === "pending_hr_admin_review";
-        const isStage4Chairman = status === "pending_chairman_review";
-
-        const originatingBranch = targetRequest.branches?.name || userBranchName || "Headquarters";
-        const currentBranch = userBranchName || "HR Division";
+        const ctx = {
+          targetRequest,
+          actorName,
+          actorRole,
+          userBranchName,
+          isChairmanOrSuper,
+        };
 
         if (decisionAction === "approved") {
-          if (isStage1Branch) {
-            // Stage 1: Branch Approval -> Forward to HR Division (HR Manager)
-            const { error: reqErr } = await supabase
-              .from("hiring_requests")
-              .update({
-                status: "pending_hr_review",
-                branch_approved_by: `${actorName} (${actorRole} · ${originatingBranch})`,
-                branch_approved_at: new Date().toISOString(),
-              })
-              .eq("id", targetRequest.id);
-
-            if (reqErr) throw reqErr;
-
-            const { data: hrBranch } = await supabase
-              .from("branches")
-              .select("id, name")
-              .ilike("name", "%HR%")
-              .is("deleted_at", null)
-              .maybeSingle();
-
-            await sendStage1BranchEndorsementNotify(targetRequest, actorName, actorRole, originatingBranch, hrBranch?.id || null);
-            toast("Endorsed", `Requisition endorsed by ${actorName} and forwarded to HR Manager.`, "success");
-          } else if (isStage2HrReview) {
-            // Stage 2: HR Review -> Forward directly to Chairwoman Final Authorization
-            const { error: reqErr } = await supabase
-              .from("hiring_requests")
-              .update({
-                status: "pending_chairman_review",
-                hr_reviewed_by: `${actorName} (${actorRole} · ${currentBranch})`,
-                hr_reviewed_at: new Date().toISOString(),
-              })
-              .eq("id", targetRequest.id);
-
-            if (reqErr) throw reqErr;
-
-            await sendStage2HrReviewNotify(targetRequest, actorName, actorRole, currentBranch, originatingBranch);
-            toast("Reviewed & Endorsed", `Requisition reviewed by HR ${actorName} and forwarded to Chairwoman.`, "success");
-          } else if (isStage3HrAdmin && !isChairmanOrSuper) {
-            // Legacy Stage 3: If an HR admin approves, escalate to Chairwoman
-            const { error: reqErr } = await supabase
-              .from("hiring_requests")
-              .update({
-                status: "pending_chairman_review",
-                hr_admin_approved_by: `${actorName} (${actorRole} · ${currentBranch})`,
-                hr_admin_approved_at: new Date().toISOString(),
-              })
-              .eq("id", targetRequest.id);
-
-            if (reqErr) throw reqErr;
-
-            await sendStage3HrAdminApprovalNotify(targetRequest, actorName, actorRole, currentBranch, originatingBranch);
-            toast("Approved", `Requisition approved by ${actorName} and escalated to Chairwoman.`, "success");
-          } else {
-            // Stage 4 (or Chairwoman acting on Stage 3): Executive Authorization -> Create live job posting & Go Live
-            const { data: jobData, error: jobErr } = await supabase
-              .from("job_postings")
-              .insert([
-                {
-                  title: targetRequest.title,
-                  department: targetRequest.department,
-                  branch_id: targetRequest.branch_id,
-                  type: targetRequest.employment_type || "full-time",
-                  salary_min: targetRequest.salary_min,
-                  salary_max: targetRequest.salary_max,
-                  description: targetRequest.justification
-                    ? `Approved Requisition: ${targetRequest.justification}`
-                    : null,
-                  status: "active",
-                },
-              ])
-              .select()
-              .single();
-
-            if (jobErr) throw jobErr;
-
-            const chairmanRecord = `${actorName} (${actorRole} · ${userBranchName || "Executive"})`;
-
-            const { error: reqErr } = await supabase
-              .from("hiring_requests")
-              .update({
-                status: "approved",
-                chairman_approved_by: chairmanRecord,
-                chairman_approved_at: new Date().toISOString(),
-                reviewed_by: chairmanRecord,
-                reviewed_at: new Date().toISOString(),
-                job_posting_id: jobData?.id,
-              })
-              .eq("id", targetRequest.id);
-
-            if (reqErr) throw reqErr;
-
-            await sendStage4ChairmanAuthorizedNotify(targetRequest, actorName, actorRole, originatingBranch);
-            toast("Authorized & Live", `Requisition authorized by ${actorName}. Job opening is now live!`, "success");
-          }
+          const result = await executeApprovalStep(ctx);
+          toast(result.title, result.message, "success");
         } else {
-          // Rejection
-          const { error: reqErr } = await supabase
-            .from("hiring_requests")
-            .update({
-              status: "rejected",
-              reviewed_by: actorName,
-              reviewed_at: new Date().toISOString(),
-              rejection_reason: rejectionReason.trim(),
-            })
-            .eq("id", targetRequest.id);
-
-          if (reqErr) throw reqErr;
-
-          const branchName = targetRequest.branches?.name || "Headquarters";
-          await sendRejectionNotify(targetRequest, actorName, actorRole, rejectionReason.trim(), branchName);
-          toast("Requisition Rejected", "Decision recorded and manager notified.", "info");
+          const result = await executeRejectionStep(ctx, rejectionReason);
+          toast(result.title, result.message, "info");
         }
 
         setDecisionModal(false);

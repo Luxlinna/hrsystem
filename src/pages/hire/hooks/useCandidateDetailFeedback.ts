@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import type { Interview, NewInterviewFormState } from "../types";
+import { notifyInterviewScheduledOrCompleted } from "../services/notifications/recruitmentEventTriggers";
 
 interface UseCandidateDetailFeedbackProps {
   candidateId?: string;
@@ -63,7 +64,6 @@ export function useCandidateDetailFeedback({
       }
       setSchedulingInterview(true);
       try {
-        // Ensure type strictly conforms to DB check constraint ('video' | 'in-person' | 'phone')
         const dbType = ["video", "in-person", "phone"].includes(newInterview.type)
           ? newInterview.type
           : "video";
@@ -78,23 +78,38 @@ export function useCandidateDetailFeedback({
           status: "scheduled",
         });
 
-        if (error) {
-          console.error("Failed to schedule interview:", error);
-          toast("Error", error.message || "Failed to schedule interview", "error");
-          return;
+        if (error) throw error;
+
+        // Standing notification: Interviewer / Hiring Manager + Assigned Recruiter
+        const { data: candInfo } = await supabase
+          .from("candidates")
+          .select("full_name, assigned_recruiter_id, job_postings(title)")
+          .eq("id", targetCandidateId)
+          .maybeSingle();
+
+        if (candInfo) {
+          await notifyInterviewScheduledOrCompleted({
+            isCompleted: false,
+            candidateName: candInfo.full_name,
+            candidateId: targetCandidateId,
+            jobTitle: (candInfo.job_postings as any)?.title || "Open Position",
+            interviewType: dbType,
+            actorName,
+            scheduledAt: new Date(newInterview.scheduled_at).toISOString(),
+            recruiterEmployeeId: candInfo.assigned_recruiter_id || null,
+          });
         }
 
         toast("Interview Scheduled", "New interview added to calendar.", "success");
         setScheduleModal(false);
         await loadCandidate(targetCandidateId);
       } catch (err: any) {
-        console.error("Exception scheduling interview:", err);
-        toast("Error", err.message || "An unexpected error occurred while scheduling", "error");
+        toast("Error", err.message || "Failed to schedule interview", "error");
       } finally {
         setSchedulingInterview(false);
       }
     },
-    [candidateId, newInterview, myEmployeeId, loadCandidate]
+    [candidateId, newInterview, myEmployeeId, actorName, loadCandidate]
   );
 
   const handleSaveFeedback = useCallback(
@@ -102,24 +117,49 @@ export function useCandidateDetailFeedback({
       e.preventDefault();
       if (!feedbackInterview || !candidateId) return;
       setSavingFeedback(true);
-      const { error } = await supabase
-        .from("interviews")
-        .update({
-          score: feedbackScore,
-          feedback: feedbackText.trim() || null,
-          status: "completed",
-        })
-        .eq("id", feedbackInterview.id);
-      setSavingFeedback(false);
-      if (error) {
-        toast("Error", "Failed to submit feedback", "error");
-        return;
+      try {
+        const { error } = await supabase
+          .from("interviews")
+          .update({
+            score: feedbackScore,
+            feedback: feedbackText.trim() || null,
+            status: "completed",
+          })
+          .eq("id", feedbackInterview.id);
+
+        if (error) throw error;
+
+        // Standing notification: Interview feedback submitted
+        const { data: candInfo } = await supabase
+          .from("candidates")
+          .select("full_name, assigned_recruiter_id, job_postings(title)")
+          .eq("id", candidateId)
+          .maybeSingle();
+
+        if (candInfo) {
+          await notifyInterviewScheduledOrCompleted({
+            isCompleted: true,
+            candidateName: candInfo.full_name,
+            candidateId,
+            jobTitle: (candInfo.job_postings as any)?.title || "Role",
+            interviewType: feedbackInterview.type || "Interview",
+            actorName,
+            score: feedbackScore,
+            recruiterEmployeeId: candInfo.assigned_recruiter_id || null,
+          });
+        }
+
+        toast("Feedback Saved", "Interview scorecard submitted.", "success");
+        setFeedbackInterview(null);
+        setFeedbackModal(false);
+        await loadCandidate(candidateId);
+      } catch (err: any) {
+        toast("Error", err.message || "Failed to submit feedback", "error");
+      } finally {
+        setSavingFeedback(false);
       }
-      toast("Feedback Saved", "Interview scorecard submitted.", "success");
-      setFeedbackInterview(null);
-      loadCandidate(candidateId);
     },
-    [feedbackInterview, candidateId, feedbackScore, feedbackText, loadCandidate]
+    [feedbackInterview, candidateId, feedbackScore, feedbackText, actorName, loadCandidate]
   );
 
   return {
@@ -130,12 +170,15 @@ export function useCandidateDetailFeedback({
     feedbackText,
     setFeedbackText,
     savingFeedback,
+    feedbackModal,
+    setFeedbackModal,
     scheduleModal,
     setScheduleModal,
     schedulingInterview,
     newInterview,
     setNewInterview,
     openScheduleModal,
+    openFeedbackModal,
     handleScheduleInterview,
     handleSaveFeedback,
   };

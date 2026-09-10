@@ -2,6 +2,8 @@ import { memo } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { HiringRequest } from "../../types";
 import { formatDateTime } from "../../hireUtils";
+import { HiringRequestStatusBadges } from "./HiringRequestStatusBadges";
+import { HiringRequestCardActions } from "./HiringRequestCardActions";
 
 interface HiringRequestCardProps {
   request: HiringRequest;
@@ -23,12 +25,10 @@ interface HiringRequestCardProps {
 
 export const HiringRequestCard = memo(function HiringRequestCard({
   request: r,
-  canApprove: _canApprove,
   canBranchApprove = false,
   canHrReview = false,
   canHrAdminApprove = false,
   canChairmanApprove = false,
-  isHrDivisionBranch = false,
   userBranchId = null,
   isSuperAdmin = false,
   isAdmin = false,
@@ -46,166 +46,56 @@ export const HiringRequestCard = memo(function HiringRequestCard({
     (actorName && r.requested_by_name?.toLowerCase() === actorName.toLowerCase());
 
   const canDeleteThisRequest = isOwner || isSuperAdmin || isAdmin;
-  const getUrgencyBadge = (urgency: string) => {
-    switch (urgency) {
-      case "urgent":
-        return "bg-rose-100 text-rose-700 border-rose-200";
-      case "high":
-        return "bg-orange-100 text-orange-700 border-orange-200";
-      case "medium":
-        return "bg-amber-100 text-amber-700 border-amber-200";
-      default:
-        return "bg-slate-100 text-slate-700 border-slate-200";
-    }
-  };
-
   const isStage1Branch = !r.status || r.status === "pending" || r.status === "pending_branch_review";
   const isStage2HrReview = r.status === "pending_hr_review";
   const isStage3HrAdmin = r.status === "pending_hr_admin_review";
   const isStage4Chairman = r.status === "pending_chairman_review";
 
-  // Strict Stage-by-Stage Separation of Duties
-  const canActStage1 =
-    isStage1Branch && canBranchApprove && (isSuperAdmin || !r.branch_id || r.branch_id === userBranchId);
+  const canActStage1 = isStage1Branch && canBranchApprove && (isSuperAdmin || !r.branch_id || r.branch_id === userBranchId);
+  const canActStage2 = isStage2HrReview && (canHrReview || isSuperAdmin);
+  const canActStage3 = isStage3HrAdmin && canHrAdminApprove && !canChairmanApprove;
+  const canActStage4 = (isStage4Chairman || isStage3HrAdmin) && (canChairmanApprove || isSuperAdmin);
 
-  const canActStage2 =
-    isStage2HrReview && (canHrReview || isSuperAdmin);
-
-  const canActStage3 =
-    isStage3HrAdmin && canHrAdminApprove && !canChairmanApprove;
-
-  const canActStage4 =
-    (isStage4Chairman || isStage3HrAdmin) && (canChairmanApprove || isSuperAdmin);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "approved":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <i className="ri-checkbox-circle-fill text-sm" /> Fully Approved & Job Live
-          </span>
-        );
-      case "rejected":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-            <i className="ri-close-line text-sm" /> Rejected
-          </span>
-        );
-      case "fulfilled":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
-            <i className="ri-team-fill text-sm" /> Position Hired
-          </span>
-        );
-      case "pending_chairman_review":
-      case "pending_hr_admin_review":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-300 animate-pulse">
-            <i className="ri-vip-crown-line text-sm" /> Awaiting Chairwoman Authorization
-          </span>
-        );
-      case "pending_hr_review":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-300 animate-pulse">
-            <i className="ri-user-star-line text-sm" /> In HR Review
-          </span>
-        );
-      case "pending_branch_review":
-      case "pending":
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-            <i className="ri-time-line text-sm" /> Awaiting Branch Endorsement
-          </span>
-        );
-    }
-  };
+  const recruiterName = r.assigned_recruiter_name || r.hr_assigned_to_name;
 
   return (
     <div
-      id={`hiring-req-${r.id}`}
-      className={`bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-xs hover:shadow-md transition-all relative group ${
-        isHighlighted ? "ring-2 ring-[#253C7D] border-[#253C7D] bg-indigo-50/20" : ""
+      className={`bg-white rounded-3xl border p-5 transition-all duration-200 ${
+        isHighlighted
+          ? "border-amber-400 ring-4 ring-amber-400/20 bg-amber-50/10 shadow-lg"
+          : "border-gray-200 hover:border-gray-300 hover:shadow-md"
       }`}
     >
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="space-y-2 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            {r.requisition_id && (
-              <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-black bg-[#1B2B5A] text-white shadow-2xs tracking-wide">
-                {r.requisition_id}
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+        <div className="flex-1 min-w-0 space-y-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-lg bg-blue-50 text-[#253C7D] border border-blue-100">
+              {r.requisition_id || "REQ-DRAFT"}
+            </span>
+            <HiringRequestStatusBadges request={r} />
+            {r.position_type === "replacement" && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                <i className="ri-repeat-line" /> Replacement
               </span>
             )}
-            <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase border ${getUrgencyBadge(r.urgency)}`}>
-              {r.urgency}
-            </span>
-            {getStatusBadge(r.status)}
-            {r.position_type === "replacement" ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                <i className="ri-user-shared-line text-xs" /> Replacement{r.replacement_for_name ? `: ${r.replacement_for_name}` : ""}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                <i className="ri-sparkling-fill text-xs text-blue-500" /> New Position
-              </span>
-            )}
-            <span className="text-xs text-gray-400 font-medium">
-              Requested {formatDateTime(r.created_at)}
-            </span>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 flex-wrap">
-              {r.title}
-              <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-extrabold">
+            <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+              <span>{r.title}</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">
                 {r.headcount} {r.headcount > 1 ? "Openings" : "Opening"}
-              </span>
-              <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-semibold capitalize">
-                {r.employment_type}
               </span>
             </h3>
 
-            {/* Organization Master & Location */}
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500 font-medium flex-wrap">
-              {(r.company || r.business_unit) && (
-                <span className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 text-slate-700 font-semibold">
-                  <i className="ri-building-2-line text-slate-400" />
-                  {[r.company, r.business_unit].filter(Boolean).join(" · ")}
-                </span>
-              )}
-              {r.division && (
-                <span className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 text-slate-700">
-                  <i className="ri-node-tree text-slate-400" />
-                  {r.division}
-                </span>
-              )}
+            <div className="flex items-center gap-x-4 gap-y-1 mt-1.5 flex-wrap text-xs text-gray-500 font-medium">
               <span className="flex items-center gap-1">
-                <i className="ri-building-line text-gray-400" />
-                {r.department}
+                <i className="ri-building-line text-[#253C7D]" />
+                {r.company ? `${r.company} · ` : ""}{r.branches?.name || r.business_unit || "HQ"}
               </span>
               <span className="flex items-center gap-1">
-                <i className="ri-map-pin-line text-gray-400" />
-                {r.location || r.branches?.name || "Headquarters"}
-              </span>
-              {r.target_joining_date && (
-                <span className="flex items-center gap-1 text-indigo-700 font-semibold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
-                  <i className="ri-calendar-check-line text-indigo-500" />
-                  Target Joining: {new Date(r.target_joining_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                </span>
-              )}
-              {(r.salary_min || r.salary_max) && (
-                <span className="flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  <i className="ri-money-dollar-circle-line" />${Number(r.salary_min || 0).toLocaleString()} - $
-                  {Number(r.salary_max || 0).toLocaleString()}
-                </span>
-              )}
-            </div>
-
-            {/* Named Stakeholders */}
-            <div className="flex items-center gap-4 mt-1.5 text-xs text-gray-600 flex-wrap">
-              <span className="flex items-center gap-1">
-                <i className="ri-user-follow-line text-gray-400" />
-                Requester: <strong className="text-gray-800">{r.requested_by_name}</strong>
+                <i className="ri-folder-user-line text-gray-400" />
+                {r.department}{r.division ? ` · ${r.division}` : ""}
               </span>
               {r.hiring_manager_name && (
                 <span className="flex items-center gap-1">
@@ -213,148 +103,70 @@ export const HiringRequestCard = memo(function HiringRequestCard({
                   Hiring Manager: <strong className="text-gray-800">{r.hiring_manager_name}</strong>
                 </span>
               )}
-              {r.hr_assigned_to_name && (
-                <span className="flex items-center gap-1">
-                  <i className="ri-user-received-line text-slate-500" />
-                  Assigned Recruiter: <strong className="text-gray-800">{r.hr_assigned_to_name}</strong>
+              {recruiterName && (
+                <span className="flex items-center gap-1 text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                  <i className="ri-user-star-line text-purple-600 font-bold" />
+                  Assigned Recruiter: <strong className="text-purple-900">{recruiterName}</strong>
                 </span>
               )}
             </div>
           </div>
 
-          {/* 4-Stage Workflow Audit Trail */}
+          {/* Audit trail */}
           <div className="flex items-center gap-2.5 pt-1 flex-wrap text-xs">
             {r.branch_approved_by && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-medium">
-                <i className="ri-checkbox-circle-line text-amber-600" />
-                CEO/Director Endorsed: <strong>{r.branch_approved_by}</strong>
+                <i className="ri-checkbox-circle-line text-amber-600" /> Endorsed: <strong>{r.branch_approved_by}</strong>
                 {r.branch_approved_at && ` · ${formatDateTime(r.branch_approved_at)}`}
               </span>
             )}
             {r.hr_reviewed_by && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 font-medium">
-                <i className="ri-user-star-line text-sky-600" />
-                HR Reviewed: <strong>{r.hr_reviewed_by}</strong>
+                <i className="ri-user-star-line text-sky-600" /> HR Reviewed: <strong>{r.hr_reviewed_by}</strong>
                 {r.hr_reviewed_at && ` · ${formatDateTime(r.hr_reviewed_at)}`}
               </span>
             )}
             {r.chairman_approved_by && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
-                <i className="ri-vip-crown-line text-emerald-600" />
-                Chairwoman Authorized: <strong>{r.chairman_approved_by}</strong>
+                <i className="ri-vip-crown-line text-emerald-600" /> Authorized: <strong>{r.chairman_approved_by}</strong>
                 {r.chairman_approved_at && ` · ${formatDateTime(r.chairman_approved_at)}`}
               </span>
             )}
           </div>
 
-          {/* Reason for Hiring & Job Description */}
+          {/* Description & Justification */}
           <div className="space-y-2 mt-2">
             {r.justification && (
               <div className="p-3 bg-gray-50/80 rounded-2xl border border-gray-100 text-xs text-gray-600">
-                <strong className="text-gray-700 font-bold block mb-0.5">Reason for Hiring / Business Need:</strong>
+                <strong className="text-gray-700 font-bold block mb-0.5">Business Need:</strong>
                 {r.justification}
               </div>
             )}
-
             {r.job_description && (
               <div className="p-3 bg-blue-50/40 rounded-2xl border border-blue-100/60 text-xs text-gray-700">
-                <strong className="text-blue-900 font-bold block mb-0.5">Job Description & Key Requirements:</strong>
+                <strong className="text-blue-900 font-bold block mb-0.5">Job Description & Requirements:</strong>
                 <p className="whitespace-pre-wrap">{r.job_description}</p>
               </div>
             )}
+            {r.status === "rejected" && r.rejection_reason && (
+              <div className="p-3 bg-rose-50/70 rounded-2xl border border-rose-100 text-xs text-rose-800">
+                <strong className="text-rose-900 font-bold block mb-0.5">Rejection Feedback / Reason:</strong>
+                {r.rejection_reason}
+              </div>
+            )}
           </div>
-
-          {r.status === "rejected" && r.rejection_reason && (
-            <div className="mt-2 p-3 bg-rose-50/70 rounded-2xl border border-rose-100 text-xs text-rose-800">
-              <strong className="text-rose-900 font-bold block mb-0.5">Rejection Feedback / Reason:</strong>
-              {r.rejection_reason}
-            </div>
-          )}
         </div>
 
-        <div className="flex items-center gap-2 lg:flex-col shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-gray-100">
-          {/* Stage 1: Branch Endorsement Action */}
-          {canActStage1 && (
-            <>
-              <button
-                onClick={() => onOpenDecision(r, "approved")}
-                className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-[#253C7D] hover:bg-[#1B2B5A] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-              >
-                <i className="ri-send-plane-fill text-sm" /> Endorse Requisition
-              </button>
-              <button
-                onClick={() => onOpenDecision(r, "rejected")}
-                className="flex-1 lg:w-48 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
-              >
-                <i className="ri-close-line text-sm" /> Reject Requisition
-              </button>
-            </>
-          )}
-
-          {/* Stage 2: HR Manager Review Action */}
-          {canActStage2 && (
-            <>
-              <button
-                onClick={() => onOpenDecision(r, "approved")}
-                className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-              >
-                <i className="ri-user-star-line text-sm" /> HR Review & Endorse
-              </button>
-              <button
-                onClick={() => onOpenDecision(r, "rejected")}
-                className="flex-1 lg:w-48 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
-              >
-                <i className="ri-close-line text-sm" /> Reject Requisition
-              </button>
-            </>
-          )}
-
-          {/* Stage 3: HR Division Admin Approval Action */}
-          {canActStage3 && (
-            <>
-              <button
-                onClick={() => onOpenDecision(r, "approved")}
-                className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-              >
-                <i className="ri-admin-line text-sm" /> Admin Manager Approve
-              </button>
-              <button
-                onClick={() => onOpenDecision(r, "rejected")}
-                className="flex-1 lg:w-48 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
-              >
-                <i className="ri-close-line text-sm" /> Reject Requisition
-              </button>
-            </>
-          )}
-
-          {/* Stage 4: Chairwoman / Executive Final Authorization Action */}
-          {canActStage4 && (
-            <>
-              <button
-                onClick={() => onOpenDecision(r, "approved")}
-                className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-              >
-                <i className="ri-vip-crown-line text-sm" /> Authorize & Go Live
-              </button>
-              <button
-                onClick={() => onOpenDecision(r, "rejected")}
-                className="flex-1 lg:w-48 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 transition-colors cursor-pointer"
-              >
-                <i className="ri-close-line text-sm" /> Reject Requisition
-              </button>
-            </>
-          )}
-
-          {onDelete && canDeleteThisRequest && (
-            <button
-              onClick={() => onDelete(r.id)}
-              title="Delete Requisition"
-              className="py-2 px-3 rounded-xl bg-gray-50 hover:bg-rose-50 text-gray-400 hover:text-rose-600 font-bold text-xs flex items-center justify-center gap-1.5 border border-gray-200 hover:border-rose-200 transition-all cursor-pointer lg:w-48"
-            >
-              <i className="ri-delete-bin-line text-sm" /> Delete Requisition
-            </button>
-          )}
-        </div>
+        <HiringRequestCardActions
+          request={r}
+          canActStage1={canActStage1}
+          canActStage2={canActStage2}
+          canActStage3={canActStage3}
+          canActStage4={canActStage4}
+          canDelete={Boolean(canDeleteThisRequest)}
+          onOpenDecision={onOpenDecision}
+          onDelete={onDelete}
+        />
       </div>
     </div>
   );

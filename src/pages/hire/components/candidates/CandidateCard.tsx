@@ -2,7 +2,9 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { Candidate } from "../../types";
 import { STAGE_CONFIG, PIPELINE_STAGES } from "../../constants";
+import { evaluateStageSla } from "../../constants/slaConfig";
 import { initials, formatRelative } from "../../hireUtils";
+
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -27,6 +29,7 @@ export const CandidateCard = memo(function CandidateCard({
   const normStage =
     candidate.stage === "applied" ? "cv_received" : candidate.stage === "interview" ? "hr_interview" : candidate.stage;
   const cfg = STAGE_CONFIG[normStage] || STAGE_CONFIG.cv_received;
+  const candSla = evaluateStageSla(candidate.stage, candidate.applied_at, true);
 
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group">
@@ -79,7 +82,7 @@ export const CandidateCard = memo(function CandidateCard({
         </div>
 
         {/* Master Profile Badges */}
-        {(candidate.location || candidate.assigned_recruiter || (candidate.tags && candidate.tags.length > 0)) && (
+        {(candidate.location || candidate.assigned_recruiter || (candidate.tags && candidate.tags.length > 0) || (candSla && candidate.stage !== "hired" && candidate.stage !== "rejected")) && (
           <div className="flex items-center gap-1.5 flex-wrap text-[10px] mb-3">
             {candidate.location && (
               <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium">
@@ -91,6 +94,12 @@ export const CandidateCard = memo(function CandidateCard({
                 Recruiter: {candidate.assigned_recruiter.first_name}
               </span>
             )}
+            {candSla && candidate.stage !== "hired" && candidate.stage !== "rejected" && (
+              <span className={`px-2 py-0.5 rounded-md font-bold border ${candSla.isOverdue ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}>
+                <i className={candSla.isOverdue ? "ri-alarm-warning-line text-rose-600 mr-0.5" : "ri-time-line mr-0.5"} />
+                {candSla.badgeText}
+              </span>
+            )}
             {candidate.tags && candidate.tags.slice(0, 2).map((t) => (
               <span key={t} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium border border-blue-100">
                 #{t}
@@ -98,6 +107,7 @@ export const CandidateCard = memo(function CandidateCard({
             ))}
           </div>
         )}
+
 
         {/* Star Rating & Resume Link */}
         <div className="flex items-center justify-between text-xs mb-3">
@@ -157,33 +167,23 @@ export const CandidateCard = memo(function CandidateCard({
 
         <div className="flex items-center gap-1">
           {candidate.stage === "hired" && (
-            <button
-              onClick={() => onMoveToOnboarding(candidate)}
-              className="px-2.5 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
-              title="Transfer to Onboarding module"
-            >
-              <i className="ri-user-shared-line text-xs" />
-              Onboarding
+            <button onClick={() => onMoveToOnboarding(candidate)} className="px-2.5 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg cursor-pointer flex items-center gap-1" title="Transfer to Onboarding module">
+              <i className="ri-user-shared-line text-xs" /> Onboarding
             </button>
           )}
-
-          <button
-            onClick={() => onEdit(candidate)}
-            className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-            title="Edit"
-          >
-            <i className="ri-edit-line text-sm" />
-          </button>
-
-          <button
-            onClick={() => onDelete(candidate.id, candidate.full_name)}
-            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-            title="Delete"
-          >
-            <i className="ri-delete-bin-line text-sm" />
-          </button>
+          {onEdit && (
+            <button onClick={() => onEdit(candidate)} className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-lg cursor-pointer" title="Edit">
+              <i className="ri-edit-line text-sm" />
+            </button>
+          )}
+          {onDelete && (
+            <button onClick={() => onDelete(candidate.id, candidate.full_name)} className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer" title="Delete">
+              <i className="ri-delete-bin-line text-sm" />
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 });
+

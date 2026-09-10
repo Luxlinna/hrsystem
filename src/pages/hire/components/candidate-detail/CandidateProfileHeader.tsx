@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { Candidate } from "../../types";
 import { STAGE_CONFIG, PIPELINE_STAGES } from "../../constants";
+import { evaluateStageSla } from "../../constants/slaConfig";
 import { initials, formatDateTime } from "../../hireUtils";
 
 interface CandidateProfileHeaderProps {
@@ -20,6 +21,8 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
   const cfg = STAGE_CONFIG[normStage] || STAGE_CONFIG.cv_received;
   const isHired = normStage === "hired";
   const isRejected = normStage === "rejected";
+  const candSla = evaluateStageSla(candidate.stage, candidate.applied_at, true);
+
 
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs mb-6">
@@ -64,6 +67,13 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
                   <i className="ri-user-star-line text-purple-500" /> Recruiter: {candidate.assigned_recruiter.first_name} {candidate.assigned_recruiter.last_name}
                 </span>
               )}
+              {candSla && candidate.stage !== "hired" && candidate.stage !== "rejected" && (
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-bold border ${candSla.isOverdue ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-blue-50 border-blue-200 text-blue-700"}`}>
+                  <i className={candSla.isOverdue ? "ri-alarm-warning-line text-rose-600" : "ri-time-line"} />
+                  {candSla.badgeText}
+                </span>
+              )}
+
               {candidate.tags && candidate.tags.map((t) => (
                 <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 font-bold text-slate-700 text-[11px]">
                   #{t}
