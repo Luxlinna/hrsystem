@@ -36,12 +36,15 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const isHrDivision = useMemo(() => {
     if (isSuperAdmin) return true;
     if (isBranchAdmin) return false;
-    const roleName = (role?.name || "").trim().toLowerCase();
     const isHrBranch =
       /hr\s*division|human\s*resource/i.test(userBranchName || "") ||
       /hr\s*division|human\s*resource/i.test(userSiteName || "");
-    const isHrRole = /hr\s*manager|recruiter|hr\s*specialist|talent/i.test(roleName);
-    return isHrRole || isHrBranch;
+    const hasHrPermissions = Boolean(
+      role?.hiring_requests_hr_admin_approve ||
+      role?.hiring_requests_hr_review ||
+      role?.hiring_requests_chairman_approve
+    );
+    return hasHrPermissions || isHrBranch;
   }, [userBranchName, userSiteName, role, isSuperAdmin, isBranchAdmin]);
 
   const selectedBranchId = useMemo(() => {
@@ -65,7 +68,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
 
   const setSelectedBranchId = useCallback(
     (id: string) => {
-      if (isSuperAdmin) {
+      if (isSuperAdmin || isHrDivision) {
         setStoredBranchId(id);
         localStorage.setItem("hrm_selected_branch_id", id);
         return;
@@ -76,7 +79,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("hrm_selected_branch_id", id);
       }
     },
-    [isSuperAdmin, branches, userBranchId]
+    [isSuperAdmin, isHrDivision, branches, userBranchId]
   );
 
   const effectiveBranchId = useMemo(() => {
@@ -95,14 +98,14 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     return null;
   }, [selectedBranchId]);
 
-  // Global ERP modules remain strictly scoped to user's branch unless Super Admin.
+  // Global ERP modules remain strictly scoped to user's branch unless Super Admin or HR Division.
   // Cross-branch workflows for HR Division are localized solely to Hire, Onboarding, Checklist, and Meeting Rooms.
   const targetBranch = useMemo(() => {
-    return isSuperAdmin ? effectiveBranchId : userBranchId;
-  }, [isSuperAdmin, effectiveBranchId, userBranchId]);
+    return (isSuperAdmin || isHrDivision) ? effectiveBranchId : userBranchId;
+  }, [isSuperAdmin, isHrDivision, effectiveBranchId, userBranchId]);
 
   const visibleBranches = useMemo(() => {
-    if (isSuperAdmin) {
+    if (isSuperAdmin || isHrDivision) {
       const pureBranches = branches.filter((b) => !b.is_site);
       const sites = branches.filter((b) => b.is_site);
       const result: BranchInfo[] = [];
@@ -113,7 +116,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       return result;
     }
     return branches.filter((b) => b.id === userBranchId || b.branch_id === userBranchId);
-  }, [isSuperAdmin, branches, userBranchId]);
+  }, [isSuperAdmin, isHrDivision, branches, userBranchId]);
 
   const isPartnerBranchBlocked = useMemo(() => {
     if (isSuperAdmin || isHrDivision) return false;

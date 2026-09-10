@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { OnboardingRequest, OnboardingDoc, EmployeeOption } from "../types";
 
 import { startOnboardingForCandidate, startOnboardingForEmployee } from "@/lib/onboarding";
@@ -9,6 +10,7 @@ import { startOnboardingForCandidate, startOnboardingForEmployee } from "@/lib/o
 export function useOnboardingData(
   onHighlight: (id: string) => void
 ) {
+  const { role, loading: permLoading } = usePermissions();
   const {
     isSuperAdmin,
     isBranchAdmin,
@@ -18,14 +20,27 @@ export function useOnboardingData(
     userBranchId,
     userBranchName,
     targetBranch,
-    isPartnerBranchBlocked
+    isPartnerBranchBlocked,
+    loading: branchLoading,
   } = useBranchScope();
 
-  const isHrDivisionBranch =
+  const hasEnterprisePermission = Boolean(
+    isSuperAdmin ||
+    role?.hiring_requests_hr_admin_approve ||
+    role?.hiring_requests_hr_review ||
+    role?.hiring_requests_chairman_approve ||
+    isHrDivision
+  );
+
+  const isHrDivisionBranch = Boolean(
     /hr\s*division/i.test(effectiveBranchName || "") ||
-    Boolean(userBranchName && /hr\s*division/i.test(userBranchName) && (!effectiveBranchId || effectiveBranchId === userBranchId));
+    /hr\s*division/i.test(userBranchName || "")
+  );
+
   const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
-  const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
+  const canViewCrossBranch = Boolean(
+    hasEnterprisePermission && (isAllBranches || !effectiveBranchId || effectiveBranchId === userBranchId || isHrDivisionBranch)
+  );
 
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
@@ -36,7 +51,8 @@ export function useOnboardingData(
   const highlightId = searchParams.get("highlight");
 
   const loadData = useCallback(async () => {
-    if (isPartnerBranchBlocked || (!canViewCrossBranch && !targetBranch)) {
+    if (branchLoading || permLoading) return;
+    if (isPartnerBranchBlocked || (!hasEnterprisePermission && !targetBranch && !userBranchId)) {
       setRequests([]);
       setDocuments([]);
       setEmployees([]);
@@ -51,9 +67,8 @@ export function useOnboardingData(
         .is("deleted_at", null)
         .order("first_name");
 
-      // Only HR Division (or All Branches) can view/enroll employees across all branches.
-      // Other BUs (and when viewing another branch) are strictly limited to that branch.
-      if (!canViewCrossBranch && targetBranch) {
+      const shouldScopeToBranch = !canViewCrossBranch && Boolean(targetBranch && !isHrDivisionBranch);
+      if (shouldScopeToBranch && targetBranch) {
         empQuery = empQuery.eq("branch_id", targetBranch);
       }
 
@@ -78,7 +93,8 @@ export function useOnboardingData(
       const empIds = new Set(formattedEmps.map((e: any) => e.id));
 
       const currentOb = ob || [];
-      const filteredRequests = canViewCrossBranch
+      const isCrossBranch = canViewCrossBranch || isHrDivisionBranch;
+      const filteredRequests = isCrossBranch
         ? (currentOb as unknown as OnboardingRequest[])
         : (currentOb as unknown as OnboardingRequest[]).filter(
             (r) => (r.employees as any)?.branch_id === targetBranch
@@ -95,7 +111,10 @@ export function useOnboardingData(
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch, canViewCrossBranch]);
+  }, [
+    branchLoading, permLoading, isPartnerBranchBlocked, targetBranch, canViewCrossBranch,
+    isHrDivisionBranch, hasEnterprisePermission, userBranchId
+  ]);
 
   useEffect(() => {
     loadData();
@@ -112,7 +131,7 @@ export function useOnboardingData(
 
   // Scoped requests: when viewing a specific branch, strictly scope to targetBranch
   const scopedRequests = useMemo(() => {
-    if (canViewCrossBranch) {
+    if (canViewCrossBranch || isHrDivisionBranch) {
       return requests;
     }
     const target = targetBranch || userBranchId;
@@ -121,17 +140,17 @@ export function useOnboardingData(
       const bId = (r.employees as any)?.branch_id;
       return bId === target;
     });
-  }, [requests, targetBranch, userBranchId, canViewCrossBranch]);
+  }, [requests, targetBranch, userBranchId, canViewCrossBranch, isHrDivisionBranch]);
 
   // Scoped employees: when viewing a specific branch, strictly scope to targetBranch
   const scopedEmployees = useMemo(() => {
-    if (canViewCrossBranch) {
+    if (canViewCrossBranch || isHrDivisionBranch) {
       return employees;
     }
     const target = targetBranch || userBranchId;
     if (!target) return [];
     return employees.filter((e: any) => e.branch_id === target);
-  }, [employees, targetBranch, userBranchId, canViewCrossBranch]);
+  }, [employees, targetBranch, userBranchId, canViewCrossBranch, isHrDivisionBranch]);
 
   // Handle URL highlight param
   useEffect(() => {

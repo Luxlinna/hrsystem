@@ -18,19 +18,30 @@ export function useHireData() {
     isPartnerBranchBlocked,
     visibleBranches,
     isHrDivision,
+    loading: branchLoading,
   } = useBranchScope();
-  const { role, isAdmin } = usePermissions();
+  const { role, loading: permLoading } = usePermissions();
 
-  const isHrDivisionBranch =
+  const hasEnterpriseRecruitmentPermission = Boolean(
+    isSuperAdmin ||
+    role?.hiring_requests_hr_admin_approve ||
+    role?.hiring_requests_hr_review ||
+    role?.hiring_requests_chairman_approve ||
+    isHrDivision
+  );
+
+  const isHrDivisionBranch = Boolean(
     /hr\s*division/i.test(effectiveBranchName || "") ||
-    Boolean(userBranchName && /hr\s*division/i.test(userBranchName) && (!effectiveBranchId || effectiveBranchId === userBranchId));
-  const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
-  const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
+    /hr\s*division/i.test(userBranchName || "")
+  );
 
-  const canHrReview =
-    !!role?.hiring_requests_hr_review ||
-    /hr\s*manager|hr\s*staff|recruiter/i.test(role?.name || "") ||
-    (canViewCrossBranch && (isBranchAdmin || isAdmin || isSuperAdmin));
+  const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
+  const canViewCrossBranch = Boolean(
+    hasEnterpriseRecruitmentPermission && (isAllBranches || !effectiveBranchId || effectiveBranchId === userBranchId || isHrDivisionBranch)
+  );
+
+  const canHrReview = Boolean(isSuperAdmin || role?.hiring_requests_hr_review);
+  const canHrAdminApprove = Boolean(isSuperAdmin || role?.hiring_requests_hr_admin_approve);
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -42,7 +53,8 @@ export function useHireData() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    if (isPartnerBranchBlocked || (!isSuperAdmin && !isHrDivision && !userBranchId)) {
+    if (branchLoading || permLoading) return;
+    if (isPartnerBranchBlocked || (!hasEnterpriseRecruitmentPermission && !targetBranch && !userBranchId)) {
       setJobs([]);
       setCandidates([]);
       setInterviews([]);
@@ -61,10 +73,9 @@ export function useHireData() {
         .order("posted_at", { ascending: false });
 
       const isCrossBranchHR = canViewCrossBranch;
+      const shouldScopeToBranch = !isCrossBranchHR && Boolean(targetBranch && !isHrDivisionBranch);
 
-      // Only HR Division and SuperAdmins viewing HR Division or All Branches have enterprise-wide recruitment authority.
-      // Other BUs or specific branch scopes are strictly restricted to their own branch's vacancies and requests.
-      if (!isCrossBranchHR && targetBranch) {
+      if (shouldScopeToBranch && targetBranch) {
         jobQuery = jobQuery.eq("branch_id", targetBranch);
       }
 
@@ -76,7 +87,7 @@ export function useHireData() {
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
-      if (!isCrossBranchHR && targetBranch) {
+      if (shouldScopeToBranch && targetBranch) {
         reqQuery = reqQuery.eq("branch_id", targetBranch);
       }
 
@@ -86,7 +97,7 @@ export function useHireData() {
         .is("deleted_at", null)
         .order("first_name");
 
-      if (!isCrossBranchHR && targetBranch) {
+      if (shouldScopeToBranch && targetBranch) {
         employeeQuery = employeeQuery.eq("branch_id", targetBranch);
       }
 
@@ -146,7 +157,11 @@ export function useHireData() {
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch, effectiveBranchId, userBranchId, visibleBranches, isSuperAdmin, isHrDivision, canViewCrossBranch]);
+  }, [
+    branchLoading, permLoading, isPartnerBranchBlocked, targetBranch, effectiveBranchId,
+    userBranchId, visibleBranches, canViewCrossBranch, hasEnterpriseRecruitmentPermission,
+    isHrDivisionBranch
+  ]);
 
   useEffect(() => {
     loadData();

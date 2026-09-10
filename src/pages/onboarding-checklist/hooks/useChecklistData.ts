@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/components/Toast";
 import type { OnboardingHire, ChecklistTask, StaffMember } from "../types";
 import {
@@ -12,6 +13,7 @@ import {
 } from "./checklistDataHelpers";
 
 export function useChecklistData() {
+  const { role, loading: permLoading } = usePermissions();
   const {
     isSuperAdmin,
     isHrDivision,
@@ -21,13 +23,26 @@ export function useChecklistData() {
     userBranchName,
     targetBranch,
     isPartnerBranchBlocked,
+    loading: branchLoading,
   } = useBranchScope();
 
-  const isHrDivisionBranch =
+  const hasEnterprisePermission = Boolean(
+    isSuperAdmin ||
+    role?.hiring_requests_hr_admin_approve ||
+    role?.hiring_requests_hr_review ||
+    role?.hiring_requests_chairman_approve ||
+    isHrDivision
+  );
+
+  const isHrDivisionBranch = Boolean(
     /hr\s*division/i.test(effectiveBranchName || "") ||
-    Boolean(userBranchName && /hr\s*division/i.test(userBranchName) && (!effectiveBranchId || effectiveBranchId === userBranchId));
+    /hr\s*division/i.test(userBranchName || "")
+  );
+
   const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
-  const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
+  const canViewCrossBranch = Boolean(
+    hasEnterprisePermission && (isAllBranches || !effectiveBranchId || effectiveBranchId === userBranchId || isHrDivisionBranch)
+  );
 
   const [searchParams, setSearchParams] = useSearchParams();
   const targetHireParam = searchParams.get("hire") || searchParams.get("request_id") || searchParams.get("highlight");
@@ -39,7 +54,8 @@ export function useChecklistData() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async (_isRealtime?: boolean) => {
-    if (isPartnerBranchBlocked || (!canViewCrossBranch && !targetBranch)) {
+    if (branchLoading || permLoading) return;
+    if (isPartnerBranchBlocked || (!hasEnterprisePermission && !targetBranch && !userBranchId)) {
       setHires([]);
       setTasks([]);
       setStaff([]);
@@ -76,7 +92,8 @@ export function useChecklistData() {
       ]);
 
       const hrStaff = filterHrStaff(st || [], branchList || []);
-      const formattedHires = formatHires(hr || [], canViewCrossBranch, targetBranch);
+      const isCrossBranch = canViewCrossBranch || isHrDivisionBranch;
+      const formattedHires = formatHires(hr || [], isCrossBranch, targetBranch);
       const cleanedRawTasks = cleanPrematureCompletions(tk || []);
       const finalTasks = buildValidHireTasks(formattedHires, cleanedRawTasks, docs || []);
 
@@ -102,7 +119,10 @@ export function useChecklistData() {
     } finally {
       setLoading(false);
     }
-  }, [targetHireParam, isPartnerBranchBlocked, targetBranch, canViewCrossBranch]);
+  }, [
+    targetHireParam, isPartnerBranchBlocked, targetBranch, canViewCrossBranch,
+    isHrDivisionBranch, hasEnterprisePermission, userBranchId, branchLoading, permLoading
+  ]);
 
   useEffect(() => {
     loadData(false);

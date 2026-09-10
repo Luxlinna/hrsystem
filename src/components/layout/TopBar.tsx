@@ -1,26 +1,12 @@
-/**
- * TopBar — thin orchestrator (~100 lines).
- *
- * All state, effects, and handlers live in useTopBar().
- * Each visual section is a memoized sub-component that only re-renders when
- * its own slice of props changes:
- *
- *   MobileDrawer          — mobile navigation drawer
- *   GlobalSearch          — search bar + results dropdown
- *   NotificationDropdown  — bell icon + notification panel
- *   ProfileDropdown       — avatar + profile menu
- *
- * Keyboard shortcut: Cmd+K / Ctrl+K focuses the search input.
- */
 import { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/context/ThemeContext";
 import { useBranchScope } from "@/context/BranchContext";
 import { useTopBar } from "./topbar/useTopBar";
-import MobileDrawer        from "./topbar/MobileDrawer";
-import GlobalSearch        from "./topbar/GlobalSearch";
+import MobileDrawer from "./topbar/MobileDrawer";
+import GlobalSearch from "./topbar/GlobalSearch";
 import NotificationDropdown from "./topbar/NotificationDropdown";
-import ProfileDropdown     from "./topbar/ProfileDropdown";
+import ProfileDropdown from "./topbar/ProfileDropdown";
 import { BranchSwitcherDropdown } from "./topbar/BranchSwitcherDropdown";
 
 export default function TopBar() {
@@ -34,6 +20,7 @@ export default function TopBar() {
     userBranchName,
     userSiteName,
     isSuperAdmin,
+    isHrDivision,
   } = useBranchScope();
 
   const {
@@ -137,8 +124,8 @@ export default function TopBar() {
 
           {/* Right — branch switcher/indicator, theme toggle, notifications, profile */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Global Branch/Site Switcher (Super Admin only) */}
-            {(isSuperAdmin || (isBranchAdmin && visibleBranches.length > 1)) ? (
+            {/* Global Branch/Site Switcher */}
+            {(isSuperAdmin || isHrDivision || (isBranchAdmin && visibleBranches.length > 1)) ? (
               <BranchSwitcherDropdown
                 visibleBranches={visibleBranches}
                 selectedBranchId={selectedBranchId}

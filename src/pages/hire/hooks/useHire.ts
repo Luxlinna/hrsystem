@@ -23,38 +23,30 @@ export function useHire() {
 
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const actorRole = role?.name || "Admin";
-  const roleNameLower = (role?.name || "").toLowerCase();
   const canRequest = true;
 
-  const isHrDivisionBranch =
+  const hasEnterpriseRecruitmentPermission = Boolean(
+    isSuperAdmin ||
+    role?.hiring_requests_hr_admin_approve ||
+    role?.hiring_requests_hr_review ||
+    role?.hiring_requests_chairman_approve ||
+    isHrDivision
+  );
+
+  const isHrDivisionBranch = Boolean(
     /hr\s*division/i.test(effectiveBranchName || "") ||
-    Boolean(userBranchName && /hr\s*division/i.test(userBranchName) && (!effectiveBranchId || effectiveBranchId === userBranchId));
+    /hr\s*division/i.test(userBranchName || "")
+  );
+
   const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
-  const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
+  const canViewCrossBranch = Boolean(
+    hasEnterpriseRecruitmentPermission && (isAllBranches || !effectiveBranchId || effectiveBranchId === userBranchId || isHrDivisionBranch)
+  );
 
-  const canBranchApprove =
-    isSuperAdmin ||
-    (typeof role?.hiring_requests_branch_approve === "boolean"
-      ? role.hiring_requests_branch_approve
-      : (/branch\s*admin|branch\s*manager|general\s*manager|branch\s*director|bu\s*ceo/i.test(roleNameLower) || isBranchAdmin));
-
-  const canHrReview =
-    isSuperAdmin ||
-    (typeof role?.hiring_requests_hr_review === "boolean"
-      ? role.hiring_requests_hr_review
-      : /hr\s*manager|recruiter|talent|hr\s*specialist|hr\s*officer|hr\s*staff/i.test(roleNameLower));
-
-  const canHrAdminApprove =
-    isSuperAdmin ||
-    (typeof role?.hiring_requests_hr_admin_approve === "boolean"
-      ? role.hiring_requests_hr_admin_approve
-      : /admin\s*manager|hr\s*admin|hr\s*director|head\s*of\s*hr/i.test(roleNameLower));
-
-  const canChairmanApprove =
-    isSuperAdmin ||
-    (typeof role?.hiring_requests_chairman_approve === "boolean"
-      ? role.hiring_requests_chairman_approve
-      : /chair(?:woman|man)|board\s*director/i.test(roleNameLower));
+  const canBranchApprove = Boolean(isSuperAdmin || role?.hiring_requests_branch_approve || isBranchAdmin);
+  const canHrReview = Boolean(isSuperAdmin || role?.hiring_requests_hr_review);
+  const canHrAdminApprove = Boolean(isSuperAdmin || role?.hiring_requests_hr_admin_approve);
+  const canChairmanApprove = Boolean(isSuperAdmin || role?.hiring_requests_chairman_approve);
 
   const canApprove = canBranchApprove || canHrReview || canHrAdminApprove || canChairmanApprove;
   const isChairman = canChairmanApprove;
