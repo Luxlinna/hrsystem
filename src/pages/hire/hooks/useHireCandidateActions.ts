@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { uploadFileToS3, uploadMultipleFilesToS3 } from "@/lib/s3-storage";
 import { startOnboardingForEmployee } from "@/lib/onboarding";
-import type { Candidate, Job, Interview, CandidateDocument } from "../types";
+import type { Candidate, Job, Interview, CandidateDocument, NewCandidateFormState } from "../types";
 
 interface UseHireCandidateActionsProps {
   actorName: string;
@@ -346,7 +346,8 @@ export function useHireCandidateActions({
         const newDocs: CandidateDocument[] = [];
         for (const file of candidateFiles) {
           try {
-            const url = await uploadToS3(file, "candidates");
+            const item = await uploadFileToS3(file, "candidates");
+            const url = item.url;
             newDocs.push({
               name: file.name,
               url,

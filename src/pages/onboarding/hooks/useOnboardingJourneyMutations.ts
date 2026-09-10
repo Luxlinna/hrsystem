@@ -148,7 +148,7 @@ export function useOnboardingJourneyMutations({
         toast("Error", "Failed to delete onboarding record", "error");
       }
     },
-    [actorName, roleName, loadData]
+    [actorName, roleName, loadData, setRequests]
   );
 
   const handlePopulateDefaultChecklist = useCallback(

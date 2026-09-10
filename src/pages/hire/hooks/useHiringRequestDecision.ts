@@ -210,7 +210,7 @@ export function useHiringRequestDecision({
         setProcessingDecision(false);
       }
     },
-    [targetRequest, decisionAction, rejectionReason, actorName, actorRole, userBranchName, loadData]
+    [targetRequest, decisionAction, rejectionReason, actorName, actorRole, userBranchName, loadData, canChairmanApprove, isSuperAdmin]
   );
 
   return {

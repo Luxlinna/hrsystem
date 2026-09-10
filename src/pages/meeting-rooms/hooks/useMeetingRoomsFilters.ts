@@ -79,7 +79,7 @@ export function useMeetingRoomsFilters(
 
       return true;
     });
-  }, [bookings, selectedDate, statusTab, searchQuery, employeeId, userEmail]);
+  }, [bookings, selectedDate, statusTab, searchQuery, employeeId, userEmail, visibleRoomIds]);
 
   // Operational stats
   const pendingCount = useMemo(() => {

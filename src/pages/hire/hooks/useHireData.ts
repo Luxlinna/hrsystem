@@ -146,7 +146,7 @@ export function useHireData() {
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, targetBranch, effectiveBranchId, userBranchId, visibleBranches, isSuperAdmin, isHrDivision, canHrReview, canViewCrossBranch]);
+  }, [isPartnerBranchBlocked, targetBranch, effectiveBranchId, userBranchId, visibleBranches, isSuperAdmin, isHrDivision, canViewCrossBranch]);
 
   useEffect(() => {
     loadData();
