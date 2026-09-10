@@ -119,7 +119,7 @@ export const CandidateApplicationsCard = memo(function CandidateApplicationsCard
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium">
               {applications.map((app, idx) => {
-                const stageCfg = STAGE_CONFIG[app.stage] || STAGE_CONFIG.applied;
+                const stageCfg = STAGE_CONFIG[app.stage] || STAGE_CONFIG.cv_received;
                 return (
                   <tr key={app.id || idx} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-4 py-3">

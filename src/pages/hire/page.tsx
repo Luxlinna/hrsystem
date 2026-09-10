@@ -8,6 +8,7 @@ import { InterviewsTabContent } from "./components/interviews/InterviewsTabConte
 import { PipelineKanbanView } from "./components/pipeline/PipelineKanbanView";
 import { PipelineMetricsChart } from "./components/pipeline/PipelineMetricsChart";
 import { HiringRequestsTab } from "./components/requests/HiringRequestsTab";
+import { RecruitmentActionsView } from "./components/actions/RecruitmentActionsView";
 import { HireModalsContainer } from "./components/modals/HireModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { supabase } from "@/lib/supabase";
@@ -73,10 +74,28 @@ export default function HirePage() {
         interviewsCount={h.interviews.length}
         requestsCount={h.hiringRequests.length}
         pendingRequestsCount={h.hiringRequests.length}
+        actionsCount={h.recruitmentActions.counts.total}
+        isHrDivisionScope={h.isHrDivisionScope}
         isChairman={h.isChairman}
       />
 
-      {h.tab !== "requests" && (
+      {h.tab === "actions" && (
+        <RecruitmentActionsView
+          selectedRole={h.recruitmentActions.selectedRole}
+          onSelectRole={h.recruitmentActions.setSelectedRole}
+          defaultRole={h.recruitmentActions.defaultRole}
+          pendingCvReviews={h.recruitmentActions.pendingCvReviews}
+          feedbackDueInterviews={h.recruitmentActions.feedbackDueInterviews}
+          pendingApprovals={h.recruitmentActions.pendingApprovals}
+          counts={h.recruitmentActions.counts}
+          isHrDivisionScope={h.isHrDivisionScope}
+          onUpdateCandidateStage={h.updateCandidateStage}
+          onOpenFeedback={h.openFeedbackModal}
+          onOpenDecision={h.openDecisionModal}
+        />
+      )}
+
+      {h.tab !== "requests" && h.tab !== "actions" && (
         <>
           <HireStatsRow
             activeJobsCount={h.jobs.filter((j) => j.status === "active").length || h.jobs.length}

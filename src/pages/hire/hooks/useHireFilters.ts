@@ -11,14 +11,14 @@ export function useHireFilters(
 ) {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get("tab") as HireTab | null;
-  const initialTab: HireTab = (urlTab && ["jobs", "candidates", "interviews", "pipeline", "requests"].includes(urlTab))
+  const initialTab: HireTab = (urlTab && ["actions", "jobs", "candidates", "interviews", "pipeline", "requests"].includes(urlTab))
     ? urlTab
     : "jobs";
 
   const [tab, setTabState] = useState<HireTab>(initialTab);
 
   useEffect(() => {
-    if (urlTab && ["jobs", "candidates", "interviews", "pipeline", "requests"].includes(urlTab)) {
+    if (urlTab && ["actions", "jobs", "candidates", "interviews", "pipeline", "requests"].includes(urlTab)) {
       setTabState(urlTab);
     }
   }, [urlTab]);
@@ -90,7 +90,8 @@ export function useHireFilters(
 
   const filteredCandidates = useMemo(() => {
     return candidates.filter((c) => {
-      if (filterCandidateStage !== "all" && c.stage !== filterCandidateStage) return false;
+      const normStage = c.stage === "applied" ? "cv_received" : c.stage === "interview" ? "hr_interview" : c.stage;
+      if (filterCandidateStage !== "all" && normStage !== filterCandidateStage && c.stage !== filterCandidateStage) return false;
       if (filterCandidateJob !== "all" && c.job_posting_id !== filterCandidateJob) return false;
       if (filterDepartment !== "all" && c.job_postings?.department !== filterDepartment) return false;
       if (searchQuery.trim()) {
@@ -129,7 +130,10 @@ export function useHireFilters(
   const pipelineStageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     PIPELINE_STAGES.forEach((st) => {
-      counts[st] = candidates.filter((c) => c.stage === st).length;
+      counts[st] = candidates.filter((c) => {
+        const norm = c.stage === "applied" ? "cv_received" : c.stage === "interview" ? "hr_interview" : c.stage;
+        return norm === st;
+      }).length;
     });
     return counts;
   }, [candidates]);

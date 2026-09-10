@@ -32,11 +32,20 @@ export const PipelineMetricsChart = memo(function PipelineMetricsChart({
       </h3>
       <p className="text-xs text-gray-400 mb-4">Volume of talent moving through recruitment funnel</p>
 
-      <div className="h-64">
+      <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 45 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis dataKey="stage" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+            <XAxis
+              dataKey="stage"
+              tick={{ fontSize: 10, fill: "#64748b" }}
+              axisLine={false}
+              tickLine={false}
+              interval={0}
+              angle={-30}
+              textAnchor="end"
+              height={50}
+            />
             <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
             <Tooltip
               contentStyle={{
@@ -46,7 +55,7 @@ export const PipelineMetricsChart = memo(function PipelineMetricsChart({
                 fontSize: "12px",
               }}
             />
-            <Bar dataKey="count" radius={[8, 8, 0, 0]} maxBarSize={45}>
+            <Bar dataKey="count" radius={[8, 8, 0, 0]} maxBarSize={38}>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}

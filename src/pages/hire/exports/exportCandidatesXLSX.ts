@@ -1,4 +1,5 @@
 import type { Candidate } from "../types";
+import { STAGE_CONFIG } from "../constants";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -13,7 +14,7 @@ export async function exportCandidatesXLSX(candidates: Candidate[]): Promise<boo
         Phone: c.phone || "—",
         Position: c.job_postings?.title || "General Application",
         Department: c.job_postings?.department || "—",
-        Stage: (c.stage || "applied").toUpperCase(),
+        Stage: STAGE_CONFIG[c.stage]?.label || c.stage || "CV Received",
         Rating: c.rating ? `${c.rating}/5` : "—",
         Source: c.source || "Direct",
         "Applied Date": c.applied_at ? new Date(c.applied_at).toLocaleDateString() : "—",

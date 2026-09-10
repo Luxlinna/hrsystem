@@ -29,7 +29,11 @@ export interface CandidateDocument {
   size?: number;
   type?: string;
   uploaded_at?: string;
+  stage_key?: string;
+  notes?: string;
 }
+
+export type StageEvidenceStatus = "verified" | "pending" | "upcoming";
 
 export interface CandidateApplication {
   id: string;
@@ -95,7 +99,15 @@ export interface Interview {
   employees?: { id?: string; first_name: string; last_name: string; avatar_url?: string } | null;
 }
 
-export type HireTab = "requests" | "jobs" | "candidates" | "interviews" | "pipeline";
+export type HireTab = "actions" | "requests" | "jobs" | "candidates" | "interviews" | "pipeline";
+
+export type RecruitmentActionRole =
+  | "manager"
+  | "hiring_manager"
+  | "hr_manager"
+  | "hr_director"
+  | "ceo_director"
+  | "chairwoman";
 
 export interface HiringRequest {
   id: string;

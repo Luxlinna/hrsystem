@@ -72,7 +72,9 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
             </thead>
             <tbody className="divide-y divide-gray-100">
               {candidates.map((c) => {
-                const cfg = STAGE_CONFIG[c.stage] || STAGE_CONFIG.applied;
+                const normStage =
+                  c.stage === "applied" ? "cv_received" : c.stage === "interview" ? "hr_interview" : c.stage;
+                const cfg = STAGE_CONFIG[normStage] || STAGE_CONFIG.cv_received;
                 return (
                   <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-5 py-3.5 whitespace-nowrap">
@@ -101,7 +103,7 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
                     </td>
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <select
-                        value={c.stage}
+                        value={normStage}
                         onChange={(e) => onUpdateStage(c.id, e.target.value)}
                         className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase border cursor-pointer focus:outline-none ${cfg.bg} ${cfg.text} ${cfg.border}`}
                       >

@@ -152,14 +152,14 @@ export function useHireCandidateActions({
           if (error) throw error;
           toast("Candidate Profile Updated", `"${candidateForm.full_name}" master profile saved.`, "success");
         } else {
-          payload.stage = "applied";
+          payload.stage = "cv_received";
           const { data: newCand, error } = await supabase.from("candidates").insert(payload).select().single();
           if (error) throw error;
           if (newCand?.id && candidateForm.job_posting_id) {
             await supabase.from("candidate_applications").insert({
               candidate_id: newCand.id,
               job_posting_id: candidateForm.job_posting_id,
-              stage: "applied",
+              stage: "cv_received",
               source: candidateForm.source,
               outcome: "in_progress",
               notes: candidateForm.notes || null,
@@ -187,11 +187,14 @@ export function useHireCandidateActions({
       }
       setSchedulingInterview(true);
       try {
+        const dbType = ["video", "in-person", "phone"].includes(interviewForm.type)
+          ? interviewForm.type
+          : "video";
         const payload = {
           candidate_id: interviewForm.candidate_id,
           scheduled_at: new Date(interviewForm.scheduled_at).toISOString(),
           duration_minutes: Number(interviewForm.duration_minutes) || 60,
-          type: interviewForm.type,
+          type: dbType,
           notes: interviewForm.notes || null,
         };
         if (editingInterview) {
@@ -446,7 +449,7 @@ export function useHireCandidateActions({
             await supabase.from("candidate_applications").insert({
               candidate_id: existingCandidateId,
               job_posting_id: candidateForm.job_posting_id,
-              stage: existing.stage || "applied",
+              stage: existing.stage || "cv_received",
               source: candidateForm.source,
               outcome: "in_progress",
               notes: `Applied via merged CV on ${new Date().toLocaleDateString()}`,

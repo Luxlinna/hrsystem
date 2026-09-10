@@ -24,7 +24,9 @@ export const CandidateCard = memo(function CandidateCard({
   onEdit,
   onDelete,
 }: CandidateCardProps) {
-  const cfg = STAGE_CONFIG[candidate.stage] || STAGE_CONFIG.applied;
+  const normStage =
+    candidate.stage === "applied" ? "cv_received" : candidate.stage === "interview" ? "hr_interview" : candidate.stage;
+  const cfg = STAGE_CONFIG[normStage] || STAGE_CONFIG.cv_received;
 
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group">
@@ -53,7 +55,7 @@ export const CandidateCard = memo(function CandidateCard({
 
           {/* Quick Stage Dropdown */}
           <select
-            value={candidate.stage}
+            value={normStage}
             onChange={(e) => onUpdateStage(candidate.id, e.target.value)}
             className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase border cursor-pointer focus:outline-none ${cfg.bg} ${cfg.text} ${cfg.border}`}
           >

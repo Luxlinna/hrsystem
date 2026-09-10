@@ -11,6 +11,8 @@ interface HireTabsBarProps {
   interviewsCount: number;
   requestsCount?: number;
   pendingRequestsCount?: number;
+  actionsCount?: number;
+  isHrDivisionScope?: boolean;
   isChairman?: boolean;
 }
 
@@ -24,6 +26,8 @@ export const HireTabsBar = memo(function HireTabsBar({
   interviewsCount,
   requestsCount,
   pendingRequestsCount = 0,
+  actionsCount = 0,
+  isHrDivisionScope = true,
 }: HireTabsBarProps) {
   const currentTab = activeTab || tab || "requests";
   const handleSelectTab = (tKey: HireTab) => {
@@ -33,7 +37,26 @@ export const HireTabsBar = memo(function HireTabsBar({
 
   const totalReqCount = requestsCount ?? pendingRequestsCount ?? 0;
 
-  const tabs = [
+  const tabs: Array<{
+    key: HireTab;
+    label: string;
+    icon: string;
+    count: number | null;
+    isBadge?: boolean;
+    highlight?: boolean;
+  }> = [
+    ...(isHrDivisionScope
+      ? [
+          {
+            key: "actions" as HireTab,
+            label: "My Recruitment Actions",
+            icon: "ri-checkbox-circle-line",
+            count: actionsCount,
+            isBadge: true,
+            highlight: true,
+          },
+        ]
+      : []),
     { key: "requests" as HireTab, label: "Requisitions", icon: "ri-file-list-3-line", count: totalReqCount, isBadge: true },
     { key: "jobs" as HireTab, label: "Job Openings", icon: "ri-briefcase-line", count: jobsCount },
     { key: "candidates" as HireTab, label: "Candidates", icon: "ri-user-search-line", count: candidatesCount },
@@ -60,8 +83,14 @@ export const HireTabsBar = memo(function HireTabsBar({
             <span>{t.label}</span>
             {t.count !== null && (
               <span
-                className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                  isActive ? "bg-[#253C7D]/10 text-[#253C7D]" : "bg-gray-100 text-gray-600"
+                className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full transition-colors ${
+                  t.highlight && t.count > 0
+                    ? isActive
+                      ? "bg-emerald-600 text-white shadow-2xs"
+                      : "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : isActive
+                    ? "bg-[#253C7D]/10 text-[#253C7D]"
+                    : "bg-gray-100 text-gray-600"
                 }`}
               >
                 {t.count}

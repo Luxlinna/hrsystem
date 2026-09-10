@@ -10,6 +10,10 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
   currentStage,
   onUpdateStage,
 }: CandidatePipelineWidgetProps) {
+  const normStage =
+    currentStage === "applied" ? "cv_received" : currentStage === "interview" ? "hr_interview" : currentStage;
+  const currentIndex = STAGE_TIMELINE_ORDER.indexOf(normStage);
+
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
@@ -20,9 +24,8 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
       </div>
       <div className="space-y-0 relative pl-2">
         {STAGE_TIMELINE_ORDER.map((stage, idx) => {
-          const isCurrent = currentStage === stage;
-          const isPassed =
-            STAGE_TIMELINE_ORDER.indexOf(currentStage) >= idx && currentStage !== "rejected";
+          const isCurrent = normStage === stage;
+          const isPassed = currentIndex >= idx && normStage !== "rejected";
           const isLast = idx === STAGE_TIMELINE_ORDER.length - 1;
 
           return (
@@ -48,17 +51,33 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
                       : "bg-white border-gray-300 group-hover:border-gray-400"
                   }`}
                 />
-                <span
-                  className={`text-xs capitalize font-bold ${
-                    isCurrent
-                      ? "text-[#172B4D] font-extrabold"
-                      : isPassed
-                      ? "text-gray-900"
-                      : "text-gray-400"
-                  }`}
-                >
-                  {STAGE_CONFIG[stage]?.label || stage}
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className={`text-xs capitalize font-bold ${
+                      isCurrent
+                        ? "text-[#172B4D] font-extrabold"
+                        : isPassed
+                        ? "text-gray-900"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {STAGE_CONFIG[stage]?.label || stage}
+                  </span>
+                  {["hr_interview", "hiring_manager_interview", "final_interview"].includes(stage) && (
+                    <span
+                      className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded-md uppercase tracking-wider ${
+                        isCurrent
+                          ? "bg-purple-100 text-purple-800 border border-purple-200 animate-pulse"
+                          : isPassed
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-gray-100 text-gray-400 border border-gray-200"
+                      }`}
+                      title="Evaluation form required evidence for this stage"
+                    >
+                      {isPassed ? "Form Verified" : "Form Required"}
+                    </span>
+                  )}
+                </div>
               </button>
             </div>
           );

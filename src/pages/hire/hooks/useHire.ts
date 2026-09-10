@@ -9,6 +9,7 @@ import { useHiringRequests } from "./useHiringRequests";
 import { useHireModals } from "./useHireModals";
 import { useHireActions } from "./useHireActions";
 import { useHireCandidateActions } from "./useHireCandidateActions";
+import { useRecruitmentActions } from "./useRecruitmentActions";
 
 export function useHire() {
   const { user } = useAuth();
@@ -88,6 +89,17 @@ export function useHire() {
     setMovingToOnboarding: actions.setMovingToOnboarding, setSavingFeedback: actions.setSavingFeedback,
   });
 
+  const recruitmentActions = useRecruitmentActions({
+    candidates: data.candidates,
+    interviews: data.interviews,
+    hiringRequests: data.hiringRequests,
+    actorRole,
+    myEmployeeRole: myEmployee?.role,
+    myEmployeeId: myEmployee?.id,
+    myDepartment: myEmployee?.department,
+    isHrDivisionScope: canViewCrossBranch || isHrDivisionBranch || isHrDivision,
+  });
+
   const handleSaveJob = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (await actions.handleSaveJob(modals.newJob, modals.editingJob)) modals.setJobModal(false);
@@ -132,6 +144,8 @@ export function useHire() {
     canRequest, canApprove, canBranchApprove, canHrReview, canHrAdminApprove, canChairmanApprove,
     isHrDivisionBranch,
     canViewCrossBranch,
+    isHrDivisionScope: canViewCrossBranch || isHrDivisionBranch || isHrDivision,
+    recruitmentActions,
     isChairman, isSuperAdmin, isAdmin, isBranchAdmin,
     jobViewMode: filters.jobViewMode, setJobViewMode: filters.setJobViewMode,
     candidateViewMode: filters.candidateViewMode, setCandidateViewMode: filters.setCandidateViewMode,

@@ -4,6 +4,7 @@ import { CandidateProfileHeader } from "./components/candidate-detail/CandidateP
 import { CandidateInfoCard } from "./components/candidate-detail/CandidateInfoCard";
 import { CandidateApplicationsCard } from "./components/candidate-detail/CandidateApplicationsCard";
 import { CandidateResumeCard } from "./components/candidate-detail/CandidateResumeCard";
+import { CandidateEvidenceCard } from "./components/candidate-detail/CandidateEvidenceCard";
 import { CandidateInterviewsCard } from "./components/candidate-detail/CandidateInterviewsCard";
 import { CandidateEvaluationWidget } from "./components/candidate-detail/CandidateEvaluationWidget";
 import { CandidateSourceWidget } from "./components/candidate-detail/CandidateSourceWidget";
@@ -11,6 +12,7 @@ import { CandidatePipelineWidget } from "./components/candidate-detail/Candidate
 import { CandidateActionsWidget } from "./components/candidate-detail/CandidateActionsWidget";
 import { InterviewModal } from "./components/modals/InterviewModal";
 import { FeedbackModal } from "./components/modals/FeedbackModal";
+import { InterviewEvaluationModal } from "./components/candidate-detail/InterviewEvaluationModal";
 import { useCandidateDetail } from "./hooks/useCandidateDetail";
 
 export default function CandidateDetail() {
@@ -42,6 +44,7 @@ export default function CandidateDetail() {
     rateCandidate,
     uploadResume,
     uploadDocuments,
+    uploadStageEvidence,
     deleteDocument,
     handleSaveNotes,
     handleSaveFeedback,
@@ -49,6 +52,12 @@ export default function CandidateDetail() {
     deleteCandidate,
     handleAddApplication,
     jobs,
+    evaluationModalStage,
+    setEvaluationModalStage,
+    submittingEvaluation,
+    handleSubmitInterviewEvaluation,
+    openScheduleStageModal,
+    actorName,
   } = useCandidateDetail(id);
 
   const avgScore = useMemo(() => {
@@ -149,7 +158,23 @@ export default function CandidateDetail() {
             onDeleteDocument={deleteDocument}
           />
 
-          {/* 4. Interview History */}
+          {/* 4. 13-Stage Recruitment Evidence & Verification Matrix */}
+          <CandidateEvidenceCard
+            candidate={candidate}
+            interviews={interviews}
+            uploading={uploadingResume}
+            onUploadStageEvidence={uploadStageEvidence}
+            onOpenEvaluationForm={setEvaluationModalStage}
+            onScheduleStageInterview={openScheduleStageModal}
+            onOpenFeedbackModal={(iv) => {
+              setFeedbackInterview(iv);
+              setFeedbackScore(iv.score || 5);
+              setFeedbackText(iv.feedback || "");
+            }}
+            onUpdateStage={updateStage}
+          />
+
+          {/* 5. Interview History */}
           <CandidateInterviewsCard
             interviews={interviews}
             avgScore={avgScore}
@@ -180,6 +205,7 @@ export default function CandidateDetail() {
 
           {/* 4. Application Actions */}
           <CandidateActionsWidget
+            currentStage={candidate.stage}
             onUpdateStage={updateStage}
             onDelete={deleteCandidate}
           />
@@ -209,6 +235,18 @@ export default function CandidateDetail() {
         saving={savingFeedback}
         onClose={() => setFeedbackInterview(null)}
         onSubmit={handleSaveFeedback}
+      />
+
+      {/* Dedicated Interview Evaluation Form Modal (Mandatory Evidence for HR, Hiring Manager, Final Interview) */}
+      <InterviewEvaluationModal
+        isOpen={Boolean(evaluationModalStage)}
+        stageKey={evaluationModalStage}
+        candidate={candidate}
+        interviews={interviews}
+        defaultEvaluatorName={actorName}
+        onClose={() => setEvaluationModalStage(null)}
+        onSubmitEvaluation={handleSubmitInterviewEvaluation}
+        submitting={submittingEvaluation}
       />
     </div>
   );

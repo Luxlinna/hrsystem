@@ -9,6 +9,7 @@ import { logActivity } from "@/lib/audit";
 import { uploadFileToS3, uploadMultipleFilesToS3 } from "@/lib/s3-storage";
 import type { Candidate, Interview, CandidateDocument, Job } from "../types";
 import { STAGE_CONFIG } from "../constants";
+import { checkInterviewStageProgressionGate, getStageInterview } from "../constants/evidenceConfig";
 import { useCandidateDetailFeedback } from "./useCandidateDetailFeedback";
 import { startOnboardingForCandidate } from "@/lib/onboarding";
 
@@ -88,6 +89,18 @@ export function useCandidateDetail(id: string | undefined) {
   const updateStage = useCallback(
     async (stage: string) => {
       if (!id || !candidate) return;
+
+      // Enforce Interview Stage progression gate: both Interview Schedule Form & Evaluation Form must be complete
+      const gate = checkInterviewStageProgressionGate(candidate.stage, stage, candidate, interviews);
+      if (!gate.allowed) {
+        toast(
+          "Stage Transition Blocked",
+          gate.reason || "Both Interview Schedule and Evaluation forms must be completed before moving forward.",
+          "warning"
+        );
+        return;
+      }
+
       const { error } = await supabase.from("candidates").update({ stage }).eq("id", id);
       if (error) {
         toast("Error", "Failed to update candidate stage", "error");
@@ -121,7 +134,7 @@ export function useCandidateDetail(id: string | undefined) {
         description: `${candidate.full_name} moved to ${STAGE_CONFIG[stage]?.label || stage}`,
       });
     },
-    [id, candidate, actorName, role?.name]
+    [id, candidate, interviews, actorName, role?.name]
   );
 
   const rateCandidate = useCallback(
@@ -194,6 +207,54 @@ export function useCandidateDetail(id: string | undefined) {
     [uploadDocuments]
   );
 
+  const uploadStageEvidence = useCallback(
+    async (stageKey: string, file: File) => {
+      if (!id) return;
+      setUploadingResume(true);
+      try {
+        const s3Items = await uploadMultipleFilesToS3([file], `candidates/evidence/${stageKey}`);
+        const uploadedItem = s3Items[0];
+        if (!uploadedItem) throw new Error("File upload returned no data");
+
+        const newDoc: CandidateDocument = {
+          name: uploadedItem.name,
+          url: uploadedItem.url,
+          size: uploadedItem.size,
+          type: uploadedItem.type,
+          uploaded_at: new Date().toISOString(),
+          stage_key: stageKey,
+        };
+
+        const existingDocs: CandidateDocument[] = candidate?.documents || (
+          candidate?.resume_url
+            ? [{ name: candidate.resume_name || "Resume", url: candidate.resume_url, stage_key: "cv_received" }]
+            : []
+        );
+
+        const allDocs = [...existingDocs, newDoc];
+
+        const { error } = await supabase.from("candidates").update({
+          documents: allDocs,
+        }).eq("id", id);
+
+        if (error) throw error;
+
+        setCandidate((prev) => (prev ? {
+          ...prev,
+          documents: allDocs,
+        } : prev));
+
+        toast("Evidence Uploaded", `Document attached to "${stageKey}" stage.`, "success");
+      } catch (err: any) {
+        console.error("Evidence upload error:", err);
+        toast("Upload Failed", err?.message || "Failed to upload stage evidence", "error");
+      } finally {
+        setUploadingResume(false);
+      }
+    },
+    [id, candidate]
+  );
+
   const deleteDocument = useCallback(
     async (docUrl: string) => {
       if (!id || !candidate) return;
@@ -261,7 +322,7 @@ export function useCandidateDetail(id: string | undefined) {
         const { error } = await supabase.from("candidate_applications").insert({
           candidate_id: id,
           job_posting_id: jobPostingId,
-          stage: "applied",
+          stage: candidate?.stage || "cv_received",
           source: source || candidate?.source || "Direct",
           outcome: "in_progress",
           notes: notes || null,
@@ -276,6 +337,144 @@ export function useCandidateDetail(id: string | undefined) {
       }
     },
     [id, candidate, loadCandidate]
+  );
+
+  const [evaluationModalStage, setEvaluationModalStage] = useState<string | null>(null);
+  const [submittingEvaluation, setSubmittingEvaluation] = useState(false);
+
+  const handleSubmitInterviewEvaluation = useCallback(
+    async (payload: {
+      stageKey: string;
+      evaluatorName: string;
+      date: string;
+      overallScore: number;
+      recommendation: "strong_hire" | "advance" | "hold" | "reject";
+      competencies: Record<string, number>;
+      strengths: string;
+      concerns: string;
+      notes: string;
+    }) => {
+      if (!id || !candidate) return;
+      setSubmittingEvaluation(true);
+      try {
+        const stageLabel = STAGE_CONFIG[payload.stageKey]?.label || payload.stageKey;
+        const compSummary = Object.entries(payload.competencies)
+          .map(([k, v]) => `${k}: ${v}/5`)
+          .join(", ");
+        const recLabel =
+          payload.recommendation === "strong_hire"
+            ? "Strong Hire"
+            : payload.recommendation === "advance"
+            ? "Advance to Next Round"
+            : payload.recommendation === "hold"
+            ? "On Hold"
+            : "Do Not Proceed";
+
+        const formattedFeedback = [
+          `[EVALUATION FORM: ${stageLabel}]`,
+          `Evaluator: ${payload.evaluatorName}`,
+          `Date: ${payload.date}`,
+          `Recommendation: ${recLabel}`,
+          `Score: ${payload.overallScore}/5`,
+          `Competencies: ${compSummary}`,
+          payload.strengths ? `Strengths: ${payload.strengths}` : null,
+          payload.concerns ? `Concerns: ${payload.concerns}` : null,
+          `Remarks: ${payload.notes}`,
+        ]
+          .filter(Boolean)
+          .join("\n");
+
+        // 1. Create or update the interview record
+        const existingIv = getStageInterview(payload.stageKey, interviews);
+
+        if (existingIv) {
+          await supabase
+            .from("interviews")
+            .update({
+              score: payload.overallScore,
+              feedback: formattedFeedback,
+              status: "completed",
+            })
+            .eq("id", existingIv.id);
+        } else {
+          await supabase.from("interviews").insert({
+            candidate_id: id,
+            interviewer_id: myEmployee?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(myEmployee.id) ? myEmployee.id : null,
+            scheduled_at: new Date(payload.date).toISOString(),
+            duration_minutes: 60,
+            type: "video",
+            score: payload.overallScore,
+            feedback: formattedFeedback,
+            status: "completed",
+            notes: `[Stage: ${payload.stageKey}] Evaluation submitted by ${payload.evaluatorName}`,
+          });
+        }
+
+        // 2. Generate and attach formal evidence document to candidate.documents
+        const newEvidenceDoc: CandidateDocument = {
+          name: `${stageLabel} - Evaluation Form`,
+          url: `#evaluation-${payload.stageKey}`,
+          size: 1024,
+          type: "application/pdf",
+          uploaded_at: new Date().toISOString(),
+          stage_key: payload.stageKey,
+          notes: `Score: ${payload.overallScore}/5 • Rec: ${recLabel} • Evaluator: ${payload.evaluatorName}`,
+        };
+
+        const existingDocs = (candidate.documents || []).filter((d) => d.stage_key !== payload.stageKey);
+        const updatedDocs = [...existingDocs, newEvidenceDoc];
+
+        const { error: candErr } = await supabase
+          .from("candidates")
+          .update({
+            documents: updatedDocs,
+          })
+          .eq("id", id);
+
+        if (candErr) {
+          console.error("Failed to update candidate documents:", candErr);
+        }
+
+        setCandidate((prev) => (prev ? { ...prev, documents: updatedDocs } : prev));
+        toast(
+          "Evaluation Form Recorded",
+          `${stageLabel} evaluation verified and attached to stage evidence.`,
+          "success"
+        );
+
+        logActivity({
+          module: "hire",
+          action: "updated",
+          entityType: "candidate",
+          entityId: id,
+          actorName,
+          actorRole: role?.name || "Unknown",
+          description: `Submitted ${stageLabel} evaluation form for ${candidate.full_name} (${recLabel})`,
+        });
+
+        setEvaluationModalStage(null);
+        await loadCandidate(id);
+      } catch (err: any) {
+        toast("Error", err.message || "Failed to submit evaluation form", "error");
+      } finally {
+        setSubmittingEvaluation(false);
+      }
+    },
+    [id, candidate, interviews, myEmployee?.id, actorName, role?.name, loadCandidate]
+  );
+
+  const openScheduleStageModal = useCallback(
+    (stageKey: string) => {
+      feedback.setNewInterview({
+        candidate_id: id || "",
+        scheduled_at: "",
+        duration_minutes: "60",
+        type: "video",
+        notes: `[Stage: ${stageKey}]`,
+      });
+      feedback.setScheduleModal(true);
+    },
+    [id, feedback]
   );
 
   return {
@@ -302,10 +501,12 @@ export function useCandidateDetail(id: string | undefined) {
     setNewInterview: feedback.setNewInterview,
     fileInputRef,
     openScheduleModal: feedback.openScheduleModal,
+    openScheduleStageModal,
     updateStage,
     rateCandidate,
     uploadResume,
     uploadDocuments,
+    uploadStageEvidence,
     deleteDocument,
     handleSaveNotes,
     deleteCandidate,
@@ -313,6 +514,11 @@ export function useCandidateDetail(id: string | undefined) {
     jobs,
     handleScheduleInterview: feedback.handleScheduleInterview,
     handleSaveFeedback: feedback.handleSaveFeedback,
+    evaluationModalStage,
+    setEvaluationModalStage,
+    submittingEvaluation,
+    handleSubmitInterviewEvaluation,
+    actorName,
     navigate,
   };
 }

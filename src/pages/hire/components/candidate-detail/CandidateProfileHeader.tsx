@@ -15,8 +15,11 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
   onUpdateStage,
   onOpenSchedule,
 }: CandidateProfileHeaderProps) {
-  const isHired = candidate.stage === "hired";
-  const isRejected = candidate.stage === "rejected";
+  const normStage =
+    candidate.stage === "applied" ? "cv_received" : candidate.stage === "interview" ? "hr_interview" : candidate.stage;
+  const cfg = STAGE_CONFIG[normStage] || STAGE_CONFIG.cv_received;
+  const isHired = normStage === "hired";
+  const isRejected = normStage === "rejected";
 
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs mb-6">
@@ -37,16 +40,10 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
                 {candidate.full_name}
               </h1>
               <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                  isHired
-                    ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                    : isRejected
-                    ? "bg-rose-100 text-rose-800 border border-rose-200"
-                    : "bg-sky-100 text-sky-800 border border-sky-200"
-                }`}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${cfg.bg} ${cfg.text} ${cfg.border}`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                {candidate.stage}
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cfg.hex }} />
+                {cfg.label}
               </span>
             </div>
 
@@ -116,7 +113,7 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
           {/* Stage Dropdown */}
           <div className="relative">
             <select
-              value={candidate.stage}
+              value={normStage}
               onChange={(e) => onUpdateStage(e.target.value)}
               className="px-3.5 py-2.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 shadow-2xs focus:outline-none focus:border-[#172B4D] cursor-pointer appearance-none pr-8"
             >

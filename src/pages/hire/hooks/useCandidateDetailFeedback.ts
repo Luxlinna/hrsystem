@@ -56,25 +56,43 @@ export function useCandidateDetailFeedback({
   const handleScheduleInterview = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!candidateId || !newInterview.scheduled_at) return;
-      setSchedulingInterview(true);
-      const { error } = await supabase.from("interviews").insert({
-        candidate_id: candidateId,
-        interviewer_id: isUuid(myEmployeeId) ? myEmployeeId : null,
-        scheduled_at: new Date(newInterview.scheduled_at).toISOString(),
-        duration_minutes: Number(newInterview.duration_minutes) || 60,
-        type: newInterview.type,
-        notes: newInterview.notes.trim() || null,
-        status: "scheduled",
-      });
-      setSchedulingInterview(false);
-      if (error) {
-        toast("Error", "Failed to schedule interview", "error");
+      const targetCandidateId = candidateId || newInterview.candidate_id;
+      if (!targetCandidateId || !newInterview.scheduled_at) {
+        toast("Validation Error", "Please provide a valid candidate and interview date/time.", "error");
         return;
       }
-      toast("Interview Scheduled", "New interview added to calendar.", "success");
-      setScheduleModal(false);
-      loadCandidate(candidateId);
+      setSchedulingInterview(true);
+      try {
+        // Ensure type strictly conforms to DB check constraint ('video' | 'in-person' | 'phone')
+        const dbType = ["video", "in-person", "phone"].includes(newInterview.type)
+          ? newInterview.type
+          : "video";
+
+        const { error } = await supabase.from("interviews").insert({
+          candidate_id: targetCandidateId,
+          interviewer_id: isUuid(myEmployeeId) ? myEmployeeId : null,
+          scheduled_at: new Date(newInterview.scheduled_at).toISOString(),
+          duration_minutes: Number(newInterview.duration_minutes) || 60,
+          type: dbType,
+          notes: newInterview.notes.trim() || null,
+          status: "scheduled",
+        });
+
+        if (error) {
+          console.error("Failed to schedule interview:", error);
+          toast("Error", error.message || "Failed to schedule interview", "error");
+          return;
+        }
+
+        toast("Interview Scheduled", "New interview added to calendar.", "success");
+        setScheduleModal(false);
+        await loadCandidate(targetCandidateId);
+      } catch (err: any) {
+        console.error("Exception scheduling interview:", err);
+        toast("Error", err.message || "An unexpected error occurred while scheduling", "error");
+      } finally {
+        setSchedulingInterview(false);
+      }
     },
     [candidateId, newInterview, myEmployeeId, loadCandidate]
   );

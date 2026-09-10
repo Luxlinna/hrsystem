@@ -109,19 +109,48 @@ export const InterviewModal = memo(function InterviewModal({
             </div>
           </div>
 
-          <div>
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Interview Format
-            </label>
-            <select
-              value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value })}
-              className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
-            >
-              <option value="video">Online Video Call</option>
-              <option value="in-person">In-Person Office</option>
-              <option value="phone">Phone Screening</option>
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                Interview Stage Round
+              </label>
+              <select
+                value={
+                  form.notes?.includes("Stage: hr_interview")
+                    ? "hr_interview"
+                    : form.notes?.includes("Stage: hiring_manager_interview")
+                    ? "hiring_manager_interview"
+                    : form.notes?.includes("Stage: final_interview")
+                    ? "final_interview"
+                    : "hr_interview"
+                }
+                onChange={(e) => {
+                  const stageKey = e.target.value;
+                  const cleanNotes = (form.notes || "").replace(/\[Stage:.*?\]\s*/g, "");
+                  setForm({ ...form, notes: `[Stage: ${stageKey}] ${cleanNotes}`.trim() });
+                }}
+                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              >
+                <option value="hr_interview">Stage 4: HR Interview</option>
+                <option value="hiring_manager_interview">Stage 5: Hiring Manager Interview</option>
+                <option value="final_interview">Stage 6: Final Interview</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                Interview Format
+              </label>
+              <select
+                value={["video", "in-person", "phone"].includes(form.type) ? form.type : "video"}
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+                className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              >
+                <option value="video">Online Video Call</option>
+                <option value="in-person">In-Person Office</option>
+                <option value="phone">Phone Screening</option>
+              </select>
+            </div>
           </div>
 
           <div>
