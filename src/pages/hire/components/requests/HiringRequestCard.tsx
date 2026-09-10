@@ -53,8 +53,8 @@ export const HiringRequestCard = memo(function HiringRequestCard({
 
   const canActStage1 = isStage1Branch && canBranchApprove && (isSuperAdmin || !r.branch_id || r.branch_id === userBranchId);
   const canActStage2 = isStage2HrReview && (canHrReview || isSuperAdmin);
-  const canActStage3 = isStage3HrAdmin && canHrAdminApprove && !canChairmanApprove;
-  const canActStage4 = (isStage4Chairman || isStage3HrAdmin) && (canChairmanApprove || isSuperAdmin);
+  const canActStage3 = isStage3HrAdmin && (canHrAdminApprove || isSuperAdmin);
+  const canActStage4 = isStage4Chairman && (canChairmanApprove || isSuperAdmin);
 
   const recruiterName = r.assigned_recruiter_name || r.hr_assigned_to_name;
 

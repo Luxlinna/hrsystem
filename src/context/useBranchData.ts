@@ -119,10 +119,26 @@ export function useBranchData(userEmail?: string | null) {
       setUserSiteName(sName);
       setUserSiteId(data.default_work_location_id || null);
     } else {
-      setUserBranchId(null);
-      setUserBranchName(null);
-      setUserSiteId(null);
-      setUserSiteName(null);
+      // Fallback: Check user's assigned role branch
+      const { data: ura } = await supabase
+        .from("user_role_assignments")
+        .select("app_roles(branch_id, branches:branch_id(id, name))")
+        .ilike("email", userEmail)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      const roleBranch = (ura?.app_roles as any)?.branches;
+      if (roleBranch?.id) {
+        setUserBranchId(roleBranch.id);
+        setUserBranchName(roleBranch.name || null);
+        setUserSiteId(null);
+        setUserSiteName(null);
+      } else {
+        setUserBranchId(null);
+        setUserBranchName(null);
+        setUserSiteId(null);
+        setUserSiteName(null);
+      }
     }
     setLoading(false);
   }, [userEmail]);

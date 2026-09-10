@@ -13,7 +13,8 @@ export function useUsersTabFilter(
   users: UserAssignment[] = [],
   branches: BranchOption[] = [],
   filterBranch: string,
-  searchQuery: string
+  searchQuery: string,
+  isSuperAdmin: boolean = true
 ) {
   const displayedUsers = useMemo(() => {
     const list = Array.isArray(users) ? users : [];
@@ -25,7 +26,7 @@ export function useUsersTabFilter(
         if (typeof filterBranch === "string" && filterBranch.startsWith("site:")) {
           const sId = filterBranch.substring(5);
           if (u.default_work_location_id !== sId) return false;
-        } else {
+        } else if (isSuperAdmin) {
           const targetB = bList.find((b) => b && b.id === filterBranch);
           const isDirectMatch = u.branch_id === filterBranch;
           const uBranchName = (u.branch_name || "").toLowerCase().trim();
@@ -47,7 +48,7 @@ export function useUsersTabFilter(
       }
       return true;
     });
-  }, [users, filterBranch, searchQuery, branches]);
+  }, [users, filterBranch, searchQuery, branches, isSuperAdmin]);
 
   const branchCounts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -72,6 +73,7 @@ export function useUsersTabFilter(
 
   const scopedTotal = useMemo(() => {
     const list = Array.isArray(users) ? users : [];
+    if (!isSuperAdmin) return list.length;
     const bList = Array.isArray(branches) ? branches : [];
     const parentBranch = bList.find((b) => b && !b.is_site);
     if (!parentBranch) return list.length;
@@ -88,7 +90,7 @@ export function useUsersTabFilter(
       );
       return isDirect || isNameMatch || isSiteMatch;
     }).length;
-  }, [users, branches]);
+  }, [users, branches, isSuperAdmin]);
 
   return { displayedUsers, branchCounts, scopedTotal };
 }

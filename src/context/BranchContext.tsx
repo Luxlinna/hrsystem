@@ -35,17 +35,22 @@ export function BranchProvider({ children }: { children: ReactNode }) {
 
   const isHrDivision = useMemo(() => {
     if (isSuperAdmin) return true;
+    if (isBranchAdmin) return false;
     const roleName = (role?.name || "").trim().toLowerCase();
-    const isHrRole =
-      /hr|human\s*resource|recruiter/i.test(roleName) ||
-      Boolean(role?.hiring_requests_hr_review || role?.hiring_requests_hr_admin_approve);
     const isHrBranch =
       /hr\s*division|human\s*resource/i.test(userBranchName || "") ||
       /hr\s*division|human\s*resource/i.test(userSiteName || "");
+    const isHrRole = /hr\s*manager|recruiter|hr\s*specialist|talent/i.test(roleName);
     return isHrRole || isHrBranch;
-  }, [userBranchName, userSiteName, role, isSuperAdmin]);
+  }, [userBranchName, userSiteName, role, isSuperAdmin, isBranchAdmin]);
 
   const selectedBranchId = useMemo(() => {
+    if (isBranchAdmin && userBranchId) {
+      if (storedBranchId && branches.some((b) => b.id === storedBranchId && (b.id === userBranchId || b.branch_id === userBranchId))) {
+        return storedBranchId;
+      }
+      return userBranchId;
+    }
     if (isSuperAdmin || isHrDivision) {
       if (storedBranchId === "all") return "all";
       if (storedBranchId && branches.some((b) => b.id === storedBranchId)) return storedBranchId;
@@ -56,7 +61,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       return storedBranchId;
     }
     return userBranchId || branches[0]?.id || "";
-  }, [isSuperAdmin, isHrDivision, userBranchId, storedBranchId, branches]);
+  }, [isBranchAdmin, isSuperAdmin, isHrDivision, userBranchId, storedBranchId, branches]);
 
   const setSelectedBranchId = useCallback(
     (id: string) => {
@@ -111,9 +116,9 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   }, [isSuperAdmin, branches, userBranchId]);
 
   const isPartnerBranchBlocked = useMemo(() => {
-    if (isSuperAdmin) return false;
+    if (isSuperAdmin || isHrDivision) return false;
     return !userBranchId;
-  }, [isSuperAdmin, userBranchId]);
+  }, [isSuperAdmin, isHrDivision, userBranchId]);
 
   const effectiveBranchName = useMemo(() => {
     if (selectedBranchId === "all") return "All Branches";

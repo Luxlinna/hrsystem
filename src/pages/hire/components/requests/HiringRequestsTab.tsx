@@ -2,6 +2,7 @@ import { memo, useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { HiringRequest } from "../../types";
 import { HiringRequestCard } from "./HiringRequestCard";
+import { HiringRequestsHeader } from "./HiringRequestsHeader";
 
 interface HiringRequestsTabProps {
   requests: HiringRequest[];
@@ -97,59 +98,12 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
 
   return (
     <div className="space-y-6">
-      {/* Executive Requisition Report Header */}
-      <div className="bg-[#1B2B5A] bg-gradient-to-r from-[#172554] via-[#1e3a8a] to-[#1e293b] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-[11px] font-bold tracking-wide uppercase text-blue-100 border border-white/10">
-                Pipeline: Manager Request → CEO/Director Endorsement → HR Review → Chairwoman Authorization (Go Live)
-              </span>
-              {isChairman && (
-                <span className="px-2.5 py-0.5 bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 rounded-full text-[11px] font-bold">
-                  Chairwoman Oversight View
-                </span>
-              )}
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Recruitment & Hiring Requisitions
-            </h2>
-            <p className="text-xs sm:text-sm text-blue-100/90 max-w-2xl leading-relaxed font-medium">
-              Enterprise Governance: Requisition requested by Department Manager, endorsed by CEO/Director, vetted by HR, and authorized by Chairwoman to go live.
-            </p>
-          </div>
-
-          {canRequest && (
-            <button
-              onClick={onOpenCreate}
-              className="inline-flex items-center gap-2 px-5 py-3 bg-white text-[#172554] hover:bg-blue-50 font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer shrink-0"
-            >
-              <i className="ri-user-add-line text-lg" />
-              Request New Employee
-            </button>
-          )}
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-6 border-t border-white/15 relative">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <p className="text-[10px] text-amber-200 font-bold uppercase tracking-wider">CEO/Director Review</p>
-            <p className="text-xl sm:text-2xl font-black text-amber-300 mt-1">{stats.pendingBranch}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <p className="text-[10px] text-sky-200 font-bold uppercase tracking-wider">HR Review</p>
-            <p className="text-xl sm:text-2xl font-black text-sky-300 mt-1">{stats.pendingHr}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <p className="text-[10px] text-orange-200 font-bold uppercase tracking-wider">Chairwoman Review</p>
-            <p className="text-xl sm:text-2xl font-black text-orange-300 mt-1">{stats.pendingChairman}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <p className="text-[10px] text-emerald-200 font-bold uppercase tracking-wider">Live Active Jobs</p>
-            <p className="text-xl sm:text-2xl font-black text-emerald-300 mt-1">{stats.approved}</p>
-          </div>
-        </div>
-      </div>
+      <HiringRequestsHeader
+        isChairman={isChairman}
+        canRequest={canRequest}
+        onOpenCreate={onOpenCreate}
+        stats={stats}
+      />
 
       {/* Filter and Search Bar */}
       <div className="bg-white rounded-2xl border border-gray-200/80 p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">

@@ -33,26 +33,31 @@ export function useHire() {
   const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
 
   const canBranchApprove =
-    !!role?.hiring_requests_branch_approve ||
-    /branch\s*admin|branch\s*manager|general\s*manager|branch\s*director/i.test(roleNameLower) ||
-    isBranchAdmin || isSuperAdmin;
+    isSuperAdmin ||
+    (typeof role?.hiring_requests_branch_approve === "boolean"
+      ? role.hiring_requests_branch_approve
+      : (/branch\s*admin|branch\s*manager|general\s*manager|branch\s*director|bu\s*ceo/i.test(roleNameLower) || isBranchAdmin));
 
   const canHrReview =
-    !!role?.hiring_requests_hr_review ||
-    /hr\s*manager|recruiter|talent|hr\s*specialist|hr\s*officer|hr\s*staff/i.test(roleNameLower) ||
-    (canViewCrossBranch && isSuperAdmin);
+    isSuperAdmin ||
+    (typeof role?.hiring_requests_hr_review === "boolean"
+      ? role.hiring_requests_hr_review
+      : /hr\s*manager|recruiter|talent|hr\s*specialist|hr\s*officer|hr\s*staff/i.test(roleNameLower));
 
   const canHrAdminApprove =
-    !!role?.hiring_requests_hr_admin_approve ||
-    /admin\s*manager|hr\s*admin|hr\s*director|head\s*of\s*hr/i.test(roleNameLower) ||
-    (canViewCrossBranch && isSuperAdmin);
+    isSuperAdmin ||
+    (typeof role?.hiring_requests_hr_admin_approve === "boolean"
+      ? role.hiring_requests_hr_admin_approve
+      : /admin\s*manager|hr\s*admin|hr\s*director|head\s*of\s*hr/i.test(roleNameLower));
 
   const canChairmanApprove =
-    !!role?.hiring_requests_chairman_approve ||
-    /chair|ceo|president|board/i.test(roleNameLower) || isSuperAdmin;
+    isSuperAdmin ||
+    (typeof role?.hiring_requests_chairman_approve === "boolean"
+      ? role.hiring_requests_chairman_approve
+      : /chair(?:woman|man)|board\s*director/i.test(roleNameLower));
 
   const canApprove = canBranchApprove || canHrReview || canHrAdminApprove || canChairmanApprove;
-  const isChairman = /chair|ceo|president/i.test(roleNameLower);
+  const isChairman = canChairmanApprove;
 
   const data = useHireData();
   const filters = useHireFilters(data.jobs, data.candidates, data.interviews, data.branches);

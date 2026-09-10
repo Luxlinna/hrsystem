@@ -35,5 +35,9 @@ export function bootstrapAdminRole(): UserRole {
     task_view_own_branch: true,
     meeting_rooms_approve: true,
     attendance_notify: true,
+    hiring_requests_branch_approve: true,
+    hiring_requests_hr_review: true,
+    hiring_requests_hr_admin_approve: true,
+    hiring_requests_chairman_approve: true,
   };
 }

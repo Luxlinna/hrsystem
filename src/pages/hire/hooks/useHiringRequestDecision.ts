@@ -64,8 +64,7 @@ export function useHiringRequestDecision({
       const isChairmanOrSuper =
         canChairmanApprove ||
         isSuperAdmin ||
-        /chair|ceo|president|board/i.test(actorRole || "") ||
-        /super\s*admin/i.test(actorRole || "");
+        /chair(?:woman|man)|board\s*director/i.test(actorRole || "");
 
       if (decisionAction === "rejected" && !rejectionReason.trim()) {
         toast("Validation", "Please specify a reason for rejection.", "error");

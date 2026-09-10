@@ -64,7 +64,7 @@ export const HiringRequestCardActions = memo(function HiringRequestCardActions({
             onClick={() => onOpenDecision(r, "approved")}
             className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
           >
-            <i className="ri-admin-line text-sm" /> Admin Manager Approve
+            <i className="ri-shield-star-line text-sm" /> HR Admin Director Approve
           </button>
           <button
             onClick={() => onOpenDecision(r, "rejected")}

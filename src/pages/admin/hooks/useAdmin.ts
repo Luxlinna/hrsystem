@@ -68,14 +68,22 @@ export function useAdmin() {
 
   // Sync filterBranch when header branch switches
   useEffect(() => {
+    if (!isSuperAdmin) {
+      setFilterBranch(userBranchId || "all");
+      return;
+    }
     if (selectedBranchId) {
       setFilterBranch(selectedBranchId);
     }
-  }, [selectedBranchId]);
+  }, [isSuperAdmin, userBranchId, selectedBranchId]);
 
   // Scope branch tabs to the currently selected header branch and its sub-sites
   const scopedBranches = useMemo(() => {
     if (!data.branches || data.branches.length === 0) return [];
+    if (!isSuperAdmin) {
+      const bId = userBranchId || selectedBranchId;
+      return bId ? data.branches.filter((b) => b && (b.id === bId || b.branch_id === bId)) : data.branches;
+    }
     if (!selectedBranchId || selectedBranchId === "all") return data.branches;
 
     if (typeof selectedBranchId === "string" && selectedBranchId.startsWith("site:")) {
@@ -89,7 +97,7 @@ export function useAdmin() {
 
     const relevant = data.branches.filter((b) => b && (b.id === selectedBranchId || b.branch_id === selectedBranchId));
     return relevant.length > 0 ? relevant : data.branches;
-  }, [data.branches, selectedBranchId]);
+  }, [data.branches, isSuperAdmin, userBranchId, selectedBranchId]);
 
   // Realtime subscription for password reset requests
   useEffect(() => {

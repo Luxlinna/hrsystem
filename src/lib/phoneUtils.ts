@@ -119,8 +119,9 @@ export function applyUserEmployeeFilter<T>(query: T, userEmail?: string | null):
     const rawPhone = syntheticEmailToPhone(cleanEmail);
     const noZero = rawPhone.replace(/^0+/, "");
     const withZero = `0${noZero}`;
+    const digitPattern = `%${noZero.split("").join("%")}%`;
     return (query as any).or(
-      `email.ilike.${cleanEmail},phone.eq.${withZero},phone.eq.${noZero},phone.eq.+855${noZero}`
+      `email.ilike.${cleanEmail},phone.eq.${withZero},phone.eq.${noZero},phone.eq.+855${noZero},phone.ilike.${digitPattern}`
     );
   }
   return (query as any).ilike("email", cleanEmail);

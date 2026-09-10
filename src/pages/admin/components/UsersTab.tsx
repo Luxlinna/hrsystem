@@ -73,7 +73,8 @@ export const UsersTab = memo(function UsersTab({
     users,
     branches,
     filterBranch,
-    searchQuery
+    searchQuery,
+    isSuperAdmin
   );
 
   return (
@@ -82,7 +83,7 @@ export const UsersTab = memo(function UsersTab({
         <div>
           <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
             {displayedUsers.length} {displayedUsers.length === 1 ? "User" : "Users"} Listed
-            {filterBranch !== "all" && (
+            {isSuperAdmin && filterBranch !== "all" && (
               <span className="text-xs font-normal text-gray-500 dark:text-slate-400 ml-1.5">
                 (filtered from {scopedTotal} total)
               </span>

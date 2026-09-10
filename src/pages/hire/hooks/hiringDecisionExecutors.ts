@@ -59,7 +59,7 @@ export async function executeApprovalStep(ctx: ProcessDecisionContext) {
     const { error: reqErr } = await supabase
       .from("hiring_requests")
       .update({
-        status: "pending_chairman_review",
+        status: "pending_hr_admin_review",
         hr_reviewed_by: `${actorName} (${actorRole} · ${currentBranch})`,
         hr_reviewed_at: nowIso,
         stage_entered_at: nowIso,
@@ -70,16 +70,16 @@ export async function executeApprovalStep(ctx: ProcessDecisionContext) {
 
     await notifyStageTransition(
       targetRequest,
-      "Chairwoman Final Authorization",
-      "Chairwoman / Executive Chairman",
+      "HR Admin Director Approval",
+      "HR Admin Director",
       actorName,
       actorRole,
       null
     );
-    return { title: "Reviewed & Endorsed", message: `Requisition reviewed by HR ${actorName} and forwarded to Chairwoman.` };
+    return { title: "Reviewed & Forwarded", message: `Requisition reviewed by HR Manager ${actorName} and forwarded to HR Admin Director.` };
   }
 
-  if (isStage3HrAdmin && !isChairmanOrSuper) {
+  if (isStage3HrAdmin) {
     const { error: reqErr } = await supabase
       .from("hiring_requests")
       .update({
@@ -94,13 +94,13 @@ export async function executeApprovalStep(ctx: ProcessDecisionContext) {
 
     await notifyStageTransition(
       targetRequest,
-      "Chairman Final Authorization",
-      "Executive Chairman",
+      "Chairwoman / Chairman Final Authorization",
+      "Chairwoman / Executive Chairman",
       actorName,
       actorRole,
       null
     );
-    return { title: "Approved", message: `Requisition approved by ${actorName} and escalated to Chairwoman.` };
+    return { title: "Approved & Escalated", message: `Requisition approved by HR Admin Director ${actorName} and forwarded to Chairwoman/Chairman.` };
   }
 
   // Final Stage: Executive Authorization -> Create live job posting & Go Live

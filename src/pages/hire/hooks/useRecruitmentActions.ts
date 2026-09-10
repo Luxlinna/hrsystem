@@ -238,10 +238,8 @@ export function useRecruitmentActions({
           return status === "pending_hr_review";
 
         case "hr_director":
-          // Stage 3: HR Admin Review (or pending HR review requiring sign-off)
-          return (
-            status === "pending_hr_admin_review" || status === "pending_hr_review"
-          );
+          // Stage 3: HR Admin Director Approval
+          return status === "pending_hr_admin_review";
 
         case "ceo_director":
           // Division / Executive endorsement

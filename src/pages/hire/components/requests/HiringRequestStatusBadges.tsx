@@ -41,10 +41,15 @@ export const HiringRequestStatusBadges = memo(function HiringRequestStatusBadges
           </span>
         );
       case "pending_chairman_review":
-      case "pending_hr_admin_review":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
-            <i className="ri-vip-crown-line text-sm" /> Stage 3: Awaiting Chairwoman Final Authorization
+            <i className="ri-vip-crown-line text-sm" /> Stage 4: Awaiting Chairwoman / Chairman Authorization
+          </span>
+        );
+      case "pending_hr_admin_review":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+            <i className="ri-shield-star-line text-sm" /> Stage 3: In HR Admin Director Approval
           </span>
         );
       case "pending_hr_review":

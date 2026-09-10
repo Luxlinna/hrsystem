@@ -44,5 +44,9 @@ export function toUserRole(data: any): UserRole | null {
     task_view_own_branch: !!r.task_view_own_branch,
     meeting_rooms_approve: !!r.meeting_rooms_approve,
     attendance_notify: !!r.attendance_notify,
+    hiring_requests_branch_approve: !!r.hiring_requests_branch_approve,
+    hiring_requests_hr_review: !!r.hiring_requests_hr_review,
+    hiring_requests_hr_admin_approve: !!r.hiring_requests_hr_admin_approve,
+    hiring_requests_chairman_approve: !!r.hiring_requests_chairman_approve,
   };
 }
