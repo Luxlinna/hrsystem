@@ -30,7 +30,8 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
     work_location_id: "",
   });
 
-  const cloudServerHost = "hrsystem-quit.onrender.com";
+  const cloudServerIp = "13.228.242.81";
+  const cloudServerPort = "80";
 
   useEffect(() => {
     if (editingDevice) {
@@ -54,9 +55,9 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
     }
   }, [editingDevice, isOpen, sites]);
 
-  const handleCopyCloudUrl = () => {
-    navigator.clipboard.writeText(cloudServerHost);
-    toast("Copied", "ZKTeco Cloud ADMS Server Address copied to clipboard", "success");
+  const handleCopyCloudIp = () => {
+    navigator.clipboard.writeText(cloudServerIp);
+    toast("Copied", "ZKTeco Cloud Server IP (13.228.242.81) copied to clipboard", "success");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -187,17 +188,22 @@ export const BiometricDeviceModal = memo(function BiometricDeviceModal({
               </p>
               <button
                 type="button"
-                onClick={handleCopyCloudUrl}
+                onClick={handleCopyCloudIp}
                 className="text-[10px] font-bold text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <i className="ri-file-copy-line" /> Copy Domain
+                <i className="ri-file-copy-line" /> Copy IP
               </button>
             </div>
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              In ZKTeco Menu: <strong>Comm. ➔ Cloud Server</strong>. Set <strong>Enable Domain Name: ON</strong>, enter this domain in <strong>Server Address</strong>, and turn <strong>Enable Proxy: OFF</strong>.
+              In ZKTeco Menu: <strong>Comm. ➔ Cloud Server (or ADMS)</strong>:
+              <br />• <strong>Server Address</strong>: <code className="text-slate-800 font-bold">{cloudServerIp}</code>
+              <br />• <strong>Server Port</strong>: <code className="text-slate-800 font-bold">{cloudServerPort}</code>
+              <br />• <strong>Enable Domain Name</strong>: <span className="text-amber-700 font-semibold">OFF</span> (Disabled)
+              <br />• <strong>Enable Proxy</strong>: <span className="text-slate-700 font-semibold">OFF</span>
             </p>
-            <div className="bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 text-[10px] text-slate-600 font-mono select-all truncate">
-              {cloudServerHost}
+            <div className="bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 text-[10px] text-slate-700 font-mono select-all flex justify-between items-center">
+              <span>http://{cloudServerIp}:{cloudServerPort}</span>
+              <span className="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">AWS Port 80</span>
             </div>
           </div>
         </div>

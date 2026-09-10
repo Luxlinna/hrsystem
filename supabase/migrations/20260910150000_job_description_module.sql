@@ -25,6 +25,7 @@ create policy "Allow all authenticated users to read JD templates"
   on job_description_templates for select
   to authenticated
   using (true);
+  
 
 drop policy if exists "Allow all authenticated users to insert JD templates" on job_description_templates;
 create policy "Allow all authenticated users to insert JD templates"
