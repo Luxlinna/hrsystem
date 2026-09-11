@@ -83,21 +83,25 @@ create index if not exists idx_offer_letters_deleted_at on public.offer_letters(
 -- Enable RLS
 alter table public.offer_letters enable row level security;
 
+drop policy if exists "Allow all authenticated users to view offer letters" on public.offer_letters;
 create policy "Allow all authenticated users to view offer letters"
   on public.offer_letters for select
   to authenticated
   using (true);
 
+drop policy if exists "Allow authenticated users to insert offer letters" on public.offer_letters;
 create policy "Allow authenticated users to insert offer letters"
   on public.offer_letters for insert
   to authenticated
   with check (true);
 
+drop policy if exists "Allow authenticated users to update offer letters" on public.offer_letters;
 create policy "Allow authenticated users to update offer letters"
   on public.offer_letters for update
   to authenticated
   using (true);
 
+drop policy if exists "Allow authenticated users to delete offer letters" on public.offer_letters;
 create policy "Allow authenticated users to delete offer letters"
   on public.offer_letters for delete
   to authenticated

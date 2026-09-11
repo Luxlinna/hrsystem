@@ -28,8 +28,8 @@ export async function notifyCandidateApprovalStepSigned({
   actorRole,
   isDelegated = false,
 }: NotifyStepParams): Promise<{ title: string; message: string }> {
-  const candidateName = candidate.name || approval.candidate_name || "Candidate";
-  const position = candidate.role || candidate.job_postings?.title || approval.position_applied || "Position";
+  const candidateName = candidate.full_name || approval.candidate_name || "Candidate";
+  const position = candidate.job_postings?.title || approval.position_applied || "Position";
   const buName = approval.business_unit || candidate.job_postings?.branches?.name || "Business Unit";
   const formNum = approval.form_number ? `[${approval.form_number}] ` : "";
 

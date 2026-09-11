@@ -46,21 +46,25 @@ create index if not exists idx_candidate_approvals_deleted_at on public.candidat
 -- RLS
 alter table public.candidate_approvals enable row level security;
 
+drop policy if exists "Allow all authenticated users to view candidate approvals" on public.candidate_approvals;
 create policy "Allow all authenticated users to view candidate approvals"
   on public.candidate_approvals for select
   to authenticated
   using (true);
 
+drop policy if exists "Allow authenticated users to insert candidate approvals" on public.candidate_approvals;
 create policy "Allow authenticated users to insert candidate approvals"
   on public.candidate_approvals for insert
   to authenticated
   with check (true);
 
+drop policy if exists "Allow authenticated users to update candidate approvals" on public.candidate_approvals;
 create policy "Allow authenticated users to update candidate approvals"
   on public.candidate_approvals for update
   to authenticated
   using (true);
 
+drop policy if exists "Allow authenticated users to delete candidate approvals" on public.candidate_approvals;
 create policy "Allow authenticated users to delete candidate approvals"
   on public.candidate_approvals for delete
   to authenticated

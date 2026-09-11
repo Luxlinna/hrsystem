@@ -18,75 +18,87 @@ export function usePermissions(): UsePermissionsReturn {
   const [loading, setLoading] = useState(!cachedRole);
 
   const resolveRole = useCallback(async (currentUser: NonNullable<typeof user>) => {
-    await supabase.rpc("link_my_role_assignment");
+    try {
+      // 1. Bootstrap Super Admin full bypass
+      if (isBootstrapAdminEmail(currentUser.email)) {
+        const fallbackRole = bootstrapAdminRole();
+        cachedRole = fallbackRole;
+        cachedUid = currentUser.id;
+        setRole(fallbackRole);
+        return;
+      }
 
-    // 1. Bootstrap Super Admin full bypass
-    if (isBootstrapAdminEmail(currentUser.email)) {
-      const fallbackRole = bootstrapAdminRole();
-      cachedRole = fallbackRole;
-      cachedUid = currentUser.id;
-      setRole(fallbackRole);
-      setLoading(false);
-      return;
-    }
+      // Non-blocking role linking in background
+      void Promise.resolve(supabase.rpc("link_my_role_assignment")).catch(() => {});
 
-    const cleanEmail = currentUser.email?.trim().toLowerCase() || "";
+      const cleanEmail = currentUser.email?.trim().toLowerCase() || "";
 
-    // 2. Employee Directory Status Check:
-    const empCheckQuery = applyUserEmployeeFilter(
-      supabase
-        .from("employees")
-        .select("id, status, deleted_at, branch_id, branches(id, status, deleted_at)"),
-      currentUser.email
-    );
-    const { data: empCheckRows } = await empCheckQuery
-      .is("deleted_at", null)
-      .limit(5);
+      // 2. Parallelize Employee Status Check & Role Assignment queries
+      const empPromise = applyUserEmployeeFilter(
+        supabase
+          .from("employees")
+          .select("id, status, deleted_at, branch_id, branches(id, status, deleted_at)"),
+        currentUser.email
+      )
+        .is("deleted_at", null)
+        .limit(5);
 
-    // Prefer active employee if multiple match (e.g. test records with duplicate phone)
-    const activeEmp = empCheckRows?.find(
-      (e) => e.status !== "inactive" && e.status !== "terminated"
-    );
-    const empCheck = activeEmp || empCheckRows?.[0] || null;
+      const uraPromise = supabase
+        .from("user_role_assignments")
+        .select("*, app_roles(*)")
+        .or(`user_id.eq.${currentUser.id},email.ilike.${cleanEmail}`)
+        .is("deleted_at", null)
+        .order("user_id", { nullsFirst: false })
+        .limit(1);
 
-    const isEmpInactive = empCheck && (empCheck.status === "inactive" || empCheck.status === "terminated");
-    const isBranchInvalid =
-      empCheck &&
-      empCheck.branch_id &&
-      ((empCheck.branches as any)?.deleted_at !== null ||
-       (empCheck.branches as any)?.status === "inactive");
+      const [{ data: empCheckRows }, { data: uraData, error: uraError }] = await Promise.all([
+        empPromise,
+        uraPromise,
+      ]);
 
-    if (isEmpInactive || isBranchInvalid) {
+      // Check employee status (inactive/terminated/branch invalid)
+      const activeEmp = empCheckRows?.find(
+        (e) => e.status !== "inactive" && e.status !== "terminated"
+      );
+      const empCheck = activeEmp || empCheckRows?.[0] || null;
+
+      const isEmpInactive = Boolean(empCheck && (empCheck.status === "inactive" || empCheck.status === "terminated"));
+      const branchInfo = (empCheck as any)?.branches;
+      const isBranchInvalid = Boolean(
+        empCheck?.branch_id &&
+        branchInfo &&
+        (Boolean(branchInfo.deleted_at) || branchInfo.status === "inactive")
+      );
+
+      if (isEmpInactive || isBranchInvalid) {
+        cachedRole = null;
+        cachedUid = currentUser.id;
+        setRole(null);
+        return;
+      }
+
+      // Load user role assignment
+      const row = !uraError && uraData && uraData.length > 0 ? uraData[0] : null;
+      const assignment = row?.app_roles ? row : await fetchRoleFromFunction();
+      const userRole = toUserRole(assignment);
+
+      if (userRole) {
+        cachedRole = userRole;
+        cachedUid = currentUser.id;
+        setRole(userRole);
+      } else {
+        cachedRole = null;
+        cachedUid = currentUser.id;
+        setRole(null);
+      }
+    } catch (err) {
+      console.error("Failed to resolve user permissions:", err);
       cachedRole = null;
       cachedUid = currentUser.id;
       setRole(null);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // 3. Load user role assignment
-    const { data, error } = await supabase
-      .from("user_role_assignments")
-      .select("*, app_roles(*)")
-      .or(`user_id.eq.${currentUser.id},email.ilike.${cleanEmail}`)
-      .is("deleted_at", null)
-      .order("user_id", { nullsFirst: false })
-      .limit(1);
-
-    const row = !error && data && data.length > 0 ? data[0] : null;
-    const assignment = row?.app_roles ? row : await fetchRoleFromFunction();
-    const userRole = toUserRole(assignment);
-
-    if (userRole) {
-      cachedRole = userRole;
-      cachedUid = currentUser.id;
-      setRole(userRole);
-    } else {
-      cachedRole = null;
-      cachedUid = currentUser.id;
-      setRole(null);
-    }
-    setLoading(false);
   }, []);
 
   useEffect(() => {

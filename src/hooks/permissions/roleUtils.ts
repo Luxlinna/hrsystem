@@ -20,9 +20,12 @@ export async function fetchRoleFromFunction(): Promise<any | null> {
 
 export function toUserRole(data: any): UserRole | null {
   if (!data?.app_roles) return null;
+  const r = data.app_roles as any;
   let localScopes: Record<string, any> = {};
   try {
-    localScopes = JSON.parse(localStorage.getItem("hrm_role_custom_scopes") || "{}")[r.id] || {};
+    const raw = localStorage.getItem("hrm_role_custom_scopes");
+    const parsed = raw ? JSON.parse(raw) : null;
+    localScopes = (parsed && typeof parsed === "object" ? parsed[r.id] : {}) || {};
   } catch {
     localScopes = {};
   }
