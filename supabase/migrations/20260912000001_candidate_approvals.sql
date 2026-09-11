@@ -33,12 +33,15 @@ create table if not exists public.candidate_approvals (
 
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  completed_at timestamptz
+  completed_at timestamptz,
+  deleted_at timestamptz,
+  deleted_by text
 );
 
 -- Indices
 create index if not exists idx_candidate_approvals_candidate on public.candidate_approvals(candidate_id);
 create index if not exists idx_candidate_approvals_status on public.candidate_approvals(status);
+create index if not exists idx_candidate_approvals_deleted_at on public.candidate_approvals(deleted_at);
 
 -- RLS
 alter table public.candidate_approvals enable row level security;

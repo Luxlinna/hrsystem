@@ -155,6 +155,8 @@ export interface CandidateApproval {
   created_at: string;
   updated_at?: string | null;
   completed_at?: string | null;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 }
 
 export type HireTab = "actions" | "requests" | "jobs" | "candidates" | "interviews" | "pipeline" | "offers";
