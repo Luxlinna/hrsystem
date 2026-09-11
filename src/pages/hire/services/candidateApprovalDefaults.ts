@@ -9,7 +9,23 @@ export function generateApprovalFormNumber(): string {
 export function initCandidateApproval(
   candidate: Candidate,
   interviews: Interview[] = [],
-  actorName = "HR Operations"
+  actorName = "HR Operations",
+  resolvedSignatories?: {
+    ceo?: string;
+    hr_manager?: string;
+    division_director?: string;
+    chairwoman?: string;
+  },
+  reqDetails?: {
+    businessUnit?: string;
+    department?: string;
+    hiringManager?: string;
+    currentSalary?: string;
+    expectationSalary?: string;
+    noticePeriod?: string;
+    positionApplied?: string;
+    branchId?: string | null;
+  }
 ): CandidateApproval {
   const now = new Date().toISOString();
   const job = candidate.job_postings;
@@ -72,25 +88,25 @@ export function initCandidateApproval(
     : "$1,500";
 
   return {
-    id: `caf-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    id: `caf_${candidate.id}`,
     candidate_id: candidate.id,
     form_number: generateApprovalFormNumber(),
-    branch_id: job?.branch_id || null,
+    branch_id: reqDetails?.branchId || job?.branch_id || null,
     status: "draft",
 
     // Section I: Candidate & Role Overview
     candidate_name: candidate.full_name,
     gender: "Female",
-    position_applied: job?.title || "Candidate Position",
-    business_unit: job?.branches?.name || "Unique Noble Investment Co. Ltd.",
-    department: job?.department || "HR & Operations",
-    hiring_manager: candidate.assigned_recruiter
+    position_applied: reqDetails?.positionApplied || job?.title || "Candidate Position",
+    business_unit: reqDetails?.businessUnit || job?.branches?.name || "Unique Noble Investment Co. Ltd.",
+    department: reqDetails?.department || job?.department || "HR & Operations",
+    hiring_manager: reqDetails?.hiringManager || (candidate.assigned_recruiter
       ? `${candidate.assigned_recruiter.first_name} ${candidate.assigned_recruiter.last_name}`
-      : "Hiring Manager",
-    current_salary: "$1,200",
-    expectation_salary: expectationSalaryStr,
+      : "Hiring Manager"),
+    current_salary: reqDetails?.currentSalary || "$1,200",
+    expectation_salary: reqDetails?.expectationSalary || expectationSalaryStr,
     current_benefit: "Standard Health & Annual Bonus",
-    notice_period: candidate.notice_period || "1 Month",
+    notice_period: reqDetails?.noticePeriod || candidate.notice_period || "1 Month",
 
     // Section II: Candidate Evaluation Summary
     education_and_skill:
@@ -109,13 +125,13 @@ export function initCandidateApproval(
       "Candidate performed exceptionally well across all interview stages. Cultural fit, technical capabilities, and leadership potential are strongly endorsed by all evaluators.",
     interview_panels: panels,
 
-    // Section III: 4 Signatories matching template
+    // Section III: 4 Signatories dynamically mapped to actual role holders
     signatories: {
       ceo: {
         role_key: "ceo",
-        title: "CEO / Division Director",
-        default_name: "CEO / Division Director",
-        assigned_name: "Ms. Meas Chhengseang",
+        title: "CEO (Business Unit)",
+        default_name: "CEO (Business Unit)",
+        assigned_name: resolvedSignatories?.ceo || "James HI",
         status: "pending",
         comment: "",
         checked_by: "",
@@ -123,9 +139,9 @@ export function initCandidateApproval(
       },
       hr_manager: {
         role_key: "hr_manager",
-        title: "HR and Admin Manager",
-        default_name: "Ms. Chea TiengChanvathna",
-        assigned_name: "Ms. Chea TiengChanvathna",
+        title: "HR Manager (HR Division)",
+        default_name: "HR Manager",
+        assigned_name: resolvedSignatories?.hr_manager || "Sokkhoeurn Leng",
         status: "pending",
         comment: "",
         checked_by: "",
@@ -133,9 +149,9 @@ export function initCandidateApproval(
       },
       division_director: {
         role_key: "division_director",
-        title: "HR&Admin Division Director",
-        default_name: "Mr. Chey Tola",
-        assigned_name: "Mr. Chey Tola",
+        title: "HR Admin Director",
+        default_name: "HR Admin Director",
+        assigned_name: resolvedSignatories?.division_director || "Phat Seign",
         status: "pending",
         comment: "",
         checked_by: "",
@@ -144,8 +160,8 @@ export function initCandidateApproval(
       chairwoman: {
         role_key: "chairwoman",
         title: "Chairwoman",
-        default_name: "Mrs. Pin Phiroum",
-        assigned_name: "Mrs. Pin Phiroum",
+        default_name: "Chairwoman",
+        assigned_name: resolvedSignatories?.chairwoman || "Mrs. Pin Phiroum",
         status: "pending",
         comment: "",
         checked_by: "",

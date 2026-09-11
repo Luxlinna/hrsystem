@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import type { Job, Candidate, Interview, HireTab, Branch } from "../types";
 import { DEFAULT_DEPARTMENTS, PIPELINE_STAGES } from "../constants";
 
@@ -10,6 +10,19 @@ export function useHireFilters(
   branches: Branch[] = []
 ) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const candidateId = searchParams.get("candidateId");
+    if (candidateId) {
+      const openApproval =
+        searchParams.get("openApproval") === "true" ||
+        searchParams.get("openCaf") === "true" ||
+        searchParams.get("approval") === "true";
+      navigate(`/hire/candidates/${candidateId}${openApproval ? "?openApproval=true" : ""}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
+
   const urlTab = searchParams.get("tab") as HireTab | null;
   const initialTab: HireTab = (urlTab && ["actions", "jobs", "candidates", "interviews", "pipeline", "requests"].includes(urlTab))
     ? urlTab

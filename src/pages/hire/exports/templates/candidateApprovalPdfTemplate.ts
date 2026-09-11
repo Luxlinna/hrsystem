@@ -1,4 +1,5 @@
 import type { CandidateApproval } from "../../types";
+import { UNI_LOGO_BASE64 } from "./uniLogoBase64";
 
 function renderSignatoryBox(
   title: string,
@@ -139,11 +140,8 @@ export function buildCandidateApprovalHtml(approval: CandidateApproval): string 
     <!-- Header Block -->
     <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px;">
       <div style="display: flex; align-items: flex-start; gap: 10px; max-width: 82%;">
-        <div style="width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-          <svg width="44" height="44" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M50 10C35 10 25 22 25 36C25 46 31 54 40 58C30 63 20 74 20 88H32C32 76 40 68 50 68C60 68 68 76 68 88H80C80 74 70 63 60 58C69 54 75 46 75 36C75 22 65 10 50 10Z" fill="#1e3a8a"/>
-            <circle cx="50" cy="36" r="16" fill="#e11d48"/>
-          </svg>
+        <div style="width: 52px; height: 52px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+          <img src="${UNI_LOGO_BASE64}" style="width: 48px; height: 48px; object-fit: contain;" alt="Unique Noble Investment Logo" />
         </div>
         <div style="font-size: 8.5px; line-height: 1.3; color: #111;">
           <div style="font-family: 'Kantumruy Pro', sans-serif; font-size: 10.5px; font-weight: bold; color: #111;">
@@ -188,11 +186,11 @@ export function buildCandidateApprovalHtml(approval: CandidateApproval): string 
         <td class="label-cell">Position Applied for:</td>
         <td class="value-cell" style="font-weight: 600;">${approval.position_applied}</td>
         <td class="label-cell">Business Unit:</td>
-        <td class="value-cell">${approval.business_unit || "Unique Noble Investment Co. Ltd."}</td>
+        <td class="value-cell" style="font-weight: 600;">${approval.business_unit || "—"}</td>
       </tr>
       <tr>
         <td class="label-cell">Department:</td>
-        <td class="value-cell">${approval.department || "Operations"}</td>
+        <td class="value-cell">${approval.department || "—"}</td>
         <td class="label-cell">Hiring Manager:</td>
         <td class="value-cell">${approval.hiring_manager || "—"}</td>
       </tr>
@@ -258,10 +256,10 @@ export function buildCandidateApprovalHtml(approval: CandidateApproval): string 
     <!-- SECTION III -->
     <div class="sec-header">III. Final Approval</div>
     <div style="display: flex; border: 1px solid #111; min-height: 125px;">
-      ${renderSignatoryBox("CEO/Division Director", sigs?.ceo?.assigned_name || "CEO/Division Director", sigs?.ceo)}
-      ${renderSignatoryBox("HR and Admin Manager", sigs?.hr_manager?.assigned_name || "Ms.Chea TiengChanvathna", sigs?.hr_manager)}
-      ${renderSignatoryBox("HR&Admin Division Director", sigs?.division_director?.assigned_name || "Mr. Chey Tola", sigs?.division_director)}
-      ${renderSignatoryBox("Chairwoman", sigs?.chairwoman?.assigned_name || "Mrs.Pin Phiroum", sigs?.chairwoman)}
+      ${renderSignatoryBox("CEO (Business Unit)", sigs?.ceo?.assigned_name || "CEO (Business Unit)", sigs?.ceo)}
+      ${renderSignatoryBox("HR Manager (HR Division)", sigs?.hr_manager?.assigned_name || "Ms. Chea TiengChanvathna", sigs?.hr_manager)}
+      ${renderSignatoryBox("HR Admin Director", sigs?.division_director?.assigned_name || "Mr. Chey Tola", sigs?.division_director)}
+      ${renderSignatoryBox("Chairwoman", sigs?.chairwoman?.assigned_name || "Mrs. Pin Phiroum", sigs?.chairwoman)}
     </div>
   </div>
 

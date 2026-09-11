@@ -34,7 +34,7 @@ export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
             Section III: Final Approval Signatories
           </h3>
           <p className="text-xs text-gray-500">
-            Sequential 4-step sign-off: BU CEO → HR Manager → Division Director → Chairwoman.
+            Sequential 4-step sign-off: CEO (by BU) → HR Manager (HR Division) → HR Admin Director → Chairwoman.
           </p>
         </div>
         {!isCompleted && canFastSign && (
@@ -51,7 +51,7 @@ export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <SignatoryCard
           stepNumber={1}
-          subtitle="EXECUTIVE SIGN-OFF"
+          subtitle="CEO OF BU"
           signatory={sigs.ceo}
           isLocked={stepGates.ceo.isLocked}
           waitingForTitle={stepGates.ceo.waitingForRoleTitle}
@@ -63,7 +63,7 @@ export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
         />
         <SignatoryCard
           stepNumber={2}
-          subtitle="HR SIGN-OFF"
+          subtitle="HR MANAGER AT HR DIVISION"
           signatory={sigs.hr_manager}
           isLocked={stepGates.hr_manager.isLocked}
           waitingForTitle={stepGates.hr_manager.waitingForRoleTitle}
@@ -75,7 +75,7 @@ export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
         />
         <SignatoryCard
           stepNumber={3}
-          subtitle="DIVISION DIRECTOR"
+          subtitle="HR ADMIN DIRECTOR"
           signatory={sigs.division_director}
           isLocked={stepGates.division_director.isLocked}
           waitingForTitle={stepGates.division_director.waitingForRoleTitle}

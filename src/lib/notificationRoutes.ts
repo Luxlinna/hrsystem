@@ -22,6 +22,21 @@ export function getNotificationTarget(
         module: "hire",
       };
     case "hire":
+      // Candidate Approval Form (CAF) notifications -> direct to Candidate Detail with CAF modal open!
+      if (
+        text.includes("caf") ||
+        text.includes("candidate approval") ||
+        text.includes("approval form") ||
+        text.includes("step 1") ||
+        text.includes("step 2") ||
+        text.includes("step 3") ||
+        text.includes("step 4")
+      ) {
+        return {
+          path: entityId ? `/hire/candidates/${entityId}?openApproval=true` : "/hire?tab=candidates",
+          module: "hire",
+        };
+      }
       // Route hiring requisitions and approvals to the Requests tab
       if (
         text.includes("requisition") ||
@@ -44,7 +59,7 @@ export function getNotificationTarget(
       if (text.includes("job") || text.includes("vacancy") || text.includes("opening")) {
         return { path: "/hire?tab=jobs", module: "hire" };
       }
-      return { path: entityId ? `/hire/candidate/${entityId}` : "/hire?tab=candidates", module: "hire" };
+      return { path: entityId ? `/hire/candidates/${entityId}` : "/hire?tab=candidates", module: "hire" };
     case "leave":
       return { path: `/leave${highlight}`, module: "leave" };
     // All current "payroll" notifications come from the Payroll Approval
@@ -78,6 +93,18 @@ export function getNotificationTarget(
       return { path: `/attendance${highlight}`, module: "attendance" };
     case "tasks":
       return { path: "/tasks", module: "tasks" };
+    case "system":
+      if (
+        text.includes("caf") ||
+        text.includes("candidate approval") ||
+        text.includes("approval form")
+      ) {
+        return {
+          path: entityId ? `/hire/candidates/${entityId}?openApproval=true` : "/hire?tab=candidates",
+          module: "hire",
+        };
+      }
+      return null;
     default:
       return null;
   }

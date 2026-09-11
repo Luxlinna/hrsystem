@@ -26,7 +26,8 @@ export async function isTelegramNotifyEnabled(): Promise<boolean> {
     .select("value")
     .eq("key", "telegram_notify_enabled")
     .maybeSingle();
-  return data?.value === "true";
+  // Enabled by default unless explicitly turned off with "false"
+  return data?.value !== "false";
 }
 
 // One-call helper for the common case: check the global toggle, send, and

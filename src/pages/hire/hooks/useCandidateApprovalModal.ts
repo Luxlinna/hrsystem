@@ -6,6 +6,7 @@ import {
   isCandidateApprovalCompleted,
 } from "../services/candidateApprovalService";
 import { exportCandidateApprovalPdf } from "../exports/exportCandidateApprovalPdf";
+import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -53,7 +54,52 @@ export function useCandidateApprovalModal({
     fetchCandidateApproval(candidate.id, candidate, interviews, currentUserName)
       .then((res) => {
         if (mounted) {
-          setData(res);
+          const updatedSigs = { ...res.signatories };
+          let changed = false;
+          const roleName = (role?.name || "").trim().toLowerCase();
+
+          // If current user is BU CEO / Branch Admin and Step 1 not signed
+          if (updatedSigs.ceo && updatedSigs.ceo.status !== "approved" && currentUserName) {
+            if (isBranchAdmin || /(bu\s*ceo|ceo|branch\s*admin)/i.test(roleName) || role?.candidate_approval_ceo_sign) {
+              if (updatedSigs.ceo.assigned_name !== currentUserName) {
+                updatedSigs.ceo.assigned_name = currentUserName;
+                changed = true;
+              }
+            }
+          }
+
+          // If current user is HR Manager and Step 2 not signed
+          if (updatedSigs.hr_manager && updatedSigs.hr_manager.status !== "approved" && currentUserName) {
+            if (/(hr\s*manager|talent\s*manager)/i.test(roleName) || role?.candidate_approval_hr_sign) {
+              if (updatedSigs.hr_manager.assigned_name !== currentUserName) {
+                updatedSigs.hr_manager.assigned_name = currentUserName;
+                changed = true;
+              }
+            }
+          }
+
+          // If current user is HR Admin Director and Step 3 not signed
+          if (updatedSigs.division_director && updatedSigs.division_director.status !== "approved" && currentUserName) {
+            if (/(hr.*director|division\s*director)/i.test(roleName) || role?.candidate_approval_director_sign) {
+              if (updatedSigs.division_director.assigned_name !== currentUserName) {
+                updatedSigs.division_director.assigned_name = currentUserName;
+                changed = true;
+              }
+            }
+          }
+
+          // If current user is Chairwoman and Step 4 not signed
+          if (updatedSigs.chairwoman && updatedSigs.chairwoman.status !== "approved" && currentUserName) {
+            if (/(chair|board)/i.test(roleName) || role?.candidate_approval_chairwoman_sign) {
+              if (updatedSigs.chairwoman.assigned_name !== currentUserName) {
+                updatedSigs.chairwoman.assigned_name = currentUserName;
+                changed = true;
+              }
+            }
+          }
+
+          const finalData = changed ? { ...res, signatories: updatedSigs } : res;
+          setData(finalData);
           setLoading(false);
         }
       })
@@ -62,8 +108,28 @@ export function useCandidateApprovalModal({
         if (mounted) setLoading(false);
       });
 
+    const channel = supabase
+      .channel(`caf-modal-${candidate.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "candidate_approvals",
+          filter: `candidate_id=eq.${candidate.id}`,
+        },
+        (payload) => {
+          if (!mounted) return;
+          if (payload.new) {
+            setData(payload.new as CandidateApproval);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       mounted = false;
+      supabase.removeChannel(channel);
     };
   }, [isOpen, candidate, interviews, currentUserName]);
 
@@ -106,7 +172,15 @@ export function useCandidateApprovalModal({
 
       const now = new Date().toISOString();
       const currentSig = data.signatories[roleKey];
-      const isDelegated = Boolean(
+      const roleName = (role?.name || "").trim();
+
+      const isRoleHolder =
+        (stepKey === "ceo" && /(ceo|bu\s*ceo|branch\s*admin)/i.test(roleName)) ||
+        (stepKey === "hr_manager" && /(hr\s*manager|talent\s*manager)/i.test(roleName)) ||
+        (stepKey === "division_director" && /(hr.*director|division\s*director)/i.test(roleName)) ||
+        (stepKey === "chairwoman" && /(chair|board)/i.test(roleName));
+
+      const isDelegated = !isRoleHolder && Boolean(
         currentUserName && currentSig.assigned_name && currentUserName !== currentSig.assigned_name
       );
 
@@ -117,6 +191,7 @@ export function useCandidateApprovalModal({
       const updatedSig: CandidateApprovalSignatory = {
         ...currentSig,
         status: "approved",
+        assigned_name: isRoleHolder ? currentUserName : currentSig.assigned_name,
         checked_by: checkedBy,
         signed_at: now,
       };

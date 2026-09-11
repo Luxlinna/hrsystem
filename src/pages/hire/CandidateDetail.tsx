@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { CandidateProfileHeader } from "./components/candidate-detail/CandidateProfileHeader";
 import { CandidateInfoCard } from "./components/candidate-detail/CandidateInfoCard";
 import { CandidateApplicationsCard } from "./components/candidate-detail/CandidateApplicationsCard";
@@ -18,6 +18,7 @@ import { useCandidateDetail } from "./hooks/useCandidateDetail";
 
 export default function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     candidate,
     interviews,
@@ -61,7 +62,34 @@ export default function CandidateDetail() {
     actorName,
   } = useCandidateDetail(id);
 
+  const isApprovalRequested = useMemo(() => {
+    return (
+      searchParams.get("openApproval") === "true" ||
+      searchParams.get("openCaf") === "true" ||
+      searchParams.get("approval") === "true" ||
+      searchParams.get("tab") === "approval"
+    );
+  }, [searchParams]);
+
   const [candidateApprovalModal, setCandidateApprovalModal] = useState(false);
+
+  useEffect(() => {
+    if (isApprovalRequested && candidate) {
+      setCandidateApprovalModal(true);
+    }
+  }, [isApprovalRequested, candidate]);
+
+  const handleCloseApprovalModal = useCallback(() => {
+    setCandidateApprovalModal(false);
+    if (isApprovalRequested) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("openApproval");
+      next.delete("openCaf");
+      next.delete("approval");
+      if (next.get("tab") === "approval") next.delete("tab");
+      setSearchParams(next, { replace: true });
+    }
+  }, [isApprovalRequested, searchParams, setSearchParams]);
 
   const avgScore = useMemo(() => {
     const scored = interviews.filter((i) => (i.score || 0) > 0);
@@ -261,7 +289,7 @@ export default function CandidateDetail() {
         candidate={candidate}
         interviews={interviews}
         currentUserName={actorName}
-        onClose={() => setCandidateApprovalModal(false)}
+        onClose={handleCloseApprovalModal}
         onAdvanceStage={async (nextStage) => {
           await updateStage(nextStage);
         }}

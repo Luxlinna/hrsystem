@@ -39,44 +39,46 @@ export async function notifyCandidateApprovalStepSigned({
     case "ceo": {
       await sendDualRecruitmentNotification({
         title: `📋 CAF Step 1 Signed: ${formNum}${candidateName}`,
-        approverMessage: `${actorName}${delegateTag} signed Step 1 (BU CEO). Forwarded to HR & Admin Manager for Step 2 Review.`,
-        recruiterMessage: `BU CEO endorsement complete for ${candidateName} (${position}). Forwarded to HR Manager.`,
+        approverMessage: `${actorName}${delegateTag} signed Step 1 (CEO of BU). Forwarded to HR Manager at HR Division for Step 2 Review.`,
+        recruiterMessage: `CEO of BU endorsement complete for ${candidateName} (${position}). Forwarded to HR Manager at HR Division.`,
         type: "info",
         entityId: candidate.id,
+        approverBranchId: null,
         telegramHtml:
           `🏢 <b>Candidate Approval Form: Step 1 Signed</b>\n` +
           `📄 <b>Form:</b> ${escapeTelegramHtml(formNum)}${escapeTelegramHtml(candidateName)}\n` +
           `💼 <b>Role:</b> ${escapeTelegramHtml(position)} · ${escapeTelegramHtml(buName)}\n` +
-          `✍️ <b>Signed By:</b> ${escapeTelegramHtml(actorName)} (BU CEO${delegateTag})\n` +
-          `⏩ <b>Next Action:</b> Step 2 - HR & Admin Manager Review Required`,
+          `✍️ <b>Signed By:</b> ${escapeTelegramHtml(actorName)} (CEO of BU${delegateTag})\n` +
+          `⏩ <b>Next Action:</b> Step 2 - HR Manager at HR Division Review Required`,
         telegramButtonText: "Review in HR Division",
-        telegramUrl: hrNexusUrl(`/hire?tab=candidates&candidateId=${candidate.id}`),
+        telegramUrl: hrNexusUrl(`/hire/candidates/${candidate.id}?openApproval=true`),
         auditAction: "caf_step1_ceo_signed",
         actorName,
         actorRole,
         description: `CAF Step 1 signed by ${actorName} for candidate ${candidateName}`,
       });
       return {
-        title: "Step 1 Endorsed (CEO)",
-        message: `${actorName} signed Step 1. Alert forwarded to HR & Admin Manager for review.`,
+        title: "Step 1 Endorsed (CEO of BU)",
+        message: `${actorName} signed Step 1. Alert forwarded to HR Manager at HR Division for review.`,
       };
     }
 
     case "hr_manager": {
       await sendDualRecruitmentNotification({
         title: `📑 CAF Step 2 Reviewed: ${formNum}${candidateName}`,
-        approverMessage: `HR Manager ${actorName}${delegateTag} reviewed Step 2. Forwarded to HR&Admin Division Director for Step 3 Approval.`,
-        recruiterMessage: `HR Manager review complete for ${candidateName}. Forwarded to Division Director.`,
+        approverMessage: `HR Manager ${actorName}${delegateTag} reviewed Step 2. Forwarded to HR Admin Director for Step 3 Approval.`,
+        recruiterMessage: `HR Manager review complete for ${candidateName}. Forwarded to HR Admin Director.`,
         type: "info",
         entityId: candidate.id,
+        approverBranchId: null,
         telegramHtml:
           `📑 <b>Candidate Approval Form: Step 2 Signed</b>\n` +
           `📄 <b>Form:</b> ${escapeTelegramHtml(formNum)}${escapeTelegramHtml(candidateName)}\n` +
           `💼 <b>Role:</b> ${escapeTelegramHtml(position)}\n` +
-          `✍️ <b>Signed By:</b> ${escapeTelegramHtml(actorName)} (HR & Admin Manager${delegateTag})\n` +
-          `⏩ <b>Next Action:</b> Step 3 - HR&Admin Division Director Approval Required`,
-        telegramButtonText: "Review as Division Director",
-        telegramUrl: hrNexusUrl(`/hire?tab=candidates&candidateId=${candidate.id}`),
+          `✍️ <b>Signed By:</b> ${escapeTelegramHtml(actorName)} (HR Manager at HR Division${delegateTag})\n` +
+          `⏩ <b>Next Action:</b> Step 3 - HR Admin Director Approval Required`,
+        telegramButtonText: "Review as HR Admin Director",
+        telegramUrl: hrNexusUrl(`/hire/candidates/${candidate.id}?openApproval=true`),
         auditAction: "caf_step2_hr_signed",
         actorName,
         actorRole,
@@ -84,32 +86,33 @@ export async function notifyCandidateApprovalStepSigned({
       });
       return {
         title: "Step 2 Reviewed (HR Manager)",
-        message: `${actorName} reviewed Step 2. Alert forwarded to HR&Admin Division Director.`,
+        message: `${actorName} reviewed Step 2. Alert forwarded to HR Admin Director.`,
       };
     }
 
     case "division_director": {
       await sendDualRecruitmentNotification({
         title: `🏛️ CAF Step 3 Approved: ${formNum}${candidateName}`,
-        approverMessage: `HR&Admin Division Director ${actorName}${delegateTag} approved Step 3. Forwarded to Chairwoman for final executive authorization.`,
-        recruiterMessage: `Division Director approval complete for ${candidateName}. Escalated to Chairwoman.`,
+        approverMessage: `HR Admin Director ${actorName}${delegateTag} approved Step 3. Forwarded to Chairwoman for final executive authorization.`,
+        recruiterMessage: `HR Admin Director approval complete for ${candidateName}. Escalated to Chairwoman.`,
         type: "warning",
         entityId: candidate.id,
+        approverBranchId: null,
         telegramHtml:
           `🏛️ <b>Candidate Approval Form: Step 3 Signed</b>\n` +
           `📄 <b>Form:</b> ${escapeTelegramHtml(formNum)}${escapeTelegramHtml(candidateName)}\n` +
           `💼 <b>Role:</b> ${escapeTelegramHtml(position)}\n` +
-          `✍️ <b>Signed By:</b> ${escapeTelegramHtml(actorName)} (HR&Admin Division Director${delegateTag})\n` +
+          `✍️ <b>Signed By:</b> ${escapeTelegramHtml(actorName)} (HR Admin Director${delegateTag})\n` +
           `⏩ <b>Next Action:</b> Step 4 - Chairwoman Final Executive Authorization`,
         telegramButtonText: "Authorize as Chairwoman",
-        telegramUrl: hrNexusUrl(`/hire?tab=candidates&candidateId=${candidate.id}`),
+        telegramUrl: hrNexusUrl(`/hire/candidates/${candidate.id}?openApproval=true`),
         auditAction: "caf_step3_director_signed",
         actorName,
         actorRole,
         description: `CAF Step 3 approved by ${actorName} for candidate ${candidateName}`,
       });
       return {
-        title: "Step 3 Approved (Division Director)",
+        title: "Step 3 Approved (HR Admin Director)",
         message: `${actorName} approved Step 3. Alert forwarded to Chairwoman for final authorization.`,
       };
     }
@@ -121,6 +124,7 @@ export async function notifyCandidateApprovalStepSigned({
         recruiterMessage: `Candidate Approval for ${candidateName} has been fully authorized by Chairwoman! Proceed to Salary Negotiation.`,
         type: "success",
         entityId: candidate.id,
+        approverBranchId: null,
         telegramHtml:
           `👑 <b>Candidate Approval Form Fully Authorized!</b>\n` +
           `📄 <b>Form:</b> ${escapeTelegramHtml(formNum)}${escapeTelegramHtml(candidateName)}\n` +
@@ -128,7 +132,7 @@ export async function notifyCandidateApprovalStepSigned({
           `✍️ <b>Authorized By:</b> ${escapeTelegramHtml(actorName)} (Chairwoman${delegateTag})\n` +
           `🎯 <b>Status:</b> All 4 Executive Approvals Completed. Candidate cleared for Salary Negotiation.`,
         telegramButtonText: "Proceed to Salary Negotiation",
-        telegramUrl: hrNexusUrl(`/hire?tab=candidates&candidateId=${candidate.id}`),
+        telegramUrl: hrNexusUrl(`/hire/candidates/${candidate.id}?openApproval=true`),
         auditAction: "caf_step4_chairwoman_authorized",
         actorName,
         actorRole,
