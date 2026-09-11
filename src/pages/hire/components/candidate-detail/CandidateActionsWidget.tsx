@@ -36,6 +36,19 @@ export const CandidateActionsWidget = memo(function CandidateActionsWidget({
         </div>
       )}
 
+      {/* If in selected, salary_negotiation, offer, or accepted, offer shortcut */}
+      {["selected", "salary_negotiation", "offer", "accepted"].includes(currentStage || "") && (
+        <Link
+          to="/hire?tab=offers"
+          className="w-full py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors block text-center"
+        >
+          <i className="ri-mail-check-line text-sm text-violet-600" />
+          {currentStage === "selected" || currentStage === "salary_negotiation"
+            ? "Create Salary Proposal"
+            : "View Offer Letter"}
+        </Link>
+      )}
+
       {/* Show "Mark as Hired" only if not yet hired */}
       {!isHired && (
         <button

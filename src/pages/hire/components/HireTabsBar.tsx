@@ -12,6 +12,7 @@ interface HireTabsBarProps {
   requestsCount?: number;
   pendingRequestsCount?: number;
   actionsCount?: number;
+  offersCount?: number;
   isHrDivisionScope?: boolean;
   isChairman?: boolean;
 }
@@ -27,6 +28,7 @@ export const HireTabsBar = memo(function HireTabsBar({
   requestsCount,
   pendingRequestsCount = 0,
   actionsCount = 0,
+  offersCount = 0,
   isHrDivisionScope = true,
 }: HireTabsBarProps) {
   const currentTab = activeTab || tab || "requests";
@@ -61,6 +63,7 @@ export const HireTabsBar = memo(function HireTabsBar({
     { key: "jobs" as HireTab, label: "Job Openings", icon: "ri-briefcase-line", count: jobsCount },
     { key: "candidates" as HireTab, label: "Candidates", icon: "ri-user-search-line", count: candidatesCount },
     { key: "interviews" as HireTab, label: "Interviews", icon: "ri-calendar-todo-line", count: interviewsCount },
+    { key: "offers" as HireTab, label: "Offer Letters", icon: "ri-mail-check-line", count: offersCount, isBadge: true },
     { key: "pipeline" as HireTab, label: "Hiring Pipeline", icon: "ri-kanban-view", count: null },
   ];
 

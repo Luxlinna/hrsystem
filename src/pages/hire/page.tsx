@@ -9,14 +9,19 @@ import { PipelineKanbanView } from "./components/pipeline/PipelineKanbanView";
 import { PipelineMetricsChart } from "./components/pipeline/PipelineMetricsChart";
 import { HiringRequestsTab } from "./components/requests/HiringRequestsTab";
 import { RecruitmentActionsView } from "./components/actions/RecruitmentActionsView";
+import { OffersTabContent } from "./components/offers/OffersTabContent";
+import { CreateSalaryProposalModal } from "./components/offers/CreateSalaryProposalModal";
+import { OfferWorkflowModal } from "./components/offers/OfferWorkflowModal";
 import { HireModalsContainer } from "./components/modals/HireModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useHire } from "./hooks/useHire";
+import { useOfferLetters } from "./hooks/useOfferLetters";
 
 export default function HirePage() {
   const h = useHire();
+  const offersManager = useOfferLetters(h.actorName, h.loadData);
 
   if (h.loading && h.jobs.length === 0 && h.candidates.length === 0) {
     return (
@@ -75,6 +80,7 @@ export default function HirePage() {
         requestsCount={h.hiringRequests.length}
         pendingRequestsCount={h.hiringRequests.length}
         actionsCount={h.recruitmentActions.counts.total}
+        offersCount={offersManager.counts.pendingAction || offersManager.offers.length}
         isHrDivisionScope={h.isHrDivisionScope}
         isChairman={h.isChairman}
       />
@@ -95,7 +101,7 @@ export default function HirePage() {
         />
       )}
 
-      {h.tab !== "requests" && h.tab !== "actions" && (
+      {h.tab !== "requests" && h.tab !== "actions" && h.tab !== "offers" && (
         <>
           <HireStatsRow
             activeJobsCount={h.jobs.filter((j) => j.status === "active").length || h.jobs.length}
@@ -217,6 +223,41 @@ export default function HirePage() {
           onAssignHrOfficer={h.handleAssignHrOfficer}
         />
       )}
+
+      {h.tab === "offers" && (
+        <OffersTabContent
+          offers={offersManager.offers}
+          loading={offersManager.loading}
+          candidates={h.candidates}
+          hiringRequests={h.hiringRequests}
+          onOpenCreateProposal={offersManager.openCreateProposal}
+          onOpenWorkflowModal={offersManager.openWorkflowModal}
+          onGenerateDraft={offersManager.handleGenerateDraft}
+          onExportPdf={offersManager.handleExportPdf}
+        />
+      )}
+
+      <CreateSalaryProposalModal
+        isOpen={offersManager.isCreateProposalOpen}
+        onClose={offersManager.closeCreateProposal}
+        candidate={offersManager.targetCandidate}
+        candidates={h.candidates}
+        hiringRequests={h.hiringRequests}
+        onSubmit={offersManager.handleCreateProposal}
+      />
+
+      <OfferWorkflowModal
+        isOpen={Boolean(offersManager.activeOffer && offersManager.modalType)}
+        onClose={offersManager.closeWorkflowModal}
+        offer={offersManager.activeOffer}
+        modalType={offersManager.modalType}
+        onApproveSalary={offersManager.handleApproveSalary}
+        onEndorseHrReview={offersManager.handleEndorseHrReview}
+        onApproveManagement={offersManager.handleApproveManagement}
+        onIssueOffer={offersManager.handleIssueOffer}
+        onRecordDecision={offersManager.handleRecordDecision}
+        onExportPdf={offersManager.handleExportPdf}
+      />
 
       <HireModalsContainer {...h} />
     </div>

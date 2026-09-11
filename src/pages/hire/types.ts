@@ -99,7 +99,81 @@ export interface Interview {
   employees?: { id?: string; first_name: string; last_name: string; avatar_url?: string } | null;
 }
 
-export type HireTab = "actions" | "requests" | "jobs" | "candidates" | "interviews" | "pipeline";
+export type HireTab = "actions" | "requests" | "jobs" | "candidates" | "interviews" | "pipeline" | "offers";
+
+export type OfferStatus =
+  | "salary_proposal"
+  | "salary_approved"
+  | "draft_letter"
+  | "hr_review"
+  | "management_approval"
+  | "approved"
+  | "issued"
+  | "accepted"
+  | "rejected";
+
+export interface OfferAllowanceItem {
+  name: string;
+  amount: number;
+}
+
+export interface OfferLetter {
+  id: string;
+  offer_number: string;
+  candidate_id: string;
+  candidate_name: string;
+  candidate_email?: string | null;
+  candidate_phone?: string | null;
+  candidate_address?: string | null;
+  hiring_request_id?: string | null;
+  job_posting_id?: string | null;
+  job_title: string;
+  department: string;
+  division?: string | null;
+  business_unit?: string | null;
+  branch_id?: string | null;
+  reporting_to?: string | null;
+  employment_type: string;
+  working_days?: string | null;
+  working_time?: string | null;
+  base_salary: number;
+  probation_salary?: number | null;
+  probation_months: number;
+  target_start_date: string;
+  allowances: OfferAllowanceItem[];
+  benefits_summary?: string | null;
+  special_terms?: string | null;
+  status: OfferStatus;
+
+  // Workflow audit fields
+  proposed_by_id?: string | null;
+  proposed_by_name?: string | null;
+  proposed_at?: string | null;
+  proposal_notes?: string | null;
+
+  salary_approved_by?: string | null;
+  salary_approved_at?: string | null;
+  salary_approval_notes?: string | null;
+
+  hr_reviewed_by?: string | null;
+  hr_reviewed_at?: string | null;
+  hr_review_notes?: string | null;
+
+  management_approved_by?: string | null;
+  management_approved_at?: string | null;
+  management_approval_notes?: string | null;
+
+  issued_by?: string | null;
+  issued_at?: string | null;
+  expiry_date?: string | null;
+
+  decision_at?: string | null;
+  decision_notes?: string | null;
+  rejection_reason?: string | null;
+
+  created_at: string;
+  updated_at?: string | null;
+}
 
 export type RecruitmentActionRole =
   | "manager"
