@@ -91,7 +91,7 @@ function formatSectionText(text?: string | null): string {
       flushList();
       const cleanHeader = line.replace(/^[-*•\d.)\s]+/, "").replace(/:$/, "").trim();
       htmlParts.push(
-        `<div style="font-weight: 800; margin-top: 10px; margin-bottom: 4px; color: #1e293b; font-size: 12px; padding-left: 2px;">${escapeHtml(
+        `<div style="font-weight: 800; margin-top: 10px; margin-bottom: 4px; color: #1e293b; font-size: 12px; padding-left: 2px; page-break-after: avoid; break-after: avoid;">${escapeHtml(
           cleanHeader
         )}</div>`
       );
@@ -212,9 +212,35 @@ export function exportHiringRequestPdf(r: HiringRequest, opts?: RequisitionPdfOp
       font-size: 11.5px;
       line-height: 1.45;
     }
+    table.print-page-layout {
+      width: 100%;
+      border-collapse: collapse;
+      border: none;
+      margin: 0;
+      padding: 0;
+    }
+    table.print-page-layout > thead {
+      display: table-header-group;
+    }
+    table.print-page-layout > tfoot {
+      display: table-footer-group;
+    }
+    table.print-page-layout > thead > tr > td,
+    table.print-page-layout > tfoot > tr > td,
+    table.print-page-layout > tbody > tr > td {
+      border: none;
+      padding: 0;
+      margin: 0;
+    }
+    .page-header-spacer {
+      height: 8mm;
+    }
+    .page-footer-spacer {
+      height: 8mm;
+    }
     .page-container {
       width: 100%;
-      padding: 12mm 16mm;
+      padding: 0 16mm;
       box-sizing: border-box;
     }
     .header-top-row {
@@ -338,6 +364,8 @@ export function exportHiringRequestPdf(r: HiringRequest, opts?: RequisitionPdfOp
       border-bottom: 1px solid #94a3b8;
       border-top: 1px solid #94a3b8;
       letter-spacing: 0.2px;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     .box-header:first-child {
       border-top: none;
@@ -458,7 +486,14 @@ export function exportHiringRequestPdf(r: HiringRequest, opts?: RequisitionPdfOp
   </style>
 </head>
 <body>
-  <div class="page-container">
+  <table class="print-page-layout">
+    <thead>
+      <tr><td><div class="page-header-spacer"></div></td></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="page-container">
     <!-- Header: Logo on Left & Title on Right on the Same Line -->
     <div class="header-top-row">
       <div class="header-logo-box">
@@ -688,7 +723,14 @@ export function exportHiringRequestPdf(r: HiringRequest, opts?: RequisitionPdfOp
       <div>HRM_OPS Enterprise HRMS &middot; ${escapeHtml(buName)}</div>
       <div>Confidential Personnel Document &middot; Ref: ${escapeHtml(reqCode)} &middot; Printed: ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
     </div>
-  </div>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr><td><div class="page-footer-spacer"></div></td></tr>
+  </tfoot>
+</table>
 </body>
 </html>`;
 

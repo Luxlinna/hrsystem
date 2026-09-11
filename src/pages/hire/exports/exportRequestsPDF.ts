@@ -34,7 +34,16 @@ export function exportRequestsPDF(requests: HiringRequest[], title = "Employee R
     <title>${title}</title>
     <style>
       @page { size: A4 landscape; margin: 0mm; }
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 15mm 20mm; color: #1e293b; box-sizing: border-box; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; color: #1e293b; }
+      table.print-page-layout { width: 100%; border-collapse: collapse; border: none; margin: 0; padding: 0; }
+      table.print-page-layout > thead { display: table-header-group; }
+      table.print-page-layout > tfoot { display: table-footer-group; }
+      table.print-page-layout > thead > tr > td,
+      table.print-page-layout > tfoot > tr > td,
+      table.print-page-layout > tbody > tr > td { border: none; padding: 0; margin: 0; }
+      .page-header-spacer { height: 8mm; }
+      .page-footer-spacer { height: 8mm; }
+      .page-container { padding: 0 20mm; box-sizing: border-box; width: 100%; }
       .header-box { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #253C7D; padding-bottom: 14px; margin-bottom: 18px; }
       h1 { font-size: 20px; font-weight: 800; color: #253C7D; margin: 0 0 4px 0; }
       .meta { font-size: 11px; color: #64748b; }
@@ -42,51 +51,67 @@ export function exportRequestsPDF(requests: HiringRequest[], title = "Employee R
       .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; text-align: center; }
       .stat-val { font-size: 18px; font-weight: 800; color: #253C7D; }
       .stat-lbl { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
-      th { text-align: left; padding: 8px 8px; background: #253C7D; color: #fff; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-      td { padding: 7px 8px; border-bottom: 1px solid #f1f5f9; }
-      tr:nth-child(even) { background-color: #f8fafc; }
+      table.data-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
+      table.data-table th { text-align: left; padding: 8px 8px; background: #253C7D; color: #fff; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+      table.data-table td { padding: 7px 8px; border-bottom: 1px solid #f1f5f9; }
+      table.data-table tr:nth-child(even) { background-color: #f8fafc; }
       .footer { margin-top: 24px; font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 8px; }
     </style>
   </head>
   <body>
-    <div class="header-box">
-      <div>
-        <h1>HRM_OPS — ${title}</h1>
-        <div class="meta">Talent Acquisition &middot; Hiring Requisitions Log</div>
-      </div>
-      <div class="meta" style="text-align:right">
-        <div><strong>Generated:</strong> ${new Date().toLocaleString("en-US")}</div>
-        <div><strong>Total Requisitions:</strong> ${total} Requests</div>
-      </div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total Requests</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:#059669">${approved}</div><div class="stat-lbl">Approved</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:#d97706">${pending}</div><div class="stat-lbl">Pending Review</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:#dc2626">${rejected}</div><div class="stat-lbl">Rejected</div></div>
-    </div>
-
-    <table>
+    <table class="print-page-layout">
       <thead>
-        <tr>
-          <th>Requisition Title</th>
-          <th>Department</th>
-          <th>Branch</th>
-          <th style="text-align:center">Headcount</th>
-          <th>Urgency</th>
-          <th>Requested By</th>
-          <th>Status</th>
-        </tr>
+        <tr><td><div class="page-header-spacer"></div></td></tr>
       </thead>
-      <tbody>${rows}</tbody>
-    </table>
+      <tbody>
+        <tr>
+          <td>
+            <div class="page-container">
+              <div class="header-box">
+                <div>
+                  <h1>HRM_OPS — ${title}</h1>
+                  <div class="meta">Talent Acquisition &middot; Hiring Requisitions Log</div>
+                </div>
+                <div class="meta" style="text-align:right">
+                  <div><strong>Generated:</strong> ${new Date().toLocaleString("en-US")}</div>
+                  <div><strong>Total Requisitions:</strong> ${total} Requests</div>
+                </div>
+              </div>
 
-    <div class="footer">
-      <div>HRM_OPS Enterprise HRMS &middot; Headcount Planning</div>
-      <div>Page 1 of 1</div>
-    </div>
+              <div class="stats-grid">
+                <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total Requests</div></div>
+                <div class="stat-card"><div class="stat-val" style="color:#059669">${approved}</div><div class="stat-lbl">Approved</div></div>
+                <div class="stat-card"><div class="stat-val" style="color:#d97706">${pending}</div><div class="stat-lbl">Pending Review</div></div>
+                <div class="stat-card"><div class="stat-val" style="color:#dc2626">${rejected}</div><div class="stat-lbl">Rejected</div></div>
+              </div>
+
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Requisition Title</th>
+                    <th>Department</th>
+                    <th>Branch</th>
+                    <th style="text-align:center">Headcount</th>
+                    <th>Urgency</th>
+                    <th>Requested By</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+
+              <div class="footer">
+                <div>HRM_OPS Enterprise HRMS &middot; Headcount Planning</div>
+                <div>Page 1 of 1</div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr><td><div class="page-footer-spacer"></div></td></tr>
+      </tfoot>
+    </table>
   </body>
   </html>`;
 
