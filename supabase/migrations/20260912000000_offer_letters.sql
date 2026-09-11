@@ -69,13 +69,16 @@ create table if not exists public.offer_letters (
   rejection_reason text,
 
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+  deleted_at timestamptz,
+  deleted_by text
 );
 
 -- Indices for performance
 create index if not exists idx_offer_letters_candidate_id on public.offer_letters(candidate_id);
 create index if not exists idx_offer_letters_status on public.offer_letters(status);
 create index if not exists idx_offer_letters_hiring_request on public.offer_letters(hiring_request_id);
+create index if not exists idx_offer_letters_deleted_at on public.offer_letters(deleted_at);
 
 -- Enable RLS
 alter table public.offer_letters enable row level security;
@@ -92,5 +95,10 @@ create policy "Allow authenticated users to insert offer letters"
 
 create policy "Allow authenticated users to update offer letters"
   on public.offer_letters for update
+  to authenticated
+  using (true);
+
+create policy "Allow authenticated users to delete offer letters"
+  on public.offer_letters for delete
   to authenticated
   using (true);

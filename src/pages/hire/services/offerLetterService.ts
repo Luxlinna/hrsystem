@@ -32,6 +32,7 @@ export async function fetchOfferLetters(): Promise<OfferLetter[]> {
     const { data, error } = await supabase
       .from("offer_letters")
       .select("*")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (!error && Array.isArray(data)) {
@@ -44,12 +45,12 @@ export async function fetchOfferLetters(): Promise<OfferLetter[]> {
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       setLocalOffers(merged);
-      return merged;
+      return merged.filter((o) => !o.deleted_at);
     }
   } catch {
     // Fallback to local storage
   }
-  return getLocalOffers();
+  return getLocalOffers().filter((o) => !o.deleted_at);
 }
 
 export async function saveOfferLetter(offer: OfferLetter): Promise<OfferLetter> {
@@ -287,7 +288,57 @@ export async function recordCandidateDecision(
   return await saveOfferLetter(updated);
 }
 
-export async function deleteOfferLetter(offerId: string): Promise<boolean> {
+export async function softDeleteOfferLetter(
+  offerId: string,
+  actorName?: string
+): Promise<boolean> {
+  const now = new Date().toISOString();
+  const current = getLocalOffers();
+  const updated = current.map((o) =>
+    o.id === offerId ? { ...o, deleted_at: now, deleted_by: actorName || "User" } : o
+  );
+  setLocalOffers(updated);
+
+  try {
+    const { error } = await supabase
+      .from("offer_letters")
+      .update({ deleted_at: now, deleted_by: actorName || "User" })
+      .eq("id", offerId);
+    if (error) {
+      console.warn("Could not soft-delete from Supabase, updated local cache:", error.message);
+    }
+  } catch (err) {
+    console.warn("Failed to soft-delete offer from Supabase:", err);
+  }
+
+  return true;
+}
+
+export const deleteOfferLetter = softDeleteOfferLetter;
+
+export async function restoreOfferLetter(offerId: string): Promise<boolean> {
+  const current = getLocalOffers();
+  const updated = current.map((o) =>
+    o.id === offerId ? { ...o, deleted_at: null, deleted_by: null } : o
+  );
+  setLocalOffers(updated);
+
+  try {
+    const { error } = await supabase
+      .from("offer_letters")
+      .update({ deleted_at: null, deleted_by: null })
+      .eq("id", offerId);
+    if (error) {
+      console.warn("Could not restore offer in Supabase, updated local cache:", error.message);
+    }
+  } catch (err) {
+    console.warn("Failed to restore offer in Supabase:", err);
+  }
+
+  return true;
+}
+
+export async function deleteForeverOfferLetter(offerId: string): Promise<boolean> {
   const current = getLocalOffers();
   const filtered = current.filter((o) => o.id !== offerId);
   setLocalOffers(filtered);
@@ -298,10 +349,10 @@ export async function deleteOfferLetter(offerId: string): Promise<boolean> {
       .delete()
       .eq("id", offerId);
     if (error) {
-      console.warn("Could not delete from Supabase, removed from local cache:", error.message);
+      console.warn("Could not delete forever from Supabase, updated local cache:", error.message);
     }
   } catch (err) {
-    console.warn("Failed to delete offer from Supabase:", err);
+    console.warn("Failed to delete forever from Supabase:", err);
   }
 
   return true;

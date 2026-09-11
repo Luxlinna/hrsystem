@@ -88,6 +88,22 @@ export async function restoreSingleItem(item: BinItem): Promise<any> {
         .eq("branch_id", item.id);
     }
     error = bErr;
+  } else if (item.table === "offer_letters") {
+    const { error: dbErr } = await supabase
+      .from("offer_letters")
+      .update({ deleted_at: null, deleted_by: null })
+      .eq("id", item.id);
+    try {
+      const raw = localStorage.getItem("hrm_offer_letters_store");
+      if (raw) {
+        const list = JSON.parse(raw);
+        const updated = list.map((o: any) =>
+          o.id === item.id ? { ...o, deleted_at: null, deleted_by: null } : o
+        );
+        localStorage.setItem("hrm_offer_letters_store", JSON.stringify(updated));
+      }
+    } catch {}
+    error = dbErr;
   } else {
     const { error: dbErr } = await supabase
       .from(item.table)
@@ -150,6 +166,20 @@ export async function deleteForeverSingleItem(item: BinItem): Promise<any> {
         .eq("onboarding_request_id", item.id),
       supabase.from("onboarding_requests").delete().eq("id", item.id),
     ]);
+    error = dbErr;
+  } else if (item.table === "offer_letters") {
+    const { error: dbErr } = await supabase
+      .from("offer_letters")
+      .delete()
+      .eq("id", item.id);
+    try {
+      const raw = localStorage.getItem("hrm_offer_letters_store");
+      if (raw) {
+        const list = JSON.parse(raw);
+        const filtered = list.filter((o: any) => o.id !== item.id);
+        localStorage.setItem("hrm_offer_letters_store", JSON.stringify(filtered));
+      }
+    } catch {}
     error = dbErr;
   } else {
     const { error: dbErr } = await supabase.from(item.table).delete().eq("id", item.id);

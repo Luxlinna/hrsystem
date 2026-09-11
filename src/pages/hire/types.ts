@@ -173,6 +173,8 @@ export interface OfferLetter {
 
   created_at: string;
   updated_at?: string | null;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 }
 
 export type RecruitmentActionRole =

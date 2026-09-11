@@ -9,6 +9,7 @@ import {
   approveOfferManagement,
   issueOffer,
   recordCandidateDecision,
+  softDeleteOfferLetter,
   deleteOfferLetter,
   type CreateProposalPayload,
 } from "../services/offerLetterService";
@@ -190,19 +191,19 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
   const handleDeleteOffer = useCallback(
     async (offer: OfferLetter) => {
       const confirmed = window.confirm(
-        `Are you sure you want to delete offer ${offer.offer_number} for ${offer.candidate_name}? This cannot be undone.`
+        `Are you sure you want to delete offer ${offer.offer_number} for ${offer.candidate_name}? It will be moved to the Recycle Bin and can be restored anytime.`
       );
       if (!confirmed) return;
 
       try {
-        await deleteOfferLetter(offer.id);
+        await softDeleteOfferLetter(offer.id, currentUserName);
         setOffers((prev) => prev.filter((o) => o.id !== offer.id));
-        toast("Offer Deleted", `Offer ${offer.offer_number} has been removed.`, "info");
+        toast("Moved to Recycle Bin", `Offer ${offer.offer_number} has been moved to the Recycle Bin.`, "info");
       } catch {
         toast("Error", "Failed to delete offer letter.", "error");
       }
     },
-    []
+    [currentUserName]
   );
 
   const counts = useMemo(() => {

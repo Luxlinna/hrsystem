@@ -122,4 +122,13 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     label: (r) => r.email,
     detail: (r) => `Password Reset · ${r.status} · requested ${r.requested_at ? new Date(r.requested_at).toLocaleString() : "—"}`,
   },
+  {
+    table: "offer_letters",
+    name: "Offer Letters",
+    icon: "ri-mail-check-line",
+    select: "id, offer_number, candidate_name, job_title, department, base_salary, status, deleted_at, deleted_by, branch_id",
+    label: (r) => `${r.offer_number || "Offer"} — ${r.candidate_name || "Candidate"}`,
+    detail: (r) => `Offer Letter · ${r.job_title || ""} (${r.department || ""}) · Status: ${r.status || ""}`,
+    applyBranchFilter: (q, b) => q.eq("branch_id", b),
+  },
 ];

@@ -53,6 +53,31 @@ export function useRecycleBinData() {
       });
     });
 
+    // Merge locally stored soft-deleted offer letters if not already returned from Supabase
+    try {
+      const rawLocalOffers = localStorage.getItem("hrm_offer_letters_store");
+      if (rawLocalOffers) {
+        const localList: any[] = JSON.parse(rawLocalOffers);
+        const offerCfg = MODULES.find((m) => m.table === "offer_letters");
+        if (offerCfg) {
+          localList
+            .filter((o) => o.deleted_at && !flat.some((f) => f.id === o.id))
+            .forEach((o) => {
+              if (targetBranch && o.branch_id && o.branch_id !== targetBranch) return;
+              flat.push({
+                table: "offer_letters",
+                id: o.id,
+                label: offerCfg.label(o),
+                detail: offerCfg.detail(o),
+                deleted_at: o.deleted_at,
+                deleted_by: o.deleted_by || null,
+                raw: o,
+              });
+            });
+        }
+      }
+    } catch {}
+
     const userEmail = (user?.email || "").toLowerCase().trim();
     const actorFullName = myEmployee
       ? `${myEmployee.first_name} ${myEmployee.last_name}`.toLowerCase().trim()
