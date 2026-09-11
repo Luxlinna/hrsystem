@@ -40,12 +40,27 @@ export async function processZkPunchRecord(punch) {
   const { userId, timestamp, punchType, verifyType, deviceSerial } = punch;
   if (!userId || !timestamp) return;
 
-  const punchDate = new Date(timestamp);
-  if (isNaN(punchDate.getTime())) return;
+  let dateStr = "";
+  let timeStr = "";
 
-  const dateStr = punchDate.toISOString().slice(0, 10); // YYYY-MM-DD
-  const timeStr = punchDate.toTimeString().slice(0, 8); // HH:mm:ss
+  if (typeof timestamp === "string" && timestamp.includes(" ")) {
+    const [d, t] = timestamp.trim().split(/\s+/);
+    dateStr = d;
+    timeStr = t ? t.slice(0, 8) : "00:00:00";
+  } else if (typeof timestamp === "string" && timestamp.includes("T")) {
+    const [d, rest] = timestamp.trim().split("T");
+    dateStr = d;
+    timeStr = rest ? rest.slice(0, 8) : "00:00:00";
+  } else {
+    const punchDate = new Date(timestamp);
+    if (isNaN(punchDate.getTime())) return;
+    dateStr = punchDate.toISOString().slice(0, 10);
+    timeStr = punchDate.toTimeString().slice(0, 8);
+  }
+
+  if (!dateStr || !timeStr) return;
   const punchMinutes = toMin(timeStr);
+  const punchIso = `${dateStr}T${timeStr}+07:00`;
 
   // 1a. Fetch device info first to guarantee branch context and isolation
   const { data: device } = await supabase
@@ -88,7 +103,7 @@ export async function processZkPunchRecord(punch) {
     await supabase.from("biometric_raw_logs").insert({
       device_serial: deviceSerial || "ZK-ADMS",
       biometric_user_id: String(userId),
-      punch_time: punchDate.toISOString(),
+      punch_time: punchIso,
       punch_state: punchType ?? 0,
       verify_type: verifyType ?? 1,
       processed: false,
@@ -311,7 +326,7 @@ export async function processZkPunchRecord(punch) {
     await supabase.from("biometric_raw_logs").insert({
       device_serial: deviceSerial || "ZK-ADMS",
       biometric_user_id: String(userId),
-      punch_time: punchDate.toISOString(),
+      punch_time: punchIso,
       punch_state: punchType ?? 0,
       verify_type: verifyType ?? 1,
       processed: false,
@@ -341,7 +356,7 @@ export async function processZkPunchRecord(punch) {
   await supabase.from("biometric_raw_logs").insert({
     device_serial: deviceSerial || "ZK-ADMS",
     biometric_user_id: String(userId),
-    punch_time: punchDate.toISOString(),
+    punch_time: punchIso,
     punch_state: punchType ?? 0,
     verify_type: verifyType ?? 1,
     processed: true,
