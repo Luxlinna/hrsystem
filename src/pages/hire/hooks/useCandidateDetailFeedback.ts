@@ -50,6 +50,8 @@ export function useCandidateDetailFeedback({
       duration_minutes: "60",
       type: "video",
       notes: "",
+      interviewer_id: "",
+      interviewer_name: "",
     });
     setScheduleModal(true);
   }, [candidateId]);
@@ -68,9 +70,15 @@ export function useCandidateDetailFeedback({
           ? newInterview.type
           : "video";
 
+        const selectedInterviewerId = isUuid(newInterview.interviewer_id)
+          ? newInterview.interviewer_id
+          : isUuid(myEmployeeId)
+          ? myEmployeeId
+          : null;
+
         const { error } = await supabase.from("interviews").insert({
           candidate_id: targetCandidateId,
-          interviewer_id: isUuid(myEmployeeId) ? myEmployeeId : null,
+          interviewer_id: selectedInterviewerId,
           scheduled_at: new Date(newInterview.scheduled_at).toISOString(),
           duration_minutes: Number(newInterview.duration_minutes) || 60,
           type: dbType,
@@ -88,6 +96,9 @@ export function useCandidateDetailFeedback({
           .maybeSingle();
 
         if (candInfo) {
+          const panelIds = newInterview.interviewer_ids || (selectedInterviewerId ? [selectedInterviewerId] : []);
+          const panelNames = newInterview.interviewer_names || (newInterview.interviewer_name ? [newInterview.interviewer_name] : []);
+
           await notifyInterviewScheduledOrCompleted({
             isCompleted: false,
             candidateName: candInfo.full_name,
@@ -97,6 +108,10 @@ export function useCandidateDetailFeedback({
             actorName,
             scheduledAt: new Date(newInterview.scheduled_at).toISOString(),
             recruiterEmployeeId: candInfo.assigned_recruiter_id || null,
+            interviewerEmployeeId: selectedInterviewerId,
+            interviewerName: newInterview.interviewer_name || null,
+            interviewerEmployeeIds: panelIds,
+            interviewerNames: panelNames,
           });
         }
 
@@ -137,6 +152,19 @@ export function useCandidateDetailFeedback({
           .maybeSingle();
 
         if (candInfo) {
+          const panelMatch = (feedbackInterview.notes || "").match(/\[Panel:\s*(.*?)\]/i);
+          const fbNames = panelMatch
+            ? panelMatch[1].split(",").map((s) => s.trim()).filter(Boolean)
+            : feedbackInterview.employees
+            ? [`${feedbackInterview.employees.first_name} ${feedbackInterview.employees.last_name}`.trim()]
+            : [];
+          const panelIdsMatch = (feedbackInterview.notes || "").match(/\[PanelIds:\s*(.*?)\]/i);
+          const fbIds = panelIdsMatch
+            ? panelIdsMatch[1].split(",").map((s) => s.trim()).filter(Boolean)
+            : feedbackInterview.interviewer_id
+            ? [feedbackInterview.interviewer_id]
+            : [];
+
           await notifyInterviewScheduledOrCompleted({
             isCompleted: true,
             candidateName: candInfo.full_name,
@@ -146,6 +174,10 @@ export function useCandidateDetailFeedback({
             actorName,
             score: feedbackScore,
             recruiterEmployeeId: candInfo.assigned_recruiter_id || null,
+            interviewerEmployeeId: feedbackInterview.interviewer_id || null,
+            interviewerName: fbNames[0] || null,
+            interviewerEmployeeIds: fbIds,
+            interviewerNames: fbNames,
           });
         }
 

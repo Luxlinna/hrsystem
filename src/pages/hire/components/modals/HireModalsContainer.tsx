@@ -1,14 +1,18 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { JobModal } from "./JobModal";
 import { CandidateModal } from "./CandidateModal";
 import { InterviewModal } from "./InterviewModal";
 import { MoveToOnboardingModal } from "./MoveToOnboardingModal";
 import { FeedbackModal } from "./FeedbackModal";
+import { InterviewEvaluationModal } from "../candidate-detail/InterviewEvaluationModal";
+import { resolveInterviewStageKey, isUserInvitedToInterview } from "../../utils/interviewPanelHelper";
 import { CreateHiringRequestModal } from "./CreateHiringRequestModal";
 import { DecisionHiringRequestModal } from "./DecisionHiringRequestModal";
 import type { Branch, Job, Candidate, Interview, HiringRequest, NewJobFormState, NewCandidateFormState, NewInterviewFormState, NewHiringRequestFormState } from "../../types";
 
 interface HireModalsContainerProps {
+  isAdminOrRecruiter?: boolean;
+  myEmployeeId?: string | null;
   jobModal: boolean;
   setJobModal: (val: boolean) => void;
   editingJob: Job | null;
@@ -61,6 +65,9 @@ interface HireModalsContainerProps {
   setFeedbackNotes: (val: string) => void;
   savingFeedback: boolean;
   handleSaveFeedback: (e: React.FormEvent) => void;
+  actorName?: string;
+  interviews?: Interview[];
+  handleSaveInterviewEvaluation?: (payload: any) => Promise<void>;
 
   showRequestModal: boolean;
   setShowRequestModal: (val: boolean) => void;
@@ -88,6 +95,33 @@ interface HireModalsContainerProps {
 }
 
 export const HireModalsContainer = memo(function HireModalsContainer(props: HireModalsContainerProps) {
+  const targetCandidate: Candidate = useMemo(() => {
+    if (!props.feedbackInterview) return null as any;
+    const found = props.candidates.find((c) => c.id === props.feedbackInterview?.candidate_id);
+    if (found) return found;
+    return {
+      id: props.feedbackInterview.candidate_id,
+      full_name: props.feedbackInterview.candidates?.full_name || "Applicant",
+      email: "",
+      phone: "",
+      source: "",
+      stage: "interview",
+      rating: props.feedbackInterview.score || 0,
+      notes: props.feedbackInterview.notes || "",
+      applied_at: new Date().toISOString(),
+      resume_url: null,
+      resume_name: null,
+      job_posting_id: props.feedbackInterview.candidates?.job_posting_id,
+      job_postings: props.feedbackInterview.candidates?.job_postings
+        ? {
+            id: props.feedbackInterview.candidates.job_posting_id || "",
+            title: props.feedbackInterview.candidates.job_postings.title,
+            department: props.feedbackInterview.candidates.job_postings.department || "General",
+          }
+        : undefined,
+    } as Candidate;
+  }, [props.candidates, props.feedbackInterview]);
+
   return (
     <>
       <JobModal
@@ -147,17 +181,31 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
         onSubmit={props.handleMoveToOnboarding}
       />
 
-      <FeedbackModal
-        isOpen={props.feedbackModal}
-        interview={props.feedbackInterview}
-        score={props.feedbackScore}
-        setScore={props.setFeedbackScore}
-        notes={props.feedbackNotes}
-        setNotes={props.setFeedbackNotes}
-        saving={props.savingFeedback}
-        onClose={() => props.setFeedbackModal(false)}
-        onSubmit={props.handleSaveFeedback}
-      />
+      {/* Dedicated Interview Evaluation Form Modal (Mandatory Evidence for HR, Hiring Manager, Final Interview) */}
+      {props.feedbackModal && props.feedbackInterview && targetCandidate && (
+        <InterviewEvaluationModal
+          isOpen={props.feedbackModal}
+          stageKey={resolveInterviewStageKey(props.feedbackInterview, targetCandidate)}
+          candidate={targetCandidate}
+          interviews={props.interviews || [props.feedbackInterview]}
+          targetInterview={props.feedbackInterview}
+          defaultEvaluatorName={props.actorName || ""}
+          canUserFeedback={isUserInvitedToInterview({
+            interview: props.feedbackInterview,
+            candidate: targetCandidate,
+            myEmployeeId: props.myEmployeeId,
+            actorName: props.actorName,
+            isAdminOrRecruiter: props.isAdminOrRecruiter,
+          })}
+          onClose={() => props.setFeedbackModal(false)}
+          onSubmitEvaluation={async (payload) => {
+            if (props.handleSaveInterviewEvaluation) {
+              await props.handleSaveInterviewEvaluation(payload);
+            }
+          }}
+          submitting={props.savingFeedback}
+        />
+      )}
 
       <CreateHiringRequestModal
         isOpen={props.showRequestModal}

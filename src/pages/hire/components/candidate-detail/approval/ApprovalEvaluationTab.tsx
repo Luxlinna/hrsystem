@@ -4,6 +4,12 @@ import {
   fetchBuEmployeesForCandidate,
   type BuEmployeeOption,
 } from "../../../services/candidateApprovalService";
+import {
+  formatInterviewEndTime,
+  extractFeedbackFromInterviews,
+  parseInterviewPanelFromNotes,
+} from "../../../utils/interviewPanelHelper";
+import { toast } from "@/components/Toast";
 
 interface TabProps {
   data: CandidateApproval;
@@ -47,26 +53,39 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
       const emp = buEmployees.find((e) => e.id === empId);
       if (!emp) return;
 
-      const nowFormatted =
-        new Date().toLocaleDateString("en-US", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }) + " 3:00PM";
+      // Check if employee participated in any completed interview
+      const matchingIv = interviews.find((iv) => {
+        if (iv.interviewer_id === emp.id) return true;
+        const { panelIds, panelMembers } = parseInterviewPanelFromNotes(iv.notes);
+        if (panelIds.includes(emp.id)) return true;
+        return panelMembers.some((m) => m.name.toLowerCase() === emp.name.toLowerCase());
+      });
+
+      const isCompleted = matchingIv
+        ? matchingIv.status === "completed" || Boolean(matchingIv.feedback || matchingIv.score)
+        : false;
+
+      const dateFormatted = matchingIv
+        ? formatInterviewEndTime(matchingIv.scheduled_at, matchingIv.duration_minutes || 60)
+        : new Date().toLocaleDateString("en-US", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }) + " 3:00PM";
 
       const updated = [
         ...panels,
         {
           name: emp.name,
-          date_time: nowFormatted,
+          date_time: dateFormatted,
           position: emp.role || emp.department || "Panel Member",
-          signature: "Verified",
+          signature: isCompleted ? "Signed" : "Verified",
         },
       ];
 
       onChange({ ...data, interview_panels: updated });
     },
-    [buEmployees, panels, data, onChange]
+    [buEmployees, panels, interviews, data, onChange]
   );
 
   const handleAddCustomPanel = useCallback(() => {
@@ -93,44 +112,78 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
 
   const handleImportInterviews = useCallback(() => {
     if (!interviews || interviews.length === 0) return;
-    const existingNames = new Set(panels.map((p) => p.name.trim().toLowerCase()));
 
-    const imported = interviews
-      .filter((iv) => {
-        const empName = iv.employees
-          ? `${iv.employees.first_name} ${iv.employees.last_name}`.trim()
-          : "";
-        return empName && !existingNames.has(empName.toLowerCase());
-      })
-      .map((iv) => {
-        const empName = `${iv.employees!.first_name} ${iv.employees!.last_name}`.trim();
-        const dt = iv.scheduled_at
-          ? new Date(iv.scheduled_at).toLocaleString("en-US", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "Completed";
-        const pos =
-          iv.type === "hr" || (iv.notes || "").toLowerCase().includes("hr")
-            ? "HR Recruiter"
-            : iv.type === "technical"
-            ? "Technical Lead"
-            : "Executive Interviewer";
+    const nextPanels = [...panels];
 
-        return {
-          name: empName,
-          date_time: dt,
-          position: pos,
-          signature: "Verified",
-        };
-      });
+    for (const iv of interviews) {
+      const isCompleted = iv.status === "completed" || Boolean(iv.feedback || iv.score);
+      const endTimeFormatted = formatInterviewEndTime(iv.scheduled_at, iv.duration_minutes || 60);
+      const signatureStatus = isCompleted ? "Signed" : "Verified";
 
-    if (imported.length > 0) {
-      onChange({ ...data, interview_panels: [...panels, ...imported] });
+      const { panelMembers } = parseInterviewPanelFromNotes(iv.notes);
+
+      const membersToProcess: { name: string; role: string }[] =
+        panelMembers.length > 0
+          ? panelMembers.map((m) => ({ name: m.name, role: m.role || "Interviewer" }))
+          : iv.employees
+          ? [
+              {
+                name: `${iv.employees.first_name} ${iv.employees.last_name}`.trim(),
+                role: iv.employees.role || iv.employees.department || "Hiring Manager",
+              },
+            ]
+          : [];
+
+      for (const m of membersToProcess) {
+        if (!m.name) continue;
+        const existingIdx = nextPanels.findIndex(
+          (p) => p.name.trim().toLowerCase() === m.name.trim().toLowerCase()
+        );
+
+        const rawFb = (iv.feedback || "").toLowerCase();
+        const cleanMName = m.name.trim().toLowerCase();
+        const hasEvaluated =
+          isCompleted &&
+          (!rawFb.includes("[evaluation form:") ||
+            rawFb.includes(`evaluator: ${cleanMName}`) ||
+            rawFb.includes(cleanMName));
+
+        const signatureVal = hasEvaluated ? "Signed" : "Verified";
+
+        if (existingIdx >= 0) {
+          nextPanels[existingIdx] = {
+            ...nextPanels[existingIdx],
+            date_time: endTimeFormatted,
+            signature: hasEvaluated ? "Signed" : nextPanels[existingIdx].signature || "Verified",
+            position: nextPanels[existingIdx].position || m.role,
+          };
+        } else {
+          nextPanels.push({
+            name: m.name,
+            date_time: endTimeFormatted,
+            position: m.role,
+            signature: signatureVal,
+          });
+        }
+      }
     }
+
+    // Synthesize evaluator feedback
+    const feedbackSynthesis = extractFeedbackFromInterviews(interviews);
+    const updated = {
+      ...data,
+      interview_panels: nextPanels,
+      strengths: feedbackSynthesis.strengths || data.strengths,
+      improvement: feedbackSynthesis.improvement || data.improvement,
+      overall_assessment: feedbackSynthesis.overallAssessment || data.overall_assessment,
+    };
+
+    onChange(updated);
+    toast(
+      "Evaluations & Panels Synced",
+      "Interview panels updated to Signed with interview end time, and evaluator remarks fetched.",
+      "success"
+    );
   }, [interviews, panels, data, onChange]);
 
   const handleRemovePanel = useCallback(
@@ -159,14 +212,20 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
     [panels, buEmployees, data, onChange]
   );
 
-  const hasLegacyMockPanels = panels.some(
-    (p) => p.name.includes("Meas Chhengseang") || p.name.includes("Sun Reasey")
-  );
+  const isMockName = (name: string) => {
+    const lower = (name || "").trim().toLowerCase();
+    return (
+      lower.includes("meas chhengseang") ||
+      lower.includes("sun reasey") ||
+      lower.includes("interviewer name") ||
+      lower === "panel member"
+    );
+  };
+
+  const hasLegacyMockPanels = panels.some((p) => isMockName(p.name));
 
   const handleClearLegacyMocks = useCallback(() => {
-    const cleaned = panels.filter(
-      (p) => !p.name.includes("Meas Chhengseang") && !p.name.includes("Sun Reasey")
-    );
+    const cleaned = panels.filter((p) => !isMockName(p.name));
     onChange({ ...data, interview_panels: cleaned });
   }, [panels, data, onChange]);
 
@@ -269,16 +328,16 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
               </button>
             )}
 
-            {/* Sync from scheduled candidate interviews */}
+            {/* Sync from scheduled & completed candidate interviews */}
             {interviews && interviews.length > 0 && (
               <button
                 type="button"
                 onClick={handleImportInterviews}
-                className="text-[10px] text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                title="Import interviewers from scheduled candidate interviews"
+                className="text-[10px] text-[#253C7D] bg-blue-50 hover:bg-blue-100 border border-blue-200/80 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                title="Fetch completed interview evaluations, auto-mark Signed with end time, and import feedback"
               >
-                <i className="ri-calendar-check-line text-xs" />
-                Import Scheduled ({interviews.length})
+                <i className="ri-sparkling-line text-xs" />
+                Import Evaluated & Scheduled ({interviews.length})
               </button>
             )}
 

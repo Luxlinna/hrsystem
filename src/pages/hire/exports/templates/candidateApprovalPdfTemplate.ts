@@ -59,15 +59,9 @@ export function buildCandidateApprovalHtml(approval: CandidateApproval): string 
           .join("")
       : `
       <tr>
-        <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px;">Ms. Meas Chhengseang</td>
-        <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px; text-align: center;">04th-June-2026 3:00PM</td>
-        <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px; text-align: center;">CEO</td>
-        <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px; text-align: center; font-style: italic; color: #1e3a8a;">Signed</td>
-      </tr>
-      <tr>
-        <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px;">Mr. Sun Reasey</td>
-        <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px; text-align: center;">04th-June-2026 3:00PM</td>
-        <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px; text-align: center;">HR Recruiter</td>
+        <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px;">${approval.hiring_manager || "Hiring Manager"}</td>
+        <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px; text-align: center;">11 Sep 2026 3:00PM</td>
+        <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px; text-align: center;">Hiring Manager</td>
         <td style="border: 1px solid #111; padding: 4px 6px; font-size: 10px; text-align: center; font-style: italic; color: #1e3a8a;">Signed</td>
       </tr>
     `;

@@ -268,4 +268,7 @@ export const INITIAL_INTERVIEW_FORM: NewInterviewFormState = {
   duration_minutes: "60",
   type: "video",
   notes: "",
+  interviewer_id: "",
+  interviewer_name: "",
 };
+

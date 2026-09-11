@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { Interview } from "../../types";
 import { InterviewCard } from "./InterviewCard";
+import { isUserInvitedToInterview } from "../../utils/interviewPanelHelper";
 
 interface InterviewsTabContentProps {
   interviews: Interview[];
@@ -8,6 +9,9 @@ interface InterviewsTabContentProps {
   onOpenFeedback: (interview: Interview) => void;
   onEditInterview: (interview: Interview) => void;
   onDeleteInterview: (id: string) => void;
+  myEmployeeId?: string | null;
+  actorName?: string | null;
+  isAdminOrRecruiter?: boolean;
 }
 
 export const InterviewsTabContent = memo(function InterviewsTabContent({
@@ -16,6 +20,9 @@ export const InterviewsTabContent = memo(function InterviewsTabContent({
   onOpenFeedback,
   onEditInterview,
   onDeleteInterview,
+  myEmployeeId,
+  actorName,
+  isAdminOrRecruiter,
 }: InterviewsTabContentProps) {
   if (interviews.length === 0) {
     return (
@@ -39,15 +46,26 @@ export const InterviewsTabContent = memo(function InterviewsTabContent({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {interviews.map((iv) => (
-        <InterviewCard
-          key={iv.id}
-          interview={iv}
-          onOpenFeedback={onOpenFeedback}
-          onEdit={onEditInterview}
-          onDelete={onDeleteInterview}
-        />
-      ))}
+      {interviews.map((iv) => {
+        const canFeedback = isUserInvitedToInterview({
+          interview: iv,
+          candidate: iv.candidates as any,
+          myEmployeeId,
+          actorName,
+          isAdminOrRecruiter,
+        });
+
+        return (
+          <InterviewCard
+            key={iv.id}
+            interview={iv}
+            onOpenFeedback={onOpenFeedback}
+            onEdit={onEditInterview}
+            onDelete={onDeleteInterview}
+            canFeedback={canFeedback}
+          />
+        );
+      })}
     </div>
   );
 });

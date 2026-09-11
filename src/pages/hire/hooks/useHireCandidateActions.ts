@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { toast } from "@/components/Toast";
 import { uploadFileToS3 } from "@/lib/s3-storage";
 import type { Candidate, Job, Interview, NewCandidateFormState } from "../types";
-import { executeSaveInterview, executeSaveFeedback } from "./candidateInterviewActions";
+import { executeSaveInterview, executeSaveFeedback, executeSaveInterviewEvaluation } from "./candidateInterviewActions";
 import { executeMoveToOnboarding } from "./candidateOnboardingActions";
 import { executeMergeCandidate } from "./candidateMergeActions";
 import { executeSaveCandidate } from "./candidateSaveActions";
@@ -11,6 +11,7 @@ interface UseHireCandidateActionsProps {
   actorName: string;
   actorRole: string;
   myEmployeeId?: string;
+  isAdminOrRecruiter?: boolean;
   loadData: () => Promise<void>;
   branches: any[];
   jobs: Job[];
@@ -24,6 +25,7 @@ interface UseHireCandidateActionsProps {
 export function useHireCandidateActions({
   actorName,
   myEmployeeId,
+  isAdminOrRecruiter,
   loadData,
   branches,
   jobs,
@@ -104,7 +106,16 @@ export function useHireCandidateActions({
     async (interview: Interview, score: number, notes: string) => {
       setSavingFeedback(true);
       try {
-        const ok = await executeSaveFeedback({ interview, score, notes, actorName, candidates, jobs });
+        const ok = await executeSaveFeedback({
+          interview,
+          score,
+          notes,
+          actorName,
+          myEmployeeId,
+          isAdminOrRecruiter,
+          candidates,
+          jobs,
+        });
         if (ok) await loadData();
         return ok;
       } catch (err: any) {
@@ -114,7 +125,32 @@ export function useHireCandidateActions({
         setSavingFeedback(false);
       }
     },
-    [actorName, candidates, jobs, loadData, setSavingFeedback]
+    [actorName, myEmployeeId, isAdminOrRecruiter, candidates, jobs, loadData, setSavingFeedback]
+  );
+
+  const handleSaveInterviewEvaluation = useCallback(
+    async (payload: any, interview?: Interview | null) => {
+      setSavingFeedback(true);
+      try {
+        const ok = await executeSaveInterviewEvaluation({
+          payload,
+          actorName,
+          myEmployeeId,
+          isAdminOrRecruiter,
+          candidates,
+          jobs,
+          interview: interview || null,
+        });
+        if (ok) await loadData();
+        return ok;
+      } catch (err: any) {
+        toast("Error", err.message || "Failed to save evaluation.", "error");
+        return false;
+      } finally {
+        setSavingFeedback(false);
+      }
+    },
+    [actorName, myEmployeeId, isAdminOrRecruiter, candidates, jobs, loadData, setSavingFeedback]
   );
 
   const handleMergeCandidate = useCallback(
@@ -137,6 +173,7 @@ export function useHireCandidateActions({
     handleSaveInterview,
     handleMoveToOnboarding,
     handleSaveFeedback,
+    handleSaveInterviewEvaluation,
     handleMergeCandidate,
   };
 }

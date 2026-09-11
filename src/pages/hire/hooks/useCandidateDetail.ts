@@ -12,6 +12,8 @@ import { STAGE_CONFIG } from "../constants";
 import { checkInterviewStageProgressionGate, getStageInterview } from "../constants/evidenceConfig";
 import { useCandidateDetailFeedback } from "./useCandidateDetailFeedback";
 import { startOnboardingForCandidate } from "@/lib/onboarding";
+import { notifyInterviewScheduledOrCompleted } from "../services/notifications/recruitmentEventTriggers";
+import { parseInterviewPanelFromNotes, isUserInvitedToInterview } from "../utils/interviewPanelHelper";
 
 export function useCandidateDetail(id: string | undefined) {
   const { user } = useAuth();
@@ -23,6 +25,17 @@ export function useCandidateDetail(id: string | undefined) {
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
+
+  const myJobRole = (myEmployee?.role || "").trim().toLowerCase();
+  const isAdminOrRecruiter = Boolean(
+    role?.is_admin ||
+    role?.hiring_requests_hr_admin_approve ||
+    role?.hiring_requests_hr_review ||
+    role?.hiring_requests_chairman_approve ||
+    /(admin|recruiter|talent|hr\s*manager|hr\s*specialist|hr\s*officer|director|ceo)\b/i.test(role?.name || "") ||
+    /(admin|recruiter|talent|hr\s*manager|hr\s*specialist|hr\s*officer|director|ceo)\b/i.test(myJobRole) ||
+    (candidate?.assigned_recruiter_id && myEmployee?.id && candidate.assigned_recruiter_id === myEmployee.id)
+  );
   const [loading, setLoading] = useState(true);
   const [uploadingResume, setUploadingResume] = useState(false);
 
@@ -39,13 +52,13 @@ export function useCandidateDetail(id: string | undefined) {
     const [{ data: c }, { data: ivs }, { data: apps }, { data: j }] = await Promise.all([
       supabase
         .from("candidates")
-        .select("*, job_postings(id, title, department, branches(name)), assigned_recruiter:employees!assigned_recruiter_id(id, first_name, last_name, email)")
+        .select("*, job_postings(id, title, department, branch_id, branches(id, name, manager_name)), assigned_recruiter:employees!assigned_recruiter_id(id, first_name, last_name, email)")
         .eq("id", cid)
         .is("deleted_at", null)
         .maybeSingle(),
       supabase
         .from("interviews")
-        .select("*, employees(first_name, last_name, avatar_url)")
+        .select("*, employees(id, first_name, last_name, avatar_url, role, department, branch_id)")
         .eq("candidate_id", cid)
         .is("deleted_at", null)
         .order("scheduled_at", { ascending: false }),
@@ -353,6 +366,7 @@ export function useCandidateDetail(id: string | undefined) {
       strengths: string;
       concerns: string;
       notes: string;
+      interviewId?: string;
     }) => {
       if (!id || !candidate) return;
       setSubmittingEvaluation(true);
@@ -385,7 +399,23 @@ export function useCandidateDetail(id: string | undefined) {
           .join("\n");
 
         // 1. Create or update the interview record
-        const existingIv = getStageInterview(payload.stageKey, interviews);
+        const existingIv = payload.interviewId
+          ? interviews.find((i) => i.id === payload.interviewId)
+          : getStageInterview(payload.stageKey, interviews);
+
+        // Verify interviewer permission: interviewer can feedback ONLY the candidate that recruiter invited them to interview
+        const canFeedback = isUserInvitedToInterview({
+          interview: existingIv,
+          candidate,
+          myEmployeeId: myEmployee?.id,
+          actorName,
+          isAdminOrRecruiter,
+        });
+
+        if (!canFeedback) {
+          toast("Access Restricted", "You can only feedback candidates that the recruiter invited you to interview.", "error");
+          return;
+        }
 
         if (existingIv) {
           await supabase
@@ -450,6 +480,37 @@ export function useCandidateDetail(id: string | undefined) {
           actorName,
           actorRole: role?.name || "Unknown",
           description: `Submitted ${stageLabel} evaluation form for ${candidate.full_name} (${recLabel})`,
+        });
+
+        // Standing notification: Interviewer / Hiring Manager + Assigned Recruiter
+        const panelInfo = existingIv?.notes ? parseInterviewPanelFromNotes(existingIv.notes) : null;
+        const panelIds = panelInfo?.panelIds?.length
+          ? panelInfo.panelIds
+          : existingIv?.interviewer_id
+          ? [existingIv.interviewer_id]
+          : [];
+        const panelNames = panelInfo?.panelMembers?.length
+          ? panelInfo.panelMembers.map((m) => m.name)
+          : existingIv?.employees
+          ? [`${existingIv.employees.first_name} ${existingIv.employees.last_name}`.trim()]
+          : [payload.evaluatorName];
+
+        await notifyInterviewScheduledOrCompleted({
+          isCompleted: true,
+          candidateName: candidate.full_name,
+          candidateId: id,
+          jobTitle: candidate.job_postings?.title || "Requisition",
+          interviewType: existingIv?.type || "Interview",
+          actorName: payload.evaluatorName || actorName,
+          score: payload.overallScore,
+          recruiterEmployeeId: candidate.assigned_recruiter_id || null,
+          recruiterName: candidate.assigned_recruiter
+            ? `${candidate.assigned_recruiter.first_name} ${candidate.assigned_recruiter.last_name}`
+            : null,
+          interviewerEmployeeId: existingIv?.interviewer_id || null,
+          interviewerName: payload.evaluatorName || panelNames[0] || null,
+          interviewerEmployeeIds: panelIds,
+          interviewerNames: panelNames,
         });
 
         setEvaluationModalStage(null);
@@ -519,6 +580,8 @@ export function useCandidateDetail(id: string | undefined) {
     submittingEvaluation,
     handleSubmitInterviewEvaluation,
     actorName,
+    isAdminOrRecruiter,
+    myEmployeeId: myEmployee?.id,
     navigate,
   };
 }

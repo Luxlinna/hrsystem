@@ -4,6 +4,11 @@ import {
   generateApprovalFormNumber,
   initCandidateApproval,
 } from "./candidateApprovalDefaults";
+import {
+  formatInterviewEndTime,
+  extractFeedbackFromInterviews,
+  parseInterviewPanelFromNotes,
+} from "../utils/interviewPanelHelper";
 
 export { generateApprovalFormNumber, initCandidateApproval };
 
@@ -374,14 +379,108 @@ export async function fetchCandidateApproval(
         detailsChanged = true;
       }
 
-      if (changed || detailsChanged) {
-        void supabase.from("candidate_approvals").update({
-          signatories: sigs,
-          business_unit: remote.business_unit,
-          department: remote.department,
-          hiring_manager: remote.hiring_manager,
-          branch_id: remote.branch_id,
-        }).eq("id", remote.id).then(null, () => {});
+      // Automatically sync completed interview panels to "Signed" with interview end time
+      let panelsChanged = false;
+      const currentPanels = [...(remote.interview_panels || [])];
+
+      if (interviews && interviews.length > 0) {
+        const completedIvs = interviews.filter(
+          (iv) => iv.status === "completed" || Boolean(iv.feedback || iv.score)
+        );
+
+        if (completedIvs.length > 0) {
+          for (const iv of completedIvs) {
+            const endTimeFormatted = formatInterviewEndTime(iv.scheduled_at, iv.duration_minutes || 60);
+            const { panelMembers } = parseInterviewPanelFromNotes(iv.notes);
+
+            const membersToSync: { name: string; role: string }[] =
+              panelMembers.length > 0
+                ? panelMembers.map((m) => ({ name: m.name, role: m.role || "Interviewer" }))
+                : iv.employees
+                ? [
+                    {
+                      name: `${iv.employees.first_name} ${iv.employees.last_name}`.trim(),
+                      role: iv.employees.role || iv.employees.department || "Hiring Manager",
+                    },
+                  ]
+                : [];
+
+            for (const m of membersToSync) {
+              const existingIdx = currentPanels.findIndex(
+                (p) => p.name.trim().toLowerCase() === m.name.trim().toLowerCase()
+              );
+
+              const rawFb = (iv.feedback || "").toLowerCase();
+              const cleanMName = m.name.trim().toLowerCase();
+              const hasEvaluated =
+                !rawFb.includes("[evaluation form:") ||
+                rawFb.includes(`evaluator: ${cleanMName}`) ||
+                rawFb.includes(cleanMName);
+
+              const signatureVal = hasEvaluated ? "Signed" : "Verified";
+
+              if (existingIdx >= 0) {
+                if (hasEvaluated && currentPanels[existingIdx].signature !== "Signed") {
+                  currentPanels[existingIdx] = {
+                    ...currentPanels[existingIdx],
+                    signature: "Signed",
+                    date_time: endTimeFormatted,
+                  };
+                  panelsChanged = true;
+                }
+              } else {
+                currentPanels.push({
+                  name: m.name,
+                  date_time: endTimeFormatted,
+                  position: m.role || "Interviewer",
+                  signature: signatureVal,
+                });
+                panelsChanged = true;
+              }
+            }
+          }
+
+          // Populate evaluator feedback into assessment if generic or empty
+          const fbSynthesis = extractFeedbackFromInterviews(interviews);
+          const isGenericAssessment =
+            !remote.overall_assessment ||
+            remote.overall_assessment.includes("Candidate performed exceptionally well across all interview stages");
+
+          if (isGenericAssessment && fbSynthesis.overallAssessment) {
+            remote.overall_assessment = fbSynthesis.overallAssessment;
+            panelsChanged = true;
+          }
+          if (!remote.strengths && fbSynthesis.strengths) {
+            remote.strengths = fbSynthesis.strengths;
+            panelsChanged = true;
+          }
+          if (!remote.improvement && fbSynthesis.improvement) {
+            remote.improvement = fbSynthesis.improvement;
+            panelsChanged = true;
+          }
+        }
+      }
+
+      if (panelsChanged) {
+        remote.interview_panels = currentPanels;
+      }
+
+      if (changed || detailsChanged || panelsChanged) {
+        void supabase
+          .from("candidate_approvals")
+          .update({
+            signatories: sigs,
+            business_unit: remote.business_unit,
+            department: remote.department,
+            hiring_manager: remote.hiring_manager,
+            branch_id: remote.branch_id,
+            interview_panels: remote.interview_panels,
+            overall_assessment: remote.overall_assessment,
+            strengths: remote.strengths,
+            improvement: remote.improvement,
+          })
+          .eq("id", remote.id)
+          .then(null, () => {});
       }
 
       const local = getLocalApprovals();

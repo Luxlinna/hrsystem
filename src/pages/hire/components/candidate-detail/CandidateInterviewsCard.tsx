@@ -1,17 +1,26 @@
 import { memo } from "react";
-import type { Interview } from "../../types";
+import type { Candidate, Interview } from "../../types";
 import { formatScheduleDateTime } from "../../hireUtils";
+import { isUserInvitedToInterview } from "../../utils/interviewPanelHelper";
 
 interface CandidateInterviewsCardProps {
   interviews: Interview[];
   avgScore: number;
   onOpenFeedbackModal: (iv: Interview) => void;
+  candidate?: Candidate | null;
+  myEmployeeId?: string | null;
+  actorName?: string | null;
+  isAdminOrRecruiter?: boolean;
 }
 
 export const CandidateInterviewsCard = memo(function CandidateInterviewsCard({
   interviews,
   avgScore,
   onOpenFeedbackModal,
+  candidate,
+  myEmployeeId,
+  actorName,
+  isAdminOrRecruiter,
 }: CandidateInterviewsCardProps) {
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs">
@@ -74,12 +83,36 @@ export const CandidateInterviewsCard = memo(function CandidateInterviewsCard({
                     ★ {iv.score}/5
                   </span>
                 )}
-                <button
-                  onClick={() => onOpenFeedbackModal(iv)}
-                  className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-xs font-bold rounded-xl shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
-                >
-                  <i className="ri-edit-line text-xs" /> {isCompleted ? "Edit Feedback" : "Record Score"}
-                </button>
+                {(() => {
+                  const canFeedback = isUserInvitedToInterview({
+                    interview: iv,
+                    candidate,
+                    myEmployeeId,
+                    actorName,
+                    isAdminOrRecruiter,
+                  });
+
+                  if (!canFeedback) {
+                    return (
+                      <span
+                        className="px-2.5 py-1 text-xs font-medium text-gray-400 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-1.5 cursor-not-allowed select-none"
+                        title="Only invited interviewers for this candidate can record feedback"
+                      >
+                        <i className="ri-lock-line text-xs" />
+                        Not Invited
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <button
+                      onClick={() => onOpenFeedbackModal(iv)}
+                      className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-xs font-bold rounded-xl shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <i className="ri-edit-line text-xs" /> {isCompleted ? "Edit Feedback" : "Record Score"}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           );

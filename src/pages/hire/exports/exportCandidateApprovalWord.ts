@@ -569,8 +569,12 @@ export async function exportCandidateApprovalWord(approval: CandidateApproval): 
   const panels = approval.interview_panels && approval.interview_panels.length > 0
     ? approval.interview_panels
     : [
-        { name: "Ms. Meas Chhengseang", date_time: "11 Sep 2026 3:00PM", position: "CEO", signature: "Signed" },
-        { name: "Mr. Sun Reasey", date_time: "11 Sep 2026 3:00PM", position: "HR Recruiter", signature: "Signed" },
+        {
+          name: approval.hiring_manager || "Hiring Manager",
+          date_time: "11 Sep 2026 3:00PM",
+          position: "Hiring Manager",
+          signature: "Signed",
+        },
       ];
 
   const panelsHeading = new Paragraph({

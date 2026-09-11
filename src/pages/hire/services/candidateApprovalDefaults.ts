@@ -1,4 +1,9 @@
 import type { Candidate, Interview, CandidateApproval, CandidateApprovalPanel } from "../types";
+import {
+  parseInterviewPanelFromNotes,
+  formatInterviewEndTime,
+  extractFeedbackFromInterviews,
+} from "../utils/interviewPanelHelper";
 
 export function generateApprovalFormNumber(): string {
   const year = new Date().getFullYear();
@@ -30,33 +35,47 @@ export function initCandidateApproval(
   const now = new Date().toISOString();
   const job = candidate.job_postings;
 
+  const feedbackSynthesis = extractFeedbackFromInterviews(interviews);
+
   const panels: CandidateApprovalPanel[] =
     interviews.length > 0
-      ? interviews.map((iv) => {
+      ? interviews.flatMap((iv) => {
+          const isCompleted = iv.status === "completed" || Boolean(iv.feedback || iv.score);
+          const endTimeFormatted = formatInterviewEndTime(iv.scheduled_at, iv.duration_minutes || 60);
+          const signatureStatus = isCompleted ? "Signed" : "Verified";
+
+          const { panelMembers } = parseInterviewPanelFromNotes(iv.notes);
+
+          if (panelMembers.length > 0) {
+            return panelMembers.map((m) => ({
+              name: m.name,
+              date_time: endTimeFormatted,
+              position: m.role || "Interviewer",
+              signature: signatureStatus,
+            }));
+          }
+
           const empName = iv.employees
-            ? `${iv.employees.first_name} ${iv.employees.last_name}`
+            ? `${iv.employees.first_name} ${iv.employees.last_name}`.trim()
             : actorName;
-          const dt = iv.scheduled_at
-            ? new Date(iv.scheduled_at).toLocaleString("en-US", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "Completed";
+
           const pos =
-            iv.type === "hr" || (iv.notes || "").toLowerCase().includes("hr")
+            iv.employees?.role ||
+            iv.employees?.department ||
+            (iv.type === "hr" || (iv.notes || "").toLowerCase().includes("hr")
               ? "HR Recruiter"
               : iv.type === "technical"
               ? "Technical Lead"
-              : "Executive Interviewer";
-          return {
-            name: empName,
-            date_time: dt,
-            position: pos,
-            signature: "Verified",
-          };
+              : "Hiring Manager");
+
+          return [
+            {
+              name: empName,
+              date_time: endTimeFormatted,
+              position: pos,
+              signature: signatureStatus,
+            },
+          ];
         })
       : reqDetails?.hiringManager
       ? [
@@ -69,7 +88,7 @@ export function initCandidateApproval(
                 year: "numeric",
               }) + " 3:00PM",
             position: "Hiring Manager",
-            signature: "Verified",
+            signature: "Signed",
           },
         ]
       : [];
@@ -109,10 +128,13 @@ export function initCandidateApproval(
       candidate.work_experience ||
       "Solid 3+ years demonstrated experience with a consistent track record of execution in similar responsibilities.",
     strengths:
+      feedbackSynthesis.strengths ||
       "High accountability, rapid learner, strong communication clarity, proactive collaboration, and great alignment with company core values.",
     improvement:
+      feedbackSynthesis.improvement ||
       "Can further expand depth in company-specific proprietary tools and enterprise workflow methodologies.",
     overall_assessment:
+      feedbackSynthesis.overallAssessment ||
       "Candidate performed exceptionally well across all interview stages. Cultural fit, technical capabilities, and leadership potential are strongly endorsed by all evaluators.",
     interview_panels: panels,
 

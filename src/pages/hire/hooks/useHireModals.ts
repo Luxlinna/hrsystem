@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import type { Job, Candidate, Interview, NewJobFormState, NewCandidateFormState, NewInterviewFormState, Branch } from "../types";
 import { INITIAL_JOB_FORM, INITIAL_CANDIDATE_FORM, INITIAL_INTERVIEW_FORM } from "../constants";
+import { parseInterviewPanelFromNotes } from "../utils/interviewPanelHelper";
 
 interface UseHireModalsProps {
   branches: Branch[];
@@ -119,12 +120,26 @@ export function useHireModals({
 
   const openEditInterview = useCallback((iv: Interview) => {
     setEditingInterview(iv);
+
+    const { panelMembers, panelIds } = parseInterviewPanelFromNotes(iv.notes);
+    const initialIds = panelIds.length > 0 ? panelIds : (iv.interviewer_id ? [iv.interviewer_id] : []);
+    const initialNames =
+      panelMembers.length > 0
+        ? panelMembers.map((m) => m.name)
+        : iv.employees
+        ? [`${iv.employees.first_name || ""} ${iv.employees.last_name || ""}`.trim()]
+        : [];
+
     setNewInterview({
       candidate_id: iv.candidate_id,
       scheduled_at: iv.scheduled_at ? new Date(iv.scheduled_at).toISOString().slice(0, 16) : "",
       duration_minutes: String(iv.duration_minutes || 60),
       type: iv.type || "video",
       notes: iv.notes || "",
+      interviewer_id: initialIds[0] || "",
+      interviewer_name: initialNames[0] || "",
+      interviewer_ids: initialIds,
+      interviewer_names: initialNames,
     });
     setInterviewModal(true);
   }, []);

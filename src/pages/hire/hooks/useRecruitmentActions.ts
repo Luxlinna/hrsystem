@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import type { Candidate, Interview, HiringRequest, RecruitmentActionRole } from "../types";
+import { isUserInvitedToInterview } from "../utils/interviewPanelHelper";
 
 export const ROLE_INFO: Record<
   RecruitmentActionRole,
@@ -159,7 +160,13 @@ export function useRecruitmentActions({
       const isMyDept = Boolean(
         myDepartment && candDept.toLowerCase() === myDepartment.toLowerCase()
       );
-      const isMyInterview = Boolean(myEmployeeId && iv.employees?.id === myEmployeeId);
+      const isMyInterview = isUserInvitedToInterview({
+        interview: iv,
+        candidate: iv.candidates as any,
+        myEmployeeId,
+        actorName: null,
+        isAdminOrRecruiter: false,
+      });
       const interviewType = (iv.type || "").toLowerCase();
 
       switch (selectedRole) {

@@ -1,13 +1,16 @@
 import { memo, useState, useEffect } from "react";
 import type { Candidate, Interview } from "../../types";
 import { getStageInterview } from "../../constants/evidenceConfig";
+import { parseInterviewPanelFromNotes } from "../../utils/interviewPanelHelper";
 
 interface InterviewEvaluationModalProps {
   isOpen: boolean;
   stageKey: string | null;
   candidate: Candidate;
   interviews: Interview[];
+  targetInterview?: Interview | null;
   defaultEvaluatorName: string;
+  canUserFeedback?: boolean;
   onClose: () => void;
   onSubmitEvaluation: (payload: {
     stageKey: string;
@@ -19,6 +22,7 @@ interface InterviewEvaluationModalProps {
     strengths: string;
     concerns: string;
     notes: string;
+    interviewId?: string;
   }) => Promise<void>;
   submitting?: boolean;
 }
@@ -80,7 +84,9 @@ export const InterviewEvaluationModal = memo(function InterviewEvaluationModal({
   stageKey,
   candidate,
   interviews,
+  targetInterview,
   defaultEvaluatorName,
+  canUserFeedback = true,
   onClose,
   onSubmitEvaluation,
   submitting = false,
@@ -96,7 +102,7 @@ export const InterviewEvaluationModal = memo(function InterviewEvaluationModal({
   };
 
   // Find existing interview record reliably
-  const existingInterview = getStageInterview(stageKey, interviews);
+  const existingInterview = targetInterview || getStageInterview(stageKey, interviews);
 
   return (
     <div
@@ -137,6 +143,7 @@ export const InterviewEvaluationModal = memo(function InterviewEvaluationModal({
           candidate={candidate}
           existingInterview={existingInterview}
           defaultEvaluatorName={defaultEvaluatorName}
+          canUserFeedback={canUserFeedback}
           submitting={submitting}
           onClose={onClose}
           onSubmit={onSubmitEvaluation}
@@ -158,24 +165,46 @@ interface EvaluationFormContentProps {
   candidate: Candidate;
   existingInterview?: Interview;
   defaultEvaluatorName: string;
+  canUserFeedback?: boolean;
   submitting: boolean;
   onClose: () => void;
   onSubmit: InterviewEvaluationModalProps["onSubmitEvaluation"];
 }
 
-function parseInterviewFeedback(feedback?: string | null) {
-  if (!feedback) return { strengths: "", concerns: "", remarks: "", rec: "advance" as const, score: undefined };
+function parseInterviewFeedback(feedback?: string | null, currentEvaluatorName?: string) {
+  if (!feedback) return { strengths: "", concerns: "", remarks: "", rec: "advance" as const, score: undefined, evaluator: "" };
 
-  if (feedback.includes("[EVALUATION FORM:")) {
-    const lines = feedback.split("\n");
+  const blocks = feedback.split(/\n\s*---\s*\n/).map((b) => b.trim()).filter(Boolean);
+
+  let targetBlock = blocks[0] || feedback;
+  if (currentEvaluatorName && blocks.length > 1) {
+    const cleanCurrent = currentEvaluatorName.trim().toLowerCase();
+    const matched = blocks.find((b) => {
+      const evalLine = b.split("\n").find((l) => l.toLowerCase().startsWith("evaluator:"));
+      if (!evalLine) return false;
+      const evalName = evalLine.replace(/evaluator:\s*/i, "").trim().toLowerCase();
+      return evalName === cleanCurrent || evalName.includes(cleanCurrent) || cleanCurrent.includes(evalName);
+    });
+    if (matched) {
+      targetBlock = matched;
+    } else {
+      // Current evaluator hasn't submitted their feedback yet for this panel session
+      return { strengths: "", concerns: "", remarks: "", rec: "advance" as const, score: undefined, evaluator: currentEvaluatorName };
+    }
+  }
+
+  if (targetBlock.includes("[EVALUATION FORM:")) {
+    const lines = targetBlock.split("\n");
     let strengths = "";
     let concerns = "";
     let remarks = "";
+    let evaluator = "";
     let rec: "strong_hire" | "advance" | "hold" | "reject" = "advance";
     let score: number | undefined = undefined;
 
     lines.forEach((line) => {
-      if (line.startsWith("Strengths: ")) strengths = line.replace("Strengths: ", "").trim();
+      if (line.startsWith("Evaluator: ")) evaluator = line.replace("Evaluator: ", "").trim();
+      else if (line.startsWith("Strengths: ")) strengths = line.replace("Strengths: ", "").trim();
       else if (line.startsWith("Concerns: ")) concerns = line.replace("Concerns: ", "").trim();
       else if (line.startsWith("Remarks: ")) remarks = line.replace("Remarks: ", "").trim();
       else if (line.startsWith("Score: ")) {
@@ -190,11 +219,11 @@ function parseInterviewFeedback(feedback?: string | null) {
       }
     });
 
-    return { strengths, concerns, remarks: remarks || feedback, rec, score };
+    return { strengths, concerns, remarks: remarks || targetBlock, rec, score, evaluator };
   }
 
   // Plain feedback text from simple feedback modal
-  return { strengths: "", concerns: "", remarks: feedback.trim(), rec: "advance" as const, score: undefined };
+  return { strengths: "", concerns: "", remarks: targetBlock.trim(), rec: "advance" as const, score: undefined, evaluator: "" };
 }
 
 function EvaluationFormContent({
@@ -203,22 +232,45 @@ function EvaluationFormContent({
   candidate,
   existingInterview,
   defaultEvaluatorName,
+  canUserFeedback,
   submitting,
   onClose,
   onSubmit,
 }: EvaluationFormContentProps) {
-  const initialParsed = parseInterviewFeedback(existingInterview?.feedback);
+  const panelInfo = existingInterview?.notes ? parseInterviewPanelFromNotes(existingInterview.notes) : null;
+  const currentUserName = (defaultEvaluatorName || "").trim();
+
+  // Match the logged-in user to their invited panel member name if present
+  const matchedPanelMember = panelInfo?.panelMembers?.find((m) => {
+    if (!currentUserName) return false;
+    const mName = m.name.trim().toLowerCase();
+    const cur = currentUserName.toLowerCase();
+    return mName === cur || mName.includes(cur) || cur.includes(mName);
+  });
+
+  const resolvedInitialEvaluator =
+    matchedPanelMember?.name ||
+    currentUserName ||
+    (existingInterview?.employees
+      ? `${existingInterview.employees.first_name || ""} ${existingInterview.employees.last_name || ""}`.trim()
+      : "Evaluator");
+
+  const initialParsed = parseInterviewFeedback(existingInterview?.feedback, resolvedInitialEvaluator);
   const cleanIvNotes = (existingInterview?.notes || "")
     .replace(/\[Stage:.*?\]\s*/g, "")
+    .replace(/\[Panel:.*?\]\s*/g, "")
+    .replace(/\[PanelIds:.*?\]\s*/g, "")
     .replace(/\[Format:.*?\]\s*/g, "")
     .trim();
 
-  const [evaluator, setEvaluator] = useState(defaultEvaluatorName || "");
+  const [evaluator, setEvaluator] = useState(
+    initialParsed.evaluator || resolvedInitialEvaluator
+  );
   const [date, setDate] = useState(
     existingInterview?.scheduled_at ? existingInterview.scheduled_at.split("T")[0] : new Date().toISOString().split("T")[0]
   );
   const [overallScore, setOverallScore] = useState<number>(
-    existingInterview?.score || initialParsed.score || (candidate.rating && candidate.rating > 0 ? candidate.rating : 4)
+    initialParsed.score || existingInterview?.score || (candidate.rating && candidate.rating > 0 ? candidate.rating : 4)
   );
   const [recommendation, setRecommendation] = useState<"strong_hire" | "advance" | "hold" | "reject">(
     initialParsed.rec || "advance"
@@ -238,14 +290,16 @@ function EvaluationFormContent({
 
   useEffect(() => {
     if (existingInterview) {
-      const p = parseInterviewFeedback(existingInterview.feedback);
+      const p = parseInterviewFeedback(existingInterview.feedback, resolvedInitialEvaluator);
       const clean = (existingInterview.notes || "")
         .replace(/\[Stage:.*?\]\s*/g, "")
+        .replace(/\[Panel:.*?\]\s*/g, "")
+        .replace(/\[PanelIds:.*?\]\s*/g, "")
         .replace(/\[Format:.*?\]\s*/g, "")
         .trim();
 
-      if (existingInterview.score) setOverallScore(existingInterview.score);
-      else if (p.score) setOverallScore(p.score);
+      if (p.score) setOverallScore(p.score);
+      else if (existingInterview.score) setOverallScore(existingInterview.score);
 
       const resolvedNotes = p.remarks || clean || candidate.notes || "";
       if (resolvedNotes) setNotes(resolvedNotes);
@@ -253,17 +307,27 @@ function EvaluationFormContent({
       if (p.strengths) setStrengths(p.strengths);
       if (p.concerns) setConcerns(p.concerns);
       if (p.rec) setRecommendation(p.rec);
+
+      if (p.evaluator) {
+        setEvaluator(p.evaluator);
+      } else {
+        setEvaluator(resolvedInitialEvaluator);
+      }
+
+      if (existingInterview.scheduled_at) {
+        setDate(existingInterview.scheduled_at.split("T")[0]);
+      }
     } else if (candidate.notes) {
       setNotes((prev) => prev || candidate.notes || "");
       if (candidate.rating) setOverallScore(candidate.rating);
     }
-  }, [existingInterview, candidate.notes, candidate.rating]);
+  }, [existingInterview, candidate.notes, candidate.rating, resolvedInitialEvaluator]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit({
       stageKey,
-      evaluatorName: evaluator.trim() || defaultEvaluatorName || "Evaluator",
+      evaluatorName: evaluator.trim() || resolvedInitialEvaluator || "Evaluator",
       date,
       overallScore,
       recommendation,
@@ -271,11 +335,19 @@ function EvaluationFormContent({
       strengths: strengths.trim(),
       concerns: concerns.trim(),
       notes: notes.trim(),
+      interviewId: existingInterview?.id,
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
+      {!canUserFeedback && (
+        <div className="flex items-center gap-2.5 p-3.5 bg-amber-50 rounded-2xl border border-amber-200 text-xs font-semibold text-amber-800">
+          <i className="ri-lock-line text-base text-amber-600 shrink-0" />
+          <span>Access Restricted: You were not invited by the recruiter to interview this candidate. Only invited interviewers or recruiters can record evaluation feedback.</span>
+        </div>
+      )}
+
       {/* Candidate Banner */}
       <div className="flex items-center justify-between p-3.5 bg-gray-50/80 rounded-2xl border border-gray-100">
         <div className="flex items-center gap-3">
@@ -308,6 +380,14 @@ function EvaluationFormContent({
             placeholder="e.g. Thorng Dararith (HR)"
             className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
           />
+          {panelInfo?.panelMembers && panelInfo.panelMembers.length > 1 && (
+            <p className="text-[10px] text-gray-500 mt-1.5 flex items-center gap-1">
+              <i className="ri-team-line text-[#253C7D]" />
+              <span>
+                Invited Panel: <strong>{panelInfo.panelMembers.map((m) => m.name).join(", ")}</strong> (Each interviewer records feedback with their own account)
+              </span>
+            </p>
+          )}
         </div>
 
         <div>
@@ -480,7 +560,7 @@ function EvaluationFormContent({
           </button>
           <button
             type="submit"
-            disabled={submitting || !notes.trim()}
+            disabled={submitting || !notes.trim() || !canUserFeedback}
             className="px-5 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
           >
             <i className="ri-check-double-line" />

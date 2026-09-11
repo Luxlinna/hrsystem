@@ -6,6 +6,8 @@ import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { useHireData } from "./useHireData";
 import { useHireFilters } from "./useHireFilters";
 import { useHiringRequests } from "./useHiringRequests";
+import { isUserInvitedToInterview } from "../utils/interviewPanelHelper";
+import { toast } from "@/components/Toast";
 import { useHireModals } from "./useHireModals";
 import { useHireActions } from "./useHireActions";
 import { useHireCandidateActions } from "./useHireCandidateActions";
@@ -69,6 +71,18 @@ export function useHire() {
   const canApprove = canBranchApprove || canHrReview || canHrAdminApprove || canChairmanApprove;
   const isChairman = canChairmanApprove;
 
+  const isAdminOrRecruiter = Boolean(
+    isSuperAdmin ||
+    isAdmin ||
+    role?.is_admin ||
+    isHrDivision ||
+    isHrDivisionBranch ||
+    role?.hiring_requests_hr_admin_approve ||
+    role?.hiring_requests_hr_review ||
+    /(recruiter|talent|hr\s*manager|hr\s*specialist|hr\s*officer|admin)\b/i.test(role?.name || "") ||
+    /(recruiter|talent|hr\s*manager|hr\s*specialist|hr\s*officer)\b/i.test(myJobRole || "")
+  );
+
   const data = useHireData();
   const filters = useHireFilters(data.jobs, data.candidates, data.interviews, data.branches);
   const requests = useHiringRequests({
@@ -87,7 +101,7 @@ export function useHire() {
   });
 
   const candidateActions = useHireCandidateActions({
-    actorName, actorRole, myEmployeeId: myEmployee?.id, loadData: data.loadData, branches: data.branches, jobs: data.jobs,
+    actorName, actorRole, myEmployeeId: myEmployee?.id, isAdminOrRecruiter, loadData: data.loadData, branches: data.branches, jobs: data.jobs,
     setUploadingResume: actions.setUploadingResume, setSchedulingInterview: actions.setSchedulingInterview,
     setMovingToOnboarding: actions.setMovingToOnboarding, setSavingFeedback: actions.setSavingFeedback,
   });
@@ -137,12 +151,40 @@ export function useHire() {
     if (await candidateActions.handleSaveFeedback(modals.feedbackInterview, modals.feedbackScore, modals.feedbackNotes)) modals.setFeedbackModal(false);
   }, [candidateActions, modals]);
 
+  const handleSaveInterviewEvaluation = useCallback(
+    async (payload: any) => {
+      if (await candidateActions.handleSaveInterviewEvaluation(payload, modals.feedbackInterview)) {
+        modals.setFeedbackModal(false);
+      }
+    },
+    [candidateActions, modals]
+  );
+
+  const openFeedbackModal = useCallback((iv: Interview) => {
+    const matchedCandidate = data.candidates.find((c) => c.id === iv.candidate_id);
+    const canFeedback = isUserInvitedToInterview({
+      interview: iv,
+      candidate: matchedCandidate,
+      myEmployeeId: myEmployee?.id,
+      actorName,
+      isAdminOrRecruiter,
+    });
+
+    if (!canFeedback) {
+      toast("Access Restricted", "You can only feedback candidates that the recruiter invited you to interview.", "error");
+      return;
+    }
+
+    modals.openFeedbackModal(iv);
+  }, [data.candidates, myEmployee?.id, actorName, isAdminOrRecruiter, modals]);
+
   return {
     isPartnerBranchBlocked, userBranchName, userBranchId, actorName, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
     jobs: data.jobs, candidates: data.candidates, allCandidates: data.allCandidates, interviews: data.interviews, branches: data.branches, employees: data.employees,
     hiringRequests: data.hiringRequests, loading: data.loading, loadData: data.loadData, tab: filters.tab, setTab: filters.setTab,
     canRequest, canApprove, canBranchApprove, canHrReview, canHrAdminApprove, canChairmanApprove, isHrDivisionBranch, canViewCrossBranch,
     isHrDivisionScope: canViewCrossBranch || isHrDivisionBranch || isHrDivision, recruitmentActions, isChairman, isSuperAdmin, isAdmin, isBranchAdmin,
+    isAdminOrRecruiter,
     jobViewMode: filters.jobViewMode, setJobViewMode: filters.setJobViewMode, candidateViewMode: filters.candidateViewMode, setCandidateViewMode: filters.setCandidateViewMode,
     searchQuery: filters.searchQuery, setSearchQuery: filters.setSearchQuery, filterJobStatus: filters.filterJobStatus, setFilterJobStatus: filters.setFilterJobStatus,
     filterDepartment: filters.filterDepartment, setFilterDepartment: filters.setFilterDepartment, filterBranch: filters.filterBranch, setFilterBranch: filters.setFilterBranch,
@@ -161,9 +203,9 @@ export function useHire() {
     setDecisionModal: requests.setDecisionModal, targetRequest: requests.targetRequest, decisionAction: requests.decisionAction, rejectionReason: requests.rejectionReason, setRejectionReason: requests.setRejectionReason, processingDecision: requests.processingDecision,
     openCreateRequest: requests.openCreateRequest, openDecisionModal: requests.openDecisionModal, handleCreateRequest: requests.handleCreateRequest, handleDeleteRequest: requests.handleDeleteRequest, handleDecision: requests.handleDecision, handleAssignHrOfficer: requests.handleAssignHrOfficer,
     openCreateJob: modals.openCreateJob, openEditJob: modals.openEditJob, openCreateCandidate: modals.openCreateCandidate, openEditCandidate: modals.openEditCandidate, openCreateInterview: modals.openCreateInterview,
-    openEditInterview: modals.openEditInterview, openMoveToOnboarding: modals.openMoveToOnboarding, openFeedbackModal: modals.openFeedbackModal,
+    openEditInterview: modals.openEditInterview, openMoveToOnboarding: modals.openMoveToOnboarding, openFeedbackModal,
     handleSaveJob, handleSaveCandidate, handleMergeCandidate, handleSaveInterview, closeJob: actions.closeJob, reopenJob: actions.reopenJob, deleteJob: actions.deleteJob,
     updateCandidateStage: actions.updateCandidateStage, rateCandidate: actions.rateCandidate, deleteCandidate: actions.deleteCandidate,
-    handleMoveToOnboarding, uploadCandidateResume: candidateActions.uploadCandidateResume, deleteInterview: actions.deleteInterview, handleSaveFeedback, getRequisitionSla,
+    handleMoveToOnboarding, uploadCandidateResume: candidateActions.uploadCandidateResume, deleteInterview: actions.deleteInterview, handleSaveFeedback, handleSaveInterviewEvaluation, getRequisitionSla,
   };
 }

@@ -65,4 +65,9 @@ export interface NewInterviewFormState {
   duration_minutes: string;
   type: string;
   notes: string;
+  interviewer_id?: string;
+  interviewer_name?: string;
+  interviewer_ids?: string[];
+  interviewer_names?: string[];
 }
+

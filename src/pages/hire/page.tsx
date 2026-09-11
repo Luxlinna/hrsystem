@@ -186,6 +186,9 @@ export default function HirePage() {
             const match = h.interviews.find((i) => i.id === id);
             if (match) h.deleteInterview(match);
           }}
+          myEmployeeId={h.myEmployeeId}
+          actorName={h.actorName}
+          isAdminOrRecruiter={h.isAdminOrRecruiter}
         />
       )}
 

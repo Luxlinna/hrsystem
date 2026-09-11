@@ -15,6 +15,9 @@ import { FeedbackModal } from "./components/modals/FeedbackModal";
 import { InterviewEvaluationModal } from "./components/candidate-detail/InterviewEvaluationModal";
 import { CandidateApprovalModal } from "./components/candidate-detail/CandidateApprovalModal";
 import { useCandidateDetail } from "./hooks/useCandidateDetail";
+import { resolveInterviewStageKey, isUserInvitedToInterview } from "./utils/interviewPanelHelper";
+import { toast } from "@/components/Toast";
+import type { Interview } from "./types";
 
 export default function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
@@ -60,6 +63,8 @@ export default function CandidateDetail() {
     handleSubmitInterviewEvaluation,
     openScheduleStageModal,
     actorName,
+    isAdminOrRecruiter,
+    myEmployeeId,
   } = useCandidateDetail(id);
 
   const isApprovalRequested = useMemo(() => {
@@ -72,6 +77,7 @@ export default function CandidateDetail() {
   }, [searchParams]);
 
   const [candidateApprovalModal, setCandidateApprovalModal] = useState(false);
+  const [selectedEvaluationInterview, setSelectedEvaluationInterview] = useState<Interview | null>(null);
 
   useEffect(() => {
     if (isApprovalRequested && candidate) {
@@ -195,12 +201,26 @@ export default function CandidateDetail() {
             interviews={interviews}
             uploading={uploadingResume}
             onUploadStageEvidence={uploadStageEvidence}
-            onOpenEvaluationForm={setEvaluationModalStage}
+            onOpenEvaluationForm={(stageKey) => {
+              setSelectedEvaluationInterview(null);
+              setEvaluationModalStage(stageKey);
+            }}
             onScheduleStageInterview={openScheduleStageModal}
             onOpenFeedbackModal={(iv) => {
-              setFeedbackInterview(iv);
-              setFeedbackScore(iv.score || 5);
-              setFeedbackText(iv.feedback || "");
+              const canFeedback = isUserInvitedToInterview({
+                interview: iv,
+                candidate,
+                myEmployeeId,
+                actorName,
+                isAdminOrRecruiter,
+              });
+              if (!canFeedback) {
+                toast("Access Restricted", "You can only feedback candidates that the recruiter invited you to interview.", "error");
+                return;
+              }
+              const stageKey = resolveInterviewStageKey(iv, candidate);
+              setSelectedEvaluationInterview(iv);
+              setEvaluationModalStage(stageKey);
             }}
             onUpdateStage={updateStage}
           />
@@ -209,10 +229,25 @@ export default function CandidateDetail() {
           <CandidateInterviewsCard
             interviews={interviews}
             avgScore={avgScore}
+            candidate={candidate}
+            myEmployeeId={myEmployeeId}
+            actorName={actorName}
+            isAdminOrRecruiter={isAdminOrRecruiter}
             onOpenFeedbackModal={(iv) => {
-              setFeedbackInterview(iv);
-              setFeedbackScore(iv.score || 5);
-              setFeedbackText(iv.feedback || "");
+              const canFeedback = isUserInvitedToInterview({
+                interview: iv,
+                candidate,
+                myEmployeeId,
+                actorName,
+                isAdminOrRecruiter,
+              });
+              if (!canFeedback) {
+                toast("Access Restricted", "You can only feedback candidates that the recruiter invited you to interview.", "error");
+                return;
+              }
+              const stageKey = resolveInterviewStageKey(iv, candidate);
+              setSelectedEvaluationInterview(iv);
+              setEvaluationModalStage(stageKey);
             }}
           />
         </div>
@@ -277,9 +312,26 @@ export default function CandidateDetail() {
         stageKey={evaluationModalStage}
         candidate={candidate}
         interviews={interviews}
+        targetInterview={selectedEvaluationInterview}
         defaultEvaluatorName={actorName}
-        onClose={() => setEvaluationModalStage(null)}
-        onSubmitEvaluation={handleSubmitInterviewEvaluation}
+        canUserFeedback={isUserInvitedToInterview({
+          interview: selectedEvaluationInterview || (interviews.find((i) => (i.notes || "").includes(evaluationModalStage || ""))),
+          candidate,
+          myEmployeeId,
+          actorName,
+          isAdminOrRecruiter,
+        })}
+        onClose={() => {
+          setEvaluationModalStage(null);
+          setSelectedEvaluationInterview(null);
+        }}
+        onSubmitEvaluation={async (payload) => {
+          await handleSubmitInterviewEvaluation({
+            ...payload,
+            interviewId: selectedEvaluationInterview?.id,
+          });
+          setSelectedEvaluationInterview(null);
+        }}
         submitting={submittingEvaluation}
       />
 

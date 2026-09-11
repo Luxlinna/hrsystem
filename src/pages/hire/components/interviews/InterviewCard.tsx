@@ -7,6 +7,7 @@ interface InterviewCardProps {
   onOpenFeedback: (interview: Interview) => void;
   onEdit: (interview: Interview) => void;
   onDelete: (id: string) => void;
+  canFeedback?: boolean;
 }
 
 export const InterviewCard = memo(function InterviewCard({
@@ -14,6 +15,7 @@ export const InterviewCard = memo(function InterviewCard({
   onOpenFeedback,
   onEdit,
   onDelete,
+  canFeedback = true,
 }: InterviewCardProps) {
   const isCompleted = interview.status === "completed";
   const isScheduled = interview.status === "scheduled";
@@ -99,17 +101,27 @@ export const InterviewCard = memo(function InterviewCard({
 
       {/* Card Actions */}
       <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-1.5">
-        <button
-          onClick={() => onOpenFeedback(interview)}
-          className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-            isCompleted
-              ? "text-gray-600 hover:bg-gray-100"
-              : "bg-[#253C7D] text-white hover:bg-[#1E3064] shadow-xs"
-          }`}
-        >
-          <i className="ri-feedback-line" />
-          {isCompleted ? "Edit Feedback" : "Record Feedback"}
-        </button>
+        {canFeedback ? (
+          <button
+            onClick={() => onOpenFeedback(interview)}
+            className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              isCompleted
+                ? "text-gray-600 hover:bg-gray-100"
+                : "bg-[#253C7D] text-white hover:bg-[#1E3064] shadow-xs"
+            }`}
+          >
+            <i className="ri-feedback-line" />
+            {isCompleted ? "Edit Feedback" : "Record Feedback"}
+          </button>
+        ) : (
+          <span
+            className="px-2.5 py-1 text-xs font-semibold rounded-xl text-gray-400 bg-gray-50 border border-gray-200/80 flex items-center gap-1.5 cursor-not-allowed select-none"
+            title="Only invited interviewers for this candidate can record feedback"
+          >
+            <i className="ri-lock-line text-xs" />
+            Not Invited
+          </span>
+        )}
 
         <div className="flex items-center gap-1">
           <button
