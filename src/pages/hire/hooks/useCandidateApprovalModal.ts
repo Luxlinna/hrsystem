@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Candidate, Interview, CandidateApproval, CandidateApprovalSignatory } from "../types";
 import {
   fetchCandidateApproval,
@@ -7,6 +7,12 @@ import {
 } from "../services/candidateApprovalService";
 import { exportCandidateApprovalPdf } from "../exports/exportCandidateApprovalPdf";
 import { toast } from "@/components/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  evaluateApprovalStepGates,
+  type ApprovalStepKey,
+} from "../services/candidateApprovalPermissions";
+import { notifyCandidateApprovalStepSigned } from "../services/notifications/candidateApprovalEventTriggers";
 
 export type ApprovalTabType = "overview" | "evaluation" | "approvals";
 
@@ -31,6 +37,13 @@ export function useCandidateApprovalModal({
   const [data, setData] = useState<CandidateApproval | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const { role, isAdmin, isBranchAdmin } = usePermissions();
+
+  const stepGates = useMemo(
+    () => evaluateApprovalStepGates(data, role, isAdmin, isBranchAdmin),
+    [data, role, isAdmin, isBranchAdmin]
+  );
 
   useEffect(() => {
     if (!isOpen || !candidate) return;
@@ -78,13 +91,33 @@ export function useCandidateApprovalModal({
   const handleSignStep = useCallback(
     async (roleKey: keyof CandidateApproval["signatories"]) => {
       if (!data) return;
+      const stepKey = roleKey as ApprovalStepKey;
+      const gate = stepGates[stepKey];
+
+      if (gate.isLocked) {
+        toast("Step Locked", `Please complete ${gate.waitingForRoleTitle} first.`, "error");
+        return;
+      }
+
+      if (!gate.canUserSign) {
+        toast("Permission Denied", gate.requiresPermissionHint, "error");
+        return;
+      }
+
       const now = new Date().toISOString();
       const currentSig = data.signatories[roleKey];
+      const isDelegated = Boolean(
+        currentUserName && currentSig.assigned_name && currentUserName !== currentSig.assigned_name
+      );
+
+      const checkedBy = isDelegated
+        ? `${currentUserName} (Staff Delegate)`
+        : currentUserName;
 
       const updatedSig: CandidateApprovalSignatory = {
         ...currentSig,
         status: "approved",
-        checked_by: currentUserName,
+        checked_by: checkedBy,
         signed_at: now,
       };
 
@@ -101,18 +134,33 @@ export function useCandidateApprovalModal({
       try {
         const saved = await saveCandidateApproval(updated);
         setData(saved);
-        toast("Step Approved", `${currentSig.title} sign-off recorded.`, "success");
+
+        const notifyRes = await notifyCandidateApprovalStepSigned({
+          candidate,
+          approval: saved,
+          signedStep: stepKey,
+          actorName: currentUserName,
+          actorRole: role?.name || "Staff",
+          isDelegated,
+        });
+
+        toast(notifyRes.title, notifyRes.message, "success");
       } catch {
         toast("Error", "Failed to record approval sign-off.", "error");
       } finally {
         setSaving(false);
       }
     },
-    [data, currentUserName]
+    [data, stepGates, currentUserName, candidate, role]
   );
 
   const handleApproveAll = useCallback(async () => {
     if (!data) return;
+    if (!isAdmin) {
+      toast("Permission Denied", "Only Administrators can fast-sign all steps.", "error");
+      return;
+    }
+
     const now = new Date().toISOString();
     const sigs = { ...data.signatories };
 
@@ -147,7 +195,7 @@ export function useCandidateApprovalModal({
     } finally {
       setSaving(false);
     }
-  }, [data, currentUserName]);
+  }, [data, currentUserName, isAdmin]);
 
   const handleExportPdf = useCallback(() => {
     if (!data) return;
@@ -177,6 +225,8 @@ export function useCandidateApprovalModal({
     saving,
     isCompleted,
     approvedCount,
+    stepGates,
+    canFastSign: isAdmin,
     handleSave,
     handleSignStep,
     handleApproveAll,

@@ -25,6 +25,10 @@ export interface AppRole {
   task_view_own_branch: boolean;
   meeting_rooms_approve: boolean;
   attendance_notify: boolean;
+  candidate_approval_ceo_sign?: boolean;
+  candidate_approval_hr_sign?: boolean;
+  candidate_approval_director_sign?: boolean;
+  candidate_approval_chairwoman_sign?: boolean;
   created_at: string;
 }
 
@@ -108,6 +112,10 @@ export interface RoleFormState {
   task_view_own_branch: boolean;
   meeting_rooms_approve: boolean;
   attendance_notify: boolean;
+  candidate_approval_ceo_sign?: boolean;
+  candidate_approval_hr_sign?: boolean;
+  candidate_approval_director_sign?: boolean;
+  candidate_approval_chairwoman_sign?: boolean;
 }
 
 export interface NewUserState {

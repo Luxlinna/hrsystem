@@ -39,5 +39,9 @@ export function bootstrapAdminRole(): UserRole {
     hiring_requests_hr_review: true,
     hiring_requests_hr_admin_approve: true,
     hiring_requests_chairman_approve: true,
+    candidate_approval_ceo_sign: true,
+    candidate_approval_hr_sign: true,
+    candidate_approval_director_sign: true,
+    candidate_approval_chairwoman_sign: true,
   };
 }

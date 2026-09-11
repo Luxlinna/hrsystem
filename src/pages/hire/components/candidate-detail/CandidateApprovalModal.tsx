@@ -33,6 +33,8 @@ export const CandidateApprovalModal = memo(function CandidateApprovalModal({
     saving,
     isCompleted,
     approvedCount,
+    stepGates,
+    canFastSign,
     handleSave,
     handleSignStep,
     handleApproveAll,
@@ -117,6 +119,9 @@ export const CandidateApprovalModal = memo(function CandidateApprovalModal({
                 <ApprovalSignatoriesTab
                   data={data}
                   isCompleted={isCompleted}
+                  stepGates={stepGates}
+                  currentUserName={currentUserName}
+                  canFastSign={canFastSign}
                   onUpdateComment={(roleKey, comment) =>
                     setData({
                       ...data,

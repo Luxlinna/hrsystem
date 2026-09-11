@@ -16,6 +16,10 @@ export const ACTION_OVERRIDES = [
   { group: "action" as const, key: "hiring_requests_hr_review", label: "Stage 2: Can review requisitions in HR Division (Forward to HR Admin)", hint: SCOPE_HINTS.hiring_requests_hr_review },
   { group: "action" as const, key: "hiring_requests_hr_admin_approve", label: "Stage 3: Can approve requisitions in HR Division (Forward to Chairman)", hint: SCOPE_HINTS.hiring_requests_hr_admin_approve },
   { group: "action" as const, key: "hiring_requests_chairman_approve", label: "Stage 4: Can perform final Chairman authorization & publish live jobs", hint: SCOPE_HINTS.hiring_requests_chairman_approve },
+  { group: "action" as const, key: "candidate_approval_ceo_sign", label: "Candidate Approval Step 1: Can sign as CEO / BU Director (or delegate)", hint: SCOPE_HINTS.candidate_approval_ceo_sign },
+  { group: "action" as const, key: "candidate_approval_hr_sign", label: "Candidate Approval Step 2: Can sign as HR & Admin Manager (or delegate)", hint: SCOPE_HINTS.candidate_approval_hr_sign },
+  { group: "action" as const, key: "candidate_approval_director_sign", label: "Candidate Approval Step 3: Can sign as HR&Admin Division Director", hint: SCOPE_HINTS.candidate_approval_director_sign },
+  { group: "action" as const, key: "candidate_approval_chairwoman_sign", label: "Candidate Approval Step 4: Final sign-off as Chairwoman", hint: SCOPE_HINTS.candidate_approval_chairwoman_sign },
   { group: "action" as const, key: "employees_manage", label: "Can edit employee records (role, department, status, manager)", hint: SCOPE_HINTS.employees_manage },
   { group: "action" as const, key: "attendance_notify", label: "Receives attendance check-in / check-out notifications", hint: SCOPE_HINTS.attendance_notify },
 ] as const;

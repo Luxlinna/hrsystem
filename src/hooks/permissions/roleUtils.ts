@@ -20,7 +20,13 @@ export async function fetchRoleFromFunction(): Promise<any | null> {
 
 export function toUserRole(data: any): UserRole | null {
   if (!data?.app_roles) return null;
-  const r = data.app_roles as any;
+  let localScopes: Record<string, any> = {};
+  try {
+    localScopes = JSON.parse(localStorage.getItem("hrm_role_custom_scopes") || "{}")[r.id] || {};
+  } catch {
+    localScopes = {};
+  }
+
   return {
     id: r.id,
     name: r.name,
@@ -44,9 +50,13 @@ export function toUserRole(data: any): UserRole | null {
     task_view_own_branch: !!r.task_view_own_branch,
     meeting_rooms_approve: !!r.meeting_rooms_approve,
     attendance_notify: !!r.attendance_notify,
-    hiring_requests_branch_approve: !!r.hiring_requests_branch_approve,
-    hiring_requests_hr_review: !!r.hiring_requests_hr_review,
-    hiring_requests_hr_admin_approve: !!r.hiring_requests_hr_admin_approve,
-    hiring_requests_chairman_approve: !!r.hiring_requests_chairman_approve,
+    hiring_requests_branch_approve: !!(r.hiring_requests_branch_approve ?? localScopes.hiring_requests_branch_approve),
+    hiring_requests_hr_review: !!(r.hiring_requests_hr_review ?? localScopes.hiring_requests_hr_review),
+    hiring_requests_hr_admin_approve: !!(r.hiring_requests_hr_admin_approve ?? localScopes.hiring_requests_hr_admin_approve),
+    hiring_requests_chairman_approve: !!(r.hiring_requests_chairman_approve ?? localScopes.hiring_requests_chairman_approve),
+    candidate_approval_ceo_sign: !!(r.candidate_approval_ceo_sign ?? localScopes.candidate_approval_ceo_sign),
+    candidate_approval_hr_sign: !!(r.candidate_approval_hr_sign ?? localScopes.candidate_approval_hr_sign),
+    candidate_approval_director_sign: !!(r.candidate_approval_director_sign ?? localScopes.candidate_approval_director_sign),
+    candidate_approval_chairwoman_sign: !!(r.candidate_approval_chairwoman_sign ?? localScopes.candidate_approval_chairwoman_sign),
   };
 }

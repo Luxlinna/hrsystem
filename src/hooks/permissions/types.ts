@@ -25,6 +25,10 @@ export interface UserRole {
   hiring_requests_hr_review?: boolean;
   hiring_requests_hr_admin_approve?: boolean;
   hiring_requests_chairman_approve?: boolean;
+  candidate_approval_ceo_sign?: boolean;
+  candidate_approval_hr_sign?: boolean;
+  candidate_approval_director_sign?: boolean;
+  candidate_approval_chairwoman_sign?: boolean;
 }
 
 export interface UsePermissionsReturn {

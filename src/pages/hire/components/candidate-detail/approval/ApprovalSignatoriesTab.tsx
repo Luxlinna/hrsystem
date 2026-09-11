@@ -1,10 +1,14 @@
 import { memo } from "react";
 import type { CandidateApproval } from "../../../types";
+import type { StepGateStatus, ApprovalStepKey } from "../../../services/candidateApprovalPermissions";
 import { SignatoryCard } from "./SignatoryCard";
 
 interface TabProps {
   data: CandidateApproval;
   isCompleted: boolean;
+  stepGates: Record<ApprovalStepKey, StepGateStatus>;
+  currentUserName: string;
+  canFastSign?: boolean;
   onUpdateComment: (roleKey: keyof CandidateApproval["signatories"], comment: string) => void;
   onSignStep: (roleKey: keyof CandidateApproval["signatories"]) => void;
   onApproveAll: () => void;
@@ -13,6 +17,9 @@ interface TabProps {
 export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
   data,
   isCompleted,
+  stepGates,
+  currentUserName,
+  canFastSign = false,
   onUpdateComment,
   onSignStep,
   onApproveAll,
@@ -27,10 +34,10 @@ export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
             Section III: Final Approval Signatories
           </h3>
           <p className="text-xs text-gray-500">
-            Review comments and collect authorized signatures from all 4 leadership roles.
+            Sequential 4-step sign-off: BU CEO → HR Manager → Division Director → Chairwoman.
           </p>
         </div>
-        {!isCompleted && (
+        {!isCompleted && canFastSign && (
           <button
             type="button"
             onClick={onApproveAll}
@@ -46,6 +53,11 @@ export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
           stepNumber={1}
           subtitle="EXECUTIVE SIGN-OFF"
           signatory={sigs.ceo}
+          isLocked={stepGates.ceo.isLocked}
+          waitingForTitle={stepGates.ceo.waitingForRoleTitle}
+          canSign={stepGates.ceo.canUserSign}
+          requiresPermissionHint={stepGates.ceo.requiresPermissionHint}
+          currentUserName={currentUserName}
           onCommentChange={(comment) => onUpdateComment("ceo", comment)}
           onSign={() => onSignStep("ceo")}
         />
@@ -53,6 +65,11 @@ export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
           stepNumber={2}
           subtitle="HR SIGN-OFF"
           signatory={sigs.hr_manager}
+          isLocked={stepGates.hr_manager.isLocked}
+          waitingForTitle={stepGates.hr_manager.waitingForRoleTitle}
+          canSign={stepGates.hr_manager.canUserSign}
+          requiresPermissionHint={stepGates.hr_manager.requiresPermissionHint}
+          currentUserName={currentUserName}
           onCommentChange={(comment) => onUpdateComment("hr_manager", comment)}
           onSign={() => onSignStep("hr_manager")}
         />
@@ -60,6 +77,11 @@ export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
           stepNumber={3}
           subtitle="DIVISION DIRECTOR"
           signatory={sigs.division_director}
+          isLocked={stepGates.division_director.isLocked}
+          waitingForTitle={stepGates.division_director.waitingForRoleTitle}
+          canSign={stepGates.division_director.canUserSign}
+          requiresPermissionHint={stepGates.division_director.requiresPermissionHint}
+          currentUserName={currentUserName}
           onCommentChange={(comment) => onUpdateComment("division_director", comment)}
           onSign={() => onSignStep("division_director")}
         />
@@ -67,6 +89,11 @@ export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
           stepNumber={4}
           subtitle="FINAL CHAIRWOMAN"
           signatory={sigs.chairwoman}
+          isLocked={stepGates.chairwoman.isLocked}
+          waitingForTitle={stepGates.chairwoman.waitingForRoleTitle}
+          canSign={stepGates.chairwoman.canUserSign}
+          requiresPermissionHint={stepGates.chairwoman.requiresPermissionHint}
+          currentUserName={currentUserName}
           onCommentChange={(comment) => onUpdateComment("chairwoman", comment)}
           onSign={() => onSignStep("chairwoman")}
         />

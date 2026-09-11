@@ -64,7 +64,16 @@ export function useAdminRoleMutations({
       branch_id: r.branch_id || null,
       work_location_id: r.work_location_id || null,
       allowed_modules: [...r.allowed_modules],
-      ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, r[o.key]])) as unknown as Omit<RoleFormState, "name" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
+      ...Object.fromEntries(
+        SCOPE_OVERRIDES.map((o) => {
+          let localVal;
+          try {
+            const allLocal = JSON.parse(localStorage.getItem("hrm_role_custom_scopes") || "{}");
+            localVal = allLocal[r.id]?.[o.key];
+          } catch {}
+          return [o.key, r[o.key] ?? localVal ?? false];
+        })
+      ) as unknown as Omit<RoleFormState, "name" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
     });
     setShowRoleForm(true);
   }, []);
@@ -118,10 +127,45 @@ export function useAdminRoleMutations({
     };
 
     let error;
+    let savedRoleId = editingRole?.id;
+
     if (editingRole) {
       ({ error } = await supabase.from("app_roles").update(payload).eq("id", editingRole.id));
+      // If error is about missing columns, retry with base payload
+      if (error && error.message?.includes("column")) {
+        const fallbackPayload = { ...payload };
+        delete (fallbackPayload as any).candidate_approval_ceo_sign;
+        delete (fallbackPayload as any).candidate_approval_hr_sign;
+        delete (fallbackPayload as any).candidate_approval_director_sign;
+        delete (fallbackPayload as any).candidate_approval_chairwoman_sign;
+        ({ error } = await supabase.from("app_roles").update(fallbackPayload).eq("id", editingRole.id));
+      }
     } else {
-      ({ error } = await supabase.from("app_roles").insert(payload));
+      let insertRes = await supabase.from("app_roles").insert(payload).select("id").maybeSingle();
+      if (insertRes.error && insertRes.error.message?.includes("column")) {
+        const fallbackPayload = { ...payload };
+        delete (fallbackPayload as any).candidate_approval_ceo_sign;
+        delete (fallbackPayload as any).candidate_approval_hr_sign;
+        delete (fallbackPayload as any).candidate_approval_director_sign;
+        delete (fallbackPayload as any).candidate_approval_chairwoman_sign;
+        insertRes = await supabase.from("app_roles").insert(fallbackPayload).select("id").maybeSingle();
+      }
+      error = insertRes.error;
+      savedRoleId = insertRes.data?.id;
+    }
+
+    if (savedRoleId) {
+      try {
+        const allLocal = JSON.parse(localStorage.getItem("hrm_role_custom_scopes") || "{}");
+        allLocal[savedRoleId] = {
+          ...(allLocal[savedRoleId] || {}),
+          candidate_approval_ceo_sign: roleForm.candidate_approval_ceo_sign,
+          candidate_approval_hr_sign: roleForm.candidate_approval_hr_sign,
+          candidate_approval_director_sign: roleForm.candidate_approval_director_sign,
+          candidate_approval_chairwoman_sign: roleForm.candidate_approval_chairwoman_sign,
+        };
+        localStorage.setItem("hrm_role_custom_scopes", JSON.stringify(allLocal));
+      } catch {}
     }
 
     setSavingRole(false);
