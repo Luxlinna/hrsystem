@@ -138,6 +138,30 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
     }
   }, [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, myEmployee, user?.email]);
 
+  useEffect(() => {
+    // Real-time live sync for attendance scans from biometric terminals & mobile
+    const channel = supabase
+      .channel("attendance-live-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "attendance_records" },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    // Fallback background refresh every 20 seconds
+    const interval = setInterval(() => {
+      fetchData();
+    }, 20000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [fetchData]);
+
   return {
     records,
     setRecords,
