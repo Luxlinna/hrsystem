@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import type { HiringRequest } from "../../types";
 import { HiringRequestCard } from "./HiringRequestCard";
 import { HiringRequestsHeader } from "./HiringRequestsHeader";
+import { exportRequestsPDF } from "../../exports/exportRequestsPDF";
+import { ExportHiringRequestModal } from "../modals/ExportHiringRequestModal";
 
 interface HiringRequestsTabProps {
   requests: HiringRequest[];
@@ -50,7 +52,19 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("highlight");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [buFilter, setBuFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [exportReq, setExportReq] = useState<HiringRequest | null>(null);
+  const [exportMode, setExportMode] = useState<"full_requisition" | "job_description">("full_requisition");
+
+  const businessUnits = useMemo(() => {
+    const set = new Set<string>();
+    requests.forEach((r) => {
+      const bu = r.branches?.name || r.business_unit;
+      if (bu) set.add(bu);
+    });
+    return Array.from(set).sort();
+  }, [requests]);
 
   useEffect(() => {
     if (highlightId) {
@@ -81,6 +95,12 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
           return false;
         }
       }
+      if (buFilter !== "all") {
+        const bu = r.branches?.name || r.business_unit || "";
+        if (bu !== buFilter) {
+          return false;
+        }
+      }
       if (search.trim()) {
         const q = search.toLowerCase();
         const title = (r.title || "").toLowerCase();
@@ -93,7 +113,7 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
       }
       return true;
     });
-  }, [requests, statusFilter, search]);
+  }, [requests, statusFilter, buFilter, search]);
 
   return (
     <div className="space-y-6">
@@ -117,7 +137,22 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {businessUnits.length > 0 && (
+            <select
+              value={buFilter}
+              onChange={(e) => setBuFilter(e.target.value)}
+              className="px-3 py-2 bg-gray-50/80 rounded-xl text-xs font-semibold text-gray-700 border border-gray-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all cursor-pointer"
+            >
+              <option value="all">All Business Units ({businessUnits.length})</option>
+              {businessUnits.map((bu) => (
+                <option key={bu} value={bu}>
+                  BU: {bu}
+                </option>
+              ))}
+            </select>
+          )}
+
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -131,6 +166,21 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
             <option value="approved">Fully Approved & Job Live ({stats.approved})</option>
             <option value="rejected">Rejected</option>
           </select>
+
+          <button
+            type="button"
+            onClick={() =>
+              exportRequestsPDF(
+                filtered,
+                buFilter !== "all" ? `Requisitions Summary — BU: ${buFilter}` : "Enterprise Requisitions Summary"
+              )
+            }
+            title="Export filtered list of requisitions as PDF"
+            className="px-3 py-2 bg-white hover:bg-blue-50 text-[#253C7D] font-bold text-xs rounded-xl border border-blue-200 hover:border-[#253C7D] transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+          >
+            <i className="ri-file-pdf-2-line text-rose-600 text-sm" />
+            <span>Export List PDF</span>
+          </button>
         </div>
       </div>
 
@@ -154,6 +204,10 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
             myEmployeeId={myEmployeeId}
             onOpenDecision={onOpenDecision}
             onDelete={onDeleteRequest}
+            onOpenExport={(req, mode) => {
+              setExportReq(req);
+              setExportMode(mode || "full_requisition");
+            }}
           />
         ))}
 
@@ -165,6 +219,13 @@ export const HiringRequestsTab = memo(function HiringRequestsTab({
           </div>
         )}
       </div>
+
+      <ExportHiringRequestModal
+        isOpen={Boolean(exportReq)}
+        request={exportReq}
+        mode={exportMode}
+        onClose={() => setExportReq(null)}
+      />
     </div>
   );
 });

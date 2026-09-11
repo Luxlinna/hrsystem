@@ -13,3 +13,4 @@ export { exportInterviewsCSV } from "./exportInterviewsCSV";
 export { exportRequestsPDF } from "./exportRequestsPDF";
 export { exportRequestsXLSX } from "./exportRequestsXLSX";
 export { exportRequestsCSV } from "./exportRequestsCSV";
+export { exportHiringRequestPdf } from "./exportHiringRequestPdf";

@@ -1,16 +1,19 @@
 import { memo, useState } from "react";
 import type { HiringRequest } from "../../types";
+import { exportHiringRequestPdf } from "../../exports/exportHiringRequestPdf";
 
 interface Props {
   request: HiringRequest;
   collapsible?: boolean;
   defaultExpanded?: boolean;
+  onOpenExport?: (req: HiringRequest, mode: "full_requisition" | "job_description") => void;
 }
 
 export const RequisitionJobDescriptionView = memo(function RequisitionJobDescriptionView({
   request: r,
   collapsible = true,
   defaultExpanded = false,
+  onOpenExport,
 }: Props) {
   const [expanded, setExpanded] = useState(!collapsible || defaultExpanded);
 
@@ -25,12 +28,12 @@ export const RequisitionJobDescriptionView = memo(function RequisitionJobDescrip
   return (
     <div className="mt-2.5 rounded-2xl border border-blue-100/80 bg-blue-50/30 overflow-hidden text-xs transition-all">
       {collapsible && (
-        <button
-          type="button"
-          onClick={() => setExpanded((prev) => !prev)}
-          className="w-full px-3.5 py-2 flex items-center justify-between font-bold text-blue-900 hover:bg-blue-50/80 transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-2">
+        <div className="w-full px-3.5 py-2 flex items-center justify-between font-bold text-blue-900 bg-blue-50/40 transition-colors">
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="flex items-center gap-2 text-left hover:text-blue-700 cursor-pointer"
+          >
             <i className="ri-file-text-line text-blue-600" />
             <span>Job Description & Role Requirements</span>
             {hasStructuredJd && (
@@ -38,12 +41,30 @@ export const RequisitionJobDescriptionView = memo(function RequisitionJobDescrip
                 Structured Spec
               </span>
             )}
-          </span>
-          <span className="text-blue-600 flex items-center gap-1 font-semibold text-[11px]">
-            {expanded ? "Hide Details" : "View Full JD"}
-            <i className={expanded ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} />
-          </span>
-        </button>
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                onOpenExport
+                  ? onOpenExport(r, "job_description")
+                  : exportHiringRequestPdf(r, { mode: "job_description", buLogo: "" })
+              }
+              title="Export Job Description Form PDF"
+              className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 text-[#253C7D] border border-blue-200 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+            >
+              <i className="ri-file-pdf-2-line text-rose-600 text-xs" /> Export JD Form
+            </button>
+            <button
+              type="button"
+              onClick={() => setExpanded((prev) => !prev)}
+              className="text-blue-600 flex items-center gap-1 font-semibold text-[11px] hover:text-blue-800 cursor-pointer"
+            >
+              {expanded ? "Hide Details" : "View Full JD"}
+              <i className={expanded ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} />
+            </button>
+          </div>
+        </div>
       )}
 
       {expanded && (

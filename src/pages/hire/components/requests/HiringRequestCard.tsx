@@ -22,6 +22,7 @@ interface HiringRequestCardProps {
   myEmployeeId?: string;
   onOpenDecision: (req: HiringRequest, action: "approved" | "rejected") => void;
   onDelete?: (id: string) => void;
+  onOpenExport?: (req: HiringRequest, mode: "full_requisition" | "job_description") => void;
 }
 
 export const HiringRequestCard = memo(function HiringRequestCard({
@@ -38,6 +39,7 @@ export const HiringRequestCard = memo(function HiringRequestCard({
   myEmployeeId,
   onOpenDecision,
   onDelete,
+  onOpenExport,
 }: HiringRequestCardProps) {
   const [searchParams] = useSearchParams();
   const isHighlighted = searchParams.get("highlight") === r.id;
@@ -149,7 +151,7 @@ export const HiringRequestCard = memo(function HiringRequestCard({
                 {r.justification}
               </div>
             )}
-            <RequisitionJobDescriptionView request={r} />
+            <RequisitionJobDescriptionView request={r} onOpenExport={onOpenExport} />
             {r.status === "rejected" && r.rejection_reason && (
               <div className="p-3 bg-rose-50/70 rounded-2xl border border-rose-100 text-xs text-rose-800">
                 <strong className="text-rose-900 font-bold block mb-0.5">Rejection Feedback / Reason:</strong>
@@ -168,6 +170,7 @@ export const HiringRequestCard = memo(function HiringRequestCard({
           canDelete={Boolean(canDeleteThisRequest)}
           onOpenDecision={onOpenDecision}
           onDelete={onDelete}
+          onOpenExport={onOpenExport}
         />
       </div>
     </div>

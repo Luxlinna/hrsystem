@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { HiringRequest } from "../../types";
+import { exportHiringRequestPdf } from "../../exports/exportHiringRequestPdf";
 
 interface Props {
   request: HiringRequest;
@@ -10,6 +11,7 @@ interface Props {
   canDelete: boolean;
   onOpenDecision: (req: HiringRequest, action: "approved" | "rejected") => void;
   onDelete?: (id: string) => void;
+  onOpenExport?: (req: HiringRequest, mode: "full_requisition" | "job_description") => void;
 }
 
 export const HiringRequestCardActions = memo(function HiringRequestCardActions({
@@ -21,9 +23,18 @@ export const HiringRequestCardActions = memo(function HiringRequestCardActions({
   canDelete,
   onOpenDecision,
   onDelete,
+  onOpenExport,
 }: Props) {
   return (
     <div className="flex items-center gap-2 lg:flex-col shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-gray-100">
+      <button
+        type="button"
+        onClick={() => (onOpenExport ? onOpenExport(r, "full_requisition") : exportHiringRequestPdf(r, { mode: "full_requisition", buLogo: "" }))}
+        title="Export Official Personnel Requisition PDF Form (with Multi-Stage Approvals)"
+        className="flex-1 lg:w-48 py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100/80 text-[#253C7D] font-bold text-xs flex items-center justify-center gap-1.5 border border-blue-200 hover:border-[#253C7D] cursor-pointer shadow-2xs transition-all"
+      >
+        <i className="ri-file-pdf-2-line text-rose-600 text-sm" /> Export PDF Form
+      </button>
       {canActStage1 && (
         <>
           <button

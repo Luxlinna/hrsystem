@@ -33,8 +33,8 @@ export function exportRequestsPDF(requests: HiringRequest[], title = "Employee R
   <head>
     <title>${title}</title>
     <style>
-      @page { size: A4 landscape; margin: 15mm; }
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 24px; color: #1e293b; }
+      @page { size: A4 landscape; margin: 0mm; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 15mm 20mm; color: #1e293b; box-sizing: border-box; }
       .header-box { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #253C7D; padding-bottom: 14px; margin-bottom: 18px; }
       h1 { font-size: 20px; font-weight: 800; color: #253C7D; margin: 0 0 4px 0; }
       .meta { font-size: 11px; color: #64748b; }
@@ -90,11 +90,54 @@ export function exportRequestsPDF(requests: HiringRequest[], title = "Employee R
   </body>
   </html>`;
 
+  // Print via a hidden iframe to eliminate the persistent "about:blank" tab
+  try {
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (doc) {
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch {
+          // Fallback
+        } finally {
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 1000);
+        }
+      }, 350);
+
+      return true;
+    }
+  } catch {
+    // Fallback if iframe fails
+  }
+
   const w = window.open("", "_blank");
   if (w) {
     w.document.write(html);
     w.document.close();
-    setTimeout(() => w.print(), 400);
+    w.focus();
+    setTimeout(() => {
+      w.print();
+      w.close();
+    }, 400);
   }
   return true;
 }
