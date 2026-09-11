@@ -269,8 +269,8 @@ export function CreateSalaryProposalModal({
                   <span className="absolute left-3 top-2.5 text-slate-400 font-bold">$</span>
                   <input
                     type="number"
-                    min="1"
-                    step="50"
+                    min="0"
+                    step="any"
                     required
                     placeholder="e.g. 800"
                     value={baseSalary}
@@ -288,8 +288,8 @@ export function CreateSalaryProposalModal({
                   <span className="absolute left-3 top-2.5 text-slate-400 font-bold">$</span>
                   <input
                     type="number"
-                    min="1"
-                    step="50"
+                    min="0"
+                    step="any"
                     placeholder="e.g. 700"
                     value={probationSalary}
                     onChange={(e) => setProbationSalary(e.target.value === "" ? "" : Number(e.target.value))}
@@ -369,7 +369,7 @@ export function CreateSalaryProposalModal({
                     <input
                       type="number"
                       min="0"
-                      step="5"
+                      step="any"
                       value={item.amount}
                       onChange={(e) => handleUpdateAllowance(idx, "amount", e.target.value)}
                       className="w-full pl-6 pr-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
