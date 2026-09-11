@@ -82,14 +82,16 @@ export const HireHeader = memo(function HireHeader({
         )}
 
         {activeTab === "requests" ? (
-          <button
-            type="button"
-            onClick={onOpenCreateRequest}
-            className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
-          >
-            <i className="ri-user-add-line text-base font-bold" />
-            Request New Employee
-          </button>
+          canManage && (
+            <button
+              type="button"
+              onClick={onOpenCreateRequest}
+              className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+            >
+              <i className="ri-user-add-line text-base font-bold" />
+              Request New Employee
+            </button>
+          )
         ) : (
           canManage && (
             <button

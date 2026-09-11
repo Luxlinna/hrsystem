@@ -34,13 +34,19 @@ export function useEmployees() {
 
   const activeBranchSites = data.workSites.filter((ws) => !targetBranch || ws.branch_id === targetBranch);
 
+  const activeBranchName =
+    data.branches.find((b) => b.id === targetBranch)?.name ||
+    scopeBranches.find((b) => b.id === targetBranch)?.name ||
+    userBranchName ||
+    "Main Office";
+
   const filters = useEmployeesFilters({
     employees: data.employees,
     managerEmails: data.managerEmails,
     accountStatus: data.accountStatus,
     canManage,
     workSites: activeBranchSites,
-    currentBranchName: userBranchName,
+    currentBranchName: activeBranchName,
   });
 
   const mutations = useEmployeesMutations({

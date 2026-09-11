@@ -23,7 +23,25 @@ export function useHire() {
 
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const actorRole = role?.name || "Admin";
-  const canRequest = true;
+
+  // Only managers & leadership at BU can request; regular operational/entry-level employees cannot
+  const myJobRole = (myEmployee?.role || "").trim().toLowerCase();
+  const isExcludedMyRole = /^(junior|intern|trainee|worker|cleaner|barista|mechanic|electrician|helper|operator|technicien|driver|guard|cashier)\b/i.test(myJobRole);
+
+  const canRequest = !isExcludedMyRole && Boolean(
+    isSuperAdmin ||
+    isBranchAdmin ||
+    isAdmin ||
+    role?.is_admin ||
+    role?.employees_manage ||
+    role?.hiring_requests_branch_approve ||
+    role?.hiring_requests_hr_review ||
+    role?.hiring_requests_hr_admin_approve ||
+    role?.hiring_requests_chairman_approve ||
+    isHrDivision ||
+    /(manager|head|director|lead|supervisor|coordinator|ceo|chief|president|management|gm|admin)\b/i.test(role?.name || "") ||
+    /(manager|head|director|lead|supervisor|coordinator|ceo|chief|president|management|gm)\b/i.test(myJobRole)
+  );
 
   const hasEnterpriseRecruitmentPermission = Boolean(
     isSuperAdmin ||
@@ -55,8 +73,8 @@ export function useHire() {
   const filters = useHireFilters(data.jobs, data.candidates, data.interviews, data.branches);
   const requests = useHiringRequests({
     actorName, actorRole, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
-    userBranchId, userBranchName, isAdmin, isSuperAdmin, isBranchAdmin,
-    canChairmanApprove, loadData: data.loadData, branches: data.branches,
+    userBranchId, userBranchName, targetBranch, isAdmin, isSuperAdmin, isBranchAdmin,
+    canChairmanApprove, canRequest, loadData: data.loadData, branches: data.branches,
   });
 
   const modals = useHireModals({

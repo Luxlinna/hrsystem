@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { phoneToSyntheticEmail, isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
+import { compareBiometricIds } from "@/lib/biometricUtils";
 import type { Employee, Branch, AppRole, AccountStatus, BiometricDeviceRef } from "../types";
 
 interface UseEmployeesDataProps {
@@ -53,6 +54,14 @@ export function useEmployeesData({
         branches: Array.isArray(x.branches) ? x.branches[0] : x.branches || null,
         work_locations: Array.isArray(x.work_locations) ? x.work_locations[0] : x.work_locations || null,
       })) as Employee[];
+
+      // Strictly sort by BU Biometric ID from 001 until the last user
+      formatted.sort((a, b) => {
+        const idComp = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
+        if (idComp !== 0) return idComp;
+        return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+      });
+
       setEmployees(formatted);
     });
   }, [isPartnerBranchBlocked, targetBranch, selectedSiteId]);

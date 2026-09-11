@@ -6,6 +6,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import { logActivity } from "@/lib/audit";
 import { normalizePhone } from "@/lib/phoneUtils";
+import { formatPaddedPin } from "@/lib/biometricUtils";
 import type { Employee, ReportEntry } from "../types";
 
 export function useEmployeeProfile(id: string | undefined) {
@@ -220,7 +221,7 @@ export function useEmployeeProfile(id: string | undefined) {
         status: form.status,
         join_date: form.join_date,
         reports_to: form.reports_to,
-        biometric_user_id: form.biometric_user_id?.trim() || null,
+        biometric_user_id: form.biometric_user_id?.trim() ? formatPaddedPin(form.biometric_user_id.trim()) : null,
       })
       .eq("id", id);
 

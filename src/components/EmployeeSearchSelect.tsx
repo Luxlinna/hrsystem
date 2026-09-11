@@ -8,6 +8,9 @@ export interface SearchableEmployee {
   role?: string;
   avatar_url?: string | null;
   branch_id?: string | null;
+  email?: string | null;
+  app_role?: string | null;
+  is_manager?: boolean;
 }
 
 interface Props {
@@ -43,7 +46,7 @@ export default function EmployeeSearchSelect({
   const filtered = available.filter((e) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
-    return `${e.first_name} ${e.last_name} ${e.department || ""} ${e.role || ""}`.toLowerCase().includes(q);
+    return `${e.first_name} ${e.last_name} ${e.department || ""} ${e.role || ""} ${e.app_role || ""}`.toLowerCase().includes(q);
   });
 
   // Close when clicking anywhere outside the combobox.
@@ -137,7 +140,11 @@ export default function EmployeeSearchSelect({
                   <span className="flex-1 min-w-0">
                     <span className="block text-[13px] font-medium text-gray-900">{emp.first_name} {emp.last_name}</span>
                     <span className="block text-[11px] text-gray-400 truncate">
-                      {emp.department}{emp.role ? ` · ${emp.role}` : ""}
+                      {emp.department}{
+                        (emp.app_role && /manager|admin|director|head|lead|ceo|supervisor/i.test(emp.app_role))
+                          ? ` · ${emp.app_role}`
+                          : (emp.role ? ` · ${emp.role}` : "")
+                      }
                     </span>
                   </span>
                   {isSelected && <i className="ri-check-line text-[#253C7D] text-sm shrink-0" />}

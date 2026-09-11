@@ -108,6 +108,7 @@ export type SortField =
   | "branch"
   | "status"
   | "join_date"
+  | "biometric_user_id"
   | null;
 
 export type SortDirection = "asc" | "desc";

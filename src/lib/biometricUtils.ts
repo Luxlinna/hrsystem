@@ -58,3 +58,37 @@ export function formatBiometricId(rawId?: string | null, branchName?: string | n
 
   return `${bu} ${paddedPin}`;
 }
+
+/**
+ * Natural comparison for sorting BU Biometric IDs:
+ * "001" comes before "002", "010", "100".
+ * Numeric IDs are compared numerically; non-numeric values compared alphabetically;
+ * Employees without an ID are consistently sorted to the end.
+ */
+export function compareBiometricIds(
+  aId?: string | number | null,
+  bId?: string | number | null
+): number {
+  const aStr = aId !== undefined && aId !== null ? String(aId).trim() : "";
+  const bStr = bId !== undefined && bId !== null ? String(bId).trim() : "";
+
+  if (!aStr && !bStr) return 0;
+  if (!aStr) return 1;
+  if (!bStr) return -1;
+
+  const aMatch = aStr.match(/\d+/);
+  const bMatch = bStr.match(/\d+/);
+
+  const aNum = aMatch ? parseInt(aMatch[0], 10) : NaN;
+  const bNum = bMatch ? parseInt(bMatch[0], 10) : NaN;
+
+  if (!isNaN(aNum) && !isNaN(bNum)) {
+    if (aNum !== bNum) return aNum - bNum;
+  } else if (!isNaN(aNum)) {
+    return -1;
+  } else if (!isNaN(bNum)) {
+    return 1;
+  }
+
+  return aStr.localeCompare(bStr, undefined, { numeric: true, sensitivity: "base" });
+}

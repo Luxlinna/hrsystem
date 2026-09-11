@@ -17,6 +17,7 @@ interface CreateHiringRequestFieldsProps {
   isBranchAdmin?: boolean;
   userBranchId?: string | null;
   userBranchName?: string | null;
+  targetBranch?: string | null;
 }
 
 export const CreateHiringRequestFields = memo(function CreateHiringRequestFields({
@@ -28,6 +29,7 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
   isSuperAdmin = false,
   userBranchId,
   userBranchName,
+  targetBranch,
 }: CreateHiringRequestFieldsProps) {
   const isReplacement = form.position_type === "replacement";
 
@@ -39,13 +41,36 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
   const parentBranches = branches.filter((b) => !b.is_site);
   const siteBranches = branches.filter((b) => b.is_site);
 
-  const mainBranch =
-    branches.find((b) => !b.is_site && (b.id === userBranchId || b.name === userBranchName)) ||
+  const activeBranch =
+    branches.find((b) => !b.is_site && b.id === targetBranch) ||
+    parentBranches.find((b) => b.id === targetBranch) ||
+    (form.business_unit ? parentBranches.find((b) => b.name === form.business_unit) : null) ||
+    (userBranchId ? parentBranches.find((b) => b.id === userBranchId) : null) ||
+    (userBranchName ? parentBranches.find((b) => b.name === userBranchName) : null) ||
     parentBranches[0];
 
-  const assignedBuName = userBranchName || mainBranch?.name || form.business_unit || "Your Business Unit";
-  const assignedBuId = userBranchId || mainBranch?.id || form.branch_id || "";
+  const assignedBuName = form.business_unit || activeBranch?.name || userBranchName || "Your Business Unit";
+  const assignedBuId = form.branch_id || activeBranch?.id || userBranchId || "";
   const buSites = siteBranches.filter((s) => s.branch_id === assignedBuId || (!s.branch_id && assignedBuId));
+
+  // Scope employees to this Business Unit (and its sub-sites)
+  const buBranchIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (assignedBuId) ids.add(assignedBuId);
+    buSites.forEach((s) => ids.add(s.id));
+    return ids;
+  }, [assignedBuId, buSites]);
+
+  const buEmployees = useMemo(() => {
+    if (buBranchIds.size === 0) return employees;
+    return employees.filter((e) => !e.branch_id || buBranchIds.has(e.branch_id));
+  }, [employees, buBranchIds]);
+
+  // For Hiring Manager: ONLY managers at this BU can request / be selected
+  const buManagers = useMemo(() => {
+    const managers = buEmployees.filter((e) => e.is_manager);
+    return managers.length > 0 ? managers : buEmployees;
+  }, [buEmployees]);
 
   useEffect(() => {
     setForm((prev) => {
@@ -60,7 +85,7 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
   }, [isSuperAdmin, assignedBuName, assignedBuId, setForm]);
 
   const handleSelectReplacementEmployee = (empId: string) => {
-    const target = employees.find((e) => e.id === empId);
+    const target = buEmployees.find((e) => e.id === empId);
     setForm((prev) => ({
       ...prev,
       replacement_for_id: target ? target.id : "",
@@ -102,10 +127,10 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
         <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2">
           <label className="block text-xs font-bold text-amber-900">Outgoing Employee Being Replaced *</label>
           <EmployeeSearchSelect
-            employees={employees}
+            employees={buEmployees}
             value={form.replacement_for_id}
             onChange={handleSelectReplacementEmployee}
-            placeholder="Search departing employee..."
+            placeholder="Search departing employee in this BU..."
           />
         </div>
       )}
@@ -166,7 +191,7 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
         form={form}
         setForm={setForm}
         branches={branches}
-        employees={employees}
+        employees={buManagers}
         isSuperAdmin={isSuperAdmin}
         assignedBuName={assignedBuName}
       />
@@ -174,8 +199,15 @@ export const CreateHiringRequestFields = memo(function CreateHiringRequestFields
       {/* 5. Justification & Description */}
       <div className="space-y-3">
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Reason for Hiring / Business Need *</label>
-          <textarea rows={2} required placeholder="Explain business need..." value={form.justification} onChange={(e) => setForm({ ...form, justification: e.target.value })} className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium resize-none" />
+          <label className="block text-xs font-semibold text-gray-700 mb-1.5">Reason for Hiring / Business Need *</label>
+          <textarea
+            rows={3}
+            required
+            placeholder="Explain business need..."
+            value={form.justification}
+            onChange={(e) => setForm({ ...form, justification: e.target.value })}
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm font-medium leading-relaxed resize-y min-h-[80px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] transition-all"
+          />
         </div>
         <JobDescriptionFormFields form={form} setForm={setForm} />
       </div>

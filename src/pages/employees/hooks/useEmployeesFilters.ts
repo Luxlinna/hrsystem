@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import type { Employee, AccountStatus, VisibleColumns, SortField, SortDirection, ViewMode, EmployeeStats } from "../types";
 import { INITIAL_VISIBLE_COLUMNS, COLUMN_WIDTHS } from "../constants";
 import { exportEmployeesCSV } from "../exportUtils";
+import { compareBiometricIds } from "@/lib/biometricUtils";
 
 interface UseEmployeesFiltersProps {
   employees: Employee[];
@@ -122,7 +123,16 @@ export function useEmployeesFilters({
         return matchesSearch && matchesDept && matchesStatus && matchesBranch && matchesLocation && matchesAccount;
       })
       .sort((a, b) => {
-        if (!sortField) return 0;
+        if (!sortField) {
+          // Default sorting: strictly by BU ID from 001 until the last user
+          const idComp = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
+          if (idComp !== 0) return idComp;
+          return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+        }
+        if (sortField === "biometric_user_id") {
+          const diff = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
+          return sortDirection === "asc" ? diff : -diff;
+        }
         let aVal = a[sortField] || "";
         let bVal = b[sortField] || "";
         if (sortField === "first_name") {

@@ -72,6 +72,7 @@ interface HireModalsContainerProps {
   isBranchAdmin?: boolean;
   userBranchId?: string | null;
   userBranchName?: string | null;
+  targetBranch?: string | null;
   isHrDivisionBranch?: boolean;
   employees?: any[];
   handleCreateRequest: (e: React.FormEvent) => void;
@@ -172,6 +173,7 @@ export const HireModalsContainer = memo(function HireModalsContainer(props: Hire
         isBranchAdmin={props.isBranchAdmin}
         userBranchId={props.userBranchId}
         userBranchName={props.userBranchName}
+        targetBranch={props.targetBranch}
       />
 
       <DecisionHiringRequestModal

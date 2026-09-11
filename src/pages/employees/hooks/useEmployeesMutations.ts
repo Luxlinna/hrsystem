@@ -5,6 +5,7 @@ import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { sendUserInvite, createPhoneUserAccount } from "@/pages/admin/api";
 import { normalizePhone } from "@/lib/phoneUtils";
+import { formatPaddedPin } from "@/lib/biometricUtils";
 import { startOnboardingForEmployee } from "@/lib/onboarding";
 import { INITIAL_EMPLOYEE_FORM } from "../constants";
 import type { Employee, EmployeeFormState, AppRole } from "../types";
@@ -206,6 +207,23 @@ export function useEmployeesMutations({
           }
         }
 
+        // Ensure sequential 3-digit padded ID from 001 for each BU
+        let resolvedBiometricId: string | null = null;
+        if (form.biometric_user_id?.trim()) {
+          resolvedBiometricId = formatPaddedPin(form.biometric_user_id.trim());
+        } else if (resolvedBranch) {
+          const { data: existingPins } = await supabase
+            .from("employees")
+            .select("biometric_user_id")
+            .eq("branch_id", resolvedBranch)
+            .is("deleted_at", null);
+          const pins = (existingPins || [])
+            .map((e) => parseInt(String(e.biometric_user_id || "").replace(/\D/g, ""), 10))
+            .filter((n) => !isNaN(n));
+          const maxPin = pins.length > 0 ? Math.max(...pins) : 0;
+          resolvedBiometricId = String(maxPin + 1).padStart(3, "0");
+        }
+
         const payload = {
           first_name: form.first_name.trim(),
           last_name: form.last_name.trim(),
@@ -218,7 +236,7 @@ export function useEmployeesMutations({
           default_work_location_id: resolvedLocation,
           join_date: form.join_date || new Date().toISOString().split("T")[0],
           reports_to: form.reports_to || null,
-          biometric_user_id: form.biometric_user_id?.trim() || null,
+          biometric_user_id: resolvedBiometricId,
         };
 
         const { data: newEmp, error } = await supabase.from("employees").insert(payload).select().single();

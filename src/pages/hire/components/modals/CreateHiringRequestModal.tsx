@@ -17,6 +17,7 @@ interface CreateHiringRequestModalProps {
   isBranchAdmin?: boolean;
   userBranchId?: string | null;
   userBranchName?: string | null;
+  targetBranch?: string | null;
 }
 
 export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
@@ -33,13 +34,14 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
   isBranchAdmin = false,
   userBranchId,
   userBranchName,
+  targetBranch,
 }: CreateHiringRequestModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50/70 via-white to-transparent">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-blue-50/70 via-white to-transparent">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 mb-1">
               <i className="ri-file-list-3-line" /> Requisition Record
@@ -58,7 +60,7 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={onSubmit} className="p-6 space-y-5 max-h-[78vh] overflow-y-auto">
           <CreateHiringRequestFields
             form={form}
             setForm={setForm}
@@ -69,6 +71,7 @@ export const CreateHiringRequestModal = memo(function CreateHiringRequestModal({
             isBranchAdmin={isBranchAdmin}
             userBranchId={userBranchId}
             userBranchName={userBranchName}
+            targetBranch={targetBranch}
           />
 
           <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">

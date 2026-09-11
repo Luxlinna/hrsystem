@@ -32,16 +32,41 @@ export const JobDescriptionFormHeader = memo(function JobDescriptionFormHeader({
   useEffect(() => { loadTemplates(); }, [loadTemplates]);
 
   const applyExtracted = useCallback((ext: ExtractedJdData) => {
-    setForm((p) => ({
-      ...p,
-      title: p.title || ext.title || p.title,
-      jd_summary: ext.job_summary || p.jd_summary,
-      jd_responsibilities: ext.responsibilities || p.jd_responsibilities,
-      jd_requirements: ext.requirements || p.jd_requirements,
-      jd_qualifications: ext.qualifications || p.jd_qualifications,
-      jd_reporting_line: ext.reporting_line || p.jd_reporting_line,
-      job_description: `${ext.job_summary}\n\nResponsibilities:\n${ext.responsibilities}\n\nRequirements:\n${ext.requirements}\n\nQualifications:\n${ext.qualifications}`,
-    }));
+    setForm((p) => {
+      const title = p.title?.trim() ? p.title : (ext.title || p.title);
+      const summary = ext.job_summary || p.jd_summary || "";
+      const resp = ext.responsibilities || p.jd_responsibilities || "";
+      const req = ext.requirements || p.jd_requirements || "";
+      const qual = ext.qualifications || p.jd_qualifications || "";
+      const rep = ext.reporting_line || p.jd_reporting_line || "";
+
+      // Smart justification fallback: use first sentence of job summary if empty
+      let justification = p.justification || ext.justification || "";
+      if (!justification && summary) {
+        const firstSentence = summary.split(/[.\n]/)[0].trim();
+        if (firstSentence.length > 15) {
+          justification = firstSentence;
+        }
+      }
+
+      return {
+        ...p,
+        title,
+        department: p.department || ext.department || p.department,
+        division: p.division || ext.division || p.division,
+        employment_type: ext.employment_type || p.employment_type,
+        salary_min: p.salary_min || ext.salary_min || p.salary_min,
+        salary_max: p.salary_max || ext.salary_max || p.salary_max,
+        headcount: ext.headcount || p.headcount || 1,
+        justification,
+        jd_summary: summary,
+        jd_responsibilities: resp,
+        jd_requirements: req,
+        jd_qualifications: qual,
+        jd_reporting_line: rep,
+        job_description: `${summary}\n\nResponsibilities:\n${resp}\n\nRequirements:\n${req}\n\nQualifications:\n${qual}`.trim(),
+      };
+    });
   }, [setForm]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,29 +135,56 @@ export const JobDescriptionFormHeader = memo(function JobDescriptionFormHeader({
   };
 
   return (
-    <div className="bg-[#1B2B5A] bg-gradient-to-r from-[#172554] via-[#1e3a8a] to-[#253C7D] p-4 sm:p-5 text-white">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div className="bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#1E3A8A] p-4 sm:p-5 text-white">
+      {/* Top Header: Title, Icon, Meta Tags */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white text-lg font-bold shadow-inner">
+          <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-blue-300 text-lg font-bold shadow-inner shrink-0">
             <i className="ri-file-list-3-line" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm sm:text-base font-extrabold tracking-tight text-white">Job Description & Role Specification</h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">Native Module</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm sm:text-base font-extrabold tracking-tight text-white">
+                Job Description & Role Specification
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                ✨ Smart Role Spec
+              </span>
             </div>
-            <div className="flex items-center gap-2 mt-1 text-[11px] text-blue-100/80 flex-wrap">
-              <span className="font-semibold"><i className="ri-building-line text-blue-300" /> {form.business_unit || "Auto BU"}</span>
-              <span>•</span>
-              <span className="font-semibold"><i className="ri-folder-user-line text-blue-300" /> {form.department || "Auto Dept"}</span>
+            <div className="flex items-center gap-2 mt-1.5 text-[11px] text-blue-100/80 flex-wrap">
+              <span className="inline-flex items-center gap-1 font-semibold bg-white/10 px-2 py-0.5 rounded-lg border border-white/10 text-white">
+                <i className="ri-building-line text-blue-300" /> {form.business_unit || "Select BU"}
+              </span>
+              {form.department && (
+                <span className="inline-flex items-center gap-1 font-semibold bg-white/10 px-2 py-0.5 rounded-lg border border-white/10 text-blue-200">
+                  <i className="ri-folder-user-line text-blue-300" /> {form.department}
+                </span>
+              )}
               {form.title && (
-                <>
-                  <span>•</span>
-                  <span className="font-bold text-white"><i className="ri-briefcase-line text-blue-300" /> {form.title}</span>
-                </>
+                <span className="inline-flex items-center gap-1 font-bold text-white bg-blue-500/25 px-2 py-0.5 rounded-lg border border-blue-400/40">
+                  <i className="ri-briefcase-line text-blue-300" /> {form.title}
+                </span>
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Action Toolbar */}
+      <div className="mt-4 pt-3.5 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="relative flex-1 sm:max-w-xs">
+          <i className="ri-book-read-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none" />
+          <select
+            value={selectedTplId}
+            onChange={(e) => handleApplyTemplate(e.target.value)}
+            disabled={loading}
+            className="w-full pl-8 pr-8 py-2 bg-white text-gray-800 font-bold text-xs rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+          >
+            <option value="">📋 Reusable JD Library ({templates.length})...</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>{t.title} · {t.department}</option>
+            ))}
+          </select>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
@@ -142,45 +194,31 @@ export const JobDescriptionFormHeader = memo(function JobDescriptionFormHeader({
             onClick={() => fileInputRef.current?.click()}
             disabled={parsing}
             title="Upload JD file (PDF, DOCX, TXT) to auto-fill form"
-            className="px-2.5 sm:px-3 py-2 rounded-xl bg-blue-500/25 hover:bg-blue-500/40 text-blue-100 text-xs font-extrabold border border-blue-400/40 transition-all shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+            className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
           >
             <i className={parsing ? "ri-loader-4-line animate-spin text-amber-300" : "ri-file-upload-line text-blue-200"} />
-            <span>{parsing ? "Parsing..." : "Upload"}</span>
+            <span>{parsing ? "Parsing..." : "Upload File"}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setPasteModalOpen(true)}
             title="Paste raw text of JD to auto-fill form"
-            className="px-2.5 sm:px-3 py-2 rounded-xl bg-indigo-500/25 hover:bg-indigo-500/40 text-indigo-100 text-xs font-extrabold border border-indigo-400/40 transition-all shrink-0 flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all shrink-0 flex items-center gap-1.5 cursor-pointer"
           >
             <i className="ri-clipboard-line text-indigo-200" />
             <span>Paste Text</span>
           </button>
-
-          <div className="relative flex-1 sm:w-44">
-            <select
-              value={selectedTplId}
-              onChange={(e) => handleApplyTemplate(e.target.value)}
-              disabled={loading}
-              className="w-full pl-3 pr-8 py-2 bg-white text-gray-800 font-bold text-xs rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
-            >
-              <option value="">📋 Library ({templates.length})...</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>{t.title} · {t.department}</option>
-              ))}
-            </select>
-          </div>
 
           <button
             type="button"
             onClick={handleSaveAsTemplate}
             disabled={saving || !form.jd_summary}
             title="Save this role specification to the reusable JD Library"
-            className="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-extrabold border border-white/20 transition-all shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+            className="px-3 py-2 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 text-xs font-bold border border-amber-400/40 transition-all shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <i className="ri-bookmark-3-line text-amber-300 text-sm" />
-            <span>Save</span>
+            <i className="ri-save-line text-amber-300 text-sm" />
+            <span>Save to Library</span>
           </button>
         </div>
       </div>

@@ -110,13 +110,13 @@ export const CreateHiringRequestRoleFields = memo(function CreateHiringRequestRo
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="block text-xs font-semibold text-gray-700">Hiring Manager</label>
-            {!isSuperAdmin && <span className="text-[10px] text-gray-500 font-medium">In {assignedBuName}</span>}
+            <span className="text-[10px] text-gray-500 font-medium">Managers in {assignedBuName}</span>
           </div>
           <EmployeeSearchSelect
             employees={employees}
             value={form.hiring_manager_id}
             onChange={handleSelectHiringManager}
-            placeholder="Search hiring manager..."
+            placeholder={assignedBuName ? `Search manager in ${assignedBuName}...` : "Search hiring manager..."}
           />
         </div>
         <div>

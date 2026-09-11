@@ -13,10 +13,12 @@ interface UseHiringRequestsProps {
   myEmployeeId?: string;
   userBranchId?: string | null;
   userBranchName?: string | null;
+  targetBranch?: string | null;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
   isBranchAdmin?: boolean;
   canChairmanApprove?: boolean;
+  canRequest?: boolean;
   loadData: () => Promise<void>;
   branches?: Branch[];
 }
@@ -28,10 +30,12 @@ export function useHiringRequests({
   myEmployeeId,
   userBranchId,
   userBranchName,
+  targetBranch,
   isAdmin = false,
   isSuperAdmin = false,
   isBranchAdmin: _isBranchAdmin = false,
   canChairmanApprove = false,
+  canRequest = true,
   loadData,
   branches = [],
 }: UseHiringRequestsProps) {
@@ -50,22 +54,31 @@ export function useHiringRequests({
   });
 
   const openCreateRequest = useCallback((defaultBranchId?: string) => {
-    const targetBranchId = defaultBranchId || userBranchId || "";
-    const matchedBranch = branches.find((b) => b.id === targetBranchId);
-    const resolvedBuName = userBranchName || matchedBranch?.name || "";
+    if (!canRequest) {
+      toast("Access Restricted", "Only Business Unit Managers and Authorized Leadership can submit hiring requisitions.", "warning");
+      return;
+    }
+
+    const activeBranchId = defaultBranchId || targetBranch || userBranchId || "";
+    const matchedBranch = branches.find((b) => b.id === activeBranchId);
+    const resolvedBuName = matchedBranch?.name || userBranchName || "";
 
     setRequestForm({
       ...INITIAL_HIRING_REQUEST_FORM,
       company: "UNI",
       business_unit: resolvedBuName,
-      branch_id: targetBranchId,
+      branch_id: activeBranchId,
     });
     setShowRequestModal(true);
-  }, [branches, userBranchId, userBranchName]);
+  }, [canRequest, branches, targetBranch, userBranchId, userBranchName]);
 
   const handleCreateRequest = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      if (!canRequest) {
+        toast("Access Restricted", "Only Business Unit Managers and Authorized Leadership can submit hiring requisitions.", "warning");
+        return;
+      }
       if (!requestForm.title.trim() || !requestForm.department.trim()) {
         toast("Validation", "Please provide a job title and department.", "error");
         return;

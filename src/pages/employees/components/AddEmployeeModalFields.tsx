@@ -33,7 +33,9 @@ export const AddEmployeeModalFields = memo(function AddEmployeeModalFields({
   const currentBranchName =
     cleanBranches.find((b) => b.id === form.branch_id)?.name ||
     branches.find((b) => b.id === form.branch_id)?.name ||
-    "OPS sulotion";
+    cleanBranches[0]?.name ||
+    branches[0]?.name ||
+    "";
 
   const [contactType, setContactType] = useState<"email" | "phone">(() =>
     form.phone && !form.email ? "phone" : "email"

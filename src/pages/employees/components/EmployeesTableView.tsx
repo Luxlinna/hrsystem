@@ -57,7 +57,21 @@ export const EmployeesTableView = memo(function EmployeesTableView({
             onChange={onSelectAll}
             className="w-4 h-4 rounded border-gray-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
           />
-          <span>Employee</span>
+          <button
+            type="button"
+            onClick={() => onSort("biometric_user_id")}
+            className="flex items-center gap-1.5 hover:text-gray-700 cursor-pointer transition-colors text-left"
+            title="Sort by BU ID (001 until last user)"
+          >
+            <span>ID / Employee</span>
+            {sortField === "biometric_user_id" ? (
+              <i className={`ri-arrow-${sortDirection === "asc" ? "up" : "down"}-s-line text-sm`} />
+            ) : !sortField ? (
+              <span className="text-[10px] text-[#253C7D] font-mono font-bold bg-[#253C7D]/10 px-1.5 py-0.2 rounded border border-[#253C7D]/20">
+                001→
+              </span>
+            ) : null}
+          </button>
         </div>
         {visibleColumns.role && (
           <button

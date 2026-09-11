@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Employee } from "../types";
 import { deptColors } from "../constants";
-import { formatBiometricId } from "@/lib/biometricUtils";
+import { formatBiometricId, compareBiometricIds } from "@/lib/biometricUtils";
 
 interface BranchStaffSectionProps {
   deptGroups: Record<string, Employee[]>;
@@ -56,7 +56,13 @@ export const BranchStaffSection = memo(function BranchStaffSection({
 
                 {isExpanded && (
                   <div className="divide-y divide-gray-50 p-1">
-                    {emps.map((emp) => (
+                    {[...emps]
+                      .sort((a, b) => {
+                        const idComp = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
+                        if (idComp !== 0) return idComp;
+                        return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+                      })
+                      .map((emp) => (
                       <div key={emp.id} className="p-2.5 flex items-center justify-between hover:bg-gray-50/50 rounded-lg transition-colors">
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
