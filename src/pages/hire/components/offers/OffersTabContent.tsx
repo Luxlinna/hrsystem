@@ -11,6 +11,7 @@ interface OffersTabContentProps {
   onOpenWorkflowModal: (offer: OfferLetter, type: WorkflowModalType) => void;
   onGenerateDraft: (offer: OfferLetter) => Promise<void>;
   onExportPdf: (offer: OfferLetter) => void;
+  onDeleteOffer: (offer: OfferLetter) => void;
 }
 
 const STATUS_CONFIG: Record<
@@ -100,6 +101,7 @@ export function OffersTabContent({
   onOpenWorkflowModal,
   onGenerateDraft,
   onExportPdf,
+  onDeleteOffer,
 }: OffersTabContentProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -489,6 +491,16 @@ export function OffersTabContent({
                               <i className="ri-file-pdf-line text-base" />
                             </button>
                           )}
+
+                          {/* Delete Offer Button */}
+                          <button
+                            type="button"
+                            onClick={() => onDeleteOffer(offer)}
+                            title="Delete / Cancel Offer"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <i className="ri-delete-bin-line text-base" />
+                          </button>
                         </div>
                       </td>
                     </tr>

@@ -286,3 +286,23 @@ export async function recordCandidateDecision(
 
   return await saveOfferLetter(updated);
 }
+
+export async function deleteOfferLetter(offerId: string): Promise<boolean> {
+  const current = getLocalOffers();
+  const filtered = current.filter((o) => o.id !== offerId);
+  setLocalOffers(filtered);
+
+  try {
+    const { error } = await supabase
+      .from("offer_letters")
+      .delete()
+      .eq("id", offerId);
+    if (error) {
+      console.warn("Could not delete from Supabase, removed from local cache:", error.message);
+    }
+  } catch (err) {
+    console.warn("Failed to delete offer from Supabase:", err);
+  }
+
+  return true;
+}

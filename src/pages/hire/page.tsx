@@ -234,6 +234,7 @@ export default function HirePage() {
           onOpenWorkflowModal={offersManager.openWorkflowModal}
           onGenerateDraft={offersManager.handleGenerateDraft}
           onExportPdf={offersManager.handleExportPdf}
+          onDeleteOffer={offersManager.handleDeleteOffer}
         />
       )}
 

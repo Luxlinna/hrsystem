@@ -9,6 +9,7 @@ import {
   approveOfferManagement,
   issueOffer,
   recordCandidateDecision,
+  deleteOfferLetter,
   type CreateProposalPayload,
 } from "../services/offerLetterService";
 import { exportOfferLetterPdf } from "../exports/exportOfferLetterPdf";
@@ -186,6 +187,24 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
     exportOfferLetterPdf(offer);
   }, []);
 
+  const handleDeleteOffer = useCallback(
+    async (offer: OfferLetter) => {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete offer ${offer.offer_number} for ${offer.candidate_name}? This cannot be undone.`
+      );
+      if (!confirmed) return;
+
+      try {
+        await deleteOfferLetter(offer.id);
+        setOffers((prev) => prev.filter((o) => o.id !== offer.id));
+        toast("Offer Deleted", `Offer ${offer.offer_number} has been removed.`, "info");
+      } catch {
+        toast("Error", "Failed to delete offer letter.", "error");
+      }
+    },
+    []
+  );
+
   const counts = useMemo(() => {
     const pendingAction = offers.filter((o) =>
       ["salary_proposal", "salary_approved", "draft_letter", "hr_review", "management_approval", "approved"].includes(o.status)
@@ -228,5 +247,6 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
     handleIssueOffer,
     handleRecordDecision,
     handleExportPdf,
+    handleDeleteOffer,
   };
 }
