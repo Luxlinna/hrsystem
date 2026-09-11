@@ -6,6 +6,7 @@ interface FooterProps {
   isCompleted: boolean;
   onSave: () => void;
   onExportPdf: () => void;
+  onExportWord: () => void;
   onAdvanceNext: () => void;
   onClose: () => void;
 }
@@ -16,6 +17,7 @@ export const CandidateApprovalModalFooter = memo(function CandidateApprovalModal
   isCompleted,
   onSave,
   onExportPdf,
+  onExportWord,
   onAdvanceNext,
   onClose,
 }: FooterProps) {
@@ -30,15 +32,27 @@ export const CandidateApprovalModalFooter = memo(function CandidateApprovalModal
         <i className="ri-save-line" /> {saving ? "Saving..." : "Save Draft"}
       </button>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2.5">
         <button
           type="button"
           disabled={disabled}
           onClick={onExportPdf}
-          className="px-4 py-2 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] border border-[#253C7D]/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+          className="px-3.5 py-2 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] border border-[#253C7D]/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+          title="Export Candidate Approval Form as PDF"
         >
           <i className="ri-file-pdf-line text-sm text-[#253C7D]" />
-          Generate Approval Form (PDF)
+          Export PDF
+        </button>
+
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onExportWord}
+          className="px-3.5 py-2 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] border border-[#253C7D]/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+          title="Export Candidate Approval Form as Word Document (.docx)"
+        >
+          <i className="ri-file-word-line text-sm text-[#253C7D]" />
+          Export Word (.docx)
         </button>
 
         {isCompleted ? (

@@ -58,30 +58,21 @@ export function initCandidateApproval(
             signature: "Verified",
           };
         })
-      : [
+      : reqDetails?.hiringManager
+      ? [
           {
-            name: "Ms. Meas Chhengseang",
+            name: reqDetails.hiringManager,
             date_time:
               new Date().toLocaleDateString("en-US", {
                 day: "2-digit",
                 month: "short",
                 year: "numeric",
               }) + " 3:00PM",
-            position: "CEO",
-            signature: "Signed",
+            position: "Hiring Manager",
+            signature: "Verified",
           },
-          {
-            name: "Mr. Sun Reasey",
-            date_time:
-              new Date().toLocaleDateString("en-US", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              }) + " 3:00PM",
-            position: "HR Recruiter",
-            signature: "Signed",
-          },
-        ];
+        ]
+      : [];
 
   const expectationSalaryStr = candidate.expected_salary
     ? `$${candidate.expected_salary.toLocaleString()}`

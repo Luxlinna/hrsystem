@@ -39,6 +39,7 @@ export const CandidateApprovalModal = memo(function CandidateApprovalModal({
     handleSignStep,
     handleApproveAll,
     handleExportPdf,
+    handleExportWord,
     handleAdvanceNext,
   } = useCandidateApprovalModal({
     isOpen,
@@ -141,7 +142,12 @@ export const CandidateApprovalModal = memo(function CandidateApprovalModal({
               )}
 
               {activeTab === "evaluation" && (
-                <ApprovalEvaluationTab data={data} onChange={setData} />
+                <ApprovalEvaluationTab
+                  data={data}
+                  onChange={setData}
+                  candidate={candidate}
+                  interviews={interviews}
+                />
               )}
             </>
           )}
@@ -153,6 +159,7 @@ export const CandidateApprovalModal = memo(function CandidateApprovalModal({
           isCompleted={isCompleted}
           onSave={() => handleSave(true)}
           onExportPdf={handleExportPdf}
+          onExportWord={handleExportWord}
           onAdvanceNext={handleAdvanceNext}
           onClose={onClose}
         />

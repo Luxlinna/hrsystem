@@ -6,6 +6,7 @@ import {
   isCandidateApprovalCompleted,
 } from "../services/candidateApprovalService";
 import { exportCandidateApprovalPdf } from "../exports/exportCandidateApprovalPdf";
+import { exportCandidateApprovalWord } from "../exports/exportCandidateApprovalWord";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -277,6 +278,17 @@ export function useCandidateApprovalModal({
     exportCandidateApprovalPdf(data);
   }, [data]);
 
+  const handleExportWord = useCallback(async () => {
+    if (!data) return;
+    try {
+      await exportCandidateApprovalWord(data);
+      toast("Success", "Word document exported successfully.", "success");
+    } catch (err) {
+      console.error("Failed to export Word document:", err);
+      toast("Export Error", "Failed to export Word document.", "error");
+    }
+  }, [data]);
+
   const handleAdvanceNext = useCallback(async () => {
     const saved = await handleSave(false);
     if (!saved) return;
@@ -306,6 +318,7 @@ export function useCandidateApprovalModal({
     handleSignStep,
     handleApproveAll,
     handleExportPdf,
+    handleExportWord,
     handleAdvanceNext,
   };
 }

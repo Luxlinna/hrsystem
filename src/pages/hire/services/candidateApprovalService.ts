@@ -26,6 +26,84 @@ function setLocalApprovals(list: CandidateApproval[]) {
   }
 }
 
+export interface BuEmployeeOption {
+  id: string;
+  name: string;
+  role: string;
+  department: string;
+  branch_id?: string;
+  branch_name?: string;
+}
+
+export async function fetchBuEmployeesForCandidate(
+  branchId?: string | null,
+  businessUnitName?: string | null
+): Promise<BuEmployeeOption[]> {
+  try {
+    let query = supabase
+      .from("employees")
+      .select("id, first_name, last_name, role, department, branch_id, branches(name)")
+      .eq("status", "active")
+      .is("deleted_at", null)
+      .order("first_name");
+
+    if (branchId) {
+      query = query.eq("branch_id", branchId);
+    }
+
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) {
+      const { data: allEmps } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, role, department, branch_id, branches(name)")
+        .eq("status", "active")
+        .is("deleted_at", null)
+        .order("first_name");
+
+      if (allEmps && allEmps.length > 0) {
+        if (businessUnitName) {
+          const matched = allEmps.filter((e) => {
+            const bName = (e.branches as any)?.name || "";
+            return bName.toLowerCase().includes(businessUnitName.toLowerCase()) ||
+                   businessUnitName.toLowerCase().includes(bName.toLowerCase());
+          });
+          if (matched.length > 0) {
+            return matched.map((e) => ({
+              id: e.id,
+              name: `${e.first_name || ""} ${e.last_name || ""}`.trim(),
+              role: e.role || e.department || "Employee",
+              department: e.department || "",
+              branch_id: e.branch_id,
+              branch_name: (e.branches as any)?.name || "",
+            }));
+          }
+        }
+        return allEmps.map((e) => ({
+          id: e.id,
+          name: `${e.first_name || ""} ${e.last_name || ""}`.trim(),
+          role: e.role || e.department || "Employee",
+          department: e.department || "",
+          branch_id: e.branch_id,
+          branch_name: (e.branches as any)?.name || "",
+        }));
+      }
+      return [];
+    }
+
+    return data.map((e) => ({
+      id: e.id,
+      name: `${e.first_name || ""} ${e.last_name || ""}`.trim(),
+      role: e.role || e.department || "Employee",
+      department: e.department || "",
+      branch_id: e.branch_id,
+      branch_name: (e.branches as any)?.name || "",
+    }));
+  } catch (err) {
+    console.error("Failed to fetch BU employees:", err);
+    return [];
+  }
+}
+
 export async function resolveSignatoryNamesForApproval(
   branchId?: string | null
 ): Promise<{
