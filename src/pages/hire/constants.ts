@@ -75,11 +75,11 @@ export const STAGE_CONFIG: Record<string, StageConfigItem> = {
   },
   candidate_approval: {
     label: "Candidate Approval",
-    bg: "bg-fuchsia-50",
-    text: "text-fuchsia-700",
-    border: "border-fuchsia-200",
+    bg: "bg-[#253C7D]/10",
+    text: "text-[#253C7D]",
+    border: "border-[#253C7D]/20",
     icon: "ri-file-check-line",
-    hex: "#C026D3",
+    hex: "#253C7D",
   },
   salary_negotiation: {
     label: "Salary Negotiation",

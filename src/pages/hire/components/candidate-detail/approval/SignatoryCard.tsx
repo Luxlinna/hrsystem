@@ -36,14 +36,14 @@ export const SignatoryCard = memo(function SignatoryCard({
           ? "bg-gray-50/60 border-dashed border-gray-300 opacity-75"
           : isApproved
             ? "bg-white border-emerald-200"
-            : "bg-white border-gray-200 hover:border-fuchsia-200"
+            : "bg-white border-gray-200 hover:border-[#253C7D]/30"
       }`}
     >
       <div className="flex items-start justify-between">
         <div>
           <span
             className={`text-[10px] font-black uppercase tracking-wider block ${
-              isLocked ? "text-gray-400" : isApproved ? "text-emerald-600" : "text-fuchsia-600"
+              isLocked ? "text-gray-400" : isApproved ? "text-emerald-600" : "text-[#253C7D]"
             }`}
           >
             STEP {stepNumber} • {subtitle}
@@ -92,7 +92,7 @@ export const SignatoryCard = memo(function SignatoryCard({
           className={`w-full text-xs p-2 rounded-xl border focus:outline-none transition-all ${
             isLocked
               ? "border-gray-200 bg-gray-100/60 text-gray-400 cursor-not-allowed"
-              : "border-gray-200 focus:ring-2 focus:ring-fuchsia-500 bg-gray-50/50"
+              : "border-gray-200 focus:ring-2 focus:ring-[#253C7D] bg-gray-50/50"
           }`}
         />
       </div>
@@ -126,7 +126,7 @@ export const SignatoryCard = memo(function SignatoryCard({
             <button
               type="button"
               onClick={onSign}
-              className="px-3 py-1 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
+              className="px-3 py-1 bg-[#253C7D] hover:bg-[#1d3065] text-white rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
             >
               <i className="ri-edit-line text-xs" />
               Sign as {signatory.title.split("/")[0].trim()}

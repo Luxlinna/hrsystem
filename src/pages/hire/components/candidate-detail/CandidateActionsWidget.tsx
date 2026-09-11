@@ -43,9 +43,9 @@ export const CandidateActionsWidget = memo(function CandidateActionsWidget({
         <button
           type="button"
           onClick={onOpenCandidateApproval}
-          className="w-full py-2.5 bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          className="w-full py-2.5 bg-[#253C7D]/10 hover:bg-[#253C7D]/15 text-[#253C7D] border border-[#253C7D]/20 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
         >
-          <i className="ri-file-check-line text-sm text-fuchsia-600" />
+          <i className="ri-file-check-line text-sm text-[#253C7D]" />
           Candidate Approval Form
         </button>
       )}

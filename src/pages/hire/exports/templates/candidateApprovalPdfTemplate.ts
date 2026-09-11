@@ -164,11 +164,11 @@ export function buildCandidateApprovalHtml(approval: CandidateApproval): string 
     </div>
 
     <!-- Title & Form Number -->
-    <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #111; padding-bottom: 3px; margin-bottom: 6px;">
-      <div style="font-size: 14px; font-weight: bold; text-decoration: underline; letter-spacing: 0.3px; margin: 0 auto 0 80px;">
+    <div style="position: relative; text-align: center; border-bottom: 2px solid #111; padding-bottom: 3px; margin-bottom: 6px;">
+      <div style="font-size: 14px; font-weight: bold; text-decoration: underline; letter-spacing: 0.3px; display: inline-block;">
         Candidate Approval Form
       </div>
-      <div style="font-size: 9.5px; font-weight: 700; white-space: nowrap;">
+      <div style="position: absolute; right: 0; bottom: 3px; font-size: 9.5px; font-weight: 700; white-space: nowrap;">
         Rec: ${approval.form_number}
       </div>
     </div>

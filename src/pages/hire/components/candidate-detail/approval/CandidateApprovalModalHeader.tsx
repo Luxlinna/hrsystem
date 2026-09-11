@@ -21,7 +21,7 @@ export const CandidateApprovalModalHeader = memo(function CandidateApprovalModal
   return (
     <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-fuchsia-100 text-fuchsia-700 flex items-center justify-center text-xl shadow-2xs">
+        <div className="w-11 h-11 rounded-2xl bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-xl shadow-2xs">
           <i className="ri-file-check-line" />
         </div>
         <div>

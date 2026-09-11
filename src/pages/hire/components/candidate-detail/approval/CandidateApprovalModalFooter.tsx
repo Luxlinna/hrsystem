@@ -35,9 +35,9 @@ export const CandidateApprovalModalFooter = memo(function CandidateApprovalModal
           type="button"
           disabled={disabled}
           onClick={onExportPdf}
-          className="px-4 py-2 bg-white hover:bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+          className="px-4 py-2 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] border border-[#253C7D]/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
         >
-          <i className="ri-file-pdf-line text-sm text-fuchsia-600" />
+          <i className="ri-file-pdf-line text-sm text-[#253C7D]" />
           Generate Approval Form (PDF)
         </button>
 

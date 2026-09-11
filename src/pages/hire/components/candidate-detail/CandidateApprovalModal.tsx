@@ -73,7 +73,7 @@ export const CandidateApprovalModal = memo(function CandidateApprovalModal({
             onClick={() => setActiveTab("approvals")}
             className={`pb-3 px-3 text-xs font-bold transition-all relative cursor-pointer ${
               activeTab === "approvals"
-                ? "text-fuchsia-700 border-b-2 border-fuchsia-600"
+                ? "text-[#253C7D] border-b-2 border-[#253C7D]"
                 : "text-gray-500 hover:text-gray-800"
             }`}
           >
@@ -85,7 +85,7 @@ export const CandidateApprovalModal = memo(function CandidateApprovalModal({
             onClick={() => setActiveTab("overview")}
             className={`pb-3 px-3 text-xs font-bold transition-all relative cursor-pointer ${
               activeTab === "overview"
-                ? "text-fuchsia-700 border-b-2 border-fuchsia-600"
+                ? "text-[#253C7D] border-b-2 border-[#253C7D]"
                 : "text-gray-500 hover:text-gray-800"
             }`}
           >
@@ -97,7 +97,7 @@ export const CandidateApprovalModal = memo(function CandidateApprovalModal({
             onClick={() => setActiveTab("evaluation")}
             className={`pb-3 px-3 text-xs font-bold transition-all relative cursor-pointer ${
               activeTab === "evaluation"
-                ? "text-fuchsia-700 border-b-2 border-fuchsia-600"
+                ? "text-[#253C7D] border-b-2 border-[#253C7D]"
                 : "text-gray-500 hover:text-gray-800"
             }`}
           >
@@ -110,7 +110,7 @@ export const CandidateApprovalModal = memo(function CandidateApprovalModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/40">
           {loading || !data ? (
             <div className="py-20 text-center text-gray-400 space-y-2">
-              <i className="ri-loader-4-line text-3xl animate-spin text-fuchsia-600 inline-block" />
+              <i className="ri-loader-4-line text-3xl animate-spin text-[#253C7D] inline-block" />
               <p className="text-xs font-bold">Loading Candidate Approval Data...</p>
             </div>
           ) : (

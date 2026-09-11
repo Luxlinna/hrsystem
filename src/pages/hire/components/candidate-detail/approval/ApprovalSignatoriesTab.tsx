@@ -41,7 +41,7 @@ export const ApprovalSignatoriesTab = memo(function ApprovalSignatoriesTab({
           <button
             type="button"
             onClick={onApproveAll}
-            className="px-3 py-1.5 bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 bg-[#253C7D]/10 hover:bg-[#253C7D]/15 text-[#253C7D] border border-[#253C7D]/20 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <i className="ri-shield-check-line text-sm" /> Fast-Sign All (Admin)
           </button>

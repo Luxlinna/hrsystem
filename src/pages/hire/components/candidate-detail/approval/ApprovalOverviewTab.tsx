@@ -24,7 +24,7 @@ export const ApprovalOverviewTab = memo(function ApprovalOverviewTab({
             type="text"
             value={data.candidate_name}
             onChange={(e) => onChange({ ...data, candidate_name: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white font-bold"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white font-bold"
           />
         </div>
         <div>
@@ -34,7 +34,7 @@ export const ApprovalOverviewTab = memo(function ApprovalOverviewTab({
           <select
             value={data.gender}
             onChange={(e) => onChange({ ...data, gender: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
           >
             <option value="Female">Female</option>
             <option value="Male">Male</option>
@@ -49,7 +49,7 @@ export const ApprovalOverviewTab = memo(function ApprovalOverviewTab({
             type="text"
             value={data.position_applied}
             onChange={(e) => onChange({ ...data, position_applied: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white font-bold"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white font-bold"
           />
         </div>
         <div>
@@ -60,7 +60,7 @@ export const ApprovalOverviewTab = memo(function ApprovalOverviewTab({
             type="text"
             value={data.business_unit}
             onChange={(e) => onChange({ ...data, business_unit: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
           />
         </div>
         <div>
@@ -71,7 +71,7 @@ export const ApprovalOverviewTab = memo(function ApprovalOverviewTab({
             type="text"
             value={data.department}
             onChange={(e) => onChange({ ...data, department: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
           />
         </div>
         <div>
@@ -82,7 +82,7 @@ export const ApprovalOverviewTab = memo(function ApprovalOverviewTab({
             type="text"
             value={data.hiring_manager}
             onChange={(e) => onChange({ ...data, hiring_manager: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
           />
         </div>
         <div>
@@ -93,7 +93,7 @@ export const ApprovalOverviewTab = memo(function ApprovalOverviewTab({
             type="text"
             value={data.current_salary}
             onChange={(e) => onChange({ ...data, current_salary: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white font-semibold"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white font-semibold"
           />
         </div>
         <div>
@@ -115,7 +115,7 @@ export const ApprovalOverviewTab = memo(function ApprovalOverviewTab({
             type="text"
             value={data.current_benefit}
             onChange={(e) => onChange({ ...data, current_benefit: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
           />
         </div>
         <div className="col-span-2">
@@ -126,7 +126,7 @@ export const ApprovalOverviewTab = memo(function ApprovalOverviewTab({
             type="text"
             value={data.notice_period}
             onChange={(e) => onChange({ ...data, notice_period: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
           />
         </div>
       </div>

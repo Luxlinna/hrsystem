@@ -26,7 +26,7 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
             rows={3}
             value={data.education_and_skill}
             onChange={(e) => onChange({ ...data, education_and_skill: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
           />
         </div>
         <div>
@@ -37,7 +37,7 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
             rows={3}
             value={data.work_experience}
             onChange={(e) => onChange({ ...data, work_experience: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
           />
         </div>
         <div>
@@ -48,7 +48,7 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
             rows={3}
             value={data.strengths}
             onChange={(e) => onChange({ ...data, strengths: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
           />
         </div>
         <div>
@@ -59,7 +59,7 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
             rows={3}
             value={data.improvement}
             onChange={(e) => onChange({ ...data, improvement: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+            className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
           />
         </div>
       </div>
@@ -72,7 +72,7 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
           rows={3}
           value={data.overall_assessment}
           onChange={(e) => onChange({ ...data, overall_assessment: e.target.value })}
-          className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 bg-white"
+          className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D] bg-white"
         />
       </div>
 
@@ -98,7 +98,7 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
                 ],
               })
             }
-            className="text-[10px] text-fuchsia-600 hover:text-fuchsia-700 font-bold flex items-center gap-1 cursor-pointer"
+            className="text-[10px] text-[#253C7D] hover:text-[#1d3065] font-bold flex items-center gap-1 cursor-pointer"
           >
             <i className="ri-add-line" /> Add Panel
           </button>
