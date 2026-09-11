@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { CandidateProfileHeader } from "./components/candidate-detail/CandidateProfileHeader";
 import { CandidateInfoCard } from "./components/candidate-detail/CandidateInfoCard";
@@ -13,6 +13,7 @@ import { CandidateActionsWidget } from "./components/candidate-detail/CandidateA
 import { InterviewModal } from "./components/modals/InterviewModal";
 import { FeedbackModal } from "./components/modals/FeedbackModal";
 import { InterviewEvaluationModal } from "./components/candidate-detail/InterviewEvaluationModal";
+import { CandidateApprovalModal } from "./components/candidate-detail/CandidateApprovalModal";
 import { useCandidateDetail } from "./hooks/useCandidateDetail";
 
 export default function CandidateDetail() {
@@ -59,6 +60,8 @@ export default function CandidateDetail() {
     openScheduleStageModal,
     actorName,
   } = useCandidateDetail(id);
+
+  const [candidateApprovalModal, setCandidateApprovalModal] = useState(false);
 
   const avgScore = useMemo(() => {
     const scored = interviews.filter((i) => (i.score || 0) > 0);
@@ -210,6 +213,7 @@ export default function CandidateDetail() {
             currentStage={candidate.stage}
             onUpdateStage={updateStage}
             onDelete={deleteCandidate}
+            onOpenCandidateApproval={() => setCandidateApprovalModal(true)}
           />
         </div>
       </div>
@@ -249,6 +253,18 @@ export default function CandidateDetail() {
         onClose={() => setEvaluationModalStage(null)}
         onSubmitEvaluation={handleSubmitInterviewEvaluation}
         submitting={submittingEvaluation}
+      />
+
+      {/* Candidate Approval Form Modal (CAF) */}
+      <CandidateApprovalModal
+        isOpen={candidateApprovalModal}
+        candidate={candidate}
+        interviews={interviews}
+        currentUserName={actorName}
+        onClose={() => setCandidateApprovalModal(false)}
+        onAdvanceStage={async (nextStage) => {
+          await updateStage(nextStage);
+        }}
       />
     </div>
   );

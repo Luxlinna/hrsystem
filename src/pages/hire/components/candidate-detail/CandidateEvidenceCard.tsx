@@ -57,7 +57,8 @@ export const CandidateEvidenceCard = memo(function CandidateEvidenceCard({
 
   const verifiedCount = stageResults.filter((r) => r.status === "verified").length;
   const pendingCount = stageResults.filter((r) => r.status === "pending").length;
-  const progressPercent = Math.round((verifiedCount / 13) * 100);
+  const totalStages = STAGE_EVIDENCE_RULES.length;
+  const progressPercent = Math.round((verifiedCount / totalStages) * 100);
 
   const filteredResults = stageResults.filter((r) => {
     if (filterMode === "active") return r.isPastOrCurrent;
@@ -97,7 +98,7 @@ export const CandidateEvidenceCard = memo(function CandidateEvidenceCard({
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
               <i className="ri-shield-check-line text-purple-600" />
-              13-Stage Audit Matrix
+              {totalStages}-Stage Audit Matrix
             </span>
             <span className="text-xs text-gray-400 font-medium">Stage Evidence & Compliance</span>
           </div>
@@ -113,7 +114,7 @@ export const CandidateEvidenceCard = memo(function CandidateEvidenceCard({
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-xs font-black text-gray-900">
-              {verifiedCount} of 13 Verified
+              {verifiedCount} of {totalStages} Verified
             </p>
             <p className="text-[10px] text-gray-400 font-medium">{progressPercent}% Completed</p>
           </div>

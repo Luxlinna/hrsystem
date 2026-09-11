@@ -1,7 +1,11 @@
 import { memo } from "react";
 import type { Candidate, Interview } from "../../types";
 import { STAGE_CONFIG, STAGE_TIMELINE_ORDER } from "../../constants";
-import { isStageInterviewScheduled, isStageInterviewEvaluated } from "../../constants/evidenceConfig";
+import {
+  isStageInterviewScheduled,
+  isStageInterviewEvaluated,
+  isCandidateApprovalVerified,
+} from "../../constants/evidenceConfig";
 
 interface CandidatePipelineWidgetProps {
   currentStage: string;
@@ -37,10 +41,14 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
           const isLast = idx === STAGE_TIMELINE_ORDER.length - 1;
 
           const isInterviewStage = ["hr_interview", "hiring_manager_interview", "final_interview"].includes(stage);
+          const isApprovalStage = stage === "candidate_approval";
           const isFormVerified =
             isInterviewStage && candidate
               ? isStageInterviewScheduled(stage, interviews) && isStageInterviewEvaluated(stage, candidate, interviews)
+              : isApprovalStage && candidate
+              ? isCandidateApprovalVerified(candidate)
               : false;
+          const requiresForm = isInterviewStage || isApprovalStage;
 
           return (
             <div key={stage} className="relative flex items-start gap-3 pb-5 last:pb-0 group">
@@ -86,7 +94,7 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
                   >
                     {STAGE_CONFIG[stage]?.label || stage}
                   </span>
-                  {isInterviewStage && (
+                  {requiresForm && (
                     <span
                       className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded-md uppercase tracking-wider ${
                         isFormVerified
@@ -95,7 +103,15 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
                           ? "bg-purple-100 text-purple-800 border border-purple-200 animate-pulse"
                           : "bg-gray-100 text-gray-400 border border-gray-200"
                       }`}
-                      title={isFormVerified ? "Interview scheduled & evaluation verified" : "Evaluation form required"}
+                      title={
+                        isApprovalStage
+                          ? isFormVerified
+                            ? "Candidate Approval Form signed & verified"
+                            : "Candidate Approval Form (CAF) required"
+                          : isFormVerified
+                          ? "Interview scheduled & evaluation verified"
+                          : "Evaluation form required"
+                      }
                     >
                       {isFormVerified ? "Form Verified" : "Form Required"}
                     </span>

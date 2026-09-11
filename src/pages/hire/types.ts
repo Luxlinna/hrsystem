@@ -99,6 +99,64 @@ export interface Interview {
   employees?: { id?: string; first_name: string; last_name: string; avatar_url?: string } | null;
 }
 
+export interface CandidateApprovalPanel {
+  name: string;
+  date_time: string;
+  position: string;
+  signature?: string | null;
+}
+
+export interface CandidateApprovalSignatory {
+  role_key: "ceo" | "hr_manager" | "division_director" | "chairwoman";
+  title: string;
+  default_name: string;
+  assigned_name: string;
+  status: "pending" | "approved" | "rejected";
+  comment?: string | null;
+  checked_by?: string | null;
+  signed_at?: string | null;
+}
+
+export interface CandidateApproval {
+  id: string;
+  candidate_id: string;
+  form_number: string; // e.g. CAF-2026-005
+  branch_id?: string | null;
+  status: "draft" | "in_review" | "approved" | "rejected";
+
+  // Section I: Candidate & Role Overview
+  candidate_name: string;
+  gender: string;
+  position_applied: string;
+  business_unit: string;
+  department: string;
+  hiring_manager: string;
+  current_salary: string;
+  expectation_salary: string;
+  current_benefit: string;
+  notice_period: string;
+
+  // Section II: Candidate Evaluation Summary
+  education_and_skill: string;
+  work_experience: string;
+  strengths: string;
+  improvement: string;
+  overall_assessment: string;
+  interview_panels: CandidateApprovalPanel[];
+
+  // Section III: 4-Step Final Approval Signatories
+  signatories: {
+    ceo: CandidateApprovalSignatory;
+    hr_manager: CandidateApprovalSignatory;
+    division_director: CandidateApprovalSignatory;
+    chairwoman: CandidateApprovalSignatory;
+  };
+
+  created_at: string;
+  updated_at?: string | null;
+  completed_at?: string | null;
+}
+
 export type HireTab = "actions" | "requests" | "jobs" | "candidates" | "interviews" | "pipeline" | "offers";
 
 export type OfferStatus =

@@ -153,7 +153,49 @@ export function checkInterviewStageProgressionGate(
     }
   }
 
+  // 3. Check candidate approval stage progression gate
+  const approvalIdx = STAGE_TIMELINE_ORDER.indexOf("candidate_approval");
+  if (approvalIdx >= 0 && targetIdx > approvalIdx) {
+    const isApproved = isCandidateApprovalVerified(candidate);
+    if (!isApproved) {
+      return {
+        allowed: false,
+        reason: 'Cannot advance past "Candidate Approval": The Candidate Approval Form (CAF) must be signed and approved first.',
+        blockingStage: "candidate_approval",
+        missingForm: "evaluation",
+      };
+    }
+  }
+
   return { allowed: true };
+}
+
+export function isCandidateApprovalVerified(candidate: Candidate): boolean {
+  const hasDoc = (candidate.documents || []).some(
+    (d) =>
+      d.stage_key === "candidate_approval" ||
+      (d.name || "").toLowerCase().includes("candidate approval")
+  );
+  if (hasDoc) return true;
+
+  try {
+    const raw = localStorage.getItem("hrm_candidate_approvals_store");
+    if (raw) {
+      const list = JSON.parse(raw);
+      const found = list.find((a: any) => a.candidate_id === candidate.id);
+      if (
+        found &&
+        (found.status === "approved" ||
+          (found.signatories &&
+            (found.signatories.ceo?.status === "approved" ||
+              found.signatories.chairwoman?.status === "approved")))
+      ) {
+        return true;
+      }
+    }
+  } catch {}
+
+  return false;
 }
 
 export interface StageEvidenceRule {
@@ -407,6 +449,36 @@ export const STAGE_EVIDENCE_RULES: StageEvidenceRule[] = [
   },
   {
     order: 8,
+    stageKey: "candidate_approval",
+    stageName: "Candidate Approval",
+    responsibleRole: "CEO, HR & Admin Manager, Division Director, Chairwoman",
+    requiredEvidence: [
+      "Candidate & Role Overview Record",
+      "Candidate Evaluation Summary & Interview Panels Verification",
+      "4-Step Executive Sign-offs (CEO, HR Manager, Division Director, Chairwoman)",
+      "Official Candidate Approval Form (CAF) PDF",
+    ],
+    formOfEvidence: "Completed Candidate Approval Form (CAF) with 4-level signatures",
+    allowsUpload: true,
+    uploadCategoryLabel: "Upload Signed Candidate Approval Form",
+    checkEvidence: (candidate) => {
+      const isVerified = isCandidateApprovalVerified(candidate);
+      const cafDocs = (candidate.documents || []).filter(
+        (d) =>
+          d.stage_key === "candidate_approval" ||
+          (d.name || "").toLowerCase().includes("candidate approval")
+      );
+      return {
+        isVerified,
+        summary: isVerified
+          ? "Verified: Candidate Approval Form (CAF) approved with executive sign-offs."
+          : "Pending: 4-step executive approval sign-off required on Candidate Approval Form.",
+        attachedDocs: cafDocs,
+      };
+    },
+  },
+  {
+    order: 9,
     stageKey: "salary_negotiation",
     stageName: "Salary Negotiation",
     responsibleRole: "HR Director & Finance",
