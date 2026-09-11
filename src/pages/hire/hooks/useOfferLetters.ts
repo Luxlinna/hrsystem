@@ -12,7 +12,7 @@ import {
   type CreateProposalPayload,
 } from "../services/offerLetterService";
 import { exportOfferLetterPdf } from "../exports/exportOfferLetterPdf";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/Toast";
 
 export type WorkflowModalType =
   | "salary_approval"
@@ -26,7 +26,6 @@ export type WorkflowModalType =
 export function useOfferLetters(currentUserName = "HR Operations", onCandidateStageUpdated?: () => void) {
   const [offers, setOffers] = useState<OfferLetter[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   const [activeOffer, setActiveOffer] = useState<OfferLetter | null>(null);
   const [modalType, setModalType] = useState<WorkflowModalType>(null);
@@ -86,7 +85,7 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
         throw err;
       }
     },
-    [currentUserName, closeCreateProposal, toast]
+    [currentUserName, closeCreateProposal]
   );
 
   const handleApproveSalary = useCallback(
@@ -100,7 +99,7 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
         toast("Error", "Failed to approve salary proposal.", "error");
       }
     },
-    [currentUserName, closeWorkflowModal, toast]
+    [currentUserName, closeWorkflowModal]
   );
 
   const handleGenerateDraft = useCallback(
@@ -114,7 +113,7 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
         toast("Error", "Failed to generate offer letter draft.", "error");
       }
     },
-    [closeWorkflowModal, toast]
+    [closeWorkflowModal]
   );
 
   const handleEndorseHrReview = useCallback(
@@ -128,7 +127,7 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
         toast("Error", "Failed to endorse HR review.", "error");
       }
     },
-    [currentUserName, closeWorkflowModal, toast]
+    [currentUserName, closeWorkflowModal]
   );
 
   const handleApproveManagement = useCallback(
@@ -142,7 +141,7 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
         toast("Error", "Failed to approve offer letter.", "error");
       }
     },
-    [currentUserName, closeWorkflowModal, toast]
+    [currentUserName, closeWorkflowModal]
   );
 
   const handleIssueOffer = useCallback(
@@ -159,7 +158,7 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
         toast("Error", "Failed to issue offer letter.", "error");
       }
     },
-    [currentUserName, closeWorkflowModal, onCandidateStageUpdated, toast]
+    [currentUserName, closeWorkflowModal, onCandidateStageUpdated]
   );
 
   const handleRecordDecision = useCallback(
@@ -180,7 +179,7 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
         toast("Error", "Failed to record candidate decision.", "error");
       }
     },
-    [closeWorkflowModal, onCandidateStageUpdated, toast]
+    [closeWorkflowModal, onCandidateStageUpdated]
   );
 
   const handleExportPdf = useCallback((offer: OfferLetter) => {
