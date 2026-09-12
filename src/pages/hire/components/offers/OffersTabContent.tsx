@@ -11,6 +11,7 @@ interface OffersTabContentProps {
   onOpenWorkflowModal: (offer: OfferLetter, type: WorkflowModalType) => void;
   onGenerateDraft: (offer: OfferLetter) => Promise<void>;
   onExportPdf: (offer: OfferLetter) => void;
+  onExportWord?: (offer: OfferLetter) => void;
   onDeleteOffer: (offer: OfferLetter) => void;
 }
 
@@ -101,6 +102,7 @@ export function OffersTabContent({
   onOpenWorkflowModal,
   onGenerateDraft,
   onExportPdf,
+  onExportWord,
   onDeleteOffer,
 }: OffersTabContentProps) {
   const [search, setSearch] = useState("");
@@ -439,9 +441,9 @@ export function OffersTabContent({
                             <button
                               type="button"
                               onClick={() => onOpenWorkflowModal(offer, "hr_review")}
-                              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
                             >
-                              Endorse HR
+                              <i className="ri-shield-check-line" /> HR Manager Review
                             </button>
                           )}
 
@@ -478,16 +480,28 @@ export function OffersTabContent({
                             </button>
                           )}
 
-                          {/* Export / Print PDF Button (Always available once draft is generated) */}
+                          {/* Export Word (.docx) & PDF Buttons (Always available once draft is generated) */}
                           {!["salary_proposal"].includes(offer.status) && (
-                            <button
-                              type="button"
-                              onClick={() => onExportPdf(offer)}
-                              title="Preview / Print Official Offer Letter PDF"
-                              className="p-1.5 text-slate-600 hover:text-[#253C7D] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <i className="ri-file-pdf-line text-base" />
-                            </button>
+                            <>
+                              {onExportWord && (
+                                <button
+                                  type="button"
+                                  onClick={() => onExportWord(offer)}
+                                  title="Export Official Offer Letter as Word (.docx)"
+                                  className="p-1.5 text-slate-600 hover:text-sky-700 hover:bg-sky-50 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  <i className="ri-file-word-line text-base text-sky-700" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => onExportPdf(offer)}
+                                title="Preview / Print Official Offer Letter PDF"
+                                className="p-1.5 text-slate-600 hover:text-[#253C7D] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <i className="ri-file-pdf-line text-base text-rose-600" />
+                              </button>
+                            </>
                           )}
 
                           {/* Delete Offer Button */}

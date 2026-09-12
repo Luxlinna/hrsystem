@@ -14,6 +14,7 @@ import {
   type CreateProposalPayload,
 } from "../services/offerLetterService";
 import { exportOfferLetterPdf } from "../exports/exportOfferLetterPdf";
+import { exportOfferLetterWord } from "../exports/exportOfferLetterWord";
 import { toast } from "@/components/Toast";
 
 export type WorkflowModalType =
@@ -110,13 +111,17 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
       try {
         const updated = await generateOfferLetterDraft(offer);
         setOffers((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-        closeWorkflowModal();
-        toast("Offer Letter Draft Generated", `Document compiled from candidate and requisition records. Ready for HR review.`, "success");
+        openWorkflowModal(updated, "hr_review");
+        toast(
+          "Offer Letter Generated",
+          "Compiled directly from candidate and requisition records. Opening HR Manager Review...",
+          "success"
+        );
       } catch {
         toast("Error", "Failed to generate offer letter draft.", "error");
       }
     },
-    [closeWorkflowModal]
+    [openWorkflowModal]
   );
 
   const handleEndorseHrReview = useCallback(
@@ -156,7 +161,12 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
         if (onCandidateStageUpdated) onCandidateStageUpdated();
         toast("Offer Officially Issued", `Offer has been issued to ${offer.candidate_name}. Candidate pipeline stage updated to Offer.`, "success");
         // Trigger PDF export
-        exportOfferLetterPdf(updated);
+        const isAtHr = Boolean(
+          typeof window !== "undefined" &&
+          (/hr\s*division|human\s*resource|\bhr\b/i.test(localStorage.getItem("hrm_selected_branch_name") || "") ||
+           localStorage.getItem("hrm_selected_branch_id") === "68b6c801-3581-460a-9918-2c6b5434fc7c")
+        );
+        exportOfferLetterPdf(updated, undefined, isAtHr);
       } catch {
         toast("Error", "Failed to issue offer letter.", "error");
       }
@@ -186,7 +196,26 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
   );
 
   const handleExportPdf = useCallback((offer: OfferLetter) => {
-    exportOfferLetterPdf(offer);
+    const isAtHr = Boolean(
+      typeof window !== "undefined" &&
+      (/hr\s*division|human\s*resource|\bhr\b/i.test(localStorage.getItem("hrm_selected_branch_name") || "") ||
+       localStorage.getItem("hrm_selected_branch_id") === "68b6c801-3581-460a-9918-2c6b5434fc7c")
+    );
+    exportOfferLetterPdf(offer, undefined, isAtHr);
+  }, []);
+
+  const handleExportWord = useCallback(async (offer: OfferLetter) => {
+    try {
+      const isAtHr = Boolean(
+        typeof window !== "undefined" &&
+        (/hr\s*division|human\s*resource|\bhr\b/i.test(localStorage.getItem("hrm_selected_branch_name") || "") ||
+         localStorage.getItem("hrm_selected_branch_id") === "68b6c801-3581-460a-9918-2c6b5434fc7c")
+      );
+      await exportOfferLetterWord(offer, undefined, isAtHr);
+      toast("Word Exported", `Offer letter for ${offer.candidate_name} downloaded as Word (.docx).`, "success");
+    } catch {
+      toast("Export Error", "Failed to generate Word document.", "error");
+    }
   }, []);
 
   const handleDeleteOffer = useCallback(
@@ -249,6 +278,7 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
     handleIssueOffer,
     handleRecordDecision,
     handleExportPdf,
+    handleExportWord,
     handleDeleteOffer,
   };
 }

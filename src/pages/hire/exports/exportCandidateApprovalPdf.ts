@@ -1,7 +1,7 @@
 import type { CandidateApproval } from "../types";
 import { buildCandidateApprovalHtml } from "./templates/candidateApprovalPdfTemplate";
 
-export function exportCandidateApprovalPdf(approval: CandidateApproval) {
+export function exportCandidateApprovalPdf(approval: CandidateApproval, isHrDivisionContext?: boolean) {
   const printWindow = document.createElement("iframe");
   printWindow.style.position = "fixed";
   printWindow.style.right = "0";
@@ -14,7 +14,7 @@ export function exportCandidateApprovalPdf(approval: CandidateApproval) {
   const doc = printWindow.contentWindow?.document;
   if (!doc) return;
 
-  const htmlContent = buildCandidateApprovalHtml(approval);
+  const htmlContent = buildCandidateApprovalHtml(approval, isHrDivisionContext);
 
   doc.open();
   doc.write(htmlContent);

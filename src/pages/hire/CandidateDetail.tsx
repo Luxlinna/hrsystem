@@ -27,6 +27,7 @@ import {
   recordCandidateDecision,
 } from "./services/offerLetterService";
 import { exportOfferLetterPdf } from "./exports/exportOfferLetterPdf";
+import { exportOfferLetterWord } from "./exports/exportOfferLetterWord";
 import { useCandidateDetail } from "./hooks/useCandidateDetail";
 import { resolveInterviewStageKey, isUserInvitedToInterview } from "./utils/interviewPanelHelper";
 import { toast } from "@/components/Toast";
@@ -182,10 +183,10 @@ export default function CandidateDetail() {
       try {
         const updated = await generateOfferLetterDraft(offer);
         setActiveOffer(updated);
-        setWorkflowModalType(null);
+        setWorkflowModalType("hr_review");
         toast(
-          "Offer Letter Draft Generated",
-          "Generated directly from candidate & requisition records (no retyping required). Ready for HR Review.",
+          "Offer Letter Generated",
+          "Generated directly from candidate & requisition records (no retyping required). Opening HR Manager Review...",
           "success"
         );
       } catch {
@@ -279,6 +280,15 @@ export default function CandidateDetail() {
 
   const handleExportPdf = useCallback((offer: OfferLetter) => {
     exportOfferLetterPdf(offer);
+  }, []);
+
+  const handleExportWord = useCallback(async (offer: OfferLetter) => {
+    try {
+      await exportOfferLetterWord(offer);
+      toast("Word Exported", `Offer letter for ${offer.candidate_name} downloaded as Word (.docx).`, "success");
+    } catch {
+      toast("Export Error", "Failed to generate Word document.", "error");
+    }
   }, []);
 
   useEffect(() => {
@@ -409,6 +419,7 @@ export default function CandidateDetail() {
                 setWorkflowModalType(type);
               }}
               onExportPdf={handleExportPdf}
+              onExportWord={handleExportWord}
             />
           )}
 
@@ -588,12 +599,14 @@ export default function CandidateDetail() {
         onClose={() => setWorkflowModalType(null)}
         offer={activeOffer}
         modalType={workflowModalType}
+        actorName={actorName}
         onGenerateDraft={handleGenerateDraft}
         onEndorseHrReview={handleEndorseHrReview}
         onApproveManagement={handleApproveManagement}
         onIssueOffer={handleIssueOffer}
         onRecordDecision={handleRecordDecision}
         onExportPdf={handleExportPdf}
+        onExportWord={handleExportWord}
       />
     </div>
   );

@@ -1,5 +1,9 @@
 import type { Candidate } from "../types";
-import { UNI_LOGO_BASE64 } from "./templates/uniLogoBase64";
+import {
+  resolveDocumentBranding,
+  getOfficialCompanyNameKhmer,
+  getOfficialCompanyNameEnglish,
+} from "@/services/formLogoService";
 
 export type InterviewResultRecommendation =
   | "recommend_to_hire"
@@ -99,7 +103,10 @@ function renderInterviewerTd(title: string, slot?: InterviewerSlot): string {
   `;
 }
 
-export function buildInterviewEvaluationHtml(data: InterviewEvaluationExportData): string {
+export function buildInterviewEvaluationHtml(
+  data: InterviewEvaluationExportData,
+  isHrDivisionContext?: boolean
+): string {
   const rec = data.recommendation || "recommend_to_hire";
   const isRecommend = rec === "recommend_to_hire" || rec === "strong_hire" || rec === "advance";
   const isHold = rec === "hold";
@@ -107,6 +114,13 @@ export function buildInterviewEvaluationHtml(data: InterviewEvaluationExportData
   const isAnotherPosition = rec === "available_another";
 
   const department = data.offerDepartment || data.candidate.job_postings?.department || "Business Development";
+  const businessUnit = (data.candidate.job_postings?.branches as any)?.name || department;
+  const branding = resolveDocumentBranding({
+    businessUnit,
+    department,
+    isHrDivisionContext,
+  });
+
   const director = data.director || "Director";
   const position = data.officerPosition || data.candidate.job_postings?.title || "Officer Position";
   const probationSalary = data.probationSalary || (data.candidate.expected_salary ? `${data.candidate.expected_salary.toLocaleString()}$ (Net)` : "1,100$ (Net)");
@@ -275,12 +289,12 @@ export function buildInterviewEvaluationHtml(data: InterviewEvaluationExportData
 </head>
 <body>
   <div class="page-container">
-    <!-- Top Branding with UNI Logo -->
+    <!-- Top Branding with BU / HR Division Logo -->
     <div class="company-header">
-      <img src="${UNI_LOGO_BASE64}" class="company-logo" alt="UNI Logo" />
+      <img src="${branding.logo}" class="company-logo" alt="Brand Logo" />
       <div class="company-info">
-        <div class="company-name-kh">យូនីក ណូបិល អ៊ិនវេសម៉ិន ឯ.ក</div>
-        <div class="company-name-en">Unique Noble Investment Co. Ltd.</div>
+        <div class="company-name-kh">${escapeHtml(branding.companyKhmer || getOfficialCompanyNameKhmer())}</div>
+        <div class="company-name-en">${escapeHtml(branding.companyName || getOfficialCompanyNameEnglish())}</div>
         <div>Building TK Roundabout No. 6, Floor 2nd, Office No. A2-06F, Street No. 289, 12, Sangkat Boeng Kak Ti Pir, Khan Tuol Kouk, Phnom Penh</div>
         <div>Phone: 095 224 424 &nbsp;|&nbsp; TIN: K005-902204561</div>
       </div>
@@ -381,8 +395,11 @@ export function buildInterviewEvaluationHtml(data: InterviewEvaluationExportData
 </html>`;
 }
 
-export function exportInterviewEvaluationPdf(data: InterviewEvaluationExportData): boolean {
-  const html = buildInterviewEvaluationHtml(data);
+export function exportInterviewEvaluationPdf(
+  data: InterviewEvaluationExportData,
+  isHrDivisionContext?: boolean
+): boolean {
+  const html = buildInterviewEvaluationHtml(data, isHrDivisionContext);
 
   try {
     const iframe = document.createElement("iframe");

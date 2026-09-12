@@ -68,6 +68,11 @@ export function BranchProvider({ children }: { children: ReactNode }) {
 
   const setSelectedBranchId = useCallback(
     (id: string) => {
+      const found = branches.find((b) => b.id === id);
+      const bName = id === "all" ? "All Branches" : (found?.name || "");
+      if (typeof window !== "undefined" && bName) {
+        localStorage.setItem("hrm_selected_branch_name", bName);
+      }
       if (isSuperAdmin || isHrDivision) {
         setStoredBranchId(id);
         localStorage.setItem("hrm_selected_branch_id", id);
@@ -129,6 +134,12 @@ export function BranchProvider({ children }: { children: ReactNode }) {
     const found = branches.find((b) => b.id === selectedBranchId);
     return found?.name || userSiteName || userBranchName || "Selected Branch";
   }, [effectiveBranchId, selectedBranchId, branches, userSiteName, userBranchName]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && effectiveBranchName) {
+      localStorage.setItem("hrm_selected_branch_name", effectiveBranchName);
+    }
+  }, [effectiveBranchName]);
 
   const isBranchScoped = Boolean(effectiveBranchId);
 

@@ -14,11 +14,16 @@ import {
   ImageRun,
 } from "docx";
 import type { CandidateApproval } from "../types";
-import { UNI_LOGO_BASE64 } from "./templates/uniLogoBase64";
+import {
+  resolveDocumentBranding,
+  getOfficialCompanyNameKhmer,
+  getOfficialCompanyNameEnglish,
+} from "@/services/formLogoService";
 
-function getLogoBuffer(): Uint8Array | null {
+function getLogoBuffer(logoBase64: string): Uint8Array | null {
   try {
-    const base64Clean = UNI_LOGO_BASE64.replace(/^data:image\/\w+;base64,/, "");
+    const raw = logoBase64;
+    const base64Clean = raw.replace(/^data:image\/\w+;base64,/, "");
     const binary = atob(base64Clean);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
@@ -30,7 +35,10 @@ function getLogoBuffer(): Uint8Array | null {
   }
 }
 
-export async function exportCandidateApprovalWord(approval: CandidateApproval): Promise<boolean> {
+export async function exportCandidateApprovalWord(
+  approval: CandidateApproval,
+  isHrDivisionContext?: boolean
+): Promise<boolean> {
   // A4 Page printable width with 10mm (567 dxa) margins: ~10,700 dxa
   const TOTAL_WIDTH = 10700;
 
@@ -58,6 +66,8 @@ export async function exportCandidateApprovalWord(approval: CandidateApproval): 
     bottom: noBorder,
     left: noBorder,
     right: noBorder,
+    insideHorizontal: noBorder,
+    insideVertical: noBorder,
   };
 
   const cellMargins = {
@@ -67,7 +77,14 @@ export async function exportCandidateApprovalWord(approval: CandidateApproval): 
     right: 90,
   };
 
-  const logoBytes = getLogoBuffer();
+  // When exported at HR Division: MUST WORK WITH UNI LOGO (NO OPS), even if candidate was for OPS
+  const branding = resolveDocumentBranding({
+    businessUnit: approval.business_unit,
+    department: approval.department,
+    isHrDivisionContext,
+  });
+
+  const logoBytes = getLogoBuffer(branding.logo);
 
   // 1. Company Header Table (Logo + Company Details) - strictly borderless
   const headerTable = new Table({
@@ -106,7 +123,7 @@ export async function exportCandidateApprovalWord(approval: CandidateApproval): 
                 spacing: { before: 0, after: 15, line: 240 },
                 children: [
                   new TextRun({
-                    text: "យូនីក ណូបិល អ៊ិនវេសម៉ិន ឯ.ក",
+                    text: branding.companyKhmer || getOfficialCompanyNameKhmer(),
                     bold: true,
                     size: 21, // 10.5pt
                     font: "Kantumruy Pro",
@@ -117,7 +134,7 @@ export async function exportCandidateApprovalWord(approval: CandidateApproval): 
                 spacing: { before: 0, after: 15, line: 240 },
                 children: [
                   new TextRun({
-                    text: "Unique Noble Investment Co. Ltd.",
+                    text: branding.companyName || getOfficialCompanyNameEnglish(),
                     bold: true,
                     size: 19, // 9.5pt
                     font: "Inter",

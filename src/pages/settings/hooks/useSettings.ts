@@ -235,8 +235,10 @@ export function useSettings() {
       // Default: save to system_settings
       const { error } = await supabase
         .from("system_settings")
-        .update({ value: val, updated_at: new Date().toISOString() })
-        .eq("key", key);
+        .upsert(
+          { key, value: val, updated_at: new Date().toISOString() },
+          { onConflict: "key" }
+        );
       setSaving(false);
       if (error) {
         toast("Error", error.message, "error");
@@ -363,8 +365,10 @@ export function useSettings() {
       for (const key of changed) {
         const { error } = await supabase
           .from("system_settings")
-          .update({ value: edited[key], updated_at: new Date().toISOString() })
-          .eq("key", key);
+          .upsert(
+            { key, value: edited[key], updated_at: new Date().toISOString() },
+            { onConflict: "key" }
+          );
         if (error) {
           setSaving(false);
           toast(

@@ -97,6 +97,10 @@ export function initCandidateApproval(
     ? `$${candidate.expected_salary.toLocaleString()}`
     : "$1,500";
 
+  const resolvedDept = reqDetails?.department || job?.department || "Operations";
+  const isHrDept = /hr\s*division|human\s*resource|\bhr\b/i.test(resolvedDept);
+  const defaultBu = isHrDept ? "HR Division (UNI Holding)" : (job?.branches?.name || "OPS Solutions Co., Ltd.");
+
   return {
     id: `caf_${candidate.id}`,
     candidate_id: candidate.id,
@@ -108,8 +112,8 @@ export function initCandidateApproval(
     candidate_name: candidate.full_name,
     gender: "Female",
     position_applied: reqDetails?.positionApplied || job?.title || "Candidate Position",
-    business_unit: reqDetails?.businessUnit || job?.branches?.name || "Unique Noble Investment Co. Ltd.",
-    department: reqDetails?.department || job?.department || "HR & Operations",
+    business_unit: reqDetails?.businessUnit || job?.branches?.name || defaultBu,
+    department: resolvedDept,
     hiring_manager: reqDetails?.hiringManager || (candidate.assigned_recruiter
       ? `${candidate.assigned_recruiter.first_name} ${candidate.assigned_recruiter.last_name}`
       : "Hiring Manager"),

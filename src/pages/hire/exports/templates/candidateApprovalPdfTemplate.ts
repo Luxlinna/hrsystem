@@ -1,5 +1,9 @@
 import type { CandidateApproval } from "../../types";
-import { UNI_LOGO_BASE64 } from "./uniLogoBase64";
+import {
+  resolveDocumentBranding,
+  getOfficialCompanyNameKhmer,
+  getOfficialCompanyNameEnglish,
+} from "@/services/formLogoService";
 
 function renderSignatoryBox(
   title: string,
@@ -40,7 +44,10 @@ function renderSignatoryBox(
   `;
 }
 
-export function buildCandidateApprovalHtml(approval: CandidateApproval): string {
+export function buildCandidateApprovalHtml(
+  approval: CandidateApproval,
+  isHrDivisionContext?: boolean
+): string {
   const panelsHtml =
     approval.interview_panels && approval.interview_panels.length > 0
       ? approval.interview_panels
@@ -67,6 +74,13 @@ export function buildCandidateApprovalHtml(approval: CandidateApproval): string 
     `;
 
   const sigs = approval.signatories;
+
+  // When exported at HR Division: MUST WORK WITH UNI LOGO (NO OPS), even if candidate was from OPS
+  const branding = resolveDocumentBranding({
+    businessUnit: approval.business_unit,
+    department: approval.department,
+    isHrDivisionContext,
+  });
 
   return `
 <!DOCTYPE html>
@@ -135,14 +149,14 @@ export function buildCandidateApprovalHtml(approval: CandidateApproval): string 
     <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px;">
       <div style="display: flex; align-items: flex-start; gap: 10px; max-width: 82%;">
         <div style="width: 52px; height: 52px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-          <img src="${UNI_LOGO_BASE64}" style="width: 48px; height: 48px; object-fit: contain;" alt="Unique Noble Investment Logo" />
+          <img src="${branding.logo}" style="width: 48px; height: 48px; object-fit: contain;" alt="Brand Logo" />
         </div>
         <div style="font-size: 8.5px; line-height: 1.3; color: #111;">
           <div style="font-family: 'Kantumruy Pro', sans-serif; font-size: 10.5px; font-weight: bold; color: #111;">
-            យូនីក ណូបិល អ៊ិនវេសម៉ិន ឯ.ក
+            ${branding.companyKhmer || getOfficialCompanyNameKhmer()}
           </div>
           <div style="font-weight: bold; font-size: 9.5px; margin-bottom: 1px;">
-            Unique Noble Investment Co. Ltd.
+            ${branding.companyName || getOfficialCompanyNameEnglish()}
           </div>
           <div style="font-family: 'Kantumruy Pro', sans-serif; font-size: 7.5px; color: #222;">
             ផ្ទះលេខ TK Roundabout លេខ 6 ជាន់ទី 2 ការិយាល័យលេខ A2-06F, ផ្លូវលេខ 289, 12 សង្កាត់ បឹងកក់ទី 2, ខណ្ឌទួលគោក, ភ្នំពេញ, កម្ពុជា

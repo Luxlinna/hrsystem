@@ -13,11 +13,16 @@ import {
   ImageRun,
 } from "docx";
 import type { InterviewEvaluationExportData, InterviewerSlot } from "./exportInterviewEvaluationPdf";
-import { UNI_LOGO_BASE64 } from "./templates/uniLogoBase64";
+import {
+  resolveDocumentBranding,
+  getOfficialCompanyNameKhmer,
+  getOfficialCompanyNameEnglish,
+} from "@/services/formLogoService";
 
-function getLogoBuffer(): Uint8Array | null {
+function getLogoBuffer(logoBase64: string): Uint8Array | null {
   try {
-    const base64Clean = UNI_LOGO_BASE64.replace(/^data:image\/\w+;base64,/, "");
+    const raw = logoBase64;
+    const base64Clean = raw.replace(/^data:image\/\w+;base64,/, "");
     const binary = atob(base64Clean);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
@@ -47,7 +52,10 @@ function formatOrdinalDate(dateStr?: string | null): string {
   return `${day}${ord} ${month} ${year}`;
 }
 
-export async function exportInterviewEvaluationWord(data: InterviewEvaluationExportData): Promise<boolean> {
+export async function exportInterviewEvaluationWord(
+  data: InterviewEvaluationExportData,
+  isHrDivisionContext?: boolean
+): Promise<boolean> {
   const TOTAL_WIDTH = 10500; // dxa width for A4 page
   const HALF_WIDTH = 5250;
   const QUARTER_WIDTH = 2625;
@@ -130,15 +138,22 @@ export async function exportInterviewEvaluationWord(data: InterviewEvaluationExp
   const employerCompany = data.approvedBy?.company || "UNI Holding";
   const approvalDate = data.approvedBy?.date || "........................";
 
+  const businessUnit = (data.candidate.job_postings?.branches as any)?.name || department;
+  const branding = resolveDocumentBranding({
+    businessUnit,
+    department,
+    isHrDivisionContext,
+  });
+
   // Company Header Table (Logo + Company text)
-  const logoBuffer = getLogoBuffer();
+  const logoBuffer = getLogoBuffer(branding.logo);
   const logoRun = logoBuffer
     ? new ImageRun({
         data: logoBuffer,
         transformation: { width: 50, height: 50 },
         type: "png",
       })
-    : new TextRun({ text: "UNI", bold: true, size: 24, color: "253c7d" });
+    : new TextRun({ text: branding.isHrDivision ? "UNI" : "OPS", bold: true, size: 24, color: "253c7d" });
 
   const companyHeaderTable = new Table({
     width: { size: TOTAL_WIDTH, type: WidthType.DXA },
@@ -160,7 +175,7 @@ export async function exportInterviewEvaluationWord(data: InterviewEvaluationExp
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: "យូនីក ណូបិល អ៊ិនវេសម៉ិន ឯ.ក",
+                    text: branding.companyKhmer || getOfficialCompanyNameKhmer(),
                     bold: true,
                     size: 20,
                     font: "Kantumruy Pro",
@@ -170,7 +185,7 @@ export async function exportInterviewEvaluationWord(data: InterviewEvaluationExp
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: "Unique Noble Investment Co. Ltd.",
+                    text: branding.companyName || getOfficialCompanyNameEnglish(),
                     bold: true,
                     size: 19,
                   }),

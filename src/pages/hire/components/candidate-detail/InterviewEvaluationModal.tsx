@@ -8,7 +8,7 @@ import {
   type InterviewerSlot,
 } from "../../exports/exportInterviewEvaluationPdf";
 import { exportInterviewEvaluationWord } from "../../exports/exportInterviewEvaluationWord";
-import { UNI_LOGO_BASE64 } from "../../exports/templates/uniLogoBase64";
+import { resolveDocumentBranding } from "@/services/formLogoService";
 import { toast } from "@/components/Toast";
 
 interface InterviewEvaluationModalProps {
@@ -112,6 +112,12 @@ export const InterviewEvaluationModal = memo(function InterviewEvaluationModal({
   // Find existing interview record reliably
   const existingInterview = targetInterview || getStageInterview(stageKey, interviews);
 
+  // Dynamic branding: UNI logo strictly for HR Division; BU logo for other BUs
+  const branding = resolveDocumentBranding({
+    businessUnit: candidate.job_postings?.branches?.name || candidate.job_postings?.department,
+    department: candidate.job_postings?.department,
+  });
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/45 backdrop-blur-xs overflow-y-auto no-scrollbar"
@@ -125,8 +131,8 @@ export const InterviewEvaluationModal = memo(function InterviewEvaluationModal({
         <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-4 min-w-0">
             <img
-              src={UNI_LOGO_BASE64}
-              alt="UNI Logo"
+              src={branding.logo}
+              alt="Brand Logo"
               className="h-10 w-auto max-w-[120px] object-contain shrink-0"
             />
             <div className="h-8 w-px bg-gray-200 hidden sm:block shrink-0" />

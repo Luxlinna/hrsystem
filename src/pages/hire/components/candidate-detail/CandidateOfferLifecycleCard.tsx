@@ -9,6 +9,7 @@ interface CandidateOfferLifecycleCardProps {
   onGenerateDraft: (offer: OfferLetter) => Promise<void>;
   onOpenWorkflowModal: (offer: OfferLetter, type: WorkflowModalType) => void;
   onExportPdf: (offer: OfferLetter) => void;
+  onExportWord?: (offer: OfferLetter) => void;
 }
 
 interface StepItem {
@@ -29,6 +30,7 @@ export const CandidateOfferLifecycleCard = memo(function CandidateOfferLifecycle
   onGenerateDraft,
   onOpenWorkflowModal,
   onExportPdf,
+  onExportWord,
 }: CandidateOfferLifecycleCardProps) {
   const isQualificationBased = useMemo(() => {
     if (!offer) return false;
@@ -90,14 +92,14 @@ export const CandidateOfferLifecycleCard = memo(function CandidateOfferLifecycle
       {
         id: 2,
         key: "generate",
-        name: "Generate Offer Letter",
-        subtitle: "Zero-retyping auto compilation",
+        name: "HR Division Review",
+        subtitle: "Review form & click Generate Offer",
         icon: "ri-file-text-line",
         isDone: ["draft_letter", "hr_review", "management_approval", "approved", "issued", "accepted", "rejected"].includes(
           s || ""
         ),
         isCurrent: hasOffer && (s === "salary_proposal" || s === "salary_approved"),
-        details: "Directly compiled from candidate profile & requisition data",
+        details: "Form sent across to HR Division for review to generate offer letter",
       },
       {
         id: 3,
@@ -180,15 +182,28 @@ export const CandidateOfferLifecycleCard = memo(function CandidateOfferLifecycle
         {/* Quick Actions in Header */}
         <div className="flex items-center gap-2 shrink-0">
           {offer && ["approved", "issued", "accepted"].includes(offer.status) && (
-            <button
-              type="button"
-              onClick={() => onExportPdf(offer)}
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5 border border-white/20 cursor-pointer backdrop-blur-xs"
-              title="Download or print official employment offer letter PDF"
-            >
-              <i className="ri-file-pdf-line text-sm text-red-300" />
-              <span>Offer PDF</span>
-            </button>
+            <>
+              {onExportWord && (
+                <button
+                  type="button"
+                  onClick={() => onExportWord(offer)}
+                  className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5 border border-white/20 cursor-pointer backdrop-blur-xs"
+                  title="Download official employment offer letter Word (.docx)"
+                >
+                  <i className="ri-file-word-line text-sm text-sky-200" />
+                  <span>Offer Word</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => onExportPdf(offer)}
+                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5 border border-white/20 cursor-pointer backdrop-blur-xs"
+                title="Download or print official employment offer letter PDF"
+              >
+                <i className="ri-file-pdf-line text-sm text-red-300" />
+                <span>Offer PDF</span>
+              </button>
+            </>
           )}
 
           {!offer && (
@@ -340,26 +355,34 @@ export const CandidateOfferLifecycleCard = memo(function CandidateOfferLifecycle
 
             {/* Step 2 guidance: Zero-retyping letter generation */}
             {offer && (offer.status === "salary_proposal" || offer.status === "salary_approved") && (
-              <p className="text-xs text-blue-900 font-medium leading-relaxed">
-                The offer letter is generated directly from candidate and requisition data already in the system —{" "}
-                <strong className="text-blue-950 font-black underline decoration-blue-300">
-                  no retyping of name, role, salary, or start date
-                </strong>
-                .
-              </p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-900 border border-blue-200">
+                    Sent to HR Division
+                  </span>
+                  <span className="text-xs text-blue-950 font-bold">HR Division Reviewing Form</span>
+                </div>
+                <p className="text-xs text-blue-900 font-medium leading-relaxed">
+                  The form has been sent across to the <strong>HR Division for review</strong>. HR Division reviews the proposed terms and clicks <strong>Generate Offer Letter</strong>. The offer letter is compiled directly from candidate and requisition data already in the system —{" "}
+                  <strong className="text-blue-950 font-black underline decoration-blue-300">
+                    no retyping of name, role, salary, or start date
+                  </strong>
+                  .
+                </p>
+              </div>
             )}
 
             {/* Step 3 guidance: HR Review */}
             {offer && (offer.status === "draft_letter" || offer.status === "hr_review") && (
               <p className="text-xs text-slate-700 font-medium">
-                The offer letter draft is compiled and waiting for HR compliance review of clauses, probation, and employment terms.
+                The offer letter has been generated directly from candidate and requisition records. The HR Manager must now review the letter terms, verify labor policy compliance, and endorse it before executive management approval.
               </p>
             )}
 
             {/* Step 4 guidance: Management Authorization */}
             {offer && offer.status === "management_approval" && (
               <p className="text-xs text-slate-700 font-medium">
-                Endorsed by HR. Awaiting final executive management sign-off to authorize formal offer letter issuance.
+                Endorsed by HR Manager. Awaiting final executive management sign-off to authorize formal offer letter issuance.
               </p>
             )}
 
@@ -425,7 +448,7 @@ export const CandidateOfferLifecycleCard = memo(function CandidateOfferLifecycle
                 className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-2"
               >
                 <i className="ri-shield-check-line text-sm" />
-                Endorse HR Review
+                HR Manager Review Offer Letter
               </button>
             )}
 
@@ -453,6 +476,17 @@ export const CandidateOfferLifecycleCard = memo(function CandidateOfferLifecycle
 
             {offer && offer.status === "issued" && (
               <div className="flex items-center gap-2">
+                {onExportWord && (
+                  <button
+                    type="button"
+                    onClick={() => onExportWord(offer)}
+                    className="px-3.5 py-2 bg-white hover:bg-gray-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+                    title="Export official Offer Letter as Word document"
+                  >
+                    <i className="ri-file-word-line text-sky-700 text-sm" />
+                    Word (.docx)
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onExportPdf(offer)}
@@ -473,14 +507,26 @@ export const CandidateOfferLifecycleCard = memo(function CandidateOfferLifecycle
             )}
 
             {offer && ["accepted", "rejected"].includes(offer.status) && (
-              <button
-                type="button"
-                onClick={() => onExportPdf(offer)}
-                className="px-4 py-2 bg-white hover:bg-gray-50 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                <i className="ri-file-pdf-line text-red-600 text-sm" />
-                Download Offer Letter PDF
-              </button>
+              <div className="flex items-center gap-2">
+                {onExportWord && (
+                  <button
+                    type="button"
+                    onClick={() => onExportWord(offer)}
+                    className="px-4 py-2 bg-white hover:bg-gray-50 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <i className="ri-file-word-line text-sky-700 text-sm" />
+                    Download Offer Letter Word
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onExportPdf(offer)}
+                  className="px-4 py-2 bg-white hover:bg-gray-50 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <i className="ri-file-pdf-line text-red-600 text-sm" />
+                  Download Offer Letter PDF
+                </button>
+              </div>
             )}
           </div>
         </div>

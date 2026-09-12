@@ -237,6 +237,7 @@ export default function HirePage() {
           onOpenWorkflowModal={offersManager.openWorkflowModal}
           onGenerateDraft={offersManager.handleGenerateDraft}
           onExportPdf={offersManager.handleExportPdf}
+          onExportWord={offersManager.handleExportWord}
           onDeleteOffer={offersManager.handleDeleteOffer}
         />
       )}
@@ -255,6 +256,7 @@ export default function HirePage() {
         onClose={offersManager.closeWorkflowModal}
         offer={offersManager.activeOffer}
         modalType={offersManager.modalType}
+        actorName={offersManager.currentUserName}
         onApproveSalary={offersManager.handleApproveSalary}
         onGenerateDraft={offersManager.handleGenerateDraft}
         onEndorseHrReview={offersManager.handleEndorseHrReview}
@@ -262,6 +264,7 @@ export default function HirePage() {
         onIssueOffer={offersManager.handleIssueOffer}
         onRecordDecision={offersManager.handleRecordDecision}
         onExportPdf={offersManager.handleExportPdf}
+        onExportWord={offersManager.handleExportWord}
       />
 
       <HireModalsContainer {...h} />

@@ -8,6 +8,7 @@ import {
 import { SettingField } from "./SettingField";
 import { ToggleField } from "./SettingField";
 import { AttendanceScheduleCard } from "./AttendanceScheduleCard";
+import { FormBrandingSettingsCard } from "./FormBrandingSettingsCard";
 
 interface GeneralSettingsProps {
   getVal: (key: string) => string;
@@ -107,6 +108,10 @@ export function GeneralSettings({
           </div>
         </div>
       )}
+
+      {/* Official Form Branding & Document Logo Configuration */}
+      <FormBrandingSettingsCard />
+
       <SettingField
         label="Company Name"
         inputType="text"

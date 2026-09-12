@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import type { OfferLetter, Candidate, HiringRequest } from "../types";
+import { sendDualRecruitmentNotification } from "./notifications/recruitmentNotifyEngine";
 
 const LOCAL_STORAGE_KEY = "hrm_offer_letters_store";
 
@@ -166,7 +167,24 @@ export async function createSalaryProposal(payload: CreateProposalPayload): Prom
     updated_at: now,
   };
 
-  return await saveOfferLetter(newOffer);
+  const saved = await saveOfferLetter(newOffer);
+
+  // Send form across to HR Division for review
+  try {
+    await sendDualRecruitmentNotification({
+      title: "Form Sent to HR Division for Review",
+      approverMessage: `Salary proposal form for ${candidate.full_name} (${jobTitle}) has been sent across to HR Division for review. Review and click Generate Offer Letter.`,
+      recruiterMessage: `Form for ${candidate.full_name} (${jobTitle}) has been routed across to HR Division for review.`,
+      approverRole: "HR Manager",
+      entityId: saved.id,
+      actorName: proposed_by_name || "Department",
+      description: `Salary proposal form sent across to HR Division for review (${offerNumber})`,
+    });
+  } catch {
+    // Non-fatal
+  }
+
+  return saved;
 }
 
 export async function approveSalary(

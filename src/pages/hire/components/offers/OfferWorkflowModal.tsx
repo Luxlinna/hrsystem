@@ -7,6 +7,7 @@ interface OfferWorkflowModalProps {
   onClose: () => void;
   offer: OfferLetter | null;
   modalType: WorkflowModalType;
+  actorName?: string;
   onApproveSalary?: (offer: OfferLetter, notes?: string) => Promise<void>;
   onGenerateDraft?: (offer: OfferLetter) => Promise<void>;
   onEndorseHrReview: (offer: OfferLetter, notes?: string) => Promise<void>;
@@ -19,6 +20,7 @@ interface OfferWorkflowModalProps {
     rejectionReason?: string
   ) => Promise<void>;
   onExportPdf: (offer: OfferLetter) => void;
+  onExportWord?: (offer: OfferLetter) => void;
 }
 
 export function OfferWorkflowModal({
@@ -26,6 +28,7 @@ export function OfferWorkflowModal({
   onClose,
   offer,
   modalType,
+  actorName,
   onApproveSalary,
   onGenerateDraft,
   onEndorseHrReview,
@@ -33,8 +36,14 @@ export function OfferWorkflowModal({
   onIssueOffer,
   onRecordDecision,
   onExportPdf,
+  onExportWord,
 }: OfferWorkflowModalProps) {
   const [notes, setNotes] = useState("");
+  const [hrReviewer, setHrReviewer] = useState(actorName || "HR Manager");
+  const [checkTerms, setCheckTerms] = useState(true);
+  const [checkRemuneration, setCheckRemuneration] = useState(true);
+  const [checkProbation, setCheckProbation] = useState(true);
+  const [checkCompliance, setCheckCompliance] = useState(true);
   const [expiryDate, setExpiryDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
@@ -58,7 +67,10 @@ export function OfferWorkflowModal({
       } else if (modalType === "generate_draft" && onGenerateDraft) {
         await onGenerateDraft(offer);
       } else if (modalType === "hr_review") {
-        await onEndorseHrReview(offer, notes);
+        const reviewNotes = notes
+          ? `[HR Reviewer: ${hrReviewer.trim() || actorName || "HR Manager"}] ${notes}`
+          : `[HR Reviewer: ${hrReviewer.trim() || actorName || "HR Manager"}] Endorsed compliance and verified terms.`;
+        await onEndorseHrReview(offer, reviewNotes);
       } else if (modalType === "management_approval") {
         await onApproveManagement(offer, notes);
       } else if (modalType === "issue_offer") {
@@ -84,18 +96,18 @@ export function OfferWorkflowModal({
       color: "from-blue-700 to-indigo-800",
     },
     generate_draft: {
-      title: "Generate Offer Letter",
-      subtitle: "Step 2: Auto-compiled directly from candidate & requisition data",
+      title: "HR Division Review & Generate Offer Letter",
+      subtitle: "Step 2: Form sent to HR Division. Review terms & click Generate Offer Letter",
       icon: "ri-file-text-line",
-      actionBtn: "Compile & Generate Offer Letter",
+      actionBtn: "Generate Offer Letter",
       color: "from-blue-700 to-indigo-800",
     },
     hr_review: {
-      title: "HR Compliance & Letter Review",
-      subtitle: "Step 3: Verify employment terms, probation, & clauses",
+      title: "HR Manager Offer Letter Review",
+      subtitle: "Step 3: Review compiled letter, verify compliance, & endorse for executive approval",
       icon: "ri-shield-check-line",
-      actionBtn: "Endorse HR Compliance",
-      color: "from-indigo-700 to-purple-800",
+      actionBtn: "Endorse as HR Manager & Forward to Management",
+      color: "from-indigo-800 via-blue-900 to-[#253C7D]",
     },
     management_approval: {
       title: "Final Management Authorization",
@@ -193,15 +205,20 @@ export function OfferWorkflowModal({
             </div>
           </div>
 
-          {/* Generate Draft Specific: Automated Compilation Notice */}
+          {/* Generate Draft Specific: HR Division Review & Automated Compilation */}
           {modalType === "generate_draft" && (
-            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/80 rounded-xl space-y-2">
-              <div className="flex items-center gap-2 text-xs font-extrabold text-blue-950">
-                <i className="ri-file-text-line text-blue-700 text-sm" />
-                Zero-Retyping Document Generation
+            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/80 rounded-xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-blue-950">
+                  <i className="ri-file-text-line text-blue-700 text-sm" />
+                  <span>Form Received by HR Division for Review</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+                  HR Division
+                </span>
               </div>
               <p className="text-xs text-blue-900/90 leading-relaxed font-medium">
-                The offer letter is generated directly from candidate and requisition data already in the system —{" "}
+                The form has been sent across to the <strong>HR Division for review</strong>. Verify the details below and click <strong>Generate Offer Letter</strong> to compile the official document directly from candidate and requisition records —{" "}
                 <span className="font-bold text-blue-950 underline decoration-blue-400 decoration-2">
                   no retyping of name, role, salary, or start date
                 </span>
@@ -224,6 +241,86 @@ export function OfferWorkflowModal({
                   <span className="text-slate-500 block font-semibold text-[10px] uppercase">Department / BU</span>
                   <span className="font-bold text-slate-900 truncate block">{offer.department} ({offer.business_unit})</span>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* HR Review Specific: HR Manager Verification & PDF preview */}
+          {modalType === "hr_review" && (
+            <div className="p-4 bg-indigo-50/70 border border-indigo-200/90 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-indigo-950">
+                  <i className="ri-shield-check-line text-indigo-600 text-base" />
+                  <span>HR Manager Review & Verification Checklist</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onExportPdf(offer)}
+                  className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Preview or print the generated offer letter PDF"
+                >
+                  <i className="ri-file-pdf-line text-rose-600" />
+                  <span>Preview Offer PDF</span>
+                </button>
+              </div>
+
+              <p className="text-xs text-indigo-900/80 leading-relaxed font-medium">
+                The offer letter draft has been compiled from candidate and requisition records. Please verify compliance, review clauses, and sign off as HR Manager before forwarding to management.
+              </p>
+
+              {/* Checklist */}
+              <div className="space-y-2 bg-white/90 p-3 rounded-xl border border-indigo-100 text-xs">
+                <label className="flex items-center gap-2 text-slate-800 font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkTerms}
+                    onChange={(e) => setCheckTerms(e.target.checked)}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>Candidate name, designation & department match approved requisition</span>
+                </label>
+                <label className="flex items-center gap-2 text-slate-800 font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkRemuneration}
+                    onChange={(e) => setCheckRemuneration(e.target.checked)}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>Base salary (${offer.base_salary.toLocaleString()}) and allowances match approved proposal</span>
+                </label>
+                <label className="flex items-center gap-2 text-slate-800 font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkProbation}
+                    onChange={(e) => setCheckProbation(e.target.checked)}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>Probation period ({offer.probation_months} months) and standard employment clauses verified</span>
+                </label>
+                <label className="flex items-center gap-2 text-slate-800 font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkCompliance}
+                    onChange={(e) => setCheckCompliance(e.target.checked)}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>All compliance standards met; endorsed for executive management approval</span>
+                </label>
+              </div>
+
+              {/* Reviewing HR Manager Name */}
+              <div className="pt-1">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                  Reviewing HR Manager <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={hrReviewer}
+                  onChange={(e) => setHrReviewer(e.target.value)}
+                  placeholder="e.g. Ms. Chea TiengChanvathna"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                />
               </div>
             </div>
           )}
@@ -321,15 +418,26 @@ export function OfferWorkflowModal({
             />
           </div>
 
-          {/* PDF Quick Download if already issued or approved */}
-          {["approved", "issued", "accepted"].includes(offer.status) && (
-            <div className="pt-2 flex justify-end">
+          {/* PDF and Word Quick Download if already generated */}
+          {!["salary_proposal"].includes(offer.status) && (
+            <div className="pt-2 flex items-center justify-end gap-2">
+              {onExportWord && (
+                <button
+                  type="button"
+                  onClick={() => onExportWord(offer)}
+                  className="text-xs font-bold text-sky-700 hover:text-sky-900 flex items-center gap-1.5 cursor-pointer bg-sky-50/80 hover:bg-sky-100/80 px-3 py-1.5 rounded-lg border border-sky-200/60 transition-colors"
+                  title="Download official Offer Letter Word document (.docx)"
+                >
+                  <i className="ri-file-word-line text-sm text-sky-700" /> Export Word (.docx)
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => onExportPdf(offer)}
-                className="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1.5 cursor-pointer bg-blue-50/80 hover:bg-blue-100/80 px-3 py-1.5 rounded-lg border border-blue-200/60 transition-colors"
+                title="Preview or print official Offer Letter PDF"
               >
-                <i className="ri-file-pdf-line text-sm" /> Preview / Print Offer Letter PDF
+                <i className="ri-file-pdf-line text-sm text-rose-600" /> Preview / Print PDF
               </button>
             </div>
           )}

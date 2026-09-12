@@ -1,5 +1,5 @@
 import type { OfferLetter } from "../types";
-import { OPS_LOGO_BASE64 } from "./opsLogoBase64";
+import { resolveDocumentBranding } from "@/services/formLogoService";
 
 function escapeHtml(str?: string | null): string {
   if (!str) return "";
@@ -16,10 +16,20 @@ function formatCurrency(val?: number | null): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
 }
 
-export function exportOfferLetterPdf(offer: OfferLetter, buLogoCustom?: string): boolean {
-  const isOps = (offer.business_unit || "").toLowerCase().includes("ops");
-  const buLogo = buLogoCustom || (isOps ? OPS_LOGO_BASE64 : "/logo-full.png");
-  const buName = offer.business_unit || "OPS Solutions Co ., Ltd";
+export function exportOfferLetterPdf(
+  offer: OfferLetter,
+  buLogoCustom?: string,
+  isHrDivisionContext?: boolean
+): boolean {
+  // When exported at HR Division: MUST WORK WITH UNI LOGO (NO OPS), even if employee or form request was from OPS
+  const { logo: buLogo, companyName: defaultBuName, isHrDivision } = resolveDocumentBranding({
+    businessUnit: offer.business_unit,
+    department: offer.department,
+    division: offer.division,
+    customLogo: buLogoCustom,
+    isHrDivisionContext,
+  });
+  const buName = isHrDivision ? defaultBuName : (offer.business_unit || defaultBuName);
 
   const formattedOfferDate = offer.issued_at
     ? new Date(offer.issued_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })

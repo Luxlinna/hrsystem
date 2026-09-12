@@ -459,6 +459,20 @@ export function CreateSalaryProposalModal({
             />
           </div>
 
+          {/* Routing to HR Division Notice */}
+          <div className="p-3 bg-blue-50/80 border border-blue-200/90 rounded-xl flex items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <i className="ri-send-plane-2-line text-blue-600 text-base shrink-0" />
+              <div>
+                <span className="font-bold text-blue-950">Next Step:</span>{" "}
+                <span className="text-blue-900">This form will be sent across to the HR Division for review to generate the offer letter.</span>
+              </div>
+            </div>
+            <span className="text-[10px] font-black uppercase text-blue-800 bg-blue-100 px-2 py-0.5 rounded border border-blue-200 shrink-0">
+              HR Division
+            </span>
+          </div>
+
           {/* Footer Actions */}
           <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
             <button
@@ -471,10 +485,10 @@ export function CreateSalaryProposalModal({
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 text-xs font-bold text-white bg-[#253C7D] hover:bg-[#1e3066] rounded-lg shadow-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              className="px-5 py-2.5 text-xs font-extrabold text-white bg-[#253C7D] hover:bg-[#1e3066] rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
-              {submitting ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-send-plane-line" />}
-              Submit Salary Proposal (Step 1)
+              {submitting ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-send-plane-2-line" />}
+              Send Form to HR Division for Review
             </button>
           </div>
         </form>
