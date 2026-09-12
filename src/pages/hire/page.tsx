@@ -248,6 +248,7 @@ export default function HirePage() {
         candidate={offersManager.targetCandidate}
         candidates={h.candidates}
         hiringRequests={h.hiringRequests}
+        existingOffers={offersManager.offers}
         onSubmit={offersManager.handleCreateProposal}
       />
 

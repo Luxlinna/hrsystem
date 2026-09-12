@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { OfferLetter } from "../../types";
 import type { WorkflowModalType } from "../../hooks/useOfferLetters";
+import { useBranchScope } from "@/context/BranchContext";
+import { isHrDivisionScope } from "@/services/formLogoService";
 
 interface OfferWorkflowModalProps {
   isOpen: boolean;
@@ -38,6 +40,9 @@ export function OfferWorkflowModal({
   onExportPdf,
   onExportWord,
 }: OfferWorkflowModalProps) {
+  const { effectiveBranchName } = useBranchScope();
+  const isCurrentScopeHr = isHrDivisionScope(effectiveBranchName);
+
   const [notes, setNotes] = useState("");
   const [hrReviewer, setHrReviewer] = useState(actorName || "HR Manager");
   const [checkTerms, setCheckTerms] = useState(true);
@@ -55,6 +60,37 @@ export function OfferWorkflowModal({
   const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen || !offer || !modalType || modalType === "preview") return null;
+
+  // Security guard: HR Manager Review, Management Approval, and Issue Offer are strictly HR Division actions
+  if (!isCurrentScopeHr && ["hr_review", "management_approval", "issue_offer"].includes(modalType)) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/50 text-amber-600 flex items-center justify-center text-2xl mx-auto">
+            <i className="ri-shield-keyhole-line" />
+          </div>
+          <div className="text-center space-y-1">
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+              HR Division Exclusive Permission
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              The <strong>HR Manager Review</strong>, <strong>Management Authorization</strong>, and <strong>Offer Issuance</strong> stages are strictly handled by the <strong>HR Division</strong>.
+            </p>
+          </div>
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            Your current active scope is <strong>{effectiveBranchName || "Business Unit"}</strong>. Your BU's part is completed (Proposal &amp; Draft submitted). Please switch to the <strong>HR Division</strong> scope to access review and authorization actions.
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-2.5 bg-[#253C7D] text-white rounded-xl text-xs font-bold hover:bg-[#1e3066] transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const totalAllowances = (offer.allowances || []).reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
   const totalPackage = Number(offer.base_salary || 0) + totalAllowances;

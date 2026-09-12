@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import type { Candidate, HiringRequest, OfferAllowanceItem } from "../../types";
+import type { Candidate, HiringRequest, OfferAllowanceItem, OfferLetter } from "../../types";
 
 interface CreateSalaryProposalModalProps {
   isOpen: boolean;
@@ -7,6 +7,7 @@ interface CreateSalaryProposalModalProps {
   candidate?: Candidate | null;
   candidates: Candidate[];
   hiringRequests: HiringRequest[];
+  existingOffers?: OfferLetter[];
   onSubmit: (payload: {
     candidate: Candidate;
     requisition?: HiringRequest | null;
@@ -27,6 +28,7 @@ export function CreateSalaryProposalModal({
   candidate,
   candidates,
   hiringRequests,
+  existingOffers = [],
   onSubmit,
 }: CreateSalaryProposalModalProps) {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>("");
@@ -48,11 +50,34 @@ export function CreateSalaryProposalModal({
   const [proposalNotes, setProposalNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Filter candidates who are eligible for proposal creation:
+  // Cannot add candidates who already have an active (non-rejected) proposal or are already at offer stage
+  const eligibleCandidates = useMemo(() => {
+    if (candidate) return [candidate];
+    return candidates.filter((c) => {
+      if (existingOffers.some((o) => o.candidate_id === c.id && o.status !== "rejected")) {
+        return false;
+      }
+      if (["offer", "accepted", "rejected"].includes(c.stage)) {
+        return false;
+      }
+      return true;
+    });
+  }, [candidate, candidates, existingOffers]);
+
   // Active candidate
   const activeCandidate = useMemo(() => {
     if (candidate) return candidate;
-    return candidates.find((c) => c.id === selectedCandidateId) || null;
-  }, [candidate, candidates, selectedCandidateId]);
+    return candidates.find((c) => c.id === selectedCandidateId) || eligibleCandidates[0] || null;
+  }, [candidate, candidates, selectedCandidateId, eligibleCandidates]);
+
+  // Check if the candidate already has an active salary proposal/offer
+  const candidateExistingOffer = useMemo(() => {
+    if (!activeCandidate || !existingOffers.length) return null;
+    return existingOffers.find(
+      (o) => o.candidate_id === activeCandidate.id && o.status !== "rejected"
+    ) || null;
+  }, [activeCandidate, existingOffers]);
 
   // Find matching requisition
   const matchedReq = useMemo(() => {
@@ -73,12 +98,17 @@ export function CreateSalaryProposalModal({
   useEffect(() => {
     if (candidate) {
       setSelectedCandidateId(candidate.id);
-    } else if (candidates.length > 0 && !selectedCandidateId) {
-      // Prioritize candidate in 'selected' stage
-      const selectedOne = candidates.find((c) => c.stage === "selected" || c.stage === "salary_negotiation");
-      setSelectedCandidateId(selectedOne ? selectedOne.id : candidates[0].id);
+    } else if (eligibleCandidates.length > 0) {
+      if (!selectedCandidateId || !eligibleCandidates.some((c) => c.id === selectedCandidateId)) {
+        const preferred = eligibleCandidates.find(
+          (c) => c.stage === "salary_negotiation" || c.stage === "selected"
+        );
+        setSelectedCandidateId(preferred ? preferred.id : eligibleCandidates[0].id);
+      }
+    } else {
+      setSelectedCandidateId("");
     }
-  }, [candidate, candidates, selectedCandidateId]);
+  }, [candidate, eligibleCandidates, selectedCandidateId]);
 
   // Pre-fill target start date & salary when candidate / req changes
   useEffect(() => {
@@ -122,6 +152,14 @@ export function CreateSalaryProposalModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeCandidate) return;
+
+    if (candidateExistingOffer) {
+      alert(
+        `A salary proposal has already been created for ${activeCandidate.full_name} (Offer #${candidateExistingOffer.offer_number}). Candidates at the proposal stage cannot be added again.`
+      );
+      return;
+    }
+
     if (!isBasedOnQualification && (!baseSalary || Number(baseSalary) <= 0)) {
       alert("Please enter a valid base salary or check 'Based on qualification'.");
       return;
@@ -185,6 +223,21 @@ export function CreateSalaryProposalModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+          {/* Duplicate Proposal Guard Alert */}
+          {candidateExistingOffer && (
+            <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-950 text-xs flex items-start gap-2.5 shadow-2xs">
+              <i className="ri-error-warning-fill text-amber-600 text-base shrink-0 mt-0.5" />
+              <div>
+                <p className="font-extrabold text-amber-900">
+                  Candidate Already Has an Active Salary Proposal / Offer
+                </p>
+                <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                  <strong>{activeCandidate?.full_name}</strong> already has an active proposal on record (<strong>Offer #{candidateExistingOffer.offer_number}</strong> &middot; Status: <strong>{candidateExistingOffer.status.replace(/_/g, " ").toUpperCase()}</strong>). Candidates at the proposal stage cannot be added again. Please review or advance the existing offer record instead.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Candidate & Position Auto-Populated Card */}
           <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
@@ -204,15 +257,19 @@ export function CreateSalaryProposalModal({
                     <span>{candidate.full_name}</span>
                     <span className="text-xs font-normal text-slate-500">{candidate.email || candidate.phone}</span>
                   </div>
+                ) : eligibleCandidates.length === 0 ? (
+                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-semibold text-amber-800">
+                    No eligible candidates available &mdash; all candidates at this stage already have active salary proposals.
+                  </div>
                 ) : (
                   <select
                     value={selectedCandidateId}
                     onChange={(e) => setSelectedCandidateId(e.target.value)}
                     className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                   >
-                    {candidates.map((c) => (
+                    {eligibleCandidates.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.full_name} — {c.job_postings?.title || "Applicant"} ({c.stage})
+                        {c.full_name} — {c.job_postings?.title || "Applicant"} ({c.stage.replace(/_/g, " ")})
                       </option>
                     ))}
                   </select>
@@ -484,8 +541,13 @@ export function CreateSalaryProposalModal({
             </button>
             <button
               type="submit"
-              disabled={submitting}
-              className="px-5 py-2.5 text-xs font-extrabold text-white bg-[#253C7D] hover:bg-[#1e3066] rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              disabled={
+                submitting ||
+                Boolean(candidateExistingOffer) ||
+                !activeCandidate ||
+                (eligibleCandidates.length === 0 && !candidate)
+              }
+              className="px-5 py-2.5 text-xs font-extrabold text-white bg-[#253C7D] hover:bg-[#1e3066] rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {submitting ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-send-plane-2-line" />}
               Send Form to HR Division for Review

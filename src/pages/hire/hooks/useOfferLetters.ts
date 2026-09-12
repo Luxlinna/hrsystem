@@ -16,6 +16,8 @@ import {
 import { exportOfferLetterPdf } from "../exports/exportOfferLetterPdf";
 import { exportOfferLetterWord } from "../exports/exportOfferLetterWord";
 import { toast } from "@/components/Toast";
+import { useBranchScope } from "@/context/BranchContext";
+import { isHrDivisionScope } from "@/services/formLogoService";
 
 export type WorkflowModalType =
   | "salary_approval"
@@ -28,6 +30,9 @@ export type WorkflowModalType =
   | null;
 
 export function useOfferLetters(currentUserName = "HR Operations", onCandidateStageUpdated?: () => void) {
+  const { effectiveBranchName } = useBranchScope();
+  const isCurrentScopeHr = isHrDivisionScope(effectiveBranchName);
+
   const [offers, setOffers] = useState<OfferLetter[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -111,17 +116,26 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
       try {
         const updated = await generateOfferLetterDraft(offer);
         setOffers((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-        openWorkflowModal(updated, "hr_review");
-        toast(
-          "Offer Letter Generated",
-          "Compiled directly from candidate and requisition records. Opening HR Manager Review...",
-          "success"
-        );
+        if (isCurrentScopeHr) {
+          openWorkflowModal(updated, "hr_review");
+          toast(
+            "Offer Letter Generated",
+            "Compiled directly from candidate and requisition records. Opening HR Manager Review...",
+            "success"
+          );
+        } else {
+          closeWorkflowModal();
+          toast(
+            "Sent to HR Division",
+            "Offer Letter draft generated and forwarded to HR Division for review. Your BU action is complete.",
+            "success"
+          );
+        }
       } catch {
         toast("Error", "Failed to generate offer letter draft.", "error");
       }
     },
-    [openWorkflowModal]
+    [openWorkflowModal, closeWorkflowModal, isCurrentScopeHr]
   );
 
   const handleEndorseHrReview = useCallback(

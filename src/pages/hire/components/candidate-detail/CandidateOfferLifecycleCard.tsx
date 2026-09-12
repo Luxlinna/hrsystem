@@ -1,6 +1,8 @@
 import { memo, useMemo } from "react";
 import type { Candidate, OfferLetter, OfferStatus } from "../../types";
 import type { WorkflowModalType } from "../../hooks/useOfferLetters";
+import { useBranchScope } from "@/context/BranchContext";
+import { isHrDivisionScope } from "@/services/formLogoService";
 
 interface CandidateOfferLifecycleCardProps {
   candidate: Candidate;
@@ -32,6 +34,9 @@ export const CandidateOfferLifecycleCard = memo(function CandidateOfferLifecycle
   onExportPdf,
   onExportWord,
 }: CandidateOfferLifecycleCardProps) {
+  const { effectiveBranchName } = useBranchScope();
+  const isCurrentScopeHr = isHrDivisionScope(effectiveBranchName);
+
   const isQualificationBased = useMemo(() => {
     if (!offer) return false;
     const text = `${offer.special_terms || ""} ${offer.proposal_notes || ""}`.toLowerCase();
@@ -441,38 +446,62 @@ export const CandidateOfferLifecycleCard = memo(function CandidateOfferLifecycle
               </button>
             )}
 
-            {offer && (offer.status === "draft_letter" || offer.status === "hr_review") && (
-              <button
-                type="button"
-                onClick={() => onOpenWorkflowModal(offer, "hr_review")}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-2"
-              >
-                <i className="ri-shield-check-line text-sm" />
-                HR Manager Review Offer Letter
-              </button>
-            )}
+            {offer && (offer.status === "draft_letter" || offer.status === "hr_review") &&
+              (isCurrentScopeHr ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenWorkflowModal(offer, "hr_review")}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <i className="ri-shield-check-line text-sm" />
+                  HR Manager Review Offer Letter
+                </button>
+              ) : (
+                <div className="p-3 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl flex items-center gap-2.5 text-xs text-indigo-950 dark:text-indigo-200">
+                  <i className="ri-send-plane-2-line text-indigo-600 shrink-0 text-base" />
+                  <span>
+                    This offer letter has been forwarded to the <strong>HR Division</strong> for review and endorsement. Your BU's actions are complete.
+                  </span>
+                </div>
+              ))}
 
-            {offer && offer.status === "management_approval" && (
-              <button
-                type="button"
-                onClick={() => onOpenWorkflowModal(offer, "management_approval")}
-                className="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-2"
-              >
-                <i className="ri-award-line text-sm" />
-                Authorize & Approve
-              </button>
-            )}
+            {offer && offer.status === "management_approval" &&
+              (isCurrentScopeHr ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenWorkflowModal(offer, "management_approval")}
+                  className="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <i className="ri-award-line text-sm" />
+                  Authorize & Approve
+                </button>
+              ) : (
+                <div className="p-3 bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl flex items-center gap-2.5 text-xs text-purple-950 dark:text-purple-200">
+                  <i className="ri-time-line text-purple-600 shrink-0 text-base" />
+                  <span>
+                    Under <strong>HR Division Executive Authorization</strong>.
+                  </span>
+                </div>
+              ))}
 
-            {offer && offer.status === "approved" && (
-              <button
-                type="button"
-                onClick={() => onOpenWorkflowModal(offer, "issue_offer")}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-2"
-              >
-                <i className="ri-mail-send-line text-sm" />
-                Issue Official Offer Letter
-              </button>
-            )}
+            {offer && offer.status === "approved" &&
+              (isCurrentScopeHr ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenWorkflowModal(offer, "issue_offer")}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <i className="ri-mail-send-line text-sm" />
+                  Issue Official Offer Letter
+                </button>
+              ) : (
+                <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-2.5 text-xs text-emerald-950 dark:text-emerald-200">
+                  <i className="ri-checkbox-circle-line text-emerald-600 shrink-0 text-base" />
+                  <span>
+                    Offer Letter approved by <strong>HR Division</strong>. Awaiting official issuance by HR.
+                  </span>
+                </div>
+              ))}
 
             {offer && offer.status === "issued" && (
               <div className="flex items-center gap-2">

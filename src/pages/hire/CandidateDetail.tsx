@@ -32,12 +32,16 @@ import { useCandidateDetail } from "./hooks/useCandidateDetail";
 import { resolveInterviewStageKey, isUserInvitedToInterview } from "./utils/interviewPanelHelper";
 import { toast } from "@/components/Toast";
 import { supabase } from "@/lib/supabase";
+import { useBranchScope } from "@/context/BranchContext";
+import { isHrDivisionScope } from "@/services/formLogoService";
 import type { WorkflowModalType } from "./hooks/useOfferLetters";
 import type { Interview, HiringRequest, CandidateDocument, OfferLetter } from "./types";
 
 export default function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { effectiveBranchName } = useBranchScope();
+  const isCurrentScopeHr = isHrDivisionScope(effectiveBranchName);
   const {
     candidate,
     interviews,
@@ -183,17 +187,26 @@ export default function CandidateDetail() {
       try {
         const updated = await generateOfferLetterDraft(offer);
         setActiveOffer(updated);
-        setWorkflowModalType("hr_review");
-        toast(
-          "Offer Letter Generated",
-          "Generated directly from candidate & requisition records (no retyping required). Opening HR Manager Review...",
-          "success"
-        );
+        if (isCurrentScopeHr) {
+          setWorkflowModalType("hr_review");
+          toast(
+            "Offer Letter Generated",
+            "Generated directly from candidate & requisition records (no retyping required). Opening HR Manager Review...",
+            "success"
+          );
+        } else {
+          setWorkflowModalType(null);
+          toast(
+            "Sent to HR Division",
+            "Offer letter draft generated and sent across to the HR Division for review. Your BU action is complete.",
+            "success"
+          );
+        }
       } catch {
         toast("Error", "Failed to generate offer letter draft.", "error");
       }
     },
-    []
+    [isCurrentScopeHr]
   );
 
   const handleEndorseHrReview = useCallback(
@@ -590,6 +603,7 @@ export default function CandidateDetail() {
         candidate={candidate}
         candidates={candidate ? [candidate] : []}
         hiringRequests={hiringRequests}
+        existingOffers={activeOffer ? [activeOffer] : []}
         onSubmit={handleCreateSalaryProposal}
       />
 

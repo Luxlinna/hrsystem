@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import type { OfferLetter, Candidate, HiringRequest, OfferStatus } from "../../types";
 import type { WorkflowModalType } from "../../hooks/useOfferLetters";
+import { useBranchScope } from "@/context/BranchContext";
+import { isHrDivisionScope } from "@/services/formLogoService";
 
 interface OffersTabContentProps {
   offers: OfferLetter[];
@@ -105,14 +107,12 @@ export function OffersTabContent({
   onExportWord,
   onDeleteOffer,
 }: OffersTabContentProps) {
+  const { effectiveBranchName } = useBranchScope();
+  const isCurrentScopeHr = isHrDivisionScope(effectiveBranchName);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deptFilter, setDeptFilter] = useState<string>("all");
-
-  // Candidates in 'selected' stage ready for proposal
-  const candidatesInSelected = useMemo(() => {
-    return candidates.filter((c) => c.stage === "selected" || c.stage === "salary_negotiation");
-  }, [candidates]);
 
   // Unique departments
   const departments = useMemo(() => {
@@ -207,37 +207,6 @@ export function OffersTabContent({
           <span className="text-[11px] text-slate-500 font-medium">Offer declined</span>
         </div>
       </div>
-
-      {/* Selected Candidates Quick Suggestion Banner */}
-      {candidatesInSelected.length > 0 && (
-        <div className="p-4 bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-2xl flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center font-bold">
-              <i className="ri-user-star-line text-lg" />
-            </div>
-            <div>
-              <h4 className="text-xs font-extrabold text-violet-950 uppercase tracking-wide">
-                {candidatesInSelected.length} Candidate(s) in "Selected" Stage
-              </h4>
-              <p className="text-xs text-violet-700">
-                Interviews successfully completed! Ready for salary proposal and offer letter generation.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {candidatesInSelected.slice(0, 3).map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => onOpenCreateProposal(c)}
-                className="px-3 py-1.5 bg-white hover:bg-violet-100 text-violet-900 border border-violet-300 rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-              >
-                + Propose for {c.full_name.split(" ")[0]}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Filter and Action Bar */}
       <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-3">
@@ -437,37 +406,61 @@ export function OffersTabContent({
                           )}
 
                           {/* Step 3: HR Review */}
-                          {(offer.status === "draft_letter" || offer.status === "hr_review") && (
-                            <button
-                              type="button"
-                              onClick={() => onOpenWorkflowModal(offer, "hr_review")}
-                              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
-                            >
-                              <i className="ri-shield-check-line" /> HR Manager Review
-                            </button>
-                          )}
+                          {(offer.status === "draft_letter" || offer.status === "hr_review") &&
+                            (isCurrentScopeHr ? (
+                              <button
+                                type="button"
+                                onClick={() => onOpenWorkflowModal(offer, "hr_review")}
+                                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                              >
+                                <i className="ri-shield-check-line" /> HR Manager Review
+                              </button>
+                            ) : (
+                              <span
+                                className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-lg text-[11px] font-bold flex items-center gap-1"
+                                title="This offer letter is currently under review by the HR Division"
+                              >
+                                <i className="ri-send-plane-2-line text-indigo-600" /> Sent to HR Division
+                              </span>
+                            ))}
 
                           {/* Step 4: Management Approval */}
-                          {offer.status === "management_approval" && (
-                            <button
-                              type="button"
-                              onClick={() => onOpenWorkflowModal(offer, "management_approval")}
-                              className="px-3 py-1 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-                            >
-                              Authorize Mgmt
-                            </button>
-                          )}
+                          {offer.status === "management_approval" &&
+                            (isCurrentScopeHr ? (
+                              <button
+                                type="button"
+                                onClick={() => onOpenWorkflowModal(offer, "management_approval")}
+                                className="px-3 py-1 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                              >
+                                Authorize Mgmt
+                              </button>
+                            ) : (
+                              <span
+                                className="px-2.5 py-1 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-lg text-[11px] font-bold flex items-center gap-1"
+                                title="Under HR Division Executive Authorization"
+                              >
+                                <i className="ri-time-line text-purple-600" /> In HR Mgmt Approval
+                              </span>
+                            ))}
 
                           {/* Step 5: Approved -> Ready to Issue */}
-                          {offer.status === "approved" && (
-                            <button
-                              type="button"
-                              onClick={() => onOpenWorkflowModal(offer, "issue_offer")}
-                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
-                            >
-                              <i className="ri-mail-send-line" /> Issue Offer
-                            </button>
-                          )}
+                          {offer.status === "approved" &&
+                            (isCurrentScopeHr ? (
+                              <button
+                                type="button"
+                                onClick={() => onOpenWorkflowModal(offer, "issue_offer")}
+                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                              >
+                                <i className="ri-mail-send-line" /> Issue Offer
+                              </button>
+                            ) : (
+                              <span
+                                className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-[11px] font-bold flex items-center gap-1"
+                                title="Approved by HR Division, awaiting issuance by HR"
+                              >
+                                <i className="ri-checkbox-circle-line text-emerald-600" /> Approved by HR
+                              </span>
+                            ))}
 
                           {/* Step 6: Issued -> Record Decision */}
                           {offer.status === "issued" && (
