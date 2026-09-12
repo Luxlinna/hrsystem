@@ -399,58 +399,31 @@ export function exportInterviewEvaluationPdf(
   data: InterviewEvaluationExportData,
   isHrDivisionContext?: boolean
 ): boolean {
-  const html = buildInterviewEvaluationHtml(data, isHrDivisionContext);
-
+  if (!data) return false;
   try {
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "none";
-    iframe.style.visibility = "hidden";
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow?.document || iframe.contentDocument;
-    if (doc) {
-      doc.open();
-      doc.write(html);
-      doc.close();
-
-      setTimeout(() => {
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-        } catch {
-          // Fallback
-        } finally {
+    const baseHtml = buildInterviewEvaluationHtml(data, isHrDivisionContext);
+    const autoPrintScript = `
+      <script>
+        window.addEventListener('DOMContentLoaded', () => {
           setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          }, 1000);
-        }
-      }, 350);
-
+            try {
+              window.focus();
+              window.print();
+            } catch {}
+          }, 350);
+        });
+      </script>
+    `;
+    const printableHtml = baseHtml.replace("</body>", `${autoPrintScript}</body>`);
+    const blob = new Blob([printableHtml], { type: "text/html;charset=utf-8" });
+    const blobUrl = URL.createObjectURL(blob);
+    const printWindow = window.open(blobUrl, "_blank");
+    if (printWindow) {
+      printWindow.focus();
       return true;
     }
-  } catch {
-    // Fallback if iframe fails
+  } catch (err) {
+    console.warn("Interview evaluation PDF export failed:", err);
   }
-
-  // Window.open fallback
-  const printWindow = window.open("", "_blank");
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 400);
-    return true;
-  }
-
   return false;
 }

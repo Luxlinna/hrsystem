@@ -53,57 +53,86 @@ export async function resolveOfferForDocument(
   doc: CandidateDocument,
   activeOffer?: OfferLetter | null
 ): Promise<OfferLetter | null> {
-  // 1. Direct match with current active offer
+  const match = (doc.name + " " + (doc.url || "")).match(/OFF-\d{4}-\d+/i);
+  const offerNumber = match ? match[0].toUpperCase() : null;
+
+  // 1. Direct match with active offer
   if (activeOffer) {
-    if (!doc.name.includes("OFF-") || doc.name.includes(activeOffer.offer_number)) {
+    if (!offerNumber || activeOffer.offer_number?.toUpperCase() === offerNumber) {
       return activeOffer;
     }
   }
 
-  // 2. Lookup by offer number pattern
-  const match = (doc.name + " " + doc.url).match(/OFF-\d{4}-\d+/i);
-  const offerNumber = match ? match[0].toUpperCase() : null;
+  // 2. Check Local Storage store (contains all client-generated offers)
+  try {
+    const raw = localStorage.getItem("hrm_offer_letters_store");
+    if (raw) {
+      const list: OfferLetter[] = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        if (offerNumber) {
+          const matchOffer = list.find((o) => o.offer_number?.toUpperCase() === offerNumber && !o.deleted_at);
+          if (matchOffer) return matchOffer;
+        }
+        if (candidate?.id) {
+          const matchCand = list.find((o) => (o.candidate_id === candidate.id || o.id === candidate.id) && !o.deleted_at);
+          if (matchCand) return matchCand;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Could not read local offers store:", err);
+  }
 
+  // 3. Lookup by offer number in Supabase
   if (offerNumber) {
-    const { data } = await supabase
-      .from("offer_letters")
-      .select("*")
-      .eq("offer_number", offerNumber)
-      .maybeSingle();
+    try {
+      const { data } = await supabase
+        .from("offer_letters")
+        .select("*")
+        .eq("offer_number", offerNumber)
+        .maybeSingle();
 
-    if (data) return data as OfferLetter;
+      if (data) return data as OfferLetter;
+    } catch {}
   }
 
-  // 3. Fallback to candidate's latest offer
+  // 4. Fallback to candidate's latest offer in Supabase
   if (candidate?.id) {
-    const { data } = await supabase
-      .from("offer_letters")
-      .select("*")
-      .eq("candidate_id", candidate.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    try {
+      const { data } = await supabase
+        .from("offer_letters")
+        .select("*")
+        .eq("candidate_id", candidate.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (data) return data as OfferLetter;
+      if (data) return data as OfferLetter;
+    } catch {}
   }
 
-  // 4. Fallback synthetic offer
+  // 5. Fallback synthetic offer with safe defaults
   if (candidate) {
     return {
       id: `synth-${candidate.id}`,
       candidate_id: candidate.id,
       candidate_name: candidate.full_name,
-      candidate_email: candidate.email,
-      candidate_phone: candidate.phone,
+      candidate_email: candidate.email || "",
+      candidate_phone: candidate.phone || "",
       job_title: candidate.job_title || candidate.position || "Designated Role",
       department: candidate.department || "",
+      division: candidate.division || "",
       business_unit: candidate.division || "",
+      employment_type: "Full-Time",
       base_salary: candidate.expected_salary || 0,
       currency: "USD",
+      probation_months: 3,
+      allowances: [],
+      benefits_summary: "Standard comprehensive healthcare, paid annual leave, and public holidays.",
       status: (doc.stage_key as any) || "accepted",
       offer_number: offerNumber || "OFF-RECORD",
-      created_at: candidate.created_at,
-      target_start_date: candidate.created_at,
+      created_at: candidate.created_at || new Date().toISOString(),
+      target_start_date: candidate.created_at || new Date().toISOString(),
       decision_at: doc.uploaded_at || new Date().toISOString(),
     } as OfferLetter;
   }
@@ -114,13 +143,29 @@ export async function resolveOfferForDocument(
 export function openOfferDocumentPreview(
   offer: OfferLetter,
   onExportPdf?: (offer: OfferLetter) => void
-): void {
-  const opened = previewOfferLetterHtml(offer);
-  if (!opened) {
-    if (onExportPdf) {
-      onExportPdf(offer);
-    } else {
-      exportOfferLetterPdf(offer);
+): boolean {
+  try {
+    const opened = previewOfferLetterHtml(offer);
+    if (!opened) {
+      toast("Pop-up Blocked", "Opening printable PDF preview...", "info");
+      if (onExportPdf) {
+        onExportPdf(offer);
+      } else {
+        exportOfferLetterPdf(offer);
+      }
+    }
+    return true;
+  } catch (err) {
+    console.warn("Could not open HTML preview, trying direct PDF print:", err);
+    try {
+      if (onExportPdf) {
+        onExportPdf(offer);
+      } else {
+        exportOfferLetterPdf(offer);
+      }
+      return true;
+    } catch {
+      return false;
     }
   }
 }

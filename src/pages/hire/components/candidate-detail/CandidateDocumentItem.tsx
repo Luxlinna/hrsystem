@@ -36,13 +36,22 @@ export const CandidateDocumentItem = memo(function CandidateDocumentItem({
   const handleView = async () => {
     setLoading(true);
     try {
+      if (doc.url && !doc.url.startsWith("#") && !doc.url.startsWith("offer-")) {
+        window.open(doc.url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
       const offer = await resolveOfferForDocument(candidate, doc, activeOffer);
       if (!offer) {
         toast("Offer Not Found", "Could not locate offer record.", "error");
         return;
       }
-      openOfferDocumentPreview(offer, onExportOfferPdf);
-    } catch {
+      const success = openOfferDocumentPreview(offer, onExportOfferPdf);
+      if (!success) {
+        toast("Preview Failed", "Could not open document preview.", "error");
+      }
+    } catch (err) {
+      console.error("handleView preview error:", err);
       toast("Error", "Could not preview offer document.", "error");
     } finally {
       setLoading(false);

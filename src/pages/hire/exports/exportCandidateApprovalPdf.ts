@@ -2,29 +2,16 @@ import type { CandidateApproval } from "../types";
 import { buildCandidateApprovalHtml } from "./templates/candidateApprovalPdfTemplate";
 
 export function exportCandidateApprovalPdf(approval: CandidateApproval, isHrDivisionContext?: boolean) {
-  const printWindow = document.createElement("iframe");
-  printWindow.style.position = "fixed";
-  printWindow.style.right = "0";
-  printWindow.style.bottom = "0";
-  printWindow.style.width = "0";
-  printWindow.style.height = "0";
-  printWindow.style.border = "0";
-  document.body.appendChild(printWindow);
-
-  const doc = printWindow.contentWindow?.document;
-  if (!doc) return;
-
-  const htmlContent = buildCandidateApprovalHtml(approval, isHrDivisionContext);
-
-  doc.open();
-  doc.write(htmlContent);
-  doc.close();
-
-  setTimeout(() => {
-    try {
-      document.body.removeChild(printWindow);
-    } catch {
-      // Ignored
+  if (!approval) return;
+  try {
+    const htmlContent = buildCandidateApprovalHtml(approval, isHrDivisionContext);
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const blobUrl = URL.createObjectURL(blob);
+    const printWindow = window.open(blobUrl, "_blank");
+    if (printWindow) {
+      printWindow.focus();
     }
-  }, 10000);
+  } catch (err) {
+    console.warn("Could not export Candidate Approval PDF:", err);
+  }
 }
