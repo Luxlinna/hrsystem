@@ -1,5 +1,7 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
+import type { OfferLetter } from "../../types";
+import type { WorkflowModalType } from "../../hooks/useOfferLetters";
 
 interface CandidateActionsWidgetProps {
   currentStage?: string;
@@ -7,6 +9,9 @@ interface CandidateActionsWidgetProps {
   onDelete: () => void;
   onOpenCandidateApproval?: () => void;
   onOpenSalaryProposal?: () => void;
+  activeOffer?: OfferLetter | null;
+  onOpenOfferWorkflow?: (type: WorkflowModalType) => void;
+  onExportPdf?: (offer: OfferLetter) => void;
 }
 
 export const CandidateActionsWidget = memo(function CandidateActionsWidget({
@@ -15,6 +20,9 @@ export const CandidateActionsWidget = memo(function CandidateActionsWidget({
   onDelete,
   onOpenCandidateApproval,
   onOpenSalaryProposal,
+  activeOffer,
+  onOpenOfferWorkflow,
+  onExportPdf,
 }: CandidateActionsWidgetProps) {
   const isHired = currentStage === "hired";
   const isRejected = currentStage === "rejected";
@@ -52,8 +60,8 @@ export const CandidateActionsWidget = memo(function CandidateActionsWidget({
         </button>
       )}
 
-      {/* If in salary_negotiation, open Salary Proposal Modal directly */}
-      {currentStage === "salary_negotiation" && onOpenSalaryProposal && (
+      {/* Offer Progression Direct Action Buttons */}
+      {!activeOffer && currentStage === "salary_negotiation" && onOpenSalaryProposal && (
         <button
           type="button"
           onClick={onOpenSalaryProposal}
@@ -64,15 +72,86 @@ export const CandidateActionsWidget = memo(function CandidateActionsWidget({
         </button>
       )}
 
-      {/* If in offer or accepted, link to offers */}
-      {["offer", "accepted"].includes(currentStage || "") && (
-        <Link
-          to="/hire?tab=offers"
-          className="w-full py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors block text-center"
-        >
-          <i className="ri-mail-check-line text-sm text-violet-600" />
-          View Offer Letter
-        </Link>
+      {activeOffer && (
+        <div className="space-y-2 pt-1 border-t border-gray-100">
+          <div className="flex items-center justify-between text-[10px] text-gray-500 font-bold uppercase">
+            <span>Offer Lifecycle</span>
+            <span className="font-mono text-[#253C7D]">{activeOffer.offer_number}</span>
+          </div>
+
+          {/* Step 2: Generate Offer Letter (Auto-compiled, no retyping) */}
+          {(activeOffer.status === "salary_proposal" || activeOffer.status === "salary_approved") && onOpenOfferWorkflow && (
+            <button
+              type="button"
+              onClick={() => onOpenOfferWorkflow("generate_draft")}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              title="Generate offer letter directly from candidate and requisition data — no retyping"
+            >
+              <i className="ri-file-text-line text-sm" />
+              Generate Offer Letter
+            </button>
+          )}
+
+          {/* Step 3: HR Review */}
+          {(activeOffer.status === "draft_letter" || activeOffer.status === "hr_review") && onOpenOfferWorkflow && (
+            <button
+              type="button"
+              onClick={() => onOpenOfferWorkflow("hr_review")}
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            >
+              <i className="ri-shield-check-line text-sm" />
+              Endorse HR Review
+            </button>
+          )}
+
+          {/* Step 4: Executive Approval */}
+          {activeOffer.status === "management_approval" && onOpenOfferWorkflow && (
+            <button
+              type="button"
+              onClick={() => onOpenOfferWorkflow("management_approval")}
+              className="w-full py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            >
+              <i className="ri-award-line text-sm" />
+              Management Sign-Off
+            </button>
+          )}
+
+          {/* Step 5: Issue Offer */}
+          {activeOffer.status === "approved" && onOpenOfferWorkflow && (
+            <button
+              type="button"
+              onClick={() => onOpenOfferWorkflow("issue_offer")}
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            >
+              <i className="ri-mail-send-line text-sm" />
+              Issue Official Offer
+            </button>
+          )}
+
+          {/* Step 6: Candidate Decision */}
+          {activeOffer.status === "issued" && onOpenOfferWorkflow && (
+            <button
+              type="button"
+              onClick={() => onOpenOfferWorkflow("decision")}
+              className="w-full py-2.5 bg-sky-700 hover:bg-sky-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            >
+              <i className="ri-question-answer-line text-sm" />
+              Record Candidate Decision
+            </button>
+          )}
+
+          {/* View / Download PDF if offer letter exists */}
+          {["approved", "issued", "accepted", "rejected"].includes(activeOffer.status) && onExportPdf && (
+            <button
+              type="button"
+              onClick={() => onExportPdf(activeOffer)}
+              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <i className="ri-file-pdf-line text-sm text-red-600" />
+              Download Offer PDF
+            </button>
+          )}
+        </div>
       )}
 
       {/* Show "Mark as Hired" only if not yet hired */}

@@ -14,13 +14,25 @@ import { InterviewModal } from "./components/modals/InterviewModal";
 import { FeedbackModal } from "./components/modals/FeedbackModal";
 import { InterviewEvaluationModal } from "./components/candidate-detail/InterviewEvaluationModal";
 import { CandidateApprovalModal } from "./components/candidate-detail/CandidateApprovalModal";
+import { CandidateOfferLifecycleCard } from "./components/candidate-detail/CandidateOfferLifecycleCard";
 import { CreateSalaryProposalModal } from "./components/offers/CreateSalaryProposalModal";
-import { createSalaryProposal } from "./services/offerLetterService";
+import { OfferWorkflowModal } from "./components/offers/OfferWorkflowModal";
+import {
+  createSalaryProposal,
+  fetchCandidateOffer,
+  generateOfferLetterDraft,
+  endorseHrReview,
+  approveOfferManagement,
+  issueOffer,
+  recordCandidateDecision,
+} from "./services/offerLetterService";
+import { exportOfferLetterPdf } from "./exports/exportOfferLetterPdf";
 import { useCandidateDetail } from "./hooks/useCandidateDetail";
 import { resolveInterviewStageKey, isUserInvitedToInterview } from "./utils/interviewPanelHelper";
 import { toast } from "@/components/Toast";
 import { supabase } from "@/lib/supabase";
-import type { Interview, HiringRequest, CandidateDocument } from "./types";
+import type { WorkflowModalType } from "./hooks/useOfferLetters";
+import type { Interview, HiringRequest, CandidateDocument, OfferLetter } from "./types";
 
 export default function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
@@ -84,6 +96,24 @@ export default function CandidateDetail() {
   const [isSalaryProposalModal, setIsSalaryProposalModal] = useState(false);
   const [hiringRequests, setHiringRequests] = useState<HiringRequest[]>([]);
 
+  // Offer Letter Lifecycle State
+  const [activeOffer, setActiveOffer] = useState<OfferLetter | null>(null);
+  const [workflowModalType, setWorkflowModalType] = useState<WorkflowModalType>(null);
+
+  const loadCandidateOffer = useCallback(async () => {
+    if (!candidate?.id) return;
+    try {
+      const off = await fetchCandidateOffer(candidate.id);
+      setActiveOffer(off);
+    } catch {
+      // Ignore
+    }
+  }, [candidate?.id]);
+
+  useEffect(() => {
+    loadCandidateOffer();
+  }, [loadCandidateOffer]);
+
   useEffect(() => {
     supabase
       .from("hiring_requests")
@@ -127,12 +157,17 @@ export default function CandidateDetail() {
           candidate.expected_salary = Number(payload.base_salary);
         }
 
+        setActiveOffer(created);
+        setIsSalaryProposalModal(false);
+
         toast(
           "Salary Proposal Created",
-          `Proposal ${created.offer_number} for ${created.candidate_name} submitted successfully.`,
+          `Proposal ${created.offer_number} submitted! Moving to Step 2: Generate Offer Letter.`,
           "success"
         );
-        setIsSalaryProposalModal(false);
+
+        // Right after Salary Proposal: Transition directly to Step 2: Generate Offer Letter (Auto-compiled, no retyping)
+        setWorkflowModalType("generate_draft");
       } catch (err: any) {
         console.error("Failed to create salary proposal:", err);
         toast("Error", "Could not create salary proposal.", "error");
@@ -141,6 +176,110 @@ export default function CandidateDetail() {
     },
     [actorName, candidate]
   );
+
+  const handleGenerateDraft = useCallback(
+    async (offer: OfferLetter) => {
+      try {
+        const updated = await generateOfferLetterDraft(offer);
+        setActiveOffer(updated);
+        setWorkflowModalType(null);
+        toast(
+          "Offer Letter Draft Generated",
+          "Generated directly from candidate & requisition records (no retyping required). Ready for HR Review.",
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to generate offer letter draft.", "error");
+      }
+    },
+    []
+  );
+
+  const handleEndorseHrReview = useCallback(
+    async (offer: OfferLetter, notes?: string) => {
+      try {
+        const updated = await endorseHrReview(offer, actorName, notes);
+        setActiveOffer(updated);
+        setWorkflowModalType(null);
+        toast(
+          "HR Review Endorsed",
+          `Offer letter endorsed by ${actorName} and forwarded for final management approval.`,
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to endorse HR review.", "error");
+      }
+    },
+    [actorName]
+  );
+
+  const handleApproveManagement = useCallback(
+    async (offer: OfferLetter, notes?: string) => {
+      try {
+        const updated = await approveOfferManagement(offer, actorName, notes);
+        setActiveOffer(updated);
+        setWorkflowModalType(null);
+        toast(
+          "Offer Authorized & Approved",
+          "Executive sign-off complete. Offer is authorized for issuance.",
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to approve offer.", "error");
+      }
+    },
+    [actorName]
+  );
+
+  const handleIssueOffer = useCallback(
+    async (offer: OfferLetter, expiryDate?: string) => {
+      try {
+        const updated = await issueOffer(offer, actorName, expiryDate);
+        setActiveOffer(updated);
+        setWorkflowModalType(null);
+        await updateStage("offer");
+        toast(
+          "Offer Officially Issued",
+          `Offer letter issued to ${offer.candidate_name}. Pipeline stage updated to Offer.`,
+          "success"
+        );
+        exportOfferLetterPdf(updated);
+      } catch {
+        toast("Error", "Failed to issue offer letter.", "error");
+      }
+    },
+    [actorName, updateStage]
+  );
+
+  const handleRecordDecision = useCallback(
+    async (
+      offer: OfferLetter,
+      decision: "accepted" | "rejected",
+      notes?: string,
+      rejectionReason?: string
+    ) => {
+      try {
+        const updated = await recordCandidateDecision(offer, decision, notes, rejectionReason);
+        setActiveOffer(updated);
+        setWorkflowModalType(null);
+        await updateStage(decision);
+        toast(
+          decision === "accepted" ? "Offer Accepted!" : "Offer Declined",
+          decision === "accepted"
+            ? `${offer.candidate_name} accepted the offer! Candidate stage updated to Accepted.`
+            : `Offer marked as declined: ${rejectionReason || "None specified"}.`,
+          decision === "accepted" ? "success" : "info"
+        );
+      } catch {
+        toast("Error", "Failed to record candidate decision.", "error");
+      }
+    },
+    [updateStage]
+  );
+
+  const handleExportPdf = useCallback((offer: OfferLetter) => {
+    exportOfferLetterPdf(offer);
+  }, []);
 
   useEffect(() => {
     if (isApprovalRequested && candidate) {
@@ -258,7 +397,22 @@ export default function CandidateDetail() {
             onDeleteDocument={deleteDocument}
           />
 
-          {/* 4. 13-Stage Recruitment Evidence & Verification Matrix */}
+          {/* 4. Offer & Compensation Lifecycle Progression (6-Step Sequential Flow) */}
+          {(activeOffer || ["salary_negotiation", "offer", "accepted", "rejected"].includes(candidate.stage)) && (
+            <CandidateOfferLifecycleCard
+              candidate={candidate}
+              offer={activeOffer}
+              onOpenCreateProposal={() => setIsSalaryProposalModal(true)}
+              onGenerateDraft={handleGenerateDraft}
+              onOpenWorkflowModal={(off, type) => {
+                setActiveOffer(off);
+                setWorkflowModalType(type);
+              }}
+              onExportPdf={handleExportPdf}
+            />
+          )}
+
+          {/* 5. 13-Stage Recruitment Evidence & Verification Matrix */}
           <CandidateEvidenceCard
             candidate={candidate}
             interviews={interviews}
@@ -290,7 +444,7 @@ export default function CandidateDetail() {
             onOpenSalaryProposal={() => setIsSalaryProposalModal(true)}
           />
 
-          {/* 5. Interview History */}
+          {/* 6. Interview History */}
           <CandidateInterviewsCard
             interviews={interviews}
             avgScore={avgScore}
@@ -345,6 +499,9 @@ export default function CandidateDetail() {
             onDelete={deleteCandidate}
             onOpenCandidateApproval={() => setCandidateApprovalModal(true)}
             onOpenSalaryProposal={() => setIsSalaryProposalModal(true)}
+            activeOffer={activeOffer}
+            onOpenOfferWorkflow={(type) => setWorkflowModalType(type)}
+            onExportPdf={handleExportPdf}
           />
         </div>
       </div>
@@ -423,6 +580,20 @@ export default function CandidateDetail() {
         candidates={candidate ? [candidate] : []}
         hiringRequests={hiringRequests}
         onSubmit={handleCreateSalaryProposal}
+      />
+
+      {/* Offer Letter Lifecycle Action Modal */}
+      <OfferWorkflowModal
+        isOpen={Boolean(activeOffer && workflowModalType)}
+        onClose={() => setWorkflowModalType(null)}
+        offer={activeOffer}
+        modalType={workflowModalType}
+        onGenerateDraft={handleGenerateDraft}
+        onEndorseHrReview={handleEndorseHrReview}
+        onApproveManagement={handleApproveManagement}
+        onIssueOffer={handleIssueOffer}
+        onRecordDecision={handleRecordDecision}
+        onExportPdf={handleExportPdf}
       />
     </div>
   );

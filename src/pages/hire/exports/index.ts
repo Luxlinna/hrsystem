@@ -16,3 +16,5 @@ export { exportRequestsCSV } from "./exportRequestsCSV";
 export { exportHiringRequestPdf } from "./exportHiringRequestPdf";
 export { exportCandidateApprovalPdf } from "./exportCandidateApprovalPdf";
 export { exportCandidateApprovalWord } from "./exportCandidateApprovalWord";
+export { exportInterviewEvaluationPdf } from "./exportInterviewEvaluationPdf";
+export { exportInterviewEvaluationWord } from "./exportInterviewEvaluationWord";

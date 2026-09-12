@@ -7,7 +7,8 @@ interface OfferWorkflowModalProps {
   onClose: () => void;
   offer: OfferLetter | null;
   modalType: WorkflowModalType;
-  onApproveSalary: (offer: OfferLetter, notes?: string) => Promise<void>;
+  onApproveSalary?: (offer: OfferLetter, notes?: string) => Promise<void>;
+  onGenerateDraft?: (offer: OfferLetter) => Promise<void>;
   onEndorseHrReview: (offer: OfferLetter, notes?: string) => Promise<void>;
   onApproveManagement: (offer: OfferLetter, notes?: string) => Promise<void>;
   onIssueOffer: (offer: OfferLetter, expiryDate?: string) => Promise<void>;
@@ -26,6 +27,7 @@ export function OfferWorkflowModal({
   offer,
   modalType,
   onApproveSalary,
+  onGenerateDraft,
   onEndorseHrReview,
   onApproveManagement,
   onIssueOffer,
@@ -51,8 +53,10 @@ export function OfferWorkflowModal({
   const handleAction = async () => {
     setSubmitting(true);
     try {
-      if (modalType === "salary_approval") {
+      if (modalType === "salary_approval" && onApproveSalary) {
         await onApproveSalary(offer, notes);
+      } else if (modalType === "generate_draft" && onGenerateDraft) {
+        await onGenerateDraft(offer);
       } else if (modalType === "hr_review") {
         await onEndorseHrReview(offer, notes);
       } else if (modalType === "management_approval") {
@@ -74,35 +78,42 @@ export function OfferWorkflowModal({
   const titles: Record<string, { title: string; subtitle: string; icon: string; actionBtn: string; color: string }> = {
     salary_approval: {
       title: "Salary Package Sign-Off",
-      subtitle: "Step 2: BU Head / Finance / HR Director Review",
+      subtitle: "Step 1: BU Head / Finance / HR Director Review",
       icon: "ri-money-dollar-circle-line",
       actionBtn: "Approve Proposed Salary",
       color: "from-blue-700 to-indigo-800",
     },
+    generate_draft: {
+      title: "Generate Offer Letter",
+      subtitle: "Step 2: Auto-compiled directly from candidate & requisition data",
+      icon: "ri-file-text-line",
+      actionBtn: "Compile & Generate Offer Letter",
+      color: "from-blue-700 to-indigo-800",
+    },
     hr_review: {
       title: "HR Compliance & Letter Review",
-      subtitle: "Step 4: Verify employment terms, probation, & clauses",
+      subtitle: "Step 3: Verify employment terms, probation, & clauses",
       icon: "ri-shield-check-line",
       actionBtn: "Endorse HR Compliance",
       color: "from-indigo-700 to-purple-800",
     },
     management_approval: {
       title: "Final Management Authorization",
-      subtitle: "Step 5: Executive sign-off to authorize offer issuance",
+      subtitle: "Step 4: Executive sign-off to authorize offer issuance",
       icon: "ri-award-line",
       actionBtn: "Authorize & Approve Offer",
       color: "from-purple-700 to-slate-900",
     },
     issue_offer: {
       title: "Issue Official Offer Letter",
-      subtitle: "Step 6: Transmit official document & update pipeline to Offer",
+      subtitle: "Step 5: Transmit official document & update pipeline to Offer",
       icon: "ri-mail-send-line",
       actionBtn: "Issue Official Offer & Generate PDF",
       color: "from-emerald-700 to-teal-900",
     },
     decision: {
       title: "Record Candidate Response",
-      subtitle: "Step 7: Candidate acceptance or rejection outcome",
+      subtitle: "Step 6: Candidate acceptance or rejection outcome",
       icon: "ri-question-answer-line",
       actionBtn: decision === "accepted" ? "Confirm Candidate Accepted" : "Confirm Candidate Declined",
       color: decision === "accepted" ? "from-emerald-700 to-teal-800" : "from-rose-700 to-red-900",
@@ -181,6 +192,41 @@ export function OfferWorkflowModal({
               <span className="text-base font-black">${totalPackage.toLocaleString()} / month</span>
             </div>
           </div>
+
+          {/* Generate Draft Specific: Automated Compilation Notice */}
+          {modalType === "generate_draft" && (
+            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/80 rounded-xl space-y-2">
+              <div className="flex items-center gap-2 text-xs font-extrabold text-blue-950">
+                <i className="ri-file-text-line text-blue-700 text-sm" />
+                Zero-Retyping Document Generation
+              </div>
+              <p className="text-xs text-blue-900/90 leading-relaxed font-medium">
+                The offer letter is generated directly from candidate and requisition data already in the system —{" "}
+                <span className="font-bold text-blue-950 underline decoration-blue-400 decoration-2">
+                  no retyping of name, role, salary, or start date
+                </span>
+                .
+              </p>
+              <div className="pt-2 border-t border-blue-100 grid grid-cols-2 gap-2 text-[11px]">
+                <div className="p-2 bg-white/80 rounded-lg border border-blue-100">
+                  <span className="text-slate-500 block font-semibold text-[10px] uppercase">Candidate</span>
+                  <span className="font-bold text-slate-900 truncate block">{offer.candidate_name}</span>
+                </div>
+                <div className="p-2 bg-white/80 rounded-lg border border-blue-100">
+                  <span className="text-slate-500 block font-semibold text-[10px] uppercase">Designation</span>
+                  <span className="font-bold text-slate-900 truncate block">{offer.job_title}</span>
+                </div>
+                <div className="p-2 bg-white/80 rounded-lg border border-blue-100">
+                  <span className="text-slate-500 block font-semibold text-[10px] uppercase">Target Start Date</span>
+                  <span className="font-bold text-slate-900 truncate block">{offer.target_start_date || "To be confirmed"}</span>
+                </div>
+                <div className="p-2 bg-white/80 rounded-lg border border-blue-100">
+                  <span className="text-slate-500 block font-semibold text-[10px] uppercase">Department / BU</span>
+                  <span className="font-bold text-slate-900 truncate block">{offer.department} ({offer.business_unit})</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Issue Offer specific: Expiry Date */}
           {modalType === "issue_offer" && (

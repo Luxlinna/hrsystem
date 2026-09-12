@@ -18,6 +18,7 @@ import { toast } from "@/components/Toast";
 
 export type WorkflowModalType =
   | "salary_approval"
+  | "generate_draft"
   | "hr_review"
   | "management_approval"
   | "issue_offer"

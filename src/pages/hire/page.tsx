@@ -256,6 +256,7 @@ export default function HirePage() {
         offer={offersManager.activeOffer}
         modalType={offersManager.modalType}
         onApproveSalary={offersManager.handleApproveSalary}
+        onGenerateDraft={offersManager.handleGenerateDraft}
         onEndorseHrReview={offersManager.handleEndorseHrReview}
         onApproveManagement={offersManager.handleApproveManagement}
         onIssueOffer={offersManager.handleIssueOffer}

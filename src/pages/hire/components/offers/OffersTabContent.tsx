@@ -27,16 +27,16 @@ const STATUS_CONFIG: Record<
     icon: "ri-time-line",
   },
   salary_approved: {
-    label: "Salary Approved",
-    step: 2,
+    label: "Salary Proposal Ready",
+    step: 1,
     color: "text-blue-800",
     bg: "bg-blue-50",
     border: "border-blue-200",
     icon: "ri-check-line",
   },
   draft_letter: {
-    label: "Letter Drafted",
-    step: 3,
+    label: "Offer Letter Generated",
+    step: 2,
     color: "text-indigo-800",
     bg: "bg-indigo-50",
     border: "border-indigo-200",
@@ -51,7 +51,7 @@ const STATUS_CONFIG: Record<
     icon: "ri-shield-user-line",
   },
   management_approval: {
-    label: "Pending Executive Approval",
+    label: "Pending Management Approval",
     step: 4,
     color: "text-purple-800",
     bg: "bg-purple-50",
@@ -59,7 +59,7 @@ const STATUS_CONFIG: Record<
     icon: "ri-award-line",
   },
   approved: {
-    label: "Fully Authorized & Ready",
+    label: "Approved & Ready to Issue",
     step: 5,
     color: "text-emerald-800",
     bg: "bg-emerald-50",
@@ -68,7 +68,7 @@ const STATUS_CONFIG: Record<
   },
   issued: {
     label: "Offer Issued to Candidate",
-    step: 6,
+    step: 5,
     color: "text-sky-800",
     bg: "bg-sky-50",
     border: "border-sky-200",
@@ -76,7 +76,7 @@ const STATUS_CONFIG: Record<
   },
   accepted: {
     label: "Accepted by Candidate",
-    step: 7,
+    step: 6,
     color: "text-teal-800",
     bg: "bg-teal-50",
     border: "border-teal-200",
@@ -84,7 +84,7 @@ const STATUS_CONFIG: Record<
   },
   rejected: {
     label: "Offer Declined",
-    step: 7,
+    step: 6,
     color: "text-rose-800",
     bg: "bg-rose-50",
     border: "border-rose-200",
@@ -422,25 +422,15 @@ export function OffersTabContent({
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* Step 1: Salary Proposal -> Step 2: Salary Approval */}
-                          {offer.status === "salary_proposal" && (
+                          {/* Step 1: Salary Proposal -> Step 2: Generate Offer Letter (Auto-compiled) */}
+                          {(offer.status === "salary_proposal" || offer.status === "salary_approved") && (
                             <button
                               type="button"
-                              onClick={() => onOpenWorkflowModal(offer, "salary_approval")}
-                              className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-                            >
-                              Approve Salary
-                            </button>
-                          )}
-
-                          {/* Step 2: Salary Approved -> Step 3: Generate Draft */}
-                          {offer.status === "salary_approved" && (
-                            <button
-                              type="button"
-                              onClick={() => onGenerateDraft(offer)}
+                              onClick={() => onOpenWorkflowModal(offer, "generate_draft")}
                               className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                              title="The offer letter is generated directly from candidate and requisition data already in the system — no retyping of name, role, salary, or start date."
                             >
-                              <i className="ri-file-text-line" /> Generate Letter
+                              <i className="ri-file-text-line" /> Generate Offer Letter
                             </button>
                           )}
 

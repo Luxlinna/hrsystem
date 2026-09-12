@@ -53,6 +53,11 @@ export async function fetchOfferLetters(): Promise<OfferLetter[]> {
   return getLocalOffers().filter((o) => !o.deleted_at);
 }
 
+export async function fetchCandidateOffer(candidateId: string): Promise<OfferLetter | null> {
+  const offers = await fetchOfferLetters();
+  return offers.find((o) => o.candidate_id === candidateId && !o.deleted_at) || null;
+}
+
 export async function saveOfferLetter(offer: OfferLetter): Promise<OfferLetter> {
   const now = new Date().toISOString();
   const updatedOffer = { ...offer, updated_at: now };
@@ -246,11 +251,33 @@ export async function issueOffer(
     updated_at: now,
   };
 
-  // Sync candidate recruitment stage to 'offer'
+  // Sync candidate recruitment stage to 'offer' and attach document evidence
   try {
+    const { data: candData } = await supabase
+      .from("candidates")
+      .select("documents")
+      .eq("id", offer.candidate_id)
+      .single();
+
+    const existingDocs = (candData?.documents || []).filter(
+      (d: any) => d.stage_key !== "offer" && !d.name.includes(offer.offer_number)
+    );
+    const offerDoc = {
+      name: `Official Offer Letter - ${offer.offer_number}`,
+      url: `#offer-letter-${offer.offer_number}`,
+      size: 2048,
+      type: "application/pdf",
+      uploaded_at: now,
+      stage_key: "offer",
+      notes: `Issued by ${issuerName}. Base: $${offer.base_salary.toLocaleString()} • Valid until: ${formattedExpiry}`,
+    };
+
     await supabase
       .from("candidates")
-      .update({ stage: "offer" })
+      .update({
+        stage: "offer",
+        documents: [...existingDocs, offerDoc],
+      })
       .eq("id", offer.candidate_id);
   } catch (err) {
     console.warn("Could not sync candidate stage to 'offer':", err);
@@ -275,11 +302,39 @@ export async function recordCandidateDecision(
     updated_at: now,
   };
 
-  // Sync candidate recruitment stage to 'accepted' or 'rejected'
+  // Sync candidate recruitment stage to 'accepted' or 'rejected' and attach document evidence
   try {
+    const { data: candData } = await supabase
+      .from("candidates")
+      .select("documents")
+      .eq("id", offer.candidate_id)
+      .single();
+
+    const existingDocs = (candData?.documents || []).filter(
+      (d: any) => d.stage_key !== decision && !d.name.includes(offer.offer_number)
+    );
+    const decisionDoc = {
+      name:
+        decision === "accepted"
+          ? `Signed Offer Acceptance - ${offer.offer_number}`
+          : `Offer Decline Record - ${offer.offer_number}`,
+      url: `#offer-decision-${offer.offer_number}`,
+      size: 1024,
+      type: "application/pdf",
+      uploaded_at: now,
+      stage_key: decision,
+      notes:
+        decision === "accepted"
+          ? `Candidate accepted offer. Confirmed start: ${offer.target_start_date}`
+          : `Decline reason: ${rejectionReason || "None specified"}`,
+    };
+
     await supabase
       .from("candidates")
-      .update({ stage: decision })
+      .update({
+        stage: decision,
+        documents: [...existingDocs, decisionDoc],
+      })
       .eq("id", offer.candidate_id);
   } catch (err) {
     console.warn(`Could not sync candidate stage to '${decision}':`, err);
