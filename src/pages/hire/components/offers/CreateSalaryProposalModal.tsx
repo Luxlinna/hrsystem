@@ -33,6 +33,7 @@ export function CreateSalaryProposalModal({
   const [selectedReqId, setSelectedReqId] = useState<string>("");
 
   const [baseSalary, setBaseSalary] = useState<number | "">("");
+  const [isBasedOnQualification, setIsBasedOnQualification] = useState(false);
   const [probationSalary, setProbationSalary] = useState<number | "">("");
   const [probationMonths, setProbationMonths] = useState<number>(3);
   const [targetStartDate, setTargetStartDate] = useState<string>("");
@@ -121,8 +122,8 @@ export function CreateSalaryProposalModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeCandidate) return;
-    if (!baseSalary || Number(baseSalary) <= 0) {
-      alert("Please enter a valid base salary.");
+    if (!isBasedOnQualification && (!baseSalary || Number(baseSalary) <= 0)) {
+      alert("Please enter a valid base salary or check 'Based on qualification'.");
       return;
     }
     if (!targetStartDate) {
@@ -130,19 +131,27 @@ export function CreateSalaryProposalModal({
       return;
     }
 
+    const finalBaseSalary = Number(baseSalary) || 0;
+    const notesWithQual = isBasedOnQualification
+      ? [proposalNotes, "[Salary: Based on Qualification]"].filter(Boolean).join("\n")
+      : proposalNotes;
+    const termsWithQual = isBasedOnQualification
+      ? [specialTerms, "Salary based on qualification & performance."].filter(Boolean).join(" ")
+      : specialTerms;
+
     setSubmitting(true);
     try {
       await onSubmit({
         candidate: activeCandidate,
         requisition: matchedReq,
-        base_salary: Number(baseSalary),
+        base_salary: finalBaseSalary,
         probation_salary: probationSalary ? Number(probationSalary) : null,
         probation_months: probationMonths,
         target_start_date: targetStartDate,
         allowances: allowances.filter((a) => a.name.trim() !== ""),
         benefits_summary: benefitsSummary,
-        special_terms: specialTerms || undefined,
-        proposal_notes: proposalNotes || undefined,
+        special_terms: termsWithQual || undefined,
+        proposal_notes: notesWithQual || undefined,
       });
       onClose();
     } catch {
@@ -262,22 +271,41 @@ export function CreateSalaryProposalModal({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Gross Base Salary ($/mo) <span className="text-rose-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Gross Base Salary ($/mo) {!isBasedOnQualification && <span className="text-rose-500">*</span>}
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={isBasedOnQualification}
+                      onChange={(e) => setIsBasedOnQualification(e.target.checked)}
+                      className="rounded border-blue-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                    />
+                    <span>Based on qualification</span>
+                  </label>
+                </div>
                 <div className="relative">
                   <span className="absolute left-3 top-2.5 text-slate-400 font-bold">$</span>
                   <input
                     type="number"
                     min="0"
                     step="any"
-                    required
-                    placeholder="e.g. 800"
+                    required={!isBasedOnQualification}
+                    placeholder={isBasedOnQualification ? "e.g. 300 (or leave 0)" : "e.g. 800"}
                     value={baseSalary}
                     onChange={(e) => setBaseSalary(e.target.value === "" ? "" : Number(e.target.value))}
-                    className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                    className={`w-full pl-8 pr-3 py-2 border rounded-lg text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden ${
+                      isBasedOnQualification ? "border-blue-300 bg-blue-50/25" : "border-slate-300"
+                    }`}
                   />
                 </div>
+                {isBasedOnQualification && (
+                  <p className="text-[10.5px] text-blue-700 font-semibold mt-1 flex items-center gap-1">
+                    <i className="ri-award-line text-blue-600" />
+                    Salary set: <strong>Based on Qualification</strong>
+                  </p>
+                )}
               </div>
 
               <div>
@@ -387,9 +415,16 @@ export function CreateSalaryProposalModal({
             </div>
 
             {/* Total package callout */}
-            <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-center justify-between">
+            <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-center justify-between flex-wrap gap-2">
               <span className="text-xs font-bold text-blue-900">Total Monthly Compensation Package:</span>
-              <span className="text-base font-black text-blue-900">${totalPackage.toLocaleString()} / month</span>
+              <div className="text-right flex items-center gap-2">
+                {isBasedOnQualification && (
+                  <span className="text-[10px] font-extrabold text-blue-800 bg-blue-100/90 px-2 py-0.5 rounded-md border border-blue-200">
+                    Based on Qualification
+                  </span>
+                )}
+                <span className="text-base font-black text-blue-900">${totalPackage.toLocaleString()} / month</span>
+              </div>
             </div>
           </div>
 

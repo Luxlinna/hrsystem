@@ -381,7 +381,25 @@ export async function fetchCandidateApproval(
 
       // Automatically sync completed interview panels to "Signed" with interview end time
       let panelsChanged = false;
-      const currentPanels = [...(remote.interview_panels || [])];
+      let currentPanels = [...(remote.interview_panels || [])];
+
+      // Automatically purge legacy placeholder/mock names from stored panels
+      const isPlaceholderPanel = (name: string) => {
+        const lower = (name || "").trim().toLowerCase();
+        return (
+          !lower ||
+          lower.includes("meas chhengseang") ||
+          lower.includes("interviewer name") ||
+          lower.includes("sun reasey") ||
+          lower === "panel member" ||
+          lower.startsWith("hr_ops")
+        );
+      };
+      const filteredPanels = currentPanels.filter((p) => !isPlaceholderPanel(p.name));
+      if (filteredPanels.length !== currentPanels.length) {
+        currentPanels = filteredPanels;
+        panelsChanged = true;
+      }
 
       if (interviews && interviews.length > 0) {
         const completedIvs = interviews.filter(

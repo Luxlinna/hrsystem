@@ -35,6 +35,9 @@ export function exportOfferLetterPdf(offer: OfferLetter, buLogoCustom?: string):
 
   const totalAllowances = (offer.allowances || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const totalPackage = Number(offer.base_salary || 0) + totalAllowances;
+  const isBasedOnQual =
+    (offer.special_terms || "").toLowerCase().includes("qualification") ||
+    (offer.proposal_notes || "").toLowerCase().includes("qualification");
 
   const html = `<!DOCTYPE html>
 <html>
@@ -330,7 +333,13 @@ export function exportOfferLetterPdf(offer: OfferLetter, buLogoCustom?: string):
               <tr>
                 <td class="lbl">Gross Base Monthly Salary:</td>
                 <td class="val-highlight" style="font-size: 13px; color: #0284c7;">
-                  ${formatCurrency(offer.base_salary)}
+                  ${
+                    isBasedOnQual
+                      ? offer.base_salary > 0
+                        ? `${formatCurrency(offer.base_salary)} <span style="font-size: 11px; font-weight: normal; color: #475569;">(Based on Qualification)</span>`
+                        : `Based on Qualification`
+                      : formatCurrency(offer.base_salary)
+                  }
                 </td>
                 <td class="lbl">Probation Period:</td>
                 <td style="font-weight: 600;">

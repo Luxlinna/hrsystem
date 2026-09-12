@@ -12,6 +12,8 @@ interface CandidatePipelineWidgetProps {
   candidate?: Candidate | null;
   interviews?: Interview[];
   onUpdateStage: (stage: string) => void;
+  onOpenCandidateApproval?: () => void;
+  onOpenSalaryProposal?: () => void;
 }
 
 export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
@@ -19,6 +21,8 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
   candidate,
   interviews = [],
   onUpdateStage,
+  onOpenCandidateApproval,
+  onOpenSalaryProposal,
 }: CandidatePipelineWidgetProps) {
   const normStage =
     currentStage === "applied" ? "cv_received" : currentStage === "interview" ? "hr_interview" : currentStage;
@@ -61,7 +65,14 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
               )}
               <button
                 type="button"
-                onClick={() => onUpdateStage(stage)}
+                onClick={() => {
+                  onUpdateStage(stage);
+                  if (stage === "candidate_approval" && onOpenCandidateApproval) {
+                    onOpenCandidateApproval();
+                  } else if (stage === "salary_negotiation" && onOpenSalaryProposal) {
+                    onOpenSalaryProposal();
+                  }
+                }}
                 className={`flex items-center gap-3 text-left relative z-10 transition-opacity ${
                   isLocked ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:opacity-90"
                 }`}

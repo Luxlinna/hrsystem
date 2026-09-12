@@ -367,9 +367,17 @@ export function OffersTabContent({
 
                       {/* Compensation */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="font-extrabold text-sm text-[#253C7D] block">
-                          ${totalPackage.toLocaleString()}/mo
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-extrabold text-sm text-[#253C7D] block">
+                            ${totalPackage.toLocaleString()}/mo
+                          </span>
+                          {((offer.special_terms || "").toLowerCase().includes("qualification") ||
+                            (offer.proposal_notes || "").toLowerCase().includes("qualification")) && (
+                            <span className="text-[9px] font-extrabold text-blue-800 bg-blue-100/90 px-1.5 py-0.5 rounded border border-blue-200">
+                              Based on Qual.
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[11px] text-slate-500 block">
                           Base: ${offer.base_salary.toLocaleString()}
                           {totalAllowances > 0 ? ` + $${totalAllowances} allow` : ""}

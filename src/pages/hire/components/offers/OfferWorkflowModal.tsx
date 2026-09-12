@@ -154,7 +154,15 @@ export function OfferWorkflowModal({
           <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl space-y-2 text-xs">
             <div className="flex justify-between items-center text-slate-600">
               <span>Base Salary:</span>
-              <span className="font-bold text-slate-900">${offer.base_salary.toLocaleString()} / month</span>
+              <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                {offer.base_salary > 0 ? `$${offer.base_salary.toLocaleString()} / month` : ""}
+                {((offer.special_terms || "").toLowerCase().includes("qualification") ||
+                  (offer.proposal_notes || "").toLowerCase().includes("qualification")) && (
+                  <span className="text-[10px] font-extrabold text-blue-800 bg-blue-100/90 px-1.5 py-0.5 rounded border border-blue-200">
+                    Based on Qualification
+                  </span>
+                )}
+              </span>
             </div>
             {offer.probation_salary && (
               <div className="flex justify-between items-center text-slate-600">

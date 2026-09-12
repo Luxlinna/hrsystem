@@ -12,6 +12,8 @@ interface CandidateEvidenceCardProps {
   onOpenEvaluationForm?: (stageKey: string) => void;
   onScheduleStageInterview?: (stageKey: string) => void;
   onUpdateStage?: (stage: string) => void;
+  onOpenCandidateApproval?: () => void;
+  onOpenSalaryProposal?: () => void;
 }
 
 export const CandidateEvidenceCard = memo(function CandidateEvidenceCard({
@@ -23,6 +25,8 @@ export const CandidateEvidenceCard = memo(function CandidateEvidenceCard({
   onOpenEvaluationForm,
   onScheduleStageInterview,
   onUpdateStage,
+  onOpenCandidateApproval,
+  onOpenSalaryProposal,
 }: CandidateEvidenceCardProps) {
   const [filterMode, setFilterMode] = useState<"all" | "active" | "missing">("all");
   const [activeUploadStage, setActiveUploadStage] = useState<string | null>(null);
@@ -364,10 +368,34 @@ export const CandidateEvidenceCard = memo(function CandidateEvidenceCard({
 
               {/* Non-interview stages summary */}
               {!isInterviewStage && (
-                <div className="mt-1 text-xs text-gray-600">
+                <div className="mt-1 text-xs text-gray-600 space-y-2">
                   <p className={status === "verified" ? "text-emerald-700 font-medium" : "text-gray-500"}>
                     {check.summary}
                   </p>
+                  {rule.stageKey === "candidate_approval" && onOpenCandidateApproval && (
+                    <div className="pt-0.5">
+                      <button
+                        type="button"
+                        onClick={onOpenCandidateApproval}
+                        className="px-3 py-1.5 bg-[#253C7D]/10 hover:bg-[#253C7D]/15 text-[#253C7D] border border-[#253C7D]/20 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <i className="ri-file-check-line text-sm" />
+                        Candidate Approval Form (CAF)
+                      </button>
+                    </div>
+                  )}
+                  {rule.stageKey === "salary_negotiation" && onOpenSalaryProposal && (
+                    <div className="pt-0.5">
+                      <button
+                        type="button"
+                        onClick={onOpenSalaryProposal}
+                        className="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <i className="ri-money-dollar-circle-line text-sm text-violet-600" />
+                        Salary Proposal Form
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 

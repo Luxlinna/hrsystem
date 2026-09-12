@@ -6,6 +6,7 @@ interface CandidateActionsWidgetProps {
   onUpdateStage: (stage: string) => void;
   onDelete: () => void;
   onOpenCandidateApproval?: () => void;
+  onOpenSalaryProposal?: () => void;
 }
 
 export const CandidateActionsWidget = memo(function CandidateActionsWidget({
@@ -13,6 +14,7 @@ export const CandidateActionsWidget = memo(function CandidateActionsWidget({
   onUpdateStage,
   onDelete,
   onOpenCandidateApproval,
+  onOpenSalaryProposal,
 }: CandidateActionsWidgetProps) {
   const isHired = currentStage === "hired";
   const isRejected = currentStage === "rejected";
@@ -50,16 +52,26 @@ export const CandidateActionsWidget = memo(function CandidateActionsWidget({
         </button>
       )}
 
-      {/* If in salary_negotiation, offer, or accepted, offer shortcut */}
-      {["salary_negotiation", "offer", "accepted"].includes(currentStage || "") && (
+      {/* If in salary_negotiation, open Salary Proposal Modal directly */}
+      {currentStage === "salary_negotiation" && onOpenSalaryProposal && (
+        <button
+          type="button"
+          onClick={onOpenSalaryProposal}
+          className="w-full py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <i className="ri-mail-send-line text-sm text-violet-600" />
+          Create Salary Proposal
+        </button>
+      )}
+
+      {/* If in offer or accepted, link to offers */}
+      {["offer", "accepted"].includes(currentStage || "") && (
         <Link
           to="/hire?tab=offers"
           className="w-full py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors block text-center"
         >
           <i className="ri-mail-check-line text-sm text-violet-600" />
-          {currentStage === "salary_negotiation"
-            ? "Create Salary Proposal"
-            : "View Offer Letter"}
+          View Offer Letter
         </Link>
       )}
 

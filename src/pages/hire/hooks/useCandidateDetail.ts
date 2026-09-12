@@ -116,7 +116,8 @@ export function useCandidateDetail(id: string | undefined) {
 
       const { error } = await supabase.from("candidates").update({ stage }).eq("id", id);
       if (error) {
-        toast("Error", "Failed to update candidate stage", "error");
+        console.error("Failed to update candidate stage:", error);
+        toast("Error", `Failed to update candidate stage: ${error.message || "Unknown error"}`, "error");
         return;
       }
       setCandidate((prev) => (prev ? { ...prev, stage } : prev));

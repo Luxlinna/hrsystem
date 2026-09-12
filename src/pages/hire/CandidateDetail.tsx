@@ -14,10 +14,13 @@ import { InterviewModal } from "./components/modals/InterviewModal";
 import { FeedbackModal } from "./components/modals/FeedbackModal";
 import { InterviewEvaluationModal } from "./components/candidate-detail/InterviewEvaluationModal";
 import { CandidateApprovalModal } from "./components/candidate-detail/CandidateApprovalModal";
+import { CreateSalaryProposalModal } from "./components/offers/CreateSalaryProposalModal";
+import { createSalaryProposal } from "./services/offerLetterService";
 import { useCandidateDetail } from "./hooks/useCandidateDetail";
 import { resolveInterviewStageKey, isUserInvitedToInterview } from "./utils/interviewPanelHelper";
 import { toast } from "@/components/Toast";
-import type { Interview } from "./types";
+import { supabase } from "@/lib/supabase";
+import type { Interview, HiringRequest, CandidateDocument } from "./types";
 
 export default function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
@@ -78,6 +81,66 @@ export default function CandidateDetail() {
 
   const [candidateApprovalModal, setCandidateApprovalModal] = useState(false);
   const [selectedEvaluationInterview, setSelectedEvaluationInterview] = useState<Interview | null>(null);
+  const [isSalaryProposalModal, setIsSalaryProposalModal] = useState(false);
+  const [hiringRequests, setHiringRequests] = useState<HiringRequest[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("hiring_requests")
+      .select("*, branches(name)")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setHiringRequests(data as unknown as HiringRequest[]);
+      });
+  }, []);
+
+  const handleCreateSalaryProposal = useCallback(
+    async (payload: any) => {
+      try {
+        const created = await createSalaryProposal({
+          ...payload,
+          proposed_by_name: actorName,
+        });
+
+        if (candidate) {
+          const newDoc: CandidateDocument = {
+            name: `Salary Proposal - ${created.offer_number}`,
+            url: `#offer-${created.offer_number}`,
+            size: 1024,
+            type: "application/pdf",
+            uploaded_at: new Date().toISOString(),
+            stage_key: "salary_negotiation",
+            notes: `Base: $${Number(payload.base_salary).toLocaleString()} • Target Start: ${payload.target_start_date}`,
+          };
+          const existingDocs = (candidate.documents || []).filter((d) => d.stage_key !== "salary_negotiation");
+          const updatedDocs = [...existingDocs, newDoc];
+
+          await supabase
+            .from("candidates")
+            .update({
+              documents: updatedDocs,
+              expected_salary: Number(payload.base_salary),
+            })
+            .eq("id", candidate.id);
+
+          candidate.documents = updatedDocs;
+          candidate.expected_salary = Number(payload.base_salary);
+        }
+
+        toast(
+          "Salary Proposal Created",
+          `Proposal ${created.offer_number} for ${created.candidate_name} submitted successfully.`,
+          "success"
+        );
+        setIsSalaryProposalModal(false);
+      } catch (err: any) {
+        console.error("Failed to create salary proposal:", err);
+        toast("Error", "Could not create salary proposal.", "error");
+        throw err;
+      }
+    },
+    [actorName, candidate]
+  );
 
   useEffect(() => {
     if (isApprovalRequested && candidate) {
@@ -223,6 +286,8 @@ export default function CandidateDetail() {
               setEvaluationModalStage(stageKey);
             }}
             onUpdateStage={updateStage}
+            onOpenCandidateApproval={() => setCandidateApprovalModal(true)}
+            onOpenSalaryProposal={() => setIsSalaryProposalModal(true)}
           />
 
           {/* 5. Interview History */}
@@ -269,6 +334,8 @@ export default function CandidateDetail() {
             candidate={candidate}
             interviews={interviews}
             onUpdateStage={updateStage}
+            onOpenCandidateApproval={() => setCandidateApprovalModal(true)}
+            onOpenSalaryProposal={() => setIsSalaryProposalModal(true)}
           />
 
           {/* 4. Application Actions */}
@@ -277,6 +344,7 @@ export default function CandidateDetail() {
             onUpdateStage={updateStage}
             onDelete={deleteCandidate}
             onOpenCandidateApproval={() => setCandidateApprovalModal(true)}
+            onOpenSalaryProposal={() => setIsSalaryProposalModal(true)}
           />
         </div>
       </div>
@@ -345,6 +413,16 @@ export default function CandidateDetail() {
         onAdvanceStage={async (nextStage) => {
           await updateStage(nextStage);
         }}
+      />
+
+      {/* Salary Proposal / Negotiation Form Modal */}
+      <CreateSalaryProposalModal
+        isOpen={isSalaryProposalModal}
+        onClose={() => setIsSalaryProposalModal(false)}
+        candidate={candidate}
+        candidates={candidate ? [candidate] : []}
+        hiringRequests={hiringRequests}
+        onSubmit={handleCreateSalaryProposal}
       />
     </div>
   );

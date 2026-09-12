@@ -119,7 +119,6 @@ export async function executeSaveFeedback(params: {
   toast("Feedback Submitted", "Interview feedback recorded.", "success");
 
   // Dual standing notification: Hiring Manager / Evaluator + Assigned Recruiter
-  const matchedCand = candidates.find((c) => c.id === interview.candidate_id);
   const matchedJob = jobs.find((j) => j.id === matchedCand?.job_posting_id);
   const recruiterId = matchedCand?.assigned_recruiter_id || null;
   const recruiterName = matchedCand?.assigned_recruiter

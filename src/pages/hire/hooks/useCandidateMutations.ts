@@ -26,7 +26,8 @@ export function useCandidateMutations({
     async (id: string, stage: string) => {
       const { error } = await supabase.from("candidates").update({ stage }).eq("id", id);
       if (error) {
-        toast("Error", "Failed to update candidate stage", "error");
+        console.error("Failed to update candidate stage:", error);
+        toast("Error", `Failed to update candidate stage: ${error.message || "Unknown error"}`, "error");
         return;
       }
       toast("Stage updated", `Candidate moved to ${STAGE_CONFIG[stage]?.label || stage}.`, "success");

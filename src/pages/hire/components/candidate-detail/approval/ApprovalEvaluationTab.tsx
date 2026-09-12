@@ -110,10 +110,23 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
     });
   }, [panels, data, onChange]);
 
+  const isMockName = (name: string) => {
+    const lower = (name || "").trim().toLowerCase();
+    return (
+      !lower ||
+      lower.includes("meas chhengseang") ||
+      lower.includes("sun reasey") ||
+      lower.includes("interviewer name") ||
+      lower === "panel member" ||
+      lower.startsWith("hr_ops")
+    );
+  };
+
   const handleImportInterviews = useCallback(() => {
     if (!interviews || interviews.length === 0) return;
 
-    const nextPanels = [...panels];
+    // Filter out legacy placeholder rows when importing
+    const nextPanels = panels.filter((p) => !isMockName(p.name));
 
     for (const iv of interviews) {
       const isCompleted = iv.status === "completed" || Boolean(iv.feedback || iv.score);
@@ -211,16 +224,6 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
     },
     [panels, buEmployees, data, onChange]
   );
-
-  const isMockName = (name: string) => {
-    const lower = (name || "").trim().toLowerCase();
-    return (
-      lower.includes("meas chhengseang") ||
-      lower.includes("sun reasey") ||
-      lower.includes("interviewer name") ||
-      lower === "panel member"
-    );
-  };
 
   const hasLegacyMockPanels = panels.some((p) => isMockName(p.name));
 
