@@ -1,5 +1,6 @@
 import type { Candidate, Interview, CandidateDocument } from "../types";
 import { STAGE_TIMELINE_ORDER, STAGE_CONFIG } from "../constants";
+import { getPortalCompletionStats } from "./documentPortalConfig";
 
 export function getStageInterview(stageKey: string, interviews: Interview[]): Interview | undefined {
   if (!interviews || interviews.length === 0) return undefined;
@@ -566,27 +567,31 @@ export const STAGE_EVIDENCE_RULES: StageEvidenceRule[] = [
     stageName: "Documents",
     responsibleRole: "Candidate & Onboarding HR",
     requiredEvidence: [
-      "Compliance Pre-boarding Document Checklist:",
-      "1. National ID / Passport copy",
-      "2. Degree & Academic Certificates",
-      "3. Medical Checkup Certificate",
-      "4. Police / Criminal Clearance",
-      "5. Bank Details & Tax Number",
-      "6. Passport Photo",
+      "10.1 Pre-boarding Required Documents:",
+      "• National ID — front",
+      "• National ID — back",
+      "• Social Security Card, if available",
+      "• Birth certificate",
+      "• Family book — cover",
+      "• Family book — inside pages",
+      "• Bank account proof",
+      "• 4×6 photo",
+      "• Academic certificate(s)",
     ],
-    formOfEvidence: "Multi-file document attachments (candidates.documents array in Storage)",
+    formOfEvidence: "Employee Document Portal (candidates.documents array in Storage)",
     allowsUpload: true,
     uploadCategoryLabel: "Upload Compliance Pre-boarding Document",
     checkEvidence: (candidate) => {
-      const complianceDocs = (candidate.documents || []).filter(
-        (d) => d.stage_key === "documents" || /id|passport|degree|medical|police|tax|bank/i.test(d.name)
-      );
-      const isVerified = complianceDocs.length >= 1;
+      const stats = getPortalCompletionStats(candidate.documents || []);
+      const complianceDocs = candidate.documents || [];
+      const isVerified = stats.verifiedRequired >= 1;
       return {
         isVerified,
-        summary: isVerified
-          ? `Verified: ${complianceDocs.length} compliance document(s) uploaded and archived.`
-          : "Pending: Pre-boarding compliance documents required (ID, Degree, Medical, etc.).",
+        summary: stats.isAllComplete
+          ? `Verified: All ${stats.totalRequired} required pre-boarding documents verified.`
+          : stats.verifiedRequired > 0
+          ? `In Progress: ${stats.verifiedRequired} of ${stats.totalRequired} required documents uploaded (${stats.percentage}%).`
+          : `Pending: Pre-boarding compliance documents required (0/${stats.totalRequired} uploaded).`,
         attachedDocs: complianceDocs,
       };
     },

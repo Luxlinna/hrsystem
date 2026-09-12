@@ -19,6 +19,7 @@ export async function startOnboardingForEmployee(
 ) {
   let employeeResumeUrl: string | null = null;
   let employeeResumeName: string | null = null;
+  let candidateDocs: any[] = [];
 
   try {
     const { data: emp } = await supabase
@@ -38,8 +39,6 @@ export async function startOnboardingForEmployee(
         candQuery = supabase.from("candidates").select("*").eq("candidate_code", emp.candidate_code).maybeSingle();
       } else if (emp.email) {
         candQuery = supabase.from("candidates").select("*").eq("email", emp.email).maybeSingle();
-      } else if (emp.phone) {
-        candQuery = supabase.from("candidates").select("*").eq("phone", emp.phone).maybeSingle();
       }
 
       if (candQuery) {
@@ -47,6 +46,7 @@ export async function startOnboardingForEmployee(
         if (cand) {
           employeeResumeUrl = emp.resume_url || cand.resume_url || null;
           employeeResumeName = emp.resume_name || cand.resume_name || null;
+          candidateDocs = Array.isArray(cand.documents) ? cand.documents : [];
           await supabase.from("employees").update({
             candidate_id: cand.id,
             candidate_code: emp.candidate_code || cand.candidate_code,
@@ -102,11 +102,45 @@ export async function startOnboardingForEmployee(
     });
   }
 
+  // Map candidate documents into initial onboarding documents
+  const completedTaskNames = new Set<string>();
+  candidateDocs.forEach((cdoc: any) => {
+    if (!cdoc.url || cdoc.url.startsWith("#")) return;
+    const name = (cdoc.name || "").toLowerCase();
+    let mappedTemplate: string | null = null;
+
+    if (cdoc.doc_slot_key?.includes("national_id") || name.includes("national id") || name.includes("id card")) {
+      mappedTemplate = "ID Verification";
+      completedTaskNames.add("Verify National ID / Passport & Proof of Address");
+    } else if (cdoc.doc_slot_key === "bank_account_proof" || name.includes("bank")) {
+      mappedTemplate = "Bank Details Form";
+      completedTaskNames.add("Submit Bank Account & Tax Filing Details");
+    } else if (name.includes("offer") || name.includes("acceptance")) {
+      mappedTemplate = "Offer Letter";
+      completedTaskNames.add("Sign Offer Letter & Employment Terms");
+    }
+
+    initialDocs.push({
+      onboarding_request_id: data.id,
+      employee_id: employeeId,
+      document_name: mappedTemplate || cdoc.name,
+      stage: "document",
+      status: "complete",
+      file_url: cdoc.url,
+      file_name: cdoc.name,
+      notes: "Transferred from Candidate Pre-boarding Portal",
+      due_date: addDays(startedAt, 3).toISOString(),
+    });
+  });
+
   const allowedDocsSet = selectedDocNames ? new Set(selectedDocNames) : null;
+  const existingNames = new Set(initialDocs.map((d) => d.document_name));
+
   Object.entries(ONBOARDING_DOCUMENT_TEMPLATES).forEach(([stageKey, templates]) => {
     const dueDate = addDays(startedAt, STAGE_DEFAULT_DUE_DAYS[stageKey] ?? 7).toISOString();
     templates.forEach((name) => {
       if (allowedDocsSet && !allowedDocsSet.has(name)) return;
+      if (existingNames.has(name)) return;
       initialDocs.push({
         onboarding_request_id: data.id,
         employee_id: employeeId,
@@ -132,7 +166,7 @@ export async function startOnboardingForEmployee(
     category: t.category,
     priority: t.priority,
     sort_order: idx + 1,
-    completed: false,
+    completed: completedTaskNames.has(t.task_name),
     due_date: addDays(startedAt, STAGE_DEFAULT_DUE_DAYS[CATEGORY_TO_STAGE[t.category]] ?? 7).toISOString().split("T")[0],
   }));
   if (initialTasks.length > 0) await supabase.from("onboarding_checklist_tasks").insert(initialTasks);

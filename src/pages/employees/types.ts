@@ -15,6 +15,8 @@ export interface Employee {
   work_locations?: { name: string } | null;
   default_work_location_id?: string | null;
   biometric_user_id?: string | null;
+  candidate_id?: string | null;
+  documents?: any[] | null;
 }
 
 export interface Branch {

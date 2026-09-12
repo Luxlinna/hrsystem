@@ -21,7 +21,12 @@ export async function startOnboardingForCandidate(
     const lastName = nameParts.slice(1).join(" ") || "-";
     const job = cand.job_postings;
 
-    const employeePayload = {
+    // Find 4x6 photo for employee avatar
+    const photoDoc = (cand.documents || []).find(
+      (d: any) => d.doc_slot_key === "photo_4x6" || /4x6|photo|avatar/i.test(d.name || "")
+    );
+
+    const employeePayload: any = {
       first_name: firstName,
       last_name: lastName,
       email: cand.email,
@@ -42,6 +47,8 @@ export async function startOnboardingForCandidate(
       notice_period: cand.notice_period || null,
       resume_url: cand.resume_url || null,
       resume_name: cand.resume_name || null,
+      avatar_url: photoDoc?.url || null,
+      documents: cand.documents || [],
     };
 
     let employeeId: string | null = null;
@@ -55,11 +62,29 @@ export async function startOnboardingForCandidate(
     }
 
     if (employeeId) {
-      await supabase.from("employees").update(employeePayload).eq("id", employeeId);
+      try {
+        await supabase.from("employees").update(employeePayload).eq("id", employeeId);
+      } catch {
+        // Fallback without documents column if schema restricts
+        delete employeePayload.documents;
+        await supabase.from("employees").update(employeePayload).eq("id", employeeId);
+      }
     } else {
-      const { data: newEmp, error: empErr } = await supabase.from("employees").insert(employeePayload).select("id").single();
-      if (empErr) return { data: null, error: empErr };
-      employeeId = newEmp.id;
+      let inserted = false;
+      try {
+        const { data: newEmp, error: empErr } = await supabase.from("employees").insert(employeePayload).select("id").single();
+        if (!empErr && newEmp?.id) {
+          employeeId = newEmp.id;
+          inserted = true;
+        }
+      } catch {}
+
+      if (!inserted) {
+        delete employeePayload.documents;
+        const { data: newEmp, error: empErr } = await supabase.from("employees").insert(employeePayload).select("id").single();
+        if (empErr) return { data: null, error: empErr };
+        employeeId = newEmp.id;
+      }
     }
 
     await supabase.from("candidates").update({ stage: "hired" }).eq("id", cand.id);
@@ -67,7 +92,7 @@ export async function startOnboardingForCandidate(
       await supabase.from("candidate_applications").update({ stage: "hired", outcome: "hired" }).eq("candidate_id", cand.id).eq("job_posting_id", cand.job_posting_id);
     }
 
-    return await startOnboardingForEmployee(employeeId, requestedBy);
+    return await startOnboardingForEmployee(employeeId!, requestedBy);
   } catch (err: any) {
     console.error("Failed in startOnboardingForCandidate:", err);
     return { data: null, error: err };

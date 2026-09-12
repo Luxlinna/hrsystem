@@ -23,6 +23,13 @@ export interface Job {
   branches?: { id: string; name: string };
 }
 
+export type DocumentVerificationStatus =
+  | "missing"
+  | "uploaded"
+  | "under_review"
+  | "verified"
+  | "rejected";
+
 export interface CandidateDocument {
   name: string;
   url: string;
@@ -31,6 +38,11 @@ export interface CandidateDocument {
   uploaded_at?: string;
   stage_key?: string;
   notes?: string;
+  doc_slot_key?: string;
+  verification_status?: DocumentVerificationStatus;
+  rejection_reason?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
 }
 
 export type StageEvidenceStatus = "verified" | "pending" | "upcoming";

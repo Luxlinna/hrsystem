@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ProfileHeader } from "./components/profile/ProfileHeader";
 import { BasicInfoCard } from "./components/profile/BasicInfoCard";
+import { EmployeeDocumentsCard } from "./components/profile/EmployeeDocumentsCard";
 import { LeaveHistoryCard } from "./components/profile/LeaveHistoryCard";
 import { PayrollHistoryCard } from "./components/profile/PayrollHistoryCard";
 import { ProfileSidebar } from "./components/profile/ProfileSidebar";
@@ -85,6 +86,7 @@ export default function EmployeeProfile() {
             workSites={workSites}
             onSave={saveChanges}
           />
+          <EmployeeDocumentsCard employee={employee} />
           <LeaveHistoryCard leaveRequests={leaveRequests} />
           <PayrollHistoryCard payrollRecords={payrollRecords} />
         </div>

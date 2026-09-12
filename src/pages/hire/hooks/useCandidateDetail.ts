@@ -118,6 +118,7 @@ export function useCandidateDetail(id: string | undefined) {
 
   return {
     candidate,
+    setCandidate,
     interviews,
     loading,
     uploadingResume: docs.uploadingResume,

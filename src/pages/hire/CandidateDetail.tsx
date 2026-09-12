@@ -15,6 +15,7 @@ import { FeedbackModal } from "./components/modals/FeedbackModal";
 import { InterviewEvaluationModal } from "./components/candidate-detail/InterviewEvaluationModal";
 import { CandidateApprovalModal } from "./components/candidate-detail/CandidateApprovalModal";
 import { CandidateOfferLifecycleCard } from "./components/candidate-detail/CandidateOfferLifecycleCard";
+import { EmployeeDocumentPortalCard } from "./components/candidate-detail/EmployeeDocumentPortalCard";
 import { CreateSalaryProposalModal } from "./components/offers/CreateSalaryProposalModal";
 import { OfferWorkflowModal } from "./components/offers/OfferWorkflowModal";
 import {
@@ -48,6 +49,7 @@ export default function CandidateDetail() {
   const isCurrentScopeHr = isHrDivisionScope(effectiveBranchName);
   const {
     candidate,
+    setCandidate,
     interviews,
     loading,
     uploadingResume,
@@ -601,7 +603,18 @@ export default function CandidateDetail() {
             />
           )}
 
-          {/* 5. 13-Stage Recruitment Evidence & Verification Matrix */}
+          {/* 5. Employee Document Portal (Activated once Offer is Accepted) */}
+          {(activeOffer?.status === "accepted" ||
+            ["accepted", "documents", "contract", "hired"].includes(candidate.stage)) && (
+            <EmployeeDocumentPortalCard
+              candidate={candidate}
+              onUploadDocuments={uploadDocuments}
+              onDeleteDocument={deleteDocument}
+              onUpdateCandidate={setCandidate}
+            />
+          )}
+
+          {/* 6. 13-Stage Recruitment Evidence & Verification Matrix */}
           <CandidateEvidenceCard
             candidate={candidate}
             interviews={interviews}
