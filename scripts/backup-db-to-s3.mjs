@@ -149,7 +149,8 @@ async function runBackup() {
   const now = new Date();
   const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const yearMonth = now.toISOString().slice(0, 7);
-  const dumpFileName = `hrsystem_backup_${timestamp}.sql`;
+  const tag = process.env.BACKUP_TAG ? `_${process.env.BACKUP_TAG}` : "";
+  const dumpFileName = `hrsystem_backup_${timestamp}${tag}.sql`;
   const gzipFileName = `${dumpFileName}.gz`;
   const tempDir = path.resolve("./.temp-backups");
 

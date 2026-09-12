@@ -3,7 +3,7 @@ import type { Employee } from "../../types";
 import { REQUIRED_DOCUMENT_SLOTS, findSlotDocument } from "@/pages/hire/constants/documentPortalConfig";
 import { DOCUMENT_STATUS_CONFIG, getDocumentVerificationStatus } from "@/pages/hire/constants/documentStatusConfig";
 import { supabase } from "@/lib/supabase";
-import { uploadFile } from "@/lib/storage";
+import { uploadFileToS3 } from "@/lib/s3-storage";
 import { toast } from "@/components/Toast";
 
 interface EmployeeDocumentsCardProps {
@@ -46,15 +46,13 @@ export const EmployeeDocumentsCard = memo(function EmployeeDocumentsCard({
     async (slotKey: string, slotTitle: string, file: File) => {
       setUploadingSlot(slotKey);
       try {
-        const ext = file.name.split(".").pop() || "pdf";
-        const path = `employees/${employee.id}/documents/${slotKey}_${Date.now()}.${ext}`;
-        const url = await uploadFile("attachments", path, file);
+        const s3Item = await uploadFileToS3(file, `employees/${employee.id}/documents/${slotKey}`);
 
         const newDoc = {
           name: `${slotTitle} (${file.name})`,
-          url,
-          size: file.size,
-          type: file.type || "application/pdf",
+          url: s3Item.url,
+          size: s3Item.size,
+          type: s3Item.type || file.type || "application/pdf",
           uploaded_at: new Date().toISOString(),
           doc_slot_key: slotKey,
           verification_status: "uploaded",
@@ -63,7 +61,7 @@ export const EmployeeDocumentsCard = memo(function EmployeeDocumentsCard({
         const updated = [...documents.filter((d) => d.doc_slot_key !== slotKey), newDoc];
         setDocuments(updated);
         await supabase.from("employees").update({ documents: updated }).eq("id", employee.id);
-        toast("Document Saved", `${slotTitle} uploaded to employee profile.`, "success");
+        toast("Document Saved", `${slotTitle} uploaded to AWS S3.`, "success");
       } catch (err: any) {
         toast("Upload Failed", err.message || "Could not upload document", "error");
       } finally {

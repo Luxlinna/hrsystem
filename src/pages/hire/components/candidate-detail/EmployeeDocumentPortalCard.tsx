@@ -7,7 +7,7 @@ import {
   type DocumentSlotConfig,
 } from "../../constants/documentPortalConfig";
 import { DocumentSlotItem } from "./DocumentSlotItem";
-import { uploadFile } from "@/lib/storage";
+import { uploadFileToS3, deleteS3File, getS3KeyFromUrl } from "@/lib/s3-storage";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 
@@ -30,15 +30,16 @@ export const EmployeeDocumentPortalCard = memo(function EmployeeDocumentPortalCa
   const handleSlotUpload = useCallback(
     async (slot: DocumentSlotConfig, file: File) => {
       try {
-        const ext = file.name.split(".").pop() || "pdf";
-        const path = `candidates/${candidate.id}/portal/${slot.key}_${Date.now()}.${ext}`;
-        const url = await uploadFile("attachments", path, file);
+        const s3Item = await uploadFileToS3(
+          file,
+          `candidates/${candidate.id}/portal/${slot.key}`
+        );
 
         const newDoc: CandidateDocument = {
           name: `${slot.title} (${file.name})`,
-          url,
-          size: file.size,
-          type: file.type || "application/pdf",
+          url: s3Item.url,
+          size: s3Item.size,
+          type: s3Item.type || file.type || "application/pdf",
           uploaded_at: new Date().toISOString(),
           stage_key: "documents",
           notes: `Uploaded for pre-boarding slot: ${slot.title}`,
@@ -60,13 +61,22 @@ export const EmployeeDocumentPortalCard = memo(function EmployeeDocumentPortalCa
         if (onUploadDocuments) {
           await onUploadDocuments([newDoc]);
         }
-        toast("Document Uploaded", `${slot.title} uploaded and set to "Uploaded" status.`, "success");
+        toast("Document Uploaded", `${slot.title} uploaded to AWS S3.`, "success");
       } catch (err: any) {
         console.error("Slot upload error:", err);
         toast("Upload Error", `Failed to upload ${slot.title}: ${err.message || "Unknown error"}`, "error");
       }
     },
     [candidate.id, candidate.documents, onUploadDocuments, onUpdateCandidate]
+  );
+
+  const handleDeleteSlot = useCallback(
+    (url: string) => {
+      const key = getS3KeyFromUrl(url);
+      if (key) deleteS3File(key).catch(() => {});
+      if (onDeleteDocument) onDeleteDocument(url);
+    },
+    [onDeleteDocument]
   );
 
   const handleUpdateStatus = useCallback(
@@ -157,7 +167,7 @@ export const EmployeeDocumentPortalCard = memo(function EmployeeDocumentPortalCa
               slot={slot}
               doc={doc}
               onUpload={handleSlotUpload}
-              onDelete={onDeleteDocument || (() => {})}
+              onDelete={handleDeleteSlot}
               onUpdateStatus={handleUpdateStatus}
             />
           );
