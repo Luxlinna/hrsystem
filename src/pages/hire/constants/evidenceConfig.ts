@@ -126,8 +126,8 @@ export function checkInterviewStageProgressionGate(
 
   for (const stg of interviewStages) {
     const stgIdx = STAGE_TIMELINE_ORDER.indexOf(stg);
-    // If target is past this interview stage, both forms MUST be completed
-    if (targetIdx > stgIdx) {
+    // Only enforce interview gates if the candidate is CURRENTLY AT or BEFORE this stage and attempting to pass it
+    if (currentIdx <= stgIdx && targetIdx > stgIdx) {
       const scheduled = isStageInterviewScheduled(stg, interviews);
       const evaluated = isStageInterviewEvaluated(stg, candidate, interviews);
 
@@ -153,9 +153,9 @@ export function checkInterviewStageProgressionGate(
     }
   }
 
-  // 3. Check candidate approval stage progression gate
+  // 3. Check candidate approval stage progression gate (only if currently at or before candidate_approval)
   const approvalIdx = STAGE_TIMELINE_ORDER.indexOf("candidate_approval");
-  if (approvalIdx >= 0 && targetIdx > approvalIdx) {
+  if (approvalIdx >= 0 && currentIdx <= approvalIdx && targetIdx > approvalIdx) {
     const isApproved = isCandidateApprovalVerified(candidate);
     if (!isApproved) {
       return {
