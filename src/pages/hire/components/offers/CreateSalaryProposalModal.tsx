@@ -1,7 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
 import type { Candidate, HiringRequest, OfferAllowanceItem, OfferLetter } from "../../types";
+import { useSalaryProposalState } from "./proposal/useSalaryProposalState";
+import { ProposalDuplicateAlert } from "./proposal/ProposalDuplicateAlert";
+import { ProposalCandidateSection } from "./proposal/ProposalCandidateSection";
+import { ProposalCompensationSection } from "./proposal/ProposalCompensationSection";
+import { ProposalAllowancesSection } from "./proposal/ProposalAllowancesSection";
+import { ProposalNotesSection } from "./proposal/ProposalNotesSection";
 
-interface CreateSalaryProposalModalProps {
+export interface CreateSalaryProposalModalProps {
   isOpen: boolean;
   onClose: () => void;
   candidate?: Candidate | null;
@@ -22,182 +27,11 @@ interface CreateSalaryProposalModalProps {
   }) => Promise<any>;
 }
 
-export function CreateSalaryProposalModal({
-  isOpen,
-  onClose,
-  candidate,
-  candidates,
-  hiringRequests,
-  existingOffers = [],
-  onSubmit,
-}: CreateSalaryProposalModalProps) {
-  const [selectedCandidateId, setSelectedCandidateId] = useState<string>("");
-  const [selectedReqId, setSelectedReqId] = useState<string>("");
-
-  const [baseSalary, setBaseSalary] = useState<number | "">("");
-  const [isBasedOnQualification, setIsBasedOnQualification] = useState(false);
-  const [probationSalary, setProbationSalary] = useState<number | "">("");
-  const [probationMonths, setProbationMonths] = useState<number>(3);
-  const [targetStartDate, setTargetStartDate] = useState<string>("");
-  const [allowances, setAllowances] = useState<OfferAllowanceItem[]>([
-    { name: "Transportation Allowance", amount: 50 },
-    { name: "Phone Allowance", amount: 30 },
-  ]);
-  const [benefitsSummary, setBenefitsSummary] = useState<string>(
-    "Comprehensive health & accident insurance, 18 days annual paid leave, public holidays as per labor law, and annual KPI performance appraisal."
-  );
-  const [specialTerms, setSpecialTerms] = useState<string>("");
-  const [proposalNotes, setProposalNotes] = useState<string>("");
-  const [submitting, setSubmitting] = useState(false);
-
-  // Filter candidates who are eligible for proposal creation:
-  // Cannot add candidates who already have an active (non-rejected) proposal or are already at offer stage
-  const eligibleCandidates = useMemo(() => {
-    if (candidate) return [candidate];
-    return candidates.filter((c) => {
-      if (existingOffers.some((o) => o.candidate_id === c.id && o.status !== "rejected")) {
-        return false;
-      }
-      if (["offer", "accepted", "rejected"].includes(c.stage)) {
-        return false;
-      }
-      return true;
-    });
-  }, [candidate, candidates, existingOffers]);
-
-  // Active candidate
-  const activeCandidate = useMemo(() => {
-    if (candidate) return candidate;
-    return candidates.find((c) => c.id === selectedCandidateId) || eligibleCandidates[0] || null;
-  }, [candidate, candidates, selectedCandidateId, eligibleCandidates]);
-
-  // Check if the candidate already has an active salary proposal/offer
-  const candidateExistingOffer = useMemo(() => {
-    if (!activeCandidate || !existingOffers.length) return null;
-    return existingOffers.find(
-      (o) => o.candidate_id === activeCandidate.id && o.status !== "rejected"
-    ) || null;
-  }, [activeCandidate, existingOffers]);
-
-  // Find matching requisition
-  const matchedReq = useMemo(() => {
-    if (selectedReqId) {
-      return hiringRequests.find((r) => r.id === selectedReqId) || null;
-    }
-    if (!activeCandidate) return null;
-    // Auto-match by job_posting_id or title
-    return (
-      hiringRequests.find(
-        (r) =>
-          (activeCandidate.job_posting_id && r.job_posting_id === activeCandidate.job_posting_id) ||
-          r.title.toLowerCase() === (activeCandidate.job_postings?.title || "").toLowerCase()
-      ) || null
-    );
-  }, [activeCandidate, hiringRequests, selectedReqId]);
-
-  useEffect(() => {
-    if (candidate) {
-      setSelectedCandidateId(candidate.id);
-    } else if (eligibleCandidates.length > 0) {
-      if (!selectedCandidateId || !eligibleCandidates.some((c) => c.id === selectedCandidateId)) {
-        const preferred = eligibleCandidates.find(
-          (c) => c.stage === "salary_negotiation" || c.stage === "selected"
-        );
-        setSelectedCandidateId(preferred ? preferred.id : eligibleCandidates[0].id);
-      }
-    } else {
-      setSelectedCandidateId("");
-    }
-  }, [candidate, eligibleCandidates, selectedCandidateId]);
-
-  // Pre-fill target start date & salary when candidate / req changes
-  useEffect(() => {
-    if (!targetStartDate) {
-      const nextMonth = new Date();
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      nextMonth.setDate(1);
-      setTargetStartDate(nextMonth.toISOString().split("T")[0]);
-    }
-
-    if (activeCandidate?.expected_salary && baseSalary === "") {
-      setBaseSalary(activeCandidate.expected_salary);
-    } else if (matchedReq?.salary_min && baseSalary === "") {
-      setBaseSalary(matchedReq.salary_min);
-    }
-  }, [activeCandidate, matchedReq, targetStartDate, baseSalary]);
+export function CreateSalaryProposalModal(props: CreateSalaryProposalModalProps) {
+  const { isOpen, onClose, candidate, candidates, hiringRequests } = props;
+  const state = useSalaryProposalState(props);
 
   if (!isOpen) return null;
-
-  const handleAddAllowance = () => {
-    setAllowances([...allowances, { name: "", amount: 0 }]);
-  };
-
-  const handleRemoveAllowance = (index: number) => {
-    setAllowances(allowances.filter((_, i) => i !== index));
-  };
-
-  const handleUpdateAllowance = (index: number, field: "name" | "amount", value: any) => {
-    const next = [...allowances];
-    if (field === "amount") {
-      next[index].amount = Number(value) || 0;
-    } else {
-      next[index].name = value;
-    }
-    setAllowances(next);
-  };
-
-  const totalAllowances = allowances.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-  const totalPackage = (Number(baseSalary) || 0) + totalAllowances;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!activeCandidate) return;
-
-    if (candidateExistingOffer) {
-      alert(
-        `A salary proposal has already been created for ${activeCandidate.full_name} (Offer #${candidateExistingOffer.offer_number}). Candidates at the proposal stage cannot be added again.`
-      );
-      return;
-    }
-
-    if (!isBasedOnQualification && (!baseSalary || Number(baseSalary) <= 0)) {
-      alert("Please enter a valid base salary or check 'Based on qualification'.");
-      return;
-    }
-    if (!targetStartDate) {
-      alert("Please specify the target commencement date.");
-      return;
-    }
-
-    const finalBaseSalary = Number(baseSalary) || 0;
-    const notesWithQual = isBasedOnQualification
-      ? [proposalNotes, "[Salary: Based on Qualification]"].filter(Boolean).join("\n")
-      : proposalNotes;
-    const termsWithQual = isBasedOnQualification
-      ? [specialTerms, "Salary based on qualification & performance."].filter(Boolean).join(" ")
-      : specialTerms;
-
-    setSubmitting(true);
-    try {
-      await onSubmit({
-        candidate: activeCandidate,
-        requisition: matchedReq,
-        base_salary: finalBaseSalary,
-        probation_salary: probationSalary ? Number(probationSalary) : null,
-        probation_months: probationMonths,
-        target_start_date: targetStartDate,
-        allowances: allowances.filter((a) => a.name.trim() !== ""),
-        benefits_summary: benefitsSummary,
-        special_terms: termsWithQual || undefined,
-        proposal_notes: notesWithQual || undefined,
-      });
-      onClose();
-    } catch {
-      // Handled by hook toast
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
@@ -222,313 +56,57 @@ export function CreateSalaryProposalModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={state.handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           {/* Duplicate Proposal Guard Alert */}
-          {candidateExistingOffer && (
-            <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-950 text-xs flex items-start gap-2.5 shadow-2xs">
-              <i className="ri-error-warning-fill text-amber-600 text-base shrink-0 mt-0.5" />
-              <div>
-                <p className="font-extrabold text-amber-900">
-                  Candidate Already Has an Active Salary Proposal / Offer
-                </p>
-                <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                  <strong>{activeCandidate?.full_name}</strong> already has an active proposal on record (<strong>Offer #{candidateExistingOffer.offer_number}</strong> &middot; Status: <strong>{candidateExistingOffer.status.replace(/_/g, " ").toUpperCase()}</strong>). Candidates at the proposal stage cannot be added again. Please review or advance the existing offer record instead.
-                </p>
-              </div>
-            </div>
-          )}
+          <ProposalDuplicateAlert
+            activeCandidate={state.activeCandidate}
+            candidateExistingOffer={state.candidateExistingOffer}
+          />
 
           {/* Candidate & Position Auto-Populated Card */}
-          <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <i className="ri-user-star-line text-blue-600" /> Candidate &amp; Requisition Reference
-              </span>
-              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                ✓ Auto-bound from System
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">Selected Candidate</label>
-                {candidate ? (
-                  <div className="p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-900 flex items-center justify-between">
-                    <span>{candidate.full_name}</span>
-                    <span className="text-xs font-normal text-slate-500">{candidate.email || candidate.phone}</span>
-                  </div>
-                ) : eligibleCandidates.length === 0 ? (
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-semibold text-amber-800">
-                    No eligible candidates available &mdash; all candidates at this stage already have active salary proposals.
-                  </div>
-                ) : (
-                  <select
-                    value={selectedCandidateId}
-                    onChange={(e) => setSelectedCandidateId(e.target.value)}
-                    className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-                  >
-                    {eligibleCandidates.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.full_name} — {c.job_postings?.title || "Applicant"} ({c.stage.replace(/_/g, " ")})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">Associated Requisition / Job</label>
-                <select
-                  value={matchedReq?.id || selectedReqId}
-                  onChange={(e) => setSelectedReqId(e.target.value)}
-                  className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-                >
-                  {matchedReq && <option value={matchedReq.id}>{matchedReq.title} ({matchedReq.department}) — {matchedReq.business_unit || "OPS"}</option>}
-                  {hiringRequests
-                    .filter((r) => r.id !== matchedReq?.id)
-                    .map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.title} ({r.department}) — Budget: ${r.salary_min || 0} - ${r.salary_max || 0}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Readonly info summary pills */}
-            <div className="mt-3 pt-3 border-t border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Role</span>
-                <span className="font-semibold text-slate-800">{matchedReq?.title || activeCandidate?.job_postings?.title || "Specialist"}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Department</span>
-                <span className="font-semibold text-slate-800">{matchedReq?.department || activeCandidate?.job_postings?.department || "Operations"}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Req Budget</span>
-                <span className="font-semibold text-blue-700">
-                  {matchedReq?.salary_min ? `$${matchedReq.salary_min} – $${matchedReq.salary_max}` : "Open"}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Candidate Ask</span>
-                <span className="font-semibold text-emerald-700">
-                  {activeCandidate?.expected_salary ? `$${activeCandidate.expected_salary}/mo` : "Not specified"}
-                </span>
-              </div>
-            </div>
-          </div>
+          <ProposalCandidateSection
+            candidate={candidate}
+            activeCandidate={state.activeCandidate}
+            eligibleCandidates={state.eligibleCandidates}
+            selectedCandidateId={state.selectedCandidateId}
+            setSelectedCandidateId={state.setSelectedCandidateId}
+            matchedReq={state.matchedReq}
+            hiringRequests={hiringRequests}
+            selectedReqId={state.selectedReqId}
+            setSelectedReqId={state.setSelectedReqId}
+          />
 
           {/* Core Compensation Package */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <i className="ri-wallet-3-line text-blue-600" /> Proposed Remuneration &amp; Schedule
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Gross Base Salary ($/mo) {!isBasedOnQualification && <span className="text-rose-500">*</span>}
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold">$</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    required={!isBasedOnQualification}
-                    placeholder={isBasedOnQualification ? "e.g. 300 (or leave 0)" : "e.g. 800"}
-                    value={baseSalary}
-                    onChange={(e) => setBaseSalary(e.target.value === "" ? "" : Number(e.target.value))}
-                    className={`w-full pl-8 pr-3 py-2 border rounded-lg text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden ${
-                      isBasedOnQualification ? "border-blue-400 bg-blue-50/20" : "border-slate-300"
-                    }`}
-                  />
-                </div>
-                <div className="mt-2">
-                  <label
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium cursor-pointer select-none transition-all ${
-                      isBasedOnQualification
-                        ? "bg-blue-50 border-blue-300 text-blue-800 shadow-2xs font-semibold"
-                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isBasedOnQualification}
-                      onChange={(e) => setIsBasedOnQualification(e.target.checked)}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
-                    />
-                    <span>Based on qualification</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Probation Salary ($/mo) <span className="text-slate-400 text-[10px]">(Optional)</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold">$</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    placeholder="e.g. 700"
-                    value={probationSalary}
-                    onChange={(e) => setProbationSalary(e.target.value === "" ? "" : Number(e.target.value))}
-                    className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-                  />
-                </div>
-                <span className="text-[11px] text-slate-400 block mt-2">
-                  During probation period
-                </span>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Probation Duration</label>
-                <select
-                  value={probationMonths}
-                  onChange={(e) => setProbationMonths(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-                >
-                  <option value={1}>1 Month</option>
-                  <option value={2}>2 Months</option>
-                  <option value={3}>3 Months (Standard)</option>
-                  <option value={6}>6 Months</option>
-                </select>
-                <span className="text-[11px] text-slate-400 block mt-2">
-                  Standard trial duration
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Target Commencement Date <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={targetStartDate}
-                  onChange={(e) => setTargetStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Working Schedule</label>
-                <input
-                  type="text"
-                  readOnly
-                  value="Monday to Saturday Half (8:00 am – 5:00 pm)"
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-sm font-medium text-slate-600"
-                />
-              </div>
-            </div>
-          </div>
+          <ProposalCompensationSection
+            baseSalary={state.baseSalary}
+            setBaseSalary={state.setBaseSalary}
+            isBasedOnQualification={state.isBasedOnQualification}
+            setIsBasedOnQualification={state.setIsBasedOnQualification}
+            probationSalary={state.probationSalary}
+            setProbationSalary={state.setProbationSalary}
+            probationMonths={state.probationMonths}
+            setProbationMonths={state.setProbationMonths}
+            targetStartDate={state.targetStartDate}
+            setTargetStartDate={state.setTargetStartDate}
+          />
 
           {/* Guaranteed Monthly Allowances */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Monthly Allowances
-              </label>
-              <button
-                type="button"
-                onClick={handleAddAllowance}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
-              >
-                <i className="ri-add-circle-line" /> Add Allowance
-              </button>
-            </div>
+          <ProposalAllowancesSection
+            allowances={state.allowances}
+            handleAddAllowance={state.handleAddAllowance}
+            handleRemoveAllowance={state.handleRemoveAllowance}
+            handleUpdateAllowance={state.handleUpdateAllowance}
+            isBasedOnQualification={state.isBasedOnQualification}
+            totalPackage={state.totalPackage}
+          />
 
-            <div className="space-y-2">
-              {allowances.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Allowance description (e.g. Phone, Transport)"
-                    value={item.name}
-                    onChange={(e) => handleUpdateAllowance(idx, "name", e.target.value)}
-                    className="flex-1 px-3 py-1.5 border border-slate-300 rounded-lg text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-                  />
-                  <div className="relative w-32">
-                    <span className="absolute left-2.5 top-1.5 text-slate-400 font-bold text-xs">$</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      value={item.amount}
-                      onChange={(e) => handleUpdateAllowance(idx, "amount", e.target.value)}
-                      className="w-full pl-6 pr-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveAllowance(idx)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                  >
-                    <i className="ri-delete-bin-line text-sm" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Total package callout */}
-            <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xs font-bold text-blue-900">Total Monthly Compensation Package:</span>
-              <div className="text-right flex items-center gap-2">
-                {isBasedOnQualification && (
-                  <span className="text-[10px] font-extrabold text-blue-800 bg-blue-100/90 px-2 py-0.5 rounded-md border border-blue-200">
-                    Based on Qualification
-                  </span>
-                )}
-                <span className="text-base font-black text-blue-900">${totalPackage.toLocaleString()} / month</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Benefits Summary */}
-          <div>
-            <label className="text-xs font-semibold text-slate-700 block mb-1">Standard Company Benefits</label>
-            <textarea
-              rows={2}
-              value={benefitsSummary}
-              onChange={(e) => setBenefitsSummary(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-            />
-          </div>
-
-          {/* Proposal Rationale Notes */}
-          <div>
-            <label className="text-xs font-semibold text-slate-700 block mb-1">
-              Proposal Rationale &amp; Notes for Approver
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Explain why this salary package is recommended (e.g. strong technical assessment, 5 years relevant React Native experience)..."
-              value={proposalNotes}
-              onChange={(e) => setProposalNotes(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-            />
-          </div>
-
-          {/* Routing to HR Division Notice */}
-          <div className="p-3 bg-blue-50/80 border border-blue-200/90 rounded-xl flex items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <i className="ri-send-plane-2-line text-blue-600 text-base shrink-0" />
-              <div>
-                <span className="font-bold text-blue-950">Next Step:</span>{" "}
-                <span className="text-blue-900">This form will be sent across to the HR Division for review to generate the offer letter.</span>
-              </div>
-            </div>
-            <span className="text-[10px] font-black uppercase text-blue-800 bg-blue-100 px-2 py-0.5 rounded border border-blue-200 shrink-0">
-              HR Division
-            </span>
-          </div>
+          {/* Benefits Summary, Notes & Next Step Notice */}
+          <ProposalNotesSection
+            benefitsSummary={state.benefitsSummary}
+            setBenefitsSummary={state.setBenefitsSummary}
+            proposalNotes={state.proposalNotes}
+            setProposalNotes={state.setProposalNotes}
+          />
 
           {/* Footer Actions */}
           <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
@@ -542,14 +120,14 @@ export function CreateSalaryProposalModal({
             <button
               type="submit"
               disabled={
-                submitting ||
-                Boolean(candidateExistingOffer) ||
-                !activeCandidate ||
-                (eligibleCandidates.length === 0 && !candidate)
+                state.submitting ||
+                Boolean(state.candidateExistingOffer) ||
+                !state.activeCandidate ||
+                (state.eligibleCandidates.length === 0 && !candidate)
               }
               className="px-5 py-2.5 text-xs font-extrabold text-white bg-[#253C7D] hover:bg-[#1e3066] rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {submitting ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-send-plane-2-line" />}
+              {state.submitting ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-send-plane-2-line" />}
               Send Form to HR Division for Review
             </button>
           </div>

@@ -16,11 +16,11 @@ function formatCurrency(val?: number | null): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
 }
 
-export function exportOfferLetterPdf(
+export function generateOfferLetterHtml(
   offer: OfferLetter,
   buLogoCustom?: string,
   isHrDivisionContext?: boolean
-): boolean {
+): string {
   // When exported at HR Division: MUST WORK WITH UNI LOGO (NO OPS), even if employee or form request was from OPS
   const { logo: buLogo, companyName: defaultBuName, isHrDivision } = resolveDocumentBranding({
     businessUnit: offer.business_unit,
@@ -412,8 +412,26 @@ export function exportOfferLetterPdf(
                   <div class="sig-title">CANDIDATE ACCEPTANCE ACKNOWLEDGMENT</div>
                   <div class="sig-line"></div>
                   <div class="sig-name">${escapeHtml(offer.candidate_name)}</div>
-                  <div class="sig-date">I accept the offer on the terms and conditions outlined above.</div>
-                  <div class="sig-date">Signature &amp; Date: _________________________</div>
+                  ${
+                    offer.status === "accepted" || offer.decision_at
+                      ? `
+                    <div style="margin-top: 6px; padding: 4px 8px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; color: #065f46; font-weight: 700; font-size: 10.5px;">
+                      ✓ Digitally Signed &amp; Accepted by Candidate
+                    </div>
+                    <div class="sig-date" style="margin-top: 4px;">Accepted on: ${escapeHtml(
+                      new Date(offer.decision_at || offer.updated_at || Date.now()).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })
+                    )}</div>
+                    <div class="sig-date">Confirmed Start: ${escapeHtml(formattedStartDate)}</div>
+                  `
+                      : `
+                    <div class="sig-date">I accept the offer on the terms and conditions outlined above.</div>
+                    <div class="sig-date">Signature &amp; Date: _________________________</div>
+                  `
+                  }
                 </div>
               </div>
             </div>
@@ -433,6 +451,14 @@ export function exportOfferLetterPdf(
   </table>
 </body>
 </html>`;
+}
+
+export function exportOfferLetterPdf(
+  offer: OfferLetter,
+  buLogoCustom?: string,
+  isHrDivisionContext?: boolean
+): boolean {
+  const html = generateOfferLetterHtml(offer, buLogoCustom, isHrDivisionContext);
 
   try {
     const iframe = document.createElement("iframe");
@@ -485,5 +511,47 @@ export function exportOfferLetterPdf(
     return true;
   }
 
+  return false;
+}
+
+export function previewOfferLetterHtml(
+  offer: OfferLetter,
+  buLogoCustom?: string,
+  isHrDivisionContext?: boolean
+): boolean {
+  const baseHtml = generateOfferLetterHtml(offer, buLogoCustom, isHrDivisionContext);
+
+  const banner = `
+    <div class="no-print" style="position: sticky; top: 0; z-index: 99999; background: #1e293b; color: #ffffff; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.15); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-weight: 800; font-size: 13.5px; color: #f8fafc; letter-spacing: -0.01em;">
+          Formal Offer &amp; Acceptance Record — ${escapeHtml(offer.offer_number)}
+        </span>
+        <span style="background: #059669; color: white; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase;">
+          ${escapeHtml(offer.status)}
+        </span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button onclick="window.print()" style="background: #2563eb; hover:background: #1d4ed8; color: white; border: none; padding: 7px 16px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+          <span>🖨️ Print / Save as PDF</span>
+        </button>
+        <button onclick="window.close()" style="background: #475569; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer;">
+          <span>✕ Close Tab</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Insert banner right after <body>
+  const previewHtml = baseHtml.replace("<body>", `<body>${banner}`);
+
+  const previewWindow = window.open("", "_blank");
+  if (previewWindow) {
+    previewWindow.document.open();
+    previewWindow.document.write(previewHtml);
+    previewWindow.document.close();
+    previewWindow.focus();
+    return true;
+  }
   return false;
 }

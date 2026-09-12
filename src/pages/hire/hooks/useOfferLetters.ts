@@ -269,9 +269,15 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
   );
 
   const handleRecordDecision = useCallback(
-    async (offer: OfferLetter, decision: "accepted" | "rejected", notes?: string, rejectionReason?: string) => {
+    async (
+      offer: OfferLetter,
+      decision: "accepted" | "rejected",
+      notes?: string,
+      rejectionReason?: string,
+      signedDoc?: { name: string; url: string; size?: number; type?: string }
+    ) => {
       try {
-        const updated = await recordCandidateDecision(offer, decision, notes, rejectionReason);
+        const updated = await recordCandidateDecision(offer, decision, notes, rejectionReason, signedDoc);
         setOffers((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
         closeWorkflowModal();
         if (onCandidateStageUpdated) onCandidateStageUpdated();

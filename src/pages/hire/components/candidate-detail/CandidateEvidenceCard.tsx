@@ -1,7 +1,12 @@
-import { memo, useState, useRef } from "react";
-import type { Candidate, Interview } from "../../types";
+import { memo, useState, useRef, useCallback } from "react";
+import type { Candidate, Interview, OfferLetter } from "../../types";
 import { STAGE_CONFIG, STAGE_TIMELINE_ORDER } from "../../constants";
-import { STAGE_EVIDENCE_RULES, type StageEvidenceRule } from "../../constants/evidenceConfig";
+import { STAGE_EVIDENCE_RULES } from "../../constants/evidenceConfig";
+import {
+  isOfferDocument,
+  resolveOfferForDocument,
+  openOfferDocumentPreview,
+} from "../../utils/candidateDocumentUtils";
 
 interface CandidateEvidenceCardProps {
   candidate: Candidate;
@@ -14,6 +19,8 @@ interface CandidateEvidenceCardProps {
   onUpdateStage?: (stage: string) => void;
   onOpenCandidateApproval?: () => void;
   onOpenSalaryProposal?: () => void;
+  activeOffer?: OfferLetter | null;
+  onExportPdf?: (offer: OfferLetter) => void;
 }
 
 export const CandidateEvidenceCard = memo(function CandidateEvidenceCard({
@@ -27,10 +34,25 @@ export const CandidateEvidenceCard = memo(function CandidateEvidenceCard({
   onUpdateStage,
   onOpenCandidateApproval,
   onOpenSalaryProposal,
+  activeOffer,
+  onExportPdf,
 }: CandidateEvidenceCardProps) {
   const [filterMode, setFilterMode] = useState<"all" | "active" | "missing">("all");
   const [activeUploadStage, setActiveUploadStage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleDocClick = useCallback(
+    async (doc: any, e: React.MouseEvent) => {
+      if (isOfferDocument(doc)) {
+        e.preventDefault();
+        const offer = await resolveOfferForDocument(candidate, doc, activeOffer);
+        if (offer) {
+          openOfferDocumentPreview(offer, onExportPdf);
+        }
+      }
+    },
+    [candidate, activeOffer, onExportPdf]
+  );
 
   const normStage =
     candidate.stage === "applied" ? "cv_received" : candidate.stage === "interview" ? "hr_interview" : candidate.stage;
@@ -403,19 +425,37 @@ export const CandidateEvidenceCard = memo(function CandidateEvidenceCard({
               {check.attachedDocs.length > 0 && (
                 <div className="mt-2.5 flex items-center gap-2 flex-wrap pt-2 border-t border-gray-50">
                   <span className="text-[11px] font-medium text-gray-400">Attached:</span>
-                  {check.attachedDocs.map((doc, idx) => (
-                    <a
-                      key={doc.url || idx}
-                      href={doc.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-colors shadow-2xs"
-                    >
-                      <i className="ri-file-text-line text-gray-400" />
-                      <span className="truncate max-w-[240px]">{doc.name}</span>
-                      <i className="ri-external-link-line text-[10px] text-gray-400" />
-                    </a>
-                  ))}
+                  {check.attachedDocs.map((doc, idx) => {
+                    if (isOfferDocument(doc)) {
+                      return (
+                        <button
+                          key={doc.url || idx}
+                          type="button"
+                          onClick={(e) => handleDocClick(doc, e)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-blue-50 border border-blue-200 text-blue-800 text-xs font-medium rounded-lg transition-colors shadow-2xs cursor-pointer"
+                          title="View official document"
+                        >
+                          <i className="ri-file-shield-line text-blue-600" />
+                          <span className="truncate max-w-[240px]">{doc.name}</span>
+                          <i className="ri-eye-line text-[10px] text-blue-600" />
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <a
+                        key={doc.url || idx}
+                        href={doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-colors shadow-2xs"
+                      >
+                        <i className="ri-file-text-line text-gray-400" />
+                        <span className="truncate max-w-[240px]">{doc.name}</span>
+                        <i className="ri-external-link-line text-[10px] text-gray-400" />
+                      </a>
+                    );
+                  })}
                 </div>
               )}
             </div>

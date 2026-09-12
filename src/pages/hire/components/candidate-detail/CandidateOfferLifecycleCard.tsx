@@ -488,17 +488,25 @@ export const CandidateOfferLifecycleCard = memo(function CandidateOfferLifecycle
             )}
 
             {/* Step 2: BU CEO Approval (Actionable in BU) */}
-            {offer && (offer.status === "pending_bu_ceo" || (offer.status === "salary_proposal" && sigs?.bu_ceo.status !== "approved")) && (
-              <button
-                type="button"
-                onClick={() => onOpenWorkflowModal(offer, "bu_ceo_approval")}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold shadow-sm transition-colors cursor-pointer flex items-center gap-2 animate-pulse"
-                title={`Approve salary proposal as CEO of ${offer.business_unit || "BU"}`}
-              >
-                <i className="ri-user-star-line text-sm" />
-                BU CEO Approve Proposal
-              </button>
-            )}
+            {offer && (offer.status === "pending_bu_ceo" || (offer.status === "salary_proposal" && sigs?.bu_ceo.status !== "approved")) &&
+              (!isCurrentScopeHr || isSuperAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenWorkflowModal(offer, "bu_ceo_approval")}
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold shadow-sm transition-colors cursor-pointer flex items-center gap-2 animate-pulse"
+                  title={`Approve salary proposal as CEO of ${offer.business_unit || "BU"}`}
+                >
+                  <i className="ri-user-star-line text-sm" />
+                  BU CEO Approve Proposal
+                </button>
+              ) : (
+                <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-xl flex items-center gap-2.5 text-xs text-blue-950">
+                  <i className="ri-time-line text-blue-600 shrink-0 text-base" />
+                  <span>
+                    Awaiting BU CEO sign-off in <strong>{offer.business_unit || "Business Unit"}</strong> before crossing to HR Division.
+                  </span>
+                </div>
+              ))}
 
             {/* Step 3: HR Manager Review (Gated to HR Division) */}
             {offer && (offer.status === "pending_hr_manager" || offer.status === "draft_letter" || offer.status === "hr_review") &&

@@ -402,13 +402,32 @@ export default function CandidateDetail() {
       offer: OfferLetter,
       decision: "accepted" | "rejected",
       notes?: string,
-      rejectionReason?: string
+      rejectionReason?: string,
+      signedDoc?: { name: string; url: string; size?: number; type?: string }
     ) => {
       try {
-        const updated = await recordCandidateDecision(offer, decision, notes, rejectionReason);
+        const updated = await recordCandidateDecision(offer, decision, notes, rejectionReason, signedDoc);
         setActiveOffer(updated);
         setWorkflowModalType(null);
         await updateStage(decision);
+
+        if (candidate) {
+          const newDoc: CandidateDocument = {
+            name: signedDoc?.name
+              ? `Signed Offer Acceptance - ${offer.offer_number} (${signedDoc.name})`
+              : `Signed Offer Acceptance - ${offer.offer_number}`,
+            url: signedDoc?.url || `#offer-decision-${offer.offer_number}`,
+            size: signedDoc?.size || 0,
+            type: signedDoc?.type || "application/pdf",
+            uploaded_at: new Date().toISOString(),
+            stage_key: decision,
+          };
+          const existing = (candidate.documents || []).filter(
+            (d) => !d.name.includes(offer.offer_number) && d.stage_key !== decision
+          );
+          candidate.documents = [...existing, newDoc];
+        }
+
         toast(
           decision === "accepted" ? "Offer Accepted!" : "Offer Declined",
           decision === "accepted"
@@ -420,7 +439,7 @@ export default function CandidateDetail() {
         toast("Error", "Failed to record candidate decision.", "error");
       }
     },
-    [updateStage]
+    [candidate, updateStage]
   );
 
   const handleExportPdf = useCallback((offer: OfferLetter) => {
@@ -553,7 +572,7 @@ export default function CandidateDetail() {
             onAddApplication={handleAddApplication}
           />
 
-          {/* 3. Resume & Candidate Documents (AWS S3) */}
+          {/* 3. Resume & Candidate Documents (AWS S3 & Digital Records) */}
           <CandidateResumeCard
             candidate={candidate}
             uploadingResume={uploadingResume}
@@ -561,6 +580,9 @@ export default function CandidateDetail() {
             onUploadResume={uploadResume}
             onUploadDocuments={uploadDocuments}
             onDeleteDocument={deleteDocument}
+            activeOffer={activeOffer}
+            onExportOfferPdf={handleExportPdf}
+            onExportOfferWord={handleExportWord}
           />
 
           {/* 4. Offer & Compensation Lifecycle Progression (6-Step Sequential Flow) */}
@@ -609,6 +631,8 @@ export default function CandidateDetail() {
             onUpdateStage={updateStage}
             onOpenCandidateApproval={() => setCandidateApprovalModal(true)}
             onOpenSalaryProposal={() => setIsSalaryProposalModal(true)}
+            activeOffer={activeOffer}
+            onExportPdf={handleExportPdf}
           />
 
           {/* 6. Interview History */}
