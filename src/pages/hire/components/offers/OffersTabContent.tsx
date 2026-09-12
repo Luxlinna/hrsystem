@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import type { OfferLetter, Candidate, HiringRequest, OfferStatus } from "../../types";
 import type { WorkflowModalType } from "../../hooks/useOfferLetters";
+import { getOfferSignatories } from "../../services/offerLetterService";
 import { useBranchScope } from "@/context/BranchContext";
 import { isHrDivisionScope } from "@/services/formLogoService";
 
@@ -28,6 +29,38 @@ const STATUS_CONFIG: Record<
     bg: "bg-amber-50",
     border: "border-amber-200",
     icon: "ri-time-line",
+  },
+  pending_bu_ceo: {
+    label: "Pending BU CEO Approval",
+    step: 2,
+    color: "text-blue-800",
+    bg: "bg-blue-50",
+    border: "border-blue-200",
+    icon: "ri-user-star-line",
+  },
+  pending_hr_manager: {
+    label: "Pending HR Manager Review",
+    step: 3,
+    color: "text-indigo-800",
+    bg: "bg-indigo-50",
+    border: "border-indigo-200",
+    icon: "ri-shield-check-line",
+  },
+  pending_hr_director: {
+    label: "Pending HR Admin Director",
+    step: 4,
+    color: "text-slate-800",
+    bg: "bg-slate-100",
+    border: "border-slate-300",
+    icon: "ri-shield-user-line",
+  },
+  pending_chairwoman: {
+    label: "Pending Chairwoman Approval",
+    step: 5,
+    color: "text-amber-800",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    icon: "ri-vip-crown-line",
   },
   salary_approved: {
     label: "Salary Proposal Ready",
@@ -136,7 +169,19 @@ export function OffersTabContent({
 
       if (statusFilter !== "all") {
         if (statusFilter === "in_review") {
-          if (!["salary_proposal", "salary_approved", "draft_letter", "hr_review", "management_approval"].includes(o.status)) {
+          if (
+            ![
+              "salary_proposal",
+              "pending_bu_ceo",
+              "pending_hr_manager",
+              "pending_hr_director",
+              "pending_chairwoman",
+              "salary_approved",
+              "draft_letter",
+              "hr_review",
+              "management_approval",
+            ].includes(o.status)
+          ) {
             return false;
           }
         } else if (statusFilter === "ready_to_issue") {
@@ -158,7 +203,17 @@ export function OffersTabContent({
   const metrics = useMemo(() => {
     const total = offers.length;
     const inReview = offers.filter((o) =>
-      ["salary_proposal", "salary_approved", "draft_letter", "hr_review", "management_approval"].includes(o.status)
+      [
+        "salary_proposal",
+        "pending_bu_ceo",
+        "pending_hr_manager",
+        "pending_hr_director",
+        "pending_chairwoman",
+        "salary_approved",
+        "draft_letter",
+        "hr_review",
+        "management_approval",
+      ].includes(o.status)
     ).length;
     const readyToIssue = offers.filter((o) => o.status === "approved").length;
     const issued = offers.filter((o) => o.status === "issued").length;
@@ -392,59 +447,78 @@ export function OffersTabContent({
 
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Step 1: Salary Proposal -> Step 2: Generate Offer Letter (Auto-compiled) */}
-                          {(offer.status === "salary_proposal" || offer.status === "salary_approved") && (
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          {/* Step 2: BU CEO Approval (Actionable in BU) */}
+                          {(offer.status === "pending_bu_ceo" || (offer.status === "salary_proposal" && getOfferSignatories(offer).bu_ceo.status !== "approved")) && (
                             <button
                               type="button"
-                              onClick={() => onOpenWorkflowModal(offer, "generate_draft")}
+                              onClick={() => onOpenWorkflowModal(offer, "bu_ceo_approval")}
                               className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
-                              title="The offer letter is generated directly from candidate and requisition data already in the system — no retyping of name, role, salary, or start date."
+                              title={`Approve proposal as CEO of ${offer.business_unit || "BU"}`}
                             >
-                              <i className="ri-file-text-line" /> Generate Offer Letter
+                              <i className="ri-user-star-line" /> BU CEO Approve
                             </button>
                           )}
 
-                          {/* Step 3: HR Review */}
-                          {(offer.status === "draft_letter" || offer.status === "hr_review") &&
+                          {/* Step 3: HR Manager Review */}
+                          {(offer.status === "pending_hr_manager" || offer.status === "draft_letter" || offer.status === "hr_review") &&
                             (isCurrentScopeHr ? (
                               <button
                                 type="button"
-                                onClick={() => onOpenWorkflowModal(offer, "hr_review")}
+                                onClick={() => onOpenWorkflowModal(offer, "hr_manager_approval")}
                                 className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
                               >
                                 <i className="ri-shield-check-line" /> HR Manager Review
                               </button>
                             ) : (
                               <span
-                                className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-lg text-[11px] font-bold flex items-center gap-1"
-                                title="This offer letter is currently under review by the HR Division"
+                                className="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold flex items-center gap-1"
+                                title="This offer letter is under review by the HR Division"
                               >
                                 <i className="ri-send-plane-2-line text-indigo-600" /> Sent to HR Division
                               </span>
                             ))}
 
-                          {/* Step 4: Management Approval */}
-                          {offer.status === "management_approval" &&
+                          {/* Step 4: HR Admin Director Authorization */}
+                          {offer.status === "pending_hr_director" &&
                             (isCurrentScopeHr ? (
                               <button
                                 type="button"
-                                onClick={() => onOpenWorkflowModal(offer, "management_approval")}
-                                className="px-3 py-1 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                                onClick={() => onOpenWorkflowModal(offer, "hr_director_approval")}
+                                className="px-3 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
                               >
-                                Authorize Mgmt
+                                <i className="ri-shield-user-line" /> HR Director Authorize
                               </button>
                             ) : (
                               <span
-                                className="px-2.5 py-1 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-lg text-[11px] font-bold flex items-center gap-1"
-                                title="Under HR Division Executive Authorization"
+                                className="px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[11px] font-bold flex items-center gap-1"
+                                title="Under HR Admin Director Authorization in HR Division"
                               >
-                                <i className="ri-time-line text-purple-600" /> In HR Mgmt Approval
+                                <i className="ri-time-line text-slate-600" /> In HR Director Approval
                               </span>
                             ))}
 
-                          {/* Step 5: Approved -> Ready to Issue */}
-                          {offer.status === "approved" &&
+                          {/* Step 5: Chairwoman Supreme Authorization */}
+                          {(offer.status === "pending_chairwoman" || offer.status === "management_approval") &&
+                            (isCurrentScopeHr ? (
+                              <button
+                                type="button"
+                                onClick={() => onOpenWorkflowModal(offer, "chairwoman_approval")}
+                                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                              >
+                                <i className="ri-vip-crown-line" /> Chairwoman Sign-off
+                              </button>
+                            ) : (
+                              <span
+                                className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg text-[11px] font-bold flex items-center gap-1"
+                                title="Under Chairwoman Supreme Authorization in HR Division"
+                              >
+                                <i className="ri-vip-crown-line text-amber-600" /> In Chairwoman Approval
+                              </span>
+                            ))}
+
+                          {/* Step 6: Approved -> Ready to Issue */}
+                          {(offer.status === "approved" || offer.status === "salary_approved") &&
                             (isCurrentScopeHr ? (
                               <button
                                 type="button"
@@ -455,14 +529,14 @@ export function OffersTabContent({
                               </button>
                             ) : (
                               <span
-                                className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-[11px] font-bold flex items-center gap-1"
-                                title="Approved by HR Division, awaiting issuance by HR"
+                                className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold flex items-center gap-1"
+                                title="Fully authorized by Chairwoman, awaiting issuance by HR"
                               >
-                                <i className="ri-checkbox-circle-line text-emerald-600" /> Approved by HR
+                                <i className="ri-checkbox-circle-line text-emerald-600" /> Authorized by Chairwoman
                               </span>
                             ))}
 
-                          {/* Step 6: Issued -> Record Decision */}
+                          {/* Step 7: Issued -> Record Decision */}
                           {offer.status === "issued" && (
                             <button
                               type="button"

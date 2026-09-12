@@ -163,18 +163,39 @@ export type HireTab = "actions" | "requests" | "jobs" | "candidates" | "intervie
 
 export type OfferStatus =
   | "salary_proposal"
-  | "salary_approved"
-  | "draft_letter"
-  | "hr_review"
-  | "management_approval"
+  | "pending_bu_ceo"
+  | "pending_hr_manager"
+  | "pending_hr_director"
+  | "pending_chairwoman"
   | "approved"
   | "issued"
   | "accepted"
-  | "rejected";
+  | "rejected"
+  // Legacy statuses for backward compatibility
+  | "salary_approved"
+  | "draft_letter"
+  | "hr_review"
+  | "management_approval";
 
 export interface OfferAllowanceItem {
   name: string;
   amount: number;
+}
+
+export interface OfferSignatory {
+  role_key: "bu_ceo" | "hr_manager" | "hr_director" | "chairwoman";
+  title: string;
+  name?: string | null;
+  status: "pending" | "approved" | "rejected";
+  comment?: string | null;
+  signed_at?: string | null;
+}
+
+export interface OfferSignatories {
+  bu_ceo: OfferSignatory;
+  hr_manager: OfferSignatory;
+  hr_director: OfferSignatory;
+  chairwoman: OfferSignatory;
 }
 
 export interface OfferLetter {
@@ -204,6 +225,7 @@ export interface OfferLetter {
   benefits_summary?: string | null;
   special_terms?: string | null;
   status: OfferStatus;
+  signatories?: OfferSignatories | null;
 
   // Workflow audit fields
   proposed_by_id?: string | null;

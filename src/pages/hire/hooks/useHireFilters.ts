@@ -19,19 +19,23 @@ export function useHireFilters(
         searchParams.get("openApproval") === "true" ||
         searchParams.get("openCaf") === "true" ||
         searchParams.get("approval") === "true";
-      navigate(`/hire/candidates/${candidateId}${openApproval ? "?openApproval=true" : ""}`, { replace: true });
+      const openOffer =
+        searchParams.get("openOffer") === "true" ||
+        searchParams.get("offer") === "true";
+      const query = openApproval ? "?openApproval=true" : openOffer ? "?openOffer=true" : "";
+      navigate(`/hire/candidates/${candidateId}${query}`, { replace: true });
     }
   }, [searchParams, navigate]);
 
   const urlTab = searchParams.get("tab") as HireTab | null;
-  const initialTab: HireTab = (urlTab && ["actions", "jobs", "candidates", "interviews", "pipeline", "requests"].includes(urlTab))
+  const initialTab: HireTab = (urlTab && ["actions", "jobs", "candidates", "interviews", "pipeline", "requests", "offers"].includes(urlTab))
     ? urlTab
     : "jobs";
 
   const [tab, setTabState] = useState<HireTab>(initialTab);
 
   useEffect(() => {
-    if (urlTab && ["actions", "jobs", "candidates", "interviews", "pipeline", "requests"].includes(urlTab)) {
+    if (urlTab && ["actions", "jobs", "candidates", "interviews", "pipeline", "requests", "offers"].includes(urlTab)) {
       setTabState(urlTab);
     }
   }, [urlTab]);

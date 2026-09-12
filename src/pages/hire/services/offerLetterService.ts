@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { OfferLetter, Candidate, HiringRequest } from "../types";
 import { sendDualRecruitmentNotification } from "./notifications/recruitmentNotifyEngine";
+import { escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
 
 const LOCAL_STORAGE_KEY = "hrm_offer_letters_store";
 
@@ -46,6 +47,18 @@ export async function fetchOfferLetters(): Promise<OfferLetter[]> {
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       setLocalOffers(merged);
+
+      // Auto-sync any local-only offers up to Supabase remote
+      local.forEach(async (localOffer) => {
+        if (!data.some((d) => d.id === localOffer.id)) {
+          try {
+            await supabase.from("offer_letters").upsert(localOffer, { onConflict: "id" });
+          } catch {
+            // Ignore
+          }
+        }
+      });
+
       return merged.filter((o) => !o.deleted_at);
     }
   } catch {
@@ -56,7 +69,7 @@ export async function fetchOfferLetters(): Promise<OfferLetter[]> {
 
 export async function fetchCandidateOffer(candidateId: string): Promise<OfferLetter | null> {
   const offers = await fetchOfferLetters();
-  return offers.find((o) => o.candidate_id === candidateId && !o.deleted_at) || null;
+  return offers.find((o) => (o.candidate_id === candidateId || o.id === candidateId) && !o.deleted_at) || null;
 }
 
 export async function saveOfferLetter(offer: OfferLetter): Promise<OfferLetter> {
@@ -156,7 +169,41 @@ export async function createSalaryProposal(payload: CreateProposalPayload): Prom
     allowances: payload.allowances || [],
     benefits_summary: payload.benefits_summary || "Standard company health insurance, annual leave (18 days), public holidays, and performance evaluation.",
     special_terms: payload.special_terms || null,
-    status: "salary_proposal",
+    status: "pending_bu_ceo",
+    signatories: {
+      bu_ceo: {
+        role_key: "bu_ceo",
+        title: `CEO (${businessUnit})`,
+        name: null,
+        status: "pending",
+        comment: null,
+        signed_at: null,
+      },
+      hr_manager: {
+        role_key: "hr_manager",
+        title: "HR Manager (HR Division)",
+        name: null,
+        status: "pending",
+        comment: null,
+        signed_at: null,
+      },
+      hr_director: {
+        role_key: "hr_director",
+        title: "HR Admin Director (HR Division)",
+        name: null,
+        status: "pending",
+        comment: null,
+        signed_at: null,
+      },
+      chairwoman: {
+        role_key: "chairwoman",
+        title: "Chairwoman (Supreme Authorization)",
+        name: null,
+        status: "pending",
+        comment: null,
+        signed_at: null,
+      },
+    },
 
     proposed_by_id: proposed_by_id || null,
     proposed_by_name: proposed_by_name,
@@ -169,16 +216,26 @@ export async function createSalaryProposal(payload: CreateProposalPayload): Prom
 
   const saved = await saveOfferLetter(newOffer);
 
-  // Send form across to HR Division for review
+  // Send notification to BU CEO for initial approval
   try {
     await sendDualRecruitmentNotification({
-      title: "Form Sent to HR Division for Review",
-      approverMessage: `Salary proposal form for ${candidate.full_name} (${jobTitle}) has been sent across to HR Division for review. Review and click Generate Offer Letter.`,
-      recruiterMessage: `Form for ${candidate.full_name} (${jobTitle}) has been routed across to HR Division for review.`,
-      approverRole: "HR Manager",
-      entityId: saved.id,
-      actorName: proposed_by_name || "Department",
-      description: `Salary proposal form sent across to HR Division for review (${offerNumber})`,
+      title: `📋 Salary Proposal Created: ${candidate.full_name}`,
+      approverMessage: `Salary proposal for ${candidate.full_name} (${jobTitle}) is awaiting your approval as BU CEO.`,
+      recruiterMessage: `Proposal for ${candidate.full_name} has been routed to BU CEO for review.`,
+      approverRole: "CEO / Division Director",
+      entityId: candidate.id,
+      actorName: proposed_by_name || "Manager",
+      description: `Salary proposal pending BU CEO sign-off (${offerNumber})`,
+      telegramHtml:
+        `📋 <b>New Salary Proposal Created</b>\n` +
+        `👤 <b>Candidate:</b> ${escapeTelegramHtml(candidate.full_name)}\n` +
+        `💼 <b>Position:</b> ${escapeTelegramHtml(jobTitle)} · ${escapeTelegramHtml(businessUnit)}\n` +
+        `💰 <b>Proposed Base:</b> $${Number(payload.base_salary).toLocaleString()}/mo\n` +
+        `✍️ <b>Submitted By:</b> ${escapeTelegramHtml(proposed_by_name || "Manager")}\n` +
+        `⏩ <b>Next Action:</b> BU CEO Approval Required`,
+      telegramButtonText: "Review Proposal (BU CEO)",
+      telegramUrl: hrNexusUrl(`/hire/candidates/${candidate.id}?openOffer=true`),
+      auditAction: "offer_salary_proposal_created",
     });
   } catch {
     // Non-fatal
@@ -187,21 +244,259 @@ export async function createSalaryProposal(payload: CreateProposalPayload): Prom
   return saved;
 }
 
-export async function approveSalary(
+export function getOfferSignatories(offer: OfferLetter) {
+  if (offer.signatories) return offer.signatories;
+  return {
+    bu_ceo: {
+      role_key: "bu_ceo" as const,
+      title: `CEO (${offer.business_unit || "BU"})`,
+      name: offer.salary_approved_by || null,
+      status: offer.salary_approved_by ? ("approved" as const) : ("pending" as const),
+      comment: offer.salary_approval_notes || null,
+      signed_at: offer.salary_approved_at || null,
+    },
+    hr_manager: {
+      role_key: "hr_manager" as const,
+      title: "HR Manager (HR Division)",
+      name: offer.hr_reviewed_by || null,
+      status: offer.hr_reviewed_by ? ("approved" as const) : ("pending" as const),
+      comment: offer.hr_review_notes || null,
+      signed_at: offer.hr_reviewed_at || null,
+    },
+    hr_director: {
+      role_key: "hr_director" as const,
+      title: "HR Admin Director (HR Division)",
+      name: null,
+      status: "pending" as const,
+      comment: null,
+      signed_at: null,
+    },
+    chairwoman: {
+      role_key: "chairwoman" as const,
+      title: "Chairwoman (Supreme Authorization)",
+      name: offer.management_approved_by || null,
+      status: offer.management_approved_by ? ("approved" as const) : ("pending" as const),
+      comment: offer.management_approval_notes || null,
+      signed_at: offer.management_approved_at || null,
+    },
+  };
+}
+
+/** Step 1: BU CEO Approval */
+export async function approveByBuCeo(
   offer: OfferLetter,
   approverName: string,
   notes?: string
 ): Promise<OfferLetter> {
   const now = new Date().toISOString();
+  const currentSigs = getOfferSignatories(offer);
+
   const updated: OfferLetter = {
     ...offer,
-    status: "salary_approved",
+    status: "pending_hr_manager",
     salary_approved_by: approverName,
     salary_approved_at: now,
     salary_approval_notes: notes || null,
+    signatories: {
+      ...currentSigs,
+      bu_ceo: {
+        ...currentSigs.bu_ceo,
+        name: approverName,
+        status: "approved",
+        comment: notes || null,
+        signed_at: now,
+      },
+    },
     updated_at: now,
   };
+
+  try {
+    await sendDualRecruitmentNotification({
+      title: `🏢 Offer Letter Step 1 Approved: ${offer.candidate_name}`,
+      approverMessage: `BU CEO ${approverName} approved salary proposal for ${offer.candidate_name}. Moved to HR Division for Step 2 HR Manager Review.`,
+      recruiterMessage: `BU CEO signed off on proposal for ${offer.candidate_name}. Forwarded to HR Division for review.`,
+      approverRole: "HR Manager",
+      entityId: offer.candidate_id,
+      actorName: approverName,
+      description: `Offer forwarded to HR Division (${offer.offer_number})`,
+      telegramHtml:
+        `🏢 <b>Offer Letter: Step 1 BU CEO Approved</b>\n` +
+        `👤 <b>Candidate:</b> ${escapeTelegramHtml(offer.candidate_name)}\n` +
+        `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)} · ${escapeTelegramHtml(offer.business_unit || "BU")}\n` +
+        `💰 <b>Base Salary:</b> $${Number(offer.base_salary).toLocaleString()}/mo\n` +
+        `✍️ <b>Approved By:</b> ${escapeTelegramHtml(approverName)} (BU CEO)\n` +
+        `⏩ <b>Next Action:</b> Step 2 - HR Manager Review at HR Division`,
+      telegramButtonText: "Review in HR Division",
+      telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
+      auditAction: "offer_step1_bu_ceo_approved",
+    });
+  } catch {}
+
   return await saveOfferLetter(updated);
+}
+
+/** Step 2: HR Division HR Manager Review & Approval */
+export async function approveByHrManager(
+  offer: OfferLetter,
+  reviewerName: string,
+  notes?: string
+): Promise<OfferLetter> {
+  const now = new Date().toISOString();
+  const currentSigs = getOfferSignatories(offer);
+
+  const updated: OfferLetter = {
+    ...offer,
+    status: "pending_hr_director",
+    hr_reviewed_by: reviewerName,
+    hr_reviewed_at: now,
+    hr_review_notes: notes || null,
+    signatories: {
+      ...currentSigs,
+      hr_manager: {
+        ...currentSigs.hr_manager,
+        name: reviewerName,
+        status: "approved",
+        comment: notes || null,
+        signed_at: now,
+      },
+    },
+    updated_at: now,
+  };
+
+  try {
+    await sendDualRecruitmentNotification({
+      title: `📑 Offer Letter Step 2 Reviewed: ${offer.candidate_name}`,
+      approverMessage: `HR Manager ${reviewerName} endorsed offer for ${offer.candidate_name}. Forwarded to HR Admin Director for Step 3 Authorization.`,
+      recruiterMessage: `HR Manager endorsed offer for ${offer.candidate_name}. Moved to HR Admin Director.`,
+      approverRole: "HR Director",
+      entityId: offer.candidate_id,
+      actorName: reviewerName,
+      description: `Offer forwarded to HR Admin Director (${offer.offer_number})`,
+      telegramHtml:
+        `📑 <b>Offer Letter: Step 2 HR Manager Endorsed</b>\n` +
+        `👤 <b>Candidate:</b> ${escapeTelegramHtml(offer.candidate_name)}\n` +
+        `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)}\n` +
+        `💰 <b>Package:</b> $${Number(offer.base_salary).toLocaleString()}/mo\n` +
+        `✍️ <b>Endorsed By:</b> ${escapeTelegramHtml(reviewerName)} (HR Manager at HR Division)\n` +
+        `⏩ <b>Next Action:</b> Step 3 - HR Admin Director Authorization Required`,
+      telegramButtonText: "Authorize as HR Director",
+      telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
+      auditAction: "offer_step2_hr_manager_reviewed",
+    });
+  } catch {}
+
+  return await saveOfferLetter(updated);
+}
+
+/** Step 3: HR Admin Director Authorization */
+export async function approveByHrDirector(
+  offer: OfferLetter,
+  approverName: string,
+  notes?: string
+): Promise<OfferLetter> {
+  const now = new Date().toISOString();
+  const currentSigs = getOfferSignatories(offer);
+
+  const updated: OfferLetter = {
+    ...offer,
+    status: "pending_chairwoman",
+    signatories: {
+      ...currentSigs,
+      hr_director: {
+        ...currentSigs.hr_director,
+        name: approverName,
+        status: "approved",
+        comment: notes || null,
+        signed_at: now,
+      },
+    },
+    updated_at: now,
+  };
+
+  try {
+    await sendDualRecruitmentNotification({
+      title: `🏛️ Offer Letter Step 3 Authorized: ${offer.candidate_name}`,
+      approverMessage: `HR Admin Director ${approverName} authorized offer for ${offer.candidate_name}. Awaiting final Chairwoman authorization.`,
+      recruiterMessage: `HR Admin Director authorized offer for ${offer.candidate_name}. Forwarded to Chairwoman.`,
+      approverRole: "Chairwoman",
+      entityId: offer.candidate_id,
+      actorName: approverName,
+      description: `Offer awaiting Chairwoman authorization (${offer.offer_number})`,
+      telegramHtml:
+        `🏛️ <b>Offer Letter: Step 3 HR Admin Director Authorized</b>\n` +
+        `👤 <b>Candidate:</b> ${escapeTelegramHtml(offer.candidate_name)}\n` +
+        `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)}\n` +
+        `✍️ <b>Authorized By:</b> ${escapeTelegramHtml(approverName)} (HR Admin Director)\n` +
+        `⏩ <b>Next Action:</b> Step 4 - Chairwoman Final Supreme Authorization`,
+      telegramButtonText: "Authorize as Chairwoman",
+      telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
+      auditAction: "offer_step3_hr_director_authorized",
+    });
+  } catch {}
+
+  return await saveOfferLetter(updated);
+}
+
+/** Step 4: Chairwoman Supreme Authorization */
+export async function authorizeByChairwoman(
+  offer: OfferLetter,
+  approverName: string,
+  notes?: string
+): Promise<OfferLetter> {
+  const now = new Date().toISOString();
+  const currentSigs = getOfferSignatories(offer);
+
+  const updated: OfferLetter = {
+    ...offer,
+    status: "approved",
+    management_approved_by: approverName,
+    management_approved_at: now,
+    management_approval_notes: notes || null,
+    signatories: {
+      ...currentSigs,
+      chairwoman: {
+        ...currentSigs.chairwoman,
+        name: approverName,
+        status: "approved",
+        comment: notes || null,
+        signed_at: now,
+      },
+    },
+    updated_at: now,
+  };
+
+  try {
+    await sendDualRecruitmentNotification({
+      title: `👑 Offer Letter Fully Authorized: ${offer.candidate_name}`,
+      approverMessage: `Chairwoman ${approverName} granted supreme authorization for ${offer.candidate_name}. All 4 executive tiers signed! Offer letter cleared for official issuance.`,
+      recruiterMessage: `Chairwoman granted supreme authorization for ${offer.candidate_name}. Ready to issue official offer!`,
+      type: "success",
+      entityId: offer.candidate_id,
+      actorName: approverName,
+      description: `Offer supreme authorization granted by Chairwoman (${offer.offer_number})`,
+      telegramHtml:
+        `👑 <b>Offer Letter Fully Authorized by Chairwoman!</b>\n` +
+        `👤 <b>Candidate:</b> ${escapeTelegramHtml(offer.candidate_name)}\n` +
+        `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)} · ${escapeTelegramHtml(offer.business_unit || "BU")}\n` +
+        `💰 <b>Authorized Salary:</b> $${Number(offer.base_salary).toLocaleString()}/mo\n` +
+        `✍️ <b>Supreme Authorization:</b> ${escapeTelegramHtml(approverName)} (Chairwoman)\n` +
+        `🎯 <b>Status:</b> All 4 Executive Approvals Completed. Cleared for official issuance.`,
+      telegramButtonText: "Issue Official Offer Letter",
+      telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
+      auditAction: "offer_step4_chairwoman_authorized",
+    });
+  } catch {}
+
+  return await saveOfferLetter(updated);
+}
+
+// Backward compatibility methods
+export async function approveSalary(
+  offer: OfferLetter,
+  approverName: string,
+  notes?: string
+): Promise<OfferLetter> {
+  return approveByBuCeo(offer, approverName, notes);
 }
 
 export async function generateOfferLetterDraft(
@@ -210,7 +505,7 @@ export async function generateOfferLetterDraft(
   const now = new Date().toISOString();
   const updated: OfferLetter = {
     ...offer,
-    status: "hr_review", // Moves straight to HR review once generated
+    status: offer.status === "pending_bu_ceo" || offer.status === "salary_proposal" ? "pending_bu_ceo" : offer.status,
     updated_at: now,
   };
   return await saveOfferLetter(updated);
@@ -221,16 +516,7 @@ export async function endorseHrReview(
   reviewerName: string,
   notes?: string
 ): Promise<OfferLetter> {
-  const now = new Date().toISOString();
-  const updated: OfferLetter = {
-    ...offer,
-    status: "management_approval",
-    hr_reviewed_by: reviewerName,
-    hr_reviewed_at: now,
-    hr_review_notes: notes || null,
-    updated_at: now,
-  };
-  return await saveOfferLetter(updated);
+  return approveByHrManager(offer, reviewerName, notes);
 }
 
 export async function approveOfferManagement(
@@ -238,16 +524,7 @@ export async function approveOfferManagement(
   approverName: string,
   notes?: string
 ): Promise<OfferLetter> {
-  const now = new Date().toISOString();
-  const updated: OfferLetter = {
-    ...offer,
-    status: "approved",
-    management_approved_by: approverName,
-    management_approved_at: now,
-    management_approval_notes: notes || null,
-    updated_at: now,
-  };
-  return await saveOfferLetter(updated);
+  return authorizeByChairwoman(offer, approverName, notes);
 }
 
 export async function issueOffer(
@@ -300,6 +577,28 @@ export async function issueOffer(
   } catch (err) {
     console.warn("Could not sync candidate stage to 'offer':", err);
   }
+
+  try {
+    await sendDualRecruitmentNotification({
+      title: `📬 Official Offer Letter Issued: ${offer.candidate_name}`,
+      approverMessage: `Official offer letter ${offer.offer_number} issued to ${offer.candidate_name} by ${issuerName}. Valid until ${formattedExpiry}.`,
+      recruiterMessage: `Offer letter ${offer.offer_number} issued to ${offer.candidate_name}. Pipeline updated to Offer stage.`,
+      type: "info",
+      entityId: offer.candidate_id,
+      actorName: issuerName,
+      description: `Offer issued to candidate (${offer.offer_number})`,
+      telegramHtml:
+        `📬 <b>Official Offer Letter Issued</b>\n` +
+        `📄 <b>Offer #:</b> ${escapeTelegramHtml(offer.offer_number)}\n` +
+        `👤 <b>Candidate:</b> ${escapeTelegramHtml(offer.candidate_name)}\n` +
+        `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)}\n` +
+        `📅 <b>Valid Until:</b> ${escapeTelegramHtml(formattedExpiry)}\n` +
+        `✍️ <b>Issued By:</b> ${escapeTelegramHtml(issuerName)} (HR Division)`,
+      telegramButtonText: "View Issued Offer",
+      telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
+      auditAction: "offer_official_issued",
+    });
+  } catch {}
 
   return await saveOfferLetter(updated);
 }
@@ -357,6 +656,45 @@ export async function recordCandidateDecision(
   } catch (err) {
     console.warn(`Could not sync candidate stage to '${decision}':`, err);
   }
+
+  try {
+    if (decision === "accepted") {
+      await sendDualRecruitmentNotification({
+        title: `🎉 Offer Accepted: ${offer.candidate_name}`,
+        approverMessage: `${offer.candidate_name} accepted the offer letter (${offer.offer_number})! Confirmed start date: ${offer.target_start_date || "Confirmed"}.`,
+        recruiterMessage: `${offer.candidate_name} accepted employment offer! Ready for onboarding.`,
+        type: "success",
+        entityId: offer.candidate_id,
+        description: `Candidate accepted offer (${offer.offer_number})`,
+        telegramHtml:
+          `🎉 <b>Candidate Accepted Employment Offer!</b>\n` +
+          `👤 <b>Candidate:</b> ${escapeTelegramHtml(offer.candidate_name)}\n` +
+          `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)} · ${escapeTelegramHtml(offer.business_unit || "BU")}\n` +
+          `🚀 <b>Target Joining Date:</b> ${escapeTelegramHtml(offer.target_start_date || "To be confirmed")}\n` +
+          `✅ <b>Status:</b> Accepted. Candidate cleared for Onboarding Journey.`,
+        telegramButtonText: "View Accepted Candidate",
+        telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
+        auditAction: "offer_candidate_accepted",
+      });
+    } else {
+      await sendDualRecruitmentNotification({
+        title: `⚠️ Offer Declined: ${offer.candidate_name}`,
+        approverMessage: `${offer.candidate_name} declined offer (${offer.offer_number}). Reason: ${rejectionReason || "Not specified"}.`,
+        recruiterMessage: `${offer.candidate_name} declined offer.`,
+        type: "warning",
+        entityId: offer.candidate_id,
+        description: `Candidate declined offer (${offer.offer_number})`,
+        telegramHtml:
+          `⚠️ <b>Candidate Declined Employment Offer</b>\n` +
+          `👤 <b>Candidate:</b> ${escapeTelegramHtml(offer.candidate_name)}\n` +
+          `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)}\n` +
+          `❌ <b>Reason:</b> ${escapeTelegramHtml(rejectionReason || "Candidate declined")}`,
+        telegramButtonText: "View Candidate Profile",
+        telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
+        auditAction: "offer_candidate_declined",
+      });
+    }
+  } catch {}
 
   return await saveOfferLetter(updated);
 }

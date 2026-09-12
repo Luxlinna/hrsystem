@@ -22,15 +22,23 @@ export function getNotificationTarget(
         module: "hire",
       };
     case "hire":
-      // Candidate Approval Form (CAF) notifications -> direct to Candidate Detail with CAF modal open!
+      // 1. Offer Letter & Salary Proposal notifications -> direct to Candidate Detail with Offer section
+      if (
+        text.includes("offer") ||
+        text.includes("salary proposal") ||
+        text.includes("proposal") ||
+        text.includes("salary")
+      ) {
+        return {
+          path: entityId ? `/hire/candidates/${entityId}?openOffer=true` : "/hire?tab=offers",
+          module: "hire",
+        };
+      }
+      // 2. Candidate Approval Form (CAF) notifications -> direct to Candidate Detail with CAF modal open!
       if (
         text.includes("caf") ||
         text.includes("candidate approval") ||
-        text.includes("approval form") ||
-        text.includes("step 1") ||
-        text.includes("step 2") ||
-        text.includes("step 3") ||
-        text.includes("step 4")
+        text.includes("approval form")
       ) {
         return {
           path: entityId ? `/hire/candidates/${entityId}?openApproval=true` : "/hire?tab=candidates",

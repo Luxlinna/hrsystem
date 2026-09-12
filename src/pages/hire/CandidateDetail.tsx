@@ -23,6 +23,10 @@ import {
   generateOfferLetterDraft,
   endorseHrReview,
   approveOfferManagement,
+  approveByBuCeo,
+  approveByHrManager,
+  approveByHrDirector,
+  authorizeByChairwoman,
   issueOffer,
   recordCandidateDecision,
 } from "./services/offerLetterService";
@@ -96,6 +100,15 @@ export default function CandidateDetail() {
     );
   }, [searchParams]);
 
+  const isOfferRequested = useMemo(() => {
+    return (
+      searchParams.get("openOffer") === "true" ||
+      searchParams.get("offer") === "true" ||
+      searchParams.get("tab") === "offer" ||
+      searchParams.get("tab") === "offers"
+    );
+  }, [searchParams]);
+
   const [candidateApprovalModal, setCandidateApprovalModal] = useState(false);
   const [selectedEvaluationInterview, setSelectedEvaluationInterview] = useState<Interview | null>(null);
   const [isSalaryProposalModal, setIsSalaryProposalModal] = useState(false);
@@ -104,6 +117,53 @@ export default function CandidateDetail() {
   // Offer Letter Lifecycle State
   const [activeOffer, setActiveOffer] = useState<OfferLetter | null>(null);
   const [workflowModalType, setWorkflowModalType] = useState<WorkflowModalType>(null);
+  const autoOpenedOfferRef = useRef(false);
+
+  // Auto-scroll to offer card when openOffer query param is present
+  useEffect(() => {
+    if (isOfferRequested && candidate) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById("candidate-offer-lifecycle-card");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [isOfferRequested, candidate]);
+
+  // Auto-open actionable workflow modal when routed from notification
+  useEffect(() => {
+    if (isOfferRequested && candidate && !autoOpenedOfferRef.current) {
+      if (activeOffer) {
+        autoOpenedOfferRef.current = true;
+        if (
+          activeOffer.status === "pending_bu_ceo" ||
+          (activeOffer.status === "salary_proposal" && !activeOffer.salary_approved_by)
+        ) {
+          setWorkflowModalType("bu_ceo_approval");
+        } else if (
+          activeOffer.status === "pending_hr_manager" ||
+          activeOffer.status === "draft_letter" ||
+          activeOffer.status === "hr_review"
+        ) {
+          setWorkflowModalType("hr_manager_approval");
+        } else if (activeOffer.status === "pending_hr_director") {
+          setWorkflowModalType("hr_director_approval");
+        } else if (
+          activeOffer.status === "pending_chairwoman" ||
+          activeOffer.status === "management_approval"
+        ) {
+          setWorkflowModalType("chairwoman_approval");
+        } else if (
+          activeOffer.status === "approved" ||
+          activeOffer.status === "salary_approved"
+        ) {
+          setWorkflowModalType("issue_offer");
+        }
+      }
+    }
+  }, [isOfferRequested, candidate, activeOffer]);
 
   const loadCandidateOffer = useCallback(async () => {
     if (!candidate?.id) return;
@@ -245,6 +305,78 @@ export default function CandidateDetail() {
     [actorName]
   );
 
+  const handleApproveBuCeo = useCallback(
+    async (offer: OfferLetter, notes?: string) => {
+      try {
+        const updated = await approveByBuCeo(offer, actorName, notes);
+        setActiveOffer(updated);
+        setWorkflowModalType(null);
+        toast(
+          "Approved by BU CEO",
+          `Proposal for ${offer.candidate_name} approved by BU CEO and forwarded to HR Division.`,
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to approve salary proposal as BU CEO.", "error");
+      }
+    },
+    [actorName]
+  );
+
+  const handleApproveHrManager = useCallback(
+    async (offer: OfferLetter, notes?: string) => {
+      try {
+        const updated = await approveByHrManager(offer, actorName, notes);
+        setActiveOffer(updated);
+        setWorkflowModalType(null);
+        toast(
+          "HR Manager Approved",
+          `Offer review endorsed. Forwarded to HR Admin Director.`,
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to complete HR Manager review.", "error");
+      }
+    },
+    [actorName]
+  );
+
+  const handleApproveHrDirector = useCallback(
+    async (offer: OfferLetter, notes?: string) => {
+      try {
+        const updated = await approveByHrDirector(offer, actorName, notes);
+        setActiveOffer(updated);
+        setWorkflowModalType(null);
+        toast(
+          "HR Admin Director Authorized",
+          `Offer authorized. Forwarded to Chairwoman.`,
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to authorize offer as HR Admin Director.", "error");
+      }
+    },
+    [actorName]
+  );
+
+  const handleAuthorizeChairwoman = useCallback(
+    async (offer: OfferLetter, notes?: string) => {
+      try {
+        const updated = await authorizeByChairwoman(offer, actorName, notes);
+        setActiveOffer(updated);
+        setWorkflowModalType(null);
+        toast(
+          "Offer Fully Authorized",
+          `Chairwoman supreme sign-off granted. Offer is authorized to be issued.`,
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to authorize offer as Chairwoman.", "error");
+      }
+    },
+    [actorName]
+  );
+
   const handleIssueOffer = useCallback(
     async (offer: OfferLetter, expiryDate?: string) => {
       try {
@@ -321,6 +453,17 @@ export default function CandidateDetail() {
       setSearchParams(next, { replace: true });
     }
   }, [isApprovalRequested, searchParams, setSearchParams]);
+
+  const handleCloseWorkflowModal = useCallback(() => {
+    setWorkflowModalType(null);
+    if (isOfferRequested) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("openOffer");
+      next.delete("offer");
+      if (next.get("tab") === "offer" || next.get("tab") === "offers") next.delete("tab");
+      setSearchParams(next, { replace: true });
+    }
+  }, [isOfferRequested, searchParams, setSearchParams]);
 
   const avgScore = useMemo(() => {
     const scored = interviews.filter((i) => (i.score || 0) > 0);
@@ -610,10 +753,14 @@ export default function CandidateDetail() {
       {/* Offer Letter Lifecycle Action Modal */}
       <OfferWorkflowModal
         isOpen={Boolean(activeOffer && workflowModalType)}
-        onClose={() => setWorkflowModalType(null)}
+        onClose={handleCloseWorkflowModal}
         offer={activeOffer}
         modalType={workflowModalType}
         actorName={actorName}
+        onApproveBuCeo={handleApproveBuCeo}
+        onApproveHrManager={handleApproveHrManager}
+        onApproveHrDirector={handleApproveHrDirector}
+        onAuthorizeChairwoman={handleAuthorizeChairwoman}
         onGenerateDraft={handleGenerateDraft}
         onEndorseHrReview={handleEndorseHrReview}
         onApproveManagement={handleApproveManagement}

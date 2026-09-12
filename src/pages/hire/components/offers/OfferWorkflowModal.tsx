@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { OfferLetter } from "../../types";
 import type { WorkflowModalType } from "../../hooks/useOfferLetters";
+import { getOfferSignatories } from "../../services/offerLetterService";
 import { useBranchScope } from "@/context/BranchContext";
 import { isHrDivisionScope } from "@/services/formLogoService";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface OfferWorkflowModalProps {
   isOpen: boolean;
@@ -11,6 +13,10 @@ interface OfferWorkflowModalProps {
   modalType: WorkflowModalType;
   actorName?: string;
   onApproveSalary?: (offer: OfferLetter, notes?: string) => Promise<void>;
+  onApproveBuCeo?: (offer: OfferLetter, notes?: string) => Promise<void>;
+  onApproveHrManager?: (offer: OfferLetter, notes?: string) => Promise<void>;
+  onApproveHrDirector?: (offer: OfferLetter, notes?: string) => Promise<void>;
+  onAuthorizeChairwoman?: (offer: OfferLetter, notes?: string) => Promise<void>;
   onGenerateDraft?: (offer: OfferLetter) => Promise<void>;
   onEndorseHrReview: (offer: OfferLetter, notes?: string) => Promise<void>;
   onApproveManagement: (offer: OfferLetter, notes?: string) => Promise<void>;
@@ -32,6 +38,10 @@ export function OfferWorkflowModal({
   modalType,
   actorName,
   onApproveSalary,
+  onApproveBuCeo,
+  onApproveHrManager,
+  onApproveHrDirector,
+  onAuthorizeChairwoman,
   onGenerateDraft,
   onEndorseHrReview,
   onApproveManagement,
@@ -40,8 +50,61 @@ export function OfferWorkflowModal({
   onExportPdf,
   onExportWord,
 }: OfferWorkflowModalProps) {
-  const { effectiveBranchName } = useBranchScope();
+  const { effectiveBranchName, branches, setSelectedBranchId, isSuperAdmin, isHrDivision, isBranchAdmin } = useBranchScope();
+  const { role } = usePermissions();
   const isCurrentScopeHr = isHrDivisionScope(effectiveBranchName);
+  const canSwitchToHr = isSuperAdmin || isHrDivision;
+
+  const handleSwitchToHr = () => {
+    const hrBranch = branches.find((b) => isHrDivisionScope(b.name));
+    if (hrBranch) {
+      setSelectedBranchId(hrBranch.id);
+    } else {
+      setSelectedBranchId("all");
+    }
+  };
+
+  const canActOnStep = useMemo(() => {
+    if (isSuperAdmin) return true;
+    switch (modalType) {
+      case "bu_ceo_approval":
+      case "salary_approval":
+        return Boolean(
+          isBranchAdmin ||
+          role?.candidate_approval_ceo_sign ||
+          role?.hiring_requests_branch_approve ||
+          /(ceo|director|general manager|president|branch admin|bu admin)/i.test(role?.name || "")
+        );
+      case "hr_manager_approval":
+      case "hr_review":
+      case "generate_draft":
+        return Boolean(
+          isHrDivision &&
+          (role?.candidate_approval_hr_sign ||
+           role?.hiring_requests_hr_review ||
+           /(hr\s*manager|talent|head of hr)/i.test(role?.name || ""))
+        );
+      case "hr_director_approval":
+        return Boolean(
+          isHrDivision &&
+          (role?.candidate_approval_director_sign ||
+           role?.hiring_requests_hr_admin_approve ||
+           /(director|head of hr)/i.test(role?.name || ""))
+        );
+      case "chairwoman_approval":
+      case "management_approval":
+        return Boolean(
+          role?.candidate_approval_chairwoman_sign ||
+          role?.hiring_requests_chairman_approve ||
+          /(chair|president|executive)/i.test(role?.name || "")
+        );
+      case "issue_offer":
+      case "decision":
+        return Boolean(isHrDivision || role?.is_admin);
+      default:
+        return true;
+    }
+  }, [modalType, isSuperAdmin, isBranchAdmin, isHrDivision, role]);
 
   const [notes, setNotes] = useState("");
   const [hrReviewer, setHrReviewer] = useState(actorName || "HR Manager");
@@ -61,8 +124,16 @@ export function OfferWorkflowModal({
 
   if (!isOpen || !offer || !modalType || modalType === "preview") return null;
 
-  // Security guard: HR Manager Review, Management Approval, and Issue Offer are strictly HR Division actions
-  if (!isCurrentScopeHr && ["hr_review", "management_approval", "issue_offer"].includes(modalType)) {
+  // Security guard: HR Manager Review, HR Admin Director, Chairwoman Authorization, and Issue Offer are strictly HR Division actions
+  const hrOnlyModalTypes = [
+    "hr_manager_approval",
+    "hr_director_approval",
+    "chairwoman_approval",
+    "hr_review",
+    "management_approval",
+    "issue_offer",
+  ];
+  if (!isCurrentScopeHr && hrOnlyModalTypes.includes(modalType)) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
@@ -74,19 +145,40 @@ export function OfferWorkflowModal({
               HR Division Exclusive Permission
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              The <strong>HR Manager Review</strong>, <strong>Management Authorization</strong>, and <strong>Offer Issuance</strong> stages are strictly handled by the <strong>HR Division</strong>.
+              The <strong>HR Manager Review</strong>, <strong>HR Admin Director Authorization</strong>, <strong>Chairwoman Authorization</strong>, and <strong>Offer Issuance</strong> stages are strictly handled by the <strong>HR Division</strong>.
             </p>
           </div>
           <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Your current active scope is <strong>{effectiveBranchName || "Business Unit"}</strong>. Your BU's part is completed (Proposal &amp; Draft submitted). Please switch to the <strong>HR Division</strong> scope to access review and authorization actions.
+            Your current active scope is <strong>{effectiveBranchName || "Business Unit"}</strong>.
+            {canSwitchToHr ? (
+              <span className="block mt-1 text-blue-700 dark:text-blue-300 font-semibold">
+                You have authorized HR credentials. Click below to switch active scope to HR Division and proceed directly with your review.
+              </span>
+            ) : (
+              <span className="block mt-1 text-rose-600 dark:text-rose-400 font-medium">
+                Your account ({role?.name || "Standard User"}) is restricted to {effectiveBranchName || "this Business Unit"}. Only HR Division authorized personnel can review this stage.
+              </span>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full py-2.5 bg-[#253C7D] text-white rounded-xl text-xs font-bold hover:bg-[#1e3066] transition-colors cursor-pointer"
-          >
-            Close
-          </button>
+          <div className="flex gap-2">
+            {canSwitchToHr && (
+              <button
+                type="button"
+                onClick={handleSwitchToHr}
+                className="flex-1 py-2.5 bg-[#253C7D] text-white rounded-xl text-xs font-bold hover:bg-[#1e3066] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <i className="ri-arrow-left-right-line" />
+                Switch to HR Division & Review
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className={`${canSwitchToHr ? "px-4" : "w-full"} py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer`}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -94,11 +186,34 @@ export function OfferWorkflowModal({
 
   const totalAllowances = (offer.allowances || []).reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
   const totalPackage = Number(offer.base_salary || 0) + totalAllowances;
+  const sigs = getOfferSignatories(offer);
 
   const handleAction = async () => {
     setSubmitting(true);
     try {
-      if (modalType === "salary_approval" && onApproveSalary) {
+      if (modalType === "bu_ceo_approval") {
+        if (onApproveBuCeo) {
+          await onApproveBuCeo(offer, notes);
+        } else if (onApproveSalary) {
+          await onApproveSalary(offer, notes);
+        }
+      } else if (modalType === "hr_manager_approval") {
+        if (onApproveHrManager) {
+          await onApproveHrManager(offer, notes);
+        } else {
+          await onEndorseHrReview(offer, notes);
+        }
+      } else if (modalType === "hr_director_approval") {
+        if (onApproveHrDirector) {
+          await onApproveHrDirector(offer, notes);
+        }
+      } else if (modalType === "chairwoman_approval") {
+        if (onAuthorizeChairwoman) {
+          await onAuthorizeChairwoman(offer, notes);
+        } else {
+          await onApproveManagement(offer, notes);
+        }
+      } else if (modalType === "salary_approval" && onApproveSalary) {
         await onApproveSalary(offer, notes);
       } else if (modalType === "generate_draft" && onGenerateDraft) {
         await onGenerateDraft(offer);
@@ -124,6 +239,34 @@ export function OfferWorkflowModal({
   };
 
   const titles: Record<string, { title: string; subtitle: string; icon: string; actionBtn: string; color: string }> = {
+    bu_ceo_approval: {
+      title: "BU CEO / Division Director Approval",
+      subtitle: `Stage 1: Sign-off by CEO of ${offer.business_unit || "Business Unit"}`,
+      icon: "ri-user-star-line",
+      actionBtn: "Approve as BU CEO & Forward to HR Division",
+      color: "from-blue-700 to-indigo-800",
+    },
+    hr_manager_approval: {
+      title: "HR Manager Review & Verification",
+      subtitle: "Stage 2: HR Division verification of remuneration, policy & terms",
+      icon: "ri-shield-check-line",
+      actionBtn: "Endorse as HR Manager & Forward to Director",
+      color: "from-indigo-800 via-blue-900 to-[#253C7D]",
+    },
+    hr_director_approval: {
+      title: "HR Admin Director Authorization",
+      subtitle: "Stage 3: Executive sign-off by HR Admin Director in HR Division",
+      icon: "ri-shield-user-line",
+      actionBtn: "Authorize as HR Admin Director & Forward to Chairwoman",
+      color: "from-slate-800 via-indigo-950 to-blue-900",
+    },
+    chairwoman_approval: {
+      title: "Chairwoman Supreme Authorization",
+      subtitle: "Stage 4: Supreme corporate executive sign-off by Chairwoman",
+      icon: "ri-vip-crown-line",
+      actionBtn: "Grant Supreme Authorization (Chairwoman)",
+      color: "from-amber-600 via-amber-700 to-slate-900",
+    },
     salary_approval: {
       title: "Salary Package Sign-Off",
       subtitle: "Step 1: BU Head / Finance / HR Director Review",
@@ -195,6 +338,18 @@ export function OfferWorkflowModal({
 
         {/* Body */}
         <div className="p-6 space-y-4 text-slate-800">
+          {!canActOnStep && (
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3 text-xs text-amber-900">
+              <i className="ri-shield-keyhole-line text-amber-600 text-xl shrink-0" />
+              <div>
+                <strong className="block font-bold">Role Permission Notice</strong>
+                <span>
+                  Your active role (<strong>{role?.name || "User"}</strong>) does not have permission to execute this workflow step. Only designated executives can sign off.
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Candidate & Role banner */}
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
             <div>
@@ -241,6 +396,130 @@ export function OfferWorkflowModal({
             </div>
           </div>
 
+          {/* 4-Tier Corporate Authorization Progress Strip */}
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+              Recruitment Authorization Chain
+            </span>
+            <div className="grid grid-cols-4 gap-1.5 text-center">
+              <div
+                className={`p-1.5 rounded-lg border text-[11px] ${
+                  sigs.bu_ceo.status === "approved"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800 font-bold"
+                    : modalType === "bu_ceo_approval"
+                    ? "bg-blue-50 border-blue-300 text-blue-800 font-bold ring-2 ring-blue-500/20"
+                    : "bg-white border-slate-200 text-slate-500"
+                }`}
+              >
+                <div className="text-[9px] uppercase font-bold text-slate-400">1. BU CEO</div>
+                <div className="truncate">
+                  {sigs.bu_ceo.status === "approved" ? "✓ Approved" : modalType === "bu_ceo_approval" ? "Active" : "Pending"}
+                </div>
+              </div>
+              <div
+                className={`p-1.5 rounded-lg border text-[11px] ${
+                  sigs.hr_manager.status === "approved"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800 font-bold"
+                    : modalType === "hr_manager_approval" || modalType === "hr_review"
+                    ? "bg-blue-50 border-blue-300 text-blue-800 font-bold ring-2 ring-blue-500/20"
+                    : "bg-white border-slate-200 text-slate-500"
+                }`}
+              >
+                <div className="text-[9px] uppercase font-bold text-slate-400">2. HR Mgr</div>
+                <div className="truncate">
+                  {sigs.hr_manager.status === "approved"
+                    ? "✓ Approved"
+                    : modalType === "hr_manager_approval" || modalType === "hr_review"
+                    ? "Active"
+                    : "Pending"}
+                </div>
+              </div>
+              <div
+                className={`p-1.5 rounded-lg border text-[11px] ${
+                  sigs.hr_director.status === "approved"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800 font-bold"
+                    : modalType === "hr_director_approval"
+                    ? "bg-blue-50 border-blue-300 text-blue-800 font-bold ring-2 ring-blue-500/20"
+                    : "bg-white border-slate-200 text-slate-500"
+                }`}
+              >
+                <div className="text-[9px] uppercase font-bold text-slate-400">3. HR Director</div>
+                <div className="truncate">
+                  {sigs.hr_director.status === "approved"
+                    ? "✓ Approved"
+                    : modalType === "hr_director_approval"
+                    ? "Active"
+                    : "Pending"}
+                </div>
+              </div>
+              <div
+                className={`p-1.5 rounded-lg border text-[11px] ${
+                  sigs.chairwoman.status === "approved"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800 font-bold"
+                    : modalType === "chairwoman_approval" || modalType === "management_approval"
+                    ? "bg-blue-50 border-blue-300 text-blue-800 font-bold ring-2 ring-blue-500/20"
+                    : "bg-white border-slate-200 text-slate-500"
+                }`}
+              >
+                <div className="text-[9px] uppercase font-bold text-slate-400">4. Chairwoman</div>
+                <div className="truncate">
+                  {sigs.chairwoman.status === "approved"
+                    ? "✓ Approved"
+                    : modalType === "chairwoman_approval" || modalType === "management_approval"
+                    ? "Active"
+                    : "Pending"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* BU CEO Specific: Operational Sign-Off */}
+          {modalType === "bu_ceo_approval" && (
+            <div className="p-4 bg-blue-50/70 border border-blue-200/90 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-blue-950">
+                  <i className="ri-user-star-line text-blue-700 text-base" />
+                  <span>BU CEO Operational Authorization Checklist</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+                  {offer.business_unit || "Operational BU"}
+                </span>
+              </div>
+              <p className="text-xs text-blue-900/80 leading-relaxed font-medium">
+                As the CEO / Division Director of <strong>{offer.business_unit}</strong>, verify that this remuneration proposal fits within your operational headcount budget before forwarding to the HR Division.
+              </p>
+              <div className="space-y-2 bg-white/90 p-3 rounded-xl border border-blue-100 text-xs">
+                <label className="flex items-center gap-2 text-slate-800 font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkTerms}
+                    onChange={(e) => setCheckTerms(e.target.checked)}
+                    className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>Designation ({offer.job_title}) and department ({offer.department}) approved for BU operations</span>
+                </label>
+                <label className="flex items-center gap-2 text-slate-800 font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkRemuneration}
+                    onChange={(e) => setCheckRemuneration(e.target.checked)}
+                    className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>Base salary (${offer.base_salary.toLocaleString()}) and package authorized within operational budget</span>
+                </label>
+                <label className="flex items-center gap-2 text-slate-800 font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkCompliance}
+                    onChange={(e) => setCheckCompliance(e.target.checked)}
+                    className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>Authorize submission to HR Division for compliance review and formal offer letter creation</span>
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* Generate Draft Specific: HR Division Review & Automated Compilation */}
           {modalType === "generate_draft" && (
             <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/80 rounded-xl space-y-2.5">
@@ -281,27 +560,40 @@ export function OfferWorkflowModal({
             </div>
           )}
 
-          {/* HR Review Specific: HR Manager Verification & PDF preview */}
-          {modalType === "hr_review" && (
+          {/* HR Review / HR Manager Specific: HR Manager Verification & PDF preview */}
+          {(modalType === "hr_manager_approval" || modalType === "hr_review") && (
             <div className="p-4 bg-indigo-50/70 border border-indigo-200/90 rounded-2xl space-y-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 text-xs font-extrabold text-indigo-950">
                   <i className="ri-shield-check-line text-indigo-600 text-base" />
                   <span>HR Manager Review & Verification Checklist</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onExportPdf(offer)}
-                  className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                  title="Preview or print the generated offer letter PDF"
-                >
-                  <i className="ri-file-pdf-line text-rose-600" />
-                  <span>Preview Offer PDF</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onExportPdf(offer)}
+                    className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    title="Preview or print the generated offer letter PDF"
+                  >
+                    <i className="ri-file-pdf-line text-rose-600" />
+                    <span>Preview Offer PDF</span>
+                  </button>
+                  {onExportWord && (
+                    <button
+                      type="button"
+                      onClick={() => onExportWord(offer)}
+                      className="px-2.5 py-1 bg-white hover:bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      title="Download offer letter Word document"
+                    >
+                      <i className="ri-file-word-line text-sky-600" />
+                      <span>Word (.docx)</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               <p className="text-xs text-indigo-900/80 leading-relaxed font-medium">
-                The offer letter draft has been compiled from candidate and requisition records. Please verify compliance, review clauses, and sign off as HR Manager before forwarding to management.
+                The offer letter draft has been compiled from candidate and requisition records. Please verify compliance, review clauses, and sign off as HR Manager before forwarding to the HR Admin Director.
               </p>
 
               {/* Checklist */}
@@ -340,7 +632,7 @@ export function OfferWorkflowModal({
                     onChange={(e) => setCheckCompliance(e.target.checked)}
                     className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
                   />
-                  <span>All compliance standards met; endorsed for executive management approval</span>
+                  <span>All compliance standards met; endorsed for HR Admin Director authorization</span>
                 </label>
               </div>
 
@@ -358,6 +650,125 @@ export function OfferWorkflowModal({
                   className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
                 />
               </div>
+            </div>
+          )}
+
+          {/* HR Admin Director Specific Authorization */}
+          {modalType === "hr_director_approval" && (
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
+                  <i className="ri-shield-user-line text-indigo-700 text-base" />
+                  <span>HR Admin Director Authorization</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onExportPdf(offer)}
+                    className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <i className="ri-file-pdf-line text-rose-600" />
+                    <span>Preview PDF</span>
+                  </button>
+                  {onExportWord && (
+                    <button
+                      type="button"
+                      onClick={() => onExportWord(offer)}
+                      className="px-2.5 py-1 bg-white hover:bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <i className="ri-file-word-line text-sky-600" />
+                      <span>Word (.docx)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5">
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>1. BU CEO Sign-off:</span>
+                  <span className="font-bold text-emerald-700">✓ {sigs.bu_ceo.name || "Approved"}</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>2. HR Manager Review:</span>
+                  <span className="font-bold text-emerald-700">✓ {sigs.hr_manager.name || "Approved"}</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Review and authorize this recruitment offer letter as HR Admin Director before forwarding to the Chairwoman for supreme sign-off.
+              </p>
+
+              <div className="space-y-2 bg-white/90 p-3 rounded-xl border border-slate-200 text-xs">
+                <label className="flex items-center gap-2 text-slate-800 font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkCompliance}
+                    onChange={(e) => setCheckCompliance(e.target.checked)}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>Corporate HR policy, grading, and compensation verified</span>
+                </label>
+                <label className="flex items-center gap-2 text-slate-800 font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkTerms}
+                    onChange={(e) => setCheckTerms(e.target.checked)}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>Forward to Chairwoman with full HR Division endorsement</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Chairwoman Specific Supreme Authorization */}
+          {(modalType === "chairwoman_approval" || modalType === "management_approval") && (
+            <div className="p-4 bg-amber-50/70 border border-amber-200/90 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-amber-950">
+                  <i className="ri-vip-crown-line text-amber-600 text-base" />
+                  <span>Chairwoman Supreme Authorization</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onExportPdf(offer)}
+                    className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <i className="ri-file-pdf-line text-rose-600" />
+                    <span>Preview PDF</span>
+                  </button>
+                  {onExportWord && (
+                    <button
+                      type="button"
+                      onClick={() => onExportWord(offer)}
+                      className="px-2.5 py-1 bg-white hover:bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <i className="ri-file-word-line text-sky-600" />
+                      <span>Word (.docx)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-3 bg-white rounded-xl border border-amber-200 text-xs space-y-1.5">
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>1. BU CEO Sign-off:</span>
+                  <span className="font-bold text-emerald-700">✓ {sigs.bu_ceo.name || "Approved"}</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>2. HR Manager Review:</span>
+                  <span className="font-bold text-emerald-700">✓ {sigs.hr_manager.name || "Approved"}</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>3. HR Admin Director:</span>
+                  <span className="font-bold text-emerald-700">✓ {sigs.hr_director.name || "Approved"}</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-amber-950 leading-relaxed font-medium">
+                Final corporate authorization. Granting supreme authorization authorizes this official offer letter to be issued to the candidate.
+              </p>
             </div>
           )}
 
@@ -490,9 +901,10 @@ export function OfferWorkflowModal({
           </button>
           <button
             type="button"
-            disabled={submitting}
+            disabled={submitting || !canActOnStep}
             onClick={handleAction}
-            className="px-5 py-2 text-xs font-bold text-white bg-[#253C7D] hover:bg-[#1e3066] rounded-lg shadow-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            title={!canActOnStep ? "Your role does not have authorization permissions for this step" : undefined}
+            className="px-5 py-2 text-xs font-bold text-white bg-[#253C7D] hover:bg-[#1e3066] rounded-lg shadow-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? <i className="ri-loader-4-line animate-spin" /> : <i className={meta.icon} />}
             {meta.actionBtn}

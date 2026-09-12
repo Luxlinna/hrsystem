@@ -7,6 +7,10 @@ import {
   generateOfferLetterDraft,
   endorseHrReview,
   approveOfferManagement,
+  approveByBuCeo,
+  approveByHrManager,
+  approveByHrDirector,
+  authorizeByChairwoman,
   issueOffer,
   recordCandidateDecision,
   softDeleteOfferLetter,
@@ -20,6 +24,10 @@ import { useBranchScope } from "@/context/BranchContext";
 import { isHrDivisionScope } from "@/services/formLogoService";
 
 export type WorkflowModalType =
+  | "bu_ceo_approval"
+  | "hr_manager_approval"
+  | "hr_director_approval"
+  | "chairwoman_approval"
   | "salary_approval"
   | "generate_draft"
   | "hr_review"
@@ -166,6 +174,78 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
     [currentUserName, closeWorkflowModal]
   );
 
+  const handleApproveBuCeo = useCallback(
+    async (offer: OfferLetter, notes?: string) => {
+      try {
+        const updated = await approveByBuCeo(offer, currentUserName, notes);
+        setOffers((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+        closeWorkflowModal();
+        toast(
+          "Approved by BU CEO",
+          `Proposal for ${offer.candidate_name} approved by BU CEO and forwarded to HR Division for HR Manager Review.`,
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to approve salary proposal as BU CEO.", "error");
+      }
+    },
+    [currentUserName, closeWorkflowModal]
+  );
+
+  const handleApproveHrManager = useCallback(
+    async (offer: OfferLetter, notes?: string) => {
+      try {
+        const updated = await approveByHrManager(offer, currentUserName, notes);
+        setOffers((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+        closeWorkflowModal();
+        toast(
+          "HR Manager Approved",
+          `Offer review endorsed. Forwarded to HR Admin Director for authorization.`,
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to complete HR Manager review.", "error");
+      }
+    },
+    [currentUserName, closeWorkflowModal]
+  );
+
+  const handleApproveHrDirector = useCallback(
+    async (offer: OfferLetter, notes?: string) => {
+      try {
+        const updated = await approveByHrDirector(offer, currentUserName, notes);
+        setOffers((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+        closeWorkflowModal();
+        toast(
+          "HR Admin Director Authorized",
+          `Offer authorized. Forwarded to Chairwoman for supreme sign-off.`,
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to authorize offer as HR Admin Director.", "error");
+      }
+    },
+    [currentUserName, closeWorkflowModal]
+  );
+
+  const handleAuthorizeChairwoman = useCallback(
+    async (offer: OfferLetter, notes?: string) => {
+      try {
+        const updated = await authorizeByChairwoman(offer, currentUserName, notes);
+        setOffers((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+        closeWorkflowModal();
+        toast(
+          "Offer Fully Authorized",
+          `Chairwoman supreme sign-off granted. Offer is authorized to be issued.`,
+          "success"
+        );
+      } catch {
+        toast("Error", "Failed to authorize offer as Chairwoman.", "error");
+      }
+    },
+    [currentUserName, closeWorkflowModal]
+  );
+
   const handleIssueOffer = useCallback(
     async (offer: OfferLetter, expiryDate?: string) => {
       try {
@@ -252,7 +332,18 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
 
   const counts = useMemo(() => {
     const pendingAction = offers.filter((o) =>
-      ["salary_proposal", "salary_approved", "draft_letter", "hr_review", "management_approval", "approved"].includes(o.status)
+      [
+        "salary_proposal",
+        "pending_bu_ceo",
+        "pending_hr_manager",
+        "pending_hr_director",
+        "pending_chairwoman",
+        "approved",
+        "salary_approved",
+        "draft_letter",
+        "hr_review",
+        "management_approval",
+      ].includes(o.status)
     ).length;
     const issued = offers.filter((o) => o.status === "issued").length;
     const accepted = offers.filter((o) => o.status === "accepted").length;
@@ -286,6 +377,10 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
     // Workflow actions
     handleCreateProposal,
     handleApproveSalary,
+    handleApproveBuCeo,
+    handleApproveHrManager,
+    handleApproveHrDirector,
+    handleAuthorizeChairwoman,
     handleGenerateDraft,
     handleEndorseHrReview,
     handleApproveManagement,

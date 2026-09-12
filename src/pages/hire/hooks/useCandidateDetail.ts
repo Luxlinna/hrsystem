@@ -76,7 +76,105 @@ export function useCandidateDetail(id: string | undefined) {
     ]);
 
     if (requestId !== loadRequestId.current) return;
-    const cand = c as unknown as Candidate | null;
+    let cand = c as unknown as Candidate | null;
+
+    // Fallback: If candidate not found directly, the passed ID may be an offer_letter, CAF, or interview ID (e.g. from existing notifications)
+    if (!cand) {
+      let resolvedCandidateId: string | null = null;
+
+      // 1. Check local offer letter store
+      try {
+        const raw = localStorage.getItem("hrm_offer_letters_store");
+        if (raw) {
+          const list = JSON.parse(raw);
+          const found = list.find((o: any) => o.id === cid);
+          if (found?.candidate_id) {
+            resolvedCandidateId = found.candidate_id;
+          }
+        }
+      } catch {}
+
+      // 2. Check remote offer_letters table
+      if (!resolvedCandidateId) {
+        try {
+          const { data: offRow } = await supabase
+            .from("offer_letters")
+            .select("candidate_id")
+            .eq("id", cid)
+            .maybeSingle();
+          if (offRow?.candidate_id) {
+            resolvedCandidateId = offRow.candidate_id;
+          }
+        } catch {}
+      }
+
+      // 3. Check candidate_approvals (CAF) table
+      if (!resolvedCandidateId) {
+        try {
+          const { data: cafRow } = await supabase
+            .from("candidate_approvals")
+            .select("candidate_id")
+            .eq("id", cid)
+            .maybeSingle();
+          if (cafRow?.candidate_id) {
+            resolvedCandidateId = cafRow.candidate_id;
+          }
+        } catch {}
+      }
+
+      // 4. Check interviews table
+      if (!resolvedCandidateId) {
+        try {
+          const { data: ivRow } = await supabase
+            .from("interviews")
+            .select("candidate_id")
+            .eq("id", cid)
+            .maybeSingle();
+          if (ivRow?.candidate_id) {
+            resolvedCandidateId = ivRow.candidate_id;
+          }
+        } catch {}
+      }
+
+      // If resolved to a candidate ID, load that candidate's profile
+      if (resolvedCandidateId && resolvedCandidateId !== cid) {
+        const [{ data: realCand }, { data: realIvs }, { data: realApps }] = await Promise.all([
+          supabase
+            .from("candidates")
+            .select("*, job_postings(id, title, department, branch_id, branches(id, name, manager_name)), assigned_recruiter:employees!assigned_recruiter_id(id, first_name, last_name, email)")
+            .eq("id", resolvedCandidateId)
+            .is("deleted_at", null)
+            .maybeSingle(),
+          supabase
+            .from("interviews")
+            .select("*, employees(id, first_name, last_name, avatar_url, role, department, branch_id)")
+            .eq("candidate_id", resolvedCandidateId)
+            .is("deleted_at", null)
+            .order("scheduled_at", { ascending: false }),
+          supabase
+            .from("candidate_applications")
+            .select("*, job_postings(id, title, department, location, branches(name))")
+            .eq("candidate_id", resolvedCandidateId)
+            .order("applied_at", { ascending: false }),
+        ]);
+
+        if (requestId !== loadRequestId.current) return;
+        cand = realCand as unknown as Candidate | null;
+        if (cand) {
+          cand.applications = (realApps as any) || [];
+          setCandidate(cand);
+          setJobs((j as unknown as Job[]) || []);
+          setNotesText(cand.notes || "");
+          setInterviews((realIvs as unknown as Interview[]) || []);
+          setLoading(false);
+          try {
+            navigate(`/hire/candidates/${resolvedCandidateId}${window.location.search}`, { replace: true });
+          } catch {}
+          return;
+        }
+      }
+    }
+
     if (cand) {
       cand.applications = (apps as any) || [];
     }
@@ -85,7 +183,7 @@ export function useCandidateDetail(id: string | undefined) {
     if (cand) setNotesText(cand.notes || "");
     setInterviews((ivs as unknown as Interview[]) || []);
     setLoading(false);
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (!id) return;

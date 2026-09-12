@@ -84,30 +84,32 @@ export const CandidateActionsWidget = memo(function CandidateActionsWidget({
             <span className="font-mono text-[#253C7D]">{activeOffer.offer_number}</span>
           </div>
 
-          {/* Step 2: Generate Offer Letter (Auto-compiled, no retyping) */}
-          {(activeOffer.status === "salary_proposal" || activeOffer.status === "salary_approved") && onOpenOfferWorkflow && (
-            <button
-              type="button"
-              onClick={() => onOpenOfferWorkflow("generate_draft")}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-              title="Generate offer letter directly from candidate and requisition data — no retyping"
-            >
-              <i className="ri-file-text-line text-sm" />
-              Generate Offer Letter
-            </button>
-          )}
+          {/* Step 2: BU CEO Approval (Actionable in BU) */}
+          {(activeOffer.status === "pending_bu_ceo" ||
+            (activeOffer.status === "salary_proposal" && (!activeOffer.signatories || activeOffer.signatories.bu_ceo.status !== "approved"))) &&
+            onOpenOfferWorkflow && (
+              <button
+                type="button"
+                onClick={() => onOpenOfferWorkflow("bu_ceo_approval")}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                title={`Approve salary proposal as CEO of ${activeOffer.business_unit || "BU"}`}
+              >
+                <i className="ri-user-star-line text-sm" />
+                BU CEO Approve Proposal
+              </button>
+            )}
 
-          {/* Step 3: HR Review */}
-          {(activeOffer.status === "draft_letter" || activeOffer.status === "hr_review") &&
+          {/* Step 3: HR Manager Review (Gated to HR Division) */}
+          {(activeOffer.status === "pending_hr_manager" || activeOffer.status === "draft_letter" || activeOffer.status === "hr_review") &&
             onOpenOfferWorkflow &&
             (isCurrentScopeHr ? (
               <button
                 type="button"
-                onClick={() => onOpenOfferWorkflow("hr_review")}
+                onClick={() => onOpenOfferWorkflow("hr_manager_approval")}
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
               >
                 <i className="ri-shield-check-line text-sm" />
-                Endorse HR Review
+                HR Manager Review &amp; Approve
               </button>
             ) : (
               <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-[11px] font-semibold text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
@@ -116,27 +118,46 @@ export const CandidateActionsWidget = memo(function CandidateActionsWidget({
               </div>
             ))}
 
-          {/* Step 4: Executive Approval */}
-          {activeOffer.status === "management_approval" &&
+          {/* Step 4: HR Admin Director Authorization */}
+          {activeOffer.status === "pending_hr_director" &&
             onOpenOfferWorkflow &&
             (isCurrentScopeHr ? (
               <button
                 type="button"
-                onClick={() => onOpenOfferWorkflow("management_approval")}
-                className="w-full py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                onClick={() => onOpenOfferWorkflow("hr_director_approval")}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
               >
-                <i className="ri-award-line text-sm" />
-                Management Sign-Off
+                <i className="ri-shield-user-line text-sm" />
+                HR Director Authorize
               </button>
             ) : (
-              <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-[11px] font-semibold text-purple-900 dark:text-purple-200 flex items-center gap-2">
-                <i className="ri-time-line text-purple-600 shrink-0" />
-                <span>In HR Management Approval</span>
+              <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-[11px] font-semibold text-slate-800 flex items-center gap-2">
+                <i className="ri-time-line text-slate-600 shrink-0" />
+                <span>In HR Director Authorization</span>
               </div>
             ))}
 
-          {/* Step 5: Issue Offer */}
-          {activeOffer.status === "approved" &&
+          {/* Step 5: Chairwoman Supreme Sign-Off */}
+          {(activeOffer.status === "pending_chairwoman" || activeOffer.status === "management_approval") &&
+            onOpenOfferWorkflow &&
+            (isCurrentScopeHr ? (
+              <button
+                type="button"
+                onClick={() => onOpenOfferWorkflow("chairwoman_approval")}
+                className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              >
+                <i className="ri-vip-crown-line text-sm" />
+                Chairwoman Supreme Sign-Off
+              </button>
+            ) : (
+              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-semibold text-amber-900 flex items-center gap-2">
+                <i className="ri-vip-crown-line text-amber-600 shrink-0" />
+                <span>In Chairwoman Authorization</span>
+              </div>
+            ))}
+
+          {/* Step 6: Issue Offer */}
+          {(activeOffer.status === "approved" || activeOffer.status === "salary_approved") &&
             onOpenOfferWorkflow &&
             (isCurrentScopeHr ? (
               <button
@@ -148,13 +169,13 @@ export const CandidateActionsWidget = memo(function CandidateActionsWidget({
                 Issue Official Offer
               </button>
             ) : (
-              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] font-semibold text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+              <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-900 flex items-center gap-2">
                 <i className="ri-checkbox-circle-line text-emerald-600 shrink-0" />
-                <span>Approved &middot; Ready for HR Issuance</span>
+                <span>Authorized &middot; Ready for HR Issuance</span>
               </div>
             ))}
 
-          {/* Step 6: Candidate Decision */}
+          {/* Step 7: Candidate Decision */}
           {activeOffer.status === "issued" && onOpenOfferWorkflow && (
             <button
               type="button"
