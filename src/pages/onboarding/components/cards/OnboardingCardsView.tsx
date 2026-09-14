@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { OnboardingRequest, OnboardingDoc } from "../../types";
+import type { OnboardingRequest, OnboardingDoc, HireDocument } from "../../types";
 import { OnboardingCard } from "./OnboardingCard";
 
 interface OnboardingCardsViewProps {
@@ -22,6 +22,10 @@ interface OnboardingCardsViewProps {
   onBulkSetDeadline: (req: OnboardingRequest, stageKey: string, days: number) => void;
   onRefresh: () => void;
   onStartOnboarding: () => void;
+  hireDocumentsByRequestId?: Record<string, HireDocument[]>;
+  onSyncHireDocs?: (req: OnboardingRequest, hireDocs: HireDocument[]) => void;
+  onAttachHireDoc?: (req: OnboardingRequest, doc: OnboardingDoc, hireDoc: HireDocument) => void;
+  onAddHireDocToChecklist?: (req: OnboardingRequest, hireDoc: HireDocument, stageKey: string) => void;
 }
 
 export const OnboardingCardsView = memo(function OnboardingCardsView({
@@ -44,6 +48,10 @@ export const OnboardingCardsView = memo(function OnboardingCardsView({
   onBulkSetDeadline,
   onRefresh,
   onStartOnboarding,
+  hireDocumentsByRequestId,
+  onSyncHireDocs,
+  onAttachHireDoc,
+  onAddHireDocToChecklist,
 }: OnboardingCardsViewProps) {
   if (requests.length === 0) {
     return (
@@ -88,6 +96,10 @@ export const OnboardingCardsView = memo(function OnboardingCardsView({
           onOpenEditDocModal={onOpenEditDocModal}
           onBulkSetDeadline={onBulkSetDeadline}
           onRefresh={onRefresh}
+          hireDocs={hireDocumentsByRequestId?.[req.id] || []}
+          onSyncHireDocs={onSyncHireDocs}
+          onAttachHireDoc={onAttachHireDoc}
+          onAddHireDocToChecklist={onAddHireDocToChecklist}
         />
       ))}
     </div>

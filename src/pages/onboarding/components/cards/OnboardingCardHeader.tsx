@@ -10,6 +10,7 @@ interface OnboardingCardHeaderProps {
   onToggleExpand: (id: string) => void;
   onDeleteRequest: (req: OnboardingRequest) => void;
   onOpenSetupModal: () => void;
+  hireDocsCount?: number;
 }
 
 export const OnboardingCardHeader = memo(function OnboardingCardHeader({
@@ -19,6 +20,7 @@ export const OnboardingCardHeader = memo(function OnboardingCardHeader({
   onToggleExpand,
   onDeleteRequest,
   onOpenSetupModal,
+  hireDocsCount = 0,
 }: OnboardingCardHeaderProps) {
   const navigate = useNavigate();
   const emp = request.employees;
@@ -48,6 +50,15 @@ export const OnboardingCardHeader = memo(function OnboardingCardHeader({
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
               Day {request.day_count}
             </span>
+            {hireDocsCount > 0 && (
+              <span
+                className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60 inline-flex items-center gap-1"
+                title={`${hireDocsCount} document${hireDocsCount > 1 ? "s" : ""} collected in hiring`}
+              >
+                <i className="ri-folder-user-line text-[11px]" />
+                {hireDocsCount} Hire Docs
+              </span>
+            )}
             {emp?.resume_url && (
               <a
                 href={emp.resume_url}

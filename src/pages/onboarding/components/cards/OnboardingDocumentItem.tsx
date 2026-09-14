@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import type { OnboardingDoc, OnboardingRequest } from "../../types";
+import type { OnboardingDoc, OnboardingRequest, HireDocument } from "../../types";
 import { DOC_TO_TASK } from "@/lib/onboarding";
 
 interface OnboardingDocumentItemProps {
@@ -10,6 +10,8 @@ interface OnboardingDocumentItemProps {
   isOverdue: boolean;
   onOpenEditDocModal: (req: OnboardingRequest, doc: OnboardingDoc) => void;
   onRefresh: () => void;
+  matchingHireDoc?: HireDocument;
+  onAttachHireDoc?: (hireDoc: HireDocument) => void;
 }
 
 export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
@@ -18,6 +20,8 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
   isOverdue,
   onOpenEditDocModal,
   onRefresh,
+  matchingHireDoc,
+  onAttachHireDoc,
 }: OnboardingDocumentItemProps) {
   const isDone = doc.status === "complete";
 
@@ -138,15 +142,33 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
               {doc.document_name}
             </p>
             {doc.file_url && (
-              <a
-                href={doc.file_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[10px] font-bold text-sky-600 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200 flex items-center gap-0.5 hover:underline"
+              <div className="flex items-center gap-1">
+                <a
+                  href={doc.file_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] font-bold text-sky-600 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200 flex items-center gap-0.5 hover:underline"
+                >
+                  <i className="ri-attachment-line" />
+                  <span>File attached</span>
+                </a>
+                {(doc.notes?.includes("Candidate Pre-boarding") || doc.notes?.includes("hiring")) && (
+                  <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
+                    From Hiring
+                  </span>
+                )}
+              </div>
+            )}
+            {!doc.file_url && matchingHireDoc && onAttachHireDoc && (
+              <button
+                type="button"
+                onClick={() => onAttachHireDoc(matchingHireDoc)}
+                className="text-[9px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200 flex items-center gap-1 cursor-pointer transition-colors"
+                title={`Attach "${matchingHireDoc.name}" from hiring records`}
               >
                 <i className="ri-attachment-line" />
-                <span>File attached</span>
-              </a>
+                <span>Attach: {matchingHireDoc.name.slice(0, 16)}...</span>
+              </button>
             )}
           </div>
 

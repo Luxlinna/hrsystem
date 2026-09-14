@@ -13,6 +13,7 @@ export interface OnboardingRequest {
     role: string;
     department: string;
     branches?: { name: string } | null;
+    email?: string | null;
     candidate_code?: string | null;
     candidate_id?: string | null;
     location?: string | null;
@@ -62,3 +63,18 @@ export interface DocForm {
 }
 
 export type OnboardingDocForm = DocForm;
+
+export interface HireDocument {
+  name: string;
+  url: string;
+  size?: number;
+  type?: string;
+  uploaded_at?: string;
+  stage_key?: string;
+  notes?: string;
+  doc_slot_key?: string;
+  verification_status?: string;
+  rejection_reason?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+}

@@ -2,10 +2,11 @@ import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "@/components/Toast";
-import type { OnboardingRequest, OnboardingDoc, DocForm } from "../types";
+import type { OnboardingRequest, OnboardingDoc, DocForm, HireDocument } from "../types";
 import { STAGES } from "../constants";
 import { formatDateTimeLocal } from "../onboardingUtils";
 import { STAGE_DEFAULT_DUE_DAYS, DOC_TO_TASK } from "@/lib/onboarding";
+import { findUnsyncedMatchingHireDocs } from "../utils/hireDocumentUtils";
 
 interface UseOnboardingDocMutationsProps {
   loadData: () => Promise<void>;
@@ -149,6 +150,121 @@ export function useOnboardingDocMutations({
     }
   }, [getDocsForRequestAndStage, loadData]);
 
+  const syncHireDocuments = useCallback(
+    async (req: OnboardingRequest, hireDocs: HireDocument[]) => {
+      const stageDocs = getDocsForRequestAndStage(req.id, "document");
+      const matches = findUnsyncedMatchingHireDocs(stageDocs, hireDocs);
+      if (matches.length === 0) {
+        toast("Up to Date", "No pending requirements matched hiring documents.", "info");
+        return;
+      }
+
+      let updatedCount = 0;
+      for (const { stageDoc, hireDoc } of matches) {
+        const { error } = await supabase
+          .from("onboarding_documents")
+          .update({
+            file_url: hireDoc.url,
+            file_name: hireDoc.name,
+            status: "complete",
+            notes: hireDoc.notes || `Collected from Candidate Pre-boarding (${hireDoc.name})`,
+          })
+          .eq("id", stageDoc.id);
+
+        if (!error) {
+          updatedCount++;
+          const taskName = DOC_TO_TASK[stageDoc.document_name] || stageDoc.document_name;
+          await supabase
+            .from("onboarding_checklist_tasks")
+            .update({ completed: true, completed_at: new Date().toISOString() })
+            .eq("onboarding_request_id", req.id)
+            .eq("task_name", taskName)
+            .is("deleted_at", null);
+        }
+      }
+
+      if (updatedCount > 0) {
+        toast("Documents Synced", `Successfully imported ${updatedCount} document${updatedCount > 1 ? "s" : ""} from hiring records.`, "success");
+        loadData();
+      }
+    },
+    [getDocsForRequestAndStage, loadData]
+  );
+
+  const attachHireDoc = useCallback(
+    async (req: OnboardingRequest, doc: OnboardingDoc, hireDoc: HireDocument) => {
+      const { error } = await supabase
+        .from("onboarding_documents")
+        .update({
+          file_url: hireDoc.url,
+          file_name: hireDoc.name,
+          status: "complete",
+          notes: hireDoc.notes || `Collected from Candidate Pre-boarding (${hireDoc.name})`,
+        })
+        .eq("id", doc.id);
+
+      if (error) {
+        toast("Error", "Failed to attach document", "error");
+        return;
+      }
+
+      const taskName = DOC_TO_TASK[doc.document_name] || doc.document_name;
+      await supabase
+        .from("onboarding_checklist_tasks")
+        .update({ completed: true, completed_at: new Date().toISOString() })
+        .eq("onboarding_request_id", req.id)
+        .eq("task_name", taskName)
+        .is("deleted_at", null);
+
+      toast("Document Attached", `Attached "${hireDoc.name}" to ${doc.document_name}`, "success");
+      loadData();
+    },
+    [loadData]
+  );
+
+  const addHireDocToChecklist = useCallback(
+    async (req: OnboardingRequest, hireDoc: HireDocument, stageKey: string = "document") => {
+      const { error } = await supabase.from("onboarding_documents").insert({
+        onboarding_request_id: req.id,
+        employee_id: req.employee_id,
+        document_name: hireDoc.name,
+        stage: stageKey,
+        status: "complete",
+        file_url: hireDoc.url,
+        file_name: hireDoc.name,
+        notes: hireDoc.notes || `Collected from Candidate Pre-boarding (${hireDoc.name})`,
+        due_date: new Date(Date.now() + 3 * 86400000).toISOString(),
+      });
+
+      if (error) {
+        toast("Error", "Failed to add document to checklist", "error");
+        return;
+      }
+
+      const stageToCat: Record<string, string> = {
+        document: "documents",
+        it_setup: "it_setup",
+        training: "training",
+        complete: "general",
+      };
+
+      await supabase.from("onboarding_checklist_tasks").insert({
+        onboarding_request_id: req.id,
+        task_name: hireDoc.name,
+        description: hireDoc.notes || `Requirement added from hiring document: ${hireDoc.name}`,
+        category: stageToCat[stageKey] || "documents",
+        priority: "medium",
+        completed: true,
+        completed_at: new Date().toISOString(),
+        due_date: new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
+      });
+
+      toast("Added to Checklist", `"${hireDoc.name}" added to ${stageKey} stage as verified.`, "success");
+      loadData();
+    },
+    [loadData]
+  );
+
   return {
     showDocModal,
     setShowDocModal,
@@ -166,5 +282,8 @@ export function useOnboardingDocMutations({
     openEditDocModal,
     handleDocUpload,
     bulkSetStageDeadline,
+    syncHireDocuments,
+    attachHireDoc,
+    addHireDocToChecklist,
   };
 }
