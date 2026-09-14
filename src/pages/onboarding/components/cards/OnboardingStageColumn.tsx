@@ -307,6 +307,24 @@ export const OnboardingStageColumn = memo(function OnboardingStageColumn({
               <i className="ri-arrow-right-line" />
             </button>
           </div>
+        ) : isCompletedJourney && idx === 3 ? (
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 py-1">
+              <i className="ri-checkbox-circle-fill text-sm" />
+              <span>Graduated</span>
+            </div>
+            {onRegressStage && (
+              <button
+                type="button"
+                onClick={() => onRegressStage(request)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-extrabold rounded-lg shadow-2xs cursor-pointer flex items-center gap-1"
+                title="Move back to previous stage to make adjustments"
+              >
+                <i className="ri-arrow-left-line" />
+                <span>Move Back</span>
+              </button>
+            )}
+          </div>
         ) : isCompleted ? (
           <div className="text-center text-[10px] font-bold text-emerald-600 flex items-center justify-center gap-1 py-1">
             <i className="ri-checkbox-circle-fill text-sm" />

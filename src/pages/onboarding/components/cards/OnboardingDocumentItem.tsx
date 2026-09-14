@@ -28,12 +28,14 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
   isCompletedStage = false,
 }: OnboardingDocumentItemProps) {
   const isDone = doc.status === "complete";
+  // Completed items are locked unless the stage is active (user must move back to uncheck).
+  // Skipped/pending items (!isDone) can be checked or edited anytime, even after stage or journey is completed!
+  const canToggle = isActiveStage || !isDone;
+  const canEdit = isActiveStage || !isDone;
 
   const toggleStatus = async () => {
-    if (!isActiveStage) {
-      if (isCompletedStage) {
-        toast("Stage Completed", "This stage is already completed. Click 'Move Back' to edit requirements in this stage.", "info");
-      }
+    if (!canToggle) {
+      toast("Stage Completed", "This requirement is already verified. Click 'Move Back' to make adjustments.", "info");
       return;
     }
     const nextStatus = isDone ? "pending" : "complete";
@@ -136,28 +138,29 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
     >
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <button
-          onClick={isActiveStage ? toggleStatus : undefined}
-          disabled={!isActiveStage}
+          onClick={canToggle ? toggleStatus : undefined}
+          disabled={!canToggle}
           title={
-            !isActiveStage
-              ? isCompletedStage
-                ? "This stage is completed. Click 'Move Back' to edit requirements in this stage."
-                : "This stage is locked."
+            !canToggle
+              ? "This requirement is completed. Click 'Move Back' to edit."
               : isDone
               ? "Uncheck requirement"
+              : !isActiveStage
+              ? "Complete skipped requirement"
               : "Check requirement"
           }
           className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
-            !isActiveStage
-              ? isDone
-                ? "bg-emerald-500/70 border-emerald-600 text-white cursor-not-allowed"
-                : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+            !canToggle
+              ? "bg-emerald-500/70 border-emerald-600 text-white cursor-not-allowed"
               : isDone
               ? "bg-emerald-500 border-emerald-600 text-white shadow-2xs cursor-pointer hover:bg-emerald-600"
+              : !isActiveStage
+              ? "border-amber-400 hover:border-amber-600 bg-amber-50 hover:bg-amber-100 text-amber-700 cursor-pointer shadow-2xs"
               : "border-gray-300 hover:border-[#253C7D] bg-white cursor-pointer"
           }`}
         >
           {isDone && <i className="ri-check-line text-xs font-black" />}
+          {!isDone && !isActiveStage && <i className="ri-add-line text-xs font-black" />}
         </button>
 
         <div className="min-w-0 flex-1">
@@ -190,7 +193,7 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
                 )}
               </div>
             )}
-            {isActiveStage && !doc.file_url && matchingHireDoc && onAttachHireDoc && (
+            {canEdit && !doc.file_url && matchingHireDoc && onAttachHireDoc && (
               <button
                 type="button"
                 onClick={() => onAttachHireDoc(matchingHireDoc)}
@@ -214,7 +217,7 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
         </div>
       </div>
 
-      {isActiveStage && (
+      {canEdit && (
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => onOpenEditDocModal(request, doc)}
@@ -223,13 +226,15 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
           >
             <i className="ri-edit-line text-xs" />
           </button>
-          <button
-            onClick={handleDelete}
-            className="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors cursor-pointer"
-            title="Delete"
-          >
-            <i className="ri-delete-bin-line text-xs" />
-          </button>
+          {isActiveStage && (
+            <button
+              onClick={handleDelete}
+              className="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors cursor-pointer"
+              title="Delete"
+            >
+              <i className="ri-delete-bin-line text-xs" />
+            </button>
+          )}
         </div>
       )}
     </div>
