@@ -45,8 +45,13 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
                   {candidate.candidate_code}
                 </span>
               )}
-              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 capitalize tracking-tight">
-                {candidate.full_name}
+              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 capitalize tracking-tight flex items-center gap-2 flex-wrap">
+                <span>{candidate.full_name}</span>
+                {candidate.kh_name && (
+                  <span className="text-lg sm:text-xl font-bold text-slate-500 font-khmer">
+                    ({candidate.kh_name})
+                  </span>
+                )}
               </h1>
               <span
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${cfg.bg} ${cfg.text} ${cfg.border}`}

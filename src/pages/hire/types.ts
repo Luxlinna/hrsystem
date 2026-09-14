@@ -102,6 +102,36 @@ export interface Candidate {
   created_at?: string | null;
   job_postings?: { id: string; title: string; department: string; branch_id?: string | null; branches?: { name: string } } | null;
   applications?: CandidateApplication[];
+
+  // 33 Standard Hiring Information Fields
+  kh_name?: string | null;
+  gender?: string | null;
+  code_bu?: string | null;
+  bu_full_name?: string | null;
+  handle_bu?: string | null;
+  working_hour?: string | null;
+  total_working_days?: string | null;
+  employment_type?: string | null;
+  start_date?: string | null;
+  working_location?: string | null;
+  national_id_number?: string | null;
+  date_of_birth?: string | null;
+  current_address?: string | null;
+  basic_salary?: number | null;
+  tax_method?: string | null;
+  allowance?: string | null;
+  line_manager?: string | null;
+  contract_type?: string | null;
+  fdc_end_date?: string | null;
+  site?: string | null;
+  bank_account_number?: string | null;
+  bank_name?: string | null;
+  nssf_number?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_phone_number?: string | null;
+  hiring_status?: string | null;
+  marital_status?: string | null;
+  hiring_info?: Record<string, any> | null;
 }
 
 export interface Interview {

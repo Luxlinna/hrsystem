@@ -9,6 +9,7 @@ interface HireHeaderProps {
   canManage: boolean;
   onOpenCreateJob: () => void;
   onOpenCreateCandidate: () => void;
+  onOpenImportCandidates?: () => void;
   onOpenCreateInterview: () => void;
   onOpenCreateRequest: () => void;
   candidates?: Candidate[];
@@ -23,6 +24,7 @@ export const HireHeader = memo(function HireHeader({
   canManage,
   onOpenCreateJob,
   onOpenCreateCandidate,
+  onOpenImportCandidates,
   onOpenCreateInterview,
   onOpenCreateRequest,
   candidates = [],
@@ -60,14 +62,27 @@ export const HireHeader = memo(function HireHeader({
         />
 
         {activeTab === "candidates" && (
-          <button
-            type="button"
-            onClick={onOpenCreateCandidate}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-          >
-            <i className="ri-user-add-line text-sm" />
-            + Add Candidate
-          </button>
+          <div className="flex items-center gap-2">
+            {onOpenImportCandidates && (
+              <button
+                type="button"
+                onClick={onOpenImportCandidates}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:border-[#253C7D] hover:bg-slate-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
+                title="Batch upload hiring records from Excel or CSV"
+              >
+                <i className="ri-upload-cloud-2-line text-sm text-[#253C7D]" />
+                <span>Import Hiring Info</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onOpenCreateCandidate}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
+            >
+              <i className="ri-user-add-line text-sm" />
+              <span>+ Add Candidate</span>
+            </button>
+          </div>
         )}
 
         {activeTab === "interviews" && (

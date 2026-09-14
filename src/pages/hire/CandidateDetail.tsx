@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { CandidateProfileHeader } from "./components/candidate-detail/CandidateProfileHeader";
 import { CandidateInfoCard } from "./components/candidate-detail/CandidateInfoCard";
+import { CandidateHiringInfoCard } from "./components/candidate-detail/CandidateHiringInfoCard";
 import { CandidateApplicationsCard } from "./components/candidate-detail/CandidateApplicationsCard";
 import { CandidateResumeCard } from "./components/candidate-detail/CandidateResumeCard";
 import { CandidateEvidenceCard } from "./components/candidate-detail/CandidateEvidenceCard";
@@ -769,7 +770,15 @@ export default function CandidateDetail() {
                 onSaveNotes={handleSaveNotes}
               />
 
-              {/* 2. Full Candidate History & Multi-Application Track */}
+              {/* 2. Official 33-Field Hiring & Employment Master Record */}
+              <CandidateHiringInfoCard
+                candidate={candidate}
+                onCandidateUpdated={(updated) => {
+                  setCandidate((prev) => (prev ? { ...prev, ...updated } : prev));
+                }}
+              />
+
+              {/* 3. Full Candidate History & Multi-Application Track */}
               <CandidateApplicationsCard
                 candidate={candidate}
                 jobs={jobs}
