@@ -57,34 +57,40 @@ export function formatHires(
     }) as OnboardingHire[];
 }
 
-export function cleanPrematureCompletions(rawTasks: any[]) {
-  // Background DB cleanup for unassigned or auto-synced completed tasks
-  supabase
-    .from("onboarding_checklist_tasks")
-    .update({ completed: false, completed_at: null, completed_by: null })
-    .is("assigned_to", null)
-    .eq("completed", true)
-    .then(() => {});
-
-  supabase
-    .from("onboarding_checklist_tasks")
-    .update({ completed: false, completed_at: null, completed_by: null })
-    .in("completed_by", ["Auto Sync", "HR Admin"])
-    .then(() => {});
-
-  return (rawTasks || []).map((t: any) => {
-    const isUnassigned = !t.assigned_to || !t.assigned_to.trim();
-    const isAutoCompleted = t.completed_by === "Auto Sync" || t.completed_by === "HR Admin";
-    if (t.completed && (isUnassigned || isAutoCompleted)) {
+export function syncTaskCompletions(rawTasks: any[], docs: any[]) {
+  const tasksToSync: string[] = [];
+  const result = (rawTasks || []).map((t: any) => {
+    const matchingDoc = (docs || []).find(
+      (d: any) =>
+        d.onboarding_request_id === t.onboarding_request_id &&
+        d.status === "complete" &&
+        matchDocAndTask(d.document_name, t.task_name)
+    );
+    if (matchingDoc && !t.completed) {
+      tasksToSync.push(t.id);
       return {
         ...t,
-        completed: false,
-        completed_at: null,
-        completed_by: null,
+        completed: true,
+        completed_at: t.completed_at || new Date().toISOString(),
+        completed_by: t.completed_by || "Hiring Process",
       };
     }
     return t;
   });
+
+  if (tasksToSync.length > 0) {
+    supabase
+      .from("onboarding_checklist_tasks")
+      .update({
+        completed: true,
+        completed_at: new Date().toISOString(),
+        completed_by: "Hiring Process",
+      })
+      .in("id", tasksToSync)
+      .then(() => {});
+  }
+
+  return result;
 }
 
 const categoryMap: Record<string, string> = {
@@ -107,7 +113,16 @@ export function buildValidHireTasks(
     );
     const hireRawTasks = cleanedRawTasks.filter((t: any) => t.onboarding_request_id === hire.id);
 
-    const validTasks = hireRawTasks.filter((t: any) => {
+    // Deduplicate existing tasks by task name
+    const seenTaskNames = new Set<string>();
+    const deduplicatedRawTasks = hireRawTasks.filter((t: any) => {
+      const norm = (t.task_name || "").trim().toLowerCase();
+      if (seenTaskNames.has(norm)) return false;
+      seenTaskNames.add(norm);
+      return true;
+    });
+
+    const validTasks = deduplicatedRawTasks.filter((t: any) => {
       const hasMatchingSelectedDoc = hireSelectedDocs.some((d: any) => matchDocAndTask(d.document_name, t.task_name));
       if (hasMatchingSelectedDoc) return true;
 
@@ -120,13 +135,21 @@ export function buildValidHireTasks(
     });
 
     const missingSelectedDocs = hireSelectedDocs.filter(
-      (d: any) => !hireRawTasks.some((t: any) => matchDocAndTask(d.document_name, t.task_name))
+      (d: any) => !deduplicatedRawTasks.some((t: any) => matchDocAndTask(d.document_name, t.task_name))
     );
 
     if (missingSelectedDocs.length > 0) {
       for (let i = 0; i < missingSelectedDocs.length; i++) {
         const md = missingSelectedDocs[i];
         const taskName = DOC_TO_TASK[md.document_name] || md.document_name;
+        if (
+          validTasks.some(
+            (v: any) => (v.task_name || "").trim().toLowerCase() === taskName.trim().toLowerCase()
+          )
+        ) {
+          continue;
+        }
+        const isComplete = md.status === "complete";
         const newTaskPayload = {
           onboarding_request_id: hire.id,
           task_name: taskName,
@@ -134,7 +157,9 @@ export function buildValidHireTasks(
           category: categoryMap[md.stage] || "documents",
           priority: "medium",
           sort_order: validTasks.length + i + 1,
-          completed: false,
+          completed: isComplete,
+          completed_at: isComplete ? new Date().toISOString() : null,
+          completed_by: isComplete ? "Hiring Process" : null,
           due_date: md.due_date ? md.due_date.split("T")[0] : null,
         };
         validTasks.push(newTaskPayload as any);

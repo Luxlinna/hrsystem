@@ -8,7 +8,7 @@ import type { OnboardingHire, ChecklistTask, StaffMember } from "../types";
 import {
   filterHrStaff,
   formatHires,
-  cleanPrematureCompletions,
+  syncTaskCompletions,
   buildValidHireTasks,
 } from "./checklistDataHelpers";
 
@@ -94,8 +94,8 @@ export function useChecklistData() {
       const hrStaff = filterHrStaff(st || [], branchList || []);
       const isCrossBranch = canViewCrossBranch || isHrDivisionBranch;
       const formattedHires = formatHires(hr || [], isCrossBranch, targetBranch);
-      const cleanedRawTasks = cleanPrematureCompletions(tk || []);
-      const finalTasks = buildValidHireTasks(formattedHires, cleanedRawTasks, docs || []);
+      const syncedRawTasks = syncTaskCompletions(tk || [], docs || []);
+      const finalTasks = buildValidHireTasks(formattedHires, syncedRawTasks, docs || []);
 
       setHires(formattedHires);
       setTasks(finalTasks);
