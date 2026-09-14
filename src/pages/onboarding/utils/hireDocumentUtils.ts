@@ -74,7 +74,7 @@ export function matchHireDocToOnboardingDoc(
 ): HireDocument | undefined {
   const norm = onboardingDocName.toLowerCase();
   return hireDocs.find((h) => {
-    if (!h.url || h.url.startsWith("#")) return false;
+    if (!h.url) return false;
     const hName = (h.name || "").toLowerCase();
     const slot = (h.doc_slot_key || "").toLowerCase();
 
@@ -85,7 +85,7 @@ export function matchHireDocToOnboardingDoc(
       return slot === "bank_account_proof" || hName.includes("bank") || hName.includes("passbook");
     }
     if (norm.includes("offer letter") || norm.includes("employment terms")) {
-      return slot === "offer_letter" || hName.includes("offer") || hName.includes("acceptance");
+      return slot === "offer_letter" || hName.includes("offer") || hName.includes("acceptance") || h.url.includes("offer");
     }
     if (norm.includes("employment contract") || norm.includes("contract")) {
       return slot === "employment_contract" || hName.includes("contract");

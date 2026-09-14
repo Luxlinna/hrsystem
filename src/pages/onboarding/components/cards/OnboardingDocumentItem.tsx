@@ -143,16 +143,23 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
             </p>
             {doc.file_url && (
               <div className="flex items-center gap-1">
-                <a
-                  href={doc.file_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] font-bold text-sky-600 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200 flex items-center gap-0.5 hover:underline"
-                >
-                  <i className="ri-attachment-line" />
-                  <span>File attached</span>
-                </a>
-                {(doc.notes?.includes("Candidate Pre-boarding") || doc.notes?.includes("hiring")) && (
+                {doc.file_url.startsWith("#") ? (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                    <i className="ri-checkbox-circle-fill text-emerald-600 text-[11px]" />
+                    <span>Signed Offer Accepted</span>
+                  </span>
+                ) : (
+                  <a
+                    href={doc.file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-bold text-sky-600 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200 flex items-center gap-0.5 hover:underline"
+                  >
+                    <i className="ri-attachment-line" />
+                    <span>File attached</span>
+                  </a>
+                )}
+                {(doc.notes?.includes("Candidate Pre-boarding") || doc.notes?.includes("hiring") || doc.notes?.includes("recruitment")) && (
                   <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
                     From Hiring
                   </span>

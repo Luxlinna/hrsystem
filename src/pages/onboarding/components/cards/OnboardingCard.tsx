@@ -145,6 +145,7 @@ export const OnboardingCard = memo(function OnboardingCard({
               stageDocs={stageDocs}
               stageProgress={stageProgress}
               currentStageIdx={currentStageIdx}
+              onApprove={onApprove}
               onAdvanceStage={onAdvanceStage}
               onRegressStage={onRegressStage}
               onCompleteOnboarding={onCompleteOnboarding}

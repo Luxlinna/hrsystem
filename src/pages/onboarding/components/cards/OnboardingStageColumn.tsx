@@ -35,6 +35,7 @@ interface OnboardingStageColumnProps {
   onSyncHireDocs?: (req: OnboardingRequest, hireDocs: HireDocument[]) => void;
   onAttachHireDoc?: (req: OnboardingRequest, doc: OnboardingDoc, hireDoc: HireDocument) => void;
   onAddHireDocToChecklist?: (req: OnboardingRequest, hireDoc: HireDocument, stageKey: string) => void;
+  onApprove?: (req: OnboardingRequest) => void;
 }
 
 export const OnboardingStageColumn = memo(function OnboardingStageColumn({
@@ -56,11 +57,13 @@ export const OnboardingStageColumn = memo(function OnboardingStageColumn({
   onSyncHireDocs,
   onAttachHireDoc,
   onAddHireDocToChecklist,
+  onApprove,
 }: OnboardingStageColumnProps) {
   const isCompletedJourney = request.status === "completed" || request.stage === "complete";
-  const isActive = idx === currentStageIdx && request.status !== "pending" && !isCompletedJourney;
+  const isCurrentStage = idx === currentStageIdx;
+  const isActive = isCurrentStage && !isCompletedJourney;
   const isCompleted = idx < currentStageIdx || isCompletedJourney;
-  const isLocked = (idx > currentStageIdx && !isCompletedJourney) || request.status === "pending";
+  const isLocked = idx > currentStageIdx && !isCompletedJourney;
 
   const [showHireDocs, setShowHireDocs] = useState(true);
   const isDocStage = stage.key === "document";
@@ -272,7 +275,16 @@ export const OnboardingStageColumn = memo(function OnboardingStageColumn({
       </div>
 
       <div className="mt-3.5 pt-2.5 border-t border-gray-100 shrink-0">
-        {isActive ? (
+        {request.status === "pending" && isCurrentStage ? (
+          <button
+            type="button"
+            onClick={() => (onApprove ? onApprove(request) : onAdvanceStage(request))}
+            className="w-full py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-extrabold rounded-xl shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <i className="ri-checkbox-circle-line" />
+            <span>Approve Journey</span>
+          </button>
+        ) : isActive ? (
           <div className="flex gap-2">
             {idx > 0 && (
               <button

@@ -4,6 +4,8 @@ import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { OnboardingRequest, OnboardingDoc, EmployeeOption, HireDocument } from "../types";
+import { matchHireDocToOnboardingDoc } from "../utils/hireDocumentUtils";
+import { DOC_TO_TASK } from "@/lib/onboarding";
 
 export function useOnboardingData(
   onHighlight: (id: string) => void
@@ -193,7 +195,7 @@ export function useOnboardingData(
         if (cand) {
           const rawDocs = Array.isArray(cand.documents) ? cand.documents : [];
           rawDocs.forEach((d: any) => {
-            if (!d || !d.url || d.url.startsWith("#")) return;
+            if (!d || !d.url) return;
             list.push({
               name: d.name || "Candidate Document",
               url: d.url,
@@ -238,8 +240,59 @@ export function useOnboardingData(
         }
       });
 
+      // Auto-bridge matching hire documents into pending onboarding documents
+      const docsToUpdate: { docId: string; fileUrl: string; fileName: string; notes: string; reqId: string; taskName: string }[] = [];
+      const updatedDocs = filteredDocs.map((doc) => {
+        if (doc.stage === "document" && (doc.status !== "complete" || !doc.file_url)) {
+          const hireDocs = hireDocsMap[doc.onboarding_request_id] || [];
+          const match = matchHireDocToOnboardingDoc(doc.document_name, hireDocs);
+          if (match && match.url) {
+            const taskName = DOC_TO_TASK[doc.document_name] || doc.document_name;
+            docsToUpdate.push({
+              docId: doc.id,
+              fileUrl: match.url,
+              fileName: match.name,
+              notes: match.notes || `Transferred from candidate recruitment (${match.name})`,
+              reqId: doc.onboarding_request_id,
+              taskName,
+            });
+            return {
+              ...doc,
+              status: "complete",
+              file_url: match.url,
+              file_name: match.name,
+              notes: match.notes || `Transferred from candidate recruitment (${match.name})`,
+            };
+          }
+        }
+        return doc;
+      });
+
+      if (docsToUpdate.length > 0) {
+        Promise.all(
+          docsToUpdate.map(async (item) => {
+            await supabase
+              .from("onboarding_documents")
+              .update({
+                status: "complete",
+                file_url: item.fileUrl,
+                file_name: item.fileName,
+                notes: item.notes,
+              })
+              .eq("id", item.docId);
+
+            await supabase
+              .from("onboarding_checklist_tasks")
+              .update({ completed: true, completed_at: new Date().toISOString() })
+              .eq("onboarding_request_id", item.reqId)
+              .eq("task_name", item.taskName)
+              .is("deleted_at", null);
+          })
+        ).catch((e) => console.error("Error auto-bridging hire docs:", e));
+      }
+
       setRequests(filteredRequests);
-      setDocuments(filteredDocs);
+      setDocuments(updatedDocs);
       setEmployees(formattedEmps);
       setHireDocumentsByRequestId(hireDocsMap);
     } catch (err) {
