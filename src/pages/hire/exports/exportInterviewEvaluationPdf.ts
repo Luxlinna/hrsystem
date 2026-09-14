@@ -133,7 +133,7 @@ export function buildInterviewEvaluationHtml(
     ? data.firstInterviewers
     : [
         {
-          name: data.evaluatorName || "Mr. Chey Tola",
+          name: data.evaluatorName || "",
           position: data.responsibleRole || "BDDD",
           date: defaultDateStr || "24th Dec 25",
         },
@@ -146,7 +146,7 @@ export function buildInterviewEvaluationHtml(
     ? data.secondInterviewers
     : [
         {
-          name: data.evaluatorName || "Mr. Chey Tola",
+          name: data.evaluatorName || "",
           position: data.responsibleRole || "BDDD",
           date: defaultDateStr || "24th Dec 25",
         },
@@ -155,7 +155,7 @@ export function buildInterviewEvaluationHtml(
         { name: "", position: "", date: "" },
       ];
 
-  const employerName = data.approvedBy?.name || "Mrs. Pin Phiroum";
+  const employerName = data.approvedBy?.name || "";
   const employerRole = data.approvedBy?.role || "Chairwoman";
   const employerCompany = data.approvedBy?.company || "UNI Holding";
   const approvalDate = data.approvedBy?.date || "........................";

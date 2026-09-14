@@ -204,13 +204,13 @@ export function buildCandidateApprovalHtml(
       </tr>
       <tr>
         <td class="label-cell">Current Salary:</td>
-        <td class="value-cell">${approval.current_salary || "$1,200"}</td>
+        <td class="value-cell">${approval.current_salary || "—"}</td>
         <td class="label-cell">Expectation Salary:</td>
-        <td class="value-cell" style="background-color: #0284c7; color: #fff; font-weight: bold;">${approval.expectation_salary || "$1,500"}</td>
+        <td class="value-cell" style="background-color: #0284c7; color: #fff; font-weight: bold;">${approval.expectation_salary || "—"}</td>
       </tr>
       <tr>
         <td class="label-cell">Current Benefit:</td>
-        <td class="value-cell">${approval.current_benefit || "Standard benefits"}</td>
+        <td class="value-cell">${approval.current_benefit || "—"}</td>
         <td class="label-cell">Notice Period:</td>
         <td class="value-cell">${approval.notice_period || "1 Month"}</td>
       </tr>
@@ -265,9 +265,9 @@ export function buildCandidateApprovalHtml(
     <div class="sec-header">III. Final Approval</div>
     <div style="display: flex; border: 1px solid #111; min-height: 125px;">
       ${renderSignatoryBox("CEO (Business Unit)", sigs?.ceo?.assigned_name || "CEO (Business Unit)", sigs?.ceo)}
-      ${renderSignatoryBox("HR Manager (HR Division)", sigs?.hr_manager?.assigned_name || "Ms. Chea TiengChanvathna", sigs?.hr_manager)}
-      ${renderSignatoryBox("HR Admin Director", sigs?.division_director?.assigned_name || "Mr. Chey Tola", sigs?.division_director)}
-      ${renderSignatoryBox("Chairwoman", sigs?.chairwoman?.assigned_name || "Mrs. Pin Phiroum", sigs?.chairwoman)}
+      ${renderSignatoryBox("HR Manager (HR Division)", sigs?.hr_manager?.assigned_name || "", sigs?.hr_manager)}
+      ${renderSignatoryBox("HR Admin Director", sigs?.division_director?.assigned_name || "", sigs?.division_director)}
+      ${renderSignatoryBox("Chairwoman", sigs?.chairwoman?.assigned_name || "", sigs?.chairwoman)}
     </div>
   </div>
 

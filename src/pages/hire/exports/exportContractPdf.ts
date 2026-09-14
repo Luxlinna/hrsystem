@@ -232,12 +232,12 @@ export function generateContractHtml(c: EmploymentContract): string {
       </div>
       <div class="sig-box">
         <div class="sig-role">Step 3: HR Admin Director Approval</div>
-        <div class="sig-name">${escapeHtml(c.hr_director_name || "Phat Seign")}</div>
+        <div class="sig-name">${escapeHtml(c.hr_director_name || "HR Admin Director")}</div>
         <div class="${c.hr_director_approved_at ? "sig-meta" : "sig-pending"}">${c.hr_director_approved_at ? `✓ Approved on: ${formatContractDateTime(c.hr_director_approved_at)}` : "Awaiting Director Approval"}</div>
       </div>
       <div class="sig-box">
         <div class="sig-role">Step 4: Chairwoman Authorization</div>
-        <div class="sig-name">${escapeHtml(c.chairwoman_name || "Mrs. Pin Phiroum")}</div>
+        <div class="sig-name">${escapeHtml(c.chairwoman_name || "Chairwoman")}</div>
         <div class="${c.chairwoman_approved_at ? "sig-meta" : "sig-pending"}">${c.chairwoman_approved_at ? `✓ Authorized on: ${formatContractDateTime(c.chairwoman_approved_at)}` : "Awaiting Chairwoman Approval"}</div>
       </div>
       <div class="sig-box">

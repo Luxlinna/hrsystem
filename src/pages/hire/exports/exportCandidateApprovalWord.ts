@@ -542,14 +542,14 @@ export async function exportCandidateApprovalWord(
             borders,
             margins: cellMargins,
             verticalAlign: VerticalAlign.TOP,
-            children: [new Paragraph({ children: [new TextRun({ text: approval.work_experience || "3+ years", size: 17 })] })],
+            children: [new Paragraph({ children: [new TextRun({ text: approval.work_experience || "", size: 17 })] })],
           }),
           new TableCell({
             width: { size: 2675, type: WidthType.DXA },
             borders,
             margins: cellMargins,
             verticalAlign: VerticalAlign.TOP,
-            children: [new Paragraph({ children: [new TextRun({ text: approval.strengths || "High accountability, rapid learner, strong communication clarity.", size: 17 })] })],
+            children: [new Paragraph({ children: [new TextRun({ text: approval.strengths || "", size: 17 })] })],
           }),
           new TableCell({
             width: { size: 2675, type: WidthType.DXA },

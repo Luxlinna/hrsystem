@@ -177,6 +177,7 @@ export default function HirePage() {
           }}
           onMoveToOnboarding={h.openMoveToOnboarding}
           onOpenInterview={(c) => h.openCreateInterview(c.id)}
+          onOpenImport={() => setShowImportModal(true)}
         />
       )}
 

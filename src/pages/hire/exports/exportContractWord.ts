@@ -244,8 +244,8 @@ export async function exportContractWord(contract: EmploymentContract): Promise<
               }),
               new TableRow({
                 children: [
-                  cell(`STEP 3: HR ADMIN DIRECTOR APPROVAL\nDirector: ${clean(contract.hr_director_name || "Phat Seign")}\nAction: ${contract.hr_director_approved_at ? `Approved on ${formatContractDateTime(contract.hr_director_approved_at)}` : "Pending Approval"}`, false, 5000),
-                  cell(`STEP 4: CHAIRWOMAN AUTHORIZATION\nExecutive: ${clean(contract.chairwoman_name || "Mrs. Pin Phiroum")}\nAction: ${contract.chairwoman_approved_at ? `Authorized on ${formatContractDateTime(contract.chairwoman_approved_at)}` : "Pending Authorization"}`, false, 5000),
+                  cell(`STEP 3: HR ADMIN DIRECTOR APPROVAL\nDirector: ${clean(contract.hr_director_name || "HR Admin Director")}\nAction: ${contract.hr_director_approved_at ? `Approved on ${formatContractDateTime(contract.hr_director_approved_at)}` : "Pending Approval"}`, false, 5000),
+                  cell(`STEP 4: CHAIRWOMAN AUTHORIZATION\nExecutive: ${clean(contract.chairwoman_name || "Chairwoman")}\nAction: ${contract.chairwoman_approved_at ? `Authorized on ${formatContractDateTime(contract.chairwoman_approved_at)}` : "Pending Authorization"}`, false, 5000),
                 ],
               }),
               new TableRow({

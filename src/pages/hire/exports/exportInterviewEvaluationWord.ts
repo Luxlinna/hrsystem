@@ -111,7 +111,7 @@ export async function exportInterviewEvaluationWord(
     ? data.firstInterviewers
     : [
         {
-          name: data.evaluatorName || "Mr. Chey Tola",
+          name: data.evaluatorName || "",
           position: data.responsibleRole || "BDDD",
           date: defaultDateStr || "24th Dec 25",
         },
@@ -124,7 +124,7 @@ export async function exportInterviewEvaluationWord(
     ? data.secondInterviewers
     : [
         {
-          name: data.evaluatorName || "Mr. Chey Tola",
+          name: data.evaluatorName || "",
           position: data.responsibleRole || "BDDD",
           date: defaultDateStr || "24th Dec 25",
         },
@@ -133,7 +133,7 @@ export async function exportInterviewEvaluationWord(
         { name: "", position: "", date: "" },
       ];
 
-  const employerName = data.approvedBy?.name || "Mrs. Pin Phiroum";
+  const employerName = data.approvedBy?.name || "";
   const employerRole = data.approvedBy?.role || "Chairwoman";
   const employerCompany = data.approvedBy?.company || "UNI Holding";
   const approvalDate = data.approvedBy?.date || "........................";

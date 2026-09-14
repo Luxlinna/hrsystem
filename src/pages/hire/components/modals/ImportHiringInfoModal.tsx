@@ -92,6 +92,7 @@ export const ImportHiringInfoModal = memo(function ImportHiringInfoModal({
   const [file, setFile] = useState<File | null>(null);
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [alsoAddToEmployees, setAlsoAddToEmployees] = useState(true);
   const [parsedRows, setParsedRows] = useState<ParsedHiringRow[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -247,6 +248,10 @@ export const ImportHiringInfoModal = memo(function ImportHiringInfoModal({
         if (match) seq = parseInt(match[1], 10) + 1;
       }
 
+      // Fetch branches for matching
+      const { data: branchList } = await supabase.from("branches").select("id, name");
+      const defaultBranchId = branchList?.[0]?.id || null;
+
       // 2. Prepare candidate insert batch
       const inserts = validRows.map((r, i) => {
         const generatedCode = r.id && r.id.startsWith("CAN-") ? r.id : `CAN-2026-${String(seq + i).padStart(6, "0")}`;
@@ -287,6 +292,7 @@ export const ImportHiringInfoModal = memo(function ImportHiringInfoModal({
           marital_status: r.maritalStatus || null,
           stage: "applied",
           source: "Hiring Import",
+          applied_at: new Date().toISOString(),
           notes: `Imported via Hiring Information Master Roster on ${new Date().toLocaleDateString()}`,
           hiring_info: {
             imported_at: new Date().toISOString(),
@@ -299,14 +305,84 @@ export const ImportHiringInfoModal = memo(function ImportHiringInfoModal({
         };
       });
 
-      // Insert in chunks of 50
-      for (let i = 0; i < inserts.length; i += 50) {
-        const chunk = inserts.slice(i, i + 50);
-        const { error } = await supabase.from("candidates").insert(chunk);
-        if (error) throw error;
+      // Insert candidates and retrieve inserted records
+      const { data: insertedCandidates, error: candError } = await supabase
+        .from("candidates")
+        .insert(inserts)
+        .select("id, candidate_code, email, full_name");
+
+      if (candError) throw candError;
+
+      // 3. If alsoAddToEmployees is checked, register in employees table
+      if (alsoAddToEmployees) {
+        const empInserts = validRows.map((r, i) => {
+          const nameParts = r.fullName.trim().split(/\s+/);
+          const matchedBranch = branchList?.find((b) =>
+            (r.site && b.name.toLowerCase().includes(r.site.toLowerCase())) ||
+            (r.workingLocation && b.name.toLowerCase().includes(r.workingLocation.toLowerCase())) ||
+            (r.buFullName && b.name.toLowerCase().includes(r.buFullName.toLowerCase()))
+          );
+          const branchId = matchedBranch ? matchedBranch.id : defaultBranchId;
+          const matchingCand = insertedCandidates?.find((c) => c.email === r.email || c.full_name === r.fullName);
+
+          return {
+            first_name: nameParts[0] || r.fullName,
+            last_name: nameParts.slice(1).join(" ") || "-",
+            email: r.email || `emp_${Date.now()}_${i}@internal.hr`,
+            phone: r.phone || null,
+            role: r.position || "Staff",
+            department: r.department || "General",
+            branch_id: branchId,
+            status: r.status?.toLowerCase() === "intern" ? "intern" : "active",
+            join_date: r.startDate || new Date().toISOString().slice(0, 10),
+            candidate_id: matchingCand?.id || null,
+            candidate_code: matchingCand?.candidate_code || r.id || null,
+
+            // 33 Standardized Fields
+            kh_name: r.khName || null,
+            gender: r.gender || null,
+            code_bu: r.codeBu || null,
+            bu_full_name: r.buFullName || null,
+            handle_bu: r.handleBu || null,
+            division: r.division || null,
+            position: r.position || null,
+            working_hour: r.workingHour || null,
+            total_working_days: r.totalWorkingDays || null,
+            employment_type: r.employmentType || "Full-time",
+            start_date: r.startDate || null,
+            working_location: r.workingLocation || null,
+            national_id_number: r.nationalId || null,
+            date_of_birth: r.dob || null,
+            current_address: r.currentAddress || null,
+            basic_salary: r.basicSalary || null,
+            tax_method: r.taxMethod || null,
+            allowance: r.allowance || null,
+            line_manager: r.lineManager || null,
+            contract_type: r.contractType || null,
+            fdc_end_date: r.fdcEndDate || null,
+            site: r.site || null,
+            bank_account_number: r.bankAccount || null,
+            nssf_number: r.nssf || null,
+            emergency_contact_name: r.emergencyContactName || null,
+            emergency_phone_number: r.emergencyPhoneNumber || null,
+            hiring_status: r.status || "Probation",
+            marital_status: r.maritalStatus || null,
+          };
+        });
+
+        const { error: empError } = await supabase.from("employees").upsert(empInserts, { onConflict: "email" });
+        if (empError) {
+          console.warn("Could not insert directly to employees:", empError);
+        }
       }
 
-      toast("Import Successful", `Successfully imported ${inserts.length} hiring records!`, "success");
+      toast(
+        "Import Successful",
+        alsoAddToEmployees
+          ? `Successfully imported ${inserts.length} records into Candidates and Employees directory!`
+          : `Successfully imported ${inserts.length} candidates!`,
+        "success"
+      );
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -550,17 +626,30 @@ export const ImportHiringInfoModal = memo(function ImportHiringInfoModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
             disabled={importing}
-            className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-800 hover:bg-gray-200/50 rounded-xl transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-800 hover:bg-gray-200/50 rounded-xl transition-colors cursor-pointer self-start sm:self-auto"
           >
             Cancel
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={alsoAddToEmployees}
+                onChange={(e) => setAlsoAddToEmployees(e.target.checked)}
+                className="rounded text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
+              />
+              <span className="flex items-center gap-1">
+                <span>Also register into </span>
+                <span className="font-extrabold text-[#253C7D]">Employees Directory (/employees)</span>
+              </span>
+            </label>
+
             <button
               type="button"
               onClick={handleCommitImport}

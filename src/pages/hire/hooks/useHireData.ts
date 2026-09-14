@@ -130,9 +130,9 @@ export function useHireData() {
       const jobIds = new Set(rawJobs.map((x) => x.id));
 
       const rawCandidates = (c as unknown as Candidate[]) || [];
-      const filteredCandidates = rawCandidates.filter(
-        (cand) => cand.job_posting_id && jobIds.has(cand.job_posting_id)
-      );
+      const filteredCandidates = shouldScopeToBranch
+        ? rawCandidates.filter((cand) => !cand.job_posting_id || jobIds.has(cand.job_posting_id))
+        : rawCandidates;
 
       const candIds = new Set(filteredCandidates.map((x) => x.id));
 

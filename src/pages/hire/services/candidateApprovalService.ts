@@ -304,13 +304,13 @@ export async function resolveCandidateRequisitionDetails(
   }
 
   return {
-    businessUnit: businessUnit || "Unique Noble Investment Co. Ltd.",
-    department: department || "HR & Operations",
-    hiringManager: hiringManager || "Hiring Manager",
-    currentSalary: currentSalary || "$1,200",
-    expectationSalary: expectationSalary || "$1,500",
-    noticePeriod: noticePeriod || "1 Month",
-    positionApplied: positionApplied || "Candidate Position",
+    businessUnit: businessUnit || "",
+    department: department || "",
+    hiringManager: hiringManager || "",
+    currentSalary: currentSalary || "",
+    expectationSalary: expectationSalary || "",
+    noticePeriod: noticePeriod || "",
+    positionApplied: positionApplied || "",
     branchId,
   };
 }
@@ -337,7 +337,10 @@ export async function fetchCandidateApproval(
       let remote = rows[0] as CandidateApproval;
 
       // Replace old static placeholder names on unsigned steps
-      const staticPlaceholders = ["Ms. Meas Chhengseang", "Ms. Chea TiengChanvathna", "Mr. Chey Tola"];
+      const staticPlaceholders = [
+        "Ms. Meas Chhengseang", "Ms. Chea TiengChanvathna", "Mr. Chey Tola",
+        "Phat Seign", "Mrs. Pin Phiroum", "James HI", "Sokkhoeurn Leng",
+      ];
       const sigs = { ...remote.signatories };
       let changed = false;
 
@@ -366,16 +369,16 @@ export async function fetchCandidateApproval(
       const isGenericHm = !remote.hiring_manager || remote.hiring_manager === "Hiring Manager";
       const isGenericDept = !remote.department || remote.department === "HR & Operations";
 
-      if (isGenericBu && reqDetails.businessUnit && reqDetails.businessUnit !== "Unique Noble Investment Co. Ltd.") {
+      if (isGenericBu && reqDetails.businessUnit) {
         remote.business_unit = reqDetails.businessUnit;
         if (reqDetails.branchId) remote.branch_id = reqDetails.branchId;
         detailsChanged = true;
       }
-      if (isGenericHm && reqDetails.hiringManager && reqDetails.hiringManager !== "Hiring Manager") {
+      if (isGenericHm && reqDetails.hiringManager) {
         remote.hiring_manager = reqDetails.hiringManager;
         detailsChanged = true;
       }
-      if (isGenericDept && reqDetails.department && reqDetails.department !== "HR & Operations") {
+      if (isGenericDept && reqDetails.department) {
         remote.department = reqDetails.department;
         detailsChanged = true;
       }
