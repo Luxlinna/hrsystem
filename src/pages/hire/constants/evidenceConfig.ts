@@ -1,6 +1,7 @@
 import type { Candidate, Interview, CandidateDocument } from "../types";
 import { STAGE_TIMELINE_ORDER, STAGE_CONFIG } from "../constants";
 import { getPortalCompletionStats } from "./documentPortalConfig";
+import { getLocalContracts } from "../services/contractService";
 
 export function getStageInterview(stageKey: string, interviews: Interview[]): Interview | undefined {
   if (!interviews || interviews.length === 0) return undefined;
@@ -600,25 +601,35 @@ export const STAGE_EVIDENCE_RULES: StageEvidenceRule[] = [
     order: 12,
     stageKey: "contract",
     stageName: "Contract",
-    responsibleRole: "Legal / HR Director & Candidate",
+    responsibleRole: "HR Division / HR Director & Candidate",
     requiredEvidence: [
-      "Official Employment Contract (Legal Standard)",
-      "Dual Signatures: Company Authorized Signatory & Candidate",
-      "Probation duration & terms",
+      "Official Employment Contract (7-Stage Governance):",
+      "1. Generate Contract (from accepted offer & BU)",
+      "2. HR Division Review & Endorsement",
+      "3. HR Director Approval",
+      "4. Chairwoman Authorization",
+      "5. Contract Issued to Candidate",
+      "6. Dual Countersignatures (Candidate & Company)",
+      "7. Completed & Archived to AWS S3",
     ],
-    formOfEvidence: "Signed Employment Contract PDF (contract_url)",
+    formOfEvidence: "Employment Contract Record & Signed PDF (AWS S3)",
     allowsUpload: true,
     uploadCategoryLabel: "Upload Signed Employment Contract PDF",
     checkEvidence: (candidate) => {
+      const contract = getLocalContracts().find((c) => c.candidate_id === candidate.id && !c.deleted_at);
       const contractDocs = (candidate.documents || []).filter(
         (d) => d.stage_key === "contract" || /contract/i.test(d.name)
       );
-      const isVerified = contractDocs.length > 0;
+      const isCompleted = contract?.status === "completed" || contractDocs.length > 0;
       return {
-        isVerified,
-        summary: isVerified
+        isVerified: isCompleted,
+        summary: contract?.status === "completed"
+          ? `Verified: Contract #${contract.contract_number} completed and dual-signed.`
+          : contract
+          ? `In Progress: Contract #${contract.contract_number} is at "${contract.status.replace("_", " ")}".`
+          : contractDocs.length > 0
           ? `Verified: Signed employment contract archived (${contractDocs[0]?.name}).`
-          : "Pending: Countersigned official employment contract PDF required.",
+          : "Pending: 7-stage contract governance and countersignature required.",
         attachedDocs: contractDocs,
       };
     },

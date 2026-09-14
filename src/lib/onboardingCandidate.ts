@@ -22,8 +22,10 @@ export async function startOnboardingForCandidate(
     const job = cand.job_postings;
 
     // Find 4x6 photo for employee avatar
-    const photoDoc = (cand.documents || []).find(
-      (d: any) => d.doc_slot_key === "photo_4x6" || /4x6|photo|avatar/i.test(d.name || "")
+    const photoDoc = (cand.documents || []).find((d: any) =>
+      d.doc_slot_key
+        ? d.doc_slot_key === "photo_4x6"
+        : (/4x6|headshot|portrait/i.test(d.name || "") && !/id|card|national|birth|family|bank|degree|cert/i.test(d.name || ""))
     );
 
     const employeePayload: any = {

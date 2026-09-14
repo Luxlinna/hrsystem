@@ -119,29 +119,21 @@ export function findSlotDocument(
   documents: CandidateDocument[] = []
 ): CandidateDocument | undefined {
   return documents.find((doc: any) => {
-    if (doc.doc_slot_key === slotKey) return true;
+    if (doc.doc_slot_key) {
+      return doc.doc_slot_key === slotKey;
+    }
     const name = (doc.name || "").toLowerCase();
     switch (slotKey) {
-      case "national_id_front":
-        return (name.includes("national id") || name.includes("id card") || name.includes("nid")) && name.includes("front");
-      case "national_id_back":
-        return (name.includes("national id") || name.includes("id card") || name.includes("nid")) && name.includes("back");
-      case "social_security_card":
-        return name.includes("social security") || name.includes("nssf");
-      case "birth_certificate":
-        return name.includes("birth certificate") || name.includes("birth cert");
-      case "family_book_cover":
-        return (name.includes("family book") || name.includes("household")) && name.includes("cover");
-      case "family_book_pages":
-        return (name.includes("family book") || name.includes("household")) && (name.includes("page") || name.includes("inside"));
-      case "bank_account_proof":
-        return name.includes("bank") || name.includes("account proof") || name.includes("passbook");
-      case "photo_4x6":
-        return name.includes("4x6") || name.includes("photo") || name.includes("portrait");
-      case "academic_certificates":
-        return name.includes("degree") || name.includes("diploma") || name.includes("certificate") || name.includes("academic");
-      default:
-        return false;
+      case "national_id_front": return (name.includes("national id") || name.includes("id card") || name.includes("nid")) && name.includes("front");
+      case "national_id_back": return (name.includes("national id") || name.includes("id card") || name.includes("nid")) && name.includes("back");
+      case "social_security_card": return name.includes("social security") || name.includes("nssf");
+      case "birth_certificate": return name.includes("birth certificate") || name.includes("birth cert");
+      case "family_book_cover": return (name.includes("family book") || name.includes("household")) && name.includes("cover");
+      case "family_book_pages": return (name.includes("family book") || name.includes("household")) && (name.includes("page") || name.includes("inside"));
+      case "bank_account_proof": return name.includes("bank") || name.includes("account proof") || name.includes("passbook");
+      case "photo_4x6": return (name.includes("4x6") || name.includes("4*6") || name.includes("headshot") || name.includes("portrait")) && !name.includes("id");
+      case "academic_certificates": return name.includes("degree") || name.includes("diploma") || name.includes("certificate") || name.includes("academic");
+      default: return false;
     }
   });
 }

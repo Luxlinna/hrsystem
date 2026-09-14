@@ -16,6 +16,7 @@ import { InterviewEvaluationModal } from "./components/candidate-detail/Intervie
 import { CandidateApprovalModal } from "./components/candidate-detail/CandidateApprovalModal";
 import { CandidateOfferLifecycleCard } from "./components/candidate-detail/CandidateOfferLifecycleCard";
 import { EmployeeDocumentPortalCard } from "./components/candidate-detail/EmployeeDocumentPortalCard";
+import { CandidateContractLifecycleCard } from "./components/contracts/CandidateContractLifecycleCard";
 import { CreateSalaryProposalModal } from "./components/offers/CreateSalaryProposalModal";
 import { OfferWorkflowModal } from "./components/offers/OfferWorkflowModal";
 import {
@@ -606,12 +607,21 @@ export default function CandidateDetail() {
           {/* 5. Employee Document Portal (Activated once Offer is Accepted) */}
           {(activeOffer?.status === "accepted" ||
             ["accepted", "documents", "contract", "hired"].includes(candidate.stage)) && (
-            <EmployeeDocumentPortalCard
-              candidate={candidate}
-              onUploadDocuments={uploadDocuments}
-              onDeleteDocument={deleteDocument}
-              onUpdateCandidate={setCandidate}
-            />
+            <>
+              <EmployeeDocumentPortalCard
+                candidate={candidate}
+                onUploadDocuments={uploadDocuments}
+                onDeleteDocument={deleteDocument}
+                onUpdateCandidate={setCandidate}
+              />
+              <CandidateContractLifecycleCard
+                candidate={candidate}
+                activeOffer={activeOffer}
+                actorName={actorName}
+                isCurrentScopeHr={isCurrentScopeHr}
+                onRefreshCandidate={loadCandidateOffer}
+              />
+            </>
           )}
 
           {/* 6. 13-Stage Recruitment Evidence & Verification Matrix */}
