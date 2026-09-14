@@ -19,7 +19,7 @@ export const getOverallProgress = (
   req: OnboardingRequest,
   documents: OnboardingDoc[]
 ): number => {
-  if (req.status === "completed" || req.stage === "complete") return 100;
+  if (req.status === "completed") return 100;
   const totalDocs = documents.filter((d) => d.onboarding_request_id === req.id);
   if (totalDocs.length === 0) {
     const idx = STAGES.findIndex((s) => s.key === req.stage);

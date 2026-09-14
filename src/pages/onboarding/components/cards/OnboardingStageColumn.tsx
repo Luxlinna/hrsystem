@@ -59,10 +59,10 @@ export const OnboardingStageColumn = memo(function OnboardingStageColumn({
   onAddHireDocToChecklist,
   onApprove,
 }: OnboardingStageColumnProps) {
-  const isCompletedJourney = request.status === "completed" || request.stage === "complete";
+  const isCompletedJourney = request.status === "completed";
   const isCurrentStage = idx === currentStageIdx;
-  const isActive = isCurrentStage && !isCompletedJourney;
-  const isCompleted = idx < currentStageIdx || isCompletedJourney;
+  const isActive = isCurrentStage && !isCompletedJourney && request.status !== "pending";
+  const isCompleted = (idx < currentStageIdx && !isCompletedJourney) || isCompletedJourney;
   const isLocked = idx > currentStageIdx && !isCompletedJourney;
 
   const [showHireDocs, setShowHireDocs] = useState(true);
@@ -181,6 +181,8 @@ export const OnboardingStageColumn = memo(function OnboardingStageColumn({
                   ? (hDoc) => onAttachHireDoc(request, doc, hDoc)
                   : undefined
               }
+              isActiveStage={isActive}
+              isCompletedStage={isCompleted}
             />
           );
         })}
