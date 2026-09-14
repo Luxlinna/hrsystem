@@ -76,7 +76,7 @@ export function useRecycleBinData() {
             });
         }
       }
-    } catch {}
+    } catch (_e) { /* non-critical data enrichment failed; continue with base data */ }
 
     const userEmail = (user?.email || "").toLowerCase().trim();
     const actorFullName = myEmployee

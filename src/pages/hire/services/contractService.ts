@@ -20,7 +20,7 @@ export function getLocalContracts(): EmploymentContract[] {
 export function setLocalContracts(contracts: EmploymentContract[]) {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(contracts));
-  } catch {}
+  } catch (_e) { /* localStorage unavailable – silently skip */ }
 }
 
 export async function fetchContracts(): Promise<EmploymentContract[]> {
@@ -35,7 +35,7 @@ export async function fetchContracts(): Promise<EmploymentContract[]> {
       setLocalContracts(data as EmploymentContract[]);
       return data as EmploymentContract[];
     }
-  } catch {}
+  } catch (_e) { /* Supabase unavailable – fall through to local cache */ }
   return getLocalContracts().filter((c) => !c.deleted_at);
 }
 
@@ -53,7 +53,7 @@ export async function fetchCandidateContract(candidateId: string): Promise<Emplo
     if (!error && data) {
       return data as EmploymentContract;
     }
-  } catch {}
+  } catch (_e) { /* Supabase unavailable – fall through to local cache */ }
   const contracts = getLocalContracts();
   return contracts.find((c) => c.candidate_id === candidateId && !c.deleted_at) || null;
 }

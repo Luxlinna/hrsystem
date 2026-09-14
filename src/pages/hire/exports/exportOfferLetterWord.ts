@@ -63,10 +63,18 @@ export async function exportOfferLetterWord(
     color: NAVY_COLOR,
   };
 
-  const innerGridBorder = {
+  const innerBorderSpec = {
     style: BorderStyle.SINGLE,
     size: 4, // 0.5 pt solid slate
     color: BORDER_COLOR,
+  };
+
+  // Full cell borders object (all 4 sides) – used as TableCell.borders
+  const innerGridBorder = {
+    top: innerBorderSpec,
+    bottom: innerBorderSpec,
+    left: innerBorderSpec,
+    right: innerBorderSpec,
   };
 
   const infoTableBorders = {
@@ -74,15 +82,15 @@ export async function exportOfferLetterWord(
     bottom: outerNavyBorder,
     left: outerNavyBorder,
     right: outerNavyBorder,
-    insideHorizontal: innerGridBorder,
-    insideVertical: innerGridBorder,
+    insideHorizontal: innerBorderSpec,
+    insideVertical: innerBorderSpec,
   };
 
   const thinCardBorders = {
-    top: innerGridBorder,
-    bottom: innerGridBorder,
-    left: innerGridBorder,
-    right: innerGridBorder,
+    top: innerBorderSpec,
+    bottom: innerBorderSpec,
+    left: innerBorderSpec,
+    right: innerBorderSpec,
   };
 
   const noBorder = {

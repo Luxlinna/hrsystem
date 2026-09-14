@@ -93,7 +93,7 @@ export async function resolveOfferForDocument(
         .maybeSingle();
 
       if (data) return data as OfferLetter;
-    } catch {}
+    } catch (_e) { /* Supabase unavailable – try next fallback */ }
   }
 
   // 4. Fallback to candidate's latest offer in Supabase
@@ -108,7 +108,7 @@ export async function resolveOfferForDocument(
         .maybeSingle();
 
       if (data) return data as OfferLetter;
-    } catch {}
+    } catch (_e) { /* Supabase unavailable – use synthetic offer */ }
   }
 
   // 5. Fallback synthetic offer with safe defaults
@@ -173,7 +173,7 @@ export function openOfferDocumentPreview(
 export async function downloadOfferDocument(
   offer: OfferLetter,
   format: "word" | "pdf",
-  onExportWord?: (offer: OfferLetter) => Promise<any>,
+  onExportWord?: (offer: OfferLetter) => Promise<any> | void,
   onExportPdf?: (offer: OfferLetter) => void
 ): Promise<void> {
   if (format === "word") {

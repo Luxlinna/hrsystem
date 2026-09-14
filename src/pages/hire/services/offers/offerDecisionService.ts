@@ -85,7 +85,7 @@ export async function issueOffer(
       telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
       auditAction: "offer_official_issued",
     });
-  } catch {}
+  } catch (_e) { /* notification errors are non-fatal; offer issuance continues */ }
 
   return await saveOfferLetter(updated);
 }
@@ -212,7 +212,7 @@ export async function recordCandidateDecision(
         auditAction: "offer_candidate_declined",
       });
     }
-  } catch {}
+  } catch (_e) { /* notification errors are non-fatal; decision recording continues */ }
 
   return await saveOfferLetter(updated);
 }

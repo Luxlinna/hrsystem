@@ -56,7 +56,7 @@ export function useCandidateDetail(id: string | undefined) {
           if (bundle.candidate) {
             try {
               navigate(`/hire/candidates/${resolvedId}${window.location.search}`, { replace: true });
-            } catch {}
+            } catch (_e) { /* navigation may fail if component is unmounted */ }
           }
         }
       }

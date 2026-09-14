@@ -159,6 +159,7 @@ export const InterviewModal = memo(function InterviewModal({
     return () => {
       isCancelled = true;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedCandidate?.id]);
 
   // Handler to add an interviewer to the panel

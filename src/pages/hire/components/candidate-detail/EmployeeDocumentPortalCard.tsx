@@ -9,7 +9,7 @@ import { notifyDocumentMissing } from "@/services/notifications/recruitmentNotif
 
 interface EmployeeDocumentPortalCardProps {
   candidate: Candidate;
-  onUploadDocuments?: (docs: CandidateDocument[]) => Promise<void>;
+  onUploadDocuments?: (docs: any[]) => Promise<void>;
   onDeleteDocument?: (url: string) => void;
   onUpdateCandidate?: (updater: (prev: Candidate | null) => Candidate | null) => void;
 }

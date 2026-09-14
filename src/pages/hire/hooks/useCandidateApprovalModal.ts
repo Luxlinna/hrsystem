@@ -132,6 +132,7 @@ export function useCandidateApprovalModal({
       mounted = false;
       supabase.removeChannel(channel);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, candidate, interviews, currentUserName]);
 
   const handleSave = useCallback(

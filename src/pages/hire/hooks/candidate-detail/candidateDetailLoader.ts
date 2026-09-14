@@ -21,9 +21,7 @@ export async function resolveCandidateIdFallback(cid: string): Promise<string | 
       const found = list.find((o: any) => o.id === cid);
       if (found?.candidate_id) return found.candidate_id;
     }
-  } catch {}
-
-  // 2. Check remote offer_letters table
+  } catch (_e) { /* localStorage unavailable or malformed – skip */ }
   try {
     const { data: offRow } = await supabase
       .from("offer_letters")
@@ -31,9 +29,7 @@ export async function resolveCandidateIdFallback(cid: string): Promise<string | 
       .eq("id", cid)
       .maybeSingle();
     if (offRow?.candidate_id) return offRow.candidate_id;
-  } catch {}
-
-  // 3. Check candidate_approvals (CAF) table
+  } catch (_e) { /* Supabase unavailable – skip */ }
   try {
     const { data: cafRow } = await supabase
       .from("candidate_approvals")
@@ -41,9 +37,7 @@ export async function resolveCandidateIdFallback(cid: string): Promise<string | 
       .eq("id", cid)
       .maybeSingle();
     if (cafRow?.candidate_id) return cafRow.candidate_id;
-  } catch {}
-
-  // 4. Check interviews table
+  } catch (_e) { /* Supabase unavailable – skip */ }
   try {
     const { data: ivRow } = await supabase
       .from("interviews")
@@ -51,7 +45,7 @@ export async function resolveCandidateIdFallback(cid: string): Promise<string | 
       .eq("id", cid)
       .maybeSingle();
     if (ivRow?.candidate_id) return ivRow.candidate_id;
-  } catch {}
+  } catch (_e) { /* Supabase unavailable – skip */ }
 
   return null;
 }

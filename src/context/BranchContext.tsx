@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { BranchInfo, BranchContextType } from "./branchTypes";

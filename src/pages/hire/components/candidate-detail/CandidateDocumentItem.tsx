@@ -17,7 +17,7 @@ interface CandidateDocumentItemProps {
   activeOffer?: OfferLetter | null;
   onDeleteDocument?: (url: string) => void;
   onExportOfferPdf?: (offer: OfferLetter) => void;
-  onExportOfferWord?: (offer: OfferLetter) => void;
+  onExportOfferWord?: (offer: OfferLetter) => Promise<any> | void;
 }
 
 export const CandidateDocumentItem = memo(function CandidateDocumentItem({

@@ -24,7 +24,14 @@ type AuditModule =
   | "shifts"
   | "reports"
   | "training";
-type AuditAction = "created" | "updated" | "approved" | "rejected" | "deleted" | "processed" | "cancelled" | "invited" | "exported";
+type AuditAction =
+  | "created" | "updated" | "approved" | "rejected" | "deleted" | "processed" | "cancelled" | "invited" | "exported"
+  | "contract_created" | "contract_hr_manager_reviewed" | "contract_hr_director_approved"
+  | "contract_chairwoman_authorized" | "contract_issued" | "contract_completed_signed"
+  | "offer_step1_bu_ceo_approved" | "offer_step2_hr_manager_reviewed"
+  | "offer_step3_hr_director_authorized" | "offer_step4_chairwoman_authorized"
+  | "offer_official_issued" | "offer_candidate_accepted" | "offer_candidate_declined"
+  | (string & Record<never, never>); // Allow any string while keeping autocomplete for known values
 
 export interface LogActivityInput {
   module: AuditModule;

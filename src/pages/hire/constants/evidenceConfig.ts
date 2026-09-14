@@ -195,7 +195,7 @@ export function isCandidateApprovalVerified(candidate: Candidate): boolean {
         return true;
       }
     }
-  } catch {}
+  } catch (_e) { /* parsing errors are non-fatal; return false */ }
 
   return false;
 }

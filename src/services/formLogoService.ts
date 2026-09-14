@@ -79,7 +79,7 @@ export function getOfficialFormLogo(): string {
       inMemoryLogo = stored;
       return stored;
     }
-  } catch {}
+  } catch (_e) { /* localStorage unavailable – continue with default */ }
   return DEFAULT_FORM_LOGO;
 }
 
@@ -100,7 +100,7 @@ export function getOpsBuLogo(branchName?: string | null): string {
       if (stored && stored.trim().length > 50) {
         return stored;
       }
-    } catch {}
+    } catch (_e) { /* localStorage unavailable – continue with default */ }
   }
   if (inMemoryOpsLogo && inMemoryOpsLogo.trim().length > 50) {
     return inMemoryOpsLogo;
@@ -111,7 +111,7 @@ export function getOpsBuLogo(branchName?: string | null): string {
       inMemoryOpsLogo = stored;
       return stored;
     }
-  } catch {}
+  } catch (_e) { /* localStorage unavailable – continue with default */ }
   return DEFAULT_OPS_LOGO;
 }
 
@@ -126,7 +126,7 @@ export function getOfficialCompanyNameKhmer(): string {
       inMemoryKhmer = stored;
       return stored;
     }
-  } catch {}
+  } catch (_e) { /* localStorage unavailable – continue with default */ }
   return DEFAULT_COMPANY_KHMER;
 }
 
@@ -143,7 +143,7 @@ export function getOfficialCompanyNameEnglish(): string {
       inMemoryEnglish = stored;
       return stored;
     }
-  } catch {}
+  } catch (_e) { /* localStorage unavailable – continue with default */ }
   return DEFAULT_COMPANY_ENGLISH;
 }
 
@@ -159,7 +159,7 @@ export function getBuCompanyName(branchName?: string | null, fallback?: string):
       if (stored && stored.trim()) {
         return stored;
       }
-    } catch {}
+    } catch (_e) { /* localStorage unavailable – continue with default */ }
   }
   if (inMemoryBuName && inMemoryBuName.trim()) {
     return inMemoryBuName;
@@ -170,7 +170,7 @@ export function getBuCompanyName(branchName?: string | null, fallback?: string):
       inMemoryBuName = stored;
       return stored;
     }
-  } catch {}
+  } catch (_e) { /* localStorage unavailable – continue with default */ }
   return branchName || fallback || DEFAULT_BU_COMPANY_NAME;
 }
 
@@ -204,7 +204,7 @@ export function isCurrentActiveBranchHrDivision(): boolean {
     if (currentScope === "hr" || currentScope.includes("hr division")) {
       return true;
     }
-  } catch {}
+  } catch (_e) { /* localStorage unavailable – continue with default */ }
   return false;
 }
 
@@ -336,7 +336,7 @@ export async function syncOfficialFormLogoFromDb(): Promise<{
         inMemoryBuName = buNameSetting.value.trim();
         try {
           localStorage.setItem(STORAGE_KEY_BU_NAME, inMemoryBuName);
-        } catch {}
+        } catch (_e) { /* localStorage unavailable – continue with default */ }
       }
 
       if (logoSetting?.value && logoSetting.value.trim().length > 50) {
@@ -344,7 +344,7 @@ export async function syncOfficialFormLogoFromDb(): Promise<{
         inMemoryLogo = logo;
         try {
           localStorage.setItem(STORAGE_KEY_LOGO, logo);
-        } catch {}
+        } catch (_e) { /* localStorage unavailable – continue with default */ }
       }
 
       if (opsLogoSetting?.value && opsLogoSetting.value.trim().length > 50) {
@@ -352,7 +352,7 @@ export async function syncOfficialFormLogoFromDb(): Promise<{
         inMemoryOpsLogo = opsLogo;
         try {
           localStorage.setItem(STORAGE_KEY_OPS_LOGO, opsLogo);
-        } catch {}
+        } catch (_e) { /* localStorage unavailable – continue with default */ }
       }
 
       if (khmerSetting?.value && khmerSetting.value.trim()) {
@@ -360,7 +360,7 @@ export async function syncOfficialFormLogoFromDb(): Promise<{
         inMemoryKhmer = khmer;
         try {
           localStorage.setItem(STORAGE_KEY_KHMER, khmer);
-        } catch {}
+        } catch (_e) { /* localStorage unavailable – continue with default */ }
       }
 
       if (englishSetting?.value && englishSetting.value.trim()) {
@@ -371,7 +371,7 @@ export async function syncOfficialFormLogoFromDb(): Promise<{
           inMemoryEnglish = english;
           try {
             localStorage.setItem(STORAGE_KEY_ENGLISH, english);
-          } catch {}
+          } catch (_e) { /* localStorage unavailable – continue with default */ }
         }
       }
     }
@@ -409,7 +409,7 @@ export async function saveOfficialFormBranding(
       } else {
         localStorage.removeItem(STORAGE_KEY_LOGO);
       }
-    } catch {}
+    } catch (_e) { /* localStorage unavailable – continue with default */ }
   }
 
   if (khmerName !== undefined) {
@@ -418,7 +418,7 @@ export async function saveOfficialFormBranding(
     inMemoryKhmer = val;
     try {
       localStorage.setItem(STORAGE_KEY_KHMER, val);
-    } catch {}
+    } catch (_e) { /* localStorage unavailable – continue with default */ }
   }
 
   if (englishName !== undefined) {
@@ -427,7 +427,7 @@ export async function saveOfficialFormBranding(
     inMemoryEnglish = val;
     try {
       localStorage.setItem(STORAGE_KEY_ENGLISH, val);
-    } catch {}
+    } catch (_e) { /* localStorage unavailable – continue with default */ }
   }
 
   if (upserts.length > 0) {
@@ -470,7 +470,7 @@ export async function saveOpsBuLogo(
           localStorage.removeItem(`hrm_bu_logo_${buKey}`);
         }
       }
-    } catch {}
+    } catch (_e) { /* localStorage unavailable – continue with default */ }
     upserts.push({ key: "bu_ops_logo", value: val, updated_at: now });
     if (buKey) {
       upserts.push({ key: `bu_logo_${buKey}`, value: val, updated_at: now });
@@ -485,7 +485,7 @@ export async function saveOpsBuLogo(
       if (buKey) {
         localStorage.setItem(`hrm_bu_name_${buKey}`, nameVal);
       }
-    } catch {}
+    } catch (_e) { /* localStorage unavailable – continue with default */ }
     upserts.push({ key: "bu_company_name", value: nameVal, updated_at: now });
     if (buKey) {
       upserts.push({ key: `bu_name_${buKey}`, value: nameVal, updated_at: now });

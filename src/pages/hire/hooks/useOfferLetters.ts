@@ -395,5 +395,6 @@ export function useOfferLetters(currentUserName = "HR Operations", onCandidateSt
     handleExportPdf,
     handleExportWord,
     handleDeleteOffer,
+    currentUserName,
   };
 }

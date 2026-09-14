@@ -29,6 +29,7 @@ export interface DualNotifyPayload {
   description?: string;
   entityType?: string;
   businessUnit?: string | null;
+  branchId?: string | null;
   targetBusinessUnit?: string | null;
   isCrossBu?: boolean;
   oldValue?: string | number | null;

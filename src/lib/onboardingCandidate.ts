@@ -79,7 +79,7 @@ export async function startOnboardingForCandidate(
           employeeId = newEmp.id;
           inserted = true;
         }
-      } catch {}
+      } catch (_e) { /* upsert conflict – fallback to plain insert below */ }
 
       if (!inserted) {
         delete employeePayload.documents;

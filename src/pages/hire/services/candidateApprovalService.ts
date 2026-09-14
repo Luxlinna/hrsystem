@@ -296,7 +296,8 @@ export async function resolveCandidateRequisitionDetails(
       currentSalary = `$${job.salary_min.toLocaleString()}`;
     }
     if (!expectationSalary && (candidate?.expected_salary || job?.salary_max)) {
-      expectationSalary = `$${(candidate?.expected_salary || job?.salary_max).toLocaleString()}`;
+      const salaryValue = candidate?.expected_salary ?? job?.salary_max ?? 0;
+      expectationSalary = `$${salaryValue.toLocaleString()}`;
     }
   } catch (err) {
     console.warn("Could not resolve requisition details for candidate approval:", err);

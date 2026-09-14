@@ -106,7 +106,7 @@ export function useHiringRequests({
         setSubmittingRequest(false);
       }
     },
-    [requestForm, myEmployeeId, actorName, actorRole, actorEmail, loadData, branches, userBranchId, userBranchName]
+    [canRequest, requestForm, myEmployeeId, actorName, actorRole, actorEmail, loadData, branches, userBranchId, userBranchName]
   );
 
   const handleDeleteRequest = useCallback(

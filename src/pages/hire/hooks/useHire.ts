@@ -13,6 +13,7 @@ import { useHireActions } from "./useHireActions";
 import { useHireCandidateActions } from "./useHireCandidateActions";
 import { useRecruitmentActions } from "./useRecruitmentActions";
 import { useRecruitmentSlaWatcher } from "./useRecruitmentSlaWatcher";
+import type { Interview } from "../types";
 
 export function useHire() {
   const { user } = useAuth();

@@ -102,7 +102,7 @@ export async function restoreSingleItem(item: BinItem): Promise<any> {
         );
         localStorage.setItem("hrm_offer_letters_store", JSON.stringify(updated));
       }
-    } catch {}
+    } catch (_e) { /* localStorage unavailable – Supabase is source of truth */ }
     error = dbErr;
   } else {
     const { error: dbErr } = await supabase
@@ -179,7 +179,7 @@ export async function deleteForeverSingleItem(item: BinItem): Promise<any> {
         const filtered = list.filter((o: any) => o.id !== item.id);
         localStorage.setItem("hrm_offer_letters_store", JSON.stringify(filtered));
       }
-    } catch {}
+    } catch (_e) { /* localStorage cleanup is best-effort only */ }
     error = dbErr;
   } else {
     const { error: dbErr } = await supabase.from(item.table).delete().eq("id", item.id);

@@ -70,7 +70,7 @@ export function useAdminRoleMutations({
           try {
             const allLocal = JSON.parse(localStorage.getItem("hrm_role_custom_scopes") || "{}");
             localVal = allLocal[r.id]?.[o.key];
-          } catch {}
+          } catch (_e) { /* localStorage may be unavailable in some environments */ }
           return [o.key, r[o.key] ?? localVal ?? false];
         })
       ) as unknown as Omit<RoleFormState, "name" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
@@ -165,7 +165,7 @@ export function useAdminRoleMutations({
           candidate_approval_chairwoman_sign: roleForm.candidate_approval_chairwoman_sign,
         };
         localStorage.setItem("hrm_role_custom_scopes", JSON.stringify(allLocal));
-      } catch {}
+      } catch (_e) { /* localStorage may be unavailable in some environments */ }
     }
 
     setSavingRole(false);

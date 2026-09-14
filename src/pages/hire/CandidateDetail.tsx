@@ -167,6 +167,7 @@ export default function CandidateDetail() {
     if (!rawTab && candidate && ["offer", "contract", "salary_negotiation"].includes(candidate.stage)) {
       setActiveTab("offer_contract");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate?.stage, searchParams]);
 
   const docCount = useMemo(() => {

@@ -92,7 +92,14 @@ export interface Candidate {
   resume_url: string | null;
   resume_name: string | null;
   documents?: CandidateDocument[] | null;
+  employee_documents?: Record<string, unknown> | null;
   linkedin_url?: string | null;
+  job_title?: string | null;
+  position?: string | null;
+  department?: string | null;
+  division?: string | null;
+  business_unit?: string | null;
+  created_at?: string | null;
   job_postings?: { id: string; title: string; department: string; branch_id?: string | null; branches?: { name: string } } | null;
   applications?: CandidateApplication[];
 }
@@ -107,8 +114,13 @@ export interface Interview {
   feedback: string;
   score: number;
   notes: string;
+  stage?: string | null;
+  interviewer_id?: string | null;
+  interviewer_ids?: string[] | null;
+  interviewer_name?: string | null;
+  interviewer_names?: string[] | null;
   candidates?: { id: string; full_name: string; job_posting_id?: string; job_postings?: { title: string; department?: string } } | null;
-  employees?: { id?: string; first_name: string; last_name: string; avatar_url?: string } | null;
+  employees?: { id?: string; first_name: string; last_name: string; avatar_url?: string; role?: string | null; department?: string | null } | null;
 }
 
 export interface CandidateApprovalPanel {
@@ -264,6 +276,12 @@ export interface OfferLetter {
   decision_at?: string | null;
   decision_notes?: string | null;
   rejection_reason?: string | null;
+
+  // Convenience / legacy aliases used across export and contract generation
+  offer_reference?: string | null;   // Human-readable ref e.g. "OL-2026-042"
+  start_date?: string | null;        // Alias for target_start_date in some forms
+  offered_salary?: number | null;    // Alias for base_salary in some forms
+  currency?: string | null;          // e.g. "USD"
 
   created_at: string;
   updated_at?: string | null;

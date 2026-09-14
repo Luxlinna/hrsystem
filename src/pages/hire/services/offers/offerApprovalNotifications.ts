@@ -38,7 +38,7 @@ export async function notifyBuCeoApproved(offer: OfferLetter, approverName: stri
       telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
       auditAction: "offer_step1_bu_ceo_approved",
     });
-  } catch {}
+  } catch (_e) { /* notification errors are non-fatal; approval flow continues */ }
 }
 
 export async function notifyHrManagerApproved(offer: OfferLetter, reviewerName: string) {
@@ -79,7 +79,7 @@ export async function notifyHrManagerApproved(offer: OfferLetter, reviewerName: 
       telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
       auditAction: "offer_step2_hr_manager_reviewed",
     });
-  } catch {}
+  } catch (_e) { /* notification errors are non-fatal; approval flow continues */ }
 }
 
 export async function notifyHrDirectorApproved(offer: OfferLetter, approverName: string) {
@@ -119,7 +119,7 @@ export async function notifyHrDirectorApproved(offer: OfferLetter, approverName:
       telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
       auditAction: "offer_step3_hr_director_authorized",
     });
-  } catch {}
+  } catch (_e) { /* notification errors are non-fatal; approval flow continues */ }
 }
 
 export async function notifyChairwomanAuthorized(offer: OfferLetter, approverName: string) {
@@ -158,5 +158,5 @@ export async function notifyChairwomanAuthorized(offer: OfferLetter, approverNam
       telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
       auditAction: "offer_step4_chairwoman_authorized",
     });
-  } catch {}
+  } catch (_e) { /* notification errors are non-fatal; approval flow continues */ }
 }

@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useCallback } from "react";
+import { memo, useState, useEffect, useCallback, useMemo } from "react";
 import type { Candidate, Interview, CandidateApproval } from "../../../types";
 import {
   fetchBuEmployeesForCandidate,
@@ -23,7 +23,7 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
   onChange,
   interviews = [],
 }: TabProps) {
-  const panels = data.interview_panels || [];
+  const panels = useMemo(() => data.interview_panels || [], [data.interview_panels]);
   const [buEmployees, setBuEmployees] = useState<BuEmployeeOption[]>([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
 

@@ -23,7 +23,7 @@ export function GenerateContractModal({
   const [submitting, setSubmitting] = useState(false);
   const [contractType, setContractType] = useState<"probationary" | "fixed_term" | "permanent">("probationary");
   const [startDate, setStartDate] = useState(offer?.start_date || new Date().toISOString().split("T")[0]);
-  const [probationMonths, setProbationMonths] = useState(offer?.probation_period_months || 3);
+  const [probationMonths, setProbationMonths] = useState(offer?.probation_months || 3);
   const [salary, setSalary] = useState(offer?.offered_salary || 0);
   const [currency] = useState(offer?.currency || "USD");
 

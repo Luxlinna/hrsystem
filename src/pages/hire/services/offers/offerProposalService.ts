@@ -155,7 +155,6 @@ export async function createSalaryProposal(payload: CreateProposalPayload): Prom
       branchId: requisition?.branch_id || candidate.job_postings?.branch_id || null,
       oldValue: hasSalaryChange ? prevSalary : undefined,
       newValue: hasSalaryChange ? payload.base_salary : undefined,
-      fieldChanged: hasSalaryChange ? "salary" : undefined,
       reason: hasSalaryChange ? reasonText : undefined,
       description: auditDescription,
       telegramHtml:

@@ -125,21 +125,21 @@ export async function saveOfferLetter(offer: OfferLetter): Promise<OfferLetter> 
   return updatedOffer;
 }
 
-export async function softDeleteOfferLetter(offerId: string): Promise<boolean> {
+export async function softDeleteOfferLetter(offerId: string, deletedBy?: string): Promise<boolean> {
   const now = new Date().toISOString();
   const current = getLocalOffers();
   const target = current.find((o) => o.id === offerId || o.offer_number === offerId);
   const resolvedId = target?.id || offerId;
 
   const updated = current.map((o) =>
-    o.id === resolvedId || o.id === offerId ? { ...o, deleted_at: now } : o
+    o.id === resolvedId || o.id === offerId ? { ...o, deleted_at: now, deleted_by: deletedBy || null } : o
   );
   setLocalOffers(updated);
 
   try {
     const { error } = await supabase
       .from("offer_letters")
-      .update({ deleted_at: now })
+      .update({ deleted_at: now, deleted_by: deletedBy || null })
       .eq("id", resolvedId);
     if (error) {
       console.warn("Could not soft delete from Supabase, updated local cache:", error.message);
