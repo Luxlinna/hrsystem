@@ -14,6 +14,8 @@ interface ContractWorkflowModalProps {
   type: ContractModalType;
   contract: EmploymentContract;
   actorName: string;
+  canApproveHrDirector?: boolean;
+  canAuthorizeChairwoman?: boolean;
   onClose: () => void;
   onActionComplete: () => void;
 }
@@ -22,6 +24,8 @@ export function ContractWorkflowModal({
   type,
   contract,
   actorName,
+  canApproveHrDirector = false,
+  canAuthorizeChairwoman = false,
   onClose,
   onActionComplete,
 }: ContractWorkflowModalProps) {
@@ -37,10 +41,13 @@ export function ContractWorkflowModal({
   const isIssue = type === "issue_contract";
   const isSign = type === "sign_contract";
 
+  const isForbidden =
+    (isHrDirector && !canApproveHrDirector) || (isChairwoman && !canAuthorizeChairwoman);
+
   const title = isHrReview
     ? "Endorse HR Review"
     : isHrDirector
-    ? "HR Director Approval"
+    ? "HR Admin Director Approval"
     : isChairwoman
     ? "Chairwoman Approval"
     : isIssue
@@ -49,14 +56,18 @@ export function ContractWorkflowModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isForbidden) {
+      toast("Access Restricted", "You do not have permission to execute this approval step.", "error");
+      return;
+    }
     setSubmitting(true);
     try {
       if (isHrReview) {
         await endorseHrReview(contract.id, actorName, notes);
-        toast("HR Review Endorsed", "Contract advanced to HR Director Approval.", "success");
+        toast("HR Review Endorsed", "Contract advanced to HR Admin Director Approval.", "success");
       } else if (isHrDirector) {
         await approveByHrDirector(contract.id, actorName, notes);
-        toast("HR Director Approved", "Contract advanced to Chairwoman Approval.", "success");
+        toast("HR Admin Director Approved", "Contract advanced to Chairwoman Approval.", "success");
       } else if (isChairwoman) {
         await authorizeByChairwoman(contract.id, actorName, notes);
         toast("Chairwoman Authorized", "Contract ready for official issuance.", "success");
@@ -131,14 +142,25 @@ export function ContractWorkflowModal({
             </p>
           )}
 
+          {isForbidden && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 flex items-center gap-2">
+              <i className="ri-error-warning-line text-base text-rose-600 shrink-0" />
+              <span>
+                {isHrDirector
+                  ? "Access Restricted: Only users with the HR Director role can approve this stage."
+                  : "Access Restricted: Only the Chairwoman can authorize this stage."}
+              </span>
+            </div>
+          )}
+
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
             <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">
               Cancel
             </button>
             <button
               type="submit"
-              disabled={submitting}
-              className="px-4 py-1.5 text-xs font-bold text-white bg-[#253C7D] hover:bg-[#1E3066] rounded-xl cursor-pointer shadow-2xs flex items-center gap-1.5 disabled:opacity-60"
+              disabled={submitting || isForbidden}
+              className="px-4 py-1.5 text-xs font-bold text-white bg-[#253C7D] hover:bg-[#1E3066] rounded-xl cursor-pointer shadow-2xs flex items-center gap-1.5 disabled:opacity-50"
             >
               {submitting ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-check-line" />}
               <span>Confirm & Proceed</span>

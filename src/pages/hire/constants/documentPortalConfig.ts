@@ -104,8 +104,8 @@ export const REQUIRED_DOCUMENT_SLOTS: DocumentSlotConfig[] = [
   {
     key: "academic_certificates",
     title: "Academic Certificate(s)",
-    subtitle: "Degree, diploma, or highest qualification certificates",
-    required: true,
+    subtitle: "Degree, diploma, or qualification certificates (optional)",
+    required: false,
     accept: ".pdf,.png,.jpg,.jpeg,.webp,.zip",
     icon: "ri-graduation-cap-line",
     color: "text-rose-600",
@@ -127,12 +127,13 @@ export function findSlotDocument(
       case "national_id_front": return (name.includes("national id") || name.includes("id card") || name.includes("nid")) && name.includes("front");
       case "national_id_back": return (name.includes("national id") || name.includes("id card") || name.includes("nid")) && name.includes("back");
       case "social_security_card": return name.includes("social security") || name.includes("nssf");
-      case "birth_certificate": return name.includes("birth certificate") || name.includes("birth cert");
+      case "birth_certificate": return name.includes("birth certificate") || name.includes("birth cert") || name.includes("birth");
       case "family_book_cover": return (name.includes("family book") || name.includes("household")) && name.includes("cover");
       case "family_book_pages": return (name.includes("family book") || name.includes("household")) && (name.includes("page") || name.includes("inside"));
       case "bank_account_proof": return name.includes("bank") || name.includes("account proof") || name.includes("passbook");
       case "photo_4x6": return (name.includes("4x6") || name.includes("4*6") || name.includes("headshot") || name.includes("portrait")) && !name.includes("id");
-      case "academic_certificates": return name.includes("degree") || name.includes("diploma") || name.includes("certificate") || name.includes("academic");
+      case "academic_certificates":
+        return (name.includes("degree") || name.includes("diploma") || name.includes("academic") || name.includes("transcript") || name.includes("education") || name.includes("graduation") || (name.includes("certificate") && !name.includes("birth") && !name.includes("medical") && !name.includes("police")));
       default: return false;
     }
   });

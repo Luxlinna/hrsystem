@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { Candidate, Interview } from "../../types";
 import { STAGE_CONFIG, STAGE_TIMELINE_ORDER } from "../../constants";
+import { RECRUITMENT_PHASES, getPhaseForStage } from "../../constants/processPhasesConfig";
 import {
   isStageInterviewScheduled,
   isStageInterviewEvaluated,
@@ -27,108 +28,165 @@ export const CandidatePipelineWidget = memo(function CandidatePipelineWidget({
   const normStage =
     currentStage === "applied" ? "cv_received" : currentStage === "interview" ? "hr_interview" : currentStage;
   const currentIndex = STAGE_TIMELINE_ORDER.indexOf(normStage);
+  const activePhase = getPhaseForStage(normStage);
+
+  // Default expanded phases: active phase is open, others can be toggled
+  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>(() => ({
+    [activePhase?.id || "sourcing"]: true,
+  }));
+
+  const togglePhase = (phaseId: string) => {
+    setExpandedPhases((prev) => ({ ...prev, [phaseId]: !prev[phaseId] }));
+  };
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block">
-          PIPELINE TIMELINE
+    <div className="bg-white rounded-3xl border border-gray-200/80 p-5 shadow-2xs space-y-4">
+      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
+            RECRUITMENT PIPELINE
+          </span>
+          <span className="text-xs font-bold text-gray-800">Sequential Stages (14)</span>
+        </div>
+        <span className="text-[11px] font-bold text-[#253C7D] px-2 py-0.5 rounded-md bg-blue-50">
+          Stage {currentIndex >= 0 ? currentIndex + 1 : 1}/14
         </span>
-        <span className="text-[10px] text-gray-400 font-medium">Sequential progression</span>
       </div>
-      <div className="space-y-0 relative pl-2">
-        {STAGE_TIMELINE_ORDER.map((stage, idx) => {
-          const isCurrent = normStage === stage;
-          const isPassed = currentIndex > idx && normStage !== "rejected";
-          const isNext = idx === currentIndex + 1;
-          const isLocked = idx > currentIndex + 1;
-          const isLast = idx === STAGE_TIMELINE_ORDER.length - 1;
 
-          const isInterviewStage = ["hr_interview", "hiring_manager_interview", "final_interview"].includes(stage);
-          const isApprovalStage = stage === "candidate_approval";
-          const isFormVerified =
-            isInterviewStage && candidate
-              ? isStageInterviewScheduled(stage, interviews) && isStageInterviewEvaluated(stage, candidate, interviews)
-              : isApprovalStage && candidate
-              ? isCandidateApprovalVerified(candidate)
-              : false;
-          const requiresForm = isInterviewStage || isApprovalStage;
+      {/* Grouped by the 4 Clear Phases */}
+      <div className="space-y-2.5">
+        {RECRUITMENT_PHASES.map((phase, pIdx) => {
+          const isPhaseOpen = !!expandedPhases[phase.id];
+          const phaseIndices = phase.stages.map((s) => STAGE_TIMELINE_ORDER.indexOf(s));
+          const minIdx = Math.min(...phaseIndices);
+          const maxIdx = Math.max(...phaseIndices);
+          const isPhaseCompleted = currentIndex > maxIdx && normStage !== "rejected";
+          const isPhaseCurrent = currentIndex >= minIdx && currentIndex <= maxIdx;
 
           return (
-            <div key={stage} className="relative flex items-start gap-3 pb-5 last:pb-0 group">
-              {!isLast && (
-                <div
-                  className={`absolute left-[7px] top-3.5 bottom-0 w-0.5 ${
-                    isPassed ? "bg-[#172B4D]" : "bg-gray-200"
-                  }`}
-                />
-              )}
+            <div
+              key={phase.id}
+              className={`rounded-2xl border transition-all overflow-hidden ${
+                isPhaseCurrent
+                  ? "border-[#253C7D]/30 bg-blue-50/20"
+                  : isPhaseCompleted
+                  ? "border-emerald-200/70 bg-emerald-50/10"
+                  : "border-gray-200/70 bg-gray-50/30"
+              }`}
+            >
+              {/* Phase Header Accordion Trigger */}
               <button
                 type="button"
-                onClick={() => {
-                  onUpdateStage(stage);
-                  if (stage === "candidate_approval" && onOpenCandidateApproval) {
-                    onOpenCandidateApproval();
-                  } else if (stage === "salary_negotiation" && onOpenSalaryProposal) {
-                    onOpenSalaryProposal();
-                  }
-                }}
-                className={`flex items-center gap-3 text-left relative z-10 transition-opacity ${
-                  isLocked ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:opacity-90"
-                }`}
-                title={isLocked ? "Complete previous stages first" : undefined}
+                onClick={() => togglePhase(phase.id)}
+                className="w-full flex items-center justify-between p-3 text-left cursor-pointer hover:bg-gray-100/50 transition-colors"
               >
-                <div
-                  className={`w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
-                    isCurrent
-                      ? "bg-[#172B4D] border-[#172B4D] ring-4 ring-[#172B4D]/20"
-                      : isPassed
-                      ? "bg-[#172B4D] border-[#172B4D]"
-                      : isNext
-                      ? "bg-white border-[#172B4D] ring-2 ring-[#172B4D]/10"
-                      : "bg-white border-gray-300"
-                  }`}
-                >
-                  {isPassed && <i className="ri-check-line text-[10px] text-white leading-none font-bold" />}
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2.5">
                   <span
-                    className={`text-xs capitalize font-bold ${
-                      isCurrent
-                        ? "text-[#172B4D] font-extrabold"
-                        : isPassed
-                        ? "text-gray-900"
-                        : isNext
-                        ? "text-gray-700"
-                        : "text-gray-400"
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                      isPhaseCompleted
+                        ? "bg-emerald-600 text-white"
+                        : isPhaseCurrent
+                        ? "bg-[#253C7D] text-white ring-2 ring-[#253C7D]/20"
+                        : "bg-gray-200 text-gray-500"
                     }`}
                   >
-                    {STAGE_CONFIG[stage]?.label || stage}
+                    {isPhaseCompleted ? <i className="ri-check-line" /> : pIdx + 1}
                   </span>
-                  {requiresForm && (
-                    <span
-                      className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded-md uppercase tracking-wider ${
-                        isFormVerified
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : isCurrent
-                          ? "bg-purple-100 text-purple-800 border border-purple-200 animate-pulse"
-                          : "bg-gray-100 text-gray-400 border border-gray-200"
-                      }`}
-                      title={
-                        isApprovalStage
-                          ? isFormVerified
-                            ? "Candidate Approval Form signed & verified"
-                            : "Candidate Approval Form (CAF) required"
-                          : isFormVerified
-                          ? "Interview scheduled & evaluation verified"
-                          : "Evaluation form required"
-                      }
-                    >
-                      {isFormVerified ? "Form Verified" : "Form Required"}
-                    </span>
-                  )}
+                  <div>
+                    <p className="text-xs font-black text-gray-800 leading-none">{phase.name}</p>
+                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">{phase.subtitle}</p>
+                  </div>
                 </div>
+
+                <i
+                  className={`ri-arrow-down-s-line text-sm text-gray-400 transition-transform ${
+                    isPhaseOpen ? "rotate-180" : ""
+                  }`}
+                />
               </button>
+
+              {/* Sub-stages inside this phase */}
+              {isPhaseOpen && (
+                <div className="px-3 pb-3 pt-1 space-y-1 border-t border-gray-100/80">
+                  {phase.stages.map((stage) => {
+                    const idx = STAGE_TIMELINE_ORDER.indexOf(stage);
+                    const isCurrent = normStage === stage;
+                    const isPassed = currentIndex > idx && normStage !== "rejected";
+                    const isNext = idx === currentIndex + 1;
+                    const isLocked = idx > currentIndex + 1;
+
+                    const isInterviewStage = ["hr_interview", "hiring_manager_interview", "final_interview"].includes(stage);
+                    const isApprovalStage = stage === "candidate_approval";
+                    const isFormVerified =
+                      isInterviewStage && candidate
+                        ? isStageInterviewScheduled(stage, interviews) && isStageInterviewEvaluated(stage, candidate, interviews)
+                        : isApprovalStage && candidate
+                        ? isCandidateApprovalVerified(candidate)
+                        : false;
+                    const requiresForm = isInterviewStage || isApprovalStage;
+
+                    return (
+                      <button
+                        key={stage}
+                        type="button"
+                        onClick={() => {
+                          onUpdateStage(stage);
+                          if (stage === "candidate_approval" && onOpenCandidateApproval) {
+                            onOpenCandidateApproval();
+                          } else if (stage === "salary_negotiation" && onOpenSalaryProposal) {
+                            onOpenSalaryProposal();
+                          }
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all ${
+                          isCurrent
+                            ? "bg-white border border-[#253C7D]/40 shadow-xs ring-1 ring-[#253C7D]/20"
+                            : isPassed
+                            ? "hover:bg-white/80 text-gray-700"
+                            : isNext
+                            ? "hover:bg-white/80 text-gray-700 font-medium"
+                            : "opacity-50 hover:opacity-80 text-gray-400 cursor-not-allowed"
+                        }`}
+                        title={isLocked ? "Complete previous stages first" : undefined}
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          <span
+                            className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] shrink-0 ${
+                              isCurrent
+                                ? "bg-[#253C7D] text-white"
+                                : isPassed
+                                ? "bg-emerald-600 text-white"
+                                : "border border-gray-300 bg-white"
+                            }`}
+                          >
+                            {isPassed ? <i className="ri-check-line" /> : idx + 1}
+                          </span>
+                          <span
+                            className={`text-xs truncate ${
+                              isCurrent ? "font-black text-[#253C7D]" : isPassed ? "font-bold text-gray-800" : "font-medium"
+                            }`}
+                          >
+                            {STAGE_CONFIG[stage]?.label || stage}
+                          </span>
+                        </div>
+
+                        {requiresForm && (
+                          <span
+                            className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 ${
+                              isFormVerified
+                                ? "bg-emerald-100 text-emerald-800"
+                                : isCurrent
+                                ? "bg-purple-100 text-purple-800 animate-pulse"
+                                : "bg-gray-100 text-gray-400"
+                            }`}
+                          >
+                            {isFormVerified ? "Verified" : "Required"}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}

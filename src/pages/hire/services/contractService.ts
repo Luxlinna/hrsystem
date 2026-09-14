@@ -27,22 +27,29 @@ export async function fetchContracts(): Promise<EmploymentContract[]> {
       .order("created_at", { ascending: false });
 
     if (!error && Array.isArray(data)) {
-      const local = getLocalContracts();
-      const map = new Map<string, EmploymentContract>();
-      local.forEach((c) => map.set(c.id, c));
-      data.forEach((c) => map.set(c.id, c as EmploymentContract));
-      const merged = Array.from(map.values()).sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      setLocalContracts(merged);
-      return merged.filter((c) => !c.deleted_at);
+      setLocalContracts(data as EmploymentContract[]);
+      return data as EmploymentContract[];
     }
   } catch {}
   return getLocalContracts().filter((c) => !c.deleted_at);
 }
 
 export async function fetchCandidateContract(candidateId: string): Promise<EmploymentContract | null> {
-  const contracts = await fetchContracts();
+  try {
+    const { data, error } = await supabase
+      .from("employment_contracts")
+      .select("*")
+      .eq("candidate_id", candidateId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && data) {
+      return data as EmploymentContract;
+    }
+  } catch {}
+  const contracts = getLocalContracts();
   return contracts.find((c) => c.candidate_id === candidateId && !c.deleted_at) || null;
 }
 
@@ -50,13 +57,24 @@ export async function saveContract(contract: EmploymentContract): Promise<Employ
   const now = new Date().toISOString();
   const updated: EmploymentContract = { ...contract, updated_at: now };
 
+  try {
+    const { data, error } = await supabase
+      .from("employment_contracts")
+      .upsert(updated, { onConflict: "id" })
+      .select()
+      .single();
+
+    if (!error && data) {
+      const current = getLocalContracts().filter((c) => c.id !== data.id);
+      setLocalContracts([data as EmploymentContract, ...current]);
+      return data as EmploymentContract;
+    }
+  } catch (err) {
+    console.warn("Failed to persist contract to Supabase, falling back to localStorage", err);
+  }
+
   const current = getLocalContracts().filter((c) => c.id !== updated.id);
   setLocalContracts([updated, ...current]);
-
-  try {
-    await supabase.from("employment_contracts").upsert(updated, { onConflict: "id" });
-  } catch {}
-
   return updated;
 }
 

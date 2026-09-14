@@ -9,6 +9,7 @@ import { CandidateInterviewsCard } from "./components/candidate-detail/Candidate
 import { CandidateEvaluationWidget } from "./components/candidate-detail/CandidateEvaluationWidget";
 import { CandidateSourceWidget } from "./components/candidate-detail/CandidateSourceWidget";
 import { CandidatePipelineWidget } from "./components/candidate-detail/CandidatePipelineWidget";
+import { CandidateProcessTracker } from "./components/candidate-detail/CandidateProcessTracker";
 import { CandidateActionsWidget } from "./components/candidate-detail/CandidateActionsWidget";
 import { InterviewModal } from "./components/modals/InterviewModal";
 import { FeedbackModal } from "./components/modals/FeedbackModal";
@@ -452,7 +453,7 @@ export default function CandidateDetail() {
   const handleExportWord = useCallback(async (offer: OfferLetter) => {
     try {
       await exportOfferLetterWord(offer);
-      toast("Word Exported", `Offer letter for ${offer.candidate_name} downloaded as Word (.docx).`, "success");
+      toast("Word Exported", `Offer letter for ${offer.candidate_name} downloaded as .`, "success");
     } catch {
       toast("Export Error", "Failed to generate Word document.", "error");
     }
@@ -551,6 +552,25 @@ export default function CandidateDetail() {
           });
           setScheduleModal(true);
         }}
+      />
+
+      {/* Recruitment Process Funnel Progression (4 Strategic Phases & Step Guidance) */}
+      <CandidateProcessTracker
+        candidate={candidate}
+        interviews={interviews}
+        onUpdateStage={updateStage}
+        onOpenSchedule={() => {
+          setNewInterview({
+            candidate_id: candidate.id,
+            scheduled_at: "",
+            duration_minutes: "60",
+            type: "video",
+            notes: "",
+          });
+          setScheduleModal(true);
+        }}
+        onOpenCandidateApproval={() => setCandidateApprovalModal(true)}
+        onOpenSalaryProposal={() => setIsSalaryProposalModal(true)}
       />
 
       {/* Main 2-Column Grid (Left: 66%, Right: 33%) */}

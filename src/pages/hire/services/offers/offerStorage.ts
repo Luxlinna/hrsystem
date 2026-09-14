@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import type { OfferLetter } from "../../types";
 
 const LOCAL_STORAGE_KEY = "hrm_offer_letters_store";
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function getLocalOffers(): OfferLetter[] {
   try {
@@ -29,28 +30,8 @@ export async function fetchOfferLetters(): Promise<OfferLetter[]> {
       .order("created_at", { ascending: false });
 
     if (!error && Array.isArray(data)) {
-      // Sync local cache with remote
-      const local = getLocalOffers();
-      const combinedMap = new Map<string, OfferLetter>();
-      local.forEach((o) => combinedMap.set(o.id, o));
-      data.forEach((o) => combinedMap.set(o.id, o as OfferLetter));
-      const merged = Array.from(combinedMap.values()).sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      setLocalOffers(merged);
-
-      // Auto-sync any local-only offers up to Supabase remote
-      local.forEach(async (localOffer) => {
-        if (!data.some((d) => d.id === localOffer.id)) {
-          try {
-            await supabase.from("offer_letters").upsert(localOffer, { onConflict: "id" });
-          } catch {
-            // Ignore
-          }
-        }
-      });
-
-      return merged.filter((o) => !o.deleted_at);
+      setLocalOffers(data as OfferLetter[]);
+      return data as OfferLetter[];
     }
   } catch {
     // Fallback to local storage
@@ -65,29 +46,80 @@ export async function fetchCandidateOffer(candidateId: string): Promise<OfferLet
 
 export async function saveOfferLetter(offer: OfferLetter): Promise<OfferLetter> {
   const now = new Date().toISOString();
-  const updatedOffer = { ...offer, updated_at: now };
+  let updatedOffer: OfferLetter = { ...offer, updated_at: now };
+
+  // Ensure ID is a valid UUID for Supabase
+  if (!UUID_REGEX.test(updatedOffer.id)) {
+    updatedOffer.id = crypto.randomUUID();
+  }
+
+  // Check if an existing row with the same offer_number or candidate_id exists in Supabase
+  let existingRemoteId: string | null = null;
+  try {
+    if (updatedOffer.offer_number) {
+      const { data: byNum } = await supabase
+        .from("offer_letters")
+        .select("id")
+        .eq("offer_number", updatedOffer.offer_number)
+        .maybeSingle();
+      if (byNum?.id) existingRemoteId = byNum.id;
+    }
+    if (!existingRemoteId && updatedOffer.candidate_id) {
+      const { data: byCand } = await supabase
+        .from("offer_letters")
+        .select("id")
+        .eq("candidate_id", updatedOffer.candidate_id)
+        .maybeSingle();
+      if (byCand?.id) existingRemoteId = byCand.id;
+    }
+  } catch {
+    // Ignore network errors
+  }
+
+  if (existingRemoteId) {
+    updatedOffer.id = existingRemoteId;
+  }
 
   // Always update local cache immediately for responsive UI
   const current = getLocalOffers();
-  const index = current.findIndex((o) => o.id === updatedOffer.id);
-  if (index >= 0) {
-    current[index] = updatedOffer;
-  } else {
-    current.unshift(updatedOffer);
-  }
-  setLocalOffers(current);
+  const filtered = current.filter(
+    (o) =>
+      o.id !== updatedOffer.id &&
+      (!updatedOffer.offer_number || o.offer_number?.toUpperCase() !== updatedOffer.offer_number.toUpperCase())
+  );
+  filtered.unshift(updatedOffer);
+  setLocalOffers(filtered);
 
-  // Try saving to Supabase
+  // Save to Supabase: use UPDATE if already exists, INSERT if brand new
   try {
-    const { error } = await supabase
-      .from("offer_letters")
-      .upsert(updatedOffer, { onConflict: "id" });
+    if (existingRemoteId) {
+      const { error: updateError } = await supabase
+        .from("offer_letters")
+        .update(updatedOffer)
+        .eq("id", existingRemoteId);
 
-    if (error) {
-      console.warn("Could not sync offer letter to Supabase remote, saved to local cache:", error.message);
+      if (updateError) {
+        console.warn("Could not update offer letter in Supabase remote:", updateError.message);
+      }
+    } else {
+      const { error: insertError } = await supabase
+        .from("offer_letters")
+        .insert(updatedOffer);
+
+      if (insertError) {
+        // If race condition on offer_number occurred, update existing row
+        if (insertError.code === "23505" && updatedOffer.offer_number) {
+          await supabase
+            .from("offer_letters")
+            .update(updatedOffer)
+            .eq("offer_number", updatedOffer.offer_number);
+        } else {
+          console.warn("Could not insert offer letter in Supabase remote:", insertError.message);
+        }
+      }
     }
   } catch (err) {
-    console.warn("Supabase upsert failed, stored in local storage cache:", err);
+    console.warn("Supabase save failed, stored in local storage cache:", err);
   }
 
   return updatedOffer;
@@ -96,17 +128,19 @@ export async function saveOfferLetter(offer: OfferLetter): Promise<OfferLetter> 
 export async function softDeleteOfferLetter(offerId: string): Promise<boolean> {
   const now = new Date().toISOString();
   const current = getLocalOffers();
-  const index = current.findIndex((o) => o.id === offerId);
-  if (index >= 0) {
-    current[index] = { ...current[index], deleted_at: now };
-    setLocalOffers(current);
-  }
+  const target = current.find((o) => o.id === offerId || o.offer_number === offerId);
+  const resolvedId = target?.id || offerId;
+
+  const updated = current.map((o) =>
+    o.id === resolvedId || o.id === offerId ? { ...o, deleted_at: now } : o
+  );
+  setLocalOffers(updated);
 
   try {
     const { error } = await supabase
       .from("offer_letters")
       .update({ deleted_at: now })
-      .eq("id", offerId);
+      .eq("id", resolvedId);
     if (error) {
       console.warn("Could not soft delete from Supabase, updated local cache:", error.message);
     }
@@ -119,17 +153,19 @@ export async function softDeleteOfferLetter(offerId: string): Promise<boolean> {
 
 export async function restoreOfferLetter(offerId: string): Promise<boolean> {
   const current = getLocalOffers();
-  const index = current.findIndex((o) => o.id === offerId);
-  if (index >= 0) {
-    current[index] = { ...current[index], deleted_at: undefined };
-    setLocalOffers(current);
-  }
+  const target = current.find((o) => o.id === offerId || o.offer_number === offerId);
+  const resolvedId = target?.id || offerId;
+
+  const updated = current.map((o) =>
+    o.id === resolvedId || o.id === offerId ? { ...o, deleted_at: undefined } : o
+  );
+  setLocalOffers(updated);
 
   try {
     const { error } = await supabase
       .from("offer_letters")
       .update({ deleted_at: null })
-      .eq("id", offerId);
+      .eq("id", resolvedId);
     if (error) {
       console.warn("Could not restore in Supabase, updated local cache:", error.message);
     }
@@ -144,14 +180,17 @@ export const deleteOfferLetter = softDeleteOfferLetter;
 
 export async function deleteForeverOfferLetter(offerId: string): Promise<boolean> {
   const current = getLocalOffers();
-  const updated = current.filter((o) => o.id !== offerId);
+  const target = current.find((o) => o.id === offerId || o.offer_number === offerId);
+  const resolvedId = target?.id || offerId;
+
+  const updated = current.filter((o) => o.id !== resolvedId && o.id !== offerId);
   setLocalOffers(updated);
 
   try {
     const { error } = await supabase
       .from("offer_letters")
       .delete()
-      .eq("id", offerId);
+      .eq("id", resolvedId);
     if (error) {
       console.warn("Could not delete forever from Supabase, updated local cache:", error.message);
     }
@@ -161,3 +200,4 @@ export async function deleteForeverOfferLetter(offerId: string): Promise<boolean
 
   return true;
 }
+

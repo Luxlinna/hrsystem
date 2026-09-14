@@ -1,4 +1,4 @@
-import type { ContractWorkflowStage } from "../types/contractTypes";
+import type { ContractWorkflowStage, EmploymentContract } from "../types/contractTypes";
 
 export interface ContractWorkflowStepMeta {
   order: number;
@@ -38,9 +38,9 @@ export const CONTRACT_WORKFLOW_STEPS: ContractWorkflowStepMeta[] = [
   {
     order: 3,
     stage: "hr_director_approval",
-    label: "HR Director Approval",
-    shortLabel: "HR Director",
-    responsible: "HR Director",
+    label: "HR Admin Director Approval",
+    shortLabel: "HR Admin Director",
+    responsible: "HR Admin Director",
     icon: "ri-shield-user-line",
     activeColor: "text-amber-700",
     activeBg: "bg-amber-50 border-amber-200",
@@ -110,4 +110,43 @@ export function isContractStepPassed(current: ContractWorkflowStage, target: Con
   const currentIdx = getContractStepIndex(current);
   const targetIdx = getContractStepIndex(target);
   return currentIdx > targetIdx;
+}
+
+export function formatContractDateTime(iso?: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+export function getContractStepAudit(
+  contract: EmploymentContract | null | undefined,
+  stage: ContractWorkflowStage
+): { actor?: string | null; timestamp?: string | null; note?: string | null } {
+  if (!contract) return {};
+  switch (stage) {
+    case "draft":
+      return { actor: contract.created_by_name || "HR Recruiter", timestamp: contract.created_at };
+    case "hr_review":
+      return { actor: contract.hr_reviewer_name, timestamp: contract.hr_reviewed_at, note: contract.hr_review_notes };
+    case "hr_director_approval":
+      return { actor: contract.hr_director_name, timestamp: contract.hr_director_approved_at, note: contract.hr_director_notes };
+    case "chairwoman_approval":
+      return { actor: contract.chairwoman_name, timestamp: contract.chairwoman_approved_at, note: contract.chairwoman_notes };
+    case "issued":
+      return { actor: contract.issued_by_name, timestamp: contract.issued_at };
+    case "signed":
+      return { actor: contract.candidate_name, timestamp: contract.signed_at };
+    case "completed":
+      return { actor: "HR Operations", timestamp: contract.completed_at || contract.signed_at };
+    default:
+      return {};
+  }
 }

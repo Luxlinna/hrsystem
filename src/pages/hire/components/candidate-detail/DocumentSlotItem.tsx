@@ -10,7 +10,7 @@ interface DocumentSlotItemProps {
   slot: DocumentSlotConfig;
   doc?: CandidateDocument;
   onUpload: (slot: DocumentSlotConfig, file: File) => Promise<void>;
-  onDelete: (url: string) => void;
+  onDelete: (url: string, slotKey?: string) => void;
   onUpdateStatus?: (slotKey: string, status: DocumentVerificationStatus, reason?: string) => Promise<void>;
 }
 
@@ -121,7 +121,7 @@ export const DocumentSlotItem = memo(function DocumentSlotItem({
                 <i className="ri-refresh-line text-xs text-blue-600" />
                 <span>{status === "rejected" ? "Re-upload" : "Replace"}</span>
               </button>
-              <button type="button" onClick={() => confirm(`Remove "${slot.title}"?`) && onDelete(doc.url)} className="w-6 h-6 text-gray-400 hover:text-rose-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer" title="Delete document">
+              <button type="button" onClick={() => confirm(`Remove "${slot.title}"?`) && onDelete(doc.url, slot.key)} className="w-6 h-6 text-gray-400 hover:text-rose-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer" title="Delete document">
                 <i className="ri-delete-bin-line text-xs" />
               </button>
             </div>
