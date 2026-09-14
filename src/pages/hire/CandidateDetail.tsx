@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { CandidateProfileHeader } from "./components/candidate-detail/CandidateProfileHeader";
 import { CandidateInfoCard } from "./components/candidate-detail/CandidateInfoCard";
@@ -43,6 +43,8 @@ import { useBranchScope } from "@/context/BranchContext";
 import { isHrDivisionScope } from "@/services/formLogoService";
 import type { WorkflowModalType } from "./hooks/useOfferLetters";
 import type { Interview, HiringRequest, CandidateDocument, OfferLetter } from "./types";
+
+export type CandidateDetailTab = "profile" | "documents" | "offer_contract" | "evidence_interviews" | "all";
 
 export default function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
@@ -122,6 +124,67 @@ export default function CandidateDetail() {
   const [activeOffer, setActiveOffer] = useState<OfferLetter | null>(null);
   const [workflowModalType, setWorkflowModalType] = useState<WorkflowModalType>(null);
   const autoOpenedOfferRef = useRef(false);
+
+  // Tabbed Workspace State
+  const [activeTab, setActiveTab] = useState<CandidateDetailTab>(() => {
+    const rawTab = searchParams.get("tab");
+    if (rawTab === "documents" || rawTab === "files") return "documents";
+    if (rawTab === "offer" || rawTab === "offers" || rawTab === "contract" || searchParams.get("openOffer") === "true") return "offer_contract";
+    if (rawTab === "evidence" || rawTab === "interviews" || rawTab === "approval") return "evidence_interviews";
+    if (rawTab === "all") return "all";
+    if (rawTab === "profile") return "profile";
+    return "profile";
+  });
+
+  const handleSelectTab = useCallback(
+    (tab: CandidateDetailTab) => {
+      setActiveTab(tab);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (tab === "profile") {
+            next.delete("tab");
+          } else {
+            next.set("tab", tab);
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
+  // Synchronize tab if stage or URL param changes
+  useEffect(() => {
+    if (isOfferRequested) {
+      setActiveTab("offer_contract");
+    }
+  }, [isOfferRequested]);
+
+  useEffect(() => {
+    const rawTab = searchParams.get("tab");
+    if (!rawTab && candidate && ["offer", "contract", "salary_negotiation"].includes(candidate.stage)) {
+      setActiveTab("offer_contract");
+    }
+  }, [candidate?.stage, searchParams]);
+
+  const docCount = useMemo(() => {
+    let count = candidate?.documents?.length || (candidate?.resume_url ? 1 : 0);
+    if (candidate?.employee_documents) {
+      count += Object.keys(candidate.employee_documents).length;
+    }
+    return count;
+  }, [candidate?.documents, candidate?.resume_url, candidate?.employee_documents]);
+
+  const hasOfferOrContract = useMemo(() => {
+    return Boolean(
+      activeOffer ||
+        ["salary_negotiation", "offer", "accepted", "rejected", "contract", "documents", "hired"].includes(
+          candidate?.stage || ""
+        )
+    );
+  }, [activeOffer, candidate?.stage]);
 
   // Auto-scroll to offer card when openOffer query param is present
   useEffect(() => {
@@ -577,132 +640,313 @@ export default function CandidateDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Primary Column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* 1. Master Profile Details & Recruiter Notes */}
-          <CandidateInfoCard
-            candidate={candidate}
-            isEditingNotes={isEditingNotes}
-            setIsEditingNotes={setIsEditingNotes}
-            notesText={notesText}
-            setNotesText={setNotesText}
-            savingNotes={savingNotes}
-            onSaveNotes={handleSaveNotes}
-          />
+          {/* Segmented Workspace Navigation Tabs */}
+          <div className="sticky top-2 z-20 bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200/80 p-1.5 shadow-xs flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {/* Tab 1: Profile & History */}
+            <button
+              type="button"
+              onClick={() => handleSelectTab("profile")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                activeTab === "profile"
+                  ? "bg-[#253C7D] text-white shadow-xs"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/70"
+              }`}
+            >
+              <i className="ri-user-3-line text-sm" />
+              <span>Profile &amp; History</span>
+            </button>
 
-          {/* 2. Full Candidate History & Multi-Application Track */}
-          <CandidateApplicationsCard
-            candidate={candidate}
-            jobs={jobs}
-            onAddApplication={handleAddApplication}
-          />
+            {/* Tab 2: Documents & Files */}
+            <button
+              type="button"
+              onClick={() => handleSelectTab("documents")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                activeTab === "documents"
+                  ? "bg-[#253C7D] text-white shadow-xs"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/70"
+              }`}
+            >
+              <i className="ri-folder-open-line text-sm" />
+              <span>Documents &amp; Files</span>
+              {docCount > 0 && (
+                <span
+                  className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                    activeTab === "documents"
+                      ? "bg-white/20 text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {docCount}
+                </span>
+              )}
+            </button>
 
-          {/* 3. Resume & Candidate Documents (AWS S3 & Digital Records) */}
-          <CandidateResumeCard
-            candidate={candidate}
-            uploadingResume={uploadingResume}
-            fileInputRef={fileInputRef}
-            onUploadResume={uploadResume}
-            onUploadDocuments={uploadDocuments}
-            onDeleteDocument={deleteDocument}
-            activeOffer={activeOffer}
-            onExportOfferPdf={handleExportPdf}
-            onExportOfferWord={handleExportWord}
-          />
+            {/* Tab 3: Offer & Contract */}
+            <button
+              type="button"
+              onClick={() => handleSelectTab("offer_contract")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                activeTab === "offer_contract"
+                  ? "bg-[#253C7D] text-white shadow-xs"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/70"
+              }`}
+            >
+              <i className="ri-file-shield-2-line text-sm" />
+              <span>Offer &amp; Contract</span>
+              {hasOfferOrContract && (
+                <span
+                  className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full flex items-center gap-1 ${
+                    activeTab === "offer_contract"
+                      ? "bg-emerald-400/25 text-emerald-100"
+                      : "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>
+                    {candidate.stage === "contract"
+                      ? "Contract"
+                      : activeOffer?.status
+                      ? activeOffer.status.replace(/_/g, " ")
+                      : "Active"}
+                  </span>
+                </span>
+              )}
+            </button>
 
-          {/* 4. Offer & Compensation Lifecycle Progression (6-Step Sequential Flow) */}
-          {(activeOffer || ["salary_negotiation", "offer", "accepted", "rejected"].includes(candidate.stage)) && (
-            <CandidateOfferLifecycleCard
-              candidate={candidate}
-              offer={activeOffer}
-              onOpenCreateProposal={() => setIsSalaryProposalModal(true)}
-              onGenerateDraft={handleGenerateDraft}
-              onOpenWorkflowModal={(off, type) => {
-                setActiveOffer(off);
-                setWorkflowModalType(type);
-              }}
-              onExportPdf={handleExportPdf}
-              onExportWord={handleExportWord}
-            />
-          )}
+            {/* Tab 4: Evidence & Interviews */}
+            <button
+              type="button"
+              onClick={() => handleSelectTab("evidence_interviews")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                activeTab === "evidence_interviews"
+                  ? "bg-[#253C7D] text-white shadow-xs"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/70"
+              }`}
+            >
+              <i className="ri-shield-check-line text-sm" />
+              <span>Evidence &amp; Interviews</span>
+              {interviews.length > 0 && (
+                <span
+                  className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                    activeTab === "evidence_interviews"
+                      ? "bg-white/20 text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {interviews.length}
+                </span>
+              )}
+            </button>
 
-          {/* 5. Employee Document Portal (Activated once Offer is Accepted) */}
-          {(activeOffer?.status === "accepted" ||
-            ["accepted", "documents", "contract", "hired"].includes(candidate.stage)) && (
+            {/* Tab 5: All Sections */}
+            <button
+              type="button"
+              onClick={() => handleSelectTab("all")}
+              className={`ml-auto px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                activeTab === "all"
+                  ? "bg-gray-800 text-white shadow-xs"
+                  : "text-gray-400 hover:text-gray-700 hover:bg-gray-100/70"
+              }`}
+              title="View all sections together in one continuous page"
+            >
+              <i className="ri-layout-grid-line text-xs" />
+              <span>All in One</span>
+            </button>
+          </div>
+
+          {/* TAB CONTENT: 1. Profile & History */}
+          {(activeTab === "profile" || activeTab === "all") && (
             <>
-              <EmployeeDocumentPortalCard
+              {/* 1. Master Profile Details & Recruiter Notes */}
+              <CandidateInfoCard
                 candidate={candidate}
-                onUploadDocuments={uploadDocuments}
-                onDeleteDocument={deleteDocument}
-                onUpdateCandidate={setCandidate}
+                isEditingNotes={isEditingNotes}
+                setIsEditingNotes={setIsEditingNotes}
+                notesText={notesText}
+                setNotesText={setNotesText}
+                savingNotes={savingNotes}
+                onSaveNotes={handleSaveNotes}
               />
-              <CandidateContractLifecycleCard
+
+              {/* 2. Full Candidate History & Multi-Application Track */}
+              <CandidateApplicationsCard
                 candidate={candidate}
-                activeOffer={activeOffer}
-                actorName={actorName}
-                isCurrentScopeHr={isCurrentScopeHr}
-                onRefreshCandidate={loadCandidateOffer}
+                jobs={jobs}
+                onAddApplication={handleAddApplication}
               />
             </>
           )}
 
-          {/* 6. 13-Stage Recruitment Evidence & Verification Matrix */}
-          <CandidateEvidenceCard
-            candidate={candidate}
-            interviews={interviews}
-            uploading={uploadingResume}
-            onUploadStageEvidence={uploadStageEvidence}
-            onOpenEvaluationForm={(stageKey) => {
-              setSelectedEvaluationInterview(null);
-              setEvaluationModalStage(stageKey);
-            }}
-            onScheduleStageInterview={openScheduleStageModal}
-            onOpenFeedbackModal={(iv) => {
-              const canFeedback = isUserInvitedToInterview({
-                interview: iv,
-                candidate,
-                myEmployeeId,
-                actorName,
-                isAdminOrRecruiter,
-              });
-              if (!canFeedback) {
-                toast("Access Restricted", "You can only feedback candidates that the recruiter invited you to interview.", "error");
-                return;
-              }
-              const stageKey = resolveInterviewStageKey(iv, candidate);
-              setSelectedEvaluationInterview(iv);
-              setEvaluationModalStage(stageKey);
-            }}
-            onUpdateStage={updateStage}
-            onOpenCandidateApproval={() => setCandidateApprovalModal(true)}
-            onOpenSalaryProposal={() => setIsSalaryProposalModal(true)}
-            activeOffer={activeOffer}
-            onExportPdf={handleExportPdf}
-          />
+          {/* TAB CONTENT: 2. Documents & Files */}
+          {(activeTab === "documents" || activeTab === "all") && (
+            <>
+              {/* 3. Resume & Candidate Documents (AWS S3 & Digital Records) */}
+              <CandidateResumeCard
+                candidate={candidate}
+                uploadingResume={uploadingResume}
+                fileInputRef={fileInputRef}
+                onUploadResume={uploadResume}
+                onUploadDocuments={uploadDocuments}
+                onDeleteDocument={deleteDocument}
+                activeOffer={activeOffer}
+                onExportOfferPdf={handleExportPdf}
+                onExportOfferWord={handleExportWord}
+              />
 
-          {/* 6. Interview History */}
-          <CandidateInterviewsCard
-            interviews={interviews}
-            avgScore={avgScore}
-            candidate={candidate}
-            myEmployeeId={myEmployeeId}
-            actorName={actorName}
-            isAdminOrRecruiter={isAdminOrRecruiter}
-            onOpenFeedbackModal={(iv) => {
-              const canFeedback = isUserInvitedToInterview({
-                interview: iv,
-                candidate,
-                myEmployeeId,
-                actorName,
-                isAdminOrRecruiter,
-              });
-              if (!canFeedback) {
-                toast("Access Restricted", "You can only feedback candidates that the recruiter invited you to interview.", "error");
-                return;
-              }
-              const stageKey = resolveInterviewStageKey(iv, candidate);
-              setSelectedEvaluationInterview(iv);
-              setEvaluationModalStage(stageKey);
-            }}
-          />
+              {/* 5. Employee Document Portal (Activated once Offer is Accepted) */}
+              {activeOffer?.status === "accepted" ||
+              ["accepted", "documents", "contract", "hired"].includes(candidate.stage) ? (
+                <EmployeeDocumentPortalCard
+                  candidate={candidate}
+                  onUploadDocuments={uploadDocuments}
+                  onDeleteDocument={deleteDocument}
+                  onUpdateCandidate={setCandidate}
+                />
+              ) : (
+                activeTab === "documents" && (
+                  <div className="p-5 bg-slate-50 border border-dashed border-gray-200 rounded-2xl text-center text-xs text-gray-500">
+                    <i className="ri-information-line mr-1.5 text-blue-600 text-sm align-middle" />
+                    Employee Document Portal (National ID, NSSF Card, Family Book, Bank Account) activates once an offer is accepted.
+                  </div>
+                )
+              )}
+            </>
+          )}
+
+          {/* TAB CONTENT: 3. Offer & Compensation + Employment Contract Lifecycle */}
+          {(activeTab === "offer_contract" || activeTab === "all") && (
+            <>
+              {activeOffer ||
+              ["salary_negotiation", "offer", "accepted", "rejected", "contract", "documents", "hired"].includes(
+                candidate.stage
+              ) ? (
+                <>
+                  {/* 4. Offer & Compensation Lifecycle Progression (6-Step Sequential Flow) */}
+                  <CandidateOfferLifecycleCard
+                    candidate={candidate}
+                    offer={activeOffer}
+                    onOpenCreateProposal={() => setIsSalaryProposalModal(true)}
+                    onGenerateDraft={handleGenerateDraft}
+                    onOpenWorkflowModal={(off, type) => {
+                      setActiveOffer(off);
+                      setWorkflowModalType(type);
+                    }}
+                    onExportPdf={handleExportPdf}
+                    onExportWord={handleExportWord}
+                  />
+
+                  {/* 5. Employment Contract Lifecycle Card */}
+                  {(activeOffer?.status === "accepted" ||
+                    ["accepted", "documents", "contract", "hired"].includes(candidate.stage)) && (
+                    <CandidateContractLifecycleCard
+                      candidate={candidate}
+                      activeOffer={activeOffer}
+                      actorName={actorName}
+                      isCurrentScopeHr={isCurrentScopeHr}
+                      onRefreshCandidate={loadCandidateOffer}
+                    />
+                  )}
+                </>
+              ) : (
+                activeTab === "offer_contract" && (
+                  <div className="p-8 bg-white rounded-3xl border border-gray-200/80 text-center shadow-2xs">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center text-2xl mx-auto mb-3">
+                      <i className="ri-file-shield-2-line" />
+                    </div>
+                    <h3 className="text-sm font-bold text-gray-900">Offer &amp; Contract Workflow</h3>
+                    <p className="text-xs text-gray-500 max-w-md mx-auto mt-1 mb-4">
+                      Candidate is currently in the{" "}
+                      <strong className="capitalize text-gray-800">
+                        {candidate.stage.replace(/_/g, " ")}
+                      </strong>{" "}
+                      stage. When interviews and evaluations are complete, you can generate a salary proposal and employment contract here.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsSalaryProposalModal(true)}
+                      className="px-4 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="ri-file-add-line text-sm" />
+                      <span>Create Salary Proposal</span>
+                    </button>
+                  </div>
+                )
+              )}
+            </>
+          )}
+
+          {/* TAB CONTENT: 4. Evidence & Interviews */}
+          {(activeTab === "evidence_interviews" || activeTab === "all") && (
+            <>
+              {/* 6. 13-Stage Recruitment Evidence & Verification Matrix */}
+              <CandidateEvidenceCard
+                candidate={candidate}
+                interviews={interviews}
+                uploading={uploadingResume}
+                onUploadStageEvidence={uploadStageEvidence}
+                onOpenEvaluationForm={(stageKey) => {
+                  setSelectedEvaluationInterview(null);
+                  setEvaluationModalStage(stageKey);
+                }}
+                onScheduleStageInterview={openScheduleStageModal}
+                onOpenFeedbackModal={(iv) => {
+                  const canFeedback = isUserInvitedToInterview({
+                    interview: iv,
+                    candidate,
+                    myEmployeeId,
+                    actorName,
+                    isAdminOrRecruiter,
+                  });
+                  if (!canFeedback) {
+                    toast(
+                      "Access Restricted",
+                      "You can only feedback candidates that the recruiter invited you to interview.",
+                      "error"
+                    );
+                    return;
+                  }
+                  const stageKey = resolveInterviewStageKey(iv, candidate);
+                  setSelectedEvaluationInterview(iv);
+                  setEvaluationModalStage(stageKey);
+                }}
+                onUpdateStage={updateStage}
+                onOpenCandidateApproval={() => setCandidateApprovalModal(true)}
+                onOpenSalaryProposal={() => setIsSalaryProposalModal(true)}
+                activeOffer={activeOffer}
+                onExportPdf={handleExportPdf}
+              />
+
+              {/* 7. Interview History */}
+              <CandidateInterviewsCard
+                interviews={interviews}
+                avgScore={avgScore}
+                candidate={candidate}
+                myEmployeeId={myEmployeeId}
+                actorName={actorName}
+                isAdminOrRecruiter={isAdminOrRecruiter}
+                onOpenFeedbackModal={(iv) => {
+                  const canFeedback = isUserInvitedToInterview({
+                    interview: iv,
+                    candidate,
+                    myEmployeeId,
+                    actorName,
+                    isAdminOrRecruiter,
+                  });
+                  if (!canFeedback) {
+                    toast(
+                      "Access Restricted",
+                      "You can only feedback candidates that the recruiter invited you to interview.",
+                      "error"
+                    );
+                    return;
+                  }
+                  const stageKey = resolveInterviewStageKey(iv, candidate);
+                  setSelectedEvaluationInterview(iv);
+                  setEvaluationModalStage(stageKey);
+                }}
+              />
+            </>
+          )}
         </div>
 
         {/* Right Sidebar Column */}

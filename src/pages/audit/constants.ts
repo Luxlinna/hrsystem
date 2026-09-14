@@ -19,7 +19,7 @@ export const ACTION_ICONS: Record<string, string> = {
   updated: "ri-edit-line",
   approved: "ri-checkbox-circle-line",
   rejected: "ri-close-circle-line",
-  deleted: "ri-delete-bin-line",
+  deleted: "ri-eraser-line",
   processed: "ri-refresh-line",
 };
 
@@ -57,4 +57,15 @@ export function formatTime(ts: string): string {
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+export function formatAuditTimestamp(ts: string): string {
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return ts;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = d.toLocaleString("en-US", { month: "short" });
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${day} ${month} ${year}, ${hours}:${minutes}`;
 }

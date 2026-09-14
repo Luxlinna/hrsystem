@@ -3,6 +3,10 @@ import type { HiringRequest, Candidate } from "../types";
 import { evaluateStageSla, StageSlaEvaluation } from "../constants/slaConfig";
 import { sendDualRecruitmentNotification } from "../services/notifications/recruitmentNotifyEngine";
 import { escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
+import {
+  notifySlaExceeded,
+  notifyInterviewFeedbackOverdue,
+} from "@/services/notifications/recruitmentNotificationTriggers";
 
 interface UseRecruitmentSlaWatcherProps {
   hiringRequests: HiringRequest[];
@@ -14,7 +18,7 @@ const alertedStages = new Set<string>();
 
 export function useRecruitmentSlaWatcher({
   hiringRequests,
-  candidates: _candidates,
+  candidates,
   enabled = true,
 }: UseRecruitmentSlaWatcherProps) {
   const isCheckingRef = useRef(false);
@@ -24,6 +28,7 @@ export function useRecruitmentSlaWatcher({
     isCheckingRef.current = true;
 
     try {
+      // 1. Check Requisition SLAs
       for (const req of hiringRequests) {
         if (req.status === "approved" || req.status === "rejected" || req.status === "fulfilled") {
           continue;
@@ -41,6 +46,20 @@ export function useRecruitmentSlaWatcher({
           const recruiterId = req.assigned_recruiter_id || req.hr_assigned_to_id || null;
           const recruiterName = req.assigned_recruiter_name || req.hr_assigned_to_name || "Assigned Recruiter";
           const daysOverdue = Math.max(1, Math.floor(evaluation.overdueHours / 24));
+          const buName = req.branches?.name || "OPS Solutions Co ., Ltd";
+
+          // Canonical Notification Engine Dispatch (Event 16: SLA exceeded)
+          void notifySlaExceeded({
+            entityType: "hiring_request",
+            entityId: req.id,
+            entityCode: req.requisition_id || "REQ",
+            entityTitle: req.title,
+            stageName: req.status.replace(/_/g, " "),
+            daysInStage: Math.floor(evaluation.hoursElapsed / 24),
+            slaLimitDays: Math.floor(evaluation.allowedHours / 24),
+            businessUnit: buName,
+            branchId: req.branch_id || null,
+          }).catch((e) => console.error("[notifySlaExceeded] error:", e));
 
           await sendDualRecruitmentNotification({
             title: `⚠️ SLA Exceeded: ${reqCode}${req.title}`,
@@ -51,6 +70,7 @@ export function useRecruitmentSlaWatcher({
             approverBranchId: req.branch_id || null,
             recruiterEmployeeId: recruiterId,
             recruiterName,
+            businessUnit: buName,
             telegramHtml:
               `⏱️ <b>Recruitment SLA Exceeded</b>\n` +
               `💼 <b>Requisition:</b> ${escapeTelegramHtml(reqCode)}${escapeTelegramHtml(req.title)}\n` +
@@ -67,12 +87,52 @@ export function useRecruitmentSlaWatcher({
           });
         }
       }
+
+      // 2. Check Candidate SLAs & Feedback Overdue
+      for (const cand of candidates) {
+        if (cand.stage === "hired" || cand.stage === "rejected") continue;
+
+        const stageTimestamp = cand.applied_at;
+        const evaluation = evaluateStageSla(cand.stage, stageTimestamp, true);
+
+        if (evaluation?.isOverdue) {
+          const alertKey = `cand-sla-${cand.id}-${cand.stage}`;
+          if (!alertedStages.has(alertKey)) {
+            alertedStages.add(alertKey);
+
+            // If in interview stage, alert interview feedback overdue (Event 8)
+            if (cand.stage.includes("interview")) {
+              void notifyInterviewFeedbackOverdue({
+                candidate: cand,
+                jobTitle: cand.job_postings?.title || "Specialist",
+                interviewerName: "Interview Panel",
+                interviewDate: cand.applied_at ? new Date(cand.applied_at).toLocaleDateString() : "Recent",
+                hoursElapsed: evaluation.hoursElapsed,
+                businessUnit: cand.job_postings?.branches?.name || "OPS Solutions Co ., Ltd",
+              }).catch((e) => console.error("[notifyInterviewFeedbackOverdue] error:", e));
+            } else {
+              // Otherwise dispatch general SLA exceeded (Event 16)
+              void notifySlaExceeded({
+                entityType: "candidate",
+                entityId: cand.id,
+                entityCode: cand.full_name,
+                entityTitle: `Candidate: ${cand.full_name}`,
+                stageName: cand.stage.replace(/_/g, " "),
+                daysInStage: Math.floor(evaluation.hoursElapsed / 24),
+                slaLimitDays: Math.floor(evaluation.allowedHours / 24),
+                businessUnit: cand.job_postings?.branches?.name || "OPS Solutions Co ., Ltd",
+                branchId: cand.job_postings?.branch_id || null,
+              }).catch((e) => console.error("[notifySlaExceeded candidate] error:", e));
+            }
+          }
+        }
+      }
     } catch (err) {
       console.error("checkRequisitionSlas error:", err);
     } finally {
       isCheckingRef.current = false;
     }
-  }, [enabled, hiringRequests]);
+  }, [enabled, hiringRequests, candidates]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

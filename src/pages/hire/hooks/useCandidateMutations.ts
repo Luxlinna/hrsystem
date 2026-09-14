@@ -7,6 +7,11 @@ import { uploadFileToS3 } from "@/lib/s3-storage";
 import { startOnboardingForEmployee } from "@/lib/onboarding";
 import type { Job, Candidate } from "../types";
 import { STAGE_CONFIG } from "../constants";
+import {
+  notifyCandidateShortlisted,
+  notifyCandidateSelected,
+  notifyRejected,
+} from "@/services/notifications/recruitmentNotificationTriggers";
 
 interface UseCandidateMutationsProps {
   actorName: string;
@@ -31,9 +36,52 @@ export function useCandidateMutations({
         return;
       }
       toast("Stage updated", `Candidate moved to ${STAGE_CONFIG[stage]?.label || stage}.`, "success");
+
+      // Canonical Notification Engine Dispatch
+      if (stage === "shortlisted" || stage === "selected" || stage === "rejected") {
+        try {
+          const { data: cand } = await supabase
+            .from("candidates")
+            .select("*, job_postings(*, branches(name))")
+            .eq("id", id)
+            .maybeSingle();
+
+          if (cand) {
+            if (stage === "shortlisted") {
+              void notifyCandidateShortlisted({
+                candidate: cand,
+                jobTitle: cand.job_postings?.title || "Specialist",
+                actorName,
+                businessUnit: cand.job_postings?.branches?.name,
+              }).catch((e) => console.error("[notifyCandidateShortlisted] error:", e));
+            } else if (stage === "selected") {
+              void notifyCandidateSelected({
+                candidate: cand,
+                jobTitle: cand.job_postings?.title || "Specialist",
+                selectedBy: actorName,
+                businessUnit: cand.job_postings?.branches?.name,
+              }).catch((e) => console.error("[notifyCandidateSelected] error:", e));
+            } else if (stage === "rejected") {
+              void notifyRejected({
+                entityType: "candidate",
+                entityId: id,
+                entityCode: cand.full_name,
+                entityTitle: `Candidate: ${cand.full_name}`,
+                rejectedBy: actorName,
+                rejectorRole: actorRole || "HR Manager",
+                reason: "Candidate stage updated to Rejected",
+                businessUnit: cand.job_postings?.branches?.name,
+              }).catch((e) => console.error("[notifyRejected candidate] error:", e));
+            }
+          }
+        } catch (err) {
+          console.warn("Could not dispatch stage transition notification:", err);
+        }
+      }
+
       loadData();
     },
-    [loadData]
+    [actorName, actorRole, loadData]
   );
 
   const rateCandidate = useCallback(

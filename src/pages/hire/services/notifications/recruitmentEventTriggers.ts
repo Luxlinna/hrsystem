@@ -1,5 +1,11 @@
 import { escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
 import { sendDualRecruitmentNotification } from "./recruitmentNotifyEngine";
+import {
+  notifyApprovalPending,
+  notifyRevisionRequested,
+  notifyRejected,
+  notifyCvReviewRequired,
+} from "@/services/notifications/recruitmentNotificationTriggers";
 import type { HiringRequest } from "../../types";
 
 export { notifyInterviewScheduledOrCompleted } from "./notifyInterviewTriggers";
@@ -14,11 +20,35 @@ export async function notifyStageTransition(
   approverRoleLabel: string,
   actorName: string,
   actorRole: string,
-  targetBranchId?: string | null
+  targetBranchId?: string | null,
+  options?: {
+    isCrossBu?: boolean;
+    businessUnit?: string | null;
+    targetBusinessUnit?: string | null;
+    description?: string;
+    auditAction?: string;
+  }
 ): Promise<void> {
   const reqCode = req.requisition_id ? `[${req.requisition_id}] ` : "";
   const recruiterId = req.assigned_recruiter_id || req.hr_assigned_to_id || null;
   const recruiterName = req.assigned_recruiter_name || req.hr_assigned_to_name || "Assigned Recruiter";
+  const buName = options?.businessUnit || req.branches?.name || req.division || "Business Unit";
+
+  // Canonical Notification Engine Dispatch
+  await notifyApprovalPending({
+    entityType: "hiring_request",
+    entityId: req.id,
+    entityCode: req.requisition_id || "REQ",
+    entityTitle: req.title,
+    approverRole: approverRoleLabel,
+    actorName,
+    actorRole,
+    businessUnit: buName,
+    targetBusinessUnit: options?.targetBusinessUnit ?? undefined,
+    isCrossBu: options?.isCrossBu,
+    branchId: targetBranchId ?? req.branch_id ?? null,
+    actionUrl: `/hire?tab=requisitions&id=${req.id}`,
+  }).catch((err) => console.error("[notifyStageTransition] canonical notify error:", err));
 
   await sendDualRecruitmentNotification({
     title: `📋 Stage Transition: ${reqCode}${req.title}`,
@@ -26,19 +56,24 @@ export async function notifyStageTransition(
     recruiterMessage: `Requisition ${reqCode}${req.title} advanced to ${nextStageLabel} by ${actorName}. Reviewing authority: ${approverRoleLabel}.`,
     type: "info",
     entityId: req.id,
-    approverBranchId: targetBranchId ?? null,
+    approverBranchId: targetBranchId ?? req.branch_id ?? null,
     recruiterEmployeeId: recruiterId,
     recruiterName,
+    businessUnit: buName,
+    targetBusinessUnit: options?.targetBusinessUnit,
+    isCrossBu: options?.isCrossBu,
     telegramHtml:
       `🔄 <b>Stage Transition: ${escapeTelegramHtml(reqCode)}${escapeTelegramHtml(req.title)}</b>\n` +
       `⏩ <b>New Stage:</b> ${escapeTelegramHtml(nextStageLabel)} (${escapeTelegramHtml(approverRoleLabel)})\n` +
       `👤 <b>Updated By:</b> ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)})\n` +
       `🎯 <b>Recruiter:</b> ${escapeTelegramHtml(recruiterName)}`,
     telegramButtonText: "Review Stage",
-    auditAction: "stage_transition",
+    auditAction: options?.auditAction || "stage_transition",
     actorName,
     actorRole,
-    description: `Requisition ${reqCode}${req.title} advanced to ${nextStageLabel} by ${actorName}`,
+    description:
+      options?.description ||
+      `Requisition ${reqCode}${req.title} advanced to ${nextStageLabel} by ${actorName} (${buName})`,
   });
 }
 
@@ -49,11 +84,17 @@ export async function notifyFullRequisitionApproval(
   req: HiringRequest,
   actorName: string,
   actorRole: string,
-  jobPostingId?: string | null
+  jobPostingId?: string | null,
+  options?: {
+    isCrossBu?: boolean;
+    businessUnit?: string | null;
+    description?: string;
+  }
 ): Promise<void> {
   const reqCode = req.requisition_id ? `[${req.requisition_id}] ` : "";
   const recruiterId = req.assigned_recruiter_id || req.hr_assigned_to_id || null;
   const recruiterName = req.assigned_recruiter_name || req.hr_assigned_to_name || "Assigned Recruiter";
+  const buName = options?.businessUnit || req.branches?.name || req.division || "Business Unit";
 
   await sendDualRecruitmentNotification({
     title: `🎉 Requisition Approved: ${reqCode}${req.title}`,
@@ -64,6 +105,8 @@ export async function notifyFullRequisitionApproval(
     approverBranchId: req.branch_id || null,
     recruiterEmployeeId: recruiterId,
     recruiterName,
+    businessUnit: buName,
+    isCrossBu: options?.isCrossBu,
     telegramHtml:
       `🎉 <b>Requisition Fully Authorized & Live!</b>\n` +
       `💼 <b>Position:</b> ${escapeTelegramHtml(reqCode)}${escapeTelegramHtml(req.title)} (${req.headcount} headcount)\n` +
@@ -76,7 +119,9 @@ export async function notifyFullRequisitionApproval(
     auditAction: "authorized",
     actorName,
     actorRole,
-    description: `Requisition ${reqCode}${req.title} authorized by ${actorName}. Recruiter sourcing triggered. Job ID: ${jobPostingId || "n/a"}`,
+    description:
+      options?.description ||
+      `${actorName} (${actorRole}) approved requisition ${req.requisition_id || req.title}. Business Unit: ${buName}. Recruiter sourcing triggered.`,
   });
 }
 
@@ -94,6 +139,15 @@ export async function notifyNewCandidateApplication(params: {
   branchId?: string | null;
 }): Promise<void> {
   const { candidateName, candidateId, jobTitle, source, recruiterEmployeeId, recruiterName, hiringManagerUserId, branchId } = params;
+
+  // Canonical Notification Engine Dispatch
+  await notifyCvReviewRequired({
+    candidate: { id: candidateId, full_name: candidateName },
+    jobTitle,
+    source,
+    reviewerRole: "Recruiter / Hiring Manager",
+    businessUnit: "OPS Solutions Co ., Ltd",
+  }).catch((err) => console.error("[notifyNewCandidateApplication] canonical notify error:", err));
 
   await sendDualRecruitmentNotification({
     title: `👤 New Candidate: ${candidateName}`,
@@ -130,6 +184,35 @@ export async function notifyRequisitionRejectedOrRevised(
   const recruiterId = req.assigned_recruiter_id || req.hr_assigned_to_id || null;
   const recruiterName = req.assigned_recruiter_name || req.hr_assigned_to_name || "Assigned Recruiter";
   const actionLabel = isRevision ? "Sent Back for Revision" : "Rejected";
+  const buName = req.branches?.name || req.division || "Business Unit";
+
+  // Canonical Notification Engine Dispatch
+  if (isRevision) {
+    await notifyRevisionRequested({
+      entityType: "hiring_request",
+      entityId: req.id,
+      entityCode: req.requisition_id || "REQ",
+      entityTitle: req.title,
+      requestedBy: actorName,
+      requestorRole: actorRole,
+      reason,
+      businessUnit: buName,
+      branchId: req.branch_id || null,
+      actionUrl: `/hire?tab=requisitions&id=${req.id}`,
+    }).catch((err) => console.error("[notifyRequisitionRejectedOrRevised] canonical notify error:", err));
+  } else {
+    await notifyRejected({
+      entityType: "hiring_request",
+      entityId: req.id,
+      entityCode: req.requisition_id || "REQ",
+      entityTitle: req.title,
+      rejectedBy: actorName,
+      rejectorRole: actorRole,
+      reason,
+      businessUnit: buName,
+      branchId: req.branch_id || null,
+    }).catch((err) => console.error("[notifyRequisitionRejectedOrRevised] canonical notify error:", err));
+  }
 
   await sendDualRecruitmentNotification({
     title: `⚠️ Requisition ${actionLabel}: ${reqCode}${req.title}`,

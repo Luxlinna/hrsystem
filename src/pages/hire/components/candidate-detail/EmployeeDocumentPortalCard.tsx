@@ -5,6 +5,7 @@ import { DocumentSlotItem } from "./DocumentSlotItem";
 import { uploadFileToS3, deleteS3File, getS3KeyFromUrl } from "@/lib/s3-storage";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { notifyDocumentMissing } from "@/services/notifications/recruitmentNotificationTriggers";
 
 interface EmployeeDocumentPortalCardProps {
   candidate: Candidate;
@@ -84,13 +85,45 @@ export const EmployeeDocumentPortalCard = memo(function EmployeeDocumentPortalCa
         const { error } = await supabase.from("candidates").update({ documents: updatedDocs }).eq("id", candidate.id);
         if (error) throw error;
         if (onUpdateCandidate) onUpdateCandidate((prev) => (prev ? { ...prev, documents: updatedDocs } : prev));
+
+        // Canonical Notification Engine Dispatch (Event 13: Document missing on rejection)
+        if (status === "rejected") {
+          const slotConfig = REQUIRED_DOCUMENT_SLOTS.find((s) => s.key === slotKey);
+          const docTitle = slotConfig ? slotConfig.title : slotKey;
+          void notifyDocumentMissing({
+            candidate,
+            missingDocumentNames: [`${docTitle} (Rejected: ${reason || "Re-upload required"})`],
+            businessUnit: candidate.job_postings?.branches?.name || "OPS Solutions Co ., Ltd",
+          }).catch((e) => console.error("[notifyDocumentMissing reject] error:", e));
+        }
+
         toast(status === "verified" ? "Document Verified" : status === "rejected" ? "Document Rejected" : "Status Updated", `Document status updated to ${status.replace("_", " ")}.`, status === "rejected" ? "error" : "success");
       } catch (err: any) {
         toast("Update Failed", err.message || "Could not update status", "error");
       }
     },
-    [candidate.id, candidate.documents, onUpdateCandidate]
+    [candidate, onUpdateCandidate]
   );
+
+  const missingSlots = REQUIRED_DOCUMENT_SLOTS.filter((slot) => {
+    const doc = findSlotDocument(slot.key, documents);
+    return !doc || doc.verification_status === "missing" || doc.verification_status === "rejected";
+  });
+
+  const handleNotifyMissing = useCallback(async () => {
+    const missingNames = missingSlots.map((s) => s.title);
+    if (missingNames.length === 0) {
+      toast("All Documents Present", "No missing documents detected.", "info");
+      return;
+    }
+    await notifyDocumentMissing({
+      candidate,
+      missingDocumentNames: missingNames,
+      deadline: "Prior to contract finalization",
+      businessUnit: candidate.job_postings?.branches?.name || "OPS Solutions Co ., Ltd",
+    });
+    toast("Missing Documents Alerted", `Dispatched notification for ${missingNames.length} missing document(s) via In-App & Telegram.`, "success");
+  }, [candidate, missingSlots]);
 
   const handleVerifyAll = useCallback(async () => {
     try {
@@ -122,11 +155,22 @@ export const EmployeeDocumentPortalCard = memo(function EmployeeDocumentPortalCa
 
         {/* Progress Pill & Breakdown */}
         <div className="sm:text-right shrink-0 space-y-1.5">
-          <div className="flex items-center sm:justify-end gap-2 text-xs font-bold text-gray-800">
+          <div className="flex items-center sm:justify-end gap-2 text-xs font-bold text-gray-800 flex-wrap">
             <span>Verified:</span>
             <span className={stats.isAllComplete ? "text-emerald-700 font-extrabold" : "text-blue-700 font-extrabold"}>
               {stats.verifiedRequired} of {stats.totalRequired} Required ({stats.percentage}%)
             </span>
+            {missingSlots.length > 0 && (
+              <button
+                type="button"
+                onClick={handleNotifyMissing}
+                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-extrabold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                title="Send In-App & Telegram notification for missing required documents"
+              >
+                <i className="ri-alarm-warning-line" />
+                <span>Alert Missing ({missingSlots.length})</span>
+              </button>
+            )}
             {!stats.isAllComplete && stats.totalUploaded > 0 && (
               <button
                 type="button"
@@ -142,7 +186,7 @@ export const EmployeeDocumentPortalCard = memo(function EmployeeDocumentPortalCa
               <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 font-extrabold">{stats.totalRejected} Rejected</span>
             )}
           </div>
-          <div className="w-48 sm:w-56 h-2 bg-gray-100 rounded-full overflow-hidden border border-gray-200/60">
+          <div className="w-48 sm:w-56 h-2 bg-gray-100 rounded-full overflow-hidden border border-gray-200/60 ml-auto">
             <div className={`h-full transition-all duration-500 ${stats.isAllComplete ? "bg-emerald-500" : "bg-blue-600"}`} style={{ width: `${Math.min(100, stats.percentage)}%` }} />
           </div>
         </div>

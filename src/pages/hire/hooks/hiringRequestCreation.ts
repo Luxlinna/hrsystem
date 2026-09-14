@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
 import { getDefaultRecruiter } from "../services/notifications/recruitmentRecipients";
 import { sendDualRecruitmentNotification } from "../services/notifications/recruitmentNotifyEngine";
+import { notifyRequisitionSubmitted } from "@/services/notifications/recruitmentNotificationTriggers";
 import type { NewHiringRequestFormState, Branch } from "../types";
 
 export interface SubmitHiringRequestParams {
@@ -159,6 +160,18 @@ export async function submitHiringRequest(params: SubmitHiringRequestParams) {
     actorRole,
     description: `Hiring requisition submitted: ${reqCode}${payload.headcount}x ${payload.title} (${payload.department}) for ${branchName}`,
   });
+
+  // Central Notification Engine: Event 1 (Requisition submitted)
+  try {
+    await notifyRequisitionSubmitted({
+      requisition: data as any,
+      submittedBy: actorName,
+      submitterRole: actorRole,
+      businessUnit: branchName,
+    });
+  } catch {
+    // Non-fatal
+  }
 
   return { data, reqCode, branchName };
 }

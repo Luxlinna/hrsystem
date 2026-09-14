@@ -27,6 +27,14 @@ export interface DualNotifyPayload {
   actorName?: string;
   actorRole?: string;
   description?: string;
+  entityType?: string;
+  businessUnit?: string | null;
+  targetBusinessUnit?: string | null;
+  isCrossBu?: boolean;
+  oldValue?: string | number | null;
+  newValue?: string | number | null;
+  reason?: string | null;
+  auditMetadata?: Record<string, unknown>;
 }
 
 /**
@@ -103,14 +111,34 @@ export async function sendDualRecruitmentNotification(payload: DualNotifyPayload
 
     // 5. System Audit Trail
     if (auditAction && description) {
+      const resolvedAction =
+        auditAction.includes("approved") || auditAction.includes("authorized")
+          ? "approved"
+          : auditAction.includes("rejected")
+          ? "rejected"
+          : auditAction.includes("created")
+          ? "created"
+          : "updated";
+
       logActivity({
         module: "hire",
-        action: auditAction as any,
-        entityType: "hiring_request",
+        action: resolvedAction,
+        entityType: payload.entityType || "hiring_request",
         entityId: entityId || undefined,
-        actorName,
-        actorRole,
+        actorName: actorName || "System",
+        actorRole: actorRole || "Recruiter",
         description,
+        branchId: approverBranchId,
+        businessUnit: payload.businessUnit,
+        targetBusinessUnit: payload.targetBusinessUnit,
+        isCrossBu: payload.isCrossBu,
+        oldValue: payload.oldValue,
+        newValue: payload.newValue,
+        reason: payload.reason,
+        metadata: {
+          original_audit_action: auditAction,
+          ...(payload.auditMetadata ?? {}),
+        },
       });
     }
 

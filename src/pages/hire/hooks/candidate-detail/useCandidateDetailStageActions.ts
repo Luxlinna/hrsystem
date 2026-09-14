@@ -7,6 +7,11 @@ import { startOnboardingForCandidate } from "@/lib/onboarding";
 import { STAGE_CONFIG } from "../../constants";
 import { checkInterviewStageProgressionGate } from "../../constants/evidenceConfig";
 import type { Candidate, Interview } from "../../types";
+import {
+  notifyCandidateShortlisted,
+  notifyCandidateSelected,
+  notifyRejected,
+} from "@/services/notifications/recruitmentNotificationTriggers";
 
 interface UseCandidateDetailStageActionsProps {
   id: string | undefined;
@@ -71,6 +76,34 @@ export function useCandidateDetailStageActions({
         }
       } else {
         toast("Stage Updated", `Candidate moved to ${STAGE_CONFIG[stage]?.label || stage}.`, "success");
+      }
+
+      // Canonical Notification Engine Dispatch
+      if (stage === "shortlisted") {
+        void notifyCandidateShortlisted({
+          candidate,
+          jobTitle: candidate.job_postings?.title || "Specialist",
+          actorName,
+          businessUnit: candidate.job_postings?.branches?.name,
+        }).catch((e) => console.error("[notifyCandidateShortlisted] error:", e));
+      } else if (stage === "selected") {
+        void notifyCandidateSelected({
+          candidate,
+          jobTitle: candidate.job_postings?.title || "Specialist",
+          selectedBy: actorName,
+          businessUnit: candidate.job_postings?.branches?.name,
+        }).catch((e) => console.error("[notifyCandidateSelected] error:", e));
+      } else if (stage === "rejected") {
+        void notifyRejected({
+          entityType: "candidate",
+          entityId: id,
+          entityCode: candidate.full_name,
+          entityTitle: `Candidate: ${candidate.full_name}`,
+          rejectedBy: actorName,
+          rejectorRole: roleName || "HR Manager",
+          reason: "Candidate stage marked as rejected",
+          businessUnit: candidate.job_postings?.branches?.name,
+        }).catch((e) => console.error("[notifyRejected candidate] error:", e));
       }
 
       logActivity({
