@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { useBranchScope } from "@/context/BranchContext";
 import { MovementsHeader } from "./components/MovementsHeader";
 import { MovementsStatsRow } from "./components/MovementsStatsRow";
 import { MovementsFilterBar } from "./components/MovementsFilterBar";
@@ -12,6 +13,7 @@ import type { EmployeeMovement, MovementType, MovementFormData } from "./types";
 
 export default function MovementsPage() {
   const { user } = useAuth();
+  const { selectedBranchId, targetBranch } = useBranchScope();
   const [movements, setMovements] = useState<EmployeeMovement[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
@@ -22,6 +24,14 @@ export default function MovementsPage() {
   const [search, setSearch] = useState<string>("");
   const [selectedType, setSelectedType] = useState<MovementType | "all">("all");
   const [selectedBranch, setSelectedBranch] = useState<string>("");
+
+  // Sync selected branch with topbar BU
+  useEffect(() => {
+    const activeBu = selectedBranchId && !selectedBranchId.startsWith("site:") ? selectedBranchId : targetBranch;
+    if (activeBu && !selectedBranch) {
+      setSelectedBranch(activeBu);
+    }
+  }, [selectedBranchId, targetBranch, selectedBranch]);
 
   // Modals
   const [showRecordModal, setShowRecordModal] = useState<boolean>(false);
@@ -122,6 +132,16 @@ export default function MovementsPage() {
     });
   }, [movements, search, selectedType, selectedBranch]);
 
+  const prioritizedEmployees = useMemo(() => {
+    const activeBu = selectedBranch || (selectedBranchId && !selectedBranchId.startsWith("site:") ? selectedBranchId : targetBranch);
+    if (!activeBu) return employees;
+    return [...employees].sort((a, b) => {
+      const aInBu = a.branch_id === activeBu ? 1 : 0;
+      const bInBu = b.branch_id === activeBu ? 1 : 0;
+      return bInBu - aInBu;
+    });
+  }, [employees, selectedBranch, selectedBranchId, targetBranch]);
+
   const handleSaveMovement = async (form: MovementFormData, employee: any) => {
     await recordEmployeeMovement({
       form,
@@ -144,7 +164,7 @@ export default function MovementsPage() {
       />
 
       {/* KPI Stats Row */}
-      <MovementsStatsRow movements={movements} />
+      <MovementsStatsRow movements={filteredMovements} />
 
       {/* Filter Bar */}
       <MovementsFilterBar
@@ -179,6 +199,7 @@ export default function MovementsPage() {
         branches={branches}
         workLocations={workLocations}
         onSave={handleSaveMovement}
+        defaultBranchId={selectedBranch || (selectedBranchId && !selectedBranchId.startsWith("site:") ? selectedBranchId : targetBranch) || ""}
       />
 
       {/* Movement Details Modal */}

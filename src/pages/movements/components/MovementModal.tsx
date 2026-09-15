@@ -34,6 +34,7 @@ interface MovementModalProps {
   workLocations?: WorkLocationOption[];
   onSave: (form: MovementFormData, employee: any) => Promise<void>;
   preselectedEmployeeId?: string;
+  defaultBranchId?: string;
 }
 
 export const MovementModal: React.FC<MovementModalProps> = ({
@@ -44,7 +45,9 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   workLocations = [],
   onSave,
   preselectedEmployeeId,
+  defaultBranchId,
 }) => {
+  const [modalBranchId, setModalBranchId] = useState<string>(defaultBranchId || "all");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(preselectedEmployeeId || "");
   const [movementType, setMovementType] = useState<MovementType>("promote");
   const [effectiveDate, setEffectiveDate] = useState<string>(
@@ -54,6 +57,13 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Sync modal branch filter with active BU
+  React.useEffect(() => {
+    if (defaultBranchId) {
+      setModalBranchId(defaultBranchId);
+    }
+  }, [defaultBranchId, open]);
 
   // Type-specific field states
   const [probationMonths, setProbationMonths] = useState<number>(3);
@@ -78,19 +88,35 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   );
   const [contractEndDate, setContractEndDate] = useState<string>("");
 
-  if (!open) return null;
-
   const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId) || null;
+  const selectedEmployeeBranchName =
+    selectedEmployee?.branches?.name ||
+    branches.find((b) => b.id === selectedEmployee?.branch_id)?.name ||
+    null;
 
-  const searchableEmployees: SearchableEmployee[] = employees.map((e) => ({
-    id: e.id,
-    first_name: e.first_name,
-    last_name: e.last_name,
-    role: e.role,
-    department: e.department,
-    avatar_url: e.avatar_url,
-    branch_id: e.branch_id,
-  }));
+  // Filter employees strictly by active BU if selected
+  const filteredEmployeesByBranch = React.useMemo(() => {
+    if (!modalBranchId || modalBranchId === "all") return employees;
+    return employees.filter((e) => e.branch_id === modalBranchId);
+  }, [employees, modalBranchId]);
+
+  const searchableEmployees: SearchableEmployee[] = React.useMemo(() => {
+    return filteredEmployeesByBranch.map((e) => {
+      const bName = e.branches?.name || branches.find((b) => b.id === e.branch_id)?.name || null;
+      return {
+        id: e.id,
+        first_name: e.first_name,
+        last_name: e.last_name,
+        role: e.role,
+        department: e.department,
+        avatar_url: e.avatar_url,
+        branch_id: e.branch_id,
+        branch_name: bName,
+      };
+    });
+  }, [filteredEmployeesByBranch, branches]);
+
+  if (!open) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,9 +202,33 @@ export const MovementModal: React.FC<MovementModalProps> = ({
 
           {/* 1. Search Employee Name or ID */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
-              1. Search Employee Name or ID <span className="text-rose-500">*</span>
-            </label>
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                1. Search Employee Name or ID <span className="text-rose-500">*</span>
+              </label>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">BU Scope:</span>
+                <select
+                  value={modalBranchId}
+                  onChange={(e) => {
+                    setModalBranchId(e.target.value);
+                    setSelectedEmployeeId("");
+                  }}
+                  className="px-2 py-0.5 text-xs font-bold rounded-md border border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-950/40 text-[#253C7D] dark:text-indigo-300 focus:outline-none focus:ring-1 focus:ring-[#253C7D]"
+                >
+                  <option value="all">All BUs ({employees.length} staff)</option>
+                  {branches.map((b) => {
+                    const count = employees.filter((e) => e.branch_id === b.id).length;
+                    return (
+                      <option key={b.id} value={b.id}>
+                        {b.name} ({count} staff)
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+
             <EmployeeSearchSelect
               employees={searchableEmployees}
               value={selectedEmployeeId}
@@ -186,9 +236,16 @@ export const MovementModal: React.FC<MovementModalProps> = ({
                 setSelectedEmployeeId(id);
                 setErrorMsg(null);
               }}
-              placeholder="Type staff name, ID, department, or role..."
+              placeholder={
+                modalBranchId !== "all"
+                  ? `Search ${branches.find((b) => b.id === modalBranchId)?.name || "BU"} staff...`
+                  : "Type staff name, ID, department, or role..."
+              }
             />
-            <SelectedEmployeeSnapshot employee={selectedEmployee} />
+            <SelectedEmployeeSnapshot
+              employee={selectedEmployee}
+              branchName={selectedEmployeeBranchName}
+            />
           </div>
 
           {/* 2. Choose 1 of 7 Movement Types */}
@@ -233,6 +290,9 @@ export const MovementModal: React.FC<MovementModalProps> = ({
             )}
             {movementType === "promote" && (
               <PromoteFields
+                currentBranchName={selectedEmployeeBranchName}
+                currentRole={selectedEmployee?.role}
+                currentDepartment={selectedEmployee?.department}
                 newRole={newRole}
                 onNewRoleChange={setNewRole}
                 newGrade={newGrade}

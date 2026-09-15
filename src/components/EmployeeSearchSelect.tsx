@@ -8,6 +8,7 @@ export interface SearchableEmployee {
   role?: string;
   avatar_url?: string | null;
   branch_id?: string | null;
+  branch_name?: string | null;
   email?: string | null;
   app_role?: string | null;
   is_manager?: boolean;
@@ -24,7 +25,7 @@ interface Props {
 const initials = (first: string, last: string) => `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase();
 
 /**
- * Searchable employee combobox — type to filter by name, department, or role;
+ * Searchable employee combobox — type to filter by name, department, role, or BU/branch;
  * pick with mouse or keyboard (↑/↓ + Enter, Esc to close). Reused by the
  * Leave request modal and the Shifts assign-employee modal.
  */
@@ -46,7 +47,7 @@ export default function EmployeeSearchSelect({
   const filtered = available.filter((e) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
-    return `${e.first_name} ${e.last_name} ${e.department || ""} ${e.role || ""} ${e.app_role || ""}`.toLowerCase().includes(q);
+    return `${e.first_name} ${e.last_name} ${e.department || ""} ${e.role || ""} ${e.app_role || ""} ${e.branch_name || ""}`.toLowerCase().includes(q);
   });
 
   // Close when clicking anywhere outside the combobox.
@@ -138,7 +139,16 @@ export default function EmployeeSearchSelect({
                     )}
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[13px] font-medium text-gray-900">{emp.first_name} {emp.last_name}</span>
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="text-[13px] font-medium text-gray-900 truncate">
+                        {emp.first_name} {emp.last_name}
+                      </span>
+                      {emp.branch_name && (
+                        <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-blue-50 text-[#253C7D] border border-blue-200/60 shrink-0">
+                          {emp.branch_name}
+                        </span>
+                      )}
+                    </div>
                     <span className="block text-[11px] text-gray-400 truncate">
                       {emp.department}{
                         (emp.app_role && /manager|admin|director|head|lead|ceo|supervisor/i.test(emp.app_role))

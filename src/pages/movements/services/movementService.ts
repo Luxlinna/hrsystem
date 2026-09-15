@@ -4,105 +4,50 @@ import type { EmployeeMovement, MovementFormData } from "../types";
 
 const LOCAL_STORAGE_KEY = "hrm_ops_employee_movements";
 
-// Initial seed movements to provide a realistic experience on first load
-const INITIAL_DEMO_MOVEMENTS: EmployeeMovement[] = [
-  {
-    id: "mov-demo-001",
-    employee_id: "",
-    movement_type: "promote",
-    title: "Promoted to Senior Operations Lead",
-    effective_date: "2026-08-01",
-    previous_values: { role: "Operations Specialist", grade: "L2" },
-    new_values: { role: "Senior Operations Lead", grade: "L3", salary_increase: 350 },
-    remarks: "Outstanding leadership during Q2 logistics reorganization.",
-    document_url: "https://example.com/docs/promotion_letter_sophea.pdf",
-    document_name: "Promotion_Letter_Signed.pdf",
-    branch_id: null,
-    created_by_name: "HR Operations",
-    created_at: "2026-08-01T08:30:00Z",
-    employees: {
-      id: "emp-demo-1",
-      first_name: "Sophea",
-      last_name: "Chan",
-      role: "Senior Operations Lead",
-      department: "Operations",
-      branches: { name: "Headquarters" },
-    },
-  },
-  {
-    id: "mov-demo-002",
-    employee_id: "",
-    movement_type: "pass_probation",
-    title: "Passed Probation Evaluation",
-    effective_date: "2026-08-15",
-    previous_values: { status: "probation" },
-    new_values: { status: "active", rating: "Exceeds Expectations (4.8/5)" },
-    remarks: "Completed 3-month probation with stellar performance metrics.",
-    document_url: "https://example.com/docs/probation_review_dara.pdf",
-    document_name: "Probation_Appraisal_Form.pdf",
-    branch_id: null,
-    created_by_name: "HR Admin",
-    created_at: "2026-08-15T09:00:00Z",
-    employees: {
-      id: "emp-demo-2",
-      first_name: "Dara",
-      last_name: "Sok",
-      role: "Backend Engineer",
-      department: "Technology",
-      branches: { name: "Headquarters" },
-    },
-  },
-  {
-    id: "mov-demo-003",
-    employee_id: "",
-    movement_type: "transfer",
-    title: "Transferred to Siem Reap Branch",
-    effective_date: "2026-09-01",
-    previous_values: { branch: "Headquarters", department: "Customer Support" },
-    new_values: { branch: "Siem Reap Branch", department: "Regional Operations" },
-    remarks: "Relocated to strengthen regional customer care operations.",
-    document_url: "https://example.com/docs/branch_transfer_piseth.pdf",
-    document_name: "Inter_Branch_Transfer_Authorization.pdf",
-    branch_id: null,
-    created_by_name: "Executive Management",
-    created_at: "2026-09-01T10:15:00Z",
-    employees: {
-      id: "emp-demo-3",
-      first_name: "Piseth",
-      last_name: "Vann",
-      role: "Regional Coordinator",
-      department: "Regional Operations",
-      branches: { name: "Siem Reap Branch" },
-    },
-  },
-];
+// Clear out any old static/demo seed data from previous versions
+if (typeof window !== "undefined") {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (raw && (raw.includes("mov-demo-") || raw.includes("Sophea Chan"))) {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage access errors
+  }
+}
 
 function getStoredLocalMovements(): EmployeeMovement[] {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_DEMO_MOVEMENTS));
-      return INITIAL_DEMO_MOVEMENTS;
-    }
-    return JSON.parse(raw);
+    if (!raw) return [];
+    const parsed: EmployeeMovement[] = JSON.parse(raw);
+    // Filter out any demo data
+    return parsed.filter((m) => !m.id.startsWith("mov-demo-"));
   } catch {
-    return INITIAL_DEMO_MOVEMENTS;
+    return [];
   }
 }
 
 function saveLocalMovement(movement: EmployeeMovement) {
   try {
     const current = getStoredLocalMovements();
-    const updated = [movement, ...current];
+    const updated = [movement, ...current.filter((m) => m.id !== movement.id)];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
   } catch (err) {
     console.error("Failed to save movement locally:", err);
   }
 }
 
+/**
+ * Dynamically fetch all movements from the database.
+ * 1. Attempts employee_movements table.
+ * 2. Falls back to audit_logs where module='employees' and entity_type='movement'.
+ * 3. Merges with any locally created movements (no static dummy data).
+ */
 export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
   try {
-    const { data, error } = await supabase
+    // 1. Try dedicated employee_movements table
+    const { data: movData, error: movErr } = await supabase
       .from("employee_movements")
       .select(`
         *,
@@ -118,29 +63,81 @@ export async function fetchAllMovements(): Promise<EmployeeMovement[]> {
           work_locations ( name )
         )
       `)
+      .is("deleted_at", null)
       .order("effective_date", { ascending: false });
 
-    if (error) {
-      // Table may not exist yet in schema cache -> fallback to local storage
-      console.warn("employee_movements query returned error, using local data:", error.message);
-      return getStoredLocalMovements();
+    if (!movErr && movData && movData.length > 0) {
+      return movData as EmployeeMovement[];
     }
 
-    if (!data || data.length === 0) {
+    // 2. Query dynamic movement records stored in audit_logs
+    const { data: auditData, error: auditErr } = await supabase
+      .from("audit_logs")
+      .select("*")
+      .eq("module", "employees")
+      .eq("entity_type", "movement")
+      .order("created_at", { ascending: false });
+
+    if (!auditErr && auditData && auditData.length > 0) {
+      // Fetch the corresponding real employees dynamically
+      const employeeIds = Array.from(new Set(auditData.map((a) => a.entity_id).filter(Boolean)));
+      let empMap = new Map<string, any>();
+
+      if (employeeIds.length > 0) {
+        const { data: emps } = await supabase
+          .from("employees")
+          .select("id, first_name, last_name, role, department, avatar_url, branch_id, branches(name), work_locations(name)")
+          .in("id", employeeIds);
+
+        if (emps) {
+          emps.forEach((e) => empMap.set(e.id, e));
+        }
+      }
+
+      const dbMovements: EmployeeMovement[] = auditData.map((a) => {
+        const meta = a.metadata || {};
+        const emp = a.entity_id ? empMap.get(a.entity_id) : null;
+        return {
+          id: a.id,
+          employee_id: a.entity_id || meta.employee_id || "",
+          movement_type: meta.movement_type || "promote",
+          title: meta.title || a.description || "Personnel Movement",
+          effective_date: meta.effective_date || a.created_at?.split("T")[0] || new Date().toISOString().split("T")[0],
+          previous_values: meta.previous_values || {},
+          new_values: meta.new_values || {},
+          remarks: meta.remarks || a.description || "",
+          document_url: meta.document_url || null,
+          document_name: meta.document_name || null,
+          branch_id: a.branch_id || meta.branch_id || null,
+          created_by: a.actor_name || null,
+          created_by_name: a.actor_name || "HR Admin",
+          created_at: a.created_at,
+          employees: emp || meta.employee_snapshot || null,
+        };
+      });
+
+      // Merge with any local user-created records
       const local = getStoredLocalMovements();
-      return local;
+      const combined = [...dbMovements];
+      local.forEach((loc) => {
+        if (!combined.some((c) => c.id === loc.id)) {
+          combined.push(loc);
+        }
+      });
+      return combined;
     }
 
-    return data as EmployeeMovement[];
+    // 3. If no DB records yet, return real user-created local records or empty array
+    return getStoredLocalMovements();
   } catch (err) {
-    console.warn("fetchMovements exception, fallback to local:", err);
+    console.warn("fetchMovements dynamic fallback:", err);
     return getStoredLocalMovements();
   }
 }
 
 export async function fetchMovementsByEmployeeId(employeeId: string): Promise<EmployeeMovement[]> {
   const all = await fetchAllMovements();
-  return all.filter((m) => m.employee_id === employeeId || (!m.employee_id && m.employees?.id === employeeId));
+  return all.filter((m) => m.employee_id === employeeId || m.employees?.id === employeeId);
 }
 
 interface CreateMovementParams {
@@ -258,7 +255,7 @@ export async function recordEmployeeMovement({
       break;
   }
 
-  // 3. Update employee table live if applicable
+  // 3. Update employee table live in the database
   if (Object.keys(employeeUpdates).length > 0) {
     try {
       await supabase
@@ -270,7 +267,8 @@ export async function recordEmployeeMovement({
     }
   }
 
-  // 4. Construct movement record
+  // 4. Construct new movement record
+  const actorName = currentUser?.displayName || currentUser?.email || "HR Admin";
   const newMovement: EmployeeMovement = {
     id: `mov-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     employee_id: employee.id,
@@ -284,7 +282,7 @@ export async function recordEmployeeMovement({
     document_name: documentName,
     branch_id: form.target_branch_id || employee.branch_id || null,
     created_by: currentUser?.id || null,
-    created_by_name: currentUser?.displayName || currentUser?.email || "HR Manager",
+    created_by_name: actorName,
     created_at: new Date().toISOString(),
     employees: {
       id: employee.id,
@@ -299,12 +297,17 @@ export async function recordEmployeeMovement({
     },
   };
 
-  // 5. Attempt insertion to Supabase employee_movements table
+  // 5. Insert directly into Supabase audit_logs (which exists in the database)
   try {
-    const { error: insertErr } = await supabase
-      .from("employee_movements")
-      .insert({
-        employee_id: newMovement.employee_id,
+    await supabase.from("audit_logs").insert({
+      module: "employees",
+      action: "updated",
+      entity_type: "movement",
+      entity_id: employee.id,
+      actor_name: actorName,
+      description: `${title} for ${employee.first_name} ${employee.last_name}`,
+      branch_id: newMovement.branch_id,
+      metadata: {
         movement_type: newMovement.movement_type,
         title: newMovement.title,
         effective_date: newMovement.effective_date,
@@ -314,23 +317,45 @@ export async function recordEmployeeMovement({
         document_url: newMovement.document_url,
         document_name: newMovement.document_name,
         branch_id: newMovement.branch_id,
-        created_by: newMovement.created_by,
-        created_by_name: newMovement.created_by_name,
-      });
-
-    if (insertErr) {
-      console.warn("Supabase insert error on employee_movements, falling back to local:", insertErr.message);
-      saveLocalMovement(newMovement);
-    }
-  } catch (err) {
-    console.warn("Supabase exception inserting movement:", err);
-    saveLocalMovement(newMovement);
+        employee_snapshot: {
+          id: employee.id,
+          first_name: employee.first_name,
+          last_name: employee.last_name,
+          role: employeeUpdates.role || employee.role,
+          department: employeeUpdates.department || employee.department,
+          avatar_url: employee.avatar_url,
+          branches: employee.branches,
+        },
+      },
+    });
+  } catch (auditErr) {
+    console.warn("Could not insert to audit_logs:", auditErr);
   }
 
-  // Also always update local cache
+  // 6. Also attempt insert into employee_movements table
+  try {
+    await supabase.from("employee_movements").insert({
+      employee_id: newMovement.employee_id,
+      movement_type: newMovement.movement_type,
+      title: newMovement.title,
+      effective_date: newMovement.effective_date,
+      previous_values: newMovement.previous_values,
+      new_values: newMovement.new_values,
+      remarks: newMovement.remarks,
+      document_url: newMovement.document_url,
+      document_name: newMovement.document_name,
+      branch_id: newMovement.branch_id,
+      created_by: newMovement.created_by,
+      created_by_name: newMovement.created_by_name,
+    });
+  } catch {
+    // Table may be awaiting migration
+  }
+
+  // Save to active local cache
   saveLocalMovement(newMovement);
 
-  // Dispatch event for any active overview cards / listening components
+  // Dispatch live event to notify all listening components
   window.dispatchEvent(new CustomEvent("employee-movement-created", { detail: newMovement }));
 
   return newMovement;
