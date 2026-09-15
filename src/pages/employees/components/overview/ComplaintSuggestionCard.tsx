@@ -27,21 +27,27 @@ export const ComplaintSuggestionCard: React.FC<ComplaintSuggestionCardProps> = (
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
 
+  const onCountLoadedRef = React.useRef(onCountLoaded);
+
+  useEffect(() => {
+    onCountLoadedRef.current = onCountLoaded;
+  }, [onCountLoaded]);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw);
         setItems(parsed);
-        onCountLoaded?.(parsed.length);
+        onCountLoadedRef.current?.(parsed.length);
       } else {
         setItems([]);
-        onCountLoaded?.(0);
+        onCountLoadedRef.current?.(0);
       }
     } catch {
       setItems([]);
     }
-  }, [storageKey, onCountLoaded]);
+  }, [storageKey]);
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();

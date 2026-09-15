@@ -12,6 +12,7 @@ export interface OnboardingRequest {
     last_name: string;
     role: string;
     department: string;
+    avatar_url?: string | null;
     branches?: { name: string } | null;
     email?: string | null;
     candidate_code?: string | null;

@@ -24,9 +24,16 @@ interface TrainingInfoCardProps {
 export const TrainingInfoCard: React.FC<TrainingInfoCardProps> = ({ employee, onCountLoaded }) => {
   const [enrollments, setEnrollments] = useState<EnrollmentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const onCountLoadedRef = React.useRef(onCountLoaded);
+
+  useEffect(() => {
+    onCountLoadedRef.current = onCountLoaded;
+  }, [onCountLoaded]);
 
   useEffect(() => {
     if (!employee?.id) return;
+    let isCancelled = false;
+
     const fetchEnrollments = async () => {
       setLoading(true);
       try {
@@ -37,22 +44,34 @@ export const TrainingInfoCard: React.FC<TrainingInfoCardProps> = ({ employee, on
           .is("deleted_at", null)
           .order("enrolled_at", { ascending: false });
 
+        if (isCancelled) return;
+
         if (!error && data) {
           const formatted = (data || []).map((x: any) => ({
             ...x,
             training_courses: Array.isArray(x.training_courses) ? x.training_courses[0] : x.training_courses,
           }));
           setEnrollments(formatted);
-          onCountLoaded?.(formatted.length);
+          onCountLoadedRef.current?.(formatted.length);
+        } else {
+          setEnrollments([]);
+          onCountLoadedRef.current?.(0);
         }
       } catch (err) {
         console.warn("Could not load training history:", err);
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
+
     fetchEnrollments();
-  }, [employee.id, onCountLoaded]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [employee.id]);
 
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {

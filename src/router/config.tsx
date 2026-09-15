@@ -42,6 +42,7 @@ const Attendance = lazy(() => import("../pages/attendance/page"));
 const Training = lazy(() => import("../pages/training/page"));
 const Disciplinary = lazy(() => import("../pages/disciplinary/page"));
 const Documents = lazy(() => import("../pages/documents/page"));
+const Movements = lazy(() => import("../pages/movements/page"));
 const AdminPortal = lazy(() => import("../pages/admin/page"));
 const RecycleBin = lazy(() => import("../pages/recycle-bin/page"));
 const Profile = lazy(() => import("../pages/profile/page"));
@@ -101,6 +102,7 @@ const routes: RouteObject[] = [
       { path: "training", element: mod("training", <Training />) },
       { path: "disciplinary", element: mod("disciplinary", <Disciplinary />) },
       { path: "documents", element: mod("documents", <Documents />) },
+      { path: "movements", element: mod("employees", <Movements />) },
       { path: "profile", element: <Suspense fallback={fallback}><Profile /></Suspense> },
       {
         path: "admin",

@@ -21,9 +21,16 @@ interface WarningInfoCardProps {
 export const WarningInfoCard: React.FC<WarningInfoCardProps> = ({ employee, onCountLoaded }) => {
   const [warnings, setWarnings] = useState<DisciplinaryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const onCountLoadedRef = React.useRef(onCountLoaded);
+
+  useEffect(() => {
+    onCountLoadedRef.current = onCountLoaded;
+  }, [onCountLoaded]);
 
   useEffect(() => {
     if (!employee?.id) return;
+    let isCancelled = false;
+
     const fetchWarnings = async () => {
       setLoading(true);
       try {
@@ -34,18 +41,30 @@ export const WarningInfoCard: React.FC<WarningInfoCardProps> = ({ employee, onCo
           .is("deleted_at", null)
           .order("incident_date", { ascending: false });
 
+        if (isCancelled) return;
+
         if (!error && data) {
           setWarnings(data as DisciplinaryItem[]);
-          onCountLoaded?.(data.length);
+          onCountLoadedRef.current?.(data.length);
+        } else {
+          setWarnings([]);
+          onCountLoadedRef.current?.(0);
         }
       } catch (err) {
         console.warn("Could not load disciplinary warnings:", err);
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
+
     fetchWarnings();
-  }, [employee.id, onCountLoaded]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [employee.id]);
 
   const getSeverityBadge = (severity: string) => {
     switch (severity?.toLowerCase()) {

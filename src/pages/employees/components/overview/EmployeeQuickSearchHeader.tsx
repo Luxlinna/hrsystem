@@ -4,7 +4,7 @@ import type { Employee } from "../../types";
 
 interface EmployeeQuickSearchHeaderProps {
   currentEmployee: Employee;
-  allEmployees: Employee[];
+  allEmployees: any[];
 }
 
 export const EmployeeQuickSearchHeader: React.FC<EmployeeQuickSearchHeaderProps> = ({

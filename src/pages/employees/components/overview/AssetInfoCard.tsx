@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Employee } from "../../types";
 
@@ -20,9 +20,16 @@ interface AssetInfoCardProps {
 export const AssetInfoCard: React.FC<AssetInfoCardProps> = ({ employee, onCountLoaded }) => {
   const [assets, setAssets] = useState<AssetRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const onCountLoadedRef = useRef(onCountLoaded);
+
+  useEffect(() => {
+    onCountLoadedRef.current = onCountLoaded;
+  }, [onCountLoaded]);
 
   useEffect(() => {
     if (!employee?.id) return;
+    let isCancelled = false;
+
     const fetchAssets = async () => {
       setLoading(true);
       try {
@@ -33,18 +40,30 @@ export const AssetInfoCard: React.FC<AssetInfoCardProps> = ({ employee, onCountL
           .is("deleted_at", null)
           .order("created_at", { ascending: false });
 
+        if (isCancelled) return;
+
         if (!error && data) {
           setAssets(data as AssetRecord[]);
-          onCountLoaded?.(data.length);
+          onCountLoadedRef.current?.(data.length);
+        } else {
+          setAssets([]);
+          onCountLoadedRef.current?.(0);
         }
       } catch (err) {
         console.warn("Could not load assigned assets:", err);
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
+
     fetchAssets();
-  }, [employee.id, onCountLoaded]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [employee.id]);
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -64,7 +83,10 @@ export const AssetInfoCard: React.FC<AssetInfoCardProps> = ({ employee, onCountL
       </div>
 
       {loading ? (
-        <div className="py-8 text-center text-xs text-gray-400">Loading asset registry...</div>
+        <div className="py-12 flex flex-col items-center justify-center gap-2 text-center text-xs text-gray-400">
+          <div className="w-6 h-6 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+          <span>Loading asset registry...</span>
+        </div>
       ) : assets.length === 0 ? (
         <div className="py-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl">
           <i className="ri-computer-line text-3xl text-gray-400 block mb-1" />

@@ -49,8 +49,13 @@ export default function EmployeeProfile() {
   }, [setEditing]);
 
   const updateCount = useCallback((key: OverviewTabKey, count: number) => {
-    setCounts((prev) => ({ ...prev, [key]: count }));
+    setCounts((prev) => (prev[key] === count ? prev : { ...prev, [key]: count }));
   }, []);
+
+  const handleWarningCount = useCallback((c: number) => updateCount("warning", c), [updateCount]);
+  const handleComplaintsCount = useCallback((c: number) => updateCount("complaints", c), [updateCount]);
+  const handleTrainingCount = useCallback((c: number) => updateCount("training", c), [updateCount]);
+  const handleAssetsCount = useCallback((c: number) => updateCount("assets", c), [updateCount]);
 
   if (loading) {
     return (
@@ -123,17 +128,17 @@ export default function EmployeeProfile() {
 
       {activeTab === "movement" && <MovementInfoCard employee={employee} />}
       {activeTab === "warning" && (
-        <WarningInfoCard employee={employee} onCountLoaded={(c) => updateCount("warning", c)} />
+        <WarningInfoCard employee={employee} onCountLoaded={handleWarningCount} />
       )}
       {activeTab === "nssf" && <NssfInfoCard employee={employee} />}
       {activeTab === "complaints" && (
-        <ComplaintSuggestionCard employee={employee} onCountLoaded={(c) => updateCount("complaints", c)} />
+        <ComplaintSuggestionCard employee={employee} onCountLoaded={handleComplaintsCount} />
       )}
       {activeTab === "training" && (
-        <TrainingInfoCard employee={employee} onCountLoaded={(c) => updateCount("training", c)} />
+        <TrainingInfoCard employee={employee} onCountLoaded={handleTrainingCount} />
       )}
       {activeTab === "assets" && (
-        <AssetInfoCard employee={employee} onCountLoaded={(c) => updateCount("assets", c)} />
+        <AssetInfoCard employee={employee} onCountLoaded={handleAssetsCount} />
       )}
       {activeTab === "payroll" && (
         <div className="max-w-4xl">

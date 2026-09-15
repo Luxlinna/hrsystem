@@ -28,6 +28,7 @@ const CORE_ITEMS: DrawerItem[] = [
 ];
 
 const WORKFORCE_ITEMS: DrawerItem[] = [
+  { path: "/movements", label: "Movements", sublabel: "Transfers & promotions", icon: "ri-route-line", module: "employees" },
   { path: "/onboarding", label: "Onboarding", sublabel: "New hire pipeline", icon: "ri-user-add-line", module: "onboarding" },
   { path: "/onboarding-checklist", label: "Checklists", sublabel: "Task assignments", icon: "ri-task-line", module: "onboarding-checklist" },
   { path: "/leave", label: "Leave", sublabel: "Approve / reject", icon: "ri-calendar-event-line", module: "leave" },

@@ -127,7 +127,7 @@ function ShiftSnapshot(props: Props) {
               try {
                 const tz = scheduleSettings.timezone || "Asia/Phnom_Penh";
                 const startDay = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(activeOutsideWork.work_checked_in_at));
-                const currentDay = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(currentTime);
+                const currentDay = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
                 if (startDay < currentDay) return "08:00";
                 return new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: tz });
               } catch {

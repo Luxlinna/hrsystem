@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 import type { HiringRequest, Candidate } from "../types";
 import { evaluateStageSla, StageSlaEvaluation } from "../constants/slaConfig";
 import { todayYMD } from "@/lib/date";
@@ -43,6 +44,8 @@ export function useRecruitmentSlaWatcher({
     isCheckingRef.current = true;
 
     try {
+      const today = todayYMD();
+
       // 1. Check Requisition SLAs
       for (const req of hiringRequests) {
         if (req.status === "approved" || req.status === "rejected" || req.status === "fulfilled") {
@@ -55,6 +58,19 @@ export function useRecruitmentSlaWatcher({
         if (evaluation?.isOverdue) {
           const alertKey = `req-${req.id}-${req.status}`;
           if (hasAlertedToday(alertKey)) continue;
+
+          // Check DB deduplication so other clients or tabs don't re-dispatch today
+          const { data: dbNotif } = await supabase
+            .from("notifications")
+            .select("id")
+            .eq("entity_id", req.id)
+            .gte("created_at", `${today}T00:00:00Z`)
+            .limit(1);
+
+          if (dbNotif && dbNotif.length > 0) {
+            markAlertedToday(alertKey);
+            continue;
+          }
 
           markAlertedToday(alertKey);
           const reqCode = req.requisition_id ? `[${req.requisition_id}] ` : "";
@@ -85,6 +101,19 @@ export function useRecruitmentSlaWatcher({
         if (evaluation?.isOverdue) {
           const alertKey = `cand-sla-${cand.id}-${cand.stage}`;
           if (hasAlertedToday(alertKey)) continue;
+
+          // Check DB deduplication
+          const { data: dbNotif } = await supabase
+            .from("notifications")
+            .select("id")
+            .eq("entity_id", cand.id)
+            .gte("created_at", `${today}T00:00:00Z`)
+            .limit(1);
+
+          if (dbNotif && dbNotif.length > 0) {
+            markAlertedToday(alertKey);
+            continue;
+          }
 
           markAlertedToday(alertKey);
 
