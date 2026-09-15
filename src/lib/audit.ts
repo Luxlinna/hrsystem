@@ -23,7 +23,10 @@ type AuditModule =
   | "tasks"
   | "shifts"
   | "reports"
-  | "training";
+  | "training"
+  | "exit"
+  | "movements";
+
 type AuditAction =
   | "created" | "updated" | "approved" | "rejected" | "deleted" | "processed" | "cancelled" | "invited" | "exported"
   | "contract_created" | "contract_hr_manager_reviewed" | "contract_hr_director_approved"

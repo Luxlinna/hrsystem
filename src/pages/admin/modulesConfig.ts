@@ -9,6 +9,7 @@ export const ALL_MODULES = [
   { key: "leave-calendar", label: "Leave Calendar", icon: "ri-calendar-2-line", group: "Workforce" },
   { key: "hire", label: "Recruitment", icon: "ri-briefcase-line", group: "Workforce" },
   { key: "offboard", label: "Offboarding", icon: "ri-user-unfollow-line", group: "Workforce" },
+  { key: "exit", label: "Exit Management", icon: "ri-logout-box-r-line", group: "Workforce" },
   { key: "org-chart", label: "Org Chart", icon: "ri-organization-chart", group: "Workforce" },
   { key: "performance", label: "Performance", icon: "ri-star-line", group: "Workforce" },
   { key: "attendance", label: "Attendance", icon: "ri-fingerprint-line", group: "Workforce" },

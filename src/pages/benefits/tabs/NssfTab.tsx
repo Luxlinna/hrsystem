@@ -209,6 +209,7 @@ export const NssfTab = memo(function NssfTab() {
     registeredCount,
     unregisteredCount,
     employees,
+    migrationNeeded,
   } = useNssf();
 
   const [exportLoading, setExportLoading] = useState<"xlsx" | "csv" | null>(null);
@@ -227,6 +228,24 @@ export const NssfTab = memo(function NssfTab() {
 
   return (
     <div className="space-y-5">
+
+      {/* Migration required banner */}
+      {migrationNeeded && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+          <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <i className="ri-database-2-line text-amber-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-900">Database Migration Required</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              The NSSF fields (nssf_number, gender, date_of_birth, etc.) are not yet in your database.
+              Go to <strong>Supabase → SQL Editor</strong> and run the migration file:
+              <code className="ml-1 bg-amber-100 px-1 rounded text-amber-800">20260915120000_nssf_management_enhancements.sql</code>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Metric Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl border border-gray-200/80 shadow-2xs p-4">

@@ -36,6 +36,7 @@ const WORKFORCE_ITEMS: DrawerItem[] = [
   { path: "/shifts", label: "Shifts", sublabel: "Shift scheduling", icon: "ri-calendar-schedule-line", module: "shifts" },
   { path: "/hire", label: "Hire", sublabel: "Candidates & jobs", icon: "ri-briefcase-line", module: "hire" },
   { path: "/offboard", label: "Off Board", sublabel: "Exit workflows", icon: "ri-user-unfollow-line", module: "offboard" },
+  { path: "/exit", label: "Exit", sublabel: "Employee exits", icon: "ri-logout-box-r-line", module: "exit" },
   { path: "/org-chart", label: "Org Chart", sublabel: "Reporting structure", icon: "ri-organization-chart", module: "org-chart" },
   { path: "/performance", label: "Performance", sublabel: "Reviews & goals", icon: "ri-star-line", module: "performance" },
   { path: "/attendance", label: "Attendance", sublabel: "Punch records", icon: "ri-fingerprint-line", module: "attendance" },

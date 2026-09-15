@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "@/components/Toast";
 import { useBranchScope } from "@/context/BranchContext";
 import type { NssfEmployee } from "../types";
 
@@ -12,6 +13,7 @@ export function useNssf() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "registered" | "unregistered">("all");
   const [importModal, setImportModal] = useState(false);
+  const [migrationNeeded, setMigrationNeeded] = useState(false);
 
   const loadData = useCallback(async () => {
     if (isPartnerBranchBlocked || !targetBranch) {
@@ -20,18 +22,38 @@ export function useNssf() {
       return;
     }
     setLoading(true);
+
+    // Try with full NSSF columns first
     const { data, error } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, status, department, role, avatar_url, branch_id, join_date")
+      .select("id, first_name, last_name, kh_name, nssf_number, nationality, gender, date_of_birth, join_date, basic_salary, status, department, role, avatar_url, branch_id")
       .eq("branch_id", targetBranch)
       .is("deleted_at", null)
       .order("first_name");
 
     if (error) {
-      // If migration hasn't been run yet, still show basic employee list
-      console.warn("NSSF query error (migration may not be applied yet):", error.message);
+      // Migration not run — fall back to base columns only
+      setMigrationNeeded(true);
+      console.warn("NSSF columns not found — run the migration:", error.message);
+
+      const { data: fallback } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, status, department, role, avatar_url, branch_id, join_date")
+        .eq("branch_id", targetBranch)
+        .is("deleted_at", null)
+        .order("first_name");
+
+      const mapped: NssfEmployee[] = (fallback || []).map((e: any) => ({
+        ...e,
+        nssf_number: null, kh_name: null, nationality: null,
+        gender: null, date_of_birth: null, basic_salary: null, branch: null,
+      }));
+      setEmployees(mapped);
+      setLoading(false);
+      return;
     }
 
+    setMigrationNeeded(false);
     const mapped: NssfEmployee[] = (data || []).map((e: any) => ({
       id: e.id,
       first_name: e.first_name,
@@ -42,7 +64,6 @@ export function useNssf() {
       avatar_url: e.avatar_url,
       branch_id: e.branch_id,
       join_date: e.join_date,
-      // NSSF fields — available after migration is applied:
       nssf_number: e.nssf_number ?? null,
       kh_name: e.kh_name ?? null,
       nationality: e.nationality ?? null,
@@ -65,14 +86,24 @@ export function useNssf() {
       id: string,
       updates: Partial<Pick<NssfEmployee, "nssf_number" | "kh_name" | "nationality" | "gender" | "date_of_birth" | "basic_salary">>
     ) => {
+      if (migrationNeeded) {
+        toast("Migration Required", "Please run the NSSF migration in Supabase SQL Editor first.", "error");
+        return false;
+      }
       setSaving(true);
       const { error } = await supabase.from("employees").update(updates).eq("id", id);
-      if (!error) await loadData();
       setSaving(false);
-      return !error;
+      if (error) {
+        toast("Save Failed", error.message || "Could not update NSSF data.", "error");
+        return false;
+      }
+      toast("Saved", "NSSF data updated successfully.", "success");
+      await loadData();
+      return true;
     },
-    [loadData]
+    [loadData, migrationNeeded]
   );
+
 
   // Bulk upsert from import
   const bulkImport = useCallback(
@@ -137,5 +168,6 @@ export function useNssf() {
     loadData,
     registeredCount,
     unregisteredCount,
+    migrationNeeded,
   };
 }
