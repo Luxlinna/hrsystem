@@ -32,55 +32,54 @@ export const AddEmployeePersonalTab = memo(function AddEmployeePersonalTab({
     <div className="space-y-6 w-full">
       <PersonalHeaderBanner />
 
-      {/* 1. Identity & Profile Photo Card */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs">
+      {/* Unified Seamless Personal Info Canvas */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-2xs space-y-8">
+        {/* 1. Profile Photo & Identity Details */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Photo Card near personal info form */}
+          {/* Photo Card on Left */}
           <div className="lg:col-span-4 xl:col-span-3.5 flex justify-center lg:sticky lg:top-4">
             <PersonalPhotoCard form={form} onChange={onChange} />
           </div>
 
-          {/* Form Fields: Identity, Demographics & Tax/ID */}
+          {/* Identity, Demographics & Tax on Right */}
           <div className="lg:col-span-8 xl:col-span-8.5 space-y-4">
             <PersonalIdentityFields form={form} onChange={onChange} />
             <PersonalDemographicFields form={form} onChange={onChange} />
             <PersonalTaxAndIdFields form={form} onChange={onChange} />
           </div>
         </div>
-      </div>
 
-      {/* 2. Banking & Identification Card */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-6">
+        {/* 2. Bank Accounts */}
         <PersonalBankAccountsSection form={form} onChange={onChange} />
+
+        {/* 3. Identification */}
         <PersonalIdentificationSection form={form} onChange={onChange} />
-      </div>
 
-      {/* 3. Address & Contact Information Card */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-6">
-        <PersonalContactSection form={form} onChange={onChange} />
+        {/* 4. Permanent Address */}
         <PersonalPermanentAddressSection form={form} onChange={onChange} />
-      </div>
 
-      {/* 4. Emergency Contacts & Family Member Info Card */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-6">
+        {/* 5. Contact Info */}
+        <PersonalContactSection form={form} onChange={onChange} />
+
+        {/* 6. Emergency Contacts */}
         <PersonalEmergencySection form={form} onChange={onChange} />
+
+        {/* 7. Family Members */}
         <PersonalFamilySection form={form} onChange={onChange} />
-      </div>
 
-      {/* 5. Education & Training History Card */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-6">
+        {/* 8. Education History */}
         <PersonalEducationSection form={form} onChange={onChange} />
+
+        {/* 9. Training History */}
         <PersonalTrainingSection form={form} onChange={onChange} />
-      </div>
 
-      {/* 6. Employment History & Achievements Card */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-6">
+        {/* 10. Employment History */}
         <PersonalEmploymentSection form={form} onChange={onChange} />
-        <PersonalAchievementSection form={form} onChange={onChange} />
-      </div>
 
-      {/* 7. Document Attachments Card */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs">
+        {/* 11. Achievements */}
+        <PersonalAchievementSection form={form} onChange={onChange} />
+
+        {/* 12. Attachments */}
         <PersonalAttachmentSection form={form} onChange={onChange} />
       </div>
     </div>

@@ -48,6 +48,15 @@ export interface Employee {
   line_manager?: string | null;
   contract_type?: string | null;
   fdc_end_date?: string | null;
+  contract_effective_date?: string | null;
+  contract_end_date?: string | null;
+  contract_rate?: number | string | null;
+  contract_rate_currency?: string | null;
+  contract_rate_frequency?: string | null;
+  contract_rate_after?: number | string | null;
+  contract_rate_after_currency?: string | null;
+  contract_rate_after_frequency?: string | null;
+  contract_remark?: string | null;
   hiring_status?: string | null;
   basic_salary?: number | string | null;
   tax_method?: string | null;
@@ -255,6 +264,15 @@ export interface EmployeeFormState {
   reports_to: string;
   contract_type: string;
   fdc_end_date: string;
+  contract_effective_date?: string;
+  contract_end_date?: string;
+  contract_rate?: string | number;
+  contract_rate_currency?: string;
+  contract_rate_frequency?: string;
+  contract_rate_after?: string | number;
+  contract_rate_after_currency?: string;
+  contract_rate_after_frequency?: string;
+  contract_remark?: string;
   hiring_status: string;
   status: string;
 
