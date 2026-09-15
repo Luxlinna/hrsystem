@@ -133,8 +133,18 @@ export function useEmployeesMutations({
   const handleAddEmployee = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!form.first_name?.trim() || !form.last_name?.trim()) {
-        toast("Required fields", "Please fill in first name and last name.", "error");
+
+      const resolvedFullName = form.full_name?.trim() || `${form.first_name || ""} ${form.last_name || ""}`.trim();
+      let resolvedFirstName = form.first_name?.trim() || "";
+      let resolvedLastName = form.last_name?.trim() || "";
+      if ((!resolvedFirstName || !resolvedLastName) && resolvedFullName) {
+        const parts = resolvedFullName.split(/\s+/);
+        resolvedFirstName = parts[0] || "";
+        resolvedLastName = parts.slice(1).join(" ") || parts[0] || "";
+      }
+
+      if (!resolvedFirstName && !resolvedFullName) {
+        toast("Required fields", "Please fill in employee full name.", "error");
         return;
       }
       setSubmitting(true);
@@ -225,17 +235,55 @@ export function useEmployeesMutations({
         }
 
         const payload = {
-          first_name: form.first_name.trim(),
-          last_name: form.last_name.trim(),
+          // 33 Standard Hiring Information Fields
+          employee_code: form.employee_code?.trim() || resolvedBiometricId || null,
+          full_name: resolvedFullName,
+          first_name: resolvedFirstName,
+          last_name: resolvedLastName,
+          kh_name: form.kh_name?.trim() || null,
+          gender: form.gender || null,
+          date_of_birth: form.date_of_birth || null,
+          marital_status: form.marital_status || null,
+          national_id_number: form.national_id_number?.trim() || null,
+
+          code_bu: form.code_bu?.trim() || null,
+          bu_full_name: form.bu_full_name?.trim() || null,
+          handle_bu: form.handle_bu?.trim() || null,
+          division: form.division?.trim() || null,
+          department: form.department || null,
+          position: form.position?.trim() || form.role?.trim() || "Staff",
+          role: form.role?.trim() || form.position?.trim() || "Staff",
+          site: form.site?.trim() || null,
+          working_location: form.working_location?.trim() || null,
+
+          working_hour: form.working_hour?.trim() || null,
+          total_working_days: form.total_working_days?.trim() || null,
+          employment_type: form.employment_type || "Full Time",
+          start_date: form.start_date || form.join_date || new Date().toISOString().split("T")[0],
+          join_date: form.join_date || form.start_date || new Date().toISOString().split("T")[0],
+          line_manager: form.line_manager?.trim() || null,
+          reports_to: form.reports_to || null,
+          contract_type: form.contract_type || "FDC",
+          fdc_end_date: form.fdc_end_date || null,
+          hiring_status: form.hiring_status || "probation",
+          status: form.status || "onboarding",
+
+          basic_salary: form.basic_salary ? parseFloat(String(form.basic_salary)) : null,
+          tax_method: form.tax_method || "Resident",
+          allowance: form.allowance?.trim() || null,
+          bank_account_number: form.bank_account_number?.trim() || null,
+          bank_name: form.bank_name?.trim() || null,
+          nssf_number: form.nssf_number?.trim() || null,
+
           email: cleanEmail,
           phone: cleanPhone,
-          role: form.role?.trim() || "Staff",
-          department: form.department,
-          status: form.status,
+          current_address: form.current_address?.trim() || null,
+          emergency_contact_name: form.emergency_contact_name?.trim() || null,
+          emergency_phone_number: form.emergency_phone_number?.trim() || null,
+          documents: form.documents || [],
+
           branch_id: resolvedBranch,
           default_work_location_id: resolvedLocation,
-          join_date: form.join_date || new Date().toISOString().split("T")[0],
-          reports_to: form.reports_to || null,
           biometric_user_id: resolvedBiometricId,
         };
 
@@ -251,7 +299,7 @@ export function useEmployeesMutations({
           }
         }
 
-        toast("Success", `${form.first_name} ${form.last_name} has been added.`, "success");
+        toast("Success", `${resolvedFullName} has been added with hiring records.`, "success");
         await logActivity({
           module: "employees",
           action: "created",
@@ -259,7 +307,7 @@ export function useEmployeesMutations({
           entityId: newEmp.id,
           actorName,
           actorRole: roleName,
-          description: `Added new employee ${form.first_name} ${form.last_name}${cleanEmail ? ` (${cleanEmail})` : cleanPhone ? ` (${cleanPhone})` : " (Biometric only)"}`,
+          description: `Added new employee ${resolvedFullName}${cleanEmail ? ` (${cleanEmail})` : cleanPhone ? ` (${cleanPhone})` : " (Biometric only)"}`,
         });
 
         await notify({

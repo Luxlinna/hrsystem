@@ -92,18 +92,62 @@ export const COLUMN_WIDTHS: Record<string, string> = {
 };
 
 export const INITIAL_EMPLOYEE_FORM: EmployeeFormState = {
+  // 1. Personal & Legal Identity
+  employee_code: "",
   first_name: "",
   last_name: "",
+  full_name: "",
+  kh_name: "",
+  gender: "",
+  date_of_birth: "",
+  marital_status: "",
+  national_id_number: "",
+
+  // 2. Org & Workplace Site
+  branch_id: "",
+  code_bu: "",
+  bu_full_name: "",
+  handle_bu: "",
+  division: "",
+  department: DEPARTMENTS[0],
+  role: "Staff",
+  position: "",
+  site: "",
+  working_location: "",
+  default_work_location_id: "",
+
+  // 3. Terms & Employment Schedule
+  working_hour: "8:00 AM - 5:00 PM (44 hrs/wk)",
+  total_working_days: "5.5 Days/Week (Mon - Sat Noon)",
+  employment_type: "Full Time",
+  start_date: new Date().toISOString().split("T")[0],
+  join_date: new Date().toISOString().split("T")[0],
+  line_manager: "",
+  reports_to: "",
+  contract_type: "FDC",
+  fdc_end_date: "",
+  hiring_status: "probation",
+  status: "onboarding",
+
+  // 4. Compensation & Tax
+  basic_salary: "",
+  tax_method: "Resident",
+  allowance: "",
+  bank_account_number: "",
+  bank_name: "",
+  nssf_number: "",
+
+  // 5. Contacts & Emergency Information
   email: "",
   phone: "",
-  role: "",
-  department: DEPARTMENTS[0],
-  branch_id: "",
-  status: "onboarding",
-  join_date: new Date().toISOString().split("T")[0],
-  reports_to: "",
-  default_work_location_id: "",
+  current_address: "",
+  emergency_contact_name: "",
+  emergency_phone_number: "",
+  documents: [],
+
+  // Biometric / Device
   biometric_user_id: "",
+  send_invite: false,
 };
 
 export const INITIAL_VISIBLE_COLUMNS: VisibleColumns = {
