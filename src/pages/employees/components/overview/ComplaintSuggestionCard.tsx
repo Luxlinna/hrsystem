@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "@/components/Toast";
 import type { Employee } from "../../types";
 
 export interface FeedbackItem {
@@ -7,8 +9,9 @@ export interface FeedbackItem {
   subject: string;
   details: string;
   date: string;
-  status: "pending" | "in_review" | "resolved";
-  response?: string;
+  status: "pending" | "in_review" | "resolved" | "dismissed";
+  suggestion?: string | null;
+  remark?: string | null;
 }
 
 interface ComplaintSuggestionCardProps {
@@ -20,55 +23,76 @@ export const ComplaintSuggestionCard: React.FC<ComplaintSuggestionCardProps> = (
   employee,
   onCountLoaded,
 }) => {
-  const storageKey = `hrm_feedback_${employee.id}`;
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [formType, setFormType] = useState<"complaint" | "suggestion" | "grievance">("suggestion");
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
+  const [suggestion, setSuggestion] = useState("");
 
-  const onCountLoadedRef = React.useRef(onCountLoaded);
-
+  const onCountLoadedRef = useRef(onCountLoaded);
   useEffect(() => {
     onCountLoadedRef.current = onCountLoaded;
   }, [onCountLoaded]);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setItems(parsed);
-        onCountLoadedRef.current?.(parsed.length);
-      } else {
-        setItems([]);
-        onCountLoadedRef.current?.(0);
-      }
-    } catch {
-      setItems([]);
-    }
-  }, [storageKey]);
+  const loadFeedback = useCallback(async () => {
+    if (!employee?.id) return;
+    const { data, error } = await supabase
+      .from("complaints_suggestions")
+      .select("*")
+      .eq("employee_id", employee.id)
+      .order("entry_date", { ascending: false });
 
-  const handleCreate = (e: React.FormEvent) => {
+    if (!error && data) {
+      const mapped: FeedbackItem[] = data.map((d: any) => ({
+        id: d.id,
+        type: d.type,
+        subject: d.subject,
+        details: d.details,
+        date: d.entry_date,
+        status: d.status,
+        suggestion: d.suggestion,
+        remark: d.remark,
+      }));
+      setItems(mapped);
+      onCountLoadedRef.current?.(mapped.length);
+    }
+  }, [employee?.id]);
+
+  useEffect(() => {
+    loadFeedback();
+  }, [loadFeedback]);
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !details.trim()) return;
 
-    const newItem: FeedbackItem = {
-      id: `fb_${Date.now()}`,
+    setSubmitting(true);
+    const payload = {
+      branch_id: employee.branch_id || null,
+      employee_id: employee.id,
       type: formType,
+      entry_date: new Date().toISOString().split("T")[0],
+      target_to: "Human Resources Department",
       subject: subject.trim(),
       details: details.trim(),
-      date: new Date().toISOString(),
+      suggestion: suggestion.trim() || null,
       status: "pending",
     };
 
-    const updated = [newItem, ...items];
-    setItems(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    onCountLoaded?.(updated.length);
-    setSubject("");
-    setDetails("");
-    setShowAdd(false);
+    const { error } = await supabase.from("complaints_suggestions").insert(payload);
+    if (error) {
+      toast("Error", error.message || "Failed to submit feedback.", "error");
+    } else {
+      toast("Submitted", "Record has been logged successfully.", "success");
+      setSubject("");
+      setDetails("");
+      setSuggestion("");
+      setShowAdd(false);
+      await loadFeedback();
+    }
+    setSubmitting(false);
   };
 
   return (
@@ -80,7 +104,9 @@ export const ComplaintSuggestionCard: React.FC<ComplaintSuggestionCardProps> = (
           </div>
           <div>
             <h3 className="text-sm font-bold text-gray-900">Complaints &amp; Suggestions</h3>
-            <p className="text-xs text-gray-500">Workplace grievances, feedback, and process improvement suggestions</p>
+            <p className="text-xs text-gray-500">
+              Workplace grievances, feedback, and process improvement suggestions
+            </p>
           </div>
         </div>
         <button
@@ -125,15 +151,23 @@ export const ComplaintSuggestionCard: React.FC<ComplaintSuggestionCardProps> = (
             rows={3}
             value={details}
             onChange={(e) => setDetails(e.target.value)}
-            placeholder="Detailed description, impact, or suggestion..."
+            placeholder="Detailed description, impact, or issue…"
+            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none"
+          />
+          <input
+            type="text"
+            value={suggestion}
+            onChange={(e) => setSuggestion(e.target.value)}
+            placeholder="Proposed suggestion or solution (optional)…"
             className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none"
           />
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-4 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 cursor-pointer"
+              disabled={submitting}
+              className="px-4 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 cursor-pointer disabled:opacity-50"
             >
-              Submit Record
+              {submitting ? "Submitting..." : "Submit Record"}
             </button>
           </div>
         </form>
@@ -143,7 +177,9 @@ export const ComplaintSuggestionCard: React.FC<ComplaintSuggestionCardProps> = (
         <div className="py-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl">
           <i className="ri-chat-smile-2-line text-3xl text-gray-400 block mb-1" />
           <span className="text-xs font-bold text-gray-700">No Feedback Logged</span>
-          <p className="text-[11px] text-gray-500 mt-0.5">No grievances, complaints, or workplace suggestions logged yet.</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">
+            No grievances, complaints, or workplace suggestions logged yet for this employee.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -158,12 +194,18 @@ export const ComplaintSuggestionCard: React.FC<ComplaintSuggestionCardProps> = (
                     </span>
                   </div>
                   <p className="text-xs text-gray-600 mt-1">{it.details}</p>
+                  {it.suggestion && (
+                    <p className="text-xs text-amber-700 mt-1 font-medium">💡 {it.suggestion}</p>
+                  )}
+                  {it.remark && (
+                    <p className="text-xs text-blue-700 mt-1 font-medium">📝 Remark: {it.remark}</p>
+                  )}
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-mono text-gray-400 block">
-                    {new Date(it.date).toLocaleDateString()}
+                <div className="text-right flex-shrink-0 ml-3">
+                  <span className="text-[10px] font-mono text-gray-400 block">{it.date}</span>
+                  <span className="text-[10px] font-bold text-amber-600 capitalize">
+                    {it.status.replace("_", " ")}
                   </span>
-                  <span className="text-[10px] font-bold text-amber-600 capitalize">{it.status.replace("_", " ")}</span>
                 </div>
               </div>
             </div>

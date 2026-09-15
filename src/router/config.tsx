@@ -20,6 +20,7 @@ const Hire = lazy(() => import("../pages/hire/page"));
 const CandidateDetail = lazy(() => import("../pages/hire/CandidateDetail"));
 const Offboard = lazy(() => import("../pages/offboard/page"));
 const ExitPage = lazy(() => import("../pages/exit/page"));
+const ComplaintsPage = lazy(() => import("../pages/complaints/page"));
 const OrgChart = lazy(() => import("../pages/orgchart/page"));
 const Tools = lazy(() => import("../pages/tools/page"));
 const Benefits = lazy(() => import("../pages/benefits/page"));
@@ -81,6 +82,7 @@ const routes: RouteObject[] = [
       { path: "hire/candidates/:id", element: mod("hire", <CandidateDetail />) },
       { path: "offboard", element: mod("offboard", <Offboard />) },
       { path: "exit", element: mod("exit", <ExitPage />) },
+      { path: "complaints", element: mod("complaints", <ComplaintsPage />) },
       { path: "org-chart", element: mod("org-chart", <OrgChart />) },
       { path: "tools", element: mod("tools", <Tools />) },
       { path: "benefits", element: mod("benefits", <Benefits />) },

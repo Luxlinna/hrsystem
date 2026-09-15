@@ -25,7 +25,8 @@ type AuditModule =
   | "reports"
   | "training"
   | "exit"
-  | "movements";
+  | "movements"
+  | "complaints";
 
 type AuditAction =
   | "created" | "updated" | "approved" | "rejected" | "deleted" | "processed" | "cancelled" | "invited" | "exported"
