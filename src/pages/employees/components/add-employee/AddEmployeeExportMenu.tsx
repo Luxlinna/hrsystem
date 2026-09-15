@@ -65,29 +65,33 @@ export const AddEmployeeExportMenu: React.FC<AddEmployeeExportMenuProps> = memo(
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 bottom-full mb-2 w-48 rounded-2xl bg-white border border-slate-200 shadow-xl z-50 p-1.5 animate-in fade-in zoom-in-95 duration-100">
+          <div className="absolute left-0 bottom-full mb-2 w-56 rounded-2xl bg-white border border-slate-200 shadow-2xl z-50 p-2 animate-in fade-in zoom-in-95 duration-150">
             <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Export 33-Field Record
             </div>
             <button
               type="button"
               onClick={handlePdf}
-              className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-rose-50 text-slate-700 hover:text-rose-700 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+              className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-rose-50 text-slate-700 hover:text-rose-700 text-xs font-semibold flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <i className="ri-file-pdf-fill text-rose-500 text-sm" />
+              <div className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center shrink-0">
+                <i className="ri-file-pdf-fill text-rose-600 text-base" />
+              </div>
               <div>
-                <p className="font-bold leading-tight">Export PDF</p>
+                <p className="font-bold leading-tight text-slate-800">Export PDF</p>
                 <p className="text-[10px] text-slate-400">Printable A4 Sheet</p>
               </div>
             </button>
             <button
               type="button"
               onClick={handleWord}
-              className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+              className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-xs font-semibold flex items-center gap-2.5 transition-colors cursor-pointer mt-1"
             >
-              <i className="ri-file-word-fill text-blue-600 text-sm" />
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                <i className="ri-file-word-fill text-blue-600 text-base" />
+              </div>
               <div>
-                <p className="font-bold leading-tight">Export Word (.docx)</p>
+                <p className="font-bold leading-tight text-slate-800">Export Word (.docx)</p>
                 <p className="text-[10px] text-slate-400">Editable Document</p>
               </div>
             </button>

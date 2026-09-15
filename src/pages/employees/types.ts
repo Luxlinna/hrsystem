@@ -2,12 +2,38 @@ export interface Employee {
   id: string;
   first_name: string;
   last_name: string;
+  title?: string | null;
+  display_name?: string | null;
+  foreign_name?: string | null;
+  nationality?: string | null;
+  is_resident?: boolean | null;
+  fringe_benefit?: boolean | null;
+  blood_group?: string | null;
+  religion?: string | null;
+  employee_tax_number?: string | null;
   full_name?: string | null;
   kh_name?: string | null;
   gender?: string | null;
   date_of_birth?: string | null;
   marital_status?: string | null;
   national_id_number?: string | null;
+  bank_accounts?: EmployeeBankAccountItem[] | null;
+  identifications?: EmployeeIdentificationItem[] | null;
+  permanent_address?: string | null;
+  permanent_city?: string | null;
+  permanent_province?: string | null;
+  permanent_postal_code?: string | null;
+  permanent_country?: string | null;
+  same_as_present_address?: boolean | null;
+  home_phone?: string | null;
+  office_phone?: string | null;
+  emergency_contacts?: EmployeeEmergencyContactItem[] | null;
+  family_members?: EmployeeFamilyMemberItem[] | null;
+  education_history?: EmployeeEducationItem[] | null;
+  training_history?: EmployeeTrainingItem[] | null;
+  employment_history?: EmployeeEmploymentHistoryItem[] | null;
+  achievement_history?: EmployeeAchievementItem[] | null;
+  personal_attachments?: string[] | null;
   code_bu?: string | null;
   bu_full_name?: string | null;
   handle_bu?: string | null;
@@ -50,6 +76,75 @@ export interface Employee {
   documents?: any[] | null;
 }
 
+export interface EmployeeBankAccountItem {
+  payment_method: string;
+  account_number: string;
+}
+
+export interface EmployeeIdentificationItem {
+  identification_type: string;
+  identification_number: string;
+  expiration_date: string;
+}
+
+export interface EmployeeEmergencyContactItem {
+  contact_person: string;
+  relationship: string;
+  phone_number: string;
+}
+
+export interface EmployeeFamilyMemberItem {
+  name: string;
+  relationship: string;
+  date_of_birth: string;
+  gender: string;
+  nationality: string;
+  tax_filing: boolean | string;
+  phone_number: string;
+  remark: string;
+  attachment?: string;
+}
+
+export interface EmployeeEducationItem {
+  institue: string;
+  subject: string;
+  degree: string;
+  start_date: string;
+  end_date: string;
+  remark: string;
+}
+
+export interface EmployeeTrainingItem {
+  institue: string;
+  subject: string;
+  start_date: string;
+  end_date: string;
+  remark: string;
+  attachment?: string;
+}
+
+export interface EmployeeEmploymentHistoryItem {
+  company_name: string;
+  start_date: string;
+  end_date: string;
+  designation: string;
+  supervisor_name: string;
+  supervisor_phone_number: string;
+  remark: string;
+  rate: string;
+  reason_for_leaving: string;
+}
+
+export interface EmployeeAchievementItem {
+  title: string;
+  year_awarded: string;
+  country: string;
+  program_name: string;
+  organizer_name: string;
+  remark: string;
+  attachment?: string;
+}
+
 export interface Branch {
   id: string;
   name: string;
@@ -90,15 +185,52 @@ export function isEmployeeBiometricEligible(
 
 export interface EmployeeFormState {
   // 1. Personal & Legal Identity
-  employee_code?: string;
+  title: string;
   first_name: string;
   last_name: string;
+  display_name: string;
+  display_name_format?: string;
+  foreign_name: string;
+  foreign_name_format?: string;
+  employee_code?: string;
   full_name: string;
   kh_name: string;
-  gender: string;
   date_of_birth: string;
+  dob_day?: string;
+  dob_month?: string;
+  dob_year?: string;
+  gender: string;
   marital_status: string;
+  nationality: string;
+  is_resident: boolean;
+  fringe_benefit: boolean;
+  blood_group: string;
+  religion: string;
+  employee_tax_number: string;
   national_id_number: string;
+
+  // Bank Accounts & Identifications (Personal Info tab tables)
+  bank_accounts: EmployeeBankAccountItem[];
+  identifications: EmployeeIdentificationItem[];
+
+  // Permanent Address Info
+  permanent_address: string;
+  permanent_city: string;
+  permanent_province: string;
+  permanent_postal_code: string;
+  permanent_country: string;
+  same_as_present_address: boolean;
+
+  // Additional Personal Info sections
+  home_phone: string;
+  office_phone: string;
+  emergency_contacts: EmployeeEmergencyContactItem[];
+  family_members: EmployeeFamilyMemberItem[];
+  education_history: EmployeeEducationItem[];
+  training_history: EmployeeTrainingItem[];
+  employment_history: EmployeeEmploymentHistoryItem[];
+  achievement_history: EmployeeAchievementItem[];
+  personal_attachments: string[];
 
   // 2. Org & Workplace Site
   branch_id: string;
@@ -140,6 +272,7 @@ export interface EmployeeFormState {
   current_address: string;
   emergency_contact_name: string;
   emergency_phone_number: string;
+  avatar_url?: string;
   documents?: any[];
 
   // Biometric / Device

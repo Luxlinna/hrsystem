@@ -34,6 +34,21 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
   const { visibleBranches, targetBranch, userBranchId } = useBranchScope();
   const [activeTab, setActiveTab] = useState<AddEmployeeStepId>("personal");
 
+  // Auto-Save Draft System
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem("hr_add_employee_autosave");
+      return stored !== null ? stored === "true" : true;
+    } catch {
+      return true;
+    }
+  });
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const isDirtyRef = useRef<boolean>(false);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const statusTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const {
     cleanBranches,
     currentBranch,
@@ -44,6 +59,70 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
     buManagers,
     buCeos,
   } = useAddEmployeeModalData(isOpen, form);
+
+  // Auto-load draft from localStorage when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        const savedDraft = localStorage.getItem("hr_add_employee_draft");
+        if (savedDraft) {
+          const parsed = JSON.parse(savedDraft);
+          // Only populate if current form has not been filled yet
+          if (!form.full_name && !form.first_name && (parsed.full_name || parsed.first_name || parsed.email || parsed.phone)) {
+            setForm((prev) => ({ ...prev, ...parsed }));
+            setLastSavedAt(new Date());
+          }
+        }
+      } catch (err) {
+        console.error("Failed to restore draft:", err);
+      }
+    }
+  }, [isOpen]);
+
+  // Debounced Auto-Save Draft
+  useEffect(() => {
+    if (!isOpen || !autoSaveEnabled) return;
+    if (!isDirtyRef.current) return;
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      try {
+        setAutoSaveStatus("saving");
+        localStorage.setItem("hr_add_employee_draft", JSON.stringify(form));
+        setLastSavedAt(new Date());
+        isDirtyRef.current = false;
+        setAutoSaveStatus("saved");
+
+        if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+        statusTimerRef.current = setTimeout(() => setAutoSaveStatus("idle"), 3000);
+      } catch (err) {
+        console.error("Auto-save draft error:", err);
+        setAutoSaveStatus("error");
+      }
+    }, 1000);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [form, autoSaveEnabled, isOpen]);
+
+  const handleToggleAutoSave = useCallback(() => {
+    setAutoSaveEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("hr_add_employee_autosave", String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const handleClearDraft = useCallback(() => {
+    try {
+      localStorage.removeItem("hr_add_employee_draft");
+      setLastSavedAt(null);
+      setAutoSaveStatus("idle");
+    } catch {}
+  }, []);
 
   // Auto-fill default branch if scoped
   useEffect(() => {
@@ -58,6 +137,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
   // Handle branch selection and auto-derive BU code, full name, and handle
   const handleSelectBranch = useCallback(
     (branchId: string) => {
+      isDirtyRef.current = true;
       const branch = cleanBranches.find((b) => b.id === branchId);
       if (branch) {
         const code = getBranchCode(branch.name);
@@ -84,6 +164,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
   // Handle site selection and auto-derive location
   const handleSelectSite = useCallback(
     (siteIdOrVal: string) => {
+      isDirtyRef.current = true;
       if (!siteIdOrVal) {
         setForm((prev) => ({
           ...prev,
@@ -116,6 +197,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
 
   const handleFieldChange = useCallback(
     (field: keyof EmployeeFormState, value: any) => {
+      isDirtyRef.current = true;
       setForm((prev) => ({ ...prev, [field]: value }));
     },
     [setForm]
@@ -186,8 +268,8 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl w-[96vw] max-w-7xl max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 via-white to-indigo-50/20">
           <div className="flex items-center justify-between gap-4">
@@ -210,7 +292,59 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
               </div>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-end">
+              {/* Auto-Save Toggle & Status Controller */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 select-none">
+                <div className="flex items-center gap-1.5 text-xs font-semibold">
+                  {autoSaveStatus === "saving" ? (
+                    <>
+                      <div className="w-2.5 h-2.5 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sky-700 text-[11px] font-bold">Saving...</span>
+                    </>
+                  ) : autoSaveStatus === "saved" ? (
+                    <>
+                      <i className="ri-checkbox-circle-fill text-emerald-600 text-xs" />
+                      <span className="text-emerald-700 text-[11px] font-bold">Auto-Saved</span>
+                    </>
+                  ) : autoSaveStatus === "error" ? (
+                    <>
+                      <i className="ri-error-warning-fill text-rose-500 text-xs" />
+                      <span className="text-rose-600 text-[11px] font-bold">Save Error</span>
+                    </>
+                  ) : autoSaveEnabled ? (
+                    <>
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                      </span>
+                      <span className="text-emerald-700 text-[11px] font-bold">Auto-Save ON</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-slate-400" />
+                      <span className="text-slate-500 text-[11px] font-medium">Auto-Save OFF</span>
+                    </>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleToggleAutoSave}
+                  className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    autoSaveEnabled ? "bg-emerald-600" : "bg-slate-300"
+                  }`}
+                  role="switch"
+                  aria-checked={autoSaveEnabled}
+                  title={autoSaveEnabled ? "Auto-Save is active. Click to toggle OFF." : "Auto-Save is off. Click to toggle ON."}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                      autoSaveEnabled ? "translate-x-3" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
               {/* Progress counter badge */}
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
                 <i className="ri-checkbox-circle-fill text-emerald-600 text-sm" />
@@ -315,7 +449,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
 
           {/* Footer Controls */}
           <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {currentStepIndex > 0 ? (
                 <button
                   type="button"
@@ -331,6 +465,21 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
 
               {/* Function Export (PDF / Word) directly from modal */}
               <AddEmployeeExportMenu form={form} />
+
+              {lastSavedAt && (
+                <div className="hidden md:flex items-center gap-1.5 text-[11px] text-slate-500 font-medium px-2 py-1 rounded-lg bg-slate-100 border border-slate-200/80">
+                  <i className="ri-check-double-line text-emerald-600" />
+                  <span>Draft saved at {lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
+                  <button
+                    type="button"
+                    onClick={handleClearDraft}
+                    className="ml-1 text-slate-400 hover:text-rose-600 underline text-[10px] cursor-pointer"
+                    title="Clear saved draft and start fresh"
+                  >
+                    Clear draft
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2.5">

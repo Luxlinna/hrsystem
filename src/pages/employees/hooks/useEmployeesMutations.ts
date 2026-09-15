@@ -235,16 +235,42 @@ export function useEmployeesMutations({
         }
 
         const payload = {
-          // 33 Standard Hiring Information Fields
-          employee_code: form.employee_code?.trim() || resolvedBiometricId || null,
-          full_name: resolvedFullName,
+          // Personal Info & Identity
+          title: form.title || "Mr",
           first_name: resolvedFirstName,
           last_name: resolvedLastName,
+          full_name: resolvedFullName,
+          display_name: form.display_name?.trim() || resolvedFullName,
+          foreign_name: form.foreign_name?.trim() || null,
+          employee_code: form.employee_code?.trim() || resolvedBiometricId || null,
           kh_name: form.kh_name?.trim() || null,
-          gender: form.gender || null,
+          gender: form.gender || "Male",
           date_of_birth: form.date_of_birth || null,
-          marital_status: form.marital_status || null,
-          national_id_number: form.national_id_number?.trim() || null,
+          marital_status: form.marital_status || "Single",
+          nationality: form.nationality || "Khmer",
+          is_resident: form.is_resident !== false,
+          fringe_benefit: Boolean(form.fringe_benefit),
+          blood_group: form.blood_group || "None",
+          religion: form.religion || "None",
+          employee_tax_number: form.employee_tax_number?.trim() || null,
+          national_id_number: form.national_id_number?.trim() || form.identifications?.[0]?.identification_number?.trim() || null,
+          bank_accounts: form.bank_accounts || [],
+          identifications: form.identifications || [],
+          permanent_address: form.permanent_address?.trim() || null,
+          permanent_city: form.permanent_city?.trim() || null,
+          permanent_province: form.permanent_province?.trim() || null,
+          permanent_postal_code: form.permanent_postal_code?.trim() || null,
+          permanent_country: form.permanent_country || "Cambodia",
+          same_as_present_address: form.same_as_present_address !== false,
+          home_phone: form.home_phone?.trim() || null,
+          office_phone: form.office_phone?.trim() || null,
+          emergency_contacts: form.emergency_contacts || [],
+          family_members: form.family_members || [],
+          education_history: form.education_history || [],
+          training_history: form.training_history || [],
+          employment_history: form.employment_history || [],
+          achievement_history: form.achievement_history || [],
+          personal_attachments: form.personal_attachments || [],
 
           code_bu: form.code_bu?.trim() || null,
           bu_full_name: form.bu_full_name?.trim() || null,
@@ -280,6 +306,7 @@ export function useEmployeesMutations({
           current_address: form.current_address?.trim() || null,
           emergency_contact_name: form.emergency_contact_name?.trim() || null,
           emergency_phone_number: form.emergency_phone_number?.trim() || null,
+          avatar_url: form.avatar_url?.trim() || null,
           documents: form.documents || [],
 
           branch_id: resolvedBranch,
@@ -318,6 +345,10 @@ export function useEmployeesMutations({
           entityId: newEmp.id,
           branchId: form.branch_id || targetBranch || null,
         });
+
+        try {
+          localStorage.removeItem("hr_add_employee_draft");
+        } catch {}
 
         setShowAddModal(false);
         setForm(INITIAL_EMPLOYEE_FORM);

@@ -93,15 +93,52 @@ export const COLUMN_WIDTHS: Record<string, string> = {
 
 export const INITIAL_EMPLOYEE_FORM: EmployeeFormState = {
   // 1. Personal & Legal Identity
-  employee_code: "",
+  title: "Mr",
   first_name: "",
   last_name: "",
+  display_name: "",
+  display_name_format: "first_last",
+  foreign_name: "",
+  foreign_name_format: "last_first",
+  employee_code: "",
   full_name: "",
   kh_name: "",
-  gender: "",
   date_of_birth: "",
-  marital_status: "",
+  dob_day: "",
+  dob_month: "",
+  dob_year: "",
+  gender: "Male",
+  marital_status: "Single",
+  nationality: "Khmer",
+  is_resident: true,
+  fringe_benefit: false,
+  blood_group: "None",
+  religion: "None",
+  employee_tax_number: "",
   national_id_number: "",
+
+  // Bank Accounts & Identifications (Personal Info tables)
+  bank_accounts: [],
+  identifications: [],
+
+  // Permanent Address Info
+  permanent_address: "",
+  permanent_city: "",
+  permanent_province: "",
+  permanent_postal_code: "",
+  permanent_country: "Cambodia",
+  same_as_present_address: true,
+
+  // Additional Personal Info sections
+  home_phone: "",
+  office_phone: "",
+  emergency_contacts: [],
+  family_members: [],
+  education_history: [],
+  training_history: [],
+  employment_history: [],
+  achievement_history: [],
+  personal_attachments: [],
 
   // 2. Org & Workplace Site
   branch_id: "",
@@ -143,6 +180,7 @@ export const INITIAL_EMPLOYEE_FORM: EmployeeFormState = {
   current_address: "",
   emergency_contact_name: "",
   emergency_phone_number: "",
+  avatar_url: "",
   documents: [],
 
   // Biometric / Device
