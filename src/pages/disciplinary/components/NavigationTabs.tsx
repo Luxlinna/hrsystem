@@ -5,6 +5,7 @@ interface NavigationTabsProps {
   activeTab: DisciplinaryTabKey;
   onSelectTab: (tab: DisciplinaryTabKey) => void;
   totalCount: number;
+  warningCount?: number;
   openCount: number;
   pipCount: number;
   criticalCount: number;
@@ -15,13 +16,15 @@ export const NavigationTabs = memo(function NavigationTabs({
   activeTab,
   onSelectTab,
   totalCount,
+  warningCount = 0,
   openCount,
   pipCount,
   criticalCount,
   resolvedCount,
 }: NavigationTabsProps) {
   const tabs = [
-    { id: "all" as const, label: "All Cases", count: totalCount, icon: "ri-folder-line" },
+    { id: "all" as const, label: "All Records", count: totalCount, icon: "ri-folder-line" },
+    { id: "warnings" as const, label: "Official Warnings", count: warningCount, icon: "ri-file-warning-line" },
     { id: "open" as const, label: "Open & Active", count: openCount, icon: "ri-time-line", isAlert: openCount > 0 },
     { id: "pip" as const, label: "Performance Plans (PIPs)", count: pipCount, icon: "ri-focus-3-line" },
     { id: "critical" as const, label: "High / Critical Alerts", count: criticalCount, icon: "ri-fire-line", isAlert: criticalCount > 0 },

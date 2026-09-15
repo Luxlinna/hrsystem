@@ -13,7 +13,7 @@ export const DisciplinaryCard = memo(function DisciplinaryCard({
   isSelected,
   onSelect,
 }: DisciplinaryCardProps) {
-  const typeCfg = TYPE_CONFIG[r.type] || TYPE_CONFIG.verbal_warning;
+  const typeCfg = TYPE_CONFIG[r.warning_type || r.type] || TYPE_CONFIG.verbal_warning;
   const sevCfg = SEVERITY_CONFIG[r.severity] || SEVERITY_CONFIG.medium;
   const statusCfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.open;
   const emp = r.employees;
@@ -59,6 +59,11 @@ export const DisciplinaryCard = memo(function DisciplinaryCard({
               <span className={`w-1.5 h-1.5 rounded-full ${sevCfg.dot}`} />
               {sevCfg.label}
             </span>
+            {r.document_url && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-[#253C7D] border border-blue-200/60 flex items-center gap-0.5" title="Attachment available">
+                <i className="ri-attachment-line" />
+              </span>
+            )}
           </div>
 
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${statusCfg.bg} ${statusCfg.color}`}>
@@ -94,9 +99,16 @@ export const DisciplinaryCard = memo(function DisciplinaryCard({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-gray-900 truncate">
-              {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
-            </p>
+            <div className="flex items-center justify-between gap-1">
+              <p className="text-xs font-bold text-gray-900 truncate">
+                {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+              </p>
+              {emp?.employee_id && (
+                <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-white border border-gray-200 text-gray-600 shrink-0">
+                  {emp.employee_id}
+                </span>
+              )}
+            </div>
             <p className="text-[10px] text-gray-400 truncate">
               {emp?.role || "Staff"} · {emp?.department || "Department"}
             </p>
@@ -108,6 +120,14 @@ export const DisciplinaryCard = memo(function DisciplinaryCard({
           <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">
             {r.description}
           </p>
+        )}
+
+        {/* Employee Promise Excerpt */}
+        {r.employee_promise && (
+          <div className="mb-3 p-2 bg-emerald-50/50 border border-emerald-200/60 rounded-xl text-[11px] text-emerald-800 italic line-clamp-1 flex items-center gap-1.5">
+            <i className="ri-hand-heart-line text-xs shrink-0 text-emerald-600" />
+            <span className="truncate">"{r.employee_promise}"</span>
+          </div>
         )}
 
         {/* Overdue Alert Banner */}

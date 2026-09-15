@@ -30,7 +30,7 @@ export const DisciplinaryTableView = memo(function DisciplinaryTableView({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {records.map((r) => {
-              const typeCfg = TYPE_CONFIG[r.type] || TYPE_CONFIG.verbal_warning;
+              const typeCfg = TYPE_CONFIG[r.warning_type || r.type] || TYPE_CONFIG.verbal_warning;
               const sevCfg = SEVERITY_CONFIG[r.severity] || SEVERITY_CONFIG.medium;
               const statusCfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.open;
               const emp = r.employees;
@@ -56,16 +56,30 @@ export const DisciplinaryTableView = memo(function DisciplinaryTableView({
                         </div>
                       )}
                       <div>
-                        <p className="font-extrabold text-gray-900 group-hover:text-[#253C7D] transition-colors">
-                          {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-extrabold text-gray-900 group-hover:text-[#253C7D] transition-colors">
+                            {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+                          </p>
+                          {emp?.employee_id && (
+                            <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-gray-100 text-gray-600">
+                              {emp.employee_id}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-gray-400">{emp?.department}</p>
                       </div>
                     </div>
                   </td>
 
                   <td className="px-5 py-3.5">
-                    <p className="font-bold text-gray-900 line-clamp-1 max-w-xs">{r.title}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-bold text-gray-900 line-clamp-1 max-w-xs">{r.title}</p>
+                      {r.document_url && (
+                        <span className="text-indigo-600 text-xs shrink-0" title="Signed document attached">
+                          <i className="ri-attachment-line" />
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   <td className="px-5 py-3.5 whitespace-nowrap">

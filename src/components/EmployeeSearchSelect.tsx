@@ -12,6 +12,7 @@ export interface SearchableEmployee {
   email?: string | null;
   app_role?: string | null;
   is_manager?: boolean;
+  employee_id?: string | null;
 }
 
 interface Props {
@@ -25,7 +26,7 @@ interface Props {
 const initials = (first: string, last: string) => `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase();
 
 /**
- * Searchable employee combobox — type to filter by name, department, role, or BU/branch;
+ * Searchable employee combobox — type to filter by name, ID, department, role, or BU/branch;
  * pick with mouse or keyboard (↑/↓ + Enter, Esc to close). Reused by the
  * Leave request modal and the Shifts assign-employee modal.
  */
@@ -33,7 +34,7 @@ export default function EmployeeSearchSelect({
   employees,
   value,
   onChange,
-  placeholder = "Search by name, department, or role...",
+  placeholder = "Search by name, employee ID, department...",
   excludeIds = [],
 }: Props) {
   const [query, setQuery] = useState("");
@@ -47,7 +48,7 @@ export default function EmployeeSearchSelect({
   const filtered = available.filter((e) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
-    return `${e.first_name} ${e.last_name} ${e.department || ""} ${e.role || ""} ${e.app_role || ""} ${e.branch_name || ""}`.toLowerCase().includes(q);
+    return `${e.first_name} ${e.last_name} ${e.employee_id || ""} ${e.department || ""} ${e.role || ""} ${e.app_role || ""} ${e.branch_name || ""}`.toLowerCase().includes(q);
   });
 
   // Close when clicking anywhere outside the combobox.
@@ -140,9 +141,16 @@ export default function EmployeeSearchSelect({
                   </span>
                   <span className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1.5">
-                      <span className="text-[13px] font-medium text-gray-900 truncate">
-                        {emp.first_name} {emp.last_name}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[13px] font-medium text-gray-900 truncate">
+                          {emp.first_name} {emp.last_name}
+                        </span>
+                        {emp.employee_id && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-bold shrink-0">
+                            {emp.employee_id}
+                          </span>
+                        )}
+                      </div>
                       {emp.branch_name && (
                         <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-blue-50 text-[#253C7D] border border-blue-200/60 shrink-0">
                           {emp.branch_name}

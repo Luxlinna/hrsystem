@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
+import { uploadFile } from "@/lib/storage";
 import type { DisciplinaryRecord, NewRecord, Employee } from "../types";
 
 interface UseDisciplinaryMutationsProps {
@@ -45,20 +46,47 @@ export function useDisciplinaryMutations({
             : record.branch_id || emp?.branch_id || targetBranch
           : targetBranch || emp?.branch_id || null;
 
+        let uploadedDocUrl = record.document_url || null;
+        let uploadedDocName = record.document_name || null;
+
+        if (record.document_file) {
+          try {
+            const fileExt = record.document_file.name.split(".").pop();
+            const fileName = `warning_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `warnings/${fileName}`;
+            uploadedDocUrl = await uploadFile("documents", filePath, record.document_file);
+            uploadedDocName = record.document_file.name;
+          } catch (uploadErr) {
+            console.warn("File upload failed, proceeding without attachment:", uploadErr);
+          }
+        }
+
+        const effectiveWarningType = record.warning_type || record.type || "first_written_warning";
+        const effectiveWarningDate = record.warning_date || record.incident_date;
+        const effectiveAction = record.action_to_take || record.action_taken || null;
+        const effectiveRemark = record.remark || record.notes || null;
+
         const payload = {
           employee_id: record.employee_id,
-          type: record.type,
+          type: effectiveWarningType,
           severity: record.severity,
           status: "open",
           title: record.title,
           description: record.description || null,
-          action_taken: record.action_taken || null,
-          incident_date: record.incident_date,
+          action_taken: effectiveAction,
+          incident_date: effectiveWarningDate,
           follow_up_date: record.follow_up_date || null,
-          notes: record.notes || null,
           created_by: actorName,
           branch_id: resolvedBranchId,
-          is_admin_scope: isSuperAdmin ? record.is_admin_scope : false,
+
+          // Dedicated Warning Management Fields
+          warning_type: effectiveWarningType,
+          warning_date: effectiveWarningDate,
+          action_to_take: effectiveAction,
+          employee_promise: record.employee_promise || null,
+          remark: effectiveRemark,
+          document_url: uploadedDocUrl,
+          document_name: uploadedDocName,
         };
 
         const { error } = await supabase.from("disciplinary_records").insert(payload);
@@ -154,11 +182,11 @@ export function useDisciplinaryMutations({
   const handleSaveNotes = useCallback(
     async (recordId: string, notes: string) => {
       try {
-        const { error } = await supabase.from("disciplinary_records").update({ notes }).eq("id", recordId);
+        const { error } = await supabase.from("disciplinary_records").update({ remark: notes }).eq("id", recordId);
         if (error) throw error;
         toast("Notes Saved", "Follow-up notes updated.", "success");
         if (selectedRecord?.id === recordId) {
-          setSelectedRecord((prev) => (prev ? { ...prev, notes } : null));
+          setSelectedRecord((prev) => (prev ? { ...prev, remark: notes, notes } : null));
         }
         await fetchData();
       } catch (err: any) {

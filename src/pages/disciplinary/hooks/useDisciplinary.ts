@@ -14,7 +14,7 @@ export function useDisciplinary() {
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
   const roleName = role?.name || "Staff";
-  const { isSuperAdmin, isBranchAdmin, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
+  const { isSuperAdmin, isBranchAdmin, userBranchName, targetBranch, selectedBranchId, isPartnerBranchBlocked } = useBranchScope();
   const { employee: myEmployee } = useMyEmployee();
 
   const isLeader =
@@ -34,6 +34,7 @@ export function useDisciplinary() {
     targetBranch,
     isPartnerBranchBlocked,
     isLeader,
+    isSuperAdmin,
     myEmployeeId: myEmployee?.id,
   });
 
@@ -52,14 +53,25 @@ export function useDisciplinary() {
   });
 
   const openCreateModal = useCallback(() => {
+    const activeBuId =
+      (targetBranch && targetBranch !== "all" ? targetBranch : "") ||
+      (selectedBranchId && selectedBranchId !== "all" && !selectedBranchId.startsWith("site:") ? selectedBranchId : "") ||
+      data.branches.find((b) => b.name === userBranchName)?.id ||
+      data.branches[0]?.id ||
+      "";
+
+    // Preselect employee from current BU if available
+    const buEmployees = data.employees.filter((e) => e.branch_id === activeBuId);
+    const defaultEmpId = buEmployees[0]?.id || data.employees[0]?.id || "";
+
     setNewRecord({
       ...INITIAL_NEW_RECORD,
-      employee_id: data.employees[0]?.id || "",
-      branch_id: targetBranch || "",
+      employee_id: defaultEmpId,
+      branch_id: activeBuId,
       is_admin_scope: isSuperAdmin,
     });
     setShowModal(true);
-  }, [data.employees, targetBranch, isSuperAdmin]);
+  }, [data.employees, data.branches, targetBranch, selectedBranchId, userBranchName, isSuperAdmin]);
 
   const handleCreateRecordSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +96,8 @@ export function useDisciplinary() {
     setNewRecord,
     activeTab: filters.activeTab,
     setActiveTab: filters.setActiveTab,
+    handleSelectTab: filters.handleSelectTab,
+    totalCount: filters.totalCount,
     filterType: filters.filterType,
     setFilterType: filters.setFilterType,
     filterStatus: filters.filterStatus,
@@ -100,6 +114,7 @@ export function useDisciplinary() {
     setPageSize: filters.setPageSize,
     page: filters.page,
     setPage: filters.setPage,
+    warningCount: filters.warningCount,
     openCount: filters.openCount,
     pipCount: filters.pipCount,
     criticalCount: filters.criticalCount,

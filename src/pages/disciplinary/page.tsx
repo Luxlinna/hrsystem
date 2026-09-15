@@ -16,11 +16,11 @@ export default function DisciplinaryPage() {
     canManage, isSuperAdmin, userBranchName, isPartnerBranchBlocked,
     employees, branches, loading, selectedRecord, setSelectedRecord,
     showModal, setShowModal, saving, newRecord, setNewRecord,
-    activeTab, setActiveTab, filterType, setFilterType,
+    activeTab, setActiveTab, handleSelectTab, totalCount, filterType, setFilterType,
     filterStatus, setFilterStatus, filterSeverity, setFilterSeverity,
     filterScope, setFilterScope, searchQuery, setSearchQuery,
     viewMode, setViewMode, pageSize, setPageSize,
-    page, setPage, openCount, pipCount, criticalCount,
+    page, setPage, warningCount, openCount, pipCount, criticalCount,
     resolvedCount, overdueCount, filteredRecords, totalPages,
     pagedRecords, handleCreateRecord, handleUpdateStatus,
     handleDeleteRecord, handleExportCSV, openCreateModal,
@@ -77,13 +77,14 @@ export default function DisciplinaryPage() {
         criticalCount={criticalCount}
         resolvedCount={resolvedCount}
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={handleSelectTab}
       />
 
       <NavigationTabs
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        totalCount={filteredRecords.length}
+        onSelectTab={handleSelectTab}
+        totalCount={totalCount}
+        warningCount={warningCount}
         openCount={openCount}
         pipCount={pipCount}
         criticalCount={criticalCount}

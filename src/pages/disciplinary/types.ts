@@ -11,14 +11,18 @@ export interface Employee {
   role: string;
   avatar_url: string | null;
   branch_id?: string | null;
+  employee_id?: string | null;
 }
 
 export type DisciplinarySeverity = "low" | "medium" | "high" | "critical";
 export type DisciplinaryType =
   | "verbal_warning"
   | "written_warning"
+  | "first_written_warning"
+  | "second_written_warning"
   | "final_warning"
   | "pip"
+  | "show_cause"
   | "incident"
   | "suspension"
   | "termination"
@@ -47,6 +51,15 @@ export interface DisciplinaryRecord {
   created_at: string;
   employees?: Employee;
   branches?: { id?: string; name: string } | null;
+
+  // Dedicated Warning Management Fields
+  warning_type?: string | null;
+  warning_date?: string | null;
+  action_to_take?: string | null;
+  employee_promise?: string | null;
+  remark?: string | null;
+  document_url?: string | null;
+  document_name?: string | null;
 }
 
 export interface NewRecord {
@@ -66,7 +79,18 @@ export interface NewRecord {
   notes?: string | null;
   branch_id?: string;
   is_admin_scope?: boolean;
+
+  // Dedicated Warning Management Fields
+  warning_type?: string;
+  warning_date?: string;
+  action_to_take?: string;
+  employee_promise?: string;
+  remark?: string;
+  document_url?: string;
+  document_name?: string;
+  document_file?: File | null;
 }
 
-export type DisciplinaryTabKey = "all" | "open" | "pip" | "critical" | "resolved";
+export type DisciplinaryTabKey = "all" | "warnings" | "open" | "pip" | "critical" | "resolved";
 export type ViewMode = "cards" | "table";
+

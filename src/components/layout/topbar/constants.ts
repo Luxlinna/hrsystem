@@ -40,7 +40,7 @@ const WORKFORCE_ITEMS: DrawerItem[] = [
   { path: "/performance", label: "Performance", sublabel: "Reviews & goals", icon: "ri-star-line", module: "performance" },
   { path: "/attendance", label: "Attendance", sublabel: "Punch records", icon: "ri-fingerprint-line", module: "attendance" },
   { path: "/training", label: "Training", sublabel: "Courses & programs", icon: "ri-graduation-cap-line", module: "training" },
-  { path: "/disciplinary", label: "Disciplinary", sublabel: "Incidents & actions", icon: "ri-alert-line", module: "disciplinary" },
+  { path: "/disciplinary", label: "Disciplinary & Warnings", sublabel: "Warnings & incident actions", icon: "ri-file-shield-line", module: "disciplinary" },
   { path: "/meeting-rooms", label: "Meeting Rooms", sublabel: "Book a room", icon: "ri-door-open-line", module: "meeting-rooms" },
   { path: "/tasks", label: "Tasks", sublabel: "Track and assign work", icon: "ri-checkbox-multiple-line", module: "tasks" },
 ];

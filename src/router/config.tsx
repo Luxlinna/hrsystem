@@ -101,6 +101,7 @@ const routes: RouteObject[] = [
       { path: "attendance", element: mod("attendance", <Attendance />) },
       { path: "training", element: mod("training", <Training />) },
       { path: "disciplinary", element: mod("disciplinary", <Disciplinary />) },
+      { path: "warnings", element: mod("disciplinary", <Disciplinary />) },
       { path: "documents", element: mod("documents", <Documents />) },
       { path: "movements", element: mod("employees", <Movements />) },
       { path: "profile", element: <Suspense fallback={fallback}><Profile /></Suspense> },
