@@ -65,5 +65,24 @@ export interface ProviderItem {
   totalEnrolled?: number;
 }
 
-export type BenefitTabKey = "plans" | "enrollment" | "providers";
+export type BenefitTabKey = "plans" | "enrollment" | "providers" | "nssf";
 export type ViewMode = "table" | "cards";
+
+export interface NssfEmployee {
+  id: string;
+  nssf_number?: string | null;
+  first_name: string;
+  last_name: string;
+  kh_name?: string | null;
+  nationality?: string | null;
+  gender?: string | null;
+  date_of_birth?: string | null;
+  join_date?: string | null;
+  basic_salary?: number | null;
+  status?: string | null;
+  department?: string | null;
+  role?: string | null;
+  branch?: string | null;
+  branch_id?: string | null;
+  avatar_url?: string | null;
+}

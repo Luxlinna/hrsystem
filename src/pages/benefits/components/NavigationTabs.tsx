@@ -7,6 +7,7 @@ interface NavigationTabsProps {
   plansCount: number;
   enrollmentsCount: number;
   providersCount: number;
+  nssfCount?: number;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
 }
@@ -17,6 +18,7 @@ export const NavigationTabs = memo(function NavigationTabs({
   plansCount,
   enrollmentsCount,
   providersCount,
+  nssfCount = 0,
   viewMode,
   setViewMode,
 }: NavigationTabsProps) {
@@ -77,6 +79,25 @@ export const NavigationTabs = memo(function NavigationTabs({
             }`}
           >
             {providersCount}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setTab("nssf")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            tab === "nssf"
+              ? "bg-[#253C7D] text-white shadow-xs"
+              : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          }`}
+        >
+          <i className="ri-shield-user-line text-sm" />
+          <span>NSSF Management</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold leading-none ${
+              tab === "nssf" ? "bg-white/20 text-white" : "bg-gray-200 text-gray-600"
+            }`}
+          >
+            {nssfCount}
           </span>
         </button>
       </div>

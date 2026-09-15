@@ -25,7 +25,6 @@ export function useBenefitsData() {
       supabase
         .from("benefit_plans")
         .select("*")
-        .eq("branch_id", targetBranch)
         .order("created_at", { ascending: false }),
       supabase
         .from("benefit_enrollments")

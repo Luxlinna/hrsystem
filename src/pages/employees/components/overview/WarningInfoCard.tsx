@@ -45,7 +45,7 @@ export const WarningInfoCard: React.FC<WarningInfoCardProps> = ({ employee, onCo
       try {
         const { data, error } = await supabase
           .from("disciplinary_records")
-          .select("id, type, warning_type, title, description, severity, incident_date, warning_date, status, action_to_take, action_taken, employee_promise, remark, notes, document_url, document_name, created_at")
+          .select("*")
           .eq("employee_id", employee.id)
           .is("deleted_at", null)
           .order("incident_date", { ascending: false });
