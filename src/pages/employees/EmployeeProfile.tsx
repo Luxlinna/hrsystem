@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ProfileHeader } from "./components/profile/ProfileHeader";
 import { BasicInfoCard } from "./components/profile/BasicInfoCard";
@@ -6,10 +6,21 @@ import { EmployeeDocumentsCard } from "./components/profile/EmployeeDocumentsCar
 import { LeaveHistoryCard } from "./components/profile/LeaveHistoryCard";
 import { PayrollHistoryCard } from "./components/profile/PayrollHistoryCard";
 import { ProfileSidebar } from "./components/profile/ProfileSidebar";
+import { EmployeeOverviewTabs, OverviewTabKey } from "./components/overview/EmployeeOverviewTabs";
+import { EmployeeQuickSearchHeader } from "./components/overview/EmployeeQuickSearchHeader";
+import { MovementInfoCard } from "./components/overview/MovementInfoCard";
+import { WarningInfoCard } from "./components/overview/WarningInfoCard";
+import { NssfInfoCard } from "./components/overview/NssfInfoCard";
+import { ComplaintSuggestionCard } from "./components/overview/ComplaintSuggestionCard";
+import { TrainingInfoCard } from "./components/overview/TrainingInfoCard";
+import { AssetInfoCard } from "./components/overview/AssetInfoCard";
 import { useEmployeeProfile } from "./hooks/useEmployeeProfile";
 
 export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
+  const [activeTab, setActiveTab] = useState<OverviewTabKey>("info");
+  const [counts, setCounts] = useState<Partial<Record<OverviewTabKey, number>>>({});
+
   const {
     canEdit,
     employee,
@@ -37,6 +48,10 @@ export default function EmployeeProfile() {
     setEditing((prev) => !prev);
   }, [setEditing]);
 
+  const updateCount = useCallback((key: OverviewTabKey, count: number) => {
+    setCounts((prev) => ({ ...prev, [key]: count }));
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -58,8 +73,11 @@ export default function EmployeeProfile() {
   }
 
   return (
-    <div className="p-6 lg:p-10 min-h-screen bg-[#FAFAF8]">
-      {/* Header & Avatar */}
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-[#FAFAF8] font-sans">
+      {/* Search by Staff ID or Name Header */}
+      <EmployeeQuickSearchHeader currentEmployee={employee} allEmployees={allEmployees} />
+
+      {/* Profile Header & Summary */}
       <ProfileHeader
         employee={employee}
         canEdit={canEdit}
@@ -70,34 +88,58 @@ export default function EmployeeProfile() {
         onUploadAvatar={uploadAvatar}
       />
 
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Profile Info, Leave History & Payroll History */}
-        <div className="lg:col-span-2 space-y-6">
-          <BasicInfoCard
-            employee={employee}
-            form={form}
-            setForm={setForm}
-            editing={editing}
-            saving={saving}
-            manager={manager}
-            allEmployees={allEmployees}
-            branches={branches}
-            workSites={workSites}
-            onSave={saveChanges}
-          />
-          <EmployeeDocumentsCard employee={employee} />
-          <LeaveHistoryCard leaveRequests={leaveRequests} />
+      {/* 8-Column Navigation Tabs */}
+      <EmployeeOverviewTabs
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        counts={{
+          ...counts,
+          payroll: payrollRecords?.length,
+        }}
+      />
+
+      {/* Tab Content Display */}
+      {activeTab === "info" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <BasicInfoCard
+              employee={employee}
+              form={form}
+              setForm={setForm}
+              editing={editing}
+              saving={saving}
+              manager={manager}
+              allEmployees={allEmployees}
+              branches={branches}
+              workSites={workSites}
+              onSave={saveChanges}
+            />
+            <EmployeeDocumentsCard employee={employee} />
+            <LeaveHistoryCard leaveRequests={leaveRequests} />
+          </div>
+          <ProfileSidebar manager={manager} reports={reports} interviews={interviews} />
+        </div>
+      )}
+
+      {activeTab === "movement" && <MovementInfoCard employee={employee} />}
+      {activeTab === "warning" && (
+        <WarningInfoCard employee={employee} onCountLoaded={(c) => updateCount("warning", c)} />
+      )}
+      {activeTab === "nssf" && <NssfInfoCard employee={employee} />}
+      {activeTab === "complaints" && (
+        <ComplaintSuggestionCard employee={employee} onCountLoaded={(c) => updateCount("complaints", c)} />
+      )}
+      {activeTab === "training" && (
+        <TrainingInfoCard employee={employee} onCountLoaded={(c) => updateCount("training", c)} />
+      )}
+      {activeTab === "assets" && (
+        <AssetInfoCard employee={employee} onCountLoaded={(c) => updateCount("assets", c)} />
+      )}
+      {activeTab === "payroll" && (
+        <div className="max-w-4xl">
           <PayrollHistoryCard payrollRecords={payrollRecords} />
         </div>
-
-        {/* Right: Sidebar */}
-        <ProfileSidebar
-          manager={manager}
-          reports={reports}
-          interviews={interviews}
-        />
-      </div>
+      )}
     </div>
   );
 }

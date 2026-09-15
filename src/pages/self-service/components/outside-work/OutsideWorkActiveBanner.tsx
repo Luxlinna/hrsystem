@@ -28,11 +28,29 @@ export function OutsideWorkActiveBanner({ activeRecord }: OutsideWorkActiveBanne
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-semibold">
               <i className="ri-login-circle-line" />
-              Checked in {activeRecord.work_checked_in_at ? new Date(activeRecord.work_checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""}
+              {(() => {
+                if (!activeRecord.work_checked_in_at) return "";
+                const d = new Date(activeRecord.work_checked_in_at);
+                const isEarlier = d.toLocaleDateString("en-CA") < new Date().toLocaleDateString("en-CA");
+                if (isEarlier) {
+                  return `Today: 8:00 AM (Started ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })})`;
+                }
+                return `Checked in ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+              })()}
             </span>
             <span className="flex items-center gap-1 text-[11px] text-gray-600 font-semibold">
               <i className="ri-timer-line" />
-              {fmtDuration(activeRecord.work_checked_in_at!, null)}
+              {(() => {
+                if (!activeRecord.work_checked_in_at) return "--";
+                const d = new Date(activeRecord.work_checked_in_at);
+                const isEarlier = d.toLocaleDateString("en-CA") < new Date().toLocaleDateString("en-CA");
+                if (isEarlier) {
+                  const today8am = new Date();
+                  today8am.setHours(8, 0, 0, 0);
+                  return fmtDuration(today8am.toISOString(), null);
+                }
+                return fmtDuration(activeRecord.work_checked_in_at, null);
+              })()}
             </span>
           </div>
         </div>

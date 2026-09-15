@@ -3,6 +3,8 @@ import type { Candidate } from "../../types";
 import { EditHiringInfoModal } from "./EditHiringInfoModal";
 import { HiringOrgAndIdentitySection } from "./HiringOrgAndIdentitySection";
 import { HiringTermsAndPayrollSection } from "./HiringTermsAndPayrollSection";
+import { HiringInfoExportMenu } from "./HiringInfoExportMenu";
+import { HiringInfoAttachmentUpload } from "./HiringInfoAttachmentUpload";
 import { toast } from "@/components/Toast";
 
 interface CandidateHiringInfoCardProps {
@@ -79,14 +81,17 @@ export const CandidateHiringInfoCard: React.FC<CandidateHiringInfoCardProps> = m
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsEditModalOpen(true)}
-            className="self-start sm:self-auto px-4 py-2 rounded-xl bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-xs cursor-pointer hover:shadow-md"
-          >
-            <i className="ri-edit-line text-sm" />
-            <span>Edit Hiring Info</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+            <HiringInfoExportMenu candidate={candidate} />
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-xs cursor-pointer hover:shadow-md"
+            >
+              <i className="ri-edit-line text-sm" />
+              <span>Edit Hiring Info</span>
+            </button>
+          </div>
         </div>
 
         {/* Completeness Bar */}
@@ -111,6 +116,12 @@ export const CandidateHiringInfoCard: React.FC<CandidateHiringInfoCardProps> = m
           candidate={candidate}
           copiedField={copiedField}
           onCopy={handleCopy}
+        />
+
+        {/* Section 6: File Upload & Attachments */}
+        <HiringInfoAttachmentUpload
+          candidate={candidate}
+          onCandidateUpdated={handleSaved}
         />
 
         {/* Edit Modal */}

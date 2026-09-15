@@ -1,8 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import type { HiringRequest, Candidate } from "../types";
 import { evaluateStageSla, StageSlaEvaluation } from "../constants/slaConfig";
-import { sendDualRecruitmentNotification } from "../services/notifications/recruitmentNotifyEngine";
-import { escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
+import { todayYMD } from "@/lib/date";
 import {
   notifySlaExceeded,
   notifyInterviewFeedbackOverdue,
@@ -14,7 +13,23 @@ interface UseRecruitmentSlaWatcherProps {
   enabled?: boolean;
 }
 
-const alertedStages = new Set<string>();
+function hasAlertedToday(key: string): boolean {
+  try {
+    const today = todayYMD();
+    return localStorage.getItem(`hrm_sla_alert_${key}_${today}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markAlertedToday(key: string): void {
+  try {
+    const today = todayYMD();
+    localStorage.setItem(`hrm_sla_alert_${key}_${today}`, "1");
+  } catch {
+    // Ignore storage quota
+  }
+}
 
 export function useRecruitmentSlaWatcher({
   hiringRequests,
@@ -39,17 +54,14 @@ export function useRecruitmentSlaWatcher({
 
         if (evaluation?.isOverdue) {
           const alertKey = `req-${req.id}-${req.status}`;
-          if (alertedStages.has(alertKey)) continue;
+          if (hasAlertedToday(alertKey)) continue;
 
-          alertedStages.add(alertKey);
+          markAlertedToday(alertKey);
           const reqCode = req.requisition_id ? `[${req.requisition_id}] ` : "";
-          const recruiterId = req.assigned_recruiter_id || req.hr_assigned_to_id || null;
-          const recruiterName = req.assigned_recruiter_name || req.hr_assigned_to_name || "Assigned Recruiter";
-          const daysOverdue = Math.max(1, Math.floor(evaluation.overdueHours / 24));
-          const buName = req.branches?.name || "OPS Solutions Co ., Ltd";
+          const buName = req.branches?.name || req.business_unit || "OPS sulotion";
 
           // Canonical Notification Engine Dispatch (Event 16: SLA exceeded)
-          void notifySlaExceeded({
+          await notifySlaExceeded({
             entityType: "hiring_request",
             entityId: req.id,
             entityCode: req.requisition_id || "REQ",
@@ -60,31 +72,6 @@ export function useRecruitmentSlaWatcher({
             businessUnit: buName,
             branchId: req.branch_id || null,
           }).catch((e) => console.error("[notifySlaExceeded] error:", e));
-
-          await sendDualRecruitmentNotification({
-            title: `⚠️ SLA Exceeded: ${reqCode}${req.title}`,
-            approverMessage: `Requisition ${reqCode}${req.title} has exceeded the stage turnaround SLA by ${daysOverdue} day(s) (Stage: ${req.status.replace(/_/g, " ")}). Please review promptly.`,
-            recruiterMessage: `Standing SLA Alert: Requisition ${reqCode}${req.title} is ${daysOverdue} day(s) overdue in ${req.status.replace(/_/g, " ")}. Expedited action needed.`,
-            type: "warning",
-            entityId: req.id,
-            approverBranchId: req.branch_id || null,
-            recruiterEmployeeId: recruiterId,
-            recruiterName,
-            businessUnit: buName,
-            telegramHtml:
-              `⏱️ <b>Recruitment SLA Exceeded</b>\n` +
-              `💼 <b>Requisition:</b> ${escapeTelegramHtml(reqCode)}${escapeTelegramHtml(req.title)}\n` +
-              `🏢 <b>Department:</b> ${escapeTelegramHtml(req.department)}\n` +
-              `⚠️ <b>Current Stage:</b> ${escapeTelegramHtml(req.status)}\n` +
-              `🚨 <b>Overdue By:</b> ${daysOverdue} day(s) (${evaluation.overdueHours}h)\n` +
-              `🎯 <b>Assigned Recruiter:</b> ${escapeTelegramHtml(recruiterName)}`,
-            telegramButtonText: "Expedite Requisition",
-            telegramUrl: hrNexusUrl("/hire"),
-            auditAction: "sla_exceeded",
-            actorName: "SLA Watcher",
-            actorRole: "Automated Monitor",
-            description: `Requisition ${reqCode}${req.title} breached ${req.status} SLA by ${evaluation.overdueHours}h`,
-          });
         }
       }
 
@@ -97,33 +84,33 @@ export function useRecruitmentSlaWatcher({
 
         if (evaluation?.isOverdue) {
           const alertKey = `cand-sla-${cand.id}-${cand.stage}`;
-          if (!alertedStages.has(alertKey)) {
-            alertedStages.add(alertKey);
+          if (hasAlertedToday(alertKey)) continue;
 
-            // If in interview stage, alert interview feedback overdue (Event 8)
-            if (cand.stage.includes("interview")) {
-              void notifyInterviewFeedbackOverdue({
-                candidate: cand,
-                jobTitle: cand.job_postings?.title || "Specialist",
-                interviewerName: "Interview Panel",
-                interviewDate: cand.applied_at ? new Date(cand.applied_at).toLocaleDateString() : "Recent",
-                hoursElapsed: evaluation.hoursElapsed,
-                businessUnit: cand.job_postings?.branches?.name || "OPS Solutions Co ., Ltd",
-              }).catch((e) => console.error("[notifyInterviewFeedbackOverdue] error:", e));
-            } else {
-              // Otherwise dispatch general SLA exceeded (Event 16)
-              void notifySlaExceeded({
-                entityType: "candidate",
-                entityId: cand.id,
-                entityCode: cand.full_name,
-                entityTitle: `Candidate: ${cand.full_name}`,
-                stageName: cand.stage.replace(/_/g, " "),
-                daysInStage: Math.floor(evaluation.hoursElapsed / 24),
-                slaLimitDays: Math.floor(evaluation.allowedHours / 24),
-                businessUnit: cand.job_postings?.branches?.name || "OPS Solutions Co ., Ltd",
-                branchId: cand.job_postings?.branch_id || null,
-              }).catch((e) => console.error("[notifySlaExceeded candidate] error:", e));
-            }
+          markAlertedToday(alertKey);
+
+          // If in interview stage, alert interview feedback overdue (Event 8)
+          if (cand.stage.includes("interview")) {
+            void notifyInterviewFeedbackOverdue({
+              candidate: cand,
+              jobTitle: cand.job_postings?.title || "Specialist",
+              interviewerName: "Interview Panel",
+              interviewDate: cand.applied_at ? new Date(cand.applied_at).toLocaleDateString() : "Recent",
+              hoursElapsed: evaluation.hoursElapsed,
+              businessUnit: cand.job_postings?.branches?.name || "OPS sulotion",
+            }).catch((e) => console.error("[notifyInterviewFeedbackOverdue] error:", e));
+          } else {
+            // Otherwise dispatch general SLA exceeded (Event 16)
+            void notifySlaExceeded({
+              entityType: "candidate",
+              entityId: cand.id,
+              entityCode: cand.full_name,
+              entityTitle: `Candidate: ${cand.full_name}`,
+              stageName: cand.stage.replace(/_/g, " "),
+              daysInStage: Math.floor(evaluation.hoursElapsed / 24),
+              slaLimitDays: Math.floor(evaluation.allowedHours / 24),
+              businessUnit: cand.job_postings?.branches?.name || "OPS sulotion",
+              branchId: cand.job_postings?.branch_id || null,
+            }).catch((e) => console.error("[notifySlaExceeded candidate] error:", e));
           }
         }
       }

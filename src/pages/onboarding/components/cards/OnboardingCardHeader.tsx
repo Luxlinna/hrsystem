@@ -28,8 +28,12 @@ export const OnboardingCardHeader = memo(function OnboardingCardHeader({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="flex items-center gap-3.5 min-w-0">
-        <div className="w-11 h-11 rounded-2xl bg-[#253C7D] text-white font-extrabold text-sm flex items-center justify-center shrink-0">
-          {initials(emp?.first_name, emp?.last_name)}
+        <div className="w-11 h-11 rounded-2xl bg-[#253C7D] text-white font-extrabold text-sm flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+          {emp?.avatar_url ? (
+            <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            initials(emp?.first_name, emp?.last_name)
+          )}
         </div>
         <div>
           <div className="flex items-center gap-2 flex-wrap">

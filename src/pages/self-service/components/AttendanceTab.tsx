@@ -160,7 +160,10 @@ export default function AttendanceTab({ employeeId }: Props) {
       ) : (
         <div className="space-y-2">
           {records.map((r) => {
-            const meta = STATUS_META[r.status] || { label: r.status, bg: "bg-gray-100", text: "text-gray-600", icon: "ri-circle-line" };
+            const isOutsideWork = r.notes?.toLowerCase().includes("outside work");
+            const meta = isOutsideWork
+              ? { label: "Outside Working", bg: "bg-teal-50", text: "text-teal-700", icon: "ri-map-pin-user-line" }
+              : STATUS_META[r.status] || { label: r.status, bg: "bg-gray-100", text: "text-gray-600", icon: "ri-circle-line" };
             const d = new Date(r.date + "T00:00:00");
             const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
             const dayNum = d.getDate();

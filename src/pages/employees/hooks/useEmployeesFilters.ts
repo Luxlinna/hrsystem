@@ -81,13 +81,15 @@ export function useEmployeesFilters({
     return employees
       .filter((e) => {
         const fullName = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
+        const staffId = (e.biometric_user_id || "").toLowerCase();
         const email = (e.email || "").toLowerCase();
         const phone = (e.phone || "").toLowerCase();
         const role = (e.role || "").toLowerCase();
         const dept = (e.department || "").toLowerCase();
-        const q = search.toLowerCase();
+        const q = search.trim().toLowerCase();
         const matchesSearch =
           !search ||
+          staffId.includes(q) ||
           fullName.includes(q) ||
           email.includes(q) ||
           phone.includes(q) ||

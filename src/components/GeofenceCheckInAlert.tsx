@@ -7,6 +7,7 @@ import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows, computeHou
 import { useAuth } from "@/context/AuthContext";
 import { notifyGeofenceEvent } from "@/lib/attendanceNotify";
 import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
+import { syncMultiDayOutsideWorkAttendance } from "@/pages/tasks/hooks/taskAttendanceSync";
 
 interface BranchGeofence {
   name: string;
@@ -52,7 +53,7 @@ export default function GeofenceCheckInAlert() {
           .select(`
             id, first_name, last_name, branch_id, default_work_location_id,
             branches(name, latitude, longitude, geofence_radius_m, work_start_time, work_end_time),
-            work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time)
+            work_locations:default_work_location_id(id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled)
           `),
         user.email
       );
@@ -65,13 +66,28 @@ export default function GeofenceCheckInAlert() {
       if (!site && (employee as any).branch_id) {
         const { data: defaultSite } = await supabase
           .from("work_locations")
-          .select("id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time")
+          .select("id, name, description, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled")
           .eq("branch_id", (employee as any).branch_id)
           .is("deleted_at", null)
           .order("is_default", { ascending: false })
           .limit(1)
           .maybeSingle();
         if (defaultSite) site = defaultSite;
+      }
+
+      // Check if this BU / site operates on 4-Punch mode
+      let isFourPunch = Boolean(site?.is_four_punch_enabled);
+      if (!isFourPunch && (employee as any).branch_id) {
+        const { data: fourPunchSites } = await supabase
+          .from("work_locations")
+          .select("id")
+          .eq("branch_id", (employee as any).branch_id)
+          .eq("is_four_punch_enabled", true)
+          .is("deleted_at", null)
+          .limit(1);
+        if (fourPunchSites && fourPunchSites.length > 0) {
+          isFourPunch = true;
+        }
       }
 
       const branch: BranchGeofence = {
@@ -87,7 +103,7 @@ export default function GeofenceCheckInAlert() {
 
       const employeeName = `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || user.email || "Employee";
 
-      // Skip alerts if employee has outside work scheduled or active today
+      // Condition 1: Skip if employee has outside work scheduled or active today
       const { data: outsideTasks } = await supabase
         .from("tasks")
         .select("id, due_date, work_status, work_checked_in_at, created_at")
@@ -101,12 +117,30 @@ export default function GeofenceCheckInAlert() {
           || (t.work_checked_in_at && t.work_checked_in_at.startsWith(today) && t.work_status !== "checked_out")
           || (t.created_at && t.created_at.startsWith(today) && t.work_status !== "checked_out")
       );
-      if (cancelled || hasOutsideToday) return;
+
+      // Condition 2: Skip if employee is assigned to a specific shift today (not normal working)
+      const { data: shiftAssignments } = await supabase
+        .from("shift_assignments")
+        .select("id, shift:shifts(id, start_time, end_time, shift_date, deleted_at)")
+        .eq("employee_id", employee.id)
+        .is("deleted_at", null);
+
+      const hasShiftToday = (shiftAssignments || []).some(
+        (a: any) => a.shift && a.shift.shift_date === today && !a.shift.deleted_at
+      );
+
+      // If on special shift assignment, skip default alerts and auto checkout
+      if (cancelled || hasShiftToday) return;
 
       const { data: scheduleRows } = await supabase.from("system_settings").select("key, value");
       const scheduleSettings = scheduleRows ? settingsFromRows(scheduleRows) : DEFAULT_WORK_SCHEDULE;
       const daySchedule = getScheduleForDate(scheduleSettings);
       if (!daySchedule) return;
+
+      // Synchronize multi-day outside tasks if any
+      if (hasOutsideToday) {
+        await syncMultiDayOutsideWorkAttendance(employee.id, scheduleSettings.timezone);
+      }
 
       const { data: todayRecord } = await supabase
         .from("attendance_records")
@@ -148,7 +182,7 @@ export default function GeofenceCheckInAlert() {
       }
 
       const checkoutAlertMin = endMinutes;
-      const autoCheckoutThresholdMin = endMinutes + 60; // Auto checkout 60m after shift ends
+      const autoCheckoutThresholdMin = endMinutes + 60; // Auto checkout 60m after shift ends (e.g. 6:00 PM for 5:00 PM shift)
 
       const formatMinToLabel = (mins: number) => {
         const h = Math.floor(mins / 60) % 24;
@@ -163,22 +197,35 @@ export default function GeofenceCheckInAlert() {
       const siteBreakStart = branch.break_start_time?.slice(0, 5) || scheduleSettings.breakStartTime;
       const siteBreakEnd = branch.break_end_time?.slice(0, 5) || scheduleSettings.breakEndTime;
 
-      // 1. AUTOMATIC CHECKOUT: If user forgot to checkout and threshold is reached (only once per day)
-      if (hasClockedIn && !hasClockedOut && nowZ.minutesOfDay >= autoCheckoutThresholdMin && !autoCheckedOutRef.current && !localStorage.getItem(dedupeKey("auto_checkout"))) {
+      // 1. AUTOMATIC CHECKOUT:
+      // Only for normal working employees in BUs without 4-punch, no active shift assignment, and no outside task
+      if (
+        !isFourPunch &&
+        hasClockedIn &&
+        !hasClockedOut &&
+        nowZ.minutesOfDay >= autoCheckoutThresholdMin &&
+        !autoCheckedOutRef.current &&
+        !localStorage.getItem(dedupeKey("auto_checkout"))
+      ) {
         autoCheckedOutRef.current = true;
         localStorage.setItem(dedupeKey("auto_checkout"), "1");
-        const now = new Date();
-        const timeStr = `${String(nowZ.hh).padStart(2, "0")}:${String(nowZ.mm).padStart(2, "0")}:${String(nowZ.ss).padStart(2, "0")}`;
+
+        // Record exact auto-checkout threshold time (e.g. 18:00:00 / 6:00 PM)
+        const autoH = Math.floor(autoCheckoutThresholdMin / 60) % 24;
+        const autoM = autoCheckoutThresholdMin % 60;
+        const autoCheckoutTimeStr = `${String(autoH).padStart(2, "0")}:${String(autoM).padStart(2, "0")}:00`;
+
         const [ciH, ciM, ciS] = (todayRecord.clock_in || "08:00:00").split(":").map(Number);
         const clockInInstant = zonedTimeToInstant(today, ciH, ciM, ciS, scheduleSettings.timezone);
-        const hoursWorked = computeHoursWorked(clockInInstant, now, siteBreakStart, siteBreakEnd);
+        const clockOutInstant = zonedTimeToInstant(today, autoH, autoM, 0, scheduleSettings.timezone);
+        const hoursWorked = computeHoursWorked(clockInInstant, clockOutInstant, siteBreakStart, siteBreakEnd);
 
         const autoNote = todayRecord.notes
           ? `${todayRecord.notes}\nAuto checkout at ${autoCheckoutLabel} (forgot to check out at ${shiftEndLabel})`
           : `Auto checkout at ${autoCheckoutLabel} (forgot to check out at ${shiftEndLabel})`;
 
         await supabase.from("attendance_records").update({
-          clock_out: timeStr,
+          clock_out: autoCheckoutTimeStr,
           hours_worked: hoursWorked,
           notes: autoNote,
         }).eq("id", todayRecord.id);
@@ -229,7 +276,7 @@ export default function GeofenceCheckInAlert() {
       }
 
       // 3. Geofence Location Watch & 100m Morning Proximity Alert
-      if (branch?.latitude && branch?.longitude && navigator.geolocation && !watchIdRef.current) {
+      if (!hasOutsideToday && branch?.latitude && branch?.longitude && navigator.geolocation && !watchIdRef.current) {
         const handleLocationUpdate = (coords: { latitude: number; longitude: number }) => {
           const dist = distanceMeters(coords.latitude, coords.longitude, branch.latitude!, branch.longitude!);
           // Alert within ~100m proximity from company branch or geofence radius

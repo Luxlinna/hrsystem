@@ -102,7 +102,25 @@ export const AttendanceTableView = memo(function AttendanceTableView({
               let statusIcon = "";
               let isPulse = false;
 
-              if (isToday) {
+              const isOutsideWork = r.notes?.toLowerCase().includes("outside work");
+
+              if (isOutsideWork) {
+                if (!r.clock_out) {
+                  statusLabel = "Outside Working";
+                  statusBg = "bg-teal-50 dark:bg-teal-950/60";
+                  statusText = "text-teal-700 dark:text-teal-300";
+                  statusBorder = "border-teal-200 dark:border-teal-800/60";
+                  statusIcon = "ri-map-pin-user-line";
+                  isPulse = true;
+                } else {
+                  statusLabel = "Outside Working";
+                  statusBg = "bg-teal-50 dark:bg-teal-950/60";
+                  statusText = "text-teal-700 dark:text-teal-300";
+                  statusBorder = "border-teal-200 dark:border-teal-800/60";
+                  statusIcon = "ri-checkbox-circle-line";
+                  isPulse = false;
+                }
+              } else if (isToday) {
                 if (isFourPunchMode && r.break_out && !r.break_in) {
                   statusLabel = "Lunch Break";
                   statusBg = "bg-orange-50 dark:bg-orange-950/60";
