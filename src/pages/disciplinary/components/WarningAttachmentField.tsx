@@ -1,5 +1,6 @@
 import React, { memo, useRef, useState } from "react";
 import type { NewRecord } from "../types";
+import { WarningFileViewerModal } from "./WarningFileViewerModal";
 
 interface WarningAttachmentFieldProps {
   newRecord: NewRecord;
@@ -12,6 +13,7 @@ export const WarningAttachmentField = memo(function WarningAttachmentField({
 }: WarningAttachmentFieldProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [previewState, setPreviewState] = useState<{ url: string; name: string } | null>(null);
 
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -59,7 +61,18 @@ export const WarningAttachmentField = memo(function WarningAttachmentField({
             <span className="text-[#0284c7] font-semibold hover:underline">Browse</span>
             {newRecord.document_file && (
               <span className="ml-2 font-bold text-slate-800 flex items-center gap-1">
-                ({newRecord.document_file.name})
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const objectUrl = URL.createObjectURL(newRecord.document_file!);
+                    setPreviewState({ url: objectUrl, name: newRecord.document_file!.name });
+                  }}
+                  className="text-slate-800 hover:text-sky-600 underline cursor-pointer"
+                  title="Click to view file"
+                >
+                  ({newRecord.document_file.name})
+                </button>
                 <button
                   type="button"
                   onClick={(e) => {
@@ -67,14 +80,38 @@ export const WarningAttachmentField = memo(function WarningAttachmentField({
                     handleFieldChange("document_file", undefined);
                   }}
                   className="text-rose-500 hover:text-rose-700 ml-0.5 cursor-pointer"
+                  title="Remove file"
                 >
                   <i className="ri-close-line" />
+                </button>
+              </span>
+            )}
+            {!newRecord.document_file && newRecord.document_url && (
+              <span className="ml-2 font-bold text-slate-800 flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewState({ url: newRecord.document_url!, name: newRecord.document_name || "Attachment" });
+                  }}
+                  className="text-slate-800 hover:text-sky-600 underline cursor-pointer"
+                  title="Click to view file"
+                >
+                  ({newRecord.document_name || "Attached File"})
                 </button>
               </span>
             )}
           </div>
         </div>
       </div>
+
+      {previewState && (
+        <WarningFileViewerModal
+          url={previewState.url}
+          fileName={previewState.name}
+          onClose={() => setPreviewState(null)}
+        />
+      )}
     </div>
   );
 });

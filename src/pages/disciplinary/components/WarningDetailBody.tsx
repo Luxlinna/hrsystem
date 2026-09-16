@@ -1,13 +1,15 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { DisciplinaryRecord } from "../types";
 import { formatDateDMY, formatMultilinePreview } from "../utils/formatters";
 import { WarningDetailEmployeeCard } from "./WarningDetailEmployeeCard";
+import { WarningFileViewerModal } from "./WarningFileViewerModal";
 
 interface WarningDetailBodyProps {
   record: DisciplinaryRecord;
 }
 
 export const WarningDetailBody = memo(function WarningDetailBody({ record }: WarningDetailBodyProps) {
+  const [viewerOpen, setViewerOpen] = useState(false);
   const warningType = record.warning_type || record.type || "First Written";
   const formattedDate = formatDateDMY(record.warning_date || record.incident_date);
 
@@ -104,19 +106,19 @@ export const WarningDetailBody = memo(function WarningDetailBody({ record }: War
             {record.document_url ? (
               <div className="w-full">
                 <div className="flex items-center justify-between text-xs py-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 border border-slate-800 rounded flex items-center justify-center text-slate-800 text-xs shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setViewerOpen(true)}
+                    className="flex items-center gap-2 group cursor-pointer text-left focus:outline-none"
+                    title="Click to preview document"
+                  >
+                    <span className="w-6 h-6 border border-slate-800 group-hover:border-sky-600 rounded flex items-center justify-center text-slate-800 group-hover:text-sky-600 text-xs shrink-0 transition-colors">
                       <i className="ri-image-line text-xs" />
                     </span>
-                    <a
-                      href={record.document_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-slate-700 hover:text-sky-600 underline font-medium truncate max-w-md"
-                    >
+                    <span className="text-slate-700 group-hover:text-sky-600 underline font-medium truncate max-w-md transition-colors">
                       {record.document_name || "photo_2026-09-12_11-24-47.jpg"}
-                    </a>
-                  </div>
+                    </span>
+                  </button>
                   <div className="flex items-center gap-3 text-slate-400 text-xs">
                     <span>184 KB</span>
                     <i className="ri-close-line cursor-pointer hover:text-slate-700 text-sm" />
@@ -134,6 +136,14 @@ export const WarningDetailBody = memo(function WarningDetailBody({ record }: War
           </div>
         </div>
       </div>
+
+      {viewerOpen && record.document_url && (
+        <WarningFileViewerModal
+          url={record.document_url}
+          fileName={record.document_name || "Attachment Document"}
+          onClose={() => setViewerOpen(false)}
+        />
+      )}
     </div>
   );
 });
