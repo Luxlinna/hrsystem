@@ -8,6 +8,7 @@ import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShi
 import { useExitData } from "./hooks/useExitData";
 import { useExitMutations } from "./hooks/useExitMutations";
 import { useExitPermission } from "./hooks/useExitPermission";
+import { useExitFormOptions } from "./hooks/useExitFormOptions";
 import { ExitHeader } from "./components/ExitHeader";
 import { ExitStatsRow } from "./components/ExitStatsRow";
 import { ExitFilterBar } from "./components/ExitFilterBar";
@@ -22,6 +23,7 @@ export default function ExitPage() {
   const { user } = useAuth();
   const { role } = usePermissions();
   const { canManageExitSettings } = useExitPermission();
+  const { exitTypes } = useExitFormOptions();
   const { isPartnerBranchBlocked, targetBranch, userBranchId, userBranchName, branches } = useBranchScope();
 
   const currentBranchId = targetBranch || userBranchId || null;
@@ -150,6 +152,7 @@ export default function ExitPage() {
         setFilterDateFrom={setFilterDateFrom}
         filterDateTo={filterDateTo}
         setFilterDateTo={setFilterDateTo}
+        exitTypeOptions={exitTypes}
       />
 
       {/* Exits Table */}

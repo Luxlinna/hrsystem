@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect } from "react";
 import type { EmployeeExit, ExitFormState } from "../types";
 import { useExitEmployeeSearch } from "../hooks/useExitEmployeeSearch";
+import { useExitFormOptions } from "../hooks/useExitFormOptions";
 import { ExitEmployeeSection } from "./modal/ExitEmployeeSection";
 import { ExitInfoSection } from "./modal/ExitInfoSection";
 import { ExitContractSection } from "./modal/ExitContractSection";
@@ -33,6 +34,7 @@ export const ExitFormModal = memo(function ExitFormModal({
   branchName,
 }: ExitFormModalProps) {
   const { results, searching, search } = useExitEmployeeSearch(branchId);
+  const { exitTypes, reasonTypes, refreshOptions } = useExitFormOptions();
 
   const handleChange = useCallback((field: keyof ExitFormState, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -45,8 +47,9 @@ export const ExitFormModal = memo(function ExitFormModal({
   useEffect(() => {
     if (isOpen) {
       search("", branchId);
+      refreshOptions();
     }
-  }, [isOpen, branchId, search]);
+  }, [isOpen, branchId, search, refreshOptions]);
 
   if (!isOpen) return null;
 
@@ -101,6 +104,8 @@ export const ExitFormModal = memo(function ExitFormModal({
             <ExitInfoSection
               form={form}
               onChange={handleChange}
+              exitTypes={exitTypes}
+              reasonTypes={reasonTypes}
             />
 
             <ExitContractSection

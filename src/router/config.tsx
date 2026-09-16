@@ -11,6 +11,7 @@ const ForgotPassword = lazy(() => import("../pages/auth/forgot-password"));
 const ResetPassword = lazy(() => import("../pages/auth/reset-password"));
 const Employees = lazy(() => import("../pages/employees/page"));
 const EmployeeProfile = lazy(() => import("../pages/employees/EmployeeProfile"));
+const EmployeeSettingsPage = lazy(() => import("../pages/employees/settings/EmployeeSettingsPage"));
 const Onboarding = lazy(() => import("../pages/onboarding/page"));
 const Leave = lazy(() => import("../pages/leave/page"));
 const PayrollModule = lazy(() => import("../pages/payroll/page"));
@@ -72,6 +73,7 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: mod("dashboard", <Home />) },
       { path: "employees", element: mod("employees", <Employees />) },
+      { path: "employees/settings", element: mod("employees", <EmployeeSettingsPage />) },
       { path: "employees/:id", element: mod("employees", <EmployeeProfile />) },
       { path: "onboarding", element: mod("onboarding", <Onboarding />) },
       { path: "leave", element: mod("leave", <Leave />) },

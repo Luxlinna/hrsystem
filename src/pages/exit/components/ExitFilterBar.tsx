@@ -10,6 +10,7 @@ interface ExitFilterBarProps {
   setFilterDateFrom: (v: string) => void;
   filterDateTo: string;
   setFilterDateTo: (v: string) => void;
+  exitTypeOptions?: Array<{ id: string; name: string }>;
 }
 
 export const ExitFilterBar = memo(function ExitFilterBar({
@@ -17,6 +18,7 @@ export const ExitFilterBar = memo(function ExitFilterBar({
   filterExitType, setFilterExitType,
   filterDateFrom, setFilterDateFrom,
   filterDateTo, setFilterDateTo,
+  exitTypeOptions = [],
 }: ExitFilterBarProps) {
   const hasFilters = searchQuery || filterExitType !== "all" || filterDateFrom || filterDateTo;
 
@@ -42,9 +44,17 @@ export const ExitFilterBar = memo(function ExitFilterBar({
           className="px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:border-[#253C7D] cursor-pointer appearance-none"
         >
           <option value="all">All Types</option>
-          {EXIT_TYPE_ORDER.map((t) => (
-            <option key={t} value={t}>{EXIT_TYPE_CONFIG[t].label}</option>
-          ))}
+          {exitTypeOptions.length > 0
+            ? exitTypeOptions.map((t) => (
+                <option key={t.id || t.name} value={t.name}>
+                  {t.name}
+                </option>
+              ))
+            : EXIT_TYPE_ORDER.map((t) => (
+                <option key={t} value={t}>
+                  {EXIT_TYPE_CONFIG[t]?.label || t}
+                </option>
+              ))}
         </select>
 
         {/* Date From */}

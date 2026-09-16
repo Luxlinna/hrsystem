@@ -5,12 +5,16 @@ interface EmployeesHeaderProps {
   branchCount: number;
   canManage: boolean;
   onOpenAddModal: () => void;
+  canManageSettings?: boolean;
+  onOpenSettings?: () => void;
 }
 
 export const EmployeesHeader = memo(function EmployeesHeader({
   branchCount,
   canManage,
   onOpenAddModal,
+  canManageSettings,
+  onOpenSettings,
 }: EmployeesHeaderProps) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
@@ -26,6 +30,16 @@ export const EmployeesHeader = memo(function EmployeesHeader({
         </p>
       </div>
       <div className="flex items-center gap-2.5 flex-wrap">
+        {canManageSettings && onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="inline-flex items-center gap-2 bg-white text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all border border-gray-200/80 shadow-2xs cursor-pointer"
+          >
+            <i className="ri-settings-3-line text-[#253C7D] text-lg" />
+            Setting
+          </button>
+        )}
         {canManage && (
           <button
             onClick={onOpenAddModal}

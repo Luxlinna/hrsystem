@@ -15,7 +15,16 @@ function initials(first: string, last: string) {
 }
 
 function ExitTypeBadge({ type }: { type: EmployeeExit["exit_type"] }) {
-  const cfg = EXIT_TYPE_CONFIG[type];
+  const normalized = (type || "").toLowerCase().replace(/[\s-]+/g, "_") as any;
+  const cfg = (EXIT_TYPE_CONFIG as any)[type] || (EXIT_TYPE_CONFIG as any)[normalized];
+  if (!cfg) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border bg-slate-100 text-slate-700 border-slate-200">
+        <i className="ri-logout-box-r-line text-[10px]" />
+        {type || "—"}
+      </span>
+    );
+  }
   return (
     <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
       <i className={`${cfg.icon} text-[10px]`} />

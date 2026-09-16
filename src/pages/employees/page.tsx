@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { EmployeesHeader } from "./components/EmployeesHeader";
 import { EmployeesStatsRow } from "./components/EmployeesStatsRow";
 import { EmployeesFilterBar } from "./components/EmployeesFilterBar";
@@ -11,6 +12,7 @@ import { AddEmployeeModal } from "./components/AddEmployeeModal";
 import { SetUpPhoneAccountModal } from "./components/SetUpPhoneAccountModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useEmployees } from "./hooks/useEmployees";
+import { useEmployeePermission } from "./hooks/useEmployeePermission";
 import { INITIAL_EMPLOYEE_FORM, getBranchCode, deriveBuHandle } from "./constants";
 
 export default function EmployeesPage() {
@@ -29,6 +31,9 @@ export default function EmployeesPage() {
     inviteUser, phoneAccountEmployee, setPhoneAccountEmployee, setUpPhoneUser,
     deleteEmployee, roles,
   } = useEmployees();
+
+  const navigate = useNavigate();
+  const { canManageEmployeeSettings } = useEmployeePermission();
 
   const handleOpenAddModal = useCallback(() => {
     const isSite = selectedBranchId && selectedBranchId.startsWith("site:");
@@ -67,6 +72,8 @@ export default function EmployeesPage() {
           branchCount={branchCount}
           canManage={false}
           onOpenAddModal={() => {}}
+          canManageSettings={canManageEmployeeSettings}
+          onOpenSettings={() => navigate("/employees/settings")}
         />
         <PartnerBranchPrivacyShield
           moduleName="Employee Directory"
@@ -83,6 +90,8 @@ export default function EmployeesPage() {
         branchCount={branchCount}
         canManage={canManage}
         onOpenAddModal={handleOpenAddModal}
+        canManageSettings={canManageEmployeeSettings}
+        onOpenSettings={() => navigate("/employees/settings")}
       />
 
       <EmployeesStatsRow stats={stats} branchCount={branchCount} />

@@ -1,16 +1,30 @@
 import { memo } from "react";
-import type { ExitFormState, ExitType, ReasonType } from "../../types";
-import { EXIT_TYPE_CONFIG, EXIT_TYPE_ORDER, REASON_TYPE_CONFIG, REASON_TYPE_ORDER } from "../../constants";
+import type { ExitFormState } from "../../types";
+import type { ExitOptionItem } from "../../hooks/useExitFormOptions";
 
 interface ExitInfoSectionProps {
   form: ExitFormState;
   onChange: (field: keyof ExitFormState, value: any) => void;
+  exitTypes?: ExitOptionItem[];
+  reasonTypes?: ExitOptionItem[];
 }
 
 export const ExitInfoSection = memo(function ExitInfoSection({
   form,
   onChange,
+  exitTypes = [],
+  reasonTypes = [],
 }: ExitInfoSectionProps) {
+  // Ensure existing selected exit_type is visible even if not in active list
+  const hasSelectedExitType =
+    !form.exit_type ||
+    exitTypes.some((t) => t.name.toLowerCase() === form.exit_type.toLowerCase());
+
+  // Ensure existing selected reason_type is visible even if not in active list
+  const hasSelectedReasonType =
+    !form.reason_type ||
+    reasonTypes.some((rt) => rt.name.toLowerCase() === form.reason_type.toLowerCase());
+
   return (
     <div className="space-y-4 pt-2">
       <div className="text-xs font-black tracking-wider text-sky-600 uppercase border-b border-slate-100 pb-1.5">
@@ -26,13 +40,16 @@ export const ExitInfoSection = memo(function ExitInfoSection({
           <select
             required
             value={form.exit_type}
-            onChange={(e) => onChange("exit_type", e.target.value as ExitType)}
+            onChange={(e) => onChange("exit_type", e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] cursor-pointer appearance-none pr-8"
           >
-            <option value="">Search...</option>
-            {EXIT_TYPE_ORDER.map((t) => (
-              <option key={t} value={t}>
-                {EXIT_TYPE_CONFIG[t].label}
+            <option value="">Select Exit Type...</option>
+            {!hasSelectedExitType && form.exit_type && (
+              <option value={form.exit_type}>{form.exit_type}</option>
+            )}
+            {exitTypes.map((t) => (
+              <option key={t.id || t.name} value={t.name}>
+                {t.name}
               </option>
             ))}
           </select>
@@ -64,13 +81,16 @@ export const ExitInfoSection = memo(function ExitInfoSection({
         <div className="md:col-span-3 relative">
           <select
             value={form.reason_type}
-            onChange={(e) => onChange("reason_type", e.target.value as ReasonType)}
+            onChange={(e) => onChange("reason_type", e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-lg bg-white border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D] cursor-pointer appearance-none pr-8"
           >
-            <option value="">Reason Type</option>
-            {REASON_TYPE_ORDER.map((rt) => (
-              <option key={rt} value={rt}>
-                {REASON_TYPE_CONFIG[rt]?.label || rt}
+            <option value="">Select Reason Type...</option>
+            {!hasSelectedReasonType && form.reason_type && (
+              <option value={form.reason_type}>{form.reason_type}</option>
+            )}
+            {reasonTypes.map((rt) => (
+              <option key={rt.id || rt.name} value={rt.name}>
+                {rt.name}
               </option>
             ))}
           </select>

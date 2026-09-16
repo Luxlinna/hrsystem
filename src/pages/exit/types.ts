@@ -5,7 +5,8 @@ export type ExitType =
   | "contract_end"
   | "abandonment"
   | "mutual_agreement"
-  | "death";
+  | "death"
+  | (string & {});
 
 export type ReasonType =
   | "personal"
@@ -17,7 +18,8 @@ export type ReasonType =
   | "relocation"
   | "retirement"
   | "contract_end"
-  | "other";
+  | "other"
+  | (string & {});
 
 export interface SeverancePayInfo {
   eligible?: boolean;
@@ -77,9 +79,9 @@ export interface ExitFormState {
 
 export const EMPTY_EXIT_FORM: ExitFormState = {
   employee_id: "",
-  exit_type: "resignation",
+  exit_type: "",
   last_working_day: new Date().toISOString().slice(0, 10),
-  reason_type: "personal",
+  reason_type: "",
   reason_description: "",
   is_blacklisted: false,
   remark: "",

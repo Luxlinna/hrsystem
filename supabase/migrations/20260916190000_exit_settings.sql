@@ -6,13 +6,28 @@
 -- 1. Create exit_types table
 create table if not exists exit_types (
   id uuid primary key default gen_random_uuid(),
-  name text not null,
+  name text not null unique,
   code text,
   status text not null default 'active' check (status in ('active', 'inactive')),
   display_order int default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Clean duplicates if any exist before adding unique constraint
+delete from exit_types
+where ctid not in (
+  select min(ctid) from exit_types group by name
+);
+
+-- Add unique constraint if table already existed without it
+do $$ begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'exit_types_name_unique'
+  ) then
+    alter table exit_types add constraint exit_types_name_unique unique (name);
+  end if;
+end $$;
 
 -- 2. Create exit_reason_types table
 create table if not exists exit_reason_types (
@@ -23,6 +38,21 @@ create table if not exists exit_reason_types (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Clean duplicates if any exist before adding unique constraint
+delete from exit_reason_types
+where ctid not in (
+  select min(ctid) from exit_reason_types group by name
+);
+
+-- Add unique constraint if table already existed without it
+do $$ begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'exit_reason_types_name_unique'
+  ) then
+    alter table exit_reason_types add constraint exit_reason_types_name_unique unique (name);
+  end if;
+end $$;
 
 -- 3. Relax check constraints on employee_exits if present
 alter table employee_exits drop constraint if exists employee_exits_exit_type_check;
