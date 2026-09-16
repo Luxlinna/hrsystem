@@ -26,14 +26,7 @@ export const PersonalPhotoCard = memo(function PersonalPhotoCard({
       toast("Profile Image Saved", "Employee photo stored securely on AWS S3.", "success");
     } catch (err) {
       console.error("Avatar AWS S3 upload error:", err);
-      // Fallback to local data URL if AWS fails
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        if (dataUrl) onChange("avatar_url", dataUrl);
-      };
-      reader.readAsDataURL(file);
-      toast("Upload Note", "Image saved locally.", "info");
+      toast("Upload Failed", err instanceof Error ? err.message : "Failed to upload employee photo to AWS S3.", "error");
     } finally {
       setUploadingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

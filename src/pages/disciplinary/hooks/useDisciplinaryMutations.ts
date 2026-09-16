@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { logActivity } from "@/lib/audit";
 import { uploadFileToS3 } from "@/lib/s3-storage";
 import type { DisciplinaryRecord, NewRecord, Employee } from "../types";
 

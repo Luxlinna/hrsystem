@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { uploadMediaToS3 } from "@/lib/s3-storage";
-import { uploadFile } from "@/lib/storage";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import { executeSaveEmployeeProfile } from "./saveEmployeeProfile";
@@ -136,13 +135,8 @@ export function useEmployeeProfile(id: string | undefined) {
       if (!id || !canEdit) return;
       setUploadingAvatar(true);
       try {
-        let url: string;
-        try {
-          const media = await uploadMediaToS3(file, `employees/${id}/avatars`);
-          url = media.url;
-        } catch {
-          url = await uploadFile("avatars", `employees/${id}/${Date.now()}_${file.name}`, file);
-        }
+        const media = await uploadMediaToS3(file, `employees/${id}/avatars`);
+        const url = media.url;
         await supabase.from("employees").update({ avatar_url: url }).eq("id", id);
         setEmployee((prev) => (prev ? { ...prev, avatar_url: url } : prev));
         toast("Avatar updated", "Profile picture stored on AWS S3", "success");

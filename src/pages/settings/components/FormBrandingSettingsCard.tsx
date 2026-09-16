@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "@/components/Toast";
 import { useBranchScope } from "@/context/BranchContext";
+import { uploadFileToS3 } from "@/lib/s3-storage";
 import {
   getOfficialFormLogo,
   getOpsBuLogo,
@@ -69,6 +70,11 @@ export function FormBrandingSettingsCard() {
       toast("File Too Large", "Please select an image smaller than 5MB.", "error");
       return;
     }
+
+    // Automatically store a copy of the official logo in AWS S3
+    uploadFileToS3(file, "branding/logos").catch((s3Err) => {
+      console.warn("Branding logo backup to AWS S3:", s3Err);
+    });
 
     const reader = new FileReader();
     reader.onload = (event) => {
