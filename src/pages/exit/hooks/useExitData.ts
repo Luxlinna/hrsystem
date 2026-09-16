@@ -3,6 +3,40 @@ import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
 import type { EmployeeExit } from "../types";
 
+function parseExitRow(row: any): EmployeeExit {
+  let is_blacklisted = Boolean(row.is_blacklisted);
+  let remark = row.remark || "";
+  let contract_type = row.contract_type || "";
+  let severance_pay_info = row.severance_pay_info || null;
+  let reason_description = row.reason_description || "";
+
+  if (typeof reason_description === "string" && reason_description.startsWith("[EXIT_META:")) {
+    const endIdx = reason_description.indexOf("]");
+    if (endIdx !== -1) {
+      try {
+        const metaStr = reason_description.slice(11, endIdx);
+        const meta = JSON.parse(metaStr);
+        if (meta.is_blacklisted !== undefined) is_blacklisted = Boolean(meta.is_blacklisted);
+        if (meta.remark !== undefined) remark = meta.remark;
+        if (meta.contract_type !== undefined) contract_type = meta.contract_type;
+        if (meta.severance_pay_info !== undefined) severance_pay_info = meta.severance_pay_info;
+        reason_description = reason_description.slice(endIdx + 1);
+      } catch {
+        // preserve
+      }
+    }
+  }
+
+  return {
+    ...row,
+    is_blacklisted,
+    remark,
+    contract_type,
+    severance_pay_info,
+    reason_description,
+  };
+}
+
 export function useExitData() {
   const { targetBranch, userBranchId, isPartnerBranchBlocked } = useBranchScope();
   const activeBranch = targetBranch || userBranchId || null;
@@ -21,7 +55,7 @@ export function useExitData() {
     let query = supabase
       .from("employee_exits")
       .select(
-        `*, ${empJoin}(first_name, last_name, role, department, avatar_url, branch_id, branches(id, name))`
+        `*, ${empJoin}(first_name, last_name, role, department, avatar_url, branch_id, biometric_user_id, employee_code, contract_type, branches(id, name))`
       )
       .order("last_working_day", { ascending: false });
 
@@ -31,7 +65,7 @@ export function useExitData() {
     }
 
     const { data, error } = await query;
-    if (!error) setExits((data as unknown as EmployeeExit[]) || []);
+    if (!error) setExits(((data as any[]) || []).map(parseExitRow));
     setLoading(false);
   }, [activeBranch, isPartnerBranchBlocked]);
 

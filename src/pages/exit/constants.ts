@@ -85,3 +85,14 @@ export const REASON_TYPE_ORDER: ReasonType[] = [
   "misconduct", "restructuring", "relocation", "retirement",
   "contract_end", "other",
 ];
+
+export const CONTRACT_TYPE_OPTIONS = [
+  "Fixed Duration Contract (FDC)",
+  "Undetermined Duration Contract (UDC)",
+  "Probationary Contract",
+  "Part-Time Contract",
+  "Internship / Trainee Agreement",
+  "Service / Consultant Agreement",
+  "Other / Custom",
+];
+

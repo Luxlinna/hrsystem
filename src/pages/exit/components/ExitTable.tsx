@@ -95,6 +95,11 @@ export const ExitTable = memo(function ExitTable({
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-sm font-bold text-gray-900 truncate">{firstName} {lastName}</p>
+                          {ex.is_blacklisted && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+                              Blacklisted
+                            </span>
+                          )}
                           {emp?.branches?.name && (
                             <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-[#253C7D] border border-blue-100">
                               {emp.branches.name}

@@ -24,11 +24,7 @@ export default function ExitPage() {
   const currentBranchName =
     branches.find((b) => b.id === currentBranchId)?.name || userBranchName || null;
 
-  const actorName =
-    (user?.user_metadata?.full_name as string) ||
-    (user?.user_metadata?.display_name as string) ||
-    user?.email ||
-    "";
+  const actorName = (user?.user_metadata?.full_name as string) || (user?.user_metadata?.display_name as string) || user?.email || "";
   const actorRole = role?.name || (user?.user_metadata?.role as string) || "";
 
   // Data hook
@@ -72,11 +68,22 @@ export default function ExitPage() {
   const handleEdit = useCallback((exit: EmployeeExit) => {
     setEditingExit(exit);
     setForm({
-      employee_id: exit.employee_id,
+      employee_id: exit.employee_id || "",
       exit_type: exit.exit_type,
-      last_working_day: exit.last_working_day,
+      last_working_day: exit.last_working_day || new Date().toISOString().slice(0, 10),
       reason_type: exit.reason_type,
       reason_description: exit.reason_description || "",
+      is_blacklisted: Boolean(exit.is_blacklisted),
+      remark: exit.remark || "",
+      contract_type: exit.contract_type || exit.employees?.contract_type || "",
+      severance_pay_info: exit.severance_pay_info || {
+        eligible: false,
+        severance_amount: 0,
+        unused_leave_amount: 0,
+        notice_pay_amount: 0,
+        total_amount: 0,
+        remark: "",
+      },
       document_url: exit.document_url || "",
       document_name: exit.document_name || "",
     });
@@ -113,13 +120,8 @@ export default function ExitPage() {
   );
 
   // Exports
-  const handleExportCSV = useCallback(() => {
-    exportExitCSV(filtered);
-  }, [filtered]);
-
-  const handleExportXLSX = useCallback(() => {
-    exportExitXLSX(filtered);
-  }, [filtered]);
+  const handleExportCSV = useCallback(() => exportExitCSV(filtered), [filtered]);
+  const handleExportXLSX = useCallback(() => exportExitXLSX(filtered), [filtered]);
 
   if (isPartnerBranchBlocked) {
     return (

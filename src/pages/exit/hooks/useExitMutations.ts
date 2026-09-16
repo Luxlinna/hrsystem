@@ -11,6 +11,41 @@ interface UseExitMutationsProps {
   actorRole: string;
 }
 
+function formatExitPayload(form: ExitFormState, actorName?: string) {
+  const extraMeta = {
+    is_blacklisted: Boolean(form.is_blacklisted),
+    remark: form.remark?.trim() || null,
+    contract_type: form.contract_type?.trim() || null,
+    severance_pay_info: form.severance_pay_info || null,
+  };
+  const encodedReason = `[EXIT_META:${JSON.stringify(extraMeta)}]${form.reason_description.trim() || ""}`;
+
+  const fallback: any = {
+    exit_type: form.exit_type,
+    last_working_day: form.last_working_day,
+    reason_type: form.reason_type,
+    reason_description: encodedReason,
+    document_url: form.document_url.trim() || null,
+    document_name: form.document_name.trim() || null,
+  };
+  if (actorName) {
+    fallback.employee_id = form.employee_id;
+    fallback.recorded_by = actorName;
+    fallback.status = "active";
+  }
+
+  const full = {
+    ...fallback,
+    is_blacklisted: Boolean(form.is_blacklisted),
+    remark: form.remark?.trim() || null,
+    contract_type: form.contract_type?.trim() || null,
+    severance_pay_info: form.severance_pay_info || null,
+    severance_amount: form.severance_pay_info?.total_amount || 0,
+  };
+
+  return { full, fallback };
+}
+
 export function useExitMutations({ loadData, actorName, actorRole }: UseExitMutationsProps) {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -22,30 +57,23 @@ export function useExitMutations({ loadData, actorName, actorRole }: UseExitMuta
       return false;
     }
     setSaving(true);
+    const { full, fallback } = formatExitPayload(form, actorName);
 
-    const payload = {
-      employee_id:        form.employee_id,
-      exit_type:          form.exit_type,
-      last_working_day:   form.last_working_day,
-      reason_type:        form.reason_type,
-      reason_description: form.reason_description.trim() || null,
-      document_url:       form.document_url.trim() || null,
-      document_name:      form.document_name.trim() || null,
-      recorded_by:        actorName,
-      status:             "active",
-    };
+    let { error } = await supabase.from("employee_exits").insert(full);
+    if (error && error.message?.includes("column")) {
+      const fallbackRes = await supabase.from("employee_exits").insert(fallback);
+      error = fallbackRes.error;
+    }
 
-    const { error } = await supabase.from("employee_exits").insert(payload);
     if (error) {
       toast("Error", error.message || "Failed to record exit.", "error");
       setSaving(false);
       return false;
     }
 
-    // Auto-set employee status to inactive
     await supabase.from("employees").update({ status: "inactive" }).eq("id", form.employee_id);
 
-    toast("Exit Recorded", "Employee exit has been recorded successfully.", "success");
+    toast("Exit Recorded", "Employee exit requirement form saved successfully.", "success");
     logActivity({
       module: "exit",
       action: "created",
@@ -63,21 +91,20 @@ export function useExitMutations({ loadData, actorName, actorRole }: UseExitMuta
   // ── Update ──────────────────────────────────────────────────────────────
   const updateExit = useCallback(async (id: string, form: ExitFormState): Promise<boolean> => {
     setSaving(true);
-    const { error } = await supabase.from("employee_exits").update({
-      exit_type:          form.exit_type,
-      last_working_day:   form.last_working_day,
-      reason_type:        form.reason_type,
-      reason_description: form.reason_description.trim() || null,
-      document_url:       form.document_url.trim() || null,
-      document_name:      form.document_name.trim() || null,
-    }).eq("id", id);
+    const { full, fallback } = formatExitPayload(form);
+
+    let { error } = await supabase.from("employee_exits").update(full).eq("id", id);
+    if (error && error.message?.includes("column")) {
+      const fallbackRes = await supabase.from("employee_exits").update(fallback).eq("id", id);
+      error = fallbackRes.error;
+    }
 
     if (error) {
       toast("Error", error.message || "Failed to update exit record.", "error");
       setSaving(false);
       return false;
     }
-    toast("Updated", "Exit record updated.", "success");
+    toast("Updated", "Exit record updated successfully.", "success");
     logActivity({
       module: "exit",
       action: "updated",
@@ -91,6 +118,7 @@ export function useExitMutations({ loadData, actorName, actorRole }: UseExitMuta
     setSaving(false);
     return true;
   }, [actorName, actorRole, loadData]);
+
 
   // ── Delete ──────────────────────────────────────────────────────────────
   const deleteExit = useCallback(async (id: string): Promise<void> => {
