@@ -37,6 +37,7 @@ export default function EmployeeProfile() {
     form,
     setForm,
     allEmployees,
+    managersList,
     branches,
     workSites,
     hasBiometricDevice,
@@ -119,7 +120,7 @@ export default function EmployeeProfile() {
               editing={editing}
               saving={saving}
               manager={manager}
-              allEmployees={allEmployees}
+              allEmployees={managersList || allEmployees}
               branches={branches}
               workSites={workSites}
               onSave={saveChanges}

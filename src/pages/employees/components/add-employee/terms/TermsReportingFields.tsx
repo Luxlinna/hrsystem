@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { EmployeeFormState } from "../../types";
+import type { EmployeeFormState } from "../../../types";
 import type { ModalManagerEmployee } from "../types";
 
 interface TermsReportingFieldsProps {

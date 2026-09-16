@@ -2,6 +2,9 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Employee } from "../../types";
 
+import { formatBiometricId } from "@/lib/biometricUtils";
+import { matchEmployeeSearch } from "../../searchUtils";
+
 interface EmployeeQuickSearchHeaderProps {
   currentEmployee: Employee;
   allEmployees: any[];
@@ -27,16 +30,11 @@ export const EmployeeQuickSearchHeader: React.FC<EmployeeQuickSearchHeaderProps>
   }, []);
 
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (!q) return [];
     return allEmployees
-      .filter((e) => {
-        const id = (e.biometric_user_id || "").toLowerCase();
-        const name = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
-        const dept = (e.department || "").toLowerCase();
-        return id.includes(q) || name.includes(q) || dept.includes(q);
-      })
-      .slice(0, 8);
+      .filter((e) => matchEmployeeSearch(e, q))
+      .slice(0, 10);
   }, [allEmployees, query]);
 
   const handleSelect = (empId: string) => {
@@ -100,15 +98,16 @@ export const EmployeeQuickSearchHeader: React.FC<EmployeeQuickSearchHeaderProps>
                 className="w-full text-left px-3 py-2 flex items-center justify-between hover:bg-indigo-50/60 transition-colors text-xs cursor-pointer border-b border-gray-50 last:border-0"
               >
                 <div>
-                  <div className="font-semibold text-gray-800">
-                    {emp.first_name} {emp.last_name}
+                  <div className="font-semibold text-gray-800 flex items-center gap-1.5">
+                    <span>{emp.first_name} {emp.last_name}</span>
+                    {emp.kh_name && <span className="text-gray-400 font-normal">({emp.kh_name})</span>}
                   </div>
                   <div className="text-[11px] text-gray-500">
-                    {emp.role || "Staff"} &middot; {emp.department || "No Department"}
+                    {emp.branches?.name ? `${emp.branches.name} · ` : ""}{emp.role || "Staff"}
                   </div>
                 </div>
-                <div className="font-mono text-[11px] font-bold text-[#253C7D] bg-indigo-50 px-2 py-0.5 rounded">
-                  ID: {emp.biometric_user_id || "—"}
+                <div className="font-mono text-[11px] font-bold text-[#253C7D] bg-indigo-50 px-2 py-0.5 rounded shrink-0">
+                  ID: {formatBiometricId(emp.biometric_user_id, emp.branches?.name) || emp.biometric_user_id || emp.employee_code || "—"}
                 </div>
               </button>
             ))}

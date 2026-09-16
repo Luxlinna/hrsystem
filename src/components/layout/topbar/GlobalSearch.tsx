@@ -137,7 +137,7 @@ const GlobalSearch = memo(function GlobalSearch({
         )}
 
         {/* No-results state */}
-        {searchOpen && searchResults.length === 0 && searchQuery.length >= 2 && !searchLoading && (
+        {searchOpen && searchResults.length === 0 && searchQuery.trim().length >= 1 && !searchLoading && (
           <div
             className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-gray-100 p-5 text-center z-50"
             style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}
