@@ -1,154 +1,184 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { DisciplinaryRecord } from "../types";
-import { TYPE_CONFIG, SEVERITY_CONFIG, STATUS_CONFIG } from "../constants";
+import { formatDateDMY, formatMultilinePreview } from "../utils/formatters";
+import { WarningRowMenu } from "./WarningRowMenu";
 
 interface DisciplinaryTableViewProps {
   records: DisciplinaryRecord[];
   onSelectRecord: (record: DisciplinaryRecord) => void;
+  onEditRecord?: (record: DisciplinaryRecord) => void;
+  onVoidRecord?: (record: DisciplinaryRecord) => void;
+  onDeleteRecord?: (record: DisciplinaryRecord) => void;
 }
 
 export const DisciplinaryTableView = memo(function DisciplinaryTableView({
   records,
   onSelectRecord,
+  onEditRecord,
+  onVoidRecord,
+  onDeleteRecord,
 }: DisciplinaryTableViewProps) {
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+  if (records.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-xs text-slate-400">
+        No warning records found
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-3xl border border-gray-200/80 shadow-2xs overflow-hidden">
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs font-sans">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/70 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-              <th className="px-5 py-3.5">Employee</th>
-              <th className="px-5 py-3.5">Case Title</th>
-              <th className="px-5 py-3.5">Scope</th>
-              <th className="px-5 py-3.5">Incident Type</th>
-              <th className="px-5 py-3.5">Severity</th>
-              <th className="px-5 py-3.5">Status</th>
-              <th className="px-5 py-3.5">Incident Date</th>
-              <th className="px-5 py-3.5">Follow-up</th>
-              <th className="px-5 py-3.5 text-right">Actions</th>
+            <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-700 font-bold text-xs">
+              <th className="px-4 py-3.5 w-14">No.</th>
+              <th className="px-4 py-3.5 whitespace-nowrap">
+                <div className="flex items-center gap-1">
+                  <span>Warning Type</span>
+                  <i className="ri-arrow-up-down-line text-slate-300 text-[11px]" />
+                </div>
+              </th>
+              <th className="px-4 py-3.5 whitespace-nowrap">
+                <div className="flex items-center gap-1">
+                  <div className="leading-tight">
+                    <div>Warning</div>
+                    <div>Date</div>
+                  </div>
+                  <i className="ri-arrow-up-down-line text-slate-300 text-[11px]" />
+                </div>
+              </th>
+              <th className="px-4 py-3.5 whitespace-nowrap">
+                <div className="flex items-center gap-1">
+                  <span>Employee</span>
+                  <i className="ri-arrow-up-down-line text-slate-300 text-[11px]" />
+                </div>
+              </th>
+              <th className="px-4 py-3.5 min-w-[220px]">
+                <div className="flex items-center gap-1">
+                  <span>Description of Violation</span>
+                  <i className="ri-arrow-up-down-line text-slate-300 text-[11px]" />
+                </div>
+              </th>
+              <th className="px-4 py-3.5 min-w-[220px]">
+                <div className="flex items-center gap-1">
+                  <span>Employee Promise</span>
+                  <i className="ri-arrow-up-down-line text-slate-300 text-[11px]" />
+                </div>
+              </th>
+              <th className="px-4 py-3.5 text-center w-24 whitespace-nowrap">
+                <div className="flex items-center justify-center gap-1">
+                  <span>Status</span>
+                  <i className="ri-arrow-up-down-line text-slate-300 text-[11px]" />
+                </div>
+              </th>
+              <th className="px-4 py-3.5 text-right w-16"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {records.map((r) => {
-              const typeCfg = TYPE_CONFIG[r.warning_type || r.type] || TYPE_CONFIG.verbal_warning;
-              const sevCfg = SEVERITY_CONFIG[r.severity] || SEVERITY_CONFIG.medium;
-              const statusCfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.open;
+          <tbody className="divide-y divide-slate-100">
+            {records.map((r, idx) => {
               const emp = r.employees;
-              const isOverdue =
-                r.follow_up_date &&
-                r.status !== "resolved" &&
-                r.status !== "closed" &&
-                new Date(r.follow_up_date + "T00:00:00") < new Date();
+              const warningType = r.warning_type || r.type || "Warning";
+              const warningDate = formatDateDMY(r.warning_date || r.incident_date);
+              const violationText = formatMultilinePreview(r.description);
+              const promiseText = formatMultilinePreview(r.employee_promise);
+              const isVoided = r.status === "voided" || r.status === "void";
 
               return (
                 <tr
                   key={r.id}
                   onClick={() => onSelectRecord(r)}
-                  className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                  className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
                 >
-                  <td className="px-5 py-3.5 whitespace-nowrap">
+                  <td className="px-4 py-3 text-slate-500 font-semibold align-top">{idx + 1}</td>
+
+                  <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap align-top">
+                    {warningType}
+                  </td>
+
+                  <td className="px-4 py-3 text-slate-700 font-medium whitespace-nowrap align-top">
+                    {warningDate}
+                  </td>
+
+                  {/* Employee */}
+                  <td className="px-4 py-3 whitespace-nowrap align-top">
                     <div className="flex items-center gap-2.5">
                       {emp?.avatar_url ? (
-                        <img src={emp.avatar_url} alt="" className="w-8 h-8 rounded-xl object-cover shrink-0" />
+                        <img
+                          src={emp.avatar_url}
+                          alt=""
+                          className="w-9 h-9 rounded-full object-cover shrink-0 border border-slate-200"
+                        />
                       ) : (
-                        <div className="w-8 h-8 rounded-xl bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center text-xs font-black shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-[#253C7D] text-white flex items-center justify-center text-xs font-black shrink-0">
                           {emp ? emp.first_name[0] + emp.last_name[0] : "?"}
                         </div>
                       )}
                       <div>
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-extrabold text-gray-900 group-hover:text-[#253C7D] transition-colors">
-                            {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
-                          </p>
-                          {emp?.employee_id && (
-                            <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-gray-100 text-gray-600">
-                              {emp.employee_id}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-gray-400">{emp?.department}</p>
+                        <p className="font-bold text-slate-900 group-hover:text-[#253C7D] transition-colors leading-tight">
+                          {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+                        </p>
+                        {emp?.employee_id && (
+                          <span className="inline-block mt-0.5 font-mono text-[10px] font-bold px-1.5 py-0.2 rounded border border-slate-200 text-slate-600 bg-white">
+                            {emp.employee_id}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </td>
 
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-bold text-gray-900 line-clamp-1 max-w-xs">{r.title}</p>
-                      {r.document_url && (
-                        <span className="text-indigo-600 text-xs shrink-0" title="Signed document attached">
-                          <i className="ri-attachment-line" />
-                        </span>
-                      )}
+                  {/* Description of Violation */}
+                  <td className="px-4 py-3 max-w-xs align-top">
+                    <div className="text-slate-700 whitespace-pre-line line-clamp-3 leading-relaxed font-['Kantumruy_Pro',sans-serif]" title={violationText}>
+                      {violationText}
                     </div>
                   </td>
 
-                  <td className="px-5 py-3.5 whitespace-nowrap">
-                    {!r.branch_id ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/60">
-                        <i className="ri-global-line text-[10px]" /> Company-Wide
+                  {/* Employee Promise */}
+                  <td className="px-4 py-3 max-w-xs align-top">
+                    <div className="text-slate-700 whitespace-pre-line line-clamp-3 leading-relaxed font-['Kantumruy_Pro',sans-serif]" title={promiseText}>
+                      {promiseText}
+                    </div>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-4 py-3 text-center whitespace-nowrap align-top">
+                    {isVoided ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-200 text-slate-600">
+                        Voided
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/60">
-                        <i className="ri-building-line text-[10px]" /> {r.branches?.name || "Branch Case"}
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-[#20B2AA] text-white">
+                        Recorded
                       </span>
                     )}
                   </td>
 
-                  <td className="px-5 py-3.5 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${typeCfg.bg} ${typeCfg.color}`}
-                    >
-                      <i className={typeCfg.icon} />
-                      {typeCfg.label}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-3.5 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${sevCfg.bg} ${sevCfg.color}`}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${sevCfg.dot}`} />
-                      {sevCfg.label}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-3.5 whitespace-nowrap">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${statusCfg.bg} ${statusCfg.color}`}>
-                      {statusCfg.label}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-3.5 whitespace-nowrap text-gray-600 font-medium">
-                    {r.incident_date
-                      ? new Date(r.incident_date + "T00:00:00").toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : "—"}
-                  </td>
-
-                  <td className="px-5 py-3.5 whitespace-nowrap">
-                    {r.follow_up_date ? (
-                      <span className={`text-[11px] font-bold ${isOverdue ? "text-rose-600" : "text-gray-700"}`}>
-                        {new Date(r.follow_up_date + "T00:00:00").toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                        {isOverdue && " ⚠️"}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-
-                  <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                  {/* Action Settings Menu */}
+                  <td
+                    className="px-4 py-3 text-right whitespace-nowrap relative align-top"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
                       type="button"
-                      onClick={() => onSelectRecord(r)}
-                      className="px-2.5 py-1 text-xs font-bold text-[#253C7D] bg-[#253C7D]/10 hover:bg-[#253C7D]/20 rounded-lg transition-colors cursor-pointer"
+                      onClick={() => setActiveMenuId(activeMenuId === r.id ? null : r.id)}
+                      className="w-7 h-7 inline-flex items-center justify-center border border-sky-500 text-sky-500 hover:bg-sky-50 rounded cursor-pointer transition-colors"
+                      title="Settings"
                     >
-                      Inspect Case
+                      <i className="ri-settings-3-line text-sm" />
                     </button>
+
+                    <WarningRowMenu
+                      isOpen={activeMenuId === r.id}
+                      onClose={() => setActiveMenuId(null)}
+                      record={r}
+                      onView={onSelectRecord}
+                      onEdit={onEditRecord}
+                      onVoid={onVoidRecord}
+                      onDelete={onDeleteRecord}
+                    />
                   </td>
                 </tr>
               );

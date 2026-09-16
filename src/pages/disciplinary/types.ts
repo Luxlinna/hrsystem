@@ -35,7 +35,7 @@ export interface DisciplinaryRecord {
   title: string;
   description: string | null;
   severity: DisciplinarySeverity;
-  status: "open" | "in_progress" | "resolved" | "escalated" | "closed";
+  status: "open" | "in_progress" | "resolved" | "escalated" | "closed" | "voided" | "void" | string;
   incident_date: string | null;
   follow_up_date: string | null;
   resolved_at: string | null;
@@ -63,12 +63,13 @@ export interface DisciplinaryRecord {
 }
 
 export interface NewRecord {
+  id?: string;
   employee_id: string;
   type: string;
   title: string;
   description: string;
   severity: DisciplinarySeverity;
-  status: "open" | "in_progress" | "resolved" | "escalated" | "closed";
+  status: "open" | "in_progress" | "resolved" | "escalated" | "closed" | "voided" | "void" | string;
   incident_date: string;
   follow_up_date: string;
   witnesses: string;

@@ -45,6 +45,7 @@ const Tasks = lazy(() => import("../pages/tasks/page"));
 const Attendance = lazy(() => import("../pages/attendance/page"));
 const Training = lazy(() => import("../pages/training/page"));
 const Disciplinary = lazy(() => import("../pages/disciplinary/page"));
+const WarningSettingsPage = lazy(() => import("../pages/disciplinary/settings/WarningSettingsPage"));
 const Documents = lazy(() => import("../pages/documents/page"));
 const Movements = lazy(() => import("../pages/movements/page"));
 const AdminPortal = lazy(() => import("../pages/admin/page"));
@@ -109,7 +110,11 @@ const routes: RouteObject[] = [
       { path: "attendance", element: mod("attendance", <Attendance />) },
       { path: "training", element: mod("training", <Training />) },
       { path: "disciplinary", element: mod("disciplinary", <Disciplinary />) },
+      { path: "disciplinary/create", element: mod("disciplinary", <Disciplinary />) },
+      { path: "disciplinary/settings", element: mod("disciplinary", <WarningSettingsPage />) },
       { path: "warnings", element: mod("disciplinary", <Disciplinary />) },
+      { path: "warnings/create", element: mod("disciplinary", <Disciplinary />) },
+      { path: "warnings/settings", element: mod("disciplinary", <WarningSettingsPage />) },
       { path: "documents", element: mod("documents", <Documents />) },
       { path: "movements", element: mod("employees", <Movements />) },
       { path: "profile", element: <Suspense fallback={fallback}><Profile /></Suspense> },

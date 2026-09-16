@@ -141,27 +141,14 @@ export function useExitMutations({ loadData, actorName, actorRole }: UseExitMuta
     await loadData();
   }, [actorName, actorRole, loadData]);
 
-  // ── File upload (AWS S3 with Supabase Storage fallback) ───────────────
+  // ── File upload (Strictly AWS S3) ────────────────────────────────────
   const uploadDocument = useCallback(async (file: File): Promise<{ url: string; name: string } | null> => {
     try {
-      // Attempt AWS S3 upload first (standard in this system)
       const res = await uploadFileToS3(file, "employees/exits");
       return { url: res.url, name: file.name };
     } catch (s3Err: any) {
-      console.warn("AWS S3 upload attempt error, trying Supabase Storage fallback:", s3Err);
-      // Fallback to Supabase Storage if S3 is not available
-      try {
-        const ext = file.name.split(".").pop();
-        const path = `exits/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error } = await supabase.storage.from("exit-documents").upload(path, file);
-        if (!error) {
-          const { data } = supabase.storage.from("exit-documents").getPublicUrl(path);
-          return { url: data.publicUrl, name: file.name };
-        }
-      } catch {
-        // ignore fallback error and report primary error below
-      }
-      toast("Upload Failed", s3Err?.message || "Failed to upload document.", "error");
+      console.error("AWS S3 upload error:", s3Err);
+      toast("Upload Failed", s3Err?.message || "Failed to upload document to AWS S3.", "error");
       return null;
     }
   }, []);

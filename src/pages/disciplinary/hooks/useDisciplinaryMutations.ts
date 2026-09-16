@@ -1,8 +1,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import { logActivity } from "@/lib/audit";
-import { uploadFile } from "@/lib/storage";
+import { uploadFileToS3 } from "@/lib/s3-storage";
 import type { DisciplinaryRecord, NewRecord, Employee } from "../types";
 
 interface UseDisciplinaryMutationsProps {
@@ -32,8 +31,14 @@ export function useDisciplinaryMutations({
 
   const handleCreateRecord = useCallback(
     async (record: NewRecord) => {
-      if (!record.employee_id || !record.title) {
-        toast("Validation Error", "Please select an employee and provide a case title.", "error");
+      const effectiveWarningType = record.warning_type || record.type || "first_written_warning";
+      const effectiveWarningDate = record.warning_date || record.incident_date || new Date().toISOString().slice(0, 10);
+      const effectiveTitle =
+        record.title?.trim() ||
+        `${effectiveWarningType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} - ${effectiveWarningDate}`;
+
+      if (!record.employee_id) {
+        toast("Validation Error", "Please select an employee.", "error");
         return false;
       }
 
@@ -51,35 +56,29 @@ export function useDisciplinaryMutations({
 
         if (record.document_file) {
           try {
-            const fileExt = record.document_file.name.split(".").pop();
-            const fileName = `warning_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const filePath = `warnings/${fileName}`;
-            uploadedDocUrl = await uploadFile("documents", filePath, record.document_file);
-            uploadedDocName = record.document_file.name;
+            const s3Item = await uploadFileToS3(record.document_file, "disciplinary/warnings");
+            uploadedDocUrl = s3Item.url;
+            uploadedDocName = s3Item.name;
           } catch (uploadErr) {
-            console.warn("File upload failed, proceeding without attachment:", uploadErr);
+            console.error("Warning attachment upload to AWS S3 failed:", uploadErr);
+            toast("Attachment Error", "Failed to upload document file to AWS S3.", "error");
           }
         }
 
-        const effectiveWarningType = record.warning_type || record.type || "first_written_warning";
-        const effectiveWarningDate = record.warning_date || record.incident_date;
         const effectiveAction = record.action_to_take || record.action_taken || null;
         const effectiveRemark = record.remark || record.notes || null;
+        const isEdit = Boolean(record.id);
 
-        const payload = {
+        const payload: Record<string, any> = {
           employee_id: record.employee_id,
           type: effectiveWarningType,
-          severity: record.severity,
-          status: "open",
-          title: record.title,
+          severity: record.severity || "medium",
+          title: effectiveTitle,
           description: record.description || null,
           action_taken: effectiveAction,
           incident_date: effectiveWarningDate,
           follow_up_date: record.follow_up_date || null,
-          created_by: actorName,
           branch_id: resolvedBranchId,
-
-          // Dedicated Warning Management Fields
           warning_type: effectiveWarningType,
           warning_date: effectiveWarningDate,
           action_to_take: effectiveAction,
@@ -89,24 +88,33 @@ export function useDisciplinaryMutations({
           document_name: uploadedDocName,
         };
 
-        const { error } = await supabase.from("disciplinary_records").insert(payload);
+        if (!isEdit) {
+          payload.status = "open";
+          payload.created_by = actorName;
+        }
+
+        const query = isEdit
+          ? supabase.from("disciplinary_records").update(payload).eq("id", record.id)
+          : supabase.from("disciplinary_records").insert(payload);
+
+        const { error } = await query;
         if (error) throw error;
 
-        toast("Record Created", `Disciplinary record for ${emp?.first_name || "Employee"} logged.`, "success");
+        toast(isEdit ? "Record Updated" : "Record Created", `Disciplinary record for ${emp?.first_name || "Employee"} saved.`, "success");
         await logActivity({
           module: "disciplinary",
-          action: "created",
+          action: isEdit ? "updated" : "created",
           entityType: "disciplinary_record",
           actorName,
           actorRole: roleName,
-          description: `Created ${record.severity} severity ${record.type} record: "${record.title}"`,
+          description: `${isEdit ? "Updated" : "Created"} warning: "${effectiveTitle}"`,
         });
 
         setShowModal(false);
         await fetchData();
         return true;
       } catch (err: any) {
-        toast("Error", err.message || "Failed to create disciplinary record", "error");
+        toast("Error", err.message || "Failed to save record", "error");
         return false;
       } finally {
         setSaving(false);
@@ -115,51 +123,42 @@ export function useDisciplinaryMutations({
     [actorName, roleName, isSuperAdmin, targetBranch, employees, fetchData, setShowModal]
   );
 
-  const handleUpdateStatus = useCallback(
-    async (id: string, newStatus: string) => {
+  const handleVoidRecord = useCallback(
+    async (record: DisciplinaryRecord) => {
+      if (!confirm(`Are you sure you want to void this employee warning?`)) return;
       try {
-        const updates: any = { status: newStatus };
-        if (newStatus === "resolved" || newStatus === "closed") {
-          updates.resolved_at = new Date().toISOString();
+        const { error } = await supabase.from("disciplinary_records").update({ status: "voided" }).eq("id", record.id);
+        if (error) {
+          await supabase.from("disciplinary_records").update({ status: "closed", remark: `${record.remark || ""} [VOIDED]`.trim() }).eq("id", record.id);
         }
-
-        const { error } = await supabase.from("disciplinary_records").update(updates).eq("id", id);
-        if (error) throw error;
-
-        toast("Status Updated", `Record marked as ${newStatus.replace("_", " ")}.`, "success");
+        toast("Warning Voided", "Employee warning has been voided.", "success");
         await logActivity({
           module: "disciplinary",
           action: "updated",
           entityType: "disciplinary_record",
-          entityId: id,
+          entityId: record.id,
           actorName,
           actorRole: roleName,
-          description: `Updated record status to ${newStatus}`,
+          description: `Voided employee warning: "${record.title || record.warning_type}"`,
         });
-
-        if (selectedRecord && selectedRecord.id === id) {
-          setSelectedRecord((prev) => (prev ? { ...prev, ...updates } : null));
-        }
         await fetchData();
       } catch (err: any) {
-        toast("Error", err.message || "Failed to update record status", "error");
+        toast("Error", err.message || "Failed to void warning", "error");
       }
     },
-    [actorName, roleName, selectedRecord, setSelectedRecord, fetchData]
+    [actorName, roleName, fetchData]
   );
 
   const handleDeleteRecord = useCallback(
     async (record: DisciplinaryRecord) => {
-      if (!confirm(`Are you sure you want to move record "${record.title}" to Recycle Bin?`)) return;
+      if (!confirm(`Are you sure you want to delete this employee warning?`)) return;
       try {
         const { error } = await supabase
           .from("disciplinary_records")
           .update({ deleted_at: new Date().toISOString(), deleted_by: actorName })
           .eq("id", record.id);
-
         if (error) throw error;
-
-        toast("Moved to Recycle Bin", `Record "${record.title}" moved to Recycle Bin.`, "success");
+        toast("Record Deleted", `Warning "${record.title || record.warning_type}" deleted.`, "success");
         await logActivity({
           module: "disciplinary",
           action: "deleted",
@@ -167,9 +166,8 @@ export function useDisciplinaryMutations({
           entityId: record.id,
           actorName,
           actorRole: roleName,
-          description: `Moved disciplinary record "${record.title}" to Recycle Bin`,
+          description: `Deleted employee warning: "${record.title || record.warning_type}"`,
         });
-
         setSelectedRecord(null);
         await fetchData();
       } catch (err: any) {
@@ -179,28 +177,10 @@ export function useDisciplinaryMutations({
     [actorName, roleName, setSelectedRecord, fetchData]
   );
 
-  const handleSaveNotes = useCallback(
-    async (recordId: string, notes: string) => {
-      try {
-        const { error } = await supabase.from("disciplinary_records").update({ remark: notes }).eq("id", recordId);
-        if (error) throw error;
-        toast("Notes Saved", "Follow-up notes updated.", "success");
-        if (selectedRecord?.id === recordId) {
-          setSelectedRecord((prev) => (prev ? { ...prev, remark: notes, notes } : null));
-        }
-        await fetchData();
-      } catch (err: any) {
-        toast("Error", err.message || "Failed to save notes", "error");
-      }
-    },
-    [selectedRecord, setSelectedRecord, fetchData]
-  );
-
   return {
     saving,
     handleCreateRecord,
-    handleUpdateStatus,
+    handleVoidRecord,
     handleDeleteRecord,
-    handleSaveNotes,
   };
 }

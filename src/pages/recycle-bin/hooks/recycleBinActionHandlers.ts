@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { extractR2Key, deleteDocument, isCloudflareR2Url } from "@/lib/r2-storage";
+import { getS3KeyFromUrl, deleteS3File } from "@/lib/s3-storage";
 import type { BinItem } from "../types";
 
 export async function restoreSingleItem(item: BinItem): Promise<any> {
@@ -10,21 +11,15 @@ export async function restoreSingleItem(item: BinItem): Promise<any> {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      const res = await fetch(
-        `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/manage-user-role`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-            apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({
-            action: "restore_assignment",
-            assignment_id: item.id,
-          }),
-        }
-      );
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/manage-user-role`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ action: "restore_assignment", assignment_id: item.id }),
+      });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || result.error) throw new Error(result.error || "Failed to restore user");
     } catch {
@@ -185,12 +180,14 @@ export async function deleteForeverSingleItem(item: BinItem): Promise<any> {
     const { error: dbErr } = await supabase.from(item.table).delete().eq("id", item.id);
     error = dbErr;
     if (!error && item.table === "documents" && item.raw?.file_url) {
-      if (isCloudflareR2Url(item.raw.file_url)) {
+      const s3Key = getS3KeyFromUrl(item.raw.file_url);
+      if (s3Key) deleteS3File(s3Key).catch(() => {});
+      else if (isCloudflareR2Url(item.raw.file_url)) {
         const key = extractR2Key(item.raw.file_url);
-        if (key) await deleteDocument(key).catch(() => {});
+        if (key) deleteDocument(key).catch(() => {});
       } else if (item.raw.file_url.includes("/storage/v1/")) {
         const filePath = item.raw.file_url.split("/documents/")[1];
-        if (filePath) await supabase.storage.from("documents").remove([filePath]);
+        if (filePath) supabase.storage.from("documents").remove([filePath]).catch(() => {});
       }
     }
   }

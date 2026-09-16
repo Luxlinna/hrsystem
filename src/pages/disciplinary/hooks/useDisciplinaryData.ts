@@ -35,12 +35,17 @@ export function useDisciplinaryData({
       const branchList = (bData as Branch[]) || [];
       setBranches(branchList);
 
-      // 2. Fetch all valid employees dynamically
-      const { data: empData, error: empErr } = await supabase
+      // 2. Fetch valid employees dynamically scoped to BU
+      let empQuery = supabase
         .from("employees")
         .select("id, first_name, last_name, department, role, avatar_url, branch_id, biometric_user_id, status, branches(id, name)")
-        .is("deleted_at", null)
-        .order("first_name");
+        .is("deleted_at", null);
+
+      if (targetBranch && targetBranch !== "all") {
+        empQuery = empQuery.eq("branch_id", targetBranch);
+      }
+
+      const { data: empData, error: empErr } = await empQuery.order("first_name");
 
       if (empErr) console.warn("Disciplinary employees query error:", empErr);
 

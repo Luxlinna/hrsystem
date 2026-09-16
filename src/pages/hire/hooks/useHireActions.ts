@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
-import { uploadFileToR2 } from "@/lib/r2-storage";
 import { startOnboardingForCandidate } from "@/lib/onboarding";
 import type { Candidate, Job, Interview } from "../types";
 import {

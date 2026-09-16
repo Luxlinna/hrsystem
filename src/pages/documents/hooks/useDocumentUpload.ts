@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { getDocumentUploadUrl } from "@/lib/r2-storage";
+import { uploadFileToS3 } from "@/lib/s3-storage";
 import { toast } from "@/components/Toast";
 import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from "../constants";
 
@@ -27,14 +27,9 @@ export function useDocumentUpload() {
           toast("File too large", `File exceeds ${MAX_FILE_SIZE_MB}MB limit`, "error");
           throw new Error(`File exceeds ${MAX_FILE_SIZE_MB}MB limit`);
         }
-        const { uploadUrl, publicUrl } = await getDocumentUploadUrl(fileUpload.name);
-        const putRes = await fetch(uploadUrl, {
-          method: "PUT",
-          body: fileUpload,
-          headers: { "Content-Type": fileUpload.type },
-        });
-        if (!putRes.ok) throw new Error("Failed to upload file to storage.");
-        finalFileUrl = publicUrl;
+        const s3Item = await uploadFileToS3(fileUpload, "company-documents");
+        finalFileUrl = s3Item.url;
+        finalFileName = s3Item.name;
       }
 
       return { finalFileUrl, finalFileName, finalFileSize, finalFileType };

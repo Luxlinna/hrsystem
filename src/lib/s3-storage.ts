@@ -182,17 +182,18 @@ export async function uploadMediaToS3(
     uploadFile = file;
   }
 
-  const ext = isVideo ? file.name.split(".").pop() || "mp4" : "jpg";
+  const originalExt = file.name.split(".").pop() || "";
+  const ext = isVideo ? (originalExt || "mp4") : isImage ? (originalExt || "jpg") : (originalExt || "bin");
   const key = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   onProgress?.(10);
-  const { uploadUrl, publicUrl } = await getUploadUrl(key, uploadFile.type);
+  const { uploadUrl, publicUrl } = await getUploadUrl(key, uploadFile.type || "application/octet-stream");
   onProgress?.(40);
 
   const res = await fetch(uploadUrl, {
     method: "PUT",
     body: uploadFile,
-    headers: { "Content-Type": uploadFile.type },
+    headers: { "Content-Type": uploadFile.type || "application/octet-stream" },
   });
   if (!res.ok) throw new Error("Failed to upload file to S3");
 
