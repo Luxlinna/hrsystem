@@ -45,8 +45,13 @@ export default function EmployeeProfile() {
   } = useEmployeeProfile(id);
 
   const handleToggleEditing = useCallback(() => {
+    if (!editing) {
+      setActiveTab("info");
+    } else if (employee) {
+      setForm(employee);
+    }
     setEditing((prev) => !prev);
-  }, [setEditing]);
+  }, [editing, employee, setForm, setEditing]);
 
   const updateCount = useCallback((key: OverviewTabKey, count: number) => {
     setCounts((prev) => (prev[key] === count ? prev : { ...prev, [key]: count }));

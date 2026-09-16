@@ -226,7 +226,26 @@ export function useEmployeeProfile(id: string | undefined) {
         is_resident: form.is_resident,
         fringe_benefit: form.fringe_benefit,
         employee_tax_number: form.employee_tax_number,
+        national_id_number:
+          form.national_id_number ||
+          (form.identifications?.[0]?.identification_number
+            ? form.identifications[0].identification_number.trim()
+            : null),
+        identifications: form.identifications || [],
+        emergency_contacts: form.emergency_contacts || [],
+        emergency_contact_name:
+          form.emergency_contact_name ||
+          form.emergency_contacts?.[0]?.contact_person ||
+          null,
+        emergency_phone_number:
+          form.emergency_phone_number ||
+          form.emergency_contacts?.[0]?.phone_number ||
+          null,
+        family_members: form.family_members || [],
+        achievement_history: form.achievement_history || [],
         permanent_address: form.permanent_address,
+        permanent_city: form.permanent_city,
+        permanent_province: form.permanent_province,
         current_address: form.current_address,
         home_phone: form.home_phone,
         code_bu: form.code_bu,
@@ -234,9 +253,13 @@ export function useEmployeeProfile(id: string | undefined) {
         handle_bu: form.handle_bu,
         position: form.position || form.role,
         contract_type: form.contract_type,
+        contract_effective_date: form.contract_effective_date,
+        contract_end_date: form.contract_end_date,
+        contract_remark: form.contract_remark,
         working_hour: form.working_hour,
         total_working_days: form.total_working_days,
         working_location: form.working_location,
+        site: form.site,
         email: cleanEmail,
         phone: cleanPhone,
         role: form.role,
