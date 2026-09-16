@@ -3,6 +3,8 @@ export * from "./ProfilePersonalInfoSection";
 export * from "./ProfileIdentityFields";
 export * from "./ProfileDemographicFields";
 export * from "./ProfileIdentificationSection";
+export * from "./ProfilePrimaryIdCard";
+export * from "./ProfileNssfCard";
 export * from "./ProfileContactAddressSection";
 export * from "./ProfileEmergencyContactFields";
 export * from "./ProfileOrgTermsSection";

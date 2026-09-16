@@ -64,6 +64,7 @@ export interface Employee {
   bank_name?: string | null;
   nssf_number?: string | null;
   register_nssf?: boolean | null;
+  nssf_info?: EmployeeNssfInfo | null;
   payroll_structure?: string | null;
   apply_day_in_month?: boolean | null;
   apply_working_hours_per_day?: boolean | null;
@@ -162,6 +163,21 @@ export interface EmployeeAchievementItem {
   organizer_name: string;
   remark: string;
   attachment?: string;
+}
+
+export interface EmployeeNssfInfo {
+  register_nssf?: boolean;
+  identity_code?: string;
+  joining_date?: string;
+  first_name_kh?: string;
+  last_name_kh?: string;
+  first_name_latin?: string;
+  last_name_latin?: string;
+  monthly_wage_type?: string;
+  monthly_wage?: string;
+  seniority_pension_fund?: string;
+  remark?: string;
+  status?: "Active" | "Inactive";
 }
 
 export interface Branch {
@@ -299,6 +315,7 @@ export interface EmployeeFormState {
   achievement_history: EmployeeAchievementItem[];
   personal_attachments: (EmployeePersonalAttachment | string)[];
   register_nssf: boolean;
+  nssf_info?: EmployeeNssfInfo;
 
   // 2. Org & Workplace Site
   branch_id: string;

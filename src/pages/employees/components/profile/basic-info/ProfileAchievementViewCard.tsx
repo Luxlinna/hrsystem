@@ -8,6 +8,21 @@ interface Props {
 export const ProfileAchievementViewCard = memo(function ProfileAchievementViewCard({
   ach,
 }: Props) {
+  const isWeb =
+    Boolean(ach.attachment) &&
+    !ach.attachment?.includes("amazonaws.com") &&
+    (ach.attachment?.startsWith("http") ||
+      ach.attachment?.includes(".com") ||
+      ach.attachment?.includes(".app") ||
+      ach.attachment?.includes(".org") ||
+      ach.attachment?.includes(".edu") ||
+      ach.attachment?.includes(".io") ||
+      ach.attachment?.includes(".dev"));
+
+  const targetUrl = ach.attachment?.startsWith("http")
+    ? ach.attachment
+    : `https://${ach.attachment}`;
+
   return (
     <div className="p-4 border border-amber-200/80 rounded-xl bg-amber-50/20 hover:bg-amber-50/40 transition-colors flex flex-col justify-between">
       <div>
@@ -35,13 +50,13 @@ export const ProfileAchievementViewCard = memo(function ProfileAchievementViewCa
       {ach.attachment && (
         <div className="pt-2 mt-2 border-t border-amber-100">
           <a
-            href={ach.attachment}
+            href={targetUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-bold text-[#253C7D] hover:underline inline-flex items-center gap-1"
+            className="text-xs font-bold text-[#253C7D] hover:underline inline-flex items-center gap-1.5"
           >
-            <i className="ri-attachment-line text-sm" />
-            <span>View Certificate / Evidence &rarr;</span>
+            <i className={isWeb ? "ri-global-line text-blue-600 text-sm" : "ri-attachment-line text-amber-600 text-sm"} />
+            <span>{isWeb ? "Visit Website / Live System \u2192" : "View Certificate / Evidence \u2192"}</span>
           </a>
         </div>
       )}

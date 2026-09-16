@@ -59,8 +59,23 @@ export function useEmployeeProfile(id: string | undefined) {
       return;
     }
 
-    setEmployee(emp as Employee);
-    setForm(emp as Employee);
+    const nssfInfo = emp.nssf_info || emp.hiring_info?.nssf_info || {
+      register_nssf: Boolean(emp.register_nssf || emp.nssf_number),
+      identity_code: emp.nssf_number || "",
+      joining_date: emp.join_date || new Date().toISOString().slice(0, 10),
+      first_name_kh: emp.kh_name ? emp.kh_name.split(" ")[1] || "" : "",
+      last_name_kh: emp.kh_name ? emp.kh_name.split(" ")[0] || "" : "",
+      first_name_latin: emp.first_name || "",
+      last_name_latin: emp.last_name || "",
+      monthly_wage_type: "Formula",
+      monthly_wage: "Taxable Salary",
+      seniority_pension_fund: "",
+      remark: "",
+      status: "Active",
+    };
+    const resolvedEmp = { ...emp, nssf_info: nssfInfo };
+    setEmployee(resolvedEmp as Employee);
+    setForm(resolvedEmp as Employee);
 
     if (emp.branch_id) {
       supabase
@@ -226,6 +241,12 @@ export function useEmployeeProfile(id: string | undefined) {
         is_resident: form.is_resident,
         fringe_benefit: form.fringe_benefit,
         employee_tax_number: form.employee_tax_number,
+        nssf_number: form.nssf_info?.identity_code?.trim() || form.nssf_number?.trim() || null,
+        register_nssf: Boolean(form.register_nssf || form.nssf_info?.register_nssf || form.nssf_info?.identity_code?.trim() || form.nssf_number?.trim()),
+        hiring_info: {
+          ...((employee as any)?.hiring_info || {}),
+          nssf_info: form.nssf_info || null,
+        },
         national_id_number:
           form.national_id_number ||
           (form.identifications?.[0]?.identification_number

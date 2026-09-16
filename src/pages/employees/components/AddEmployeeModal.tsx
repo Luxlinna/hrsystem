@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useMemo, useCallback } from "react";
+import { memo, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { Branch, Employee, EmployeeFormState } from "../types";
 import { useBranchScope } from "@/context/BranchContext";
 import { ADD_EMPLOYEE_STEPS, type AddEmployeeStepId } from "./add-employee/types";

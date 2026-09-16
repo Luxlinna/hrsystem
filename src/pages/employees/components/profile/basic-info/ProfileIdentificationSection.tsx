@@ -2,6 +2,8 @@ import { memo } from "react";
 import type { BasicInfoSectionProps } from "./types";
 import type { EmployeeIdentificationItem } from "../../../types";
 import { extractMachinePin } from "@/lib/biometricUtils";
+import { ProfilePrimaryIdCard } from "./ProfilePrimaryIdCard";
+import { ProfileNssfCard } from "./ProfileNssfCard";
 
 export const ProfileIdentificationSection = memo(function ProfileIdentificationSection({
   employee,
@@ -50,63 +52,27 @@ export const ProfileIdentificationSection = memo(function ProfileIdentificationS
         </div>
         <div>
           <h3 className="text-xs font-black text-gray-900 uppercase tracking-wide">
-            Official Identification &amp; Tax Credentials
+            Official Identification &amp; Credentials
           </h3>
           <p className="text-[11px] text-gray-500 font-medium">
-            National ID records, staff identifier, biometric credentials, and tax filings
+            National ID records, staff identifier, biometric credentials, NSSF, and tax filings
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Primary ID */}
-        <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
-          <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">
-            {editing ? "Primary Identification" : primaryId.identification_type || "National ID"}
-          </span>
-          {editing ? (
-            <div className="space-y-1.5">
-              <select
-                value={primaryId.identification_type || "National ID Card"}
-                onChange={(e) => handleUpdatePrimaryId("identification_type", e.target.value)}
-                className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-medium focus:outline-none focus:border-[#253C7D] bg-white"
-              >
-                <option value="National ID Card">National ID Card</option>
-                <option value="Passport">Passport</option>
-                <option value="Birth Certificate">Birth Certificate</option>
-                <option value="Driving License">Driving License</option>
-              </select>
-              <input
-                type="text"
-                placeholder="ID Number"
-                value={primaryId.identification_number === "—" ? "" : primaryId.identification_number}
-                onChange={(e) => handleUpdatePrimaryId("identification_number", e.target.value)}
-                className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-mono font-bold focus:outline-none focus:border-[#253C7D] bg-white"
-              />
-              <input
-                type="date"
-                placeholder="Expiration"
-                value={primaryId.expiration_date === "—" ? "" : primaryId.expiration_date}
-                onChange={(e) => handleUpdatePrimaryId("expiration_date", e.target.value)}
-                className="w-full px-2 py-1 rounded-lg border border-slate-300 text-[11px] font-mono focus:outline-none focus:border-[#253C7D] bg-white"
-              />
-            </div>
-          ) : (
-            <>
-              <p className="text-xs font-mono font-black text-slate-900">
-                {primaryId.identification_number || employee.national_id_number || "—"}
-              </p>
-              {primaryId.expiration_date && primaryId.expiration_date !== "—" && (
-                <p className="text-[10px] text-slate-500 mt-1">Exp: {primaryId.expiration_date}</p>
-              )}
-            </>
-          )}
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {/* 1. Primary ID */}
+        <ProfilePrimaryIdCard
+          primaryId={primaryId}
+          nationalIdNumber={form.national_id_number || employee.national_id_number}
+          editing={editing}
+          onUpdate={handleUpdatePrimaryId}
+        />
 
-        {/* Staff ID */}
+        {/* 2. Staff ID */}
         <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
           <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">
-            Staff ID / Employee Code
+            Staff ID / Code
           </span>
           <p className="text-xs font-mono font-black text-[#253C7D]">
             {employee.employee_code || "006"}
@@ -116,7 +82,7 @@ export const ProfileIdentificationSection = memo(function ProfileIdentificationS
           </span>
         </div>
 
-        {/* Biometric PIN */}
+        {/* 3. Biometric PIN */}
         <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
           <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">
             Biometric PIN / Machine ID
@@ -130,7 +96,7 @@ export const ProfileIdentificationSection = memo(function ProfileIdentificationS
                 onChange={(e) => setForm({ ...form, biometric_user_id: e.target.value })}
                 className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-mono font-bold focus:outline-none focus:border-[#253C7D] bg-white"
               />
-              <span className="text-[10px] text-slate-400">Terminal user enrollment pin</span>
+              <span className="text-[10px] text-slate-400">Terminal user pin</span>
             </div>
           ) : (
             <>
@@ -147,7 +113,15 @@ export const ProfileIdentificationSection = memo(function ProfileIdentificationS
           )}
         </div>
 
-        {/* Tax Method / TIN */}
+        {/* 4. NSSF Member ID */}
+        <ProfileNssfCard
+          employee={employee}
+          form={form}
+          setForm={setForm}
+          editing={editing}
+        />
+
+        {/* 5. Tax Method / TIN */}
         <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
           <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">
             Tax Method / TIN
@@ -156,19 +130,19 @@ export const ProfileIdentificationSection = memo(function ProfileIdentificationS
             <div className="space-y-1">
               <input
                 type="text"
-                placeholder="Tax ID Number (TIN)"
+                placeholder="Tax ID (TIN)"
                 value={form.employee_tax_number || ""}
                 onChange={(e) => setForm({ ...form, employee_tax_number: e.target.value })}
                 className="w-full px-2 py-1 rounded-lg border border-slate-300 text-xs font-mono font-bold focus:outline-none focus:border-[#253C7D] bg-white"
               />
-              <span className="text-[10px] text-slate-400">GDT registered tax code</span>
+              <span className="text-[10px] text-slate-400">GDT tax code</span>
             </div>
           ) : (
             <>
               <p className="text-xs font-bold text-slate-900 font-mono">
                 {employee.employee_tax_number || employee.tax_method || "Resident"}
               </p>
-              <p className="text-[10px] text-slate-400 mt-1">General Department of Taxation</p>
+              <p className="text-[10px] text-slate-400 mt-1">General Dept of Taxation</p>
             </>
           )}
         </div>

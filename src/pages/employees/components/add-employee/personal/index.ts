@@ -15,5 +15,7 @@ export * from "./PersonalTrainingSection";
 export * from "./PersonalEmploymentRow";
 export * from "./PersonalEmploymentSection";
 export * from "./PersonalAchievementSection";
+export * from "./PersonalAchievementRow";
 export * from "./PersonalAttachmentSection";
+export * from "./PersonalNssfSection";
 export * from "./PersonalPhotoCard";

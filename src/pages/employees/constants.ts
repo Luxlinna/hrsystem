@@ -202,6 +202,20 @@ export const INITIAL_EMPLOYEE_FORM: EmployeeFormState = {
   achievement_history: [],
   personal_attachments: [],
   register_nssf: false,
+  nssf_info: {
+    register_nssf: false,
+    identity_code: "",
+    joining_date: new Date().toISOString().slice(0, 10),
+    first_name_kh: "",
+    last_name_kh: "",
+    first_name_latin: "",
+    last_name_latin: "",
+    monthly_wage_type: "Formula",
+    monthly_wage: "Taxable Salary",
+    seniority_pension_fund: "",
+    remark: "",
+    status: "Active",
+  },
 
   // 2. Org & Workplace Site
   branch_id: "",

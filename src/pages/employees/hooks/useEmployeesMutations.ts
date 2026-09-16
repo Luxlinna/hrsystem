@@ -308,8 +308,11 @@ export function useEmployeesMutations({
           allowance: form.allowance?.trim() || null,
           bank_account_number: form.bank_account_number?.trim() || null,
           bank_name: form.bank_name?.trim() || null,
-          nssf_number: form.nssf_number?.trim() || null,
-          register_nssf: Boolean(form.register_nssf),
+          nssf_number: form.nssf_info?.identity_code?.trim() || form.nssf_number?.trim() || null,
+          register_nssf: Boolean(form.register_nssf || form.nssf_info?.register_nssf || form.nssf_info?.identity_code?.trim() || form.nssf_number?.trim()),
+          hiring_info: {
+            nssf_info: form.nssf_info || null,
+          },
           payroll_structure: form.payroll_structure || "Standard Monthly",
           apply_day_in_month: Boolean(form.apply_day_in_month),
           apply_working_hours_per_day: Boolean(form.apply_working_hours_per_day),

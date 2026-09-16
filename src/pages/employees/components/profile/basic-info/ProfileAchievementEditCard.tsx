@@ -20,6 +20,19 @@ export const ProfileAchievementEditCard = memo(function ProfileAchievementEditCa
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const isWebUrl =
+    Boolean(ach.attachment) &&
+    !ach.attachment?.includes("amazonaws.com") &&
+    (ach.attachment?.startsWith("http") ||
+      ach.attachment?.includes(".com") ||
+      ach.attachment?.includes(".app") ||
+      ach.attachment?.includes(".org") ||
+      ach.attachment?.includes(".io"));
+
+  const targetUrl = ach.attachment?.startsWith("http")
+    ? ach.attachment
+    : `https://${ach.attachment}`;
+
   return (
     <div className="p-5 border border-amber-300/80 rounded-2xl bg-amber-50/30 shadow-2xs space-y-3">
       <div className="flex items-center justify-between border-b border-amber-200/60 pb-2.5">
@@ -50,7 +63,7 @@ export const ProfileAchievementEditCard = memo(function ProfileAchievementEditCa
             type="text"
             value={ach.title}
             onChange={(e) => onUpdate(idx, "title", e.target.value)}
-            placeholder="e.g. NEP, Dean's List"
+            placeholder="e.g. NEP, Website, HRMS"
             className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-bold focus:outline-none focus:border-[#253C7D]"
           />
         </div>
@@ -83,54 +96,54 @@ export const ProfileAchievementEditCard = memo(function ProfileAchievementEditCa
 
         <div className="sm:col-span-2">
           <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
-            Program / Award Description
+            Program / System / App Name
           </label>
           <input
             type="text"
             value={ach.program_name}
             onChange={(e) => onUpdate(idx, "program_name", e.target.value)}
-            placeholder="Programme Mapping System and Advisory"
+            placeholder="e.g. Programme Mapping System, Company Portal"
             className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold focus:outline-none focus:border-[#253C7D]"
           />
         </div>
 
         <div>
           <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
-            Organizer / Issuer
+            Organizer / Issuer / BU
           </label>
           <input
             type="text"
             value={ach.organizer_name}
             onChange={(e) => onUpdate(idx, "organizer_name", e.target.value)}
-            placeholder="PNC"
+            placeholder="PNC / Internal Project"
             className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
           />
         </div>
 
         <div>
           <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
-            Remark / Level
+            Remark / Category
           </label>
           <input
             type="text"
             value={ach.remark}
             onChange={(e) => onUpdate(idx, "remark", e.target.value)}
-            placeholder="College / Dept level"
+            placeholder="College / Web App / Production"
             className="w-full px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
           />
         </div>
 
         <div className="sm:col-span-2">
           <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
-            Certificate / Evidence Document
+            Website / System / App URL or Document Evidence
           </label>
           <div className="flex items-center gap-2 flex-wrap">
             <input
               type="text"
               value={ach.attachment || ""}
               onChange={(e) => onUpdate(idx, "attachment", e.target.value)}
-              placeholder="Document URL or upload below"
-              className="flex-1 min-w-[180px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
+              placeholder="https://... (live website, system, app URL, or upload file)"
+              className="flex-1 min-w-[200px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:outline-none focus:border-[#253C7D]"
             />
 
             <input
@@ -149,6 +162,7 @@ export const ProfileAchievementEditCard = memo(function ProfileAchievementEditCa
               disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
               className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
+              title="Upload file to S3"
             >
               {uploading ? (
                 <>
@@ -165,13 +179,13 @@ export const ProfileAchievementEditCard = memo(function ProfileAchievementEditCa
 
             {ach.attachment && (
               <a
-                href={ach.attachment}
+                href={targetUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-[#253C7D] border border-blue-200 text-xs font-bold inline-flex items-center gap-1 hover:underline"
               >
-                <i className="ri-external-link-line" />
-                <span>Preview</span>
+                <i className={isWebUrl ? "ri-global-line text-blue-600" : "ri-external-link-line"} />
+                <span>{isWebUrl ? "Visit URL" : "Preview"}</span>
               </a>
             )}
           </div>

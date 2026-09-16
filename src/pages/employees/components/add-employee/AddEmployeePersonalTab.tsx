@@ -16,6 +16,7 @@ import {
   PersonalTrainingSection,
   PersonalEmploymentSection,
   PersonalAchievementSection,
+  PersonalNssfSection,
   PersonalAttachmentSection,
 } from "./personal";
 
@@ -79,7 +80,10 @@ export const AddEmployeePersonalTab = memo(function AddEmployeePersonalTab({
         {/* 11. Achievements */}
         <PersonalAchievementSection form={form} onChange={onChange} />
 
-        {/* 12. Attachments */}
+        {/* 12. NSSF Registration */}
+        <PersonalNssfSection form={form} onChange={onChange} />
+
+        {/* 13. Attachments */}
         <PersonalAttachmentSection form={form} onChange={onChange} />
       </div>
     </div>

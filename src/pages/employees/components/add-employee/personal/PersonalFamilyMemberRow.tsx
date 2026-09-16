@@ -98,8 +98,8 @@ export const PersonalFamilyMemberRow = memo(function PersonalFamilyMemberRow({
       <td className="py-2 px-2.5">
         <input
           type="text"
-          value={member.phone_number || member.contact_number || ""}
-          onChange={(e) => onUpdate(idx, { ...member, phone_number: e.target.value, contact_number: e.target.value })}
+          value={member.phone_number || ""}
+          onChange={(e) => onUpdate(idx, { ...member, phone_number: e.target.value })}
           placeholder="Phone"
           className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs font-mono focus:outline-none focus:border-[#253C7D]"
         />
