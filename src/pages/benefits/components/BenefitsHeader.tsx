@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { BenefitPlan, Enrollment } from "../types";
+import type { BenefitPlan, Enrollment, BenefitTabKey } from "../types";
 import { BenefitsExportMenu } from "./BenefitsExportMenu";
 
 interface BenefitsHeaderProps {
@@ -7,7 +7,7 @@ interface BenefitsHeaderProps {
   onExportCSV?: () => void;
   onOpenNewPlanModal: () => void;
   onOpenEnrollModal: () => void;
-  tab?: "plans" | "enrollment" | "providers";
+  tab?: BenefitTabKey;
   plans?: BenefitPlan[];
   enrollments?: Enrollment[];
 }

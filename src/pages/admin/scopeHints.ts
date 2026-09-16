@@ -10,6 +10,7 @@ export const SCOPE_HINTS: Record<string, string> = {
   candidate_approval_director_sign: "Candidate Approval Step 3: Sign on behalf of HR Admin Director (or authorized delegate).",
   candidate_approval_chairwoman_sign: "Candidate Approval Step 4: Final Executive sign-off on behalf of Chairwoman.",
   employees_manage: "Off by default — allows editing employee directory records.",
+  exit_manage_settings: "Allows viewing and configuring Exit Settings (Exit Types & Reason Types) for Exit Management.",
   attendance_notify: "Off by default. Receives attendance check-in / check-out alerts.",
 
   self_service_all_employees: "Off by default — only sees own account employee record.",

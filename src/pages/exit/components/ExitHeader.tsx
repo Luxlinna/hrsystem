@@ -6,12 +6,16 @@ interface ExitHeaderProps {
   exits: EmployeeExit[];
   onExportCSV: () => void;
   onExportXLSX: () => void;
+  canManageSettings?: boolean;
+  onOpenSettings?: () => void;
 }
 
 export const ExitHeader = memo(function ExitHeader({
   onRecord,
   onExportCSV,
   onExportXLSX,
+  canManageSettings,
+  onOpenSettings,
 }: ExitHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -29,6 +33,18 @@ export const ExitHeader = memo(function ExitHeader({
       </div>
 
       <div className="flex items-center gap-2.5">
+        {/* Settings Button (BU CEO Admin, SuperAdmin, or permitted role) */}
+        {canManageSettings && onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer shadow-xs"
+          >
+            <i className="ri-settings-3-line text-[#253C7D] text-sm" />
+            Setting
+          </button>
+        )}
+
         {/* Export dropdown */}
         <div className="relative group">
           <button className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer shadow-xs">

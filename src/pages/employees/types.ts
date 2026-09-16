@@ -183,6 +183,7 @@ export interface EmployeeNssfInfo {
 export interface Branch {
   id: string;
   name: string;
+  location?: string;
   is_site?: boolean;
   branch_id?: string;
 }

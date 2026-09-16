@@ -92,7 +92,7 @@ export function NssfImportModal({ isOpen, onClose, onImport, saving }: NssfImpor
         // ── XLSX / XLS binary ────────────────────────────────────────────────
         const XLSX = await import("xlsx");
         const buf  = await f.arrayBuffer();
-        const wb   = XLSX.read(buf, { type: "array" });
+        const wb = XLSX.read(buf, { type: "array" }) as unknown as import("xlsx").WorkBook;
 
         // Use Object.keys(Sheets) as fallback — more reliable than SheetNames
         const sheetKeys = Object.keys(wb.Sheets ?? {});

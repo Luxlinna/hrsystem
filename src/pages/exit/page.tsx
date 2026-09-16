@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
@@ -6,6 +7,7 @@ import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShi
 
 import { useExitData } from "./hooks/useExitData";
 import { useExitMutations } from "./hooks/useExitMutations";
+import { useExitPermission } from "./hooks/useExitPermission";
 import { ExitHeader } from "./components/ExitHeader";
 import { ExitStatsRow } from "./components/ExitStatsRow";
 import { ExitFilterBar } from "./components/ExitFilterBar";
@@ -13,11 +15,13 @@ import { ExitTable } from "./components/ExitTable";
 import { ExitFormModal } from "./components/ExitFormModal";
 import { exportExitCSV } from "./exports/exportExitCSV";
 import { exportExitXLSX } from "./exports/exportExitXLSX";
-import { EMPTY_EXIT_FORM, type EmployeeExit, type ExitFormState } from "./types";
+import { EMPTY_EXIT_FORM, exitToFormState, type EmployeeExit, type ExitFormState } from "./types";
 
 export default function ExitPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { role } = usePermissions();
+  const { canManageExitSettings } = useExitPermission();
   const { isPartnerBranchBlocked, targetBranch, userBranchId, userBranchName, branches } = useBranchScope();
 
   const currentBranchId = targetBranch || userBranchId || null;
@@ -67,26 +71,7 @@ export default function ExitPage() {
   // Open modal to edit
   const handleEdit = useCallback((exit: EmployeeExit) => {
     setEditingExit(exit);
-    setForm({
-      employee_id: exit.employee_id || "",
-      exit_type: exit.exit_type,
-      last_working_day: exit.last_working_day || new Date().toISOString().slice(0, 10),
-      reason_type: exit.reason_type,
-      reason_description: exit.reason_description || "",
-      is_blacklisted: Boolean(exit.is_blacklisted),
-      remark: exit.remark || "",
-      contract_type: exit.contract_type || exit.employees?.contract_type || "",
-      severance_pay_info: exit.severance_pay_info || {
-        eligible: false,
-        severance_amount: 0,
-        unused_leave_amount: 0,
-        notice_pay_amount: 0,
-        total_amount: 0,
-        remark: "",
-      },
-      document_url: exit.document_url || "",
-      document_name: exit.document_name || "",
-    });
+    setForm(exitToFormState(exit));
     setShowModal(true);
   }, []);
 
@@ -143,6 +128,8 @@ export default function ExitPage() {
         exits={filtered}
         onExportCSV={handleExportCSV}
         onExportXLSX={handleExportXLSX}
+        canManageSettings={canManageExitSettings}
+        onOpenSettings={() => navigate("/exit/settings")}
       />
 
       {/* Stats Cards */}

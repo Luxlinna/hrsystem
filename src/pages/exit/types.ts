@@ -111,3 +111,27 @@ export interface ExitEmployee {
   branches?: { id?: string; name: string } | null;
 }
 
+export function exitToFormState(exit: EmployeeExit): ExitFormState {
+  return {
+    employee_id: exit.employee_id || "",
+    exit_type: exit.exit_type,
+    last_working_day: exit.last_working_day || new Date().toISOString().slice(0, 10),
+    reason_type: exit.reason_type,
+    reason_description: exit.reason_description || "",
+    is_blacklisted: Boolean(exit.is_blacklisted),
+    remark: exit.remark || "",
+    contract_type: exit.contract_type || exit.employees?.contract_type || "",
+    severance_pay_info: exit.severance_pay_info || {
+      eligible: false,
+      severance_amount: 0,
+      unused_leave_amount: 0,
+      notice_pay_amount: 0,
+      total_amount: 0,
+      remark: "",
+    },
+    document_url: exit.document_url || "",
+    document_name: exit.document_name || "",
+  };
+}
+
+

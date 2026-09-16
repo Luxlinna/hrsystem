@@ -25,7 +25,7 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
       if (bRes.data) setDbBranches(bRes.data);
       if (wRes.data) setDbWorkLocations(wRes.data);
 
-      const rawEmployees = eRes.data || [];
+      const rawEmployees = (eRes.data || []) as any[];
       const assignments = (uRes.data || []) as any[];
 
       const enriched: ModalManagerEmployee[] = rawEmployees

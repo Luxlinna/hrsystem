@@ -21,6 +21,7 @@ export const ACTION_OVERRIDES = [
   { group: "action" as const, key: "candidate_approval_director_sign", label: "Candidate Approval Step 3: Can sign as HR Admin Director (or delegate)", hint: SCOPE_HINTS.candidate_approval_director_sign },
   { group: "action" as const, key: "candidate_approval_chairwoman_sign", label: "Candidate Approval Step 4: Final sign-off as Chairwoman", hint: SCOPE_HINTS.candidate_approval_chairwoman_sign },
   { group: "action" as const, key: "employees_manage", label: "Can edit employee records (role, department, status, manager)", hint: SCOPE_HINTS.employees_manage },
+  { group: "action" as const, key: "exit_manage_settings", label: "Can manage Exit Settings (Exit Types & Reason Types)", hint: SCOPE_HINTS.exit_manage_settings },
   { group: "action" as const, key: "attendance_notify", label: "Receives attendance check-in / check-out notifications", hint: SCOPE_HINTS.attendance_notify },
 ] as const;
 

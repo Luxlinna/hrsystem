@@ -120,7 +120,8 @@ export const AddEmployeeAssetTab: React.FC<AddEmployeeAssetTabProps> = memo(
             .select("id, name, asset_tag, type, status, serial_number, branch_id, branches(id, name, location)")
             .is("deleted_at", null)
             .order("name", { ascending: true });
-          data = fallbackRes.data;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data = fallbackRes.data as any;
           error = fallbackRes.error;
         }
 
