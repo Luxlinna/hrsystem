@@ -17,6 +17,8 @@ export interface ComplaintSuggestion {
   attachment_url: string | null;
   attachment_name: string | null;
   recorded_by: string | null;
+  show_identity?: boolean;
+  target_category?: string;
   created_at: string;
   updated_at: string;
   // joined relations
@@ -38,6 +40,8 @@ export interface ComplaintFormState {
   type: ComplaintType;
   entry_date: string;
   target_to: string;
+  target_category?: string;
+  show_identity?: boolean;
   subject: string;
   details: string;
   suggestion: string;
@@ -52,6 +56,8 @@ export const EMPTY_COMPLAINT_FORM: ComplaintFormState = {
   type: "complaint",
   entry_date: new Date().toISOString().split("T")[0],
   target_to: "",
+  target_category: "Business Unit",
+  show_identity: true,
   subject: "",
   details: "",
   suggestion: "",

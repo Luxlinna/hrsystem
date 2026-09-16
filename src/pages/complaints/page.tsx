@@ -10,14 +10,13 @@ import { ComplaintHeader } from "./components/ComplaintHeader";
 import { ComplaintStatsRow } from "./components/ComplaintStatsRow";
 import { ComplaintFilterBar } from "./components/ComplaintFilterBar";
 import { ComplaintTable } from "./components/ComplaintTable";
-import { ComplaintModal } from "./components/ComplaintModal";
+import { CreateComplaintForm } from "./components/CreateComplaintForm";
 import { exportComplaintCSV } from "./exports/exportComplaintCSV";
 import { exportComplaintXLSX } from "./exports/exportComplaintXLSX";
 import {
   EMPTY_COMPLAINT_FORM,
   type ComplaintSuggestion,
   type ComplaintFormState,
-  type ComplaintStatus,
 } from "./types";
 
 export default function ComplaintsPage() {
@@ -37,7 +36,6 @@ export default function ComplaintsPage() {
     "";
   const actorRole = role?.name || (user?.user_metadata?.role as string) || "";
 
-  // Data hook
   const {
     filtered,
     loading,
@@ -55,7 +53,6 @@ export default function ComplaintsPage() {
     loadData,
   } = useComplaintsData();
 
-  // Mutations hook
   const {
     saving,
     createComplaint,
@@ -65,19 +62,21 @@ export default function ComplaintsPage() {
     uploadDocument,
   } = useComplaintMutations({ loadData, actorName, actorRole });
 
-  // Modal & Form state
-  const [showModal, setShowModal] = useState(false);
+  // View Mode: "table" | "form"
+  const [viewMode, setViewMode] = useState<"table" | "form">("table");
   const [editingRecord, setEditingRecord] = useState<ComplaintSuggestion | null>(null);
   const [form, setForm] = useState<ComplaintFormState>(EMPTY_COMPLAINT_FORM);
 
-  // Open modal to create
   const handleOpenNew = useCallback(() => {
     setEditingRecord(null);
-    setForm(EMPTY_COMPLAINT_FORM);
-    setShowModal(true);
-  }, []);
+    setForm({
+      ...EMPTY_COMPLAINT_FORM,
+      target_category: "Business Unit",
+      target_to: currentBranchName || "Business Unit",
+    });
+    setViewMode("form");
+  }, [currentBranchName]);
 
-  // Open modal to edit
   const handleEdit = useCallback((record: ComplaintSuggestion) => {
     setEditingRecord(record);
     setForm({
@@ -85,6 +84,8 @@ export default function ComplaintsPage() {
       type: record.type,
       entry_date: record.entry_date,
       target_to: record.target_to,
+      target_category: record.target_category || "Business Unit",
+      show_identity: record.show_identity ?? true,
       subject: record.subject,
       details: record.details,
       suggestion: record.suggestion || "",
@@ -93,10 +94,9 @@ export default function ComplaintsPage() {
       attachment_url: record.attachment_url || "",
       attachment_name: record.attachment_name || "",
     });
-    setShowModal(true);
+    setViewMode("form");
   }, []);
 
-  // Delete
   const handleDelete = useCallback(
     async (id: string) => {
       if (window.confirm("Are you sure you want to delete this record?")) {
@@ -106,37 +106,36 @@ export default function ComplaintsPage() {
     [deleteComplaint]
   );
 
-  // Submit modal form
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
+    async (e: React.FormEvent, shouldClose: boolean = false) => {
       e.preventDefault();
-      let success = false;
       if (editingRecord) {
-        success = await updateComplaint(editingRecord.id, form);
+        const success = await updateComplaint(editingRecord.id, form);
+        if (success && shouldClose) {
+          setViewMode("table");
+          setEditingRecord(null);
+          setForm(EMPTY_COMPLAINT_FORM);
+        }
       } else {
         if (!currentBranchId) {
           alert("No Business Unit assigned.");
           return;
         }
-        success = await createComplaint(form, currentBranchId);
-      }
-      if (success) {
-        setShowModal(false);
-        setEditingRecord(null);
-        setForm(EMPTY_COMPLAINT_FORM);
+        const createdId = await createComplaint(form, currentBranchId);
+        if (createdId) {
+          if (shouldClose) {
+            setViewMode("table");
+            setEditingRecord(null);
+            setForm(EMPTY_COMPLAINT_FORM);
+          } else {
+            // keep form open in edit mode for subsequent saves
+            setEditingRecord({ ...form, id: createdId } as any);
+          }
+        }
       }
     },
     [editingRecord, form, currentBranchId, updateComplaint, createComplaint]
   );
-
-  // Exports
-  const handleExportCSV = useCallback(() => {
-    exportComplaintCSV(filtered);
-  }, [filtered]);
-
-  const handleExportXLSX = useCallback(() => {
-    exportComplaintXLSX(filtered);
-  }, [filtered]);
 
   if (isPartnerBranchBlocked) {
     return (
@@ -150,19 +149,34 @@ export default function ComplaintsPage() {
     );
   }
 
+  if (viewMode === "form") {
+    return (
+      <CreateComplaintForm
+        form={form}
+        setForm={setForm}
+        editingRecord={editingRecord}
+        saving={saving}
+        branchId={currentBranchId}
+        branchName={currentBranchName}
+        onBack={() => {
+          setViewMode("table");
+          setEditingRecord(null);
+          setForm(EMPTY_COMPLAINT_FORM);
+        }}
+        onSubmit={handleSubmit}
+        onUploadDocument={uploadDocument}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
-      {/* Header */}
       <ComplaintHeader
         onNew={handleOpenNew}
-        onExportCSV={handleExportCSV}
-        onExportXLSX={handleExportXLSX}
+        onExportCSV={() => exportComplaintCSV(filtered)}
+        onExportXLSX={() => exportComplaintXLSX(filtered)}
       />
-
-      {/* Stats Cards */}
       <ComplaintStatsRow stats={stats} />
-
-      {/* Filters Bar */}
       <ComplaintFilterBar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -175,8 +189,6 @@ export default function ComplaintsPage() {
         filterDateTo={filterDateTo}
         setFilterDateTo={setFilterDateTo}
       />
-
-      {/* Table */}
       <ComplaintTable
         records={filtered}
         loading={loading}
@@ -184,23 +196,6 @@ export default function ComplaintsPage() {
         onDelete={handleDelete}
         onUpdateStatus={updateStatus}
         onNew={handleOpenNew}
-      />
-
-      {/* Modal */}
-      <ComplaintModal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setEditingRecord(null);
-          setForm(EMPTY_COMPLAINT_FORM);
-        }}
-        editing={editingRecord}
-        form={form}
-        setForm={setForm}
-        saving={saving}
-        onSubmit={handleSubmit}
-        onUploadDocument={uploadDocument}
-        branchName={currentBranchName}
       />
     </div>
   );

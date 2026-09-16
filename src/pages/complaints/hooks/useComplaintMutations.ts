@@ -18,40 +18,47 @@ export function useComplaintMutations({
 }: UseComplaintMutationsProps) {
   const [saving, setSaving] = useState(false);
 
-  // ── 1. Create Complaint / Suggestion ─────────────────────────────────────
+  // 1. Create Complaint / Suggestion
   const createComplaint = useCallback(
-    async (form: ComplaintFormState, branchId: string): Promise<boolean> => {
+    async (form: ComplaintFormState, branchId: string): Promise<string | null> => {
       if (!form.target_to.trim() || !form.subject.trim() || !form.details.trim()) {
         toast("Validation Error", "Target recipient, subject, and details are required.", "error");
-        return false;
+        return null;
       }
       if (!branchId) {
         toast("Error", "No Business Unit assigned.", "error");
-        return false;
+        return null;
       }
 
       setSaving(true);
       const payload = {
-        branch_id:       branchId,
-        employee_id:     form.employee_id || null,
-        type:            form.type,
-        entry_date:      form.entry_date,
-        target_to:       form.target_to.trim(),
-        subject:         form.subject.trim(),
-        details:         form.details.trim(),
-        suggestion:      form.suggestion.trim() || null,
-        remark:          form.remark.trim() || null,
-        status:          form.status,
-        attachment_url:  form.attachment_url.trim() || null,
+        branch_id: branchId,
+        employee_id: form.employee_id || null,
+        type: form.type,
+        entry_date: form.entry_date,
+        target_to: form.target_to.trim(),
+        target_category: form.target_category || "Employee",
+        show_identity: form.show_identity ?? true,
+        subject: form.subject.trim(),
+        details: form.details.trim(),
+        suggestion: form.suggestion.trim() || null,
+        remark: form.remark.trim() || null,
+        status: form.status,
+        attachment_url: form.attachment_url.trim() || null,
         attachment_name: form.attachment_name.trim() || null,
-        recorded_by:     actorName,
+        recorded_by: actorName,
       };
 
-      const { error } = await supabase.from("complaints_suggestions").insert(payload);
+      const { data, error } = await supabase
+        .from("complaints_suggestions")
+        .insert(payload)
+        .select("id")
+        .single();
+
       if (error) {
         toast("Error", error.message || "Failed to record entry.", "error");
         setSaving(false);
-        return false;
+        return null;
       }
 
       toast("Recorded", "Record has been created successfully.", "success");
@@ -66,12 +73,12 @@ export function useComplaintMutations({
 
       await loadData();
       setSaving(false);
-      return true;
+      return data?.id || "created";
     },
     [actorName, actorRole, loadData]
   );
 
-  // ── 2. Update Complaint / Suggestion ─────────────────────────────────────
+  // 2. Update Complaint / Suggestion
   const updateComplaint = useCallback(
     async (id: string, form: ComplaintFormState): Promise<boolean> => {
       if (!form.target_to.trim() || !form.subject.trim() || !form.details.trim()) {
@@ -81,21 +88,27 @@ export function useComplaintMutations({
 
       setSaving(true);
       const payload = {
-        employee_id:     form.employee_id || null,
-        type:            form.type,
-        entry_date:      form.entry_date,
-        target_to:       form.target_to.trim(),
-        subject:         form.subject.trim(),
-        details:         form.details.trim(),
-        suggestion:      form.suggestion.trim() || null,
-        remark:          form.remark.trim() || null,
-        status:          form.status,
-        attachment_url:  form.attachment_url.trim() || null,
+        employee_id: form.employee_id || null,
+        type: form.type,
+        entry_date: form.entry_date,
+        target_to: form.target_to.trim(),
+        target_category: form.target_category || "Employee",
+        show_identity: form.show_identity ?? true,
+        subject: form.subject.trim(),
+        details: form.details.trim(),
+        suggestion: form.suggestion.trim() || null,
+        remark: form.remark.trim() || null,
+        status: form.status,
+        attachment_url: form.attachment_url.trim() || null,
         attachment_name: form.attachment_name.trim() || null,
-        updated_at:      new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase.from("complaints_suggestions").update(payload).eq("id", id);
+      const { error } = await supabase
+        .from("complaints_suggestions")
+        .update(payload)
+        .eq("id", id);
+
       if (error) {
         toast("Error", error.message || "Failed to update record.", "error");
         setSaving(false);
@@ -120,41 +133,33 @@ export function useComplaintMutations({
     [actorName, actorRole, loadData]
   );
 
-  // ── 3. Quick Status / Remark Update ─────────────────────────────────────
+  // 3. Status Update
   const updateStatus = useCallback(
     async (id: string, status: ComplaintStatus, remark?: string): Promise<boolean> => {
       const payload: Record<string, any> = {
         status,
         updated_at: new Date().toISOString(),
       };
-      if (remark !== undefined) {
-        payload.remark = remark.trim() || null;
-      }
+      if (remark !== undefined) payload.remark = remark.trim() || null;
 
-      const { error } = await supabase.from("complaints_suggestions").update(payload).eq("id", id);
+      const { error } = await supabase
+        .from("complaints_suggestions")
+        .update(payload)
+        .eq("id", id);
+
       if (error) {
         toast("Error", error.message || "Failed to update status.", "error");
         return false;
       }
 
       toast("Status Updated", `Record marked as ${status}.`, "success");
-      logActivity({
-        module: "complaints",
-        action: "updated",
-        entityType: "complaint_suggestion",
-        entityId: id,
-        actorName,
-        actorRole,
-        description: `Updated complaint status to ${status}`,
-      });
-
       await loadData();
       return true;
     },
-    [actorName, actorRole, loadData]
+    [loadData]
   );
 
-  // ── 4. Delete ────────────────────────────────────────────────────────────
+  // 4. Delete
   const deleteComplaint = useCallback(
     async (id: string): Promise<boolean> => {
       const { error } = await supabase.from("complaints_suggestions").delete().eq("id", id);
@@ -162,32 +167,20 @@ export function useComplaintMutations({
         toast("Error", error.message || "Failed to delete record.", "error");
         return false;
       }
-
       toast("Deleted", "Record removed.", "success");
-      logActivity({
-        module: "complaints",
-        action: "deleted",
-        entityType: "complaint_suggestion",
-        entityId: id,
-        actorName,
-        actorRole,
-        description: `Deleted complaint record ${id}`,
-      });
-
       await loadData();
       return true;
     },
-    [actorName, actorRole, loadData]
+    [loadData]
   );
 
-  // ── 5. File Upload (AWS S3) ──────────────────────────────────────────────
+  // 5. File Upload (AWS S3)
   const uploadDocument = useCallback(
     async (file: File): Promise<{ url: string; name: string } | null> => {
       try {
-        const res = await uploadFileToS3(file, "complaints");
+        const res = await uploadFileToS3(file, "complaints/attachments");
         return { url: res.url, name: file.name };
       } catch (s3Err: any) {
-        console.warn("AWS S3 upload attempt error:", s3Err);
         toast("Upload Failed", s3Err?.message || "Failed to upload file to AWS S3.", "error");
         return null;
       }
