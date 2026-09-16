@@ -87,20 +87,35 @@ export const ProfileHeader = memo(function ProfileHeader({
 
             {/* 2. Full Name + Position (directly below photo) */}
             <div className="space-y-0.5">
-              <h1 className="text-xl md:text-2xl font-black text-gray-900 leading-tight">
-                {employee.first_name} {employee.last_name}
+              <h1 className="text-xl md:text-2xl font-black text-gray-900 leading-tight flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                <span>{employee.first_name} {employee.last_name}</span>
+                {employee.title && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    {employee.title}
+                  </span>
+                )}
               </h1>
-              <p className="text-sm font-bold text-[#253C7D]">
-                {employee.role || "No Position Assigned"}
+              {employee.kh_name && (
+                <p className="text-xs font-bold text-[#253C7D] font-sans">
+                  {employee.kh_name}
+                </p>
+              )}
+              <p className="text-sm font-bold text-slate-700">
+                {employee.position || employee.role || "No Position Assigned"}
               </p>
             </div>
 
             {/* 3. Division / Department */}
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-0.5">
-              {employee.branches?.name && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-700 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200/60" title="Division / Business Unit">
+              {(employee.bu_full_name || employee.branches?.name) && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-700 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200/60" title="Business Unit">
                   <i className="ri-building-line text-gray-500" />
-                  {employee.branches.name}
+                  <span>{employee.bu_full_name || employee.branches?.name}</span>
+                  {employee.code_bu && (
+                    <span className="text-[9px] font-mono font-black text-[#253C7D] bg-blue-100/80 px-1 rounded">
+                      [{employee.code_bu}]
+                    </span>
+                  )}
                 </span>
               )}
               {employee.department && (

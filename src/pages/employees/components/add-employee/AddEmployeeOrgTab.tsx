@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { EmployeeFormState } from "../../types";
-import { DEPARTMENTS } from "../../constants";
+import { OrgHierarchyFields } from "./org";
 
 interface AddEmployeeOrgTabProps {
   form: EmployeeFormState;
@@ -86,148 +86,24 @@ export const AddEmployeeOrgTab = memo(function AddEmployeeOrgTab({
             <label className="block text-xs font-bold text-gray-700 mb-1">
               Part 2: Sub-Branch / Work Location
             </label>
-            {workSites.length > 0 ? (
-              <select
-                value={currentSiteSelectValue}
-                onChange={(e) => onSelectSite(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-emerald-300 bg-emerald-50/20 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#253C7D] cursor-pointer shadow-2xs"
-              >
-                <option value="">Main Office ({currentBranchName})</option>
-                {workSites.map((site) => (
-                  <option key={site.id} value={site.id}>
-                    📍 {site.name} (Sub-Branch)
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="text"
-                value={form.site || form.working_location || "Headquarters"}
-                onChange={(e) => {
-                  onChange("site", e.target.value);
-                  onChange("working_location", e.target.value);
-                }}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 bg-white"
-                placeholder="Work Site / Location"
-              />
-            )}
+            <select
+              value={currentSiteSelectValue}
+              onChange={(e) => onSelectSite(e.target.value)}
+              className="w-full px-3.5 py-2.5 border border-emerald-300 bg-emerald-50/20 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#253C7D] cursor-pointer shadow-2xs"
+            >
+              <option value="">Main Office ({currentBranchName || "Main Office"})</option>
+              {workSites.map((site) => (
+                <option key={site.id} value={site.id}>
+                  📍 {site.name} (Sub-Branch)
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
       {/* Synchronized Organizational Hierarchy Details */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Code BU */}
-        <div>
-          <label className="block text-xs font-extrabold text-slate-700 mb-1">
-            Code BU
-          </label>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-2 rounded-xl bg-blue-50 border border-blue-200 text-[#253C7D] font-mono font-black text-xs shrink-0">
-              {form.code_bu || "BU"}
-            </span>
-            <input
-              type="text"
-              value={form.code_bu}
-              onChange={(e) => onChange("code_bu", e.target.value.toUpperCase())}
-              placeholder="e.g. EXP"
-              className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold font-mono text-slate-900 focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
-        </div>
-
-        {/* BU Full Name */}
-        <div className="md:col-span-2">
-          <label className="block text-xs font-extrabold text-slate-700 mb-1">
-            BU Full Name
-          </label>
-          <input
-            type="text"
-            value={form.bu_full_name}
-            onChange={(e) => onChange("bu_full_name", e.target.value)}
-            placeholder="e.g. Express Delivery Business Unit"
-            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
-          />
-        </div>
-
-        {/* Handle BU */}
-        <div>
-          <label className="block text-xs font-extrabold text-slate-700 mb-1">
-            Handle BU
-          </label>
-          <input
-            type="text"
-            value={form.handle_bu}
-            onChange={(e) => onChange("handle_bu", e.target.value)}
-            placeholder="e.g. @express or EXP-OPS"
-            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
-          />
-        </div>
-
-        {/* Division */}
-        <div>
-          <label className="block text-xs font-extrabold text-slate-700 mb-1">
-            Division
-          </label>
-          <input
-            type="text"
-            value={form.division}
-            onChange={(e) => onChange("division", e.target.value)}
-            placeholder="e.g. Commercial &amp; Operations"
-            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
-          />
-        </div>
-
-        {/* Department */}
-        <div>
-          <label className="block text-xs font-extrabold text-slate-700 mb-1">
-            Department <span className="text-rose-500">*</span>
-          </label>
-          <select
-            value={form.department}
-            onChange={(e) => onChange("department", e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
-          >
-            {DEPARTMENTS.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Position / Role Title */}
-        <div className="md:col-span-2">
-          <label className="block text-xs font-extrabold text-slate-700 mb-1">
-            Position / Job Title <span className="text-rose-500">*</span>
-          </label>
-          <input
-            type="text"
-            required
-            value={form.position || form.role}
-            onChange={(e) => {
-              onChange("position", e.target.value);
-              onChange("role", e.target.value);
-            }}
-            placeholder="e.g. Operations Coordinator / Senior Specialist"
-            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
-          />
-        </div>
-
-        {/* Working Location */}
-        <div>
-          <label className="block text-xs font-extrabold text-slate-700 mb-1">
-            Working Location / Province
-          </label>
-          <input
-            type="text"
-            value={form.working_location}
-            onChange={(e) => onChange("working_location", e.target.value)}
-            placeholder="e.g. Phnom Penh / Siem Reap"
-            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
-          />
-        </div>
-      </div>
+      <OrgHierarchyFields form={form} onChange={onChange} />
     </div>
   );
 });

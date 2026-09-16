@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import type { ModalManagerEmployee } from "./types";
 import type { EmployeeFormState } from "../../types";
+import { getBranchCode, deriveBuHandle } from "../../constants";
 
 export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState) {
   const [dbBranches, setDbBranches] = useState<
@@ -18,7 +19,7 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
     Promise.all([
       supabase.from("branches").select("id, name, location").is("deleted_at", null).order("name"),
       supabase.from("work_locations").select("id, name, description, branch_id").is("deleted_at", null).order("name"),
-      supabase.from("employees").select("id, first_name, last_name, email, phone, department, role, position, branch_id, bu_full_name, code_bu").is("deleted_at", null).order("first_name"),
+      supabase.from("employees").select("id, first_name, last_name, email, phone, department, role, position, branch_id, bu_full_name, code_bu, branches(id, name)").is("deleted_at", null).order("first_name"),
       supabase.from("user_role_assignments").select("id, user_id, email, display_name, role_id, deleted_at, app_roles(id, name, is_admin, branch_id)").is("deleted_at", null),
     ]).then(([bRes, wRes, eRes, uRes]) => {
       if (bRes.data) setDbBranches(bRes.data);
@@ -116,31 +117,15 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
     );
   }, [dbBranches]);
 
-  const getBranchCode = useCallback((branchName: string): string => {
-    const lower = (branchName || "").toLowerCase().trim();
-    if (lower.includes("express") || lower.includes("exp")) return "EXP";
-    if (lower.includes("logistics") || lower.includes("log")) return "LOG";
-    if (lower.includes("tech") || lower.includes("technology")) return "TEC";
-    if (lower.includes("retail") || lower.includes("mart") || lower.includes("store")) return "RET";
-    if (lower.includes("finance") || lower.includes("capital")) return "FIN";
-    if (lower.includes("cambodia") || lower.includes("kh")) return "KHM";
-    if (lower.includes("headquarter") || lower.includes("hq") || lower.includes("main")) return "HQ";
-    const words = branchName.trim().split(/\s+/);
-    if (words.length >= 2) {
-      return (words[0].slice(0, 2) + words[1].slice(0, 1)).toUpperCase();
-    }
-    return (branchName.slice(0, 3) || "BU").toUpperCase();
-  }, []);
-
   const currentBranch = useMemo(() => {
     if (!form.branch_id && !form.bu_full_name && !form.code_bu) return null;
     return (
       cleanBranches.find((b) => b.id === form.branch_id) ||
-      cleanBranches.find((b) => b.name === form.bu_full_name) ||
+      cleanBranches.find((b) => b.name.toLowerCase().trim() === (form.bu_full_name || "").toLowerCase().trim()) ||
       cleanBranches.find((b) => getBranchCode(b.name) === form.code_bu) ||
       null
     );
-  }, [cleanBranches, form.branch_id, form.bu_full_name, form.code_bu, getBranchCode]);
+  }, [cleanBranches, form.branch_id, form.bu_full_name, form.code_bu]);
 
   const currentBranchName = currentBranch?.name || form.bu_full_name || cleanBranches[0]?.name || "";
 
@@ -151,29 +136,58 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
 
   const currentSiteSelectValue = useMemo(() => {
     if (!form.site) return "";
+    const lowerSite = form.site.toLowerCase().trim();
+    if (
+      lowerSite === "headquarters" ||
+      lowerSite === "main office" ||
+      lowerSite.startsWith("main office")
+    ) {
+      return "";
+    }
     const matched = workSites.find(
-      (w) => w.name.toLowerCase().trim() === form.site.toLowerCase().trim()
+      (w) => w.name.toLowerCase().trim() === lowerSite || w.id === form.site
     );
-    return matched ? matched.id : form.site;
+    return matched ? matched.id : "";
   }, [workSites, form.site]);
 
+  // Filter employees strictly belonging to the BU chosen in Step 2
+  const buEmployees = useMemo(() => {
+    const selectedBranchId = currentBranch?.id || form.branch_id;
+    const targetCodeBu = (form.code_bu || "").trim().toLowerCase();
+    const targetBuName = (form.bu_full_name || currentBranch?.name || "").trim().toLowerCase();
+
+    // If no BU is selected, do not leak employees from other branches
+    if (!selectedBranchId && !targetCodeBu && !targetBuName) {
+      return [];
+    }
+
+    return dbEmployees.filter((e) => {
+      if (selectedBranchId && e.branch_id === selectedBranchId) return true;
+      if (selectedBranchId && e.branches?.id === selectedBranchId) return true;
+      if (targetBuName) {
+        if (e.bu_full_name && e.bu_full_name.trim().toLowerCase() === targetBuName) return true;
+        if (e.branches?.name && e.branches.name.trim().toLowerCase() === targetBuName) return true;
+      }
+      if (targetCodeBu && e.code_bu && e.code_bu.trim().toLowerCase() === targetCodeBu) return true;
+      return false;
+    });
+  }, [dbEmployees, currentBranch, form.branch_id, form.code_bu, form.bu_full_name]);
+
   const buManagers = useMemo(() => {
-    if (!currentBranch) return dbEmployees;
-    const sameBu = dbEmployees.filter(
-      (e) =>
-        e.branch_id === currentBranch.id ||
-        (e.code_bu && form.code_bu && e.code_bu === form.code_bu) ||
-        (e.bu_full_name && form.bu_full_name && e.bu_full_name === form.bu_full_name)
-    );
-    return sameBu.length > 0 ? sameBu : dbEmployees;
-  }, [dbEmployees, currentBranch, form.code_bu, form.bu_full_name]);
+    const managers = buEmployees.filter((e) => {
+      const lower = (e.realRole || "").toLowerCase();
+      const isExec = lower.includes("ceo") || lower.includes("chair") || lower.includes("director");
+      return !isExec;
+    });
+    return managers;
+  }, [buEmployees]);
 
   const buCeos = useMemo(() => {
-    return dbEmployees.filter((e) => {
+    return buEmployees.filter((e) => {
       const lower = (e.realRole || "").toLowerCase();
       return lower.includes("ceo") || lower.includes("chair") || lower.includes("director") || e.isAdmin;
     });
-  }, [dbEmployees]);
+  }, [buEmployees]);
 
   return {
     cleanBranches,
@@ -182,6 +196,7 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
     workSites,
     currentSiteSelectValue,
     getBranchCode,
+    deriveBuHandle,
     buManagers,
     buCeos,
   };

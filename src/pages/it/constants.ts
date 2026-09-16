@@ -129,14 +129,110 @@ export const TICKET_CATEGORIES = [
   "Other",
 ];
 
+export interface AssetCategoryCardConfig {
+  id: string;
+  name: string;
+  subType: "Electronic Hardware" | "Office Supply" | "Furniture" | string;
+  trackingBadges: string[];
+  keywords: string[];
+}
+
+export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
+  {
+    id: "contact_phone_sim",
+    name: "Contact: Phone, Sim Card Number",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["phone", "mobile", "sim", "cell", "contact", "telecom"],
+  },
+  {
+    id: "desktop_bundle",
+    name: "Desktop: Mouse, Pad, Keyboard, Monitor, System Unit, Extension Cord",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["desktop", "workstation", "pc", "tower", "system unit"],
+  },
+  {
+    id: "laptop_bundle",
+    name: "Laptop: Mouse, Pad, Charger, Bag, Extension",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["laptop", "notebook", "thinkpad", "macbook", "latitude"],
+  },
+  {
+    id: "office_equipment",
+    name: "Off. Equipment: Name Tage, Officer Card",
+    subType: "Office Supply",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["badge", "card", "tag", "equipment", "stamp", "office supply"],
+  },
+  {
+    id: "peripherals",
+    name: "Peripherals: Headset, Mouse, Keyboard, Webcam",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["peripheral", "mouse", "keyboard", "headset", "webcam", "accessory"],
+  },
+  {
+    id: "displays",
+    name: "Display: 24\" & 27\" LED Workstation Monitors",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["display", "monitor", "screen"],
+  },
+  {
+    id: "furniture",
+    name: "Office Furniture: Ergonomic Chair, Desk, Cabinet",
+    subType: "Office Supply",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["furniture", "chair", "desk", "table", "cabinet"],
+  },
+  {
+    id: "server_network",
+    name: "Network & Server: Router, Access Point, Switch, Rack",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["server", "network", "router", "switch", "access point"],
+  },
+];
+
+export const ASSET_CATEGORIES = [
+  "Contact: Phone, Sim Card Number",
+  "Desktop: Mouse, Pad, Keyboard, Monitor, System Unit, Extension Cord",
+  "Laptop: Mouse, Pad, Charger, Bag, Extension",
+  "Off. Equipment: Name Tage, Officer Card",
+  "Peripherals: Headset, Mouse, Keyboard, Webcam",
+  "Display: 24\" & 27\" LED Workstation Monitors",
+  "Office Furniture: Ergonomic Chair, Desk, Cabinet",
+  "Network & Server: Router, Access Point, Switch, Rack",
+  "Other",
+];
+
+export const ASSET_CONDITIONS = [
+  "New",
+  "Good",
+  "Fair",
+  "Poor",
+  "Damaged",
+];
+
 export const INITIAL_ASSET_FORM: AssetFormState = {
   name: "",
   asset_tag: "",
   type: "Laptop",
+  category: "",
+  purchase_date: new Date().toISOString().split("T")[0],
+  description: "",
+  condition: "New",
+  price: 0,
+  price_currency: "USD",
+  site: "",
   serial_number: "",
   branch_id: "",
   employee_id: "",
-  status: "active",
+  status: "inventory",
+  photo_url: null,
+  attachments: [],
 };
 
 export const INITIAL_TICKET_FORM: TicketFormState = {

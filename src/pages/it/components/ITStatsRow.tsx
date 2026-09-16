@@ -1,11 +1,12 @@
 import { memo } from "react";
+import type { ITTabType } from "../types";
 
 interface ITStatsRowProps {
   activeAssets: number;
   inInventory: number;
   openTickets: number;
   criticalTickets: number;
-  onSelectTab: (tab: "assets" | "tickets") => void;
+  onSelectTab: (tab: ITTabType) => void;
 }
 
 export const ITStatsRow = memo(function ITStatsRow({

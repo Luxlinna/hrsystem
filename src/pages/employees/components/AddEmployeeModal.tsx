@@ -7,6 +7,7 @@ import { AddEmployeePersonalTab } from "./add-employee/AddEmployeePersonalTab";
 import { AddEmployeeOrgTab } from "./add-employee/AddEmployeeOrgTab";
 import { AddEmployeeTermsTab } from "./add-employee/AddEmployeeTermsTab";
 import { AddEmployeeCompTab } from "./add-employee/AddEmployeeCompTab";
+import { AddEmployeeAssetTab } from "./add-employee/AddEmployeeAssetTab";
 import { AddEmployeeContactTab } from "./add-employee/AddEmployeeContactTab";
 import { AddEmployeeExportMenu } from "./add-employee/AddEmployeeExportMenu";
 
@@ -56,6 +57,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
     workSites,
     currentSiteSelectValue,
     getBranchCode,
+    deriveBuHandle,
     buManagers,
     buCeos,
   } = useAddEmployeeModalData(isOpen, form);
@@ -124,16 +126,6 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
     } catch {}
   }, []);
 
-  // Auto-fill default branch if scoped
-  useEffect(() => {
-    if (isOpen && !isSuperAdmin) {
-      const defaultBranch = targetBranch || userBranchId || "";
-      if (defaultBranch && form.branch_id !== defaultBranch) {
-        setForm((prev) => ({ ...prev, branch_id: defaultBranch }));
-      }
-    }
-  }, [isOpen, isSuperAdmin, targetBranch, userBranchId, form.branch_id, setForm]);
-
   // Handle branch selection and auto-derive BU code, full name, and handle
   const handleSelectBranch = useCallback(
     (branchId: string) => {
@@ -141,25 +133,75 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
       const branch = cleanBranches.find((b) => b.id === branchId);
       if (branch) {
         const code = getBranchCode(branch.name);
+        const handle = deriveBuHandle(branch.name, code);
         setForm((prev) => ({
           ...prev,
           branch_id: branch.id,
           code_bu: code,
           bu_full_name: branch.name,
-          handle_bu: `@${code.toLowerCase()}`,
-          site: "Headquarters",
+          handle_bu: handle,
+          site: branch.name ? `Main Office (${branch.name})` : "Main Office",
           working_location: branch.location || "Phnom Penh",
           default_work_location_id: "",
         }));
       } else {
         setForm((prev) => ({
           ...prev,
-          branch_id: branchId,
+          branch_id: "",
+          code_bu: "",
+          bu_full_name: "",
+          handle_bu: "",
+          site: "",
+          default_work_location_id: "",
         }));
       }
     },
-    [cleanBranches, getBranchCode, setForm]
+    [cleanBranches, getBranchCode, deriveBuHandle, setForm]
   );
+
+  // Auto-fill default branch if scoped
+  useEffect(() => {
+    if (isOpen && !isSuperAdmin) {
+      const defaultBranch = targetBranch || userBranchId || "";
+      if (defaultBranch && form.branch_id !== defaultBranch) {
+        handleSelectBranch(defaultBranch);
+      }
+    }
+  }, [isOpen, isSuperAdmin, targetBranch, userBranchId, form.branch_id, handleSelectBranch]);
+
+  // Auto-sync BU details (bu_full_name, handle_bu, code_bu) whenever a branch is selected/loaded
+  useEffect(() => {
+    if (!isOpen || !cleanBranches.length) return;
+    const branchId = form.branch_id || targetBranch || userBranchId;
+    if (!branchId) return;
+
+    const branch = cleanBranches.find((b) => b.id === branchId);
+    if (branch) {
+      const code = getBranchCode(branch.name);
+      const handle = deriveBuHandle(branch.name, code);
+
+      setForm((prev) => {
+        const needsBuNameSync = !prev.bu_full_name;
+        const needsHandleSync = !prev.handle_bu;
+        const needsCodeSync = !prev.code_bu;
+        const needsBranchSync = prev.branch_id !== branch.id;
+
+        if (!needsBuNameSync && !needsHandleSync && !needsCodeSync && !needsBranchSync) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          branch_id: branch.id,
+          code_bu: prev.code_bu || code,
+          bu_full_name: prev.bu_full_name || branch.name,
+          handle_bu: prev.handle_bu || handle,
+          site: prev.site || (branch.name ? `Main Office (${branch.name})` : "Main Office"),
+          working_location: prev.working_location || branch.location || "Phnom Penh",
+        };
+      });
+    }
+  }, [isOpen, cleanBranches, form.branch_id, targetBranch, userBranchId, getBranchCode, deriveBuHandle, setForm]);
 
   // Handle site selection and auto-derive location
   const handleSelectSite = useCallback(
@@ -169,7 +211,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
         setForm((prev) => ({
           ...prev,
           default_work_location_id: "",
-          site: "Headquarters",
+          site: currentBranch?.name ? `Main Office (${currentBranch.name})` : "Main Office",
           working_location: currentBranch?.location || "Phnom Penh",
         }));
         return;
@@ -362,49 +404,65 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
             </div>
           </div>
 
-          {/* 5 Step Wizard Tabs */}
-          <div className="grid grid-cols-5 gap-1 sm:gap-2 mt-4 pt-3 border-t border-slate-100 overflow-x-auto">
-            {ADD_EMPLOYEE_STEPS.map((step, idx) => {
-              const isActive = step.id === activeTab;
-              const isPast = idx < currentStepIndex;
+          {/* 6 Step Wizard Progress Bar */}
+          <div className="mt-3.5 pt-3 border-t border-slate-100">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              {ADD_EMPLOYEE_STEPS.map((step, idx) => {
+                const isActive = step.id === activeTab;
+                const isPast = idx < currentStepIndex;
 
-              return (
-                <button
-                  key={step.id}
-                  type="button"
-                  onClick={() => setActiveTab(step.id)}
-                  className={`flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-2 px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer ${
-                    isActive
-                      ? "bg-[#253C7D] text-white shadow-sm font-bold"
-                      : isPast
-                      ? "bg-slate-100 text-slate-700 hover:bg-slate-200/80 font-semibold"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-medium"
-                  }`}
-                >
-                  <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0 ${
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => setActiveTab(step.id)}
+                    className={`group relative flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all duration-150 cursor-pointer active:scale-[0.97] border ${
                       isActive
-                        ? "bg-white/20 text-white"
+                        ? "bg-[#253C7D] border-[#253C7D] text-white shadow-md shadow-[#253C7D]/25 ring-2 ring-[#253C7D]/20"
                         : isPast
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-200 text-slate-600"
+                        ? "bg-emerald-50/70 border-emerald-200/80 text-emerald-800 hover:bg-emerald-100/60 hover:border-emerald-300 shadow-2xs"
+                        : "bg-slate-50/80 border-slate-200/80 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-300 shadow-2xs"
                     }`}
                   >
-                    {isPast ? <i className="ri-check-line font-bold" /> : <i className={step.icon} />}
-                  </div>
-                  <div className="min-w-0 text-center sm:text-left">
-                    <p className="text-[11px] leading-tight truncate">{step.shortLabel}</p>
-                    <p
-                      className={`text-[9px] hidden sm:block ${
-                        isActive ? "text-blue-200" : "text-slate-400"
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 transition-transform group-hover:scale-105 shadow-2xs ${
+                        isActive
+                          ? "bg-white/20 text-white font-black"
+                          : isPast
+                          ? "bg-emerald-500 text-white font-black"
+                          : "bg-white border border-slate-200 text-slate-500 font-bold"
                       }`}
                     >
-                      Step {step.step}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
+                      {isPast ? (
+                        <i className="ri-check-line text-sm" />
+                      ) : (
+                        <i className={`${step.icon} text-xs`} />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`text-xs font-bold leading-tight truncate ${
+                          isActive ? "text-white" : isPast ? "text-emerald-900" : "text-slate-800"
+                        }`}
+                      >
+                        {step.shortLabel}
+                      </p>
+                      <p
+                        className={`text-[10px] font-semibold mt-0.5 leading-none ${
+                          isActive
+                            ? "text-blue-200"
+                            : isPast
+                            ? "text-emerald-600"
+                            : "text-slate-400"
+                        }`}
+                      >
+                        Step {step.step}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -440,6 +498,15 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
 
             {activeTab === "compensation" && (
               <AddEmployeeCompTab form={form} onChange={handleFieldChange} />
+            )}
+
+            {activeTab === "asset" && (
+              <AddEmployeeAssetTab
+                form={form}
+                onChange={handleFieldChange}
+                cleanBranches={cleanBranches}
+                currentBranch={currentBranch}
+              />
             )}
 
             {activeTab === "contact" && (

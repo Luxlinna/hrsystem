@@ -33,7 +33,7 @@ export function useITData() {
         supabase
           .from("it_assets")
           .select(
-            "id, name, asset_tag, type, employee_id, branch_id, status, serial_number, created_at, employees(id, first_name, last_name, department, avatar_url), branches(id, name)"
+            "id, name, asset_tag, type, category, purchase_date, description, condition, price, price_currency, site, photo_url, attachments, employee_id, branch_id, status, serial_number, created_at, employees(id, first_name, last_name, department, avatar_url), branches(id, name)"
           )
           .is("deleted_at", null)
           .or(`branch_id.eq.${targetBranch},branch_id.is.null`)

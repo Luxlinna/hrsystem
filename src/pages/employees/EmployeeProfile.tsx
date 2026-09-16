@@ -141,8 +141,8 @@ export default function EmployeeProfile() {
         <AssetInfoCard employee={employee} onCountLoaded={handleAssetsCount} />
       )}
       {activeTab === "payroll" && (
-        <div className="max-w-4xl">
-          <PayrollHistoryCard payrollRecords={payrollRecords} />
+        <div className="max-w-5xl">
+          <PayrollHistoryCard employee={employee} payrollRecords={payrollRecords} />
         </div>
       )}
     </div>

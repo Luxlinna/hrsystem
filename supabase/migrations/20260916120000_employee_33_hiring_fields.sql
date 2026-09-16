@@ -82,5 +82,6 @@ create index if not exists idx_employees_nssf_number on employees(nssf_number);
 update employees
 set
   full_name = coalesce(full_name, trim(concat(first_name, ' ', last_name))),
-  start_date = coalesce(start_date, case when join_date ~ '^\d{4}-\d{2}-\d{2}' then join_date::date else null end)
+  start_date = coalesce(start_date, join_date)
 where full_name is null or start_date is null;
+

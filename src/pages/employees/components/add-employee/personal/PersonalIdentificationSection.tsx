@@ -69,6 +69,7 @@ export const PersonalIdentificationSection = memo(function PersonalIdentificatio
                       <option value="Passport">Passport</option>
                       <option value="Driver License">Driver License</option>
                       <option value="Work Permit">Work Permit</option>
+                      <option value="NSSF Card">NSSF Card</option>
                     </select>
                   </td>
                   <td className="py-2 px-3">

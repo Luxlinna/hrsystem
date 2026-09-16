@@ -35,7 +35,7 @@ export const TermsReportingFields = memo(function TermsReportingFields({
             Line Manager (Reporting Line)
           </label>
           <span className="text-[10px] font-bold text-[#253C7D]">
-            {buManagers.length} Managers Available
+            {buManagers.length + buCeos.length} in this BU
           </span>
         </div>
         <select
@@ -56,16 +56,18 @@ export const TermsReportingFields = memo(function TermsReportingFields({
           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
         >
           <option value="">-- Select Line Manager --</option>
-          <optgroup label="BU Leadership &amp; Managers">
-            {buManagers.map((m) => {
-              const name = `${m.first_name} ${m.last_name}`.trim();
-              return (
-                <option key={m.id} value={name}>
-                  👤 {name} ({m.realRole || m.department || "Manager"})
-                </option>
-              );
-            })}
-          </optgroup>
+          {buManagers.length > 0 && (
+            <optgroup label={`${form.bu_full_name || "BU"} Leadership & Managers`}>
+              {buManagers.map((m) => {
+                const name = `${m.first_name} ${m.last_name}`.trim();
+                return (
+                  <option key={m.id} value={name}>
+                    👤 {name} ({m.realRole || m.department || "Manager"})
+                  </option>
+                );
+              })}
+            </optgroup>
+          )}
           {buCeos.length > 0 && (
             <optgroup label="Executive &amp; Directors">
               {buCeos.map((c) => {
@@ -77,6 +79,11 @@ export const TermsReportingFields = memo(function TermsReportingFields({
                 );
               })}
             </optgroup>
+          )}
+          {buManagers.length === 0 && buCeos.length === 0 && (
+            <option value="" disabled>
+              No managers found in this BU (use Custom Manager below)
+            </option>
           )}
           <option value="__CUSTOM__">✍ Custom / External Manager...</option>
         </select>

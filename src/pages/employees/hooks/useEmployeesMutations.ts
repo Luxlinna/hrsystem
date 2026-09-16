@@ -309,6 +309,17 @@ export function useEmployeesMutations({
           bank_account_number: form.bank_account_number?.trim() || null,
           bank_name: form.bank_name?.trim() || null,
           nssf_number: form.nssf_number?.trim() || null,
+          register_nssf: Boolean(form.register_nssf),
+          payroll_structure: form.payroll_structure || "Standard Monthly",
+          apply_day_in_month: Boolean(form.apply_day_in_month),
+          apply_working_hours_per_day: Boolean(form.apply_working_hours_per_day),
+          tax_salary: form.tax_salary ? parseFloat(String(form.tax_salary)) : null,
+          tax_salary_currency: form.tax_salary_currency || "USD",
+          tax_salary_frequency: form.tax_salary_frequency || "Monthly",
+          rate_items: form.rate_items || [],
+          payroll_attachments: form.payroll_attachments || [],
+          asset_bookings: form.asset_bookings || [],
+          asset_attachments: form.asset_attachments || [],
 
           email: cleanEmail,
           phone: cleanPhone,
@@ -332,6 +343,21 @@ export function useEmployeesMutations({
             await startOnboardingForEmployee(newEmp.id, actorName);
           } catch (obErr) {
             console.error("Failed to initialize onboarding journey for new employee:", obErr);
+          }
+        }
+
+        // Link booked assets in it_assets table
+        if (form.asset_bookings && form.asset_bookings.length > 0 && newEmp?.id) {
+          try {
+            const tags = form.asset_bookings.map((b) => b.tag).filter(Boolean);
+            if (tags.length > 0) {
+              await supabase
+                .from("it_assets")
+                .update({ employee_id: newEmp.id, status: "active" })
+                .in("asset_tag", tags);
+            }
+          } catch (assetErr) {
+            console.warn("Failed to update it_assets status for new employee:", assetErr);
           }
         }
 

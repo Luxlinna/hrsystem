@@ -7,6 +7,7 @@ import {
   type HiringStepId,
   type EditHiringFormData,
 } from "./edit-hiring/types";
+import { deriveBuHandle } from "@/pages/employees/constants";
 import { useHiringModalData } from "./edit-hiring/useHiringModalData";
 import { EditHiringModalHeader } from "./edit-hiring/EditHiringModalHeader";
 import { EditHiringPersonalTab } from "./edit-hiring/EditHiringPersonalTab";
@@ -176,7 +177,7 @@ export const EditHiringInfoModal: React.FC<EditHiringInfoModalProps> = ({
         ...prev,
         code_bu: code,
         bu_full_name: branch.name,
-        handle_bu: code,
+        handle_bu: deriveBuHandle(branch.name, code),
         site: newSite,
         working_location: newLocation,
       }));

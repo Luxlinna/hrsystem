@@ -1,4 +1,26 @@
-import type { EmployeeFormState, VisibleColumns } from "./types";
+import type { EmployeeFormState, VisibleColumns, EmployeeRateItem } from "./types";
+
+export const PAYROLL_STRUCTURES = [
+  "Standard Monthly",
+  "Executive Salary Structure",
+  "Operations & Shift Structure",
+  "Fixed Base + Allowance",
+  "Daily Rated Structure",
+  "Hourly Rated Structure",
+  "Commission Only",
+];
+
+export const DEFAULT_PAYROLL_RATE_ITEMS: EmployeeRateItem[] = [
+  { name: "Gasoline", amount: 0, remark: "" },
+  { name: "Attendance", amount: 0, remark: "" },
+  { name: "Accommodation", amount: 0, remark: "" },
+  { name: "Transportation", amount: 0, remark: "Covering on transportation fees and maintenance." },
+  { name: "Parking", amount: 0, remark: "For staff at store PP0003 only - 6.5 USD!" },
+  { name: "Phone", amount: 0, remark: "" },
+  { name: "13th month salary", amount: 0, remark: "Offer to specific employees with latest basic salary every anniversary." },
+  { name: "N.OT Allowance", amount: 0, remark: "An allowance is provided to an employee for 1 time normal OT." },
+  { name: "Position", amount: 0, remark: "" },
+];
 
 export const DEPARTMENTS = [
   "Engineering",
@@ -13,6 +35,46 @@ export const DEPARTMENTS = [
   "Customer Service",
   "Other",
 ];
+
+export function getBranchCode(branchName: string): string {
+  const lower = (branchName || "").toLowerCase().trim();
+  if (lower.includes("express") || lower.includes("exp")) return "EXP";
+  if (lower.includes("logistics") || lower.includes("log")) return "LOG";
+  if (lower.includes("tech") || lower.includes("technology")) return "TEC";
+  if (lower.includes("retail") || lower.includes("mart") || lower.includes("store")) return "RET";
+  if (lower.includes("finance") || lower.includes("capital")) return "FIN";
+  if (lower.includes("cambodia") || lower.includes("kh")) return "KHM";
+  if (lower.includes("headquarter") || lower.includes("hq") || lower.includes("main")) return "HQ";
+
+  const words = branchName.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    if (words[0].length <= 3 && /^[A-Za-z]+$/.test(words[0])) {
+      return words[0].toUpperCase();
+    }
+    return (words[0].slice(0, 2) + words[1].slice(0, 1)).toUpperCase();
+  }
+  return (branchName.slice(0, 3) || "BU").toUpperCase();
+}
+
+export function deriveBuHandle(branchName: string, code?: string): string {
+  if (!branchName && !code) return "";
+  const name = (branchName || "").trim();
+  const lower = name.toLowerCase();
+
+  // Known patterns
+  if (lower.includes("express")) return "@express";
+  if (lower.includes("logistics")) return "@logistics";
+  if (lower.includes("headquarter") || lower.includes("hq")) return "@hq";
+
+  // First word slug (e.g. "OPS sulotion" -> "@ops", "Pinex Agro" -> "@pinex")
+  const firstWord = lower.split(/\s+/)[0]?.replace(/[^a-z0-9]/g, "");
+  if (firstWord && firstWord.length >= 2) {
+    return `@${firstWord}`;
+  }
+
+  const fallbackCode = (code || name.slice(0, 3)).toLowerCase().replace(/[^a-z0-9]/g, "");
+  return `@${fallbackCode || "bu"}`;
+}
 
 export const STATUS_OPTIONS = [
   { value: "onboarding", label: "Onboarding" },
@@ -139,6 +201,7 @@ export const INITIAL_EMPLOYEE_FORM: EmployeeFormState = {
   employment_history: [],
   achievement_history: [],
   personal_attachments: [],
+  register_nssf: false,
 
   // 2. Org & Workplace Site
   branch_id: "",
@@ -182,8 +245,20 @@ export const INITIAL_EMPLOYEE_FORM: EmployeeFormState = {
   bank_account_number: "",
   bank_name: "",
   nssf_number: "",
+  payroll_structure: "Standard Monthly",
+  apply_day_in_month: false,
+  apply_working_hours_per_day: false,
+  tax_salary: "",
+  tax_salary_currency: "USD",
+  tax_salary_frequency: "Monthly",
+  rate_items: DEFAULT_PAYROLL_RATE_ITEMS,
+  payroll_attachments: [],
 
-  // 5. Contacts & Emergency Information
+  // 5. Asset Assignment & Booking
+  asset_bookings: [],
+  asset_attachments: [],
+
+  // 6. Contacts & Emergency Information
   email: "",
   phone: "",
   current_address: "",

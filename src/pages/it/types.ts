@@ -17,6 +17,15 @@ export interface ITAsset {
   name: string;
   asset_tag: string;
   type: string;
+  category?: string;
+  purchase_date?: string | null;
+  description?: string | null;
+  condition?: "New" | "Good" | "Fair" | "Poor" | "Damaged" | string;
+  price?: number;
+  price_currency?: string;
+  site?: string | null;
+  photo_url?: string | null;
+  attachments?: Array<{ name: string; url: string; size?: number; type?: string; key?: string }>;
   employee_id: string | null;
   branch_id: string | null;
   status: "active" | "inventory" | "maintenance" | "retired" | string;
@@ -50,10 +59,19 @@ export interface AssetFormState {
   name: string;
   asset_tag: string;
   type: string;
-  serial_number: string;
+  category: string;
+  purchase_date: string;
+  description: string;
+  condition: string;
+  price: number | string;
+  price_currency: string;
+  site: string;
   branch_id: string;
   employee_id: string;
   status: string;
+  serial_number: string;
+  photo_url?: string | null;
+  attachments?: Array<{ name: string; url: string; size?: number; type?: string; key?: string }>;
 }
 
 export interface TicketFormState {
@@ -65,7 +83,7 @@ export interface TicketFormState {
   branch_id?: string;
 }
 
-export type ITTabType = "assets" | "tickets" | "security" | "stationery";
+export type ITTabType = "assets" | "categories" | "tickets" | "security" | "stationery";
 
 export interface StationeryItem {
   id: string;

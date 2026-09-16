@@ -33,7 +33,7 @@ export interface Employee {
   training_history?: EmployeeTrainingItem[] | null;
   employment_history?: EmployeeEmploymentHistoryItem[] | null;
   achievement_history?: EmployeeAchievementItem[] | null;
-  personal_attachments?: string[] | null;
+  personal_attachments?: (EmployeePersonalAttachment | string)[] | null;
   code_bu?: string | null;
   bu_full_name?: string | null;
   handle_bu?: string | null;
@@ -57,13 +57,23 @@ export interface Employee {
   contract_rate_after_currency?: string | null;
   contract_rate_after_frequency?: string | null;
   contract_remark?: string | null;
-  hiring_status?: string | null;
   basic_salary?: number | string | null;
   tax_method?: string | null;
   allowance?: string | null;
   bank_account_number?: string | null;
   bank_name?: string | null;
   nssf_number?: string | null;
+  register_nssf?: boolean | null;
+  payroll_structure?: string | null;
+  apply_day_in_month?: boolean | null;
+  apply_working_hours_per_day?: boolean | null;
+  tax_salary?: number | string | null;
+  tax_salary_currency?: string | null;
+  tax_salary_frequency?: string | null;
+  rate_items?: EmployeeRateItem[] | null;
+  payroll_attachments?: EmployeePayrollAttachment[] | null;
+  asset_bookings?: EmployeeAssetBookingItem[] | null;
+  asset_attachments?: EmployeeAssetAttachment[] | null;
   current_address?: string | null;
   emergency_contact_name?: string | null;
   emergency_phone_number?: string | null;
@@ -192,6 +202,54 @@ export function isEmployeeBiometricEligible(
   });
 }
 
+export interface EmployeeRateItem {
+  name: string;
+  amount: number | string;
+  remark: string;
+}
+
+export interface EmployeePayrollAttachment {
+  name: string;
+  url: string;
+  size?: number;
+  type?: string;
+  uploaded_at?: string;
+}
+
+export interface EmployeePersonalAttachment {
+  name: string;
+  url: string;
+  size?: number;
+  type?: string;
+  uploaded_at?: string;
+  key?: string;
+}
+
+export interface EmployeeAssetBookingItem {
+  id: string;
+  name: string;
+  category: string;
+  tag: string;
+  assign_for: "Full Day" | "Half Day" | "Hourly" | string;
+  from_date: string;
+  to_date_never: boolean;
+  to_date: string;
+  remark: string;
+  status: "Assigned" | "Booked" | "Pending Handover" | string;
+  branch_id?: string | null;
+  bu_name?: string | null;
+  bu_code?: string | null;
+}
+
+export interface EmployeeAssetAttachment {
+  name: string;
+  url: string;
+  size?: number;
+  type?: string;
+  uploaded_at?: string;
+  key?: string;
+}
+
 export interface EmployeeFormState {
   // 1. Personal & Legal Identity
   title: string;
@@ -239,7 +297,8 @@ export interface EmployeeFormState {
   training_history: EmployeeTrainingItem[];
   employment_history: EmployeeEmploymentHistoryItem[];
   achievement_history: EmployeeAchievementItem[];
-  personal_attachments: string[];
+  personal_attachments: (EmployeePersonalAttachment | string)[];
+  register_nssf: boolean;
 
   // 2. Org & Workplace Site
   branch_id: string;
@@ -283,8 +342,20 @@ export interface EmployeeFormState {
   bank_account_number: string;
   bank_name: string;
   nssf_number: string;
+  payroll_structure: string;
+  apply_day_in_month: boolean;
+  apply_working_hours_per_day: boolean;
+  tax_salary: string | number;
+  tax_salary_currency: string;
+  tax_salary_frequency: string;
+  rate_items: EmployeeRateItem[];
+  payroll_attachments: EmployeePayrollAttachment[];
 
-  // 5. Contacts & Emergency Information
+  // 5. Asset Assignment & Booking
+  asset_bookings: EmployeeAssetBookingItem[];
+  asset_attachments: EmployeeAssetAttachment[];
+
+  // 6. Contacts & Emergency Information
   email: string;
   phone: string;
   current_address: string;

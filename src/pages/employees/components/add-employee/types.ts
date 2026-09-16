@@ -1,4 +1,4 @@
-export type AddEmployeeStepId = "personal" | "org" | "terms" | "compensation" | "contact";
+export type AddEmployeeStepId = "personal" | "org" | "terms" | "compensation" | "asset" | "contact";
 
 export interface AddEmployeeStepConfig {
   id: AddEmployeeStepId;
@@ -22,6 +22,7 @@ export interface ModalManagerEmployee {
   branch_id: string | null;
   bu_full_name: string | null;
   code_bu: string | null;
+  branches?: { id: string; name: string } | null;
   realRole: string;
   isManager: boolean;
   isAdmin: boolean;
@@ -32,5 +33,6 @@ export const ADD_EMPLOYEE_STEPS: AddEmployeeStepConfig[] = [
   { id: "org", step: 2, label: "2. Org & Site Workplace", shortLabel: "Org & Site", fullLabel: "Organizational Placement & Physical Work Station", icon: "ri-building-2-line", fieldCount: 8 },
   { id: "terms", step: 3, label: "3. Terms & Schedule", shortLabel: "Schedule", fullLabel: "Terms & Employment Schedule", icon: "ri-calendar-check-line", fieldCount: 8 },
   { id: "compensation", step: 4, label: "4. Compensation & Tax", shortLabel: "Payroll", fullLabel: "Compensation, Tax & Payroll Setup", icon: "ri-money-dollar-circle-line", fieldCount: 5 },
-  { id: "contact", step: 5, label: "5. Contact & Emergency", shortLabel: "Contacts", fullLabel: "Contact & Emergency Information", icon: "ri-contacts-book-2-line", fieldCount: 6 },
+  { id: "asset", step: 5, label: "5. Asset Booking", shortLabel: "Assets", fullLabel: "Asset Assignment & Booking Info", icon: "ri-computer-line", fieldCount: 4 },
+  { id: "contact", step: 6, label: "6. Contact & Emergency", shortLabel: "Contacts", fullLabel: "Contact & Emergency Information", icon: "ri-contacts-book-2-line", fieldCount: 6 },
 ];

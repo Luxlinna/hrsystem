@@ -1,10 +1,30 @@
-import { memo } from "react";
+import { memo, useState } from "react";
+import { uploadFileToS3 } from "@/lib/s3-storage";
+import { toast } from "@/components/Toast";
 import type { PersonalSectionProps } from "./types";
 
 export const PersonalTrainingSection = memo(function PersonalTrainingSection({
   form,
   onChange,
 }: PersonalSectionProps) {
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+
+  const handleFileUpload = async (file: File, idx: number) => {
+    setUploadingIdx(idx);
+    try {
+      const s3Item = await uploadFileToS3(file, "employees/training");
+      const updated = [...(form.training_history || [])];
+      updated[idx] = { ...updated[idx], attachment: s3Item.url };
+      onChange("training_history", updated);
+      toast("Stored on AWS S3", `Saved ${file.name} to AWS S3.`, "success");
+    } catch (err) {
+      console.error("Training doc S3 upload error:", err);
+      toast("Upload Failed", "Could not upload training document to AWS S3", "error");
+    } finally {
+      setUploadingIdx(null);
+    }
+  };
+
   const handleAdd = () => {
     const current = form.training_history || [];
     onChange("training_history", [
@@ -125,18 +145,47 @@ export const PersonalTrainingSection = memo(function PersonalTrainingSection({
                     />
                   </td>
                   <td className="py-2 px-3">
-                    <input
-                      type="file"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const updated = [...(form.training_history || [])];
-                          updated[idx] = { ...updated[idx], attachment: file.name };
-                          onChange("training_history", updated);
-                        }
-                      }}
-                      className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                    />
+                    {uploadingIdx === idx ? (
+                      <div className="flex items-center gap-1.5 text-blue-600 text-[10px] font-bold py-1">
+                        <i className="ri-loader-4-line animate-spin text-sm" />
+                        <span>Uploading to AWS S3...</span>
+                      </div>
+                    ) : train.attachment ? (
+                      <div className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-blue-50/70 border border-blue-200/80">
+                        <a
+                          href={train.attachment}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1 text-[10px] font-bold text-[#253C7D] hover:underline truncate max-w-[140px]"
+                          title="View on AWS S3"
+                        >
+                          <i className="ri-file-text-line text-blue-500" />
+                          <span className="truncate">View on AWS S3</span>
+                          <i className="ri-external-link-line text-[10px]" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...(form.training_history || [])];
+                            updated[idx] = { ...updated[idx], attachment: "" };
+                            onChange("training_history", updated);
+                          }}
+                          className="text-slate-400 hover:text-rose-600 cursor-pointer text-xs"
+                          title="Remove attachment"
+                        >
+                          <i className="ri-close-line" />
+                        </button>
+                      </div>
+                    ) : (
+                      <input
+                        type="file"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(file, idx);
+                        }}
+                        className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                      />
+                    )}
                   </td>
                   <td className="py-2 px-3 text-center">
                     <button

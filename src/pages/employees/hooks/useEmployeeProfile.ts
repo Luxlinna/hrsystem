@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { uploadMediaToS3 } from "@/lib/s3-storage";
 import { uploadFile } from "@/lib/storage";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
@@ -212,6 +213,30 @@ export function useEmployeeProfile(id: string | undefined) {
       .update({
         first_name: form.first_name,
         last_name: form.last_name,
+        kh_name: form.kh_name,
+        display_name: form.display_name,
+        foreign_name: form.foreign_name,
+        title: form.title,
+        gender: form.gender,
+        date_of_birth: form.date_of_birth,
+        marital_status: form.marital_status,
+        nationality: form.nationality,
+        religion: form.religion,
+        blood_group: form.blood_group,
+        is_resident: form.is_resident,
+        fringe_benefit: form.fringe_benefit,
+        employee_tax_number: form.employee_tax_number,
+        permanent_address: form.permanent_address,
+        current_address: form.current_address,
+        home_phone: form.home_phone,
+        code_bu: form.code_bu,
+        bu_full_name: form.bu_full_name,
+        handle_bu: form.handle_bu,
+        position: form.position || form.role,
+        contract_type: form.contract_type,
+        working_hour: form.working_hour,
+        total_working_days: form.total_working_days,
+        working_location: form.working_location,
         email: cleanEmail,
         phone: cleanPhone,
         role: form.role,
@@ -259,12 +284,18 @@ export function useEmployeeProfile(id: string | undefined) {
       if (!id || !canEdit) return;
       setUploadingAvatar(true);
       try {
-        const url = await uploadFile("avatars", `employees/${id}/${Date.now()}_${file.name}`, file);
+        let url: string;
+        try {
+          const media = await uploadMediaToS3(file, `employees/${id}/avatars`);
+          url = media.url;
+        } catch {
+          url = await uploadFile("avatars", `employees/${id}/${Date.now()}_${file.name}`, file);
+        }
         await supabase.from("employees").update({ avatar_url: url }).eq("id", id);
         setEmployee((prev) => (prev ? { ...prev, avatar_url: url } : prev));
-        toast("Avatar updated", "Profile picture saved", "success");
+        toast("Avatar updated", "Profile picture stored on AWS S3", "success");
       } catch (err) {
-        toast("Upload failed", err instanceof Error ? err.message : "Could not upload avatar", "error");
+        toast("Upload failed", err instanceof Error ? err.message : "Could not upload avatar to AWS S3", "error");
       }
       setUploadingAvatar(false);
     },

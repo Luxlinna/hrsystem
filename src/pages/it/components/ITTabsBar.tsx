@@ -20,6 +20,7 @@ export const ITTabsBar = memo(function ITTabsBar({
 }: ITTabsBarProps) {
   const tabs = [
     { key: "assets" as const, label: "Hardware & Asset Register", icon: "ri-macbook-line", count: assetsCount },
+    { key: "categories" as const, label: "Asset Category", icon: "ri-folders-line", count: 8 },
     { key: "tickets" as const, label: "Helpdesk & Incident Queue", icon: "ri-customer-service-2-line", count: openTicketsCount },
     {
       key: "stationery" as const,
