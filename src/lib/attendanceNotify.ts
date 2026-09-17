@@ -99,7 +99,7 @@ export async function notifyAttendanceEvent(input: AttendanceNotifyInput) {
   }
 
   if (wantsTelegram) {
-    const appUrl = (import.meta.env.VITE_APP_URL || "https://hrsystem-quit.onrender.com").replace(/\/$/, "");
+    const appUrl = (import.meta.env.VITE_APP_URL || "https://hrsystem.opssolution.tech").replace(/\/$/, "");
 
     if (input.isException) {
       const label = input.type === "in" ? "Late Check-in" : "Early Checkout";
@@ -165,7 +165,7 @@ export async function notifyGeofenceEvent(input: GeofenceEventInput) {
     lines.push(`✅ <b>Status:</b> Back inside company perimeter`);
   }
 
-  const appUrl = (import.meta.env.VITE_APP_URL || "https://hrsystem-quit.onrender.com").replace(/\/$/, "");
+  const appUrl = (import.meta.env.VITE_APP_URL || "https://hrsystem.opssolution.tech").replace(/\/$/, "");
   sendTelegramMessage(lines.join("\n"), { text: "Open Attendance", url: `${appUrl}/attendance` }).catch((err) =>
     console.warn("Telegram geofence notify failed:", err)
   );

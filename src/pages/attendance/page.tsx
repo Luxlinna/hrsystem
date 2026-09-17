@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useAttendance } from "./hooks/useAttendance";
+import { useAttendanceOvertime } from "./hooks/useAttendanceOvertime";
 import { AttendanceHeader } from "./components/AttendanceHeader";
 import { SelfCheckInBanner } from "./components/SelfCheckInBanner";
 import { AttendanceKpiBar } from "./components/AttendanceKpiBar";
 import { AttendanceWorkSitePills } from "./components/AttendanceWorkSitePills";
 import { AttendanceControlBar } from "./components/AttendanceControlBar";
-import { RecordDetailsDrawer } from "./components/RecordDetailsDrawer";
-import { LogAttendanceModal } from "./components/LogAttendanceModal";
-import { EditAttendanceModal } from "./components/EditAttendanceModal";
 import { CreateTimeLogForm } from "./components/CreateTimeLogForm";
+import { CreateOvertimeForm } from "./components/overtime/CreateOvertimeForm";
+import { OvertimeTab } from "./tabs/OvertimeTab";
 import { RecordsTab } from "./tabs/RecordsTab";
+import { AttendanceModals } from "./components/AttendanceModals";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 
 export default function AttendancePage() {
@@ -21,8 +22,14 @@ export default function AttendancePage() {
     selectedRecord, setSelectedRecord, editingRecord, setEditingRecord,
     showLogModal, setShowLogModal, newRecord, setNewRecord,
     myTodayRecord, data, filters, metrics, mutations,
-    openLogModal, handleSaveNewRecord, handleUpdateRecord,
+    handleSaveNewRecord, handleUpdateRecord,
   } = useAttendance();
+
+  const overtime = useAttendanceOvertime({
+    targetBranch: data.targetBranch,
+    myEmployeeId: data.myEmployee?.id,
+    canViewAll,
+  });
 
   const handleOpenTimeLog = (empId?: string) => {
     setTimeLogInitialEmployeeId(empId || (canViewAll ? undefined : data.myEmployee?.id));
@@ -72,6 +79,19 @@ export default function AttendancePage() {
     );
   }
 
+  if (overtime.showOvertimeForm) {
+    return (
+      <CreateOvertimeForm
+        onBack={() => overtime.setShowOvertimeForm(false)}
+        employees={data.employees}
+        initialEmployeeId={canViewAll ? undefined : data.myEmployee?.id}
+        isEmployeeFixed={!canViewAll && !!data.myEmployee}
+        onSaved={overtime.fetchOvertime}
+        activeBranchId={userBranchId || null}
+      />
+    );
+  }
+
   return (
     <div className="attendance-hub min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
       <AttendanceHeader
@@ -82,110 +102,116 @@ export default function AttendancePage() {
         hasEmployee={!!data.myEmployee}
         onExportCSV={filters.handleExportCSV}
         onOpenLogModal={() => handleOpenTimeLog()}
+        onOpenOvertime={() => overtime.setShowOvertimeForm(true)}
+        activeMainTab={overtime.activeMainTab}
+        setActiveMainTab={overtime.setActiveMainTab}
         records={filters.filteredRecords.length > 0 ? filters.filteredRecords : data.records}
         summaries={metrics.employeeSummary || []}
         isFourPunchMode={isFourPunchMode}
       />
 
-      <SelfCheckInBanner myEmployee={data.myEmployee} myTodayRecord={myTodayRecord} />
-
-      <AttendanceKpiBar
-        filterDatePreset={filters.filterDatePreset}
-        filterStatus={filters.filterStatus}
-        setFilterStatus={filters.setFilterStatus}
-        presentCount={metrics.presentCount}
-        workingNow={metrics.workingNow}
-        lateCount={metrics.lateCount}
-        remoteCount={metrics.remoteCount}
-        absentCount={metrics.absentCount}
-      />
-
-      {canManage && (
-        <AttendanceWorkSitePills
-          todayByWorkSite={metrics.todayByWorkSite}
-          filterWorkLocation={filters.filterWorkLocation}
-          setFilterWorkLocation={filters.setFilterWorkLocation}
+      {overtime.activeMainTab === "overtime" ? (
+        <OvertimeTab
+          records={overtime.overtimeRecords}
+          canManage={canManage}
+          onOpenCreate={() => overtime.setShowOvertimeForm(true)}
+          onExport={overtime.handleExport}
+          onApprove={overtime.handleApprove}
+          onReject={overtime.handleReject}
+          onDelete={overtime.handleDelete}
         />
+      ) : (
+        <>
+          <SelfCheckInBanner myEmployee={data.myEmployee} myTodayRecord={myTodayRecord} />
+
+          <AttendanceKpiBar
+            filterDatePreset={filters.filterDatePreset}
+            filterStatus={filters.filterStatus}
+            setFilterStatus={filters.setFilterStatus}
+            presentCount={metrics.presentCount}
+            workingNow={metrics.workingNow}
+            lateCount={metrics.lateCount}
+            remoteCount={metrics.remoteCount}
+            absentCount={metrics.absentCount}
+          />
+
+          {canManage && (
+            <AttendanceWorkSitePills
+              todayByWorkSite={metrics.todayByWorkSite}
+              filterWorkLocation={filters.filterWorkLocation}
+              setFilterWorkLocation={filters.setFilterWorkLocation}
+            />
+          )}
+
+          <AttendanceControlBar
+            canManage={canManage}
+            filteredRecordsCount={filters.filteredRecords.length}
+            searchQuery={filters.searchQuery}
+            setSearchQuery={filters.setSearchQuery}
+            filterDatePreset={filters.filterDatePreset}
+            setFilterDatePreset={filters.setFilterDatePreset}
+            singleDate={filters.singleDate}
+            setSingleDate={filters.setSingleDate}
+            fromDate={filters.fromDate}
+            setFromDate={filters.setFromDate}
+            toDate={filters.toDate}
+            setToDate={filters.setToDate}
+            departments={filters.departments}
+            filterDepartment={filters.filterDepartment}
+            setFilterDepartment={filters.setFilterDepartment}
+            employees={data.employees}
+            filterEmployeeId={filters.filterEmployeeId}
+            setFilterEmployeeId={filters.setFilterEmployeeId}
+            filterStatus={filters.filterStatus}
+            setFilterStatus={filters.setFilterStatus}
+            workLocations={data.workLocations}
+            filterWorkLocation={filters.filterWorkLocation}
+            setFilterWorkLocation={filters.setFilterWorkLocation}
+            viewMode={filters.viewMode}
+            setViewMode={filters.setViewMode}
+            todayYMD={todayYMD}
+          />
+
+          <RecordsTab
+            filteredRecords={filters.filteredRecords}
+            pagedRecords={filters.pagedRecords}
+            viewMode={filters.viewMode}
+            todayYMD={todayYMD}
+            canManage={canManage}
+            isFourPunchMode={isFourPunchMode}
+            pageSize={filters.pageSize}
+            setPageSize={filters.setPageSize}
+            page={filters.page}
+            setPage={filters.setPage}
+            totalPages={filters.totalPages}
+            onSelectRecord={setSelectedRecord}
+            onEditRecord={setEditingRecord}
+            onDeleteRecord={mutations.handleDeleteRecord}
+            onLogTimeForEmployee={handleOpenTimeLog}
+            totalRecordsCount={data.records.length}
+            onResetFilters={filters.handleResetFilters}
+            isFiltered={filters.isFiltered}
+          />
+        </>
       )}
 
-      <AttendanceControlBar
-        canManage={canManage}
-        filteredRecordsCount={filters.filteredRecords.length}
-        searchQuery={filters.searchQuery}
-        setSearchQuery={filters.setSearchQuery}
-        filterDatePreset={filters.filterDatePreset}
-        setFilterDatePreset={filters.setFilterDatePreset}
-        singleDate={filters.singleDate}
-        setSingleDate={filters.setSingleDate}
-        fromDate={filters.fromDate}
-        setFromDate={filters.setFromDate}
-        toDate={filters.toDate}
-        setToDate={filters.setToDate}
-        departments={filters.departments}
-        filterDepartment={filters.filterDepartment}
-        setFilterDepartment={filters.setFilterDepartment}
-        employees={data.employees}
-        filterEmployeeId={filters.filterEmployeeId}
-        setFilterEmployeeId={filters.setFilterEmployeeId}
-        filterStatus={filters.filterStatus}
-        setFilterStatus={filters.setFilterStatus}
-        workLocations={data.workLocations}
-        filterWorkLocation={filters.filterWorkLocation}
-        setFilterWorkLocation={filters.setFilterWorkLocation}
-        viewMode={filters.viewMode}
-        setViewMode={filters.setViewMode}
-        todayYMD={todayYMD}
-      />
-
-      <RecordsTab
-        filteredRecords={filters.filteredRecords}
-        pagedRecords={filters.pagedRecords}
-        viewMode={filters.viewMode}
-        todayYMD={todayYMD}
-        canManage={canManage}
-        isFourPunchMode={isFourPunchMode}
-        pageSize={filters.pageSize}
-        setPageSize={filters.setPageSize}
-        page={filters.page}
-        setPage={filters.setPage}
-        totalPages={filters.totalPages}
-        onSelectRecord={setSelectedRecord}
-        onEditRecord={setEditingRecord}
-        onDeleteRecord={mutations.handleDeleteRecord}
-        onLogTimeForEmployee={handleOpenTimeLog}
-        totalRecordsCount={data.records.length}
-        onResetFilters={filters.handleResetFilters}
-        isFiltered={filters.isFiltered}
-      />
-
-      <RecordDetailsDrawer
+      <AttendanceModals
         selectedRecord={selectedRecord}
-        onClose={() => setSelectedRecord(null)}
-        canManage={canManage}
-        onOpenEditModal={setEditingRecord}
-        onDeleteRecord={mutations.handleDeleteRecord}
-      />
-
-      <LogAttendanceModal
-        isOpen={showLogModal}
-        onClose={() => setShowLogModal(false)}
+        setSelectedRecord={setSelectedRecord}
+        editingRecord={editingRecord}
+        setEditingRecord={setEditingRecord}
+        showLogModal={showLogModal}
+        setShowLogModal={setShowLogModal}
+        newRecord={newRecord}
+        setNewRecord={setNewRecord}
         canManage={canManage}
         employees={data.employees}
         workLocations={data.workLocations}
         myEmployee={data.myEmployee}
-        newRecord={newRecord}
-        setNewRecord={setNewRecord}
         saving={mutations.saving}
-        onSubmit={handleSaveNewRecord}
-      />
-
-      <EditAttendanceModal
-        editingRecord={editingRecord}
-        setEditingRecord={setEditingRecord}
-        workLocations={data.workLocations}
-        saving={mutations.saving}
-        onClose={() => setEditingRecord(null)}
-        onSubmit={handleUpdateRecord}
+        onSaveNewRecord={handleSaveNewRecord}
+        onUpdateRecord={handleUpdateRecord}
+        onDeleteRecord={mutations.handleDeleteRecord}
       />
     </div>
   );

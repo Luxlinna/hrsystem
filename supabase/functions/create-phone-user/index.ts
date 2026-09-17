@@ -277,7 +277,7 @@ Deno.serve(async (req) => {
 
     let inviteLink: string | null = null;
     if (isInviteMode || redirect_to) {
-      const defaultAppUrl = Deno.env.get("APP_URL") || "https://hrsystem-quit.onrender.com";
+      const defaultAppUrl = Deno.env.get("APP_URL") || "https://hrsystem.opssolution.tech";
       const targetRedirect = redirect_to || `${defaultAppUrl.replace(/\/$/, "")}/reset-password`;
       const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
         type: "recovery",

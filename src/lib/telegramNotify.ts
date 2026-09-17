@@ -55,6 +55,6 @@ export function escapeTelegramHtml(s: string): string {
 // Builds an absolute link into the app from a path (e.g. "/leave"), for use
 // as a Telegram inline button target.
 export function hrNexusUrl(path: string): string {
-  const appUrl = (import.meta.env.VITE_APP_URL || "https://hrsystem-quit.onrender.com").replace(/\/$/, "");
+  const appUrl = (import.meta.env.VITE_APP_URL || "https://hrsystem.opssolution.tech").replace(/\/$/, "");
   return `${appUrl}${path}`;
 }

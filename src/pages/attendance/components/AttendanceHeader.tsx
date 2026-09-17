@@ -11,6 +11,9 @@ interface AttendanceHeaderProps {
   hasEmployee: boolean;
   onExportCSV?: () => void;
   onOpenLogModal: () => void;
+  onOpenOvertime?: () => void;
+  activeMainTab?: "attendance" | "overtime";
+  setActiveMainTab?: (tab: "attendance" | "overtime") => void;
   records?: AttendanceRecord[];
   summaries?: EmployeeSummaryItem[];
   isFourPunchMode?: boolean;
@@ -23,6 +26,9 @@ export const AttendanceHeader = memo(function AttendanceHeader({
   canViewAll,
   hasEmployee,
   onOpenLogModal,
+  onOpenOvertime,
+  activeMainTab = "attendance",
+  setActiveMainTab,
   records = [],
   summaries = [],
   isFourPunchMode = false,
@@ -82,6 +88,46 @@ export const AttendanceHeader = memo(function AttendanceHeader({
           summaries={summaries}
           isFourPunchMode={isFourPunchMode}
         />
+
+        {/* Attendance vs Overtime Switcher */}
+        {setActiveMainTab && (
+          <div className="inline-flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl border border-gray-200/80 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setActiveMainTab("attendance")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeMainTab === "attendance"
+                  ? "bg-[#253C7D] text-white shadow-xs"
+                  : "text-gray-600 dark:text-slate-300 hover:text-gray-900"
+              }`}
+            >
+              Attendance
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMainTab("overtime")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeMainTab === "overtime"
+                  ? "bg-[#253C7D] text-white shadow-xs"
+                  : "text-gray-600 dark:text-slate-300 hover:text-gray-900"
+              }`}
+            >
+              Overtime
+            </button>
+          </div>
+        )}
+
+        {/* Action Button: + Overtime */}
+        {onOpenOvertime && (
+          <button
+            type="button"
+            onClick={onOpenOvertime}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 text-[#253C7D] dark:text-sky-300 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
+          >
+            <i className="ri-timer-flash-line text-sm" />
+            + Overtime
+          </button>
+        )}
 
         {/* Manual Log Button (Can choose any old date) */}
         <button
