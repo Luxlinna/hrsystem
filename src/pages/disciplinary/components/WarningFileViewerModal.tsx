@@ -11,9 +11,10 @@ export const WarningFileViewerModal = memo(function WarningFileViewerModal({
   fileName,
   onClose,
 }: WarningFileViewerModalProps) {
+  const [useGoogleFallback, setUseGoogleFallback] = useState(false);
+
   if (!url) return null;
 
-  const [useGoogleFallback, setUseGoogleFallback] = useState(false);
   const cleanName = fileName || "Attachment Document";
   const ext = (cleanName.split(".").pop() || "").toLowerCase();
 

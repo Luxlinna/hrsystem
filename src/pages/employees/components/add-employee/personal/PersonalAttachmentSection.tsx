@@ -1,4 +1,4 @@
-import { memo, useRef, useState, useCallback } from "react";
+import { memo, useRef, useState, useCallback, useMemo } from "react";
 import { uploadMultipleFilesToS3 } from "@/lib/s3-storage";
 import { toast } from "@/components/Toast";
 import type { PersonalSectionProps } from "./types";
@@ -13,48 +13,54 @@ export const PersonalAttachmentSection = memo(function PersonalAttachmentSection
   const [uploading, setUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const attachments: (EmployeePersonalAttachment | string)[] = form.personal_attachments || [];
+  const attachments: (EmployeePersonalAttachment | string)[] = useMemo(
+    () => form.personal_attachments || [],
+    [form.personal_attachments]
+  );
 
-  const handleFiles = async (files: FileList | File[] | null) => {
-    if (!files || !files.length) return;
-    const fileArray = Array.from(files);
+  const handleFiles = useCallback(
+    async (files: FileList | File[] | null) => {
+      if (!files || !files.length) return;
+      const fileArray = Array.from(files);
 
-    setUploading(true);
-    try {
-      const uploaded = await uploadMultipleFilesToS3(fileArray, "employees/personal-attachments");
-      
-      const newItems: EmployeePersonalAttachment[] = uploaded.map((item) => ({
-        name: item.name,
-        url: item.url,
-        size: item.size,
-        type: item.type,
-        uploaded_at: new Date().toISOString(),
-        key: item.key,
-      }));
+      setUploading(true);
+      try {
+        const uploaded = await uploadMultipleFilesToS3(fileArray, "employees/personal-attachments");
 
-      const updated = [...attachments, ...newItems];
-      onChange("personal_attachments", updated);
+        const newItems: EmployeePersonalAttachment[] = uploaded.map((item) => ({
+          name: item.name,
+          url: item.url,
+          size: item.size,
+          type: item.type,
+          uploaded_at: new Date().toISOString(),
+          key: item.key,
+        }));
 
-      const docMirror = uploaded.map((item) => ({
-        name: item.name,
-        url: item.url,
-        size: item.size,
-        type: item.type,
-        uploaded_at: new Date().toISOString(),
-        doc_slot_key: "personal_doc",
-        stage_key: "personal_information",
-      }));
-      onChange("documents", [...(form.documents || []), ...docMirror]);
+        const updated = [...attachments, ...newItems];
+        onChange("personal_attachments", updated);
 
-      toast("Stored to AWS S3", `Uploaded ${fileArray.length} document(s) to AWS S3.`, "success");
-    } catch (err) {
-      console.error("Personal document upload error:", err);
-      toast("Upload Failed", err instanceof Error ? err.message : "Could not upload document", "error");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
+        const docMirror = uploaded.map((item) => ({
+          name: item.name,
+          url: item.url,
+          size: item.size,
+          type: item.type,
+          uploaded_at: new Date().toISOString(),
+          doc_slot_key: "personal_doc",
+          stage_key: "personal_information",
+        }));
+        onChange("documents", [...(form.documents || []), ...docMirror]);
+
+        toast("Stored to AWS S3", `Uploaded ${fileArray.length} document(s) to AWS S3.`, "success");
+      } catch (err) {
+        console.error("Personal document upload error:", err);
+        toast("Upload Failed", err instanceof Error ? err.message : "Could not upload document", "error");
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [attachments, form.documents, onChange]
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFiles(e.target.files);
@@ -70,13 +76,16 @@ export const PersonalAttachmentSection = memo(function PersonalAttachmentSection
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
-    }
-  }, [attachments]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFiles(e.dataTransfer.files);
+      }
+    },
+    [handleFiles]
+  );
 
   const handleRemove = (idx: number) => {
     const itemToRemove = attachments[idx];

@@ -1,4 +1,4 @@
-import { memo, useRef, useState, useCallback } from "react";
+import { memo, useRef, useState, useCallback, useMemo } from "react";
 import type { EmployeeFormState, EmployeeRateItem, EmployeePayrollAttachment } from "../../types";
 import { DEFAULT_PAYROLL_RATE_ITEMS, PAYROLL_STRUCTURES } from "../../constants";
 import { uploadMultipleFilesToS3 } from "@/lib/s3-storage";
@@ -29,16 +29,25 @@ export const AddEmployeeCompTab = memo(function AddEmployeeCompTab({
   };
 
   const handleAddRateItem = () => {
-    const updated = [
-      ...rateItems,
-      { name: "Custom Allowance", amount: 0, remark: "" },
-    ];
-    onChange("rate_items", updated);
+    const newItem: EmployeeRateItem = {
+      label: "",
+      type: "Allowance",
+      amount: "0",
+      is_taxable: true,
+      notes: "",
+    };
+    onChange("rate_items", [...rateItems, newItem]);
   };
 
   const handleRemoveRateItem = (idx: number) => {
     const updated = rateItems.filter((_, i) => i !== idx);
     onChange("rate_items", updated);
+  };
+
+  const handleApplyStructure = (struct: (typeof PAYROLL_STRUCTURES)[number]) => {
+    onChange("payroll_structure", struct.name);
+    onChange("rate_items", struct.defaultRates);
+    toast("Preset Applied", `Loaded default rate structure: ${struct.name}`, "info");
   };
 
   const handleResetRateItems = () => {
@@ -53,39 +62,45 @@ export const AddEmployeeCompTab = memo(function AddEmployeeCompTab({
   }, 0);
 
   // Attachments Handling
-  const attachments: EmployeePayrollAttachment[] = form.payroll_attachments || [];
+  const attachments: EmployeePayrollAttachment[] = useMemo(() => form.payroll_attachments || [], [form.payroll_attachments]);
 
-  const handleFiles = async (fileList: FileList | null) => {
-    if (!fileList || !fileList.length) return;
-    const fileArray = Array.from(fileList);
-    setUploading(true);
-    try {
-      const uploaded = await uploadMultipleFilesToS3(fileArray, "employees/payroll-attachments");
-      const newItems: EmployeePayrollAttachment[] = uploaded.map((item) => ({
-        name: item.name,
-        url: item.url,
-        size: item.size,
-        type: item.type,
-        uploaded_at: new Date().toISOString(),
-      }));
-      onChange("payroll_attachments", [...attachments, ...newItems]);
-      toast("File Uploaded", `Added ${fileArray.length} payroll attachment(s).`, "success");
-    } catch (err) {
-      console.error("Payroll upload error:", err);
-      toast("Upload Failed", err instanceof Error ? err.message : "Could not upload file", "error");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
+  const handleFiles = useCallback(
+    async (fileList: FileList | null) => {
+      if (!fileList || !fileList.length) return;
+      const fileArray = Array.from(fileList);
+      setUploading(true);
+      try {
+        const uploaded = await uploadMultipleFilesToS3(fileArray, "employees/payroll-attachments");
+        const newItems: EmployeePayrollAttachment[] = uploaded.map((item) => ({
+          name: item.name,
+          url: item.url,
+          size: item.size,
+          type: item.type,
+          uploaded_at: new Date().toISOString(),
+        }));
+        onChange("payroll_attachments", [...attachments, ...newItems]);
+        toast("File Uploaded", `Added ${fileArray.length} payroll attachment(s).`, "success");
+      } catch (err) {
+        console.error("Payroll upload error:", err);
+        toast("Upload Failed", err instanceof Error ? err.message : "Could not upload file", "error");
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [attachments, onChange]
+  );
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
-    }
-  }, [attachments]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFiles(e.dataTransfer.files);
+      }
+    },
+    [handleFiles]
+  );
 
   const handleRemoveAttachment = (url: string) => {
     onChange(

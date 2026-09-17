@@ -16,12 +16,10 @@ export const WarningDetailModal = memo(function WarningDetailModal({
   onClose,
   onDelete,
 }: WarningDetailModalProps) {
-  if (!record) return null;
-
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    if (!record.employee_id) return;
+    if (!record?.employee_id) return;
     let active = true;
     supabase
       .from("employees")
@@ -34,7 +32,9 @@ export const WarningDetailModal = memo(function WarningDetailModal({
     return () => {
       active = false;
     };
-  }, [record.employee_id]);
+  }, [record?.employee_id]);
+
+  if (!record) return null;
 
   const formattedDate = formatDateDMY(record.warning_date || record.incident_date);
   const isVoided =

@@ -100,8 +100,8 @@ export const AddEmployeeAssetTab: React.FC<AddEmployeeAssetTabProps> = memo(
     const [uploading, setUploading] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
 
-    const assetBookings: EmployeeAssetBookingItem[] = form.asset_bookings || [];
-    const assetAttachments: EmployeeAssetAttachment[] = form.asset_attachments || [];
+    const assetBookings: EmployeeAssetBookingItem[] = useMemo(() => form.asset_bookings || [], [form.asset_bookings]);
+    const assetAttachments: EmployeeAssetAttachment[] = useMemo(() => form.asset_attachments || [], [form.asset_attachments]);
 
     // Fetch real system IT assets strictly from it_assets table in Supabase
     const fetchAssets = useCallback(async () => {
@@ -120,7 +120,6 @@ export const AddEmployeeAssetTab: React.FC<AddEmployeeAssetTabProps> = memo(
             .select("id, name, asset_tag, type, status, serial_number, branch_id, branches(id, name, location)")
             .is("deleted_at", null)
             .order("name", { ascending: true });
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           data = fallbackRes.data as any;
           error = fallbackRes.error;
         }
@@ -379,7 +378,7 @@ export const AddEmployeeAssetTab: React.FC<AddEmployeeAssetTabProps> = memo(
     };
 
     // Attachments Handling with AWS S3
-    const handleFiles = async (fileList: FileList | File[] | null) => {
+    const handleFiles = useCallback(async (fileList: FileList | File[] | null) => {
       if (!fileList || !fileList.length) return;
       const fileArray = Array.from(fileList);
 
@@ -405,7 +404,7 @@ export const AddEmployeeAssetTab: React.FC<AddEmployeeAssetTabProps> = memo(
         setUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
-    };
+    }, [assetAttachments, onChange]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       handleFiles(e.target.files);
@@ -427,7 +426,7 @@ export const AddEmployeeAssetTab: React.FC<AddEmployeeAssetTabProps> = memo(
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         handleFiles(e.dataTransfer.files);
       }
-    }, [assetAttachments]);
+    }, [handleFiles]);
 
     const handleRemoveAttachment = (idx: number) => {
       const updated = assetAttachments.filter((_, i) => i !== idx);

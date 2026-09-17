@@ -14,24 +14,27 @@ export const PersonalPhotoCard = memo(function PersonalPhotoCard({
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const processAndUploadFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast("Invalid File", "Please select an image file (JPG, PNG, WebP)", "error");
-      return;
-    }
-    setUploadingAvatar(true);
-    try {
-      const media = await uploadMediaToS3(file, "employees/avatars");
-      onChange("avatar_url", media.url);
-      toast("Profile Image Saved", "Employee photo stored securely on AWS S3.", "success");
-    } catch (err) {
-      console.error("Avatar AWS S3 upload error:", err);
-      toast("Upload Failed", err instanceof Error ? err.message : "Failed to upload employee photo to AWS S3.", "error");
-    } finally {
-      setUploadingAvatar(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
+  const processAndUploadFile = useCallback(
+    async (file: File) => {
+      if (!file.type.startsWith("image/")) {
+        toast("Invalid File", "Please select an image file (JPG, PNG, WebP)", "error");
+        return;
+      }
+      setUploadingAvatar(true);
+      try {
+        const media = await uploadMediaToS3(file, "employees/avatars");
+        onChange("avatar_url", media.url);
+        toast("Profile Image Saved", "Employee photo stored securely on AWS S3.", "success");
+      } catch (err) {
+        console.error("Avatar AWS S3 upload error:", err);
+        toast("Upload Failed", err instanceof Error ? err.message : "Failed to upload employee photo to AWS S3.", "error");
+      } finally {
+        setUploadingAvatar(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [onChange]
+  );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,12 +51,15 @@ export const PersonalPhotoCard = memo(function PersonalPhotoCard({
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) processAndUploadFile(file);
-  }, []);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      const file = e.dataTransfer.files?.[0];
+      if (file) processAndUploadFile(file);
+    },
+    [processAndUploadFile]
+  );
 
   const startCamera = async () => {
     try {

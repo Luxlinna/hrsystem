@@ -31,8 +31,6 @@ export const DisciplinaryModal = memo(function DisciplinaryModal({
   saving,
   onSubmit,
 }: DisciplinaryModalProps) {
-  if (!isOpen) return null;
-
   const selectedBranchName = branches.find((b) => b.id === newRecord.branch_id)?.name;
 
   // Dynamically resolve employees according to selected scope
@@ -77,6 +75,8 @@ export const DisciplinaryModal = memo(function DisciplinaryModal({
   }, [availableEmployees, branches]);
 
   const selectedEmp = employees.find((e) => e.id === newRecord.employee_id);
+
+  if (!isOpen) return null;
 
   return (
     <div

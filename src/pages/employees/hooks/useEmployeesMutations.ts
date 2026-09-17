@@ -386,7 +386,9 @@ export function useEmployeesMutations({
 
         try {
           localStorage.removeItem("hr_add_employee_draft");
-        } catch {}
+        } catch {
+          /* ignore */
+        }
 
         setShowAddModal(false);
         setForm(INITIAL_EMPLOYEE_FORM);

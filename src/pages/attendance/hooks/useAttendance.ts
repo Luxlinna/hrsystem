@@ -3,7 +3,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { toYMD, todayYMD as todayYMDLib } from "@/lib/date";
-import type { AttendanceRecord, NewRecordForm } from "../types";
+import type { AttendanceRecord, NewRecordForm, Employee } from "../types";
 import { useAttendanceData } from "./useAttendanceData";
 import { useAttendanceFilters } from "./useAttendanceFilters";
 import { useAttendanceMetrics } from "./useAttendanceMetrics";

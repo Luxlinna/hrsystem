@@ -70,16 +70,19 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
         if (savedDraft) {
           const parsed = JSON.parse(savedDraft);
           // Only populate if current form has not been filled yet
-          if (!form.full_name && !form.first_name && (parsed.full_name || parsed.first_name || parsed.email || parsed.phone)) {
-            setForm((prev) => ({ ...prev, ...parsed }));
-            setLastSavedAt(new Date());
-          }
+          setForm((prev) => {
+            if (!prev.full_name && !prev.first_name && (parsed.full_name || parsed.first_name || parsed.email || parsed.phone)) {
+              setLastSavedAt(new Date());
+              return { ...prev, ...parsed };
+            }
+            return prev;
+          });
         }
       } catch (err) {
         console.error("Failed to restore draft:", err);
       }
     }
-  }, [isOpen]);
+  }, [isOpen, setForm]);
 
   // Debounced Auto-Save Draft
   useEffect(() => {
@@ -113,7 +116,9 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
       const next = !prev;
       try {
         localStorage.setItem("hr_add_employee_autosave", String(next));
-      } catch {}
+      } catch {
+        /* ignore */
+      }
       return next;
     });
   }, []);
@@ -123,7 +128,9 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
       localStorage.removeItem("hr_add_employee_draft");
       setLastSavedAt(null);
       setAutoSaveStatus("idle");
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   // Handle branch selection and auto-derive BU code, full name, and handle
