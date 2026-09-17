@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAttendance } from "./hooks/useAttendance";
 import { AttendanceHeader } from "./components/AttendanceHeader";
 import { SelfCheckInBanner } from "./components/SelfCheckInBanner";
@@ -7,10 +8,14 @@ import { AttendanceControlBar } from "./components/AttendanceControlBar";
 import { RecordDetailsDrawer } from "./components/RecordDetailsDrawer";
 import { LogAttendanceModal } from "./components/LogAttendanceModal";
 import { EditAttendanceModal } from "./components/EditAttendanceModal";
+import { CreateTimeLogForm } from "./components/CreateTimeLogForm";
 import { RecordsTab } from "./tabs/RecordsTab";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 
 export default function AttendancePage() {
+  const [showTimeLogForm, setShowTimeLogForm] = useState(false);
+  const [timeLogInitialEmployeeId, setTimeLogInitialEmployeeId] = useState<string | undefined>(undefined);
+
   const {
     canManage, canViewAll, todayYMD, userBranchName, userBranchId, isFourPunchMode,
     selectedRecord, setSelectedRecord, editingRecord, setEditingRecord,
@@ -18,6 +23,11 @@ export default function AttendancePage() {
     myTodayRecord, data, filters, metrics, mutations,
     openLogModal, handleSaveNewRecord, handleUpdateRecord,
   } = useAttendance();
+
+  const handleOpenTimeLog = (empId?: string) => {
+    setTimeLogInitialEmployeeId(empId || (canViewAll ? undefined : data.myEmployee?.id));
+    setShowTimeLogForm(true);
+  };
 
   if (data.loading && data.records.length === 0) {
     return (
@@ -45,6 +55,23 @@ export default function AttendancePage() {
     );
   }
 
+  if (showTimeLogForm) {
+    return (
+      <CreateTimeLogForm
+        onBack={() => {
+          setShowTimeLogForm(false);
+          setTimeLogInitialEmployeeId(undefined);
+        }}
+        employees={data.employees}
+        workLocations={data.workLocations}
+        initialEmployeeId={timeLogInitialEmployeeId}
+        isEmployeeFixed={!canViewAll && !!data.myEmployee}
+        onSaved={data.fetchData}
+        activeBranchId={userBranchId || null}
+      />
+    );
+  }
+
   return (
     <div className="attendance-hub min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
       <AttendanceHeader
@@ -54,7 +81,7 @@ export default function AttendancePage() {
         canViewAll={canViewAll}
         hasEmployee={!!data.myEmployee}
         onExportCSV={filters.handleExportCSV}
-        onOpenLogModal={openLogModal}
+        onOpenLogModal={() => handleOpenTimeLog()}
         records={filters.filteredRecords.length > 0 ? filters.filteredRecords : data.records}
         summaries={metrics.employeeSummary || []}
         isFourPunchMode={isFourPunchMode}
@@ -125,6 +152,10 @@ export default function AttendancePage() {
         onSelectRecord={setSelectedRecord}
         onEditRecord={setEditingRecord}
         onDeleteRecord={mutations.handleDeleteRecord}
+        onLogTimeForEmployee={handleOpenTimeLog}
+        totalRecordsCount={data.records.length}
+        onResetFilters={filters.handleResetFilters}
+        isFiltered={filters.isFiltered}
       />
 
       <RecordDetailsDrawer

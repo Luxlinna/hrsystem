@@ -51,6 +51,21 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
 
     setLoading(true);
     try {
+      let empRecord = myEmployee;
+      if (!empRecord && user?.email) {
+        const meQuery = applyUserEmployeeFilter(
+          supabase
+            .from("employees")
+            .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id"),
+          user.email
+        );
+        const { data: rows } = await meQuery.is("deleted_at", null).limit(5);
+        if (rows && rows.length > 0) {
+          empRecord = (rows.find((r: any) => (user.email ? r.email?.toLowerCase() === user.email.toLowerCase() : false)) || rows[0]) as unknown as Employee;
+          setMyEmployee(empRecord);
+        }
+      }
+
       if (isLeader) {
         // Fetch all employees belonging to the selected branch
         const { data: team, error: empErr } = await supabase
@@ -88,25 +103,7 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
         });
         setRecords(mapped);
       } else {
-        let empRecord = myEmployee;
-        if (!empRecord && user?.email) {
-          const meQuery = applyUserEmployeeFilter(
-            supabase
-              .from("employees")
-              .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id"),
-            user.email
-          );
-          const { data: me } = await meQuery
-            .eq("branch_id", targetBranch)
-            .is("deleted_at", null)
-            .maybeSingle();
-          if (me) {
-            empRecord = me as unknown as Employee;
-            setMyEmployee(empRecord);
-          }
-        }
-
-        if (empRecord && (empRecord as any).branch_id === targetBranch) {
+        if (empRecord) {
           setEmployees([empRecord]);
           const { data: recData } = await supabase
             .from("attendance_records")
@@ -136,7 +133,7 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, myEmployee, user?.email]);
+  }, [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, user?.email]);
 
   useEffect(() => {
     // Real-time live sync for attendance scans from biometric terminals & mobile

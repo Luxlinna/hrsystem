@@ -9,6 +9,7 @@ interface DayRosterTabProps {
   todayYMD: string;
   filteredSummary: EmployeeSummaryItem[];
   onChangeRosterDate: (offset: number) => void;
+  onLogTimeForEmployee?: (employeeId: string) => void;
 }
 
 export const DayRosterTab = memo(function DayRosterTab({
@@ -17,6 +18,7 @@ export const DayRosterTab = memo(function DayRosterTab({
   todayYMD,
   filteredSummary,
   onChangeRosterDate,
+  onLogTimeForEmployee,
 }: DayRosterTabProps) {
   return (
     <div>
@@ -183,10 +185,23 @@ export const DayRosterTab = memo(function DayRosterTab({
                 </div>
               </div>
 
-              {/* Bottom Stats */}
+              {/* Bottom Stats & Quick Log Time */}
               <div className="flex items-center justify-between text-[11px] pt-3 border-t border-gray-100 text-gray-400">
                 <span>Attendance: {emp.attendanceRate}%</span>
-                <span className="text-[#253C7D] font-bold">{emp.totalHours}h logged</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#253C7D] font-bold">{emp.totalHours}h logged</span>
+                  {onLogTimeForEmployee && (
+                    <button
+                      type="button"
+                      onClick={() => onLogTimeForEmployee(emp.id)}
+                      className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800 font-bold hover:underline cursor-pointer"
+                      title={`Create Time Log for ${emp.first_name} ${emp.last_name}`}
+                    >
+                      <i className="ri-time-line text-xs" />
+                      Log Time
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );

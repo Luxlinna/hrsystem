@@ -83,7 +83,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
       if (filterEmployeeId !== "all" && r.employee_id !== filterEmployeeId) return false;
       if (filterWorkLocation !== "all") {
         if (filterWorkLocation === "main") {
-          if (r.work_location_id && r.work_location_id !== "main") return false;
+          if (r.work_location_id && r.work_location_id !== "main" && !(r.work_location as any)?.is_default) return false;
         } else {
           if (r.work_location_id !== filterWorkLocation) return false;
         }
@@ -153,29 +153,31 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
     toast("Export Complete", `Exported ${filteredRecords.length} records to CSV`, "success");
   }, [filteredRecords, dateRangeBounds]);
 
+  const isFiltered = Boolean(
+    searchQuery || filterDepartment !== "all" || filterEmployeeId !== "all" ||
+    filterStatus !== "all" || filterWorkLocation !== "all" || filterDatePreset !== "all"
+  );
+
+  const handleResetFilters = useCallback(() => {
+    setSearchQuery("");
+    setFilterDepartment("all");
+    setFilterEmployeeId("all");
+    setFilterStatus("all");
+    setFilterWorkLocation("all");
+    setFilterDatePreset("all");
+    setFromDate("");
+    setToDate("");
+    setSingleDate(todayYMD);
+  }, [todayYMD]);
+
   return {
-    activeTab, setActiveTab,
-    viewMode, setViewMode,
-    searchQuery, setSearchQuery,
-    filterDepartment, setFilterDepartment,
-    filterEmployeeId, setFilterEmployeeId,
-    filterStatus, setFilterStatus,
-    filterWorkLocation, setFilterWorkLocation,
-    pageSize, setPageSize,
-    page, setPage,
-    filterDatePreset, setFilterDatePreset,
-    fromDate, setFromDate,
-    toDate, setToDate,
-    singleDate, setSingleDate,
-    rosterDate, setRosterDate,
-    matrixMonth, setMatrixMonth,
-    departments,
-    dateRangeBounds,
-    activeScopeRecords,
-    filteredRecords,
-    pagedRecords,
-    totalPages,
-    changeRosterDate,
-    handleExportCSV,
+    activeTab, setActiveTab, viewMode, setViewMode, searchQuery, setSearchQuery,
+    filterDepartment, setFilterDepartment, filterEmployeeId, setFilterEmployeeId,
+    filterStatus, setFilterStatus, filterWorkLocation, setFilterWorkLocation,
+    pageSize, setPageSize, page, setPage, filterDatePreset, setFilterDatePreset,
+    fromDate, setFromDate, toDate, setToDate, singleDate, setSingleDate,
+    rosterDate, setRosterDate, matrixMonth, setMatrixMonth, departments,
+    dateRangeBounds, activeScopeRecords, filteredRecords, pagedRecords,
+    totalPages, changeRosterDate, handleExportCSV, isFiltered, handleResetFilters,
   };
 }

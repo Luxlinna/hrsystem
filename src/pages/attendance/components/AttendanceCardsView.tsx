@@ -10,6 +10,7 @@ interface AttendanceCardsViewProps {
   onSelectRecord: (record: AttendanceRecord) => void;
   onEditRecord: (record: AttendanceRecord) => void;
   onDeleteRecord: (id: number) => void;
+  onLogTimeForEmployee?: (employeeId: string) => void;
 }
 
 export const AttendanceCardsView = memo(function AttendanceCardsView({
@@ -20,6 +21,7 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
   onSelectRecord,
   onEditRecord,
   onDeleteRecord,
+  onLogTimeForEmployee,
 }: AttendanceCardsViewProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -103,16 +105,14 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
                 </div>
               )}
 
-              {r.work_location?.name && (
-                <div className="mb-2 flex items-center justify-between text-[11px]">
-                  <span className="text-gray-400 dark:text-slate-400 flex items-center gap-1 font-medium">
-                    <i className="ri-building-2-line" /> Work Site
-                  </span>
-                  <span className={`font-bold ${r.work_location_id !== emp?.default_work_location_id ? "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60 dark:border-amber-800/60 px-2 py-0.5 rounded-md" : "text-gray-800 dark:text-slate-200"}`}>
-                    {r.work_location.name}
-                  </span>
-                </div>
-              )}
+              <div className="mb-2 flex items-center justify-between text-[11px]">
+                <span className="text-gray-400 dark:text-slate-400 flex items-center gap-1 font-medium">
+                  <i className="ri-building-2-line" /> Work Site
+                </span>
+                <span className={`font-bold ${r.work_location_id !== emp?.default_work_location_id && emp?.default_work_location_id ? "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60 dark:border-amber-800/60 px-2 py-0.5 rounded-md" : "text-gray-800 dark:text-slate-200"}`}>
+                  {r.work_location?.name || "Main Office"}
+                </span>
+              </div>
 
               {r.notes && (
                 <p className="text-xs text-gray-500 dark:text-slate-400 italic bg-gray-50/50 dark:bg-slate-800/50 p-2 rounded-xl border border-gray-100/60 dark:border-slate-800 mb-2 truncate">
@@ -133,6 +133,16 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
 
               {canManage && (
                 <div className="flex items-center gap-1">
+                  {onLogTimeForEmployee && (
+                    <button
+                      type="button"
+                      onClick={() => onLogTimeForEmployee(r.employee_id)}
+                      className="w-7 h-7 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
+                      title={`Create Time Log for ${emp ? `${emp.first_name} ${emp.last_name}` : "this employee"}`}
+                    >
+                      <i className="ri-time-line text-xs" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => onEditRecord(r)}

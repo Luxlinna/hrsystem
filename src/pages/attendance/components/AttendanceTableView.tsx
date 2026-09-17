@@ -10,6 +10,7 @@ interface AttendanceTableViewProps {
   onSelectRecord: (record: AttendanceRecord) => void;
   onEditRecord: (record: AttendanceRecord) => void;
   onDeleteRecord: (id: number) => void;
+  onLogTimeForEmployee?: (employeeId: string) => void;
 }
 
 export const AttendanceTableView = memo(function AttendanceTableView({
@@ -20,6 +21,7 @@ export const AttendanceTableView = memo(function AttendanceTableView({
   onSelectRecord,
   onEditRecord,
   onDeleteRecord,
+  onLogTimeForEmployee,
 }: AttendanceTableViewProps) {
 
   return (
@@ -136,12 +138,21 @@ export const AttendanceTableView = memo(function AttendanceTableView({
                   statusIcon = "ri-time-line";
                   isPulse = true;
                 } else if (r.clock_in && !r.clock_out && (!isFourPunchMode || !r.break_out)) {
-                  statusLabel = "Working Now";
-                  statusBg = "bg-emerald-50 dark:bg-emerald-950/60";
-                  statusText = "text-emerald-700 dark:text-emerald-300";
-                  statusBorder = "border-emerald-200 dark:border-emerald-800/60";
-                  statusIcon = "ri-time-line";
-                  isPulse = true;
+                  if (r.status === "late" || (r.late_minutes && r.late_minutes > 0)) {
+                    statusLabel = `Late Arrival (${r.late_minutes || 0}m)`;
+                    statusBg = "bg-amber-50 dark:bg-amber-950/60";
+                    statusText = "text-amber-700 dark:text-amber-300";
+                    statusBorder = "border-amber-200 dark:border-amber-800/60";
+                    statusIcon = "ri-time-line";
+                    isPulse = false;
+                  } else {
+                    statusLabel = "Working Now";
+                    statusBg = "bg-emerald-50 dark:bg-emerald-950/60";
+                    statusText = "text-emerald-700 dark:text-emerald-300";
+                    statusBorder = "border-emerald-200 dark:border-emerald-800/60";
+                    statusIcon = "ri-time-line";
+                    isPulse = true;
+                  }
                 }
               }
 
@@ -185,7 +196,7 @@ export const AttendanceTableView = memo(function AttendanceTableView({
                       {emp?.department || "General"}
                     </span>
                     {emp?.branches?.name && <span className="text-gray-400 dark:text-slate-500 block text-[10px] mt-0.5">{emp.branches.name}</span>}
-                    {r.work_location?.name && (
+                    {r.work_location?.name ? (
                       <div className="mt-1">
                         <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800/60 px-1.5 py-0.5 rounded-md shadow-2xs">
                           <i className="ri-map-pin-2-fill text-[9px] text-emerald-500 dark:text-emerald-400" />
@@ -195,6 +206,13 @@ export const AttendanceTableView = memo(function AttendanceTableView({
                               Visiting
                             </span>
                           )}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="mt-1">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 px-1.5 py-0.5 rounded-md shadow-2xs">
+                          <i className="ri-building-line text-[9px] text-slate-400" />
+                          <span>Main Office</span>
                         </span>
                       </div>
                     )}
@@ -303,6 +321,16 @@ export const AttendanceTableView = memo(function AttendanceTableView({
                     <div className="flex items-center justify-end gap-1">
                       {canManage && (
                         <>
+                          {onLogTimeForEmployee && (
+                            <button
+                              type="button"
+                              onClick={() => onLogTimeForEmployee(r.employee_id)}
+                              className="w-7 h-7 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
+                              title={`Create Time Log for ${emp ? `${emp.first_name} ${emp.last_name}` : "this employee"}`}
+                            >
+                              <i className="ri-time-line text-sm" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => onEditRecord(r)}
