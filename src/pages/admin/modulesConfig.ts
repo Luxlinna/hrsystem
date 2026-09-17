@@ -14,6 +14,7 @@ export const ALL_MODULES = [
   { key: "org-chart", label: "Org Chart", icon: "ri-organization-chart", group: "Workforce" },
   { key: "performance", label: "Performance", icon: "ri-star-line", group: "Workforce" },
   { key: "attendance", label: "Attendance", icon: "ri-fingerprint-line", group: "Workforce" },
+  { key: "overtime", label: "Overtime", icon: "ri-timer-flash-line", group: "Workforce" },
   { key: "training", label: "Training", icon: "ri-graduation-cap-line", group: "Workforce" },
   { key: "disciplinary", label: "Disciplinary", icon: "ri-alert-line", group: "Workforce" },
   { key: "shifts", label: "Shifts", icon: "ri-calendar-schedule-line", group: "Workforce" },

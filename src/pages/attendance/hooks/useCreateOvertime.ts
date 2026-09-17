@@ -1,5 +1,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "@/components/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchScope } from "@/context/BranchContext";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import type { Employee } from "../types";
 import { OVERTIME_TYPES, type NewOvertimeForm, type OvertimeStatus } from "../types/overtimeTypes";
 import { calcOvertimeHours, createOvertimeRecord } from "../services/overtimeService";
@@ -22,6 +25,10 @@ export function useCreateOvertime({
   onBack,
   activeBranchId,
 }: UseCreateOvertimeProps) {
+  const { role, isAdmin, can } = usePermissions();
+  const { isSuperAdmin, isBranchAdmin } = useBranchScope();
+  const { employee: currentEmp } = useMyEmployee();
+
   const today = todayYMD();
 
   const [employeeId, setEmployeeId] = useState<string>(initialEmployeeId || employees[0]?.id || "");
@@ -84,6 +91,31 @@ export function useCreateOvertime({
 
 
   const handleSave = useCallback(async () => {
+    const rName = (role?.name || "").trim().toLowerCase();
+    const empTitle = (currentEmp?.role || "").trim().toLowerCase();
+    const isManager =
+      rName !== "employee" &&
+      rName !== "staff" &&
+      empTitle !== "employee" &&
+      empTitle !== "staff" &&
+      (/manager|lead|director|chief|president|head\b/i.test(rName) ||
+        /manager|lead|director|supervisor|head\b/i.test(empTitle));
+
+    const canSubmit =
+      isSuperAdmin ||
+      isAdmin ||
+      isBranchAdmin ||
+      role?.is_admin ||
+      role?.allowed_modules?.includes("*") ||
+      role?.allowed_modules?.includes("overtime") ||
+      can("overtime") ||
+      isManager;
+
+    if (!canSubmit) {
+      toast("Error", "Employees cannot request overtime. Only Managers, BU Admins, and Super Admins can submit overtime.", "error");
+      return;
+    }
+
     if (!employeeId) {
       toast("Error", "Please select an employee", "error");
       return;
@@ -136,7 +168,9 @@ export function useCreateOvertime({
     }
   }, [
     employeeId, reason, calculatedHours, overtimeType, fromDate, toDate, timeIn24, timeOut24,
-    breakMinutes, remark, selectedEmployee, activeBranchId, attachmentFile, onSaved, onBack
+    breakMinutes, remark, selectedEmployee, activeBranchId, attachmentFile, onSaved, onBack,
+    role, isAdmin, isBranchAdmin, isSuperAdmin, can, currentEmp, approvalStatus, approverEmployeeId,
+    rejectionReason, approvalDate,
   ]);
 
   return {

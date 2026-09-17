@@ -22,6 +22,7 @@ interface AttendanceModalsProps {
   onSaveNewRecord: (e: React.FormEvent) => void;
   onUpdateRecord: (e: React.FormEvent) => void;
   onDeleteRecord: (id: number) => void;
+  canManageSettings?: boolean;
   showOvertimeSettings?: boolean;
   onCloseOvertimeSettings?: () => void;
 }
@@ -36,6 +37,7 @@ export const AttendanceModals = memo(function AttendanceModals({
   newRecord,
   setNewRecord,
   canManage,
+  canManageSettings,
   employees,
   workLocations,
   myEmployee,
@@ -81,7 +83,7 @@ export const AttendanceModals = memo(function AttendanceModals({
       <OvertimeSettingsModal
         isOpen={!!showOvertimeSettings}
         onClose={() => onCloseOvertimeSettings?.()}
-        canManage={canManage}
+        canManage={canManageSettings ?? canManage}
       />
     </>
   );

@@ -6,6 +6,7 @@ export interface OvertimeActionDropdownProps {
   onCreateRequestFor: () => void;
   onOpenSettings: () => void;
   canManage?: boolean;
+  canManageSettings?: boolean;
 }
 
 export const OvertimeActionDropdown = memo(function OvertimeActionDropdown({
@@ -14,6 +15,7 @@ export const OvertimeActionDropdown = memo(function OvertimeActionDropdown({
   onCreateRequestFor,
   onOpenSettings,
   canManage = true,
+  canManageSettings = true,
 }: OvertimeActionDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,15 +65,17 @@ export const OvertimeActionDropdown = memo(function OvertimeActionDropdown({
             </button>
           )}
 
-          {/* 2. Create Overtime Request (For Self) */}
-          <button
-            type="button"
-            onClick={() => handleSelect(onCreateRequest)}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-xs text-left font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
-          >
-            <i className="ri-mail-send-line text-base text-gray-500 dark:text-slate-400" />
-            <span>Create Overtime Request</span>
-          </button>
+          {/* 2. Create Overtime Request (For Self - Only for Manager/Admin) */}
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => handleSelect(onCreateRequest)}
+              className="flex items-center gap-3 w-full px-4 py-2.5 text-xs text-left font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+            >
+              <i className="ri-mail-send-line text-base text-gray-500 dark:text-slate-400" />
+              <span>Create Overtime Request</span>
+            </button>
+          )}
 
           {/* 3. Create Overtime Request For (For Staff) */}
           {canManage && (
@@ -85,18 +89,20 @@ export const OvertimeActionDropdown = memo(function OvertimeActionDropdown({
             </button>
           )}
 
-          {/* Divider */}
-          <div className="my-1 border-t border-gray-100 dark:border-slate-800" />
-
-          {/* 4. Overtime Setting */}
-          <button
-            type="button"
-            onClick={() => handleSelect(onOpenSettings)}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-xs text-left font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
-          >
-            <i className="ri-settings-3-line text-base text-gray-500 dark:text-slate-400" />
-            <span>Overtime Setting</span>
-          </button>
+          {/* Divider & Overtime Setting (Only for authorized managers/admins) */}
+          {canManageSettings && (
+            <>
+              <div className="my-1 border-t border-gray-100 dark:border-slate-800" />
+              <button
+                type="button"
+                onClick={() => handleSelect(onOpenSettings)}
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-xs text-left font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+              >
+                <i className="ri-settings-3-line text-base text-gray-500 dark:text-slate-400" />
+                <span>Overtime Setting</span>
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

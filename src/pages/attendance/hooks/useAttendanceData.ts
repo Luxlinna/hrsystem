@@ -7,13 +7,17 @@ import type { Employee, AttendanceRecord, WorkLocation, BiometricDevice } from "
 import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 import { compareBiometricIds } from "@/lib/biometricUtils";
 
-export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean = false) {
+export function useAttendanceData(
+  isLeader: boolean,
+  canViewAllBranches: boolean = false,
+  fallbackEmployee?: Employee | null
+) {
   const { user } = useAuth();
   const { targetBranch, isPartnerBranchBlocked, userBranchName, userBranchId } = useBranchScope();
 
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
+  const [myEmployee, setMyEmployee] = useState<Employee | null>(fallbackEmployee || null);
   const [workLocations, setWorkLocations] = useState<WorkLocation[]>([]);
   const [biometricDevices, setBiometricDevices] = useState<BiometricDevice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +56,7 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
 
     setLoading(true);
     try {
-      let empRecord = myEmployee;
+      let empRecord = myEmployee || fallbackEmployee || null;
       if (!empRecord && user?.email) {
         const meQuery = applyUserEmployeeFilter(
           supabase
@@ -151,7 +155,7 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, user?.email]);
+  }, [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, user?.email, fallbackEmployee]);
 
   useEffect(() => {
     // Real-time live sync for attendance scans from biometric terminals & mobile

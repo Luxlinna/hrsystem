@@ -9,12 +9,14 @@ interface UseAttendanceOvertimeProps {
   targetBranch?: string | null;
   myEmployeeId?: string | null;
   canViewAll?: boolean;
+  canAccessOvertime?: boolean;
 }
 
 export function useAttendanceOvertime({
   targetBranch,
   myEmployeeId,
   canViewAll,
+  canAccessOvertime = true,
 }: UseAttendanceOvertimeProps) {
   const [showOvertimeForm, setShowOvertimeForm] = useState(false);
   const [formMode, setFormMode] = useState<"direct" | "request" | "request_for">("direct");
@@ -23,7 +25,18 @@ export function useAttendanceOvertime({
   const [overtimeRecords, setOvertimeRecords] = useState<OvertimeRecord[]>([]);
   const [otLoading, setOtLoading] = useState(false);
 
+  // Auto fallback to attendance tab if user does not have permission
+  useEffect(() => {
+    if (!canAccessOvertime && activeMainTab === "overtime") {
+      setActiveMainTab("attendance");
+    }
+  }, [canAccessOvertime, activeMainTab]);
+
   const fetchOvertime = useCallback(async () => {
+    if (!canAccessOvertime) {
+      setOvertimeRecords([]);
+      return;
+    }
     setOtLoading(true);
     try {
       const records = await fetchOvertimeRecords(
@@ -34,9 +47,11 @@ export function useAttendanceOvertime({
     } finally {
       setOtLoading(false);
     }
-  }, [targetBranch, myEmployeeId, canViewAll]);
+  }, [targetBranch, myEmployeeId, canViewAll, canAccessOvertime]);
 
   useEffect(() => {
+    if (!canAccessOvertime) return;
+
     fetchOvertime();
 
     const channel = supabase
@@ -49,7 +64,7 @@ export function useAttendanceOvertime({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchOvertime]);
+  }, [fetchOvertime, canAccessOvertime]);
 
   const handleApprove = useCallback(async (id: string) => {
     const ok = await updateOvertimeStatus(id, "approved", myEmployeeId);
@@ -88,23 +103,27 @@ export function useAttendanceOvertime({
   }, [overtimeRecords]);
 
   const handleCreateNew = useCallback(() => {
+    if (!canAccessOvertime) return;
     setFormMode("direct");
     setShowOvertimeForm(true);
-  }, []);
+  }, [canAccessOvertime]);
 
   const handleCreateRequest = useCallback(() => {
+    if (!canAccessOvertime) return;
     setFormMode("request");
     setShowOvertimeForm(true);
-  }, []);
+  }, [canAccessOvertime]);
 
   const handleCreateRequestFor = useCallback(() => {
+    if (!canAccessOvertime) return;
     setFormMode("request_for");
     setShowOvertimeForm(true);
-  }, []);
+  }, [canAccessOvertime]);
 
   const handleOpenSettings = useCallback(() => {
+    if (!canAccessOvertime) return;
     setShowOvertimeSettings(true);
-  }, []);
+  }, [canAccessOvertime]);
 
   return {
     showOvertimeForm, setShowOvertimeForm, formMode, setFormMode,

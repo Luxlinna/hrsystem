@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { toYMD, todayYMD as todayYMDLib } from "@/lib/date";
 import type { AttendanceRecord, NewRecordForm } from "../types";
 import { useAttendanceData } from "./useAttendanceData";
@@ -11,44 +12,137 @@ import { useAttendanceMutations } from "./useAttendanceMutations";
 export function useAttendance() {
   const { role, isAdmin, loading: permsLoading, can } = usePermissions();
   const { isSuperAdmin, isBranchAdmin, userBranchName, userBranchId, effectiveBranchName, isPartnerBranchBlocked } = useBranchScope();
+  const { employee: currentEmp } = useMyEmployee();
 
   const roleName = (role?.name || "").toLowerCase();
   const canViewAllBranches = isSuperAdmin || !!role?.attendance_view_all_employees;
+
+  const isRoleOrTitleManager = useMemo(() => {
+    const rName = (role?.name || "").trim().toLowerCase();
+    if (rName === "employee" || rName === "staff" || rName === "user") {
+      return false;
+    }
+    const empTitle = (currentEmp?.role || "").trim().toLowerCase();
+    if (empTitle === "employee" || empTitle === "staff") {
+      return false;
+    }
+    return (
+      /manager|lead|director|chief|president|head\b/i.test(rName) ||
+      /manager|lead|director|supervisor|head\b/i.test(empTitle)
+    );
+  }, [role?.name, currentEmp?.role]);
+
+  // Super Admin, BU Admin, or Department/Branch Manager
+  const isSuperOrAdminOrManager =
+    isSuperAdmin ||
+    isAdmin ||
+    isBranchAdmin ||
+    role?.is_admin ||
+    role?.allowed_modules?.includes("*") ||
+    isRoleOrTitleManager;
+
+  // An employee can see ONLY their own records.
+  // Leader/management viewing is strictly restricted to managers and admins.
   const isLeader =
-    (isSuperAdmin ||
-      isBranchAdmin ||
-      isAdmin ||
-      role?.is_admin ||
-      role?.allowed_modules?.includes("attendance") ||
-      role?.allowed_modules?.includes("*") ||
-      can("attendance") ||
-      /manager|lead|head|admin|ceo|director|chief|president|officer/i.test(roleName) ||
-      !!role?.attendance_view_all_employees ||
-      !!role?.attendance_view_own_branch) &&
+    isSuperOrAdminOrManager &&
     (!isPartnerBranchBlocked || canViewAllBranches);
 
   const canManage = isLeader;
   const canViewAll = isLeader;
   const todayYMD = todayYMDLib();
 
-  const data = useAttendanceData(isLeader, canViewAllBranches);
+  const data = useAttendanceData(isLeader, canViewAllBranches, currentEmp as unknown as Employee);
   const { fetchData } = data;
+
+  const isManager = useMemo(() => {
+    const rName = (role?.name || "").trim().toLowerCase();
+    if (rName === "employee" || rName === "staff" || rName === "user") {
+      return false;
+    }
+    const myRole = (data.myEmployee?.role || currentEmp?.role || "").trim().toLowerCase();
+    if (myRole === "employee" || myRole === "staff") {
+      return false;
+    }
+    return (
+      isRoleOrTitleManager ||
+      /manager|lead|director|supervisor|head\b/i.test(myRole)
+    );
+  }, [isRoleOrTitleManager, role?.name, data.myEmployee?.role, currentEmp?.role]);
+
+  const canAccessOvertime = useMemo(() => {
+    if (isPartnerBranchBlocked) return false;
+
+    // Super Admin
+    if (isSuperAdmin || isAdmin || role?.is_admin || role?.allowed_modules?.includes("*")) {
+      return true;
+    }
+
+    // BU Admin
+    if (isBranchAdmin || /(branch|bu)\s*.*admin/i.test(roleName) || /(branch|bu)\s*ceo/i.test(roleName)) {
+      return true;
+    }
+
+    // Role permission: explicitly enabled by Admin for this role
+    if (role?.allowed_modules?.includes("overtime") || can("overtime")) {
+      return true;
+    }
+
+    // Manager
+    if (isManager) {
+      return true;
+    }
+
+    // Regular employees cannot access or request overtime
+    return false;
+  }, [isPartnerBranchBlocked, isSuperAdmin, isAdmin, role, isBranchAdmin, roleName, can, isManager]);
+
+  const canManageOvertimeSettings = useMemo(() => {
+    return (
+      isSuperAdmin ||
+      isAdmin ||
+      isBranchAdmin ||
+      /admin|ceo|director|head|hr\s*manager|chief|president/i.test(roleName)
+    );
+  }, [isSuperAdmin, isAdmin, isBranchAdmin, roleName]);
 
   useEffect(() => {
     if (permsLoading) return;
     fetchData();
   }, [permsLoading, fetchData]);
 
-  const filters = useAttendanceFilters(data.records, data.employees, todayYMD);
+  // Strict client-side guarantee: if not a leader/manager, employee sees ONLY their own records
+  const visibleRecords = useMemo(() => {
+    if (isLeader) return data.records;
+    const myId = data.myEmployee?.id || currentEmp?.id;
+    if (!myId) return data.records;
+    return data.records.filter((r) => r.employee_id === myId);
+  }, [isLeader, data.records, data.myEmployee?.id, currentEmp?.id]);
+
+  const visibleEmployees = useMemo(() => {
+    if (isLeader) return data.employees;
+    const emp = data.myEmployee || (currentEmp as unknown as Employee);
+    if (!emp) return data.employees;
+    return [emp];
+  }, [isLeader, data.employees, data.myEmployee, currentEmp]);
+
+  const scopedData = useMemo(() => {
+    return {
+      ...data,
+      records: visibleRecords,
+      employees: visibleEmployees,
+    };
+  }, [data, visibleRecords, visibleEmployees]);
+
+  const filters = useAttendanceFilters(visibleRecords, visibleEmployees, todayYMD);
 
   const currentBranchName =
     effectiveBranchName && effectiveBranchName !== "Select Branch" && effectiveBranchName !== "Selected Branch"
       ? effectiveBranchName
-      : userBranchName || data.employees[0]?.branches?.name || "Main Office";
+      : userBranchName || scopedData.employees[0]?.branches?.name || "Main Office";
 
   const metrics = useAttendanceMetrics({
-    records: data.records,
-    employees: data.employees,
+    records: visibleRecords,
+    employees: visibleEmployees,
     workLocations: data.workLocations,
     activeScopeRecords: filters.activeScopeRecords,
     todayYMD,
@@ -143,6 +237,8 @@ export function useAttendance() {
   return {
     canManage,
     canViewAll,
+    canAccessOvertime,
+    canManageOvertimeSettings,
     todayYMD,
     userBranchName,
     userBranchId,
@@ -156,7 +252,7 @@ export function useAttendance() {
     newRecord,
     setNewRecord,
     myTodayRecord,
-    data,
+    data: scopedData,
     filters,
     metrics,
     mutations,

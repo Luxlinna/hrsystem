@@ -17,6 +17,7 @@ interface OvertimeFilterBarProps {
   onCreateRequestFor?: () => void;
   onOpenSettings?: () => void;
   canManage?: boolean;
+  canManageSettings?: boolean;
 }
 
 export const OvertimeFilterBar = memo(function OvertimeFilterBar({
@@ -34,6 +35,7 @@ export const OvertimeFilterBar = memo(function OvertimeFilterBar({
   onCreateRequestFor,
   onOpenSettings,
   canManage = true,
+  canManageSettings = false,
 }: OvertimeFilterBarProps) {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-3.5 shadow-2xs mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3.5">
@@ -53,6 +55,7 @@ export const OvertimeFilterBar = memo(function OvertimeFilterBar({
           onCreateRequestFor={onCreateRequestFor || onOpenCreate}
           onOpenSettings={onOpenSettings || (() => {})}
           canManage={canManage}
+          canManageSettings={canManageSettings}
         />
       </div>
 

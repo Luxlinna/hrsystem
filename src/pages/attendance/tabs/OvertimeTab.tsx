@@ -8,6 +8,7 @@ import { formatBiometricId } from "@/lib/biometricUtils";
 interface OvertimeTabProps {
   records: OvertimeRecord[];
   canManage: boolean;
+  canManageSettings?: boolean;
   onOpenCreate: () => void;
   onCreateNew?: () => void;
   onCreateRequest?: () => void;
@@ -22,6 +23,7 @@ interface OvertimeTabProps {
 export const OvertimeTab = memo(function OvertimeTab({
   records,
   canManage,
+  canManageSettings = false,
   onOpenCreate,
   onCreateNew,
   onCreateRequest,
@@ -68,6 +70,7 @@ export const OvertimeTab = memo(function OvertimeTab({
         onCreateRequestFor={onCreateRequestFor}
         onOpenSettings={onOpenSettings}
         canManage={canManage}
+        canManageSettings={canManageSettings}
       />
 
       {filtered.length === 0 ? (

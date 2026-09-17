@@ -9,6 +9,8 @@ interface AttendanceHeaderProps {
   activeTab?: AttendanceTabKey;
   dateRangeBounds: { start: string; end: string } | null;
   canViewAll: boolean;
+  canAccessOvertime?: boolean;
+  canManageOvertimeSettings?: boolean;
   hasEmployee: boolean;
   onExportCSV?: () => void;
   onOpenLogModal: () => void;
@@ -28,6 +30,8 @@ export const AttendanceHeader = memo(function AttendanceHeader({
   activeTab = "records",
   dateRangeBounds,
   canViewAll,
+  canAccessOvertime = false,
+  canManageOvertimeSettings = false,
   hasEmployee,
   onOpenLogModal,
   onCreateNewOvertime,
@@ -78,14 +82,15 @@ export const AttendanceHeader = memo(function AttendanceHeader({
             </div>
           </div>
 
-          {/* Overtime Actions Dropdown */}
-          {onCreateNewOvertime && (
+          {/* Overtime Actions Dropdown (Only visible to Manager, BU Admin, Super Admin, or permitted role) */}
+          {canAccessOvertime && onCreateNewOvertime && (
             <OvertimeActionDropdown
               onCreateNew={onCreateNewOvertime}
               onCreateRequest={onCreateOvertimeRequest || onCreateNewOvertime}
               onCreateRequestFor={onCreateOvertimeRequestFor || onCreateNewOvertime}
               onOpenSettings={onOpenOvertimeSettings || (() => {})}
               canManage={canViewAll}
+              canManageSettings={canManageOvertimeSettings}
             />
           )}
 
@@ -103,8 +108,8 @@ export const AttendanceHeader = memo(function AttendanceHeader({
 
       {/* Secondary Bar: Tab Switcher on Left, Full Report & Export on Right */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-gray-200/70 dark:border-slate-800">
-        {/* Attendance vs Overtime Switcher */}
-        {setActiveMainTab && (
+        {/* Attendance vs Overtime Switcher (Only visible if user has overtime access) */}
+        {setActiveMainTab && canAccessOvertime && (
           <div className="inline-flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl border border-gray-200/80 dark:border-slate-700">
             <button
               type="button"

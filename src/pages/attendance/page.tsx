@@ -18,7 +18,8 @@ export default function AttendancePage() {
   const [timeLogInitialEmployeeId, setTimeLogInitialEmployeeId] = useState<string | undefined>(undefined);
 
   const {
-    canManage, canViewAll, todayYMD, userBranchName, userBranchId, isFourPunchMode,
+    canManage, canViewAll, canAccessOvertime, canManageOvertimeSettings,
+    todayYMD, userBranchName, userBranchId, isFourPunchMode,
     selectedRecord, setSelectedRecord, editingRecord, setEditingRecord,
     showLogModal, setShowLogModal, newRecord, setNewRecord,
     myTodayRecord, data, filters, metrics, mutations,
@@ -29,6 +30,7 @@ export default function AttendancePage() {
     targetBranch: data.targetBranch,
     myEmployeeId: data.myEmployee?.id,
     canViewAll,
+    canAccessOvertime,
   });
 
   const handleOpenTimeLog = (empId?: string) => {
@@ -53,6 +55,7 @@ export default function AttendancePage() {
           activeTab={filters.activeTab}
           dateRangeBounds={filters.dateRangeBounds}
           canViewAll={false}
+          canAccessOvertime={false}
           hasEmployee={false}
           onExportCSV={() => {}}
           onOpenLogModal={() => {}}
@@ -79,7 +82,7 @@ export default function AttendancePage() {
     );
   }
 
-  if (overtime.showOvertimeForm) {
+  if (overtime.showOvertimeForm && canAccessOvertime) {
     const isSelf = overtime.formMode === "request";
     return (
       <CreateOvertimeForm
@@ -101,6 +104,8 @@ export default function AttendancePage() {
         activeTab={filters.activeTab}
         dateRangeBounds={filters.dateRangeBounds}
         canViewAll={canViewAll}
+        canAccessOvertime={canAccessOvertime}
+        canManageOvertimeSettings={canManageOvertimeSettings}
         hasEmployee={!!data.myEmployee}
         onExportCSV={filters.handleExportCSV}
         onOpenLogModal={() => handleOpenTimeLog()}
@@ -115,10 +120,11 @@ export default function AttendancePage() {
         isFourPunchMode={isFourPunchMode}
       />
 
-      {overtime.activeMainTab === "overtime" ? (
+      {canAccessOvertime && overtime.activeMainTab === "overtime" ? (
         <OvertimeTab
           records={overtime.overtimeRecords}
           canManage={canManage}
+          canManageSettings={canManageOvertimeSettings}
           onOpenCreate={overtime.handleCreateNew}
           onCreateNew={overtime.handleCreateNew}
           onCreateRequest={overtime.handleCreateRequest}
@@ -214,6 +220,7 @@ export default function AttendancePage() {
         newRecord={newRecord}
         setNewRecord={setNewRecord}
         canManage={canManage}
+        canManageSettings={canManageOvertimeSettings}
         employees={data.employees}
         workLocations={data.workLocations}
         myEmployee={data.myEmployee}
@@ -221,7 +228,7 @@ export default function AttendancePage() {
         onSaveNewRecord={handleSaveNewRecord}
         onUpdateRecord={handleUpdateRecord}
         onDeleteRecord={mutations.handleDeleteRecord}
-        showOvertimeSettings={overtime.showOvertimeSettings}
+        showOvertimeSettings={canAccessOvertime && canManageOvertimeSettings && overtime.showOvertimeSettings}
         onCloseOvertimeSettings={() => overtime.setShowOvertimeSettings(false)}
       />
     </div>
