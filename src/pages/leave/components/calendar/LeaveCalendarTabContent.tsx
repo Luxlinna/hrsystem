@@ -67,7 +67,10 @@ export const LeaveCalendarTabContent = memo(function LeaveCalendarTabContent({
     setCalendarLang(lang);
     try {
       localStorage.setItem("leave_calendar_lang", lang);
-    } catch {}
+    } catch {
+      // Fallback if localStorage is unavailable
+      void lang;
+    }
   };
 
   const isKm = calendarLang === "km";
@@ -205,7 +208,9 @@ export const LeaveCalendarTabContent = memo(function LeaveCalendarTabContent({
                 const l = toKhmerLunarDate(dObj);
                 lunarDayText = `${l.moonDayKhmer || l.moonDay}${l.moonStatus || ""}`;
                 isSil = isSilDay(dObj);
-              } catch {}
+              } catch {
+                lunarDayText = "";
+              }
             }
 
             return (
