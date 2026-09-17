@@ -8,6 +8,7 @@ import { useAttendanceData } from "./useAttendanceData";
 import { useAttendanceFilters } from "./useAttendanceFilters";
 import { useAttendanceMetrics } from "./useAttendanceMetrics";
 import { useAttendanceMutations } from "./useAttendanceMutations";
+import { useHolidays } from "@/hooks/useHolidays";
 
 export function useAttendance() {
   const { role, isAdmin, loading: permsLoading, can } = usePermissions();
@@ -140,6 +141,8 @@ export function useAttendance() {
       ? effectiveBranchName
       : userBranchName || scopedData.employees[0]?.branches?.name || "Main Office";
 
+  const holidaysState = useHolidays(data.targetBranch);
+
   const metrics = useAttendanceMetrics({
     records: visibleRecords,
     employees: visibleEmployees,
@@ -151,6 +154,7 @@ export function useAttendance() {
     matrixMonth: filters.matrixMonth,
     filterDepartment: filters.filterDepartment,
     searchQuery: filters.searchQuery,
+    holidays: holidaysState.holidays,
   });
 
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
@@ -256,6 +260,8 @@ export function useAttendance() {
     filters,
     metrics,
     mutations,
+    holidays: holidaysState.holidays,
+    holidaysState,
     openLogModal,
     handleSaveNewRecord,
     handleUpdateRecord,

@@ -98,4 +98,7 @@ export interface MatrixDay {
   dateStr: string;
   dayName: string;
   isWeekend: boolean;
+  isHoliday?: boolean;
+  holidayName?: string;
+  holidayLocalName?: string | null;
 }

@@ -7,6 +7,7 @@ import { LeaveBalancesTabContent } from "./components/balances/LeaveBalancesTabC
 import { LeaveCalendarTabContent } from "./components/calendar/LeaveCalendarTabContent";
 import { LeaveModalsContainer } from "./components/modals/LeaveModalsContainer";
 import { CreateLeaveForm } from "./components/form/CreateLeaveForm";
+import { HolidaysModal } from "../attendance/components/holidays/HolidaysModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useLeave } from "./hooks/useLeave";
 import { INITIAL_LEAVE_FORM } from "./constants";
@@ -14,6 +15,7 @@ import { INITIAL_LEAVE_FORM } from "./constants";
 export default function Leave() {
   const l = useLeave();
   const [formMode, setFormMode] = useState<"self" | "for_employee">("self");
+  const [showHolidaysModal, setShowHolidaysModal] = useState(false);
 
   const handleOpenApprovalModal = useCallback((req: any, action: "approved" | "rejected") => {
     l.setSelectedRequest(req);
@@ -108,6 +110,8 @@ export default function Leave() {
         filteredRequests={l.filteredRequests}
         onToast={l.setToast}
         canManage={l.canManage}
+        onOpenHolidaysModal={() => setShowHolidaysModal(true)}
+        holidayCount={l.holidays?.length || 0}
         onRequestLeave={() => {
           setFormMode("self");
           l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: l.myEmployee?.id || "" });
@@ -127,6 +131,8 @@ export default function Leave() {
         setActiveTab={l.setActiveTab}
         pendingCount={l.stats.pending}
         onLeaveTodayCount={l.stats.onLeaveToday}
+        onOpenHolidaysModal={() => setShowHolidaysModal(true)}
+        holidayCount={l.holidays?.length || 0}
       />
 
       {l.activeTab === "requests" && (
@@ -193,7 +199,10 @@ export default function Leave() {
           todayMonth={l.todayMonth}
           selectedDayDateStr={l.selectedDayDateStr}
           selectedDayLeaves={l.selectedDayLeaves}
+          selectedDayHoliday={l.selectedDayHoliday}
           onInspectRequest={l.setInspectRequest}
+          onOpenHolidaysModal={() => setShowHolidaysModal(true)}
+          holidayCount={l.holidays?.length || 0}
         />
       )}
 
@@ -201,6 +210,20 @@ export default function Leave() {
         {...l}
         onOpenApprovalModal={handleOpenApprovalModal}
         onOpenCancelModal={handleOpenCancelModal}
+      />
+
+      <HolidaysModal
+        isOpen={showHolidaysModal}
+        onClose={() => setShowHolidaysModal(false)}
+        year={l.holidaysState.year}
+        setYear={l.holidaysState.setYear}
+        holidays={l.holidaysState.holidays}
+        loading={l.holidaysState.loading}
+        syncing={l.holidaysState.syncing}
+        onSync={l.holidaysState.syncYear}
+        onAddHoliday={l.holidaysState.addHoliday}
+        onDeleteHoliday={l.holidaysState.removeHoliday}
+        canManage={l.canManage}
       />
     </div>
   );

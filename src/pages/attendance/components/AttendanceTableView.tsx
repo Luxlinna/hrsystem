@@ -1,13 +1,15 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import type { AttendanceRecord } from "../types";
 import { STATUS_CONFIG, formatTime, calcHours, initials } from "../constants";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import type { Holiday } from "@/services/holidays/holidaysService";
 
 interface AttendanceTableViewProps {
   records: AttendanceRecord[];
   todayYMD: string;
   canManage: boolean;
   isFourPunchMode?: boolean;
+  holidays?: Holiday[];
   onSelectRecord: (record: AttendanceRecord) => void;
   onEditRecord: (record: AttendanceRecord) => void;
   onDeleteRecord: (id: number) => void;
@@ -19,11 +21,17 @@ export const AttendanceTableView = memo(function AttendanceTableView({
   todayYMD,
   canManage,
   isFourPunchMode = false,
+  holidays = [],
   onSelectRecord,
   onEditRecord,
   onDeleteRecord,
   onLogTimeForEmployee,
 }: AttendanceTableViewProps) {
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, Holiday>();
+    holidays.forEach((h) => map.set(h.date, h));
+    return map;
+  }, [holidays]);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
@@ -157,7 +165,21 @@ export const AttendanceTableView = memo(function AttendanceTableView({
                 }
               }
 
-              if (!statusLabel) {
+              const holiday = holidayMap.get(r.date);
+              if (r.status === "holiday" || (!r.clock_in && holiday)) {
+                statusLabel = holiday ? `Holiday: ${holiday.name}` : "Holiday / Off";
+                statusBg = "bg-purple-50 dark:bg-purple-950/60";
+                statusText = "text-purple-700 dark:text-purple-300";
+                statusBorder = "border-purple-200 dark:border-purple-800/60";
+                statusIcon = "ri-calendar-event-line";
+                isPulse = false;
+              } else if (r.clock_in && holiday && (!statusLabel || statusLabel === "Working Now")) {
+                statusLabel = statusLabel === "Working Now" ? "Working on Holiday (2.0x)" : "Holiday Work (2.0x OT)";
+                statusBg = "bg-purple-50 dark:bg-purple-950/60";
+                statusText = "text-purple-700 dark:text-purple-300";
+                statusBorder = "border-purple-200 dark:border-purple-800/60";
+                statusIcon = "ri-scales-3-line";
+              } else if (!statusLabel) {
                 const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.ontime || STATUS_CONFIG.present;
                 statusLabel = cfg.label + (r.status === "late" && r.late_minutes && r.late_minutes > 0 ? ` (${r.late_minutes}m)` : "");
                 statusBg = cfg.bg;

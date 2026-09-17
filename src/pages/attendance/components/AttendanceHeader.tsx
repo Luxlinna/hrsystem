@@ -23,6 +23,8 @@ interface AttendanceHeaderProps {
   records?: AttendanceRecord[];
   summaries?: EmployeeSummaryItem[];
   isFourPunchMode?: boolean;
+  onOpenHolidaysModal?: () => void;
+  holidayCount?: number;
 }
 
 export const AttendanceHeader = memo(function AttendanceHeader({
@@ -43,6 +45,8 @@ export const AttendanceHeader = memo(function AttendanceHeader({
   records = [],
   summaries = [],
   isFourPunchMode = false,
+  onOpenHolidaysModal,
+  holidayCount,
 }: AttendanceHeaderProps) {
   return (
     <div className="space-y-4 mb-6">
@@ -92,6 +96,24 @@ export const AttendanceHeader = memo(function AttendanceHeader({
               canManage={canViewAll}
               canManageSettings={canManageOvertimeSettings}
             />
+          )}
+
+          {/* Cambodia Labor Law Holidays Button */}
+          {onOpenHolidaysModal && (
+            <button
+              type="button"
+              onClick={onOpenHolidaysModal}
+              className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800/80 hover:bg-purple-50/70 dark:hover:bg-purple-950/40 text-purple-700 dark:text-purple-300 px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer whitespace-nowrap"
+              title="Cambodia Public Holidays & Labor Law Calendar"
+            >
+              <i className="ri-calendar-event-line text-purple-600 dark:text-purple-400 text-base" />
+              <span>Holidays</span>
+              {holidayCount !== undefined && holidayCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-purple-100 dark:bg-purple-900/80 text-purple-800 dark:text-purple-200">
+                  {holidayCount}
+                </span>
+              )}
+            </button>
           )}
 
           {/* Manual Log Button (Can choose any old date) */}

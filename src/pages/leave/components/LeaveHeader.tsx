@@ -9,6 +9,8 @@ interface LeaveHeaderProps {
   canManage?: boolean;
   onRequestLeaveFor?: () => void;
   onToast?: (toast: { type: "success" | "info" | "error"; message: string }) => void;
+  onOpenHolidaysModal?: () => void;
+  holidayCount?: number;
 }
 
 export const LeaveHeader = memo(function LeaveHeader({
@@ -18,6 +20,8 @@ export const LeaveHeader = memo(function LeaveHeader({
   canManage = false,
   onRequestLeaveFor,
   onToast,
+  onOpenHolidaysModal,
+  holidayCount,
 }: LeaveHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -40,6 +44,23 @@ export const LeaveHeader = memo(function LeaveHeader({
 
       <div className="flex items-center gap-2.5 flex-wrap">
         <LeaveExportMenu filteredRequests={filteredRequests} onToast={onToast} />
+
+        {onOpenHolidaysModal && (
+          <button
+            type="button"
+            onClick={onOpenHolidaysModal}
+            className="inline-flex items-center gap-1.5 bg-white hover:bg-purple-50/70 border border-purple-200 text-purple-700 px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98"
+            title="Cambodia Public Holidays & Labor Law Calendar"
+          >
+            <i className="ri-calendar-event-line text-base text-purple-600" />
+            <span>Holidays</span>
+            {holidayCount !== undefined && holidayCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-800">
+                {holidayCount}
+              </span>
+            )}
+          </button>
+        )}
 
         {canManage && onRequestLeaveFor && (
           <button

@@ -4,6 +4,8 @@ import { Pagination } from "../components/Pagination";
 import { AttendanceTableView } from "../components/AttendanceTableView";
 import { AttendanceCardsView } from "../components/AttendanceCardsView";
 
+import type { Holiday } from "@/services/holidays/holidaysService";
+
 interface RecordsTabProps {
   filteredRecords: AttendanceRecord[];
   pagedRecords: AttendanceRecord[];
@@ -11,6 +13,7 @@ interface RecordsTabProps {
   todayYMD: string;
   canManage: boolean;
   isFourPunchMode?: boolean;
+  holidays?: Holiday[];
   pageSize: number;
   setPageSize: (size: number) => void;
   page: number;
@@ -32,6 +35,7 @@ export const RecordsTab = memo(function RecordsTab({
   todayYMD,
   canManage,
   isFourPunchMode = false,
+  holidays = [],
   pageSize,
   setPageSize,
   page,
@@ -87,6 +91,7 @@ export const RecordsTab = memo(function RecordsTab({
           todayYMD={todayYMD}
           canManage={canManage}
           isFourPunchMode={isFourPunchMode}
+          holidays={holidays}
           onSelectRecord={onSelectRecord}
           onEditRecord={onEditRecord}
           onDeleteRecord={onDeleteRecord}
@@ -98,6 +103,7 @@ export const RecordsTab = memo(function RecordsTab({
           todayYMD={todayYMD}
           canManage={canManage}
           isFourPunchMode={isFourPunchMode}
+          holidays={holidays}
           onSelectRecord={onSelectRecord}
           onEditRecord={onEditRecord}
           onDeleteRecord={onDeleteRecord}

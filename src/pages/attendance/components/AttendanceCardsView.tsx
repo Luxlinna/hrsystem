@@ -1,13 +1,15 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import type { AttendanceRecord } from "../types";
 import { STATUS_CONFIG, formatTime, calcHours, initials } from "../constants";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import type { Holiday } from "@/services/holidays/holidaysService";
 
 interface AttendanceCardsViewProps {
   records: AttendanceRecord[];
   todayYMD: string;
   canManage: boolean;
   isFourPunchMode?: boolean;
+  holidays?: Holiday[];
   onSelectRecord: (record: AttendanceRecord) => void;
   onEditRecord: (record: AttendanceRecord) => void;
   onDeleteRecord: (id: number) => void;
@@ -19,15 +21,32 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
   todayYMD,
   canManage,
   isFourPunchMode = false,
+  holidays = [],
   onSelectRecord,
   onEditRecord,
   onDeleteRecord,
   onLogTimeForEmployee,
 }: AttendanceCardsViewProps) {
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, Holiday>();
+    holidays.forEach((h) => map.set(h.date, h));
+    return map;
+  }, [holidays]);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {records.map((r) => {
-        const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.ontime || STATUS_CONFIG.present;
+        const holiday = holidayMap.get(r.date);
+        let cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.ontime || STATUS_CONFIG.present;
+        let badgeLabel = cfg.label;
+
+        if (r.status === "holiday" || (!r.clock_in && holiday)) {
+          cfg = STATUS_CONFIG.holiday;
+          badgeLabel = holiday ? `Holiday · ${holiday.name}` : "Holiday / Off";
+        } else if (r.clock_in && holiday) {
+          cfg = STATUS_CONFIG.holiday;
+          badgeLabel = "Holiday Work (2.0x OT)";
+        }
         const emp = r.employees;
         const isWorkingNow = r.clock_in && !r.clock_out && r.date === todayYMD;
 
@@ -74,7 +93,7 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
 
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.bg} ${cfg.text} border ${cfg.border} shrink-0`}>
                   <i className={cfg.icon} />
-                  {cfg.label}
+                  {badgeLabel}
                 </span>
               </div>
 

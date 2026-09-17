@@ -3,6 +3,8 @@ import type { Employee, AttendanceRecord, WorkLocation, EmployeeSummaryItem, Mat
 import { calcHoursNum } from "../constants";
 import { compareBiometricIds, formatBiometricId } from "@/lib/biometricUtils";
 
+import type { Holiday } from "@/services/holidays/holidaysService";
+
 interface UseAttendanceMetricsProps {
   records: AttendanceRecord[];
   employees: Employee[];
@@ -14,6 +16,7 @@ interface UseAttendanceMetricsProps {
   matrixMonth: string;
   filterDepartment: string;
   searchQuery: string;
+  holidays?: Holiday[];
 }
 
 export function useAttendanceMetrics({
@@ -27,6 +30,7 @@ export function useAttendanceMetrics({
   matrixMonth,
   filterDepartment,
   searchQuery,
+  holidays = [],
 }: UseAttendanceMetricsProps) {
   const presentCount = useMemo(
     () => activeScopeRecords.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "remote").length,
@@ -148,6 +152,12 @@ export function useAttendanceMetrics({
     });
   }, [employeeSummary, filterDepartment, searchQuery]);
 
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, Holiday>();
+    holidays.forEach((h) => map.set(h.date, h));
+    return map;
+  }, [holidays]);
+
   const matrixDays: MatrixDay[] = useMemo(() => {
     if (!matrixMonth) return [];
     const [yStr, mStr] = matrixMonth.split("-");
@@ -161,14 +171,18 @@ export function useAttendanceMetrics({
       const d = new Date(year, month - 1, dayNum);
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
       const dayOfWeek = d.getDay();
+      const hol = holidayMap.get(dateStr);
       return {
         dayNum,
         dateStr,
         dayName: dayNames[dayOfWeek],
         isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+        isHoliday: Boolean(hol),
+        holidayName: hol?.name,
+        holidayLocalName: hol?.local_name,
       };
     });
-  }, [matrixMonth]);
+  }, [matrixMonth, holidayMap]);
 
   return {
     presentCount,

@@ -10,12 +10,15 @@ import { CreateTimeLogForm } from "./components/CreateTimeLogForm";
 import { CreateOvertimeForm } from "./components/overtime/CreateOvertimeForm";
 import { OvertimeTab } from "./tabs/OvertimeTab";
 import { RecordsTab } from "./tabs/RecordsTab";
+import { MonthlyMatrixTab } from "./tabs/MonthlyMatrixTab";
+import { HolidaysModal } from "./components/holidays/HolidaysModal";
 import { AttendanceModals } from "./components/AttendanceModals";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 
 export default function AttendancePage() {
   const [showTimeLogForm, setShowTimeLogForm] = useState(false);
   const [timeLogInitialEmployeeId, setTimeLogInitialEmployeeId] = useState<string | undefined>(undefined);
+  const [showHolidaysModal, setShowHolidaysModal] = useState(false);
 
   const {
     canManage, canViewAll, canAccessOvertime, canManageOvertimeSettings,
@@ -23,6 +26,7 @@ export default function AttendancePage() {
     selectedRecord, setSelectedRecord, editingRecord, setEditingRecord,
     showLogModal, setShowLogModal, newRecord, setNewRecord,
     myTodayRecord, data, filters, metrics, mutations,
+    holidays, holidaysState,
     handleSaveNewRecord, handleUpdateRecord,
   } = useAttendance();
 
@@ -118,6 +122,8 @@ export default function AttendancePage() {
         records={filters.filteredRecords.length > 0 ? filters.filteredRecords : data.records}
         summaries={metrics.employeeSummary || []}
         isFourPunchMode={isFourPunchMode}
+        onOpenHolidaysModal={() => setShowHolidaysModal(true)}
+        holidayCount={holidays.length}
       />
 
       {canAccessOvertime && overtime.activeMainTab === "overtime" ? (
@@ -137,7 +143,11 @@ export default function AttendancePage() {
         />
       ) : (
         <>
-          <SelfCheckInBanner myEmployee={data.myEmployee} myTodayRecord={myTodayRecord} />
+          <SelfCheckInBanner
+            myEmployee={data.myEmployee}
+            myTodayRecord={myTodayRecord}
+            todayHoliday={holidaysState.todayHoliday}
+          />
 
           <AttendanceKpiBar
             filterDatePreset={filters.filterDatePreset}
@@ -185,28 +195,42 @@ export default function AttendancePage() {
             viewMode={filters.viewMode}
             setViewMode={filters.setViewMode}
             todayYMD={todayYMD}
+            activeTab={filters.activeTab}
+            setActiveTab={filters.setActiveTab}
           />
 
-          <RecordsTab
-            filteredRecords={filters.filteredRecords}
-            pagedRecords={filters.pagedRecords}
-            viewMode={filters.viewMode}
-            todayYMD={todayYMD}
-            canManage={canManage}
-            isFourPunchMode={isFourPunchMode}
-            pageSize={filters.pageSize}
-            setPageSize={filters.setPageSize}
-            page={filters.page}
-            setPage={filters.setPage}
-            totalPages={filters.totalPages}
-            onSelectRecord={setSelectedRecord}
-            onEditRecord={setEditingRecord}
-            onDeleteRecord={mutations.handleDeleteRecord}
-            onLogTimeForEmployee={handleOpenTimeLog}
-            totalRecordsCount={data.records.length}
-            onResetFilters={filters.handleResetFilters}
-            isFiltered={filters.isFiltered}
-          />
+          {filters.activeTab === "matrix" ? (
+            <MonthlyMatrixTab
+              matrixMonth={filters.matrixMonth}
+              setMatrixMonth={filters.setMatrixMonth}
+              matrixDays={metrics.matrixDays}
+              filteredSummary={metrics.filteredSummary}
+              records={data.records}
+              onSelectRecord={setSelectedRecord}
+            />
+          ) : (
+            <RecordsTab
+              filteredRecords={filters.filteredRecords}
+              pagedRecords={filters.pagedRecords}
+              viewMode={filters.viewMode}
+              todayYMD={todayYMD}
+              canManage={canManage}
+              isFourPunchMode={isFourPunchMode}
+              holidays={holidays}
+              pageSize={filters.pageSize}
+              setPageSize={filters.setPageSize}
+              page={filters.page}
+              setPage={filters.setPage}
+              totalPages={filters.totalPages}
+              onSelectRecord={setSelectedRecord}
+              onEditRecord={setEditingRecord}
+              onDeleteRecord={mutations.handleDeleteRecord}
+              onLogTimeForEmployee={handleOpenTimeLog}
+              totalRecordsCount={data.records.length}
+              onResetFilters={filters.handleResetFilters}
+              isFiltered={filters.isFiltered}
+            />
+          )}
         </>
       )}
 
@@ -230,6 +254,20 @@ export default function AttendancePage() {
         onDeleteRecord={mutations.handleDeleteRecord}
         showOvertimeSettings={canAccessOvertime && canManageOvertimeSettings && overtime.showOvertimeSettings}
         onCloseOvertimeSettings={() => overtime.setShowOvertimeSettings(false)}
+      />
+
+      <HolidaysModal
+        isOpen={showHolidaysModal}
+        onClose={() => setShowHolidaysModal(false)}
+        year={holidaysState.year}
+        setYear={holidaysState.setYear}
+        holidays={holidaysState.holidays}
+        loading={holidaysState.loading}
+        syncing={holidaysState.syncing}
+        onSync={holidaysState.syncYear}
+        onAddHoliday={holidaysState.addHoliday}
+        onDeleteHoliday={holidaysState.removeHoliday}
+        canManage={canManage}
       />
     </div>
   );

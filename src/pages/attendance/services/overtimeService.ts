@@ -118,7 +118,10 @@ export async function createOvertimeRecord(params: {
     logActivity({
       module: "attendance",
       action: "created",
-      details: `Created overtime request for ${overtimeHours} hours (${form.overtime_type})`,
+      entityType: "overtime",
+      actorName: "System",
+      actorRole: "Manager",
+      description: `Created overtime request for ${overtimeHours} hours (${form.overtime_type})`,
     });
 
     return { ok: true };
@@ -156,7 +159,11 @@ export async function updateOvertimeStatus(
   logActivity({
     module: "attendance",
     action: "updated",
-    details: `Updated overtime request #${id} to ${status}`,
+    entityType: "overtime",
+    entityId: id,
+    actorName: "System",
+    actorRole: "Manager",
+    description: `Updated overtime request #${id} to ${status}`,
   });
   return true;
 }
