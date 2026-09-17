@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactElement } from "react";
-import type { RouteObject } from "react-router-dom";
+import { type RouteObject, Navigate } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { RequireAdmin, RequireModule, RequireRecycleBin } from "@/components/RequirePermission";
@@ -100,7 +100,7 @@ const routes: RouteObject[] = [
       { path: "audit-log", element: mod("audit-log", <AuditLog />) },
       { path: "self-service", element: mod("self-service", <SelfService />) },
       { path: "onboarding-checklist", element: mod("onboarding-checklist", <OnboardingChecklist />) },
-      { path: "leave-calendar", element: mod("leave-calendar", <LeaveCalendar />) },
+      { path: "leave-calendar", element: <Navigate to="/leave?tab=calendar" replace /> },
       { path: "payroll-approval", element: mod("payroll-approval", <PayrollApproval />) },
       { path: "performance", element: mod("performance", <Performance />) },
       { path: "announcements", element: mod("announcements", <Announcements />) },

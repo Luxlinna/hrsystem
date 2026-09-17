@@ -3,7 +3,13 @@ import { useSearchParams } from "react-router-dom";
 import type { LeaveRequest, Employee } from "../types";
 
 export function useLeaveFilters(requests: LeaveRequest[], employees: Employee[]) {
-  const [activeTab, setActiveTab] = useState<"requests" | "balances" | "calendar">("requests");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"requests" | "balances" | "calendar">(
+    initialTab === "calendar" || initialTab === "balances" || initialTab === "requests"
+      ? initialTab
+      : "requests"
+  );
 
   // Filters
   const [statusFilter, setStatusFilter] = useState("all");
@@ -16,8 +22,14 @@ export function useLeaveFilters(requests: LeaveRequest[], employees: Employee[])
   const [page, setPage] = useState(1);
 
   // Deep link highlight
-  const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("highlight");
+
+  const tabParam = searchParams.get("tab");
+  useEffect(() => {
+    if (tabParam === "calendar" || tabParam === "balances" || tabParam === "requests") {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     if (!highlightId || requests.length === 0) return;
