@@ -47,15 +47,15 @@ export const LeaveApprovalModal = memo(function LeaveApprovalModal({
               <h3 className="text-base font-extrabold text-gray-900">
                 {isApprove
                   ? hasManagerEndorsed
-                    ? "Step 2: HR Final Approval"
+                    ? "Step 2: Final Authorization"
                     : "Step 1: Manager Endorsement"
                   : "Reject Leave Request"}
               </h3>
               <p className="text-[11px] text-gray-500 font-medium">
                 {isApprove
                   ? hasManagerEndorsed
-                    ? "Manager endorsed • Authorize final official leave"
-                    : "Endorse request & forward to HR Manager"
+                    ? "Manager endorsed • Authorized by HR Manager or Role Permission"
+                    : "Endorse request & forward to HR Manager or authorized role"
                   : "Decline and terminate this leave request"}
               </p>
             </div>
@@ -126,7 +126,7 @@ export const LeaveApprovalModal = memo(function LeaveApprovalModal({
               ? "Processing..."
               : isApprove
               ? hasManagerEndorsed
-                ? "Grant Final HR Approval"
+                ? "Grant Final Approval"
                 : "Endorse & Forward to HR"
               : "Confirm Rejection"}
           </button>

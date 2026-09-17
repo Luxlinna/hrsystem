@@ -9,6 +9,10 @@ import { LEAVE_TYPE_CONFIG } from "../constants";
 interface UseLeaveApprovalDecisionProps {
   actorName: string;
   actorRole: string;
+  canApproveLeave?: boolean;
+  isAdmin?: boolean;
+  isSuperAdmin?: boolean;
+  hasRoleApprovalAccess?: boolean;
   loadData: () => Promise<void>;
   setToast: (toast: { type: "success" | "error" | "info"; message: string } | null) => void;
 }
@@ -16,6 +20,10 @@ interface UseLeaveApprovalDecisionProps {
 export function useLeaveApprovalDecision({
   actorName,
   actorRole,
+  canApproveLeave,
+  isAdmin,
+  isSuperAdmin,
+  hasRoleApprovalAccess,
   loadData,
   setToast,
 }: UseLeaveApprovalDecisionProps) {
@@ -34,15 +42,25 @@ export function useLeaveApprovalDecision({
     if (!selectedRequest) return;
     setProcessingApproval(true);
     try {
-      const isSuperAdmin =
+      const isSuperAdminRole =
+        isSuperAdmin ||
         actorRole?.toLowerCase().includes("super admin") ||
         actorRole?.toLowerCase().includes("superadmin");
+
       const isHrManager =
         actorRole?.toLowerCase().includes("hr manager") ||
         actorRole?.toLowerCase().includes("hr admin") ||
         actorRole?.toLowerCase().includes("hr officer") ||
         actorRole?.toLowerCase().includes("director");
-      const isFinalApprover = isSuperAdmin || isHrManager;
+
+      // Can be HR manager, or the one who has this access at role permission
+      const hasPermissionAccess =
+        isAdmin ||
+        canApproveLeave ||
+        hasRoleApprovalAccess ||
+        isHrManager;
+
+      const isFinalApprover = isSuperAdminRole || hasPermissionAccess;
 
       const isApprove = approvalAction === "approved";
       const hasManagerEndorsed = (selectedRequest.reason || "").includes("[Stage: Manager Endorsed");
@@ -72,16 +90,16 @@ export function useLeaveApprovalDecision({
         stageTag = `\n\n[Stage: Manager Endorsed by ${actorName} (${actorRole})]${
           approvalNote ? `\n[Manager Note: ${approvalNote}]` : ""
         }`;
-        toastMessage = "Step 1: Endorsed by Manager. Forwarded to HR Manager for final approval.";
+        toastMessage = "Step 1: Endorsed by Manager. Forwarded for HR / Role Permission final approval.";
         notifyTitle = "Leave Endorsed by Manager";
-        notifyMessage = `Manager ${actorName} endorsed ${empName}'s leave request. Ready for HR Manager final approval.`;
+        notifyMessage = `Manager ${actorName} endorsed ${empName}'s leave request. Ready for final approval.`;
       } else {
-        // Step 2: Final HR Approval (or Super Admin Direct Approval)
+        // Step 2: Final HR / Role Permission Approval (or Super Admin Direct Approval)
         finalStatus = "approved";
-        stageTag = `\n\n[Stage: Final HR Approved by ${actorName} (${actorRole})]${
-          approvalNote ? `\n[HR Note: ${approvalNote}]` : ""
+        stageTag = `\n\n[Stage: Final Approved by ${actorName} (${actorRole})]${
+          approvalNote ? `\n[Approval Note: ${approvalNote}]` : ""
         }`;
-        toastMessage = "Step 2: Granted final approval by HR Manager.";
+        toastMessage = "Step 2: Granted final approval (HR / Role Permission).";
         notifyTitle = "Leave Request Fully Approved";
         notifyMessage = `Your ${selectedRequest.leave_type} leave was granted final approval by ${actorName}.`;
       }
@@ -146,7 +164,7 @@ export function useLeaveApprovalDecision({
     } finally {
       setProcessingApproval(false);
     }
-  }, [selectedRequest, approvalAction, approvalNote, actorName, actorRole, loadData, setToast]);
+  }, [selectedRequest, approvalAction, approvalNote, actorName, actorRole, canApproveLeave, hasRoleApprovalAccess, isAdmin, isSuperAdmin, loadData, setToast]);
 
   const handleCancelRequest = useCallback(async () => {
     if (!cancelTargetRequest) return;

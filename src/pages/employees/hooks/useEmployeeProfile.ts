@@ -25,6 +25,7 @@ export function useEmployeeProfile(id: string | undefined) {
   const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
   const [form, setForm] = useState<Partial<Employee>>({});
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
+  const [userManagementUsers, setUserManagementUsers] = useState<any[]>([]);
   const [managersList, setManagersList] = useState<ReportEntry[]>([]);
   const loadRequestId = useRef(0);
 
@@ -102,6 +103,7 @@ export function useEmployeeProfile(id: string | undefined) {
     setManager(rels.manager);
     setReports(rels.reports);
     setAllEmployees(rels.allEmployees);
+    setUserManagementUsers(rels.userManagementUsers || []);
     setManagersList(rels.managersList);
     setInterviews(rels.interviews);
     setLeaveRequests(rels.leaveRequests);
@@ -164,10 +166,12 @@ export function useEmployeeProfile(id: string | undefined) {
     form,
     setForm,
     allEmployees,
+    userManagementUsers,
     managersList,
     branches,
     workSites,
     hasBiometricDevice,
+    loadEmployee,
     saveChanges,
     uploadAvatar,
   };

@@ -8,6 +8,7 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
   editing,
   manager,
   allEmployees,
+  branches,
 }: BasicInfoOrgProps) {
   return (
     <>
@@ -16,19 +17,44 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
         <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
           Business Unit (BU)
         </label>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs font-black text-[#253C7D]">
-            {employee.bu_full_name || employee.branches?.name || "OPS sulotion"}
-          </span>
-          {employee.code_bu && (
-            <span className="text-[10px] font-mono font-black px-1.5 py-0.2 rounded bg-blue-100 text-[#253C7D]">
-              [{employee.code_bu}]
+        {editing && branches && branches.length > 0 ? (
+          <select
+            value={form.branch_id || employee.branch_id || ""}
+            onChange={(e) => {
+              const bId = e.target.value || null;
+              const selectedBranch = branches.find((b) => b.id === bId);
+              setForm({
+                ...form,
+                branch_id: bId,
+                bu_full_name: selectedBranch?.name || null,
+                reports_to: null,
+                line_manager: null,
+              });
+            }}
+            className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold focus:outline-none focus:border-[#253C7D]"
+          >
+            <option value="">-- Select Business Unit --</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-black text-[#253C7D]">
+              {employee.bu_full_name || employee.branches?.name || "OPS sulotion"}
             </span>
-          )}
-          {employee.handle_bu && (
-            <span className="text-[10px] text-slate-400 font-mono">{employee.handle_bu}</span>
-          )}
-        </div>
+            {employee.code_bu && (
+              <span className="text-[10px] font-mono font-black px-1.5 py-0.2 rounded bg-blue-100 text-[#253C7D]">
+                [{employee.code_bu}]
+              </span>
+            )}
+            {employee.handle_bu && (
+              <span className="text-[10px] text-slate-400 font-mono">{employee.handle_bu}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Department */}
@@ -67,13 +93,28 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
 
       {/* Line Manager */}
       <div>
-        <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-          Line Manager (Reporting Line)
-        </label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+            Line Manager (Reporting Line)
+          </label>
+          {editing && (
+            <span className="text-[10px] font-bold text-[#253C7D]">
+              {allEmployees.length} in this BU
+            </span>
+          )}
+        </div>
         {editing ? (
           <select
             value={form.reports_to || ""}
-            onChange={(e) => setForm({ ...form, reports_to: e.target.value || null })}
+            onChange={(e) => {
+              const val = e.target.value || null;
+              const matched = allEmployees.find((m) => m.id === val);
+              setForm({
+                ...form,
+                reports_to: val,
+                line_manager: matched ? `${matched.first_name} ${matched.last_name}`.trim() : null,
+              });
+            }}
             className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold focus:outline-none focus:border-[#253C7D]"
           >
             <option value="">No manager</option>

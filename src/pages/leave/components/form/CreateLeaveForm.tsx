@@ -138,45 +138,6 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
     return cand || null;
   }, [selectedEmployee, employees, activeEmpId, myEmployee, myApproverName]);
 
-  // Step 2 HR Approvers (Matching user screenshot: Chea Rachana & Chorn Sokcheng)
-  const finalHrApprovers = useMemo(() => {
-    const list: Array<{ id: string; name: string; role: string; avatar_url?: string }> = [];
-    if (hrApprovers && hrApprovers.length > 0) {
-      hrApprovers.forEach((h) => {
-        list.push({
-          id: h.id,
-          name: `${h.first_name || ""} ${h.last_name || ""}`.trim() || "HR Officer",
-          role: h.role || h.department || "HR Admin Officer",
-          avatar_url: h.avatar_url,
-        });
-      });
-    }
-    if (list.length === 0) {
-      list.push(
-        {
-          id: "hr-rachana",
-          name: "Chea Rachana",
-          role: "HR Admin Officer",
-          avatar_url: "",
-        },
-        {
-          id: "hr-sokcheng",
-          name: "Chorn Sokcheng",
-          role: "HR Admin Officer",
-          avatar_url: "",
-        }
-      );
-    } else if (list.length === 1 && !list.some((h) => h.name.toLowerCase().includes("sokcheng"))) {
-      list.push({
-        id: "hr-sokcheng",
-        name: "Chorn Sokcheng",
-        role: "HR Admin Officer",
-        avatar_url: "",
-      });
-    }
-    return list;
-  }, [hrApprovers]);
-
   const filteredEmployees = useMemo(() => {
     return employees.filter((e) => matchLeaveEmployee(e, employeeSearch));
   }, [employees, employeeSearch]);
@@ -862,56 +823,37 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
                 </div>
               </div>
 
-              {/* Step 2: Final HR Manager Approval (Matches screenshot exact layout) */}
+              {/* Step 2: Final Authorization (Clean unified card, no list of individual users) */}
               <div className="rounded-xl border border-gray-200 overflow-hidden shadow-2xs">
                 <div className="bg-[#4A72B2] text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between">
-                  <span>Step 2 — Final HR Manager Approval</span>
+                  <span>Step 2 — Final Authorization</span>
                   <span className="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-md">
-                    Final Authorization
+                    Final Sign-Off
                   </span>
                 </div>
 
-                <div className="p-4 bg-white space-y-3">
-                  {finalHrApprovers.map((approver, idx) => (
-                    <React.Fragment key={approver.id}>
-                      {idx > 0 && (
-                        <div className="py-1">
-                          <span className="text-[10px] font-extrabold text-gray-400 tracking-wider">
-                            OR
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          {approver.avatar_url ? (
-                            <img
-                              src={approver.avatar_url}
-                              alt={approver.name}
-                              className="w-10 h-10 rounded-full object-cover border border-gray-200"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-slate-100 text-[#253C7D] font-bold text-xs flex items-center justify-center border border-slate-200 shadow-2xs">
-                              {approver.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .slice(0, 2)}
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-xs font-bold text-gray-900">{approver.name}</p>
-                            <p className="text-[11px] text-gray-400 font-medium">{approver.role}</p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
-                          HR Sign-Off
-                        </span>
+                <div className="p-4 bg-white">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center justify-center border border-emerald-200 shadow-2xs">
+                        <i className="ri-shield-check-line text-lg" />
                       </div>
-                    </React.Fragment>
-                  ))}
+                      <div>
+                        <p className="text-xs font-bold text-gray-900">
+                          HR Manager / Role Permission
+                        </p>
+                        <p className="text-[11px] text-gray-500 font-medium">
+                          Authorized leave approval team
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+                      Final Authority
+                    </span>
+                  </div>
                   <p className="text-[11px] text-gray-400 mt-2.5 pt-2 border-t border-gray-100 flex items-center gap-1.5">
-                    <i className="ri-shield-check-line text-emerald-600" />
-                    After manager endorsement, HR Manager grants the final official sign-off.
+                    <i className="ri-checkbox-circle-line text-emerald-600" />
+                    After line manager endorsement, automatically routed for final sign-off.
                   </p>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ProfileHeader } from "./components/profile/ProfileHeader";
 import { BasicInfoCard } from "./components/profile/BasicInfoCard";
@@ -14,12 +14,15 @@ import { NssfInfoCard } from "./components/overview/NssfInfoCard";
 import { ComplaintSuggestionCard } from "./components/overview/ComplaintSuggestionCard";
 import { TrainingInfoCard } from "./components/overview/TrainingInfoCard";
 import { AssetInfoCard } from "./components/overview/AssetInfoCard";
+import { QuickEditManagerModal } from "./components/profile/QuickEditManagerModal";
 import { useEmployeeProfile } from "./hooks/useEmployeeProfile";
+import { filterBuManagers } from "./hooks/employeeProfileLoader";
 
 export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<OverviewTabKey>("info");
   const [counts, setCounts] = useState<Partial<Record<OverviewTabKey, number>>>({});
+  const [showManagerModal, setShowManagerModal] = useState(false);
 
   const {
     canEdit,
@@ -37,13 +40,30 @@ export default function EmployeeProfile() {
     form,
     setForm,
     allEmployees,
+    userManagementUsers,
     managersList,
     branches,
     workSites,
     hasBiometricDevice,
+    loadEmployee,
     saveChanges,
     uploadAvatar,
   } = useEmployeeProfile(id);
+
+  // Dynamically filter User Management users belonging to this employee's effective BU only
+  const dynamicBuManagers = useMemo(() => {
+    const effectiveBranchId = form.branch_id || employee?.branch_id;
+    const effectiveBuName = form.bu_full_name || employee?.bu_full_name || employee?.branches?.name;
+    const effectiveCodeBu = form.code_bu || employee?.code_bu;
+
+    return filterBuManagers(
+      userManagementUsers,
+      employee?.id,
+      effectiveBranchId,
+      effectiveBuName,
+      effectiveCodeBu
+    );
+  }, [form.branch_id, form.bu_full_name, form.code_bu, employee, userManagementUsers]);
 
   const handleToggleEditing = useCallback(() => {
     if (!editing) {
@@ -120,7 +140,7 @@ export default function EmployeeProfile() {
               editing={editing}
               saving={saving}
               manager={manager}
-              allEmployees={managersList || allEmployees}
+              allEmployees={dynamicBuManagers}
               branches={branches}
               workSites={workSites}
               onSave={saveChanges}
@@ -128,7 +148,13 @@ export default function EmployeeProfile() {
             <EmployeeDocumentsCard employee={employee} />
             <LeaveHistoryCard leaveRequests={leaveRequests} />
           </div>
-          <ProfileSidebar manager={manager} reports={reports} interviews={interviews} />
+          <ProfileSidebar
+            manager={manager}
+            reports={reports}
+            interviews={interviews}
+            canEdit={canEdit}
+            onEditManager={() => setShowManagerModal(true)}
+          />
         </div>
       )}
 
@@ -150,6 +176,17 @@ export default function EmployeeProfile() {
         <div className="max-w-5xl">
           <PayrollHistoryCard employee={employee} payrollRecords={payrollRecords} />
         </div>
+      )}
+
+      {employee && (
+        <QuickEditManagerModal
+          isOpen={showManagerModal}
+          onClose={() => setShowManagerModal(false)}
+          employee={employee}
+          manager={manager}
+          allEmployees={dynamicBuManagers}
+          onSuccess={() => id && loadEmployee(id)}
+        />
       )}
     </div>
   );

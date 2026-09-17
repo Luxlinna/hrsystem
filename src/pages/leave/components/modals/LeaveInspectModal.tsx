@@ -171,7 +171,7 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
                       >
                         2
                       </span>
-                      <span className="font-bold text-[11px]">HR Manager</span>
+                      <span className="font-bold text-[11px]">HR / Role Authority</span>
                     </div>
                     <p className="text-[10px] font-medium opacity-80">
                       {isApproved

@@ -52,7 +52,7 @@ export function useLeaveData() {
       const { data: hrStaff } = await supabase
         .from("employees")
         .select("id, first_name, last_name, role, department, avatar_url, email, branch_id")
-        .or("department.ilike.%hr%,role.ilike.%hr%,role.ilike.%admin%")
+        .or("department.ilike.%hr%,role.ilike.%hr%")
         .is("deleted_at", null)
         .order("first_name");
       setHrApprovers(hrStaff || []);

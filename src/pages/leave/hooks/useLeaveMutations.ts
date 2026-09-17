@@ -14,6 +14,10 @@ interface UseLeaveMutationsProps {
   myEmployee: Employee | null;
   actorName: string;
   actorRole: string;
+  canApproveLeave?: boolean;
+  isAdmin?: boolean;
+  isSuperAdmin?: boolean;
+  hasRoleApprovalAccess?: boolean;
   getRemaining: (employeeId: string, type: string) => number | null;
   loadData: () => Promise<void>;
   setToast: (toast: { type: "success" | "error" | "info"; message: string } | null) => void;
@@ -25,6 +29,10 @@ export function useLeaveMutations({
   myEmployee,
   actorName,
   actorRole,
+  canApproveLeave,
+  isAdmin,
+  isSuperAdmin: isSuperAdminProp,
+  hasRoleApprovalAccess,
   getRemaining,
   loadData,
   setToast,
@@ -34,16 +42,21 @@ export function useLeaveMutations({
   const [submitting, setSubmitting] = useState(false);
   const [inspectRequest, setInspectRequest] = useState<LeaveRequest | null>(null);
 
+  const isSuperAdmin =
+    isSuperAdminProp ||
+    actorRole?.toLowerCase().includes("super admin") ||
+    actorRole?.toLowerCase().includes("superadmin");
+
   const decision = useLeaveApprovalDecision({
     actorName,
     actorRole,
+    canApproveLeave,
+    isAdmin,
+    isSuperAdmin,
+    hasRoleApprovalAccess,
     loadData,
     setToast,
   });
-
-  const isSuperAdmin =
-    actorRole?.toLowerCase().includes("super admin") ||
-    actorRole?.toLowerCase().includes("superadmin");
 
   const handleSubmitRequest = useCallback(
     async (e: React.FormEvent) => {
