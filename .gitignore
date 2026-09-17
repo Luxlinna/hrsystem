@@ -7,6 +7,8 @@ out/
 .parcel-cache/
 *.local
 
+
+
 # Environment variables & secrets
 .env
 .env.*
