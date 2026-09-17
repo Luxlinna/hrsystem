@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { EmployeeSummaryItem } from "../types";
 import { formatTime, calcHours, initials } from "../constants";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface DayRosterTabProps {
   rosterDate: string;
@@ -119,13 +120,24 @@ export const DayRosterTab = memo(function DayRosterTab({
                     </div>
 
                     <div className="min-w-0">
-                      <Link
-                        to={`/employees/${emp.id}`}
-                        className="font-extrabold text-gray-900 hover:text-[#253C7D] transition-colors truncate text-sm block"
-                      >
-                        {emp.first_name} {emp.last_name}
-                      </Link>
-                      <p className="text-[11px] text-gray-400 truncate">{emp.role}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Link
+                          to={`/employees/${emp.id}`}
+                          className="font-extrabold text-gray-900 hover:text-[#253C7D] transition-colors truncate text-sm"
+                        >
+                          {emp.first_name} {emp.last_name}
+                        </Link>
+                        {emp.biometric_user_id && (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
+                            title={`BU Biometric ID: ${emp.biometric_user_id}`}
+                          >
+                            <i className="ri-fingerprint-line text-[10px]" />
+                            {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-400 truncate mt-0.5">{emp.role}</p>
                       <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.2 rounded-md inline-block mt-0.5">
                         {emp.department}
                       </span>

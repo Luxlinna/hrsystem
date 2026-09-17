@@ -1,8 +1,9 @@
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "@/components/Toast";
 import type { Employee } from "../types";
-import { OVERTIME_TYPES, type NewOvertimeForm } from "../types/overtimeTypes";
+import { OVERTIME_TYPES, type NewOvertimeForm, type OvertimeStatus } from "../types/overtimeTypes";
 import { calcOvertimeHours, createOvertimeRecord } from "../services/overtimeService";
+import { matchAttendanceEmployee } from "../searchUtils";
 import { todayYMD } from "@/lib/date";
 
 interface UseCreateOvertimeProps {
@@ -46,6 +47,15 @@ export function useCreateOvertime({
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Approval fields (for direct entry mode)
+  const [approvalStatus, setApprovalStatus] = useState<OvertimeStatus>("pending");
+  const [approverEmployeeId, setApproverEmployeeId] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [approvalDate, setApprovalDate] = useState<string>(() => {
+    const d = new Date();
+    return d.toISOString().split("T")[0];
+  });
+
   // Helper converting 12h to 24h
   const to24h = (h: string, m: string, p: "AM" | "PM") => {
     let numH = parseInt(h, 10) || 12;
@@ -67,15 +77,11 @@ export function useCreateOvertime({
   }, [employees, employeeId]);
 
   const filteredEmployees = useMemo(() => {
-    if (!employeeSearchQuery.trim()) return employees;
-    const q = employeeSearchQuery.toLowerCase();
-    return employees.filter((e) => {
-      const name = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
-      const role = (e.role || "").toLowerCase();
-      const dept = (e.department || "").toLowerCase();
-      return name.includes(q) || role.includes(q) || dept.includes(q);
-    });
-  }, [employees, employeeSearchQuery]);
+    return employees.filter((e) =>
+      matchAttendanceEmployee(e, employeeSearchQuery, activeBranchId)
+    );
+  }, [employees, employeeSearchQuery, activeBranchId]);
+
 
   const handleSave = useCallback(async () => {
     if (!employeeId) {
@@ -103,6 +109,10 @@ export function useCreateOvertime({
         break_minutes: breakMinutes,
         reason,
         remark,
+        approval_status: approvalStatus,
+        approver_employee_id: approvalStatus === "approved" ? approverEmployeeId || null : null,
+        rejection_reason: approvalStatus === "rejected" ? rejectionReason || null : null,
+        approval_date: approvalStatus === "approved" ? approvalDate || null : null,
       };
 
       const res = await createOvertimeRecord({
@@ -137,5 +147,9 @@ export function useCreateOvertime({
     outHour, setOutHour, outMinute, setOutMinute, outPeriod, setOutPeriod,
     breakMinutes, setBreakMinutes, calculatedHours, reason, setReason,
     remark, setRemark, attachmentFile, setAttachmentFile, saving, handleSave,
+    approvalStatus, setApprovalStatus,
+    approverEmployeeId, setApproverEmployeeId,
+    rejectionReason, setRejectionReason,
+    approvalDate, setApprovalDate,
   };
 }

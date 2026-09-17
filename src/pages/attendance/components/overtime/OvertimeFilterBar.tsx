@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { OVERTIME_TYPES } from "../../types/overtimeTypes";
+import { OvertimeActionDropdown } from "./OvertimeActionDropdown";
 
 interface OvertimeFilterBarProps {
   searchQuery: string;
@@ -11,6 +12,11 @@ interface OvertimeFilterBarProps {
   recordsCount: number;
   onExport: () => void;
   onOpenCreate: () => void;
+  onCreateNew?: () => void;
+  onCreateRequest?: () => void;
+  onCreateRequestFor?: () => void;
+  onOpenSettings?: () => void;
+  canManage?: boolean;
 }
 
 export const OvertimeFilterBar = memo(function OvertimeFilterBar({
@@ -23,10 +29,15 @@ export const OvertimeFilterBar = memo(function OvertimeFilterBar({
   recordsCount,
   onExport,
   onOpenCreate,
+  onCreateNew,
+  onCreateRequest,
+  onCreateRequestFor,
+  onOpenSettings,
+  canManage = true,
 }: OvertimeFilterBarProps) {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-3.5 shadow-2xs mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3.5">
-      {/* Header Count & Add button */}
+      {/* Header Count & Overtimes Dropdown button */}
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center gap-2 px-3 py-1.5 bg-[#253C7D]/10 dark:bg-sky-950/50 text-[#253C7D] dark:text-sky-300 rounded-xl font-bold text-xs border border-transparent dark:border-sky-800/40">
           <i className="ri-time-line text-sm" />
@@ -36,14 +47,13 @@ export const OvertimeFilterBar = memo(function OvertimeFilterBar({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={onOpenCreate}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3166] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
-        >
-          <i className="ri-add-line text-sm" />
-          <span>+ New Overtime</span>
-        </button>
+        <OvertimeActionDropdown
+          onCreateNew={onCreateNew || onOpenCreate}
+          onCreateRequest={onCreateRequest || onOpenCreate}
+          onCreateRequestFor={onCreateRequestFor || onOpenCreate}
+          onOpenSettings={onOpenSettings || (() => {})}
+          canManage={canManage}
+        />
       </div>
 
       {/* Filters: Search, Type, Status, Export */}

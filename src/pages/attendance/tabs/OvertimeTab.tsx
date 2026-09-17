@@ -3,11 +3,16 @@ import type { OvertimeRecord } from "../types/overtimeTypes";
 import { OVERTIME_STATUS_CONFIG } from "../types/overtimeTypes";
 import { OvertimeFilterBar } from "../components/overtime/OvertimeFilterBar";
 import { formatTime, initials } from "../constants";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface OvertimeTabProps {
   records: OvertimeRecord[];
   canManage: boolean;
   onOpenCreate: () => void;
+  onCreateNew?: () => void;
+  onCreateRequest?: () => void;
+  onCreateRequestFor?: () => void;
+  onOpenSettings?: () => void;
   onExport: () => void;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
@@ -18,6 +23,10 @@ export const OvertimeTab = memo(function OvertimeTab({
   records,
   canManage,
   onOpenCreate,
+  onCreateNew,
+  onCreateRequest,
+  onCreateRequestFor,
+  onOpenSettings,
   onExport,
   onApprove,
   onReject,
@@ -54,6 +63,11 @@ export const OvertimeTab = memo(function OvertimeTab({
         recordsCount={filtered.length}
         onExport={onExport}
         onOpenCreate={onOpenCreate}
+        onCreateNew={onCreateNew}
+        onCreateRequest={onCreateRequest}
+        onCreateRequestFor={onCreateRequestFor}
+        onOpenSettings={onOpenSettings}
+        canManage={canManage}
       />
 
       {filtered.length === 0 ? (
@@ -100,8 +114,19 @@ export const OvertimeTab = memo(function OvertimeTab({
                             )}
                           </div>
                           <div>
-                            <p className="font-bold text-gray-900 dark:text-slate-100">{emp ? `${emp.first_name} ${emp.last_name}` : "Unknown"}</p>
-                            <p className="text-[10px] text-gray-400">{emp?.role || emp?.department || "Staff"}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-bold text-gray-900 dark:text-slate-100">{emp ? `${emp.first_name} ${emp.last_name}` : "Unknown"}</p>
+                              {emp?.biometric_user_id ? (
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
+                                  title={`BU Biometric ID: ${emp.biometric_user_id}`}
+                                >
+                                  <i className="ri-fingerprint-line text-[10px]" />
+                                  {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="text-[10px] text-gray-400 mt-0.5">{emp?.role || emp?.department || "Staff"}</p>
                           </div>
                         </div>
                       </td>
@@ -161,6 +186,16 @@ export const OvertimeTab = memo(function OvertimeTab({
                           <i className={cfg.icon} />
                           <span>{cfg.label}</span>
                         </span>
+                        {r.status === "approved" && r.approved_at && (
+                          <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
+                            {new Date(r.approved_at).toLocaleDateString()}
+                          </p>
+                        )}
+                        {r.status === "rejected" && r.rejection_reason && (
+                          <p className="text-[10px] text-rose-400 italic mt-0.5 max-w-[120px] truncate" title={r.rejection_reason}>
+                            {r.rejection_reason}
+                          </p>
+                        )}
                       </td>
 
                       {/* Actions */}

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Employee, AttendanceRecord, WorkLocation, EmployeeSummaryItem, MatrixDay } from "../types";
 import { calcHoursNum } from "../constants";
+import { compareBiometricIds, formatBiometricId } from "@/lib/biometricUtils";
 
 interface UseAttendanceMetricsProps {
   records: AttendanceRecord[];
@@ -89,7 +90,7 @@ export function useAttendanceMetrics({
   const rosterRecords = useMemo(() => records.filter((r) => r.date === rosterDate), [records, rosterDate]);
 
   const employeeSummary: EmployeeSummaryItem[] = useMemo(() => {
-    return employees.map((emp) => {
+    const items = employees.map((emp) => {
       const empRecords = activeScopeRecords.filter((r) => r.employee_id === emp.id);
       const present = empRecords.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "remote").length;
       const late = empRecords.filter((r) => r.status === "late").length;
@@ -116,6 +117,9 @@ export function useAttendanceMetrics({
         rosterRecord,
       };
     });
+
+    items.sort((a, b) => compareBiometricIds(a.biometric_user_id, b.biometric_user_id));
+    return items;
   }, [employees, activeScopeRecords, rosterRecords]);
 
   const filteredSummary = useMemo(() => {
@@ -126,7 +130,19 @@ export function useAttendanceMetrics({
         const name = `${e.first_name} ${e.last_name}`.toLowerCase();
         const roleName = (e.role || "").toLowerCase();
         const dept = (e.department || "").toLowerCase();
-        if (!name.includes(q) && !roleName.includes(q) && !dept.includes(q)) return false;
+        const bioId = (e.biometric_user_id || "").toLowerCase();
+        const fullBuId = formatBiometricId(e.biometric_user_id, e.branches?.name).toLowerCase();
+        const code = (e.employee_code || "").toLowerCase();
+        if (
+          !name.includes(q) &&
+          !roleName.includes(q) &&
+          !dept.includes(q) &&
+          !bioId.includes(q) &&
+          !fullBuId.includes(q) &&
+          !code.includes(q)
+        ) {
+          return false;
+        }
       }
       return true;
     });

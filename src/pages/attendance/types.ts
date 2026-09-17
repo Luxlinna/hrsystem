@@ -8,6 +8,8 @@ export interface Employee {
   branch_id?: string | null;
   branches?: { id: string; name: string } | null;
   default_work_location_id?: string | null;
+  employee_code?: string | null;
+  biometric_user_id?: string | null;
 }
 
 export interface BiometricDevice {

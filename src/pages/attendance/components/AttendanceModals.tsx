@@ -3,6 +3,7 @@ import type { AttendanceRecord, Employee, WorkLocation, NewRecordForm } from "..
 import { RecordDetailsDrawer } from "./RecordDetailsDrawer";
 import { LogAttendanceModal } from "./LogAttendanceModal";
 import { EditAttendanceModal } from "./EditAttendanceModal";
+import { OvertimeSettingsModal } from "./overtime/OvertimeSettingsModal";
 
 interface AttendanceModalsProps {
   selectedRecord: AttendanceRecord | null;
@@ -21,6 +22,8 @@ interface AttendanceModalsProps {
   onSaveNewRecord: (e: React.FormEvent) => void;
   onUpdateRecord: (e: React.FormEvent) => void;
   onDeleteRecord: (id: number) => void;
+  showOvertimeSettings?: boolean;
+  onCloseOvertimeSettings?: () => void;
 }
 
 export const AttendanceModals = memo(function AttendanceModals({
@@ -40,6 +43,8 @@ export const AttendanceModals = memo(function AttendanceModals({
   onSaveNewRecord,
   onUpdateRecord,
   onDeleteRecord,
+  showOvertimeSettings = false,
+  onCloseOvertimeSettings,
 }: AttendanceModalsProps) {
   return (
     <>
@@ -71,6 +76,12 @@ export const AttendanceModals = memo(function AttendanceModals({
         saving={saving}
         onClose={() => setEditingRecord(null)}
         onSubmit={onUpdateRecord}
+      />
+
+      <OvertimeSettingsModal
+        isOpen={!!showOvertimeSettings}
+        onClose={() => onCloseOvertimeSettings?.()}
+        canManage={canManage}
       />
     </>
   );

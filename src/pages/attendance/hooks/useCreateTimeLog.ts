@@ -6,6 +6,7 @@ import { toast } from "@/components/Toast";
 import { toYMD } from "@/lib/date";
 import { saveTimeLogRecord } from "../services/timeLogService";
 import type { Employee, WorkLocation } from "../types";
+import { matchAttendanceEmployee } from "../searchUtils";
 
 interface UseCreateTimeLogProps {
   employees: Employee[];
@@ -109,10 +110,10 @@ export function useCreateTimeLog({
 
   const selectedEmployee = useMemo(() => employees.find((e) => e.id === employeeId) || null, [employees, employeeId]);
   const filteredEmployees = useMemo(() => {
-    if (!employeeSearchQuery.trim()) return employees;
-    const q = employeeSearchQuery.toLowerCase().trim();
-    return employees.filter((e) => `${e.first_name || ""} ${e.last_name || ""} ${e.department || ""} ${e.role || ""}`.toLowerCase().includes(q));
-  }, [employees, employeeSearchQuery]);
+    return employees.filter((e) =>
+      matchAttendanceEmployee(e, employeeSearchQuery, activeBranchId)
+    );
+  }, [employees, employeeSearchQuery, activeBranchId]);
 
   const handleHourBlur = () => { const v = parseInt(hour, 10); setHour(String(isNaN(v) || v < 1 ? 1 : v > 12 ? 12 : v).padStart(2, "0")); };
   const handleMinuteBlur = () => { const v = parseInt(minute, 10); setMinute(String(isNaN(v) || v < 0 ? 0 : v > 59 ? 59 : v).padStart(2, "0")); };

@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { DatePreset, ViewMode, WorkLocation, Employee } from "../types";
 import { STATUS_CONFIG } from "../constants";
 import { AttendanceDateRangePicker } from "./AttendanceDateRangePicker";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface AttendanceControlBarProps {
   canManage: boolean;
@@ -140,11 +141,16 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
             title="Filter by specific employee"
           >
             <option value="all">All Employees ({availableEmployees.length})</option>
-            {availableEmployees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.first_name} {emp.last_name} ({emp.role || emp.department || "Staff"})
-              </option>
-            ))}
+            {availableEmployees.map((emp) => {
+              const bioId = formatBiometricId(emp.biometric_user_id, emp.branches?.name);
+              return (
+                <option key={emp.id} value={emp.id}>
+                  {emp.first_name} {emp.last_name}
+                  {bioId ? ` [${bioId}]` : ""}
+                  {emp.role ? ` (${emp.role})` : ""}
+                </option>
+              );
+            })}
           </select>
         )}
 

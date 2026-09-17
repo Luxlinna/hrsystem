@@ -5,6 +5,7 @@ import { useBranchScope } from "@/context/BranchContext";
 import { toast } from "@/components/Toast";
 import type { Employee, AttendanceRecord, WorkLocation, BiometricDevice } from "../types";
 import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
+import { compareBiometricIds } from "@/lib/biometricUtils";
 
 export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean = false) {
   const { user } = useAuth();
@@ -56,7 +57,7 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
         const meQuery = applyUserEmployeeFilter(
           supabase
             .from("employees")
-            .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id"),
+            .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id"),
           user.email
         );
         const { data: rows } = await meQuery.is("deleted_at", null).limit(5);
@@ -70,21 +71,24 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
         // Fetch all employees belonging to the selected branch
         const { data: team, error: empErr } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id")
+          .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id")
           .is("deleted_at", null)
           .eq("branch_id", targetBranch)
           .order("first_name");
         if (empErr) console.warn("Error fetching attendance employees:", empErr);
 
         const empList = (team as unknown as Employee[]) || [];
+        // Natural numerical sorting by BU Biometric ID (001, 002, 003...)
+        empList.sort((a, b) => compareBiometricIds(a.biometric_user_id, b.biometric_user_id));
         setEmployees(empList);
         const ids = empList.map((e) => e.id);
+        const empMap = new Map(empList.map((e) => [e.id, e]));
 
         let rawRecords: AttendanceRecord[] = [];
         if (ids.length > 0) {
           const { data: recData, error: recErr } = await supabase
             .from("attendance_records")
-            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id), work_location:work_locations(id, name)")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code), work_location:work_locations(id, name)")
             .is("deleted_at", null)
             .in("employee_id", ids)
             .order("date", { ascending: false })
@@ -94,32 +98,46 @@ export function useAttendanceData(isLeader: boolean, canViewAllBranches: boolean
         }
 
         const mapped = rawRecords.map((r) => {
-          if (!r.work_location_id && r.employees?.default_work_location_id) {
-            const locId = r.employees.default_work_location_id;
+          const emp = empMap.get(r.employee_id) || r.employees;
+          let rec = { ...r, employees: emp };
+          if (!rec.work_location_id && emp?.default_work_location_id) {
+            const locId = emp.default_work_location_id;
             const locObj = wlData?.find((wl) => wl.id === locId);
-            return { ...r, work_location_id: locId, work_location: locObj ? { id: locObj.id, name: locObj.name } : null };
+            rec = { ...rec, work_location_id: locId, work_location: locObj ? { id: locObj.id, name: locObj.name } : null };
           }
-          return r;
+          return rec;
         });
+
+        // Sort by date descending, then naturally by BU Biometric ID
+        mapped.sort((a, b) => {
+          const dateComp = (b.date || "").localeCompare(a.date || "");
+          if (dateComp !== 0) return dateComp;
+          const bioComp = compareBiometricIds(a.employees?.biometric_user_id, b.employees?.biometric_user_id);
+          if (bioComp !== 0) return bioComp;
+          return (a.employees?.first_name || "").localeCompare(b.employees?.first_name || "");
+        });
+
         setRecords(mapped);
       } else {
         if (empRecord) {
           setEmployees([empRecord]);
           const { data: recData } = await supabase
             .from("attendance_records")
-            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id), work_location:work_locations(id, name)")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code), work_location:work_locations(id, name)")
             .eq("employee_id", empRecord.id)
             .is("deleted_at", null)
             .order("date", { ascending: false })
             .limit(1000);
           const rawRecords = (recData as unknown as AttendanceRecord[]) || [];
           const mapped = rawRecords.map((r) => {
-            if (!r.work_location_id && r.employees?.default_work_location_id) {
-              const locId = r.employees.default_work_location_id;
+            const emp = empRecord || r.employees;
+            let rec = { ...r, employees: emp };
+            if (!rec.work_location_id && emp?.default_work_location_id) {
+              const locId = emp.default_work_location_id;
               const locObj = wlData?.find((wl) => wl.id === locId);
-              return { ...r, work_location_id: locId, work_location: locObj ? { id: locObj.id, name: locObj.name } : null };
+              rec = { ...rec, work_location_id: locId, work_location: locObj ? { id: locObj.id, name: locObj.name } : null };
             }
-            return r;
+            return rec;
           });
           setRecords(mapped);
         } else {

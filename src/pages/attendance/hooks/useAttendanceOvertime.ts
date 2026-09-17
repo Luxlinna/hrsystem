@@ -17,6 +17,8 @@ export function useAttendanceOvertime({
   canViewAll,
 }: UseAttendanceOvertimeProps) {
   const [showOvertimeForm, setShowOvertimeForm] = useState(false);
+  const [formMode, setFormMode] = useState<"direct" | "request" | "request_for">("direct");
+  const [showOvertimeSettings, setShowOvertimeSettings] = useState(false);
   const [activeMainTab, setActiveMainTab] = useState<"attendance" | "overtime">("attendance");
   const [overtimeRecords, setOvertimeRecords] = useState<OvertimeRecord[]>([]);
   const [otLoading, setOtLoading] = useState(false);
@@ -85,9 +87,30 @@ export function useAttendanceOvertime({
     exportOvertimeCSV(overtimeRecords);
   }, [overtimeRecords]);
 
+  const handleCreateNew = useCallback(() => {
+    setFormMode("direct");
+    setShowOvertimeForm(true);
+  }, []);
+
+  const handleCreateRequest = useCallback(() => {
+    setFormMode("request");
+    setShowOvertimeForm(true);
+  }, []);
+
+  const handleCreateRequestFor = useCallback(() => {
+    setFormMode("request_for");
+    setShowOvertimeForm(true);
+  }, []);
+
+  const handleOpenSettings = useCallback(() => {
+    setShowOvertimeSettings(true);
+  }, []);
+
   return {
-    showOvertimeForm, setShowOvertimeForm, activeMainTab, setActiveMainTab,
-    overtimeRecords, otLoading, fetchOvertime,
+    showOvertimeForm, setShowOvertimeForm, formMode, setFormMode,
+    showOvertimeSettings, setShowOvertimeSettings,
+    activeMainTab, setActiveMainTab, overtimeRecords, otLoading, fetchOvertime,
     handleApprove, handleReject, handleDelete, handleExport,
+    handleCreateNew, handleCreateRequest, handleCreateRequestFor, handleOpenSettings,
   };
 }

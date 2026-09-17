@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { AttendanceRecord } from "../types";
 import { STATUS_CONFIG, formatTime, calcHours, initials } from "../constants";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface AttendanceCardsViewProps {
   records: AttendanceRecord[];
@@ -47,10 +48,25 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
                     )}
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-gray-900 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-sky-400 transition-colors text-sm">
-                      {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
-                    </h4>
-                    <p className="text-[11px] text-gray-400 dark:text-slate-400 font-medium">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h4 className="font-extrabold text-gray-900 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-sky-400 transition-colors text-sm">
+                        {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+                      </h4>
+                      {emp?.biometric_user_id ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
+                          title={`BU Biometric ID: ${emp.biometric_user_id}`}
+                        >
+                          <i className="ri-fingerprint-line text-[10px]" />
+                          {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                        </span>
+                      ) : emp?.employee_code ? (
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300 shrink-0">
+                          {emp.employee_code}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-[11px] text-gray-400 dark:text-slate-400 font-medium mt-0.5">
                       {emp?.role} · {emp?.department}
                     </p>
                   </div>

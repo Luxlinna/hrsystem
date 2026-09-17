@@ -3,6 +3,7 @@ import { toYMD } from "@/lib/date";
 import { toast } from "@/components/Toast";
 import type { AttendanceRecord, AttendanceTabKey, DatePreset, Employee, ViewMode } from "../types";
 import { calcHours } from "../constants";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 export function useAttendanceFilters(records: AttendanceRecord[], employees: Employee[], todayYMD: string) {
   const [activeTab, setActiveTab] = useState<AttendanceTabKey>("records");
@@ -91,13 +92,30 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
       if (dateRangeBounds && (r.date < dateRangeBounds.start || r.date > dateRangeBounds.end)) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.toLowerCase();
-        const empRole = (r.employees?.role || "").toLowerCase();
-        const dept = (r.employees?.department || "").toLowerCase();
+        const emp = r.employees;
+        const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.toLowerCase();
+        const empRole = (emp?.role || "").toLowerCase();
+        const dept = (emp?.department || "").toLowerCase();
         const notes = (r.notes || "").toLowerCase();
         const dateStr = r.date.toLowerCase();
         const site = (r.work_location?.name || "").toLowerCase();
-        if (!empName.includes(q) && !empRole.includes(q) && !dept.includes(q) && !notes.includes(q) && !dateStr.includes(q) && !site.includes(q)) return false;
+        const bioId = (emp?.biometric_user_id || "").toLowerCase();
+        const fullBuId = formatBiometricId(emp?.biometric_user_id, emp?.branches?.name).toLowerCase();
+        const code = (emp?.employee_code || "").toLowerCase();
+
+        if (
+          !empName.includes(q) &&
+          !empRole.includes(q) &&
+          !dept.includes(q) &&
+          !notes.includes(q) &&
+          !dateStr.includes(q) &&
+          !site.includes(q) &&
+          !bioId.includes(q) &&
+          !fullBuId.includes(q) &&
+          !code.includes(q)
+        ) {
+          return false;
+        }
       }
       return true;
     });

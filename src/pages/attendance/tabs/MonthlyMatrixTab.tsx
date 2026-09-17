@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { AttendanceRecord, EmployeeSummaryItem, MatrixDay } from "../types";
 import { STATUS_CONFIG, formatTime, calcHoursNum } from "../constants";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface MonthlyMatrixTabProps {
   matrixMonth: string;
@@ -81,10 +82,21 @@ export const MonthlyMatrixTab = memo(function MonthlyMatrixTab({
               return (
                 <tr key={emp.id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="px-4 py-2.5 sticky left-0 bg-white z-10 shadow-xs whitespace-nowrap">
-                    <p className="font-bold text-gray-900 text-xs">
-                      {emp.first_name} {emp.last_name}
-                    </p>
-                    <p className="text-[10px] text-gray-400">{emp.department}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-bold text-gray-900 text-xs">
+                        {emp.first_name} {emp.last_name}
+                      </p>
+                      {emp.biometric_user_id && (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
+                          title={`BU Biometric ID: ${emp.biometric_user_id}`}
+                        >
+                          <i className="ri-fingerprint-line text-[10px]" />
+                          {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{emp.department}</p>
                   </td>
 
                   {matrixDays.map((d) => {

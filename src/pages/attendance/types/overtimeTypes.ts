@@ -37,6 +37,11 @@ export interface NewOvertimeForm {
   remark: string;
   attachment_url?: string;
   attachment_name?: string;
+  // Approval fields (used in direct entry mode)
+  approval_status?: OvertimeStatus;
+  approver_employee_id?: string | null;
+  rejection_reason?: string | null;
+  approval_date?: string | null;
 }
 
 export const OVERTIME_TYPES = [

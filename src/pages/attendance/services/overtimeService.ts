@@ -83,7 +83,8 @@ export async function createOvertimeRecord(params: {
       form.break_minutes
     );
 
-    const { error } = await supabase.from("overtime_records").insert({
+    const status = form.approval_status || "pending";
+    const insertData: Record<string, any> = {
       employee_id: form.employee_id,
       branch_id: branchId || null,
       overtime_type: form.overtime_type,
@@ -97,8 +98,20 @@ export async function createOvertimeRecord(params: {
       remark: form.remark.trim() || null,
       attachment_url: attachmentUrl,
       attachment_name: attachmentName,
-      status: "pending",
-    });
+      status,
+    };
+
+    if (status === "approved") {
+      insertData.approved_by = form.approver_employee_id || null;
+      insertData.approved_at = form.approval_date
+        ? new Date(form.approval_date).toISOString()
+        : new Date().toISOString();
+      insertData.rejection_reason = null;
+    } else if (status === "rejected") {
+      insertData.rejection_reason = form.rejection_reason || null;
+    }
+
+    const { error } = await supabase.from("overtime_records").insert(insertData);
 
     if (error) throw error;
 

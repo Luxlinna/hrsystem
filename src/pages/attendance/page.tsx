@@ -80,12 +80,14 @@ export default function AttendancePage() {
   }
 
   if (overtime.showOvertimeForm) {
+    const isSelf = overtime.formMode === "request";
     return (
       <CreateOvertimeForm
         onBack={() => overtime.setShowOvertimeForm(false)}
         employees={data.employees}
-        initialEmployeeId={canViewAll ? undefined : data.myEmployee?.id}
-        isEmployeeFixed={!canViewAll && !!data.myEmployee}
+        initialEmployeeId={isSelf ? data.myEmployee?.id : canViewAll ? undefined : data.myEmployee?.id}
+        isEmployeeFixed={isSelf || (!canViewAll && !!data.myEmployee)}
+        formMode={overtime.formMode}
         onSaved={overtime.fetchOvertime}
         activeBranchId={userBranchId || null}
       />
@@ -102,7 +104,10 @@ export default function AttendancePage() {
         hasEmployee={!!data.myEmployee}
         onExportCSV={filters.handleExportCSV}
         onOpenLogModal={() => handleOpenTimeLog()}
-        onOpenOvertime={() => overtime.setShowOvertimeForm(true)}
+        onCreateNewOvertime={overtime.handleCreateNew}
+        onCreateOvertimeRequest={overtime.handleCreateRequest}
+        onCreateOvertimeRequestFor={overtime.handleCreateRequestFor}
+        onOpenOvertimeSettings={overtime.handleOpenSettings}
         activeMainTab={overtime.activeMainTab}
         setActiveMainTab={overtime.setActiveMainTab}
         records={filters.filteredRecords.length > 0 ? filters.filteredRecords : data.records}
@@ -114,7 +119,11 @@ export default function AttendancePage() {
         <OvertimeTab
           records={overtime.overtimeRecords}
           canManage={canManage}
-          onOpenCreate={() => overtime.setShowOvertimeForm(true)}
+          onOpenCreate={overtime.handleCreateNew}
+          onCreateNew={overtime.handleCreateNew}
+          onCreateRequest={overtime.handleCreateRequest}
+          onCreateRequestFor={overtime.handleCreateRequestFor}
+          onOpenSettings={overtime.handleOpenSettings}
           onExport={overtime.handleExport}
           onApprove={overtime.handleApprove}
           onReject={overtime.handleReject}
@@ -212,6 +221,8 @@ export default function AttendancePage() {
         onSaveNewRecord={handleSaveNewRecord}
         onUpdateRecord={handleUpdateRecord}
         onDeleteRecord={mutations.handleDeleteRecord}
+        showOvertimeSettings={overtime.showOvertimeSettings}
+        onCloseOvertimeSettings={() => overtime.setShowOvertimeSettings(false)}
       />
     </div>
   );
