@@ -21,18 +21,21 @@ export function useLeaveData() {
   const { role, isAdmin, loading: permsLoading } = usePermissions();
   const { isSuperAdmin, isBranchAdmin, effectiveBranchId, userBranchId, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
 
-  const canViewAll = (isAdmin || (!isBranchAdmin && !!role?.leave_view_all_employees)) && !isPartnerBranchBlocked;
-  const canViewOwnBranch = !canViewAll && (isBranchAdmin || !!role?.leave_view_own_branch) && !isPartnerBranchBlocked;
-  const canManage = canViewAll || canViewOwnBranch;
-  const canApproveLeave = (isAdmin || isBranchAdmin || !!role?.leave_approve) && !isPartnerBranchBlocked;
-
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [calendarRequests, setCalendarRequests] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
   const [myApproverName, setMyApproverName] = useState<string>("");
+  const [hrApprovers, setHrApprovers] = useState<Employee[]>([]);
   const [leaveTypePolicies, setLeaveTypePolicies] = useState<LeaveTypePolicy[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const canViewAll = (isAdmin || (!isBranchAdmin && !!role?.leave_view_all_employees)) && !isPartnerBranchBlocked;
+  const canViewOwnBranch = !canViewAll && (isBranchAdmin || !!role?.leave_view_own_branch) && !isPartnerBranchBlocked;
+  const canManage = canViewAll || canViewOwnBranch;
+  const hasSubordinates = employees.some((e) => e.reports_to === myEmployee?.id && e.id !== myEmployee?.id);
+  const isLineManager = hasSubordinates || (myEmployee?.role?.toLowerCase().includes("manager") ?? false);
+  const canApproveLeave = (isAdmin || isBranchAdmin || !!role?.leave_approve || isLineManager) && !isPartnerBranchBlocked;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -44,6 +47,15 @@ export function useLeaveData() {
         setLoading(false);
         return;
       }
+
+      // Fetch HR Approvers for the approval chain
+      const { data: hrStaff } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, role, department, avatar_url, email, branch_id")
+        .or("department.ilike.%hr%,role.ilike.%hr%,role.ilike.%admin%")
+        .is("deleted_at", null)
+        .order("first_name");
+      setHrApprovers(hrStaff || []);
 
       const meQuery = applyUserEmployeeFilter(
         supabase
@@ -71,7 +83,7 @@ export function useLeaveData() {
       if (canViewAll || canViewOwnBranch) {
         const { data: team } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id")
+          .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to")
           .eq("branch_id", targetBranch)
           .is("deleted_at", null)
           .order("first_name");
@@ -103,11 +115,21 @@ export function useLeaveData() {
         return;
       }
 
-      setEmployees([me]);
+      // If user is a line manager, fetch direct subordinates who report to them
+      const { data: directReports } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, role, department, annual_leave_days, avatar_url, email, branch_id, reports_to")
+        .eq("reports_to", me.id)
+        .is("deleted_at", null);
+
+      const combinedTeam = [me, ...(directReports || [])];
+      setEmployees(combinedTeam);
+
+      const targetIds = combinedTeam.map((e) => e.id);
       const { data: lr } = await supabase
         .from("leave_requests")
         .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email, branch_id)")
-        .eq("employee_id", me.id)
+        .in("employee_id", targetIds)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       const allReqs = (lr || []).map((x: any) => normalizeLeaveRequest({
@@ -169,6 +191,7 @@ export function useLeaveData() {
     employees,
     myEmployee,
     myApproverName,
+    hrApprovers,
     leaveTypePolicies,
     loading,
     loadData,

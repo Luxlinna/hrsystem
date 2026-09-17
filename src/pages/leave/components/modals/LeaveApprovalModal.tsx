@@ -27,6 +27,7 @@ export const LeaveApprovalModal = memo(function LeaveApprovalModal({
   if (!isOpen || !selectedRequest) return null;
 
   const isApprove = approvalAction === "approved";
+  const hasManagerEndorsed = (selectedRequest.reason || "").includes("[Stage: Manager Endorsed");
   const cfg = LEAVE_TYPE_CONFIG[selectedRequest.leave_type] || LEAVE_TYPE_CONFIG.annual;
 
   return (
@@ -42,9 +43,22 @@ export const LeaveApprovalModal = memo(function LeaveApprovalModal({
             >
               <i className={isApprove ? "ri-checkbox-circle-line" : "ri-close-circle-line"} />
             </div>
-            <h3 className="text-base font-extrabold text-gray-900">
-              {isApprove ? "Approve Leave Request" : "Reject Leave Request"}
-            </h3>
+            <div>
+              <h3 className="text-base font-extrabold text-gray-900">
+                {isApprove
+                  ? hasManagerEndorsed
+                    ? "Step 2: HR Final Approval"
+                    : "Step 1: Manager Endorsement"
+                  : "Reject Leave Request"}
+              </h3>
+              <p className="text-[11px] text-gray-500 font-medium">
+                {isApprove
+                  ? hasManagerEndorsed
+                    ? "Manager endorsed • Authorize final official leave"
+                    : "Endorse request & forward to HR Manager"
+                  : "Decline and terminate this leave request"}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -111,7 +125,9 @@ export const LeaveApprovalModal = memo(function LeaveApprovalModal({
             {processingApproval
               ? "Processing..."
               : isApprove
-              ? "Confirm Approval"
+              ? hasManagerEndorsed
+                ? "Grant Final HR Approval"
+                : "Endorse & Forward to HR"
               : "Confirm Rejection"}
           </button>
         </div>

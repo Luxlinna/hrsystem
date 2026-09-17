@@ -34,55 +34,108 @@ export function useLeaveApprovalDecision({
     if (!selectedRequest) return;
     setProcessingApproval(true);
     try {
+      const isSuperAdmin =
+        actorRole?.toLowerCase().includes("super admin") ||
+        actorRole?.toLowerCase().includes("superadmin");
+      const isHrManager =
+        actorRole?.toLowerCase().includes("hr manager") ||
+        actorRole?.toLowerCase().includes("hr admin") ||
+        actorRole?.toLowerCase().includes("hr officer") ||
+        actorRole?.toLowerCase().includes("director");
+      const isFinalApprover = isSuperAdmin || isHrManager;
+
       const isApprove = approvalAction === "approved";
+      const hasManagerEndorsed = (selectedRequest.reason || "").includes("[Stage: Manager Endorsed");
+
+      let finalStatus: "pending" | "approved" | "rejected" = approvalAction;
+      let stageTag = "";
+      let toastMessage = "";
+      let notifyTitle = "";
+      let notifyMessage = "";
+
+      const empName = selectedRequest.employees
+        ? `${selectedRequest.employees.first_name} ${selectedRequest.employees.last_name}`
+        : "Employee";
+
+      if (!isApprove) {
+        // Rejection at any step
+        finalStatus = "rejected";
+        stageTag = `\n\n[Stage: Rejected by ${actorName} (${actorRole})]${
+          approvalNote ? `\n[Reject Reason: ${approvalNote}]` : ""
+        }`;
+        toastMessage = `Leave request rejected by ${actorName}`;
+        notifyTitle = "Leave Request Rejected";
+        notifyMessage = `Your ${selectedRequest.leave_type} leave was rejected by ${actorName}.`;
+      } else if (!isFinalApprover && !hasManagerEndorsed) {
+        // Step 1: Manager Endorsement (Leaves status as 'pending' for Step 2 HR review)
+        finalStatus = "pending";
+        stageTag = `\n\n[Stage: Manager Endorsed by ${actorName} (${actorRole})]${
+          approvalNote ? `\n[Manager Note: ${approvalNote}]` : ""
+        }`;
+        toastMessage = "Step 1: Endorsed by Manager. Forwarded to HR Manager for final approval.";
+        notifyTitle = "Leave Endorsed by Manager";
+        notifyMessage = `Manager ${actorName} endorsed ${empName}'s leave request. Ready for HR Manager final approval.`;
+      } else {
+        // Step 2: Final HR Approval (or Super Admin Direct Approval)
+        finalStatus = "approved";
+        stageTag = `\n\n[Stage: Final HR Approved by ${actorName} (${actorRole})]${
+          approvalNote ? `\n[HR Note: ${approvalNote}]` : ""
+        }`;
+        toastMessage = "Step 2: Granted final approval by HR Manager.";
+        notifyTitle = "Leave Request Fully Approved";
+        notifyMessage = `Your ${selectedRequest.leave_type} leave was granted final approval by ${actorName}.`;
+      }
+
       const { error } = await supabase
         .from("leave_requests")
         .update({
-          status: approvalAction,
-          reason: approvalNote
-            ? `${selectedRequest.reason || ""}\n\n[Approver Note: ${approvalNote}]`.trim()
-            : selectedRequest.reason,
+          status: finalStatus,
+          reason: `${selectedRequest.reason || ""}${stageTag}`.trim(),
         })
         .eq("id", selectedRequest.id);
 
       if (error) throw error;
 
       setToast({
-        type: "success",
-        message: `Leave request ${isApprove ? "approved" : "rejected"} successfully`,
+        type: finalStatus === "rejected" ? "error" : "success",
+        message: toastMessage,
       });
       setShowApprovalModal(false);
       setApprovalNote("");
 
-      const empName = selectedRequest.employees
-        ? `${selectedRequest.employees.first_name} ${selectedRequest.employees.last_name}`
-        : "Employee";
-
       logActivity({
         module: "leave",
-        action: isApprove ? "approved" : "rejected",
+        action: finalStatus,
         entityType: "leave_request",
         entityId: selectedRequest.id,
         actorName,
         actorRole,
-        description: `${isApprove ? "Approved" : "Rejected"} ${selectedRequest.leave_type} leave request for ${empName} (${selectedRequest.days} days)`,
+        description: `${toastMessage} for ${empName} (${selectedRequest.days} days)`,
       });
 
       notify({
         source: "leave",
-        type: isApprove ? "success" : "warning",
-        title: `Leave Request ${isApprove ? "Approved" : "Rejected"}`,
-        message: `Your ${selectedRequest.leave_type} leave (${selectedRequest.start_date} to ${selectedRequest.end_date}) was ${approvalAction} by ${actorName}`,
+        type: finalStatus === "approved" ? "success" : finalStatus === "rejected" ? "error" : "info",
+        title: notifyTitle,
+        message: notifyMessage,
         entityId: selectedRequest.id,
         skipTelegram: true,
       });
 
       notifyTelegramEvent(
-        `<b>${isApprove ? "✅ Leave Request Approved" : "❌ Leave Request Rejected"}</b>\n\n` +
+        `<b>${
+          finalStatus === "approved"
+            ? "✅ Leave Request Approved (Final HR)"
+            : finalStatus === "rejected"
+            ? "❌ Leave Request Rejected"
+            : "📋 Step 1: Leave Endorsed by Manager"
+        }</b>\n\n` +
           `<b>Employee:</b> ${escapeTelegramHtml(empName)}\n` +
-          `<b>Type:</b> ${escapeTelegramHtml(LEAVE_TYPE_CONFIG[selectedRequest.leave_type]?.label || selectedRequest.leave_type)}\n` +
+          `<b>Type:</b> ${escapeTelegramHtml(
+            LEAVE_TYPE_CONFIG[selectedRequest.leave_type]?.label || selectedRequest.leave_type
+          )}\n` +
           `<b>Duration:</b> ${selectedRequest.days} day(s) (${selectedRequest.start_date} → ${selectedRequest.end_date})\n` +
-          `<b>Decided By:</b> ${escapeTelegramHtml(actorName)}\n` +
+          `<b>Reviewer:</b> ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)})\n` +
           (approvalNote ? `<b>Note:</b> ${escapeTelegramHtml(approvalNote)}\n` : ""),
         { text: "View Leave", url: hrNexusUrl(`/leave?highlight=${selectedRequest.id}`) }
       );

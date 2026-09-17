@@ -27,6 +27,17 @@ export function useLeaveBalances({
           (myEmployee?.id === employeeId ? myEmployee : null);
         return emp?.annual_leave_days ?? 18;
       }
+      if (type === "maternity") {
+        return 90;
+      }
+      if (type === "sick") {
+        const policy = leaveTypePolicies.find((p) => p.type === "sick");
+        return policy ? policy.default_days : 30;
+      }
+      if (type === "special") {
+        const policy = leaveTypePolicies.find((p) => p.type === "special");
+        return policy ? policy.default_days : 7;
+      }
       const policy = leaveTypePolicies.find((p) => p.type === type);
       return policy ? policy.default_days : null;
     },
@@ -74,6 +85,22 @@ export function useLeaveBalances({
     [getEntitlement, getUsedDays, getPendingDays]
   );
 
+  const getLeaveTypeStats = useCallback(
+    (employeeId: string, type: string) => {
+      const entitlement = getEntitlement(employeeId, type) ?? 0;
+      const used = getUsedDays(employeeId, type);
+      const pending = getPendingDays(employeeId, type);
+      const available = Math.max(0, entitlement - used - pending);
+      return {
+        balance: entitlement,
+        used,
+        available,
+        pending,
+      };
+    },
+    [getEntitlement, getUsedDays, getPendingDays]
+  );
+
   const stats: LeaveStats = useMemo(() => {
     const targetEmpId = myEmployee?.id || "";
     const myAnnualUsed = targetEmpId ? getUsedDays(targetEmpId, "annual") : 0;
@@ -108,6 +135,7 @@ export function useLeaveBalances({
     getUsedDays,
     getPendingDays,
     getRemaining,
+    getLeaveTypeStats,
     stats,
   };
 }

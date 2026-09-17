@@ -85,12 +85,24 @@ export const LeaveTableView = memo(function LeaveTableView({
                 </td>
 
                 <td className="px-5 py-3.5 whitespace-nowrap">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${statusCfg.bg}`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-                    {statusCfg.label}
-                  </span>
+                  {r.status === "pending" && r.reason?.includes("[Stage: Manager Endorsed") ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border bg-amber-50 text-amber-700 border-amber-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      Step 2: HR Pending
+                    </span>
+                  ) : r.status === "pending" ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border bg-sky-50 text-sky-700 border-sky-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+                      Step 1: Manager Review
+                    </span>
+                  ) : (
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${statusCfg.bg}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                      {statusCfg.label}
+                    </span>
+                  )}
                 </td>
 
                 <td className="px-5 py-3.5 whitespace-nowrap text-gray-400 font-medium text-[11px]">
@@ -106,9 +118,9 @@ export const LeaveTableView = memo(function LeaveTableView({
                       <>
                         <button
                           onClick={() => onOpenApprovalModal(r, "approved")}
-                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer shadow-2xs"
                         >
-                          Approve
+                          {r.reason?.includes("[Stage: Manager Endorsed") ? "HR Approve" : "Endorse"}
                         </button>
                         <button
                           onClick={() => onOpenApprovalModal(r, "rejected")}

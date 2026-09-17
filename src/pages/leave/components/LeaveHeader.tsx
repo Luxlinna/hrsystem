@@ -6,6 +6,8 @@ interface LeaveHeaderProps {
   onLeaveTodayCount: number;
   filteredRequests: LeaveRequest[];
   onRequestLeave: () => void;
+  canManage?: boolean;
+  onRequestLeaveFor?: () => void;
   onToast?: (toast: { type: "success" | "info" | "error"; message: string }) => void;
 }
 
@@ -13,6 +15,8 @@ export const LeaveHeader = memo(function LeaveHeader({
   onLeaveTodayCount,
   filteredRequests,
   onRequestLeave,
+  canManage = false,
+  onRequestLeaveFor,
   onToast,
 }: LeaveHeaderProps) {
   return (
@@ -36,6 +40,16 @@ export const LeaveHeader = memo(function LeaveHeader({
 
       <div className="flex items-center gap-2.5 flex-wrap">
         <LeaveExportMenu filteredRequests={filteredRequests} onToast={onToast} />
+
+        {canManage && onRequestLeaveFor && (
+          <button
+            onClick={onRequestLeaveFor}
+            className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-800 px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98"
+          >
+            <i className="ri-user-shared-line text-base text-[#253C7D]" />
+            Request Leave For
+          </button>
+        )}
 
         <button
           onClick={onRequestLeave}

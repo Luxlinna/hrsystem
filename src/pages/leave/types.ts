@@ -7,6 +7,10 @@ export interface LeaveRequest {
   days: number;
   status: string;
   reason: string | null;
+  remark?: string | null;
+  attachment_url?: string | null;
+  category_law?: string | null;
+  approved_by?: string | null;
   created_at: string;
   employees?: {
     first_name: string;
@@ -15,6 +19,9 @@ export interface LeaveRequest {
     department: string;
     avatar_url?: string | null;
     email?: string;
+    employee_code?: string | null;
+    biometric_user_id?: string | null;
+    branch_id?: string | null;
   } | null;
 }
 
@@ -29,6 +36,14 @@ export interface Employee {
   email?: string;
   branch_id?: string;
   reports_to?: string | null;
+  employee_id?: string | null;
+  employee_code?: string | null;
+  biometric_user_id?: string | null;
+  branches?: {
+    id: string;
+    name: string;
+    location?: string | null;
+  } | null;
 }
 
 export interface LeaveTypePolicy {
@@ -42,6 +57,17 @@ export interface LeaveFormData {
   start_date: string;
   end_date: string;
   reason: string;
+  remark: string;
+  category_law?: string;
+  attachment_url?: string | null;
+  attachment_file?: File | null;
+}
+
+export interface LeaveTypeBalanceStats {
+  balance: number;
+  used: number;
+  available: number;
+  pending: number;
 }
 
 export interface LeaveStats {

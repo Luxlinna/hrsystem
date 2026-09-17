@@ -104,6 +104,88 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
             </div>
           </div>
 
+          {/* 2-Step Approval Workflow Progress */}
+          {(() => {
+            const hasManagerEndorsed = (inspectRequest.reason || "").includes("[Stage: Manager Endorsed");
+            const isApproved = inspectRequest.status === "approved";
+            const isRejected = inspectRequest.status === "rejected";
+
+            return (
+              <div className="p-3.5 bg-slate-50/90 rounded-2xl border border-slate-200/80 text-xs space-y-2">
+                <span className="text-[10px] font-extrabold text-[#4A72B2] uppercase tracking-wider block">
+                  2-Step Approval Status
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Step 1 */}
+                  <div
+                    className={`p-2.5 rounded-xl border ${
+                      hasManagerEndorsed || isApproved
+                        ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
+                        : isRejected
+                        ? "bg-rose-50/80 border-rose-200 text-rose-900"
+                        : "bg-sky-50/80 border-sky-200 text-sky-900"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span
+                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                          hasManagerEndorsed || isApproved
+                            ? "bg-emerald-600 text-white"
+                            : "bg-sky-600 text-white"
+                        }`}
+                      >
+                        1
+                      </span>
+                      <span className="font-bold text-[11px]">Line Manager</span>
+                    </div>
+                    <p className="text-[10px] font-medium opacity-80">
+                      {hasManagerEndorsed || isApproved
+                        ? "✓ Endorsed"
+                        : isRejected
+                        ? "Rejected"
+                        : "Awaiting Review"}
+                    </p>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div
+                    className={`p-2.5 rounded-xl border ${
+                      isApproved
+                        ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
+                        : isRejected
+                        ? "bg-rose-50/80 border-rose-200 text-rose-900"
+                        : hasManagerEndorsed
+                        ? "bg-amber-50/80 border-amber-200 text-amber-900"
+                        : "bg-gray-50 border-gray-200 text-gray-400"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span
+                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                          isApproved
+                            ? "bg-emerald-600 text-white"
+                            : hasManagerEndorsed
+                            ? "bg-amber-500 text-white"
+                            : "bg-gray-300 text-gray-600"
+                        }`}
+                      >
+                        2
+                      </span>
+                      <span className="font-bold text-[11px]">HR Manager</span>
+                    </div>
+                    <p className="text-[10px] font-medium opacity-80">
+                      {isApproved
+                        ? "✓ Final Approved"
+                        : hasManagerEndorsed
+                        ? "Pending Final Sign-Off"
+                        : "Awaiting Step 1"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Reason */}
           {inspectRequest.reason && (
             <div>
@@ -113,6 +195,22 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
               <p className="text-xs text-gray-700 bg-gray-50 rounded-2xl p-3.5 border border-gray-100 leading-relaxed whitespace-pre-wrap">
                 {inspectRequest.reason}
               </p>
+              {(() => {
+                const match = inspectRequest.reason?.match(/\[Attachment:\s*(https?:\/\/[^\]\s]+)\]/i);
+                const url = inspectRequest.attachment_url || match?.[1];
+                if (!url) return null;
+                return (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#253C7D]/10 hover:bg-[#253C7D]/20 text-[#253C7D] rounded-xl text-xs font-bold transition-colors mt-2"
+                  >
+                    <i className="ri-attachment-line text-sm" />
+                    View Attached Proof / Certificate
+                  </a>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -128,7 +226,7 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
                 }}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
               >
-                Approve
+                {inspectRequest.reason?.includes("[Stage: Manager Endorsed") ? "HR Approve" : "Endorse"}
               </button>
               <button
                 onClick={() => {
