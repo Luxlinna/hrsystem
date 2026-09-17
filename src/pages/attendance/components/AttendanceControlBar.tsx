@@ -31,8 +31,6 @@ interface AttendanceControlBarProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   todayYMD: string;
-  activeTab?: AttendanceTabKey;
-  setActiveTab?: (tab: AttendanceTabKey) => void;
 }
 
 export const AttendanceControlBar = memo(function AttendanceControlBar({
@@ -62,8 +60,6 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   viewMode,
   setViewMode,
   todayYMD,
-  activeTab = "records",
-  setActiveTab,
 }: AttendanceControlBarProps) {
   const isFiltered =
     searchQuery ||
@@ -92,55 +88,15 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-3.5 shadow-2xs mb-6 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
-      {/* Records vs Monthly Matrix Switcher */}
+      {/* Records Header / Count */}
       <div className="flex items-center gap-2">
-        {setActiveTab ? (
-          <div className="inline-flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl border border-gray-200/80 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => setActiveTab("records")}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "records"
-                  ? "bg-[#253C7D] text-white shadow-xs"
-                  : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white"
-              }`}
-            >
-              <i className="ri-list-check text-xs" />
-              <span>Daily Logs</span>
-              <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                  activeTab === "records" ? "bg-white/20 text-white" : "bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200"
-                }`}
-              >
-                {filteredRecordsCount}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("matrix")}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "matrix"
-                  ? "bg-[#253C7D] text-white shadow-xs"
-                  : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white"
-              }`}
-              title="Monthly Timesheet Matrix with Public Holidays"
-            >
-              <i className="ri-grid-fill text-xs" />
-              <span>Monthly Matrix</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 font-extrabold">
-                🎉 Holidays
-              </span>
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#253C7D]/10 dark:bg-sky-950/50 text-[#253C7D] dark:text-sky-300 rounded-xl font-bold text-xs border border-transparent dark:border-sky-800/40">
-            <i className="ri-calendar-check-line text-sm" />
-            <span>Attendance Records</span>
-            <span className="bg-[#253C7D] dark:bg-sky-500 text-white dark:text-slate-950 text-[10px] px-1.5 py-0.5 rounded-full font-extrabold leading-none">
-              {filteredRecordsCount}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#253C7D]/10 dark:bg-sky-950/50 text-[#253C7D] dark:text-sky-300 rounded-xl font-bold text-xs border border-transparent dark:border-sky-800/40">
+          <i className="ri-calendar-check-line text-sm" />
+          <span>Attendance Records</span>
+          <span className="bg-[#253C7D] dark:bg-sky-500 text-white dark:text-slate-950 text-[10px] px-1.5 py-0.5 rounded-full font-extrabold leading-none">
+            {filteredRecordsCount}
+          </span>
+        </div>
       </div>
 
       {/* Filters: Search, Date Range, Work Site, Employee, Department, Status */}
