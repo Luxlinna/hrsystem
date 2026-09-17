@@ -7,6 +7,7 @@ import {
 } from "../services/candidateApprovalService";
 import { exportCandidateApprovalPdf } from "../exports/exportCandidateApprovalPdf";
 import { exportCandidateApprovalWord } from "../exports/exportCandidateApprovalWord";
+import { isExportAtHrDivision } from "@/services/formLogoService";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -276,13 +277,15 @@ export function useCandidateApprovalModal({
 
   const handleExportPdf = useCallback(() => {
     if (!data) return;
-    exportCandidateApprovalPdf(data);
+    const isHr = isExportAtHrDivision({ businessUnit: data.business_unit, department: data.department });
+    exportCandidateApprovalPdf(data, isHr);
   }, [data]);
 
   const handleExportWord = useCallback(async () => {
     if (!data) return;
     try {
-      await exportCandidateApprovalWord(data);
+      const isHr = isExportAtHrDivision({ businessUnit: data.business_unit, department: data.department });
+      await exportCandidateApprovalWord(data, isHr);
       toast("Success", "Word document exported successfully.", "success");
     } catch (err) {
       console.error("Failed to export Word document:", err);

@@ -180,6 +180,12 @@ export function getBuCompanyName(branchName?: string | null, fallback?: string):
 export function isCurrentActiveBranchHrDivision(): boolean {
   try {
     if (typeof window === "undefined") return false;
+
+    // Direct flag set by BranchContext / user role evaluation
+    if (localStorage.getItem("hrm_is_hr_division") === "true") {
+      return true;
+    }
+
     const branchName = (localStorage.getItem("hrm_selected_branch_name") || "").toLowerCase().trim();
     const branchId = (localStorage.getItem("hrm_selected_branch_id") || "").trim();
 
@@ -224,7 +230,7 @@ export function isExportAtHrDivision(params?: {
     return true;
   }
 
-  // 2. Active top-bar branch is HR Division
+  // 2. Active top-bar branch or active user role is HR Division
   if (isCurrentActiveBranchHrDivision()) {
     return true;
   }
@@ -239,10 +245,10 @@ export function isExportAtHrDivision(params?: {
 
 /**
  * Resolves the logo and branding dynamically according to the Business Unit:
- * - If export is at HR Division -> MUST work with UNI logo (NO OPS), even if employee or request is from OPS.
+ * - If export is at HR Division -> MUST strictly use the UNI logo (NO OPS), even if employee or request is from OPS.
  * - If export is at an operational BU (e.g. OPS) -> strictly uses the BU Logo (OPS Logo) and respective BU name.
  */
-export function resolveDocumentBranding(params: {
+export function resolveDocumentBranding(params?: {
   businessUnit?: string | null;
   department?: string | null;
   division?: string | null;
@@ -256,17 +262,8 @@ export function resolveDocumentBranding(params: {
 } {
   const atHrDivision = isExportAtHrDivision(params);
 
-  if (params.customLogo && params.customLogo.trim().length > 50) {
-    return {
-      logo: params.customLogo.trim(),
-      companyName: params.businessUnit || (atHrDivision ? getOfficialCompanyNameEnglish() : getBuCompanyName()),
-      companyKhmer: atHrDivision ? getOfficialCompanyNameKhmer() : "",
-      isHrDivision: atHrDivision,
-    };
-  }
-
+  // STRICT REQUIREMENT: Every export file from HR Division MUST strictly use the official UNI logo (no OPS, no BU override)
   if (atHrDivision) {
-    // When exporting at HR Division: MUST WORK WITH UNI LOGO, NO OPS, even if employee or request was from OPS
     return {
       logo: getOfficialFormLogo(), // Official UNI Logo
       companyName: getOfficialCompanyNameEnglish(), // "Unique Noble Investment Co. Ltd."
@@ -275,10 +272,19 @@ export function resolveDocumentBranding(params: {
     };
   }
 
+  if (params?.customLogo && params.customLogo.trim().length > 50) {
+    return {
+      logo: params.customLogo.trim(),
+      companyName: params?.businessUnit || getBuCompanyName(params?.businessUnit),
+      companyKhmer: "",
+      isHrDivision: false,
+    };
+  }
+
   // Other Business Units strictly use their respective BU logo (OPS logo for operations)
   return {
-    logo: getOpsBuLogo(params.businessUnit),
-    companyName: params.businessUnit || getBuCompanyName(params.businessUnit), // "OPS Solutions Co., Ltd."
+    logo: getOpsBuLogo(params?.businessUnit),
+    companyName: params?.businessUnit || getBuCompanyName(params?.businessUnit), // "OPS Solutions Co., Ltd."
     companyKhmer: "",
     isHrDivision: false,
   };

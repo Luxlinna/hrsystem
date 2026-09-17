@@ -1,6 +1,11 @@
 import type { HiringRequest } from "../types";
+import { resolveDocumentBranding } from "@/services/formLogoService";
 
 export function exportRequestsPDF(requests: HiringRequest[], title = "Employee Requisitions & Hiring Requests"): boolean {
+  const branding = resolveDocumentBranding();
+  const logo = branding.logo;
+  const compName = branding.isHrDivision ? "UNI Holding — HR Division" : "HRM_OPS";
+
   const total = requests.length;
   const approved = requests.filter((r) => r.status === "approved").length;
   const pending = requests.filter((r) => r.status.includes("pending")).length;
@@ -68,9 +73,12 @@ export function exportRequestsPDF(requests: HiringRequest[], title = "Employee R
           <td>
             <div class="page-container">
               <div class="header-box">
-                <div>
-                  <h1>HRM_OPS — ${title}</h1>
-                  <div class="meta">Talent Acquisition &middot; Hiring Requisitions Log</div>
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <img src="${logo}" alt="Logo" style="max-height: 46px; max-width: 140px; object-fit: contain;" />
+                  <div>
+                    <h1>${compName} — ${title}</h1>
+                    <div class="meta">Talent Acquisition &middot; Hiring Requisitions Log</div>
+                  </div>
                 </div>
                 <div class="meta" style="text-align:right">
                   <div><strong>Generated:</strong> ${new Date().toLocaleString("en-US")}</div>

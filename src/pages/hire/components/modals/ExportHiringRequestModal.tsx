@@ -1,26 +1,26 @@
-import { memo, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import type { HiringRequest } from "../../types";
-import { exportHiringRequestPdf, type RequisitionPdfOptions } from "../../exports/exportHiringRequestPdf";
+import { exportHiringRequestPdf, type RequisitionPdfOptions, type ExportPdfMode } from "../../exports/exportHiringRequestPdf";
 import { toast } from "@/components/Toast";
+import { resolveDocumentBranding, isExportAtHrDivision, getOfficialFormLogo, getOpsBuLogo } from "@/services/formLogoService";
 
-interface Props {
+interface ExportHiringRequestModalProps {
   isOpen: boolean;
-  request: HiringRequest | null;
-  mode?: "full_requisition" | "job_description";
   onClose: () => void;
+  request: HiringRequest | null;
+  defaultMode?: ExportPdfMode;
 }
 
 export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
   isOpen,
-  request,
-  mode = "full_requisition",
   onClose,
-}: Props) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Logo starts with localStorage cache if available for this BU
+  request,
+  defaultMode = "full_requisition",
+}: ExportHiringRequestModalProps) {
+  const [mode, setMode] = useState<ExportPdfMode>(defaultMode);
   const [buLogo, setBuLogo] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [businessUnit, setBusinessUnit] = useState("");
   const [division, setDivision] = useState("");
@@ -35,18 +35,29 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
   useEffect(() => {
     if (request) {
       const rawBu = request.branches?.name || request.business_unit || "OPS Solutions Co ., Ltd";
-      const buKey = rawBu.toLowerCase().replace(/[^a-z0-9]/g, "_");
-      const cachedLogo = localStorage.getItem(`hrm_bu_logo_${buKey}`);
+      const isHr = isExportAtHrDivision({
+        businessUnit: rawBu,
+        department: request.department,
+        division: request.division,
+      });
 
-      if (cachedLogo) {
-        setBuLogo(cachedLogo);
-        setFileName("Cached BU Logo");
+      if (isHr) {
+        setBuLogo(getOfficialFormLogo());
+        setFileName("UNI Official Logo (HR Division)");
+        setBusinessUnit(request.company === "UNI" ? "Unique Noble Investment Co. Ltd." : "HR Division");
       } else {
-        setBuLogo("");
-        setFileName("");
-      }
+        const buKey = rawBu.toLowerCase().replace(/[^a-z0-9]/g, "_");
+        const cachedLogo = localStorage.getItem(`hrm_bu_logo_${buKey}`);
 
-      setBusinessUnit(rawBu);
+        if (cachedLogo) {
+          setBuLogo(cachedLogo);
+          setFileName("Cached BU Logo");
+        } else {
+          setBuLogo(getOpsBuLogo(rawBu));
+          setFileName("Default BU Logo");
+        }
+        setBusinessUnit(rawBu);
+      }
       setDivision(request.department || "IT and Development");
       setJobTitle(request.title || "Mobile Developer");
       setDirectReportsTo(request.jd_reporting_line || request.hiring_manager_name || "IT Project Manger");
@@ -107,15 +118,22 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
   };
 
   const handleExport = () => {
-    if (!buLogo) {
+    const isHr = isExportAtHrDivision({
+      businessUnit,
+      department: request.department,
+      division,
+    });
+    const finalLogo = isHr ? getOfficialFormLogo() : (buLogo || getOpsBuLogo(businessUnit));
+
+    if (!finalLogo && !isHr) {
       toast("Logo Required", "You must upload a Business Unit logo before exporting.", "warning");
       return;
     }
 
     const opts: RequisitionPdfOptions = {
       mode,
-      buLogo,
-      businessUnit,
+      buLogo: finalLogo,
+      businessUnit: isHr ? (request.company === "UNI" ? "Unique Noble Investment Co. Ltd." : businessUnit) : businessUnit,
       division,
       jobTitle,
       directReportsTo,
@@ -126,6 +144,7 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
       workingTime,
       headOfDeptName: request.hiring_manager_name || request.branch_approved_by || undefined,
       hrAdminName: request.hr_admin_approved_by || request.hr_reviewed_by || undefined,
+      isHrDivisionContext: isHr,
     };
 
     exportHiringRequestPdf(request, opts);

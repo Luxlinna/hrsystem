@@ -17,6 +17,7 @@ interface UseHiringRequestsProps {
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
   isBranchAdmin?: boolean;
+  canBranchApprove?: boolean;
   canChairmanApprove?: boolean;
   canRequest?: boolean;
   loadData: () => Promise<void>;
@@ -33,7 +34,8 @@ export function useHiringRequests({
   targetBranch,
   isAdmin = false,
   isSuperAdmin = false,
-  isBranchAdmin: _isBranchAdmin = false,
+  isBranchAdmin = false,
+  canBranchApprove = false,
   canChairmanApprove = false,
   canRequest = true,
   loadData,
@@ -86,7 +88,7 @@ export function useHiringRequests({
 
       setSubmittingRequest(true);
       try {
-        const { reqCode, branchName } = await submitHiringRequest({
+        const { reqCode, branchName, isBuCeoAdmin } = await submitHiringRequest({
           requestForm,
           actorName,
           actorRole,
@@ -95,9 +97,23 @@ export function useHiringRequests({
           userBranchId,
           userBranchName,
           branches,
+          isBranchAdmin,
+          canBranchApprove,
         });
 
-        toast("Request Submitted", `Requisition ${reqCode}submitted for ${branchName} leadership review.`, "success");
+        if (isBuCeoAdmin) {
+          toast(
+            "Request Submitted",
+            `Requisition ${reqCode}endorsed by BU CEO and forwarded to HR Division for HR Manager review.`,
+            "success"
+          );
+        } else {
+          toast(
+            "Request Submitted",
+            `Requisition ${reqCode}submitted for ${branchName} leadership review.`,
+            "success"
+          );
+        }
         setShowRequestModal(false);
         await loadData();
       } catch (err: any) {
@@ -106,7 +122,7 @@ export function useHiringRequests({
         setSubmittingRequest(false);
       }
     },
-    [canRequest, requestForm, myEmployeeId, actorName, actorRole, actorEmail, loadData, branches, userBranchId, userBranchName]
+    [canRequest, requestForm, myEmployeeId, actorName, actorRole, actorEmail, loadData, branches, userBranchId, userBranchName, isBranchAdmin, canBranchApprove]
   );
 
   const handleDeleteRequest = useCallback(

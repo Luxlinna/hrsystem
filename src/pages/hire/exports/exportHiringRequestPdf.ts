@@ -1,12 +1,12 @@
 import type { HiringRequest } from "../types";
-import { OPS_LOGO_BASE64 } from "./opsLogoBase64";
 import { formatDateTime } from "../hireUtils";
+import { resolveDocumentBranding } from "@/services/formLogoService";
 
 export type ExportPdfMode = "full_requisition" | "job_description";
 
 export interface RequisitionPdfOptions {
   mode?: ExportPdfMode;
-  buLogo: string;
+  buLogo?: string;
   businessUnit?: string;
   division?: string;
   jobTitle?: string;
@@ -18,6 +18,7 @@ export interface RequisitionPdfOptions {
   workingTime?: string;
   headOfDeptName?: string;
   hrAdminName?: string;
+  isHrDivisionContext?: boolean;
 }
 
 function escapeHtml(str: string): string {
@@ -122,12 +123,18 @@ function formatSectionText(text?: string | null): string {
 export function exportHiringRequestPdf(r: HiringRequest, opts?: RequisitionPdfOptions): boolean {
   const mode: ExportPdfMode = opts?.mode || "full_requisition";
 
+  const branding = resolveDocumentBranding({
+    businessUnit: opts?.businessUnit || r.branches?.name || r.business_unit,
+    department: r.department,
+    division: r.division || opts?.division,
+    customLogo: opts?.buLogo,
+    isHrDivisionContext: opts?.isHrDivisionContext,
+  });
+
   const rawBu = r.branches?.name || r.business_unit || "OPS Solutions Co ., Ltd";
   const isOps = rawBu.toLowerCase().includes("ops");
-  const buName = opts?.businessUnit || (isOps ? "OPS Solutions Co ., Ltd" : rawBu);
-
-  // BU Logo
-  const buLogo = opts?.buLogo || (isOps ? OPS_LOGO_BASE64 : "/logo-full.png");
+  const buName = opts?.businessUnit || (branding.isHrDivision ? branding.companyName : (isOps ? "OPS Solutions Co ., Ltd" : rawBu));
+  const buLogo = branding.logo;
 
   const division = opts?.division || r.department || (r.division ? `${r.department} / ${r.division}` : "IT and Development");
   const jobTitle = opts?.jobTitle || r.title || "Mobile Developer";
