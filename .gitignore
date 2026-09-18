@@ -7,6 +7,8 @@ out/
 .parcel-cache/
 *.local
 
+
+
 # Environment variables & secrets
 .env
 .env.*
@@ -26,6 +28,8 @@ out/
 *firebase-adminsdk*.json
 credentials.json
 client_secret*.json
+Guidance.txt
+document.txt
 
 # Supabase, functions & backups
 supabase/.temp*
