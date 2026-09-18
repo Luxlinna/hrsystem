@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 
 export const fmtDateTime = (iso?: string | null): string =>
@@ -25,3 +26,15 @@ export const getUserInitials = (displayName?: string, email?: string): string =>
     .slice(0, 2)
     .toUpperCase();
 };
+
+export async function syncEmployeeAndCandidate(
+  employeeId: string,
+  candidateId: string | null | undefined,
+  payload: Record<string, any>
+) {
+  const { error } = await supabase.from("employees").update(payload).eq("id", employeeId);
+  if (error) throw error;
+  if (candidateId) {
+    await supabase.from("candidates").update(payload).eq("id", candidateId);
+  }
+}
