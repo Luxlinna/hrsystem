@@ -5,160 +5,18 @@ import {
   TextRun,
   Table,
   TableRow,
-  TableCell,
   WidthType,
   AlignmentType,
-  BorderStyle,
-  VerticalAlign,
-  ImageRun,
 } from "docx";
 import type { EmploymentContract } from "../types/contractTypes";
-import {
-  getOfficialFormLogo,
-  getOfficialCompanyNameKhmer,
-  getOfficialCompanyNameEnglish,
-} from "@/services/formLogoService";
+import { getOfficialCompanyNameEnglish } from "@/services/formLogoService";
 import { formatContractDateTime } from "../constants/contractWorkflowConfig";
-
-function clean(text?: string | null): string {
-  return text?.trim() || "—";
-}
-
-function getLogoBuffer(logoBase64: string): Uint8Array | null {
-  try {
-    const base64Clean = logoBase64.replace(/^data:image\/\w+;base64,/, "");
-    const binary = atob(base64Clean);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return bytes;
-  } catch {
-    return null;
-  }
-}
-
-function cell(text: string, isLabel = false, widthDxa = 5000): TableCell {
-  return new TableCell({
-    width: { size: widthDxa, type: WidthType.DXA },
-    shading: isLabel ? { fill: "F8FAFC" } : undefined,
-    margins: { top: 120, bottom: 120, left: 140, right: 140 },
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 1, color: "CBD5E1" },
-      bottom: { style: BorderStyle.SINGLE, size: 1, color: "CBD5E1" },
-      left: { style: BorderStyle.SINGLE, size: 1, color: "CBD5E1" },
-      right: { style: BorderStyle.SINGLE, size: 1, color: "CBD5E1" },
-    },
-    children: [
-      new Paragraph({
-        children: [
-          new TextRun({
-            text,
-            bold: isLabel,
-            font: "Calibri",
-            size: 20, // 10pt
-            color: isLabel ? "475569" : "0F172A",
-          }),
-        ],
-      }),
-    ],
-  });
-}
-
-function row(label: string, value: string): TableRow {
-  return new TableRow({
-    children: [cell(label, true, 2800), cell(value, false, 7200)],
-  });
-}
-
-function sectionHeader(title: string): Paragraph {
-  return new Paragraph({
-    spacing: { before: 200, after: 100 },
-    children: [
-      new TextRun({
-        text: title,
-        bold: true,
-        font: "Calibri",
-        size: 22, // 11pt
-        color: "253C7D",
-      }),
-    ],
-  });
-}
+import { clean, cell, row, sectionHeader } from "./contractWordHelpers";
+import { buildContractWordHeader } from "./buildContractWordHeader";
 
 export async function exportContractWord(contract: EmploymentContract): Promise<boolean> {
-  const logoBytes = getLogoBuffer(getOfficialFormLogo());
-  const companyKhmer = getOfficialCompanyNameKhmer();
   const companyEnglish = getOfficialCompanyNameEnglish();
-
-  const noBorder = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
-  const bottomBorder = { style: BorderStyle.SINGLE, size: 12, color: "253C7D" };
-
-  const headerTable = new Table({
-    width: { size: 10000, type: WidthType.DXA },
-    borders: { top: noBorder, bottom: bottomBorder, left: noBorder, right: noBorder },
-    rows: [
-      new TableRow({
-        children: [
-          new TableCell({
-            width: { size: 1200, type: WidthType.DXA },
-            borders: { top: noBorder, bottom: bottomBorder, left: noBorder, right: noBorder },
-            verticalAlign: VerticalAlign.CENTER,
-            children: [
-              new Paragraph({
-                children: logoBytes
-                  ? [
-                      new ImageRun({
-                        data: logoBytes,
-                        transformation: { width: 56, height: 56 },
-                        type: "png",
-                      }),
-                    ]
-                  : [],
-              }),
-            ],
-          }),
-          new TableCell({
-            width: { size: 8800, type: WidthType.DXA },
-            borders: { top: noBorder, bottom: bottomBorder, left: noBorder, right: noBorder },
-            verticalAlign: VerticalAlign.CENTER,
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: companyKhmer,
-                    bold: true,
-                    font: "Kantumruy Pro",
-                    size: 22, // 11pt
-                    color: "0F172A",
-                  }),
-                ],
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: companyEnglish,
-                    bold: true,
-                    font: "Calibri",
-                    size: 26, // 13pt
-                    color: "253C7D",
-                  }),
-                ],
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "Human Resources Management Division • Employment Governance",
-                    font: "Calibri",
-                    size: 18, // 9pt
-                    color: "64748B",
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
-    ],
-  });
+  const headerTable = buildContractWordHeader();
 
   const doc = new Document({
     sections: [

@@ -5,11 +5,8 @@ import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { startOnboardingForCandidate } from "@/lib/onboarding";
 import type { Candidate, Job, Interview } from "../types";
-import {
-  notifyCandidateShortlisted,
-  notifyCandidateSelected,
-  notifyRejected,
-} from "@/services/notifications/recruitmentNotificationTriggers";
+import { executeSaveJob } from "../utils/jobSaveHelper";
+import { dispatchCandidateStageNotification } from "../utils/candidateStageNotificationHelper";
 
 interface UseHireActionsProps {
   actorName: string;
@@ -34,41 +31,11 @@ export function useHireActions({
 
   const handleSaveJob = useCallback(
     async (jobForm: any, editingJob: Job | null) => {
-      if (!jobForm.title || !jobForm.department) {
-        toast("Validation Error", "Title and department are required.", "error");
-        return false;
-      }
       setPostingJob(true);
       try {
-        const isSite = jobForm.branch_id && jobForm.branch_id.startsWith("site:");
-        const siteObj = isSite ? branches.find((b: any) => b.id === jobForm.branch_id) : null;
-        const branchId = isSite ? siteObj?.branch_id : (jobForm.branch_id || null);
-        const resolvedLocation = isSite ? siteObj?.name : jobForm.location;
-
-        const payload: any = {
-          title: jobForm.title,
-          department: jobForm.department,
-          branch_id: branchId,
-          description: jobForm.description || null,
-          location: resolvedLocation || null,
-          salary_min: jobForm.salary_min ? Number(jobForm.salary_min) : null,
-          salary_max: jobForm.salary_max ? Number(jobForm.salary_max) : null,
-          type: jobForm.type,
-          closing_date: jobForm.closing_date || null,
-        };
-
-        if (editingJob) {
-          const { error } = await supabase.from("job_postings").update(payload).eq("id", editingJob.id);
-          if (error) throw error;
-          toast("Job Updated", `"${jobForm.title}" saved.`, "success");
-        } else {
-          payload.status = "active";
-          const { error } = await supabase.from("job_postings").insert(payload);
-          if (error) throw error;
-          toast("Job Posted", `"${jobForm.title}" is now open.`, "success");
-        }
-        await loadData();
-        return true;
+        const ok = await executeSaveJob(jobForm, editingJob, branches);
+        if (ok) await loadData();
+        return ok;
       } catch (err: any) {
         toast("Error", err.message || "Failed to save job posting.", "error");
         return false;
@@ -143,46 +110,12 @@ export function useHireActions({
       }
 
       // Canonical Notification Engine Dispatch
-      if (stage === "shortlisted" || stage === "selected" || stage === "rejected") {
-        try {
-          const { data: cand } = await supabase
-            .from("candidates")
-            .select("*, job_postings(*, branches(name))")
-            .eq("id", candidateId)
-            .maybeSingle();
-
-          if (cand) {
-            if (stage === "shortlisted") {
-              void notifyCandidateShortlisted({
-                candidate: cand,
-                jobTitle: cand.job_postings?.title || "Specialist",
-                actorName,
-                businessUnit: cand.job_postings?.branches?.name,
-              }).catch((e) => console.error("[notifyCandidateShortlisted] error:", e));
-            } else if (stage === "selected") {
-              void notifyCandidateSelected({
-                candidate: cand,
-                jobTitle: cand.job_postings?.title || "Specialist",
-                selectedBy: actorName,
-                businessUnit: cand.job_postings?.branches?.name,
-              }).catch((e) => console.error("[notifyCandidateSelected] error:", e));
-            } else if (stage === "rejected") {
-              void notifyRejected({
-                entityType: "candidate",
-                entityId: candidateId,
-                entityCode: cand.full_name,
-                entityTitle: `Candidate: ${cand.full_name}`,
-                rejectedBy: actorName,
-                rejectorRole: actorRole || "HR Manager",
-                reason: "Candidate stage updated to Rejected",
-                businessUnit: cand.job_postings?.branches?.name,
-              }).catch((e) => console.error("[notifyRejected candidate] error:", e));
-            }
-          }
-        } catch (err) {
-          console.warn("Could not dispatch stage transition notification:", err);
-        }
-      }
+      await dispatchCandidateStageNotification({
+        candidateId,
+        stage,
+        actorName,
+        actorRole,
+      });
 
       await loadData();
     } catch (err: any) {
