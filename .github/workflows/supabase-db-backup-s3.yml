@@ -23,16 +23,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Install Backup Dependencies
+        run: npm install @supabase/supabase-js@2.57.4 @aws-sdk/client-s3@^3.1123.0 dotenv@^17.4.2 --no-audit
 
       - name: Run Automated Database Backup to AWS S3
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_PUBLIC_SUPABASE_URL || 'https://blcvtbzwpwmqkphlcjji.supabase.co' }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://blcvtbzwpwmqkphlcjji.supabase.co' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SECRET_KEY }}
-          VITE_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.VITE_PUBLIC_SUPABASE_ANON_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BACKUP_BUCKET || secrets.AWS_S3_BUCKET || 'hrsystem-ops' }}
