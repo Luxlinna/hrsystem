@@ -62,14 +62,46 @@ export const PersonalPhotoCard = memo(function PersonalPhotoCard({
   );
 
   const startCamera = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert(
+        "Camera access is blocked by the browser because this site is not using HTTPS (SSL).\n\n" +
+        "To enable it in Chrome/Edge for this IP:\n" +
+        "1. Open chrome://flags/#unsafely-treat-insecure-origin-as-secure in a new tab.\n" +
+        "2. Add this website address (" + window.location.origin + ") and select Enabled.\n" +
+        "3. Click Relaunch at the bottom of Chrome.\n\n" +
+        "Alternatively, you can click 'Upload Photo' to select an image from your computer."
+      );
+      return;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 480, height: 480, facingMode: "user" },
-      });
+      // Try flexible resolution first, fallback to basic video if camera is strict
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+        });
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+
       setCameraStream(stream);
       setIsCameraOpen(true);
-    } catch {
-      alert("Unable to access camera. Please check permissions or upload an image instead.");
+    } catch (err: any) {
+      const errName = err?.name || "Error";
+      if (errName === "NotAllowedError" || errName === "PermissionDeniedError") {
+        alert(
+          "Camera permission was blocked in Chrome for this site.\n\n" +
+          "Click the Lock / Tune icon (🎚️) on the left side of the address bar at the top of your browser, and switch Camera to 'Allow'."
+        );
+      } else if (errName === "NotReadableError" || errName === "TrackStartError") {
+        alert(
+          "Your camera is currently in use by another app (such as Telegram Desktop, Zoom, or another browser window).\n\n" +
+          "Please close the other app and try again."
+        );
+      } else {
+        alert(`Unable to access camera (${errName}: ${err?.message || "Unknown error"}). Please check permissions or upload an image instead.`);
+      }
     }
   };
 
