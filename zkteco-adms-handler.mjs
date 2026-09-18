@@ -33,6 +33,190 @@ function toMin(timeStr) {
   return h * 60 + m;
 }
 
+// In-memory throttle for device heartbeat DB writes (SN -> timestamp)
+const deviceHeartbeatThrottle = new Map();
+
+/**
+ * Sends a Telegram notification to the configured HRM_OPS_Notifications group via Supabase Edge Function
+ */
+export async function sendDeviceTelegramNotification(message) {
+  try {
+    const { data: notifEnabled } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "biometric_offline_alert_enabled")
+      .maybeSingle();
+
+    if (notifEnabled?.value === "false") return;
+
+    const { error } = await supabase.functions.invoke("send-telegram-notification", {
+      body: { message },
+    });
+    if (error) {
+      console.warn("[ZKTeco ADMS] Telegram notification failed:", error.message);
+    }
+  } catch (err) {
+    console.warn("[ZKTeco ADMS] Telegram notification exception:", err.message);
+  }
+}
+
+/**
+ * Records device activity (heartbeat, handshake, or punch ingestion).
+ * Throttles DB updates to once per 60s per device unless recovering from offline status.
+ */
+export async function recordDeviceActivity(deviceSerial) {
+  if (!deviceSerial) return;
+  const now = Date.now();
+  const lastRecorded = deviceHeartbeatThrottle.get(deviceSerial) || 0;
+  const shouldUpdateDb = (now - lastRecorded) > 60000;
+
+  try {
+    const { data: dev } = await supabase
+      .from("biometric_devices")
+      .select("id, device_name, alerted_offline, branch_id, branches(name)")
+      .eq("device_serial", deviceSerial)
+      .maybeSingle();
+
+    if (!dev) return;
+
+    if (dev.alerted_offline) {
+      // RECOVERY DETECTED: Device was flagged offline and is now back online!
+      console.log(`[ZKTeco ADMS] Device ${dev.device_name} (${deviceSerial}) RECOVERED! Sending recovery notification...`);
+      await supabase
+        .from("biometric_devices")
+        .update({
+          status: "online",
+          last_sync_at: new Date().toISOString(),
+          alerted_offline: false,
+        })
+        .eq("id", dev.id);
+
+      deviceHeartbeatThrottle.set(deviceSerial, now);
+
+      const branchName = dev.branches?.name || "Branch Office";
+      const recoveryTime = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Phnom_Penh",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }).format(new Date());
+
+      const recoveryMsg = [
+        "✅ <b>Biometric Device Back Online</b>",
+        "",
+        `📍 <b>Location / Branch:</b> ${branchName}`,
+        `📟 <b>Device:</b> ${dev.device_name} (<code>${deviceSerial}</code>)`,
+        `🕒 <b>Reconnected At:</b> ${recoveryTime}`,
+        `📶 <b>Status:</b> Communication restored. Online and actively syncing.`,
+      ].join("\n");
+
+      await sendDeviceTelegramNotification(recoveryMsg);
+    } else if (shouldUpdateDb) {
+      await supabase
+        .from("biometric_devices")
+        .update({
+          status: "online",
+          last_sync_at: new Date().toISOString(),
+        })
+        .eq("id", dev.id);
+
+      deviceHeartbeatThrottle.set(deviceSerial, now);
+    }
+  } catch (err) {
+    console.error("[ZKTeco ADMS] Error updating device activity:", err);
+  }
+}
+
+/**
+ * Watchdog: Checks if any active biometric device has stopped communicating for longer than threshold.
+ * Runs during working hours (06:00 - 19:00 UTC+7) to prevent false alerts when power is shut down at night.
+ */
+export async function checkBiometricDeviceHealth() {
+  try {
+    const { data: enabledSetting } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "biometric_offline_alert_enabled")
+      .maybeSingle();
+
+    if (enabledSetting?.value === "false") return;
+
+    const { data: threshSetting } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "biometric_offline_threshold_minutes")
+      .maybeSingle();
+
+    const thresholdMinutes = parseInt(threshSetting?.value || "60", 10) || 60;
+
+    // Working hours guard: 06:00 to 19:00 in Cambodia (Asia/Phnom_Penh, UTC+7)
+    const nowPnh = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Phnom_Penh" }));
+    const currentHour = nowPnh.getHours();
+    if (currentHour < 6 || currentHour >= 19) {
+      // Outside working hours, skip sending alerts
+      return;
+    }
+
+    const { data: devices, error: devErr } = await supabase
+      .from("biometric_devices")
+      .select("id, device_name, device_serial, status, last_sync_at, alerted_offline, branches(name)");
+
+    if (devErr || !devices) return;
+
+    const now = Date.now();
+
+    for (const dev of devices) {
+      if (dev.status === "inactive") continue;
+      if (dev.alerted_offline) continue; // Already alerted, avoid spam
+
+      if (!dev.last_sync_at) continue;
+
+      const lastSyncTime = new Date(dev.last_sync_at).getTime();
+      const elapsedMinutes = Math.floor((now - lastSyncTime) / 60000);
+
+      if (elapsedMinutes >= thresholdMinutes) {
+        console.warn(`[ZKTeco Watchdog] Device ${dev.device_name} is OFFLINE for ${elapsedMinutes}m. Dispatching alert...`);
+
+        const branchName = dev.branches?.name || "Branch Office";
+        const lastSeenFormatted = new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Phnom_Penh",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }).format(new Date(dev.last_sync_at));
+
+        const alertMsg = [
+          "⚠️ <b>Biometric Device Offline Alert</b>",
+          "",
+          `📍 <b>Location / Branch:</b> ${branchName}`,
+          `📟 <b>Device:</b> ${dev.device_name} (<code>${dev.device_serial || "N/A"}</code>)`,
+          `🕒 <b>Last Heartbeat:</b> ${lastSeenFormatted} (<b>${elapsedMinutes} mins ago</b>)`,
+          "",
+          "🔴 <b>Action Required:</b>",
+          "• Check power to the ZKTeco terminal and 4G router.",
+          "• Verify the Huawei router has 4G SIM mobile credit/data.",
+          "• Ensure the Ethernet cable is connected tightly.",
+        ].join("\n");
+
+        await supabase
+          .from("biometric_devices")
+          .update({
+            status: "offline",
+            alerted_offline: true,
+            last_offline_alert_at: new Date().toISOString(),
+          })
+          .eq("id", dev.id);
+
+        await sendDeviceTelegramNotification(alertMsg);
+      }
+    }
+  } catch (err) {
+    console.error("[ZKTeco Watchdog] Error checking device health:", err);
+  }
+}
+
 /**
  * Process a single attendance log entry from ZKTeco into Supabase
  */
@@ -363,15 +547,9 @@ export async function processZkPunchRecord(punch) {
     attendance_record_id: upsertedRecord?.id || null,
   });
 
-  // 5. Update device status to online & record last_sync_at
+  // 5. Update device status & record activity
   if (deviceSerial) {
-    await supabase
-      .from("biometric_devices")
-      .update({
-        status: "online",
-        last_sync_at: new Date().toISOString(),
-      })
-      .eq("device_serial", deviceSerial);
+    await recordDeviceActivity(deviceSerial);
   }
 }
 
@@ -435,6 +613,7 @@ export async function handleZkAdmsRequest(req, res) {
   // 1. Heartbeat & Command Polling: GET /iclock/getrequest
   if (pathname === "/iclock/getrequest") {
     console.log(`[ZKTeco ADMS] Heartbeat getrequest from SN: ${sn || "Unknown"}`);
+    if (sn) recordDeviceActivity(sn);
 
     try {
       // Check for pending device commands
@@ -506,15 +685,7 @@ export async function handleZkAdmsRequest(req, res) {
   // 3. Handshake & Config: GET /iclock/cdata
   if (pathname === "/iclock/cdata" && req.method === "GET") {
     console.log(`[ZKTeco ADMS] Handshake from Device SN: ${sn || "Unknown"}`);
-    
-    // Update device status in database
-    if (sn) {
-      supabase
-        .from("biometric_devices")
-        .update({ status: "online", last_sync_at: new Date().toISOString() })
-        .eq("device_serial", sn)
-        .then();
-    }
+    if (sn) recordDeviceActivity(sn);
 
     const configResponse = [
       `GET OPTION FROM: ${sn || "ZKTeco"}`,
