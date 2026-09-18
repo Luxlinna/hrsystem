@@ -8,6 +8,7 @@ interface ExportHiringRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   request: HiringRequest | null;
+  mode?: ExportPdfMode;
   defaultMode?: ExportPdfMode;
 }
 
@@ -15,9 +16,18 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
   isOpen,
   onClose,
   request,
+  mode: propMode,
   defaultMode = "full_requisition",
 }: ExportHiringRequestModalProps) {
-  const [mode, setMode] = useState<ExportPdfMode>(defaultMode);
+  const [mode, setMode] = useState<ExportPdfMode>(propMode || defaultMode);
+
+  useEffect(() => {
+    if (propMode) {
+      setMode(propMode);
+    } else if (defaultMode) {
+      setMode(defaultMode);
+    }
+  }, [propMode, defaultMode, isOpen]);
   const [buLogo, setBuLogo] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
