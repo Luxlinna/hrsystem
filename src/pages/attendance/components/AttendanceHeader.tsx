@@ -66,7 +66,7 @@ export const AttendanceHeader = memo(function AttendanceHeader({
         </div>
 
         {/* Live Digital Clock & Action Buttons */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
           {/* Live Digital Clock Widget */}
           <div className="bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 rounded-2xl px-3.5 py-2 shadow-2xs flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#253C7D] to-[#17254E] text-white flex items-center justify-center text-sm shadow-xs">
@@ -98,7 +98,7 @@ export const AttendanceHeader = memo(function AttendanceHeader({
           <button
             onClick={onOpenLogModal}
             disabled={!canViewAll && !hasEmployee}
-            className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50 whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
             <i className="ri-add-circle-line text-base font-bold" />
             Log Attendance
@@ -139,7 +139,7 @@ export const AttendanceHeader = memo(function AttendanceHeader({
         )}
 
         {/* Full Report & Export Dropdown */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Full Report in the Reports Center */}
           <Link
             to={`/reports?module=${activeTab === "summary" ? "attendance-summary" : "attendance"}${

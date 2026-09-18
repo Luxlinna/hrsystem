@@ -395,7 +395,8 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
               </p>
             </div>
           ) : (
-            <table className="w-full text-xs text-left">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left min-w-[650px]">
               <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-wider">
                 <tr>
                   <th className="p-2.5 pl-3">Interview Panel (Employee)</th>
@@ -475,6 +476,7 @@ export const ApprovalEvaluationTab = memo(function ApprovalEvaluationTab({
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

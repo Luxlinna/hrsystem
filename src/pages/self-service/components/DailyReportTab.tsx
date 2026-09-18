@@ -283,7 +283,8 @@ export default function DailyReportTab({ employeeId }: Props) {
       {/* Year View */}
       {view === "year" && (
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-          <table className="w-full text-[13px]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px] min-w-[340px]">
             <thead>
               <tr className="border-b border-gray-100 text-left text-[11px] text-gray-500 uppercase tracking-wide">
                 <th className="px-4 py-3">Month</th>
@@ -306,6 +307,7 @@ export default function DailyReportTab({ employeeId }: Props) {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

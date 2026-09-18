@@ -53,14 +53,17 @@ function LayoutContent() {
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-white dark:bg-[#0b0f19] w-full max-w-full overflow-x-hidden">
       <Sidebar />
       <div
-        className="flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ease-in-out"
+        className="flex-1 flex flex-col min-h-screen min-w-0 w-full max-w-full overflow-x-hidden transition-all duration-300 ease-in-out"
         style={{ marginLeft: isMobile ? 0 : (collapsed ? 64 : 260) }}
       >
         <TopBar />
-        <main className="flex-1 min-w-0 pb-16 lg:pb-0">
+        <main
+          className="flex-1 min-w-0 w-full max-w-full pb-20 lg:pb-0"
+          style={{ paddingBottom: isMobile ? "calc(4.5rem + env(safe-area-inset-bottom, 0px))" : undefined }}
+        >
           <Outlet />
         </main>
         <BottomNav />

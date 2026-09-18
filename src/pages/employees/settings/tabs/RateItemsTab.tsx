@@ -83,7 +83,8 @@ export const RateItemsTab = memo(function RateItemsTab({
         </div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
-          <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[600px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                 <th className="px-4 py-3">Item Name</th>
@@ -136,6 +137,7 @@ export const RateItemsTab = memo(function RateItemsTab({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
