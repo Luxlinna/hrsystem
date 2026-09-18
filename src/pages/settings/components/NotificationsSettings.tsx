@@ -24,6 +24,7 @@ export function NotificationsSettings({
 }: NotificationsSettingsProps) {
   const [testingNotifTelegram, setTestingNotifTelegram] = useState(false);
   const [testingOtpTelegram, setTestingOtpTelegram] = useState(false);
+  const [testingDeviceTelegram, setTestingDeviceTelegram] = useState(false);
 
   const handleTestNotifications = async () => {
     setTestingNotifTelegram(true);
@@ -67,11 +68,35 @@ export function NotificationsSettings({
     }
   };
 
+  const handleTestDeviceAlert = async () => {
+    setTestingDeviceTelegram(true);
+    try {
+      const chatId = getVal("telegram_notifications_chat_id") || undefined;
+      const threshold = getVal("biometric_offline_threshold_minutes") || "60";
+      await sendTelegramMessage(
+        `⚠️ <b>Biometric Device Offline Alert (TEST)</b>\n\n📍 <b>Location / Branch:</b> Kampong Thom (Pinex Agro)\n📟 <b>Device:</b> MB460 Plus - Kampong Thom (<code>TTQ5255000213</code>)\n🕒 <b>Last Heartbeat:</b> ${threshold} mins ago\n\n🔴 <b>Action Required:</b>\n• Check power to the ZKTeco terminal and 4G router.\n• Verify the Huawei router has 4G SIM mobile credit/data.\n• Ensure the Ethernet cable is connected tightly.\n\n💡 <i>This is a test notification. Real alerts fire automatically when a machine stops heartbeating for >${threshold} mins during working hours (06:00 – 19:00).</i>`,
+        undefined,
+        chatId
+      );
+      toast("Sent", "Test device alert posted to the Notifications Telegram group.", "success");
+    } catch (err: any) {
+      toast(
+        "Error",
+        err?.message || "Failed to send Telegram test alert.",
+        "error"
+      );
+    } finally {
+      setTestingDeviceTelegram(false);
+    }
+  };
+
   const notifKeys = [
     ...notificationKeys.map((n) => n.key),
     "telegram_notify_enabled",
     "telegram_notifications_chat_id",
     "telegram_otp_chat_id",
+    "biometric_offline_alert_enabled",
+    "biometric_offline_threshold_minutes",
   ];
 
   return (
@@ -271,6 +296,72 @@ export function NotificationsSettings({
           </div>
           <p className="text-[10px] text-gray-400 dark:text-slate-500">
             💡 Connected to group ID: <code className="bg-gray-200 dark:bg-slate-700 px-1 rounded">{getVal("telegram_otp_chat_id") || "-5356924617"}</code> (HRMsystem_OTP_code). Type <code className="bg-gray-200 dark:bg-slate-700 px-1 rounded">/set_otp</code> in the group anytime to re-verify.
+          </p>
+        </div>
+
+        {/* Channel 3: Biometric Device Offline & Recovery Alerts */}
+        <div className="bg-gray-50/80 dark:bg-slate-800/60 rounded-lg p-4 border border-gray-200/80 dark:border-slate-700 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">📟</span>
+              <div>
+                <span className="text-[12px] font-semibold text-gray-800 dark:text-slate-200">
+                  Biometric Device Offline & Recovery Alerts
+                </span>
+                <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 rounded font-medium">
+                  ZKTeco ADMS
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleTestDeviceAlert}
+              disabled={testingDeviceTelegram || getVal("telegram_notify_enabled") !== "true"}
+              className="px-3 py-1.5 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-[11px] font-semibold rounded-lg transition-colors disabled:opacity-40 cursor-pointer"
+            >
+              {testingDeviceTelegram ? "Sending…" : "Send test device alert"}
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-500 dark:text-slate-400">
+            Sends an immediate alert to the Notifications group if any branch terminal stops heartbeating during working hours (06:00 – 19:00), and sends a recovery message once it reconnects.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <label className="flex items-center gap-2 text-[12px] text-gray-700 dark:text-slate-300 cursor-pointer bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-gray-200 dark:border-slate-700">
+              <input
+                type="checkbox"
+                checked={getVal("biometric_offline_alert_enabled") !== "false"}
+                onChange={(e) =>
+                  updateValue(
+                    "biometric_offline_alert_enabled",
+                    String(e.target.checked)
+                  )
+                }
+                className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
+              />
+              <span className="font-medium">Enable Offline Telegram Alerts</span>
+            </label>
+
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-lg border border-gray-200 dark:border-slate-700">
+              <span className="text-[11px] text-gray-600 dark:text-slate-400 whitespace-nowrap">
+                Alert after inactive:
+              </span>
+              <select
+                value={getVal("biometric_offline_threshold_minutes") || "60"}
+                onChange={(e) =>
+                  updateValue("biometric_offline_threshold_minutes", e.target.value)
+                }
+                className="flex-1 px-2 py-1 bg-transparent text-[12px] text-gray-900 dark:text-slate-100 font-medium focus:outline-none cursor-pointer"
+              >
+                <option value="30" className="dark:bg-slate-900">30 minutes</option>
+                <option value="45" className="dark:bg-slate-900">45 minutes</option>
+                <option value="60" className="dark:bg-slate-900">60 minutes (Recommended)</option>
+                <option value="90" className="dark:bg-slate-900">90 minutes</option>
+                <option value="120" className="dark:bg-slate-900">120 minutes (2 hours)</option>
+              </select>
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-400 dark:text-slate-500">
+            💡 Active only during working hours (06:00 – 19:00 Cambodia Time) to avoid false alerts when branch power is shut down at night.
           </p>
         </div>
       </div>

@@ -1,0 +1,114 @@
+import { memo } from "react";
+import type { EmployeeFormState } from "../../types";
+import { AddEmployeeAttachmentUpload } from "./AddEmployeeAttachmentUpload";
+
+interface AddEmployeeContactTabProps {
+  form: EmployeeFormState;
+  onChange: (field: keyof EmployeeFormState, value: any) => void;
+}
+
+export const AddEmployeeContactTab = memo(function AddEmployeeContactTab({
+  form,
+  onChange,
+}: AddEmployeeContactTabProps) {
+  return (
+    <div className="space-y-4">
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50/90 via-pink-50/40 to-white border border-purple-200/80 flex items-start gap-3.5 shadow-2xs">
+        <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+          <i className="ri-contacts-book-2-line text-lg" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-xs font-black text-slate-900 tracking-wide">
+              Contact &amp; Emergency Information
+            </h3>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200/60">
+              Step 5 of 5
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-600 font-medium mt-0.5 leading-relaxed">
+            Employee direct contact channels, current residential address, emergency point-of-contact details, and document uploads.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Email */}
+        <div>
+          <label className="block text-xs font-extrabold text-slate-700 mb-1">
+            Email Address
+          </label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => onChange("email", e.target.value)}
+            placeholder="e.g. employee@company.com"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
+          />
+        </div>
+
+        {/* Phone Number */}
+        <div>
+          <label className="block text-xs font-extrabold text-slate-700 mb-1">
+            Phone Number
+          </label>
+          <input
+            type="tel"
+            value={form.phone}
+            onChange={(e) => onChange("phone", e.target.value)}
+            placeholder="e.g. +855 12 345 678"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
+          />
+        </div>
+
+        {/* Current Address */}
+        <div className="md:col-span-2">
+          <label className="block text-xs font-extrabold text-slate-700 mb-1">
+            Current Residential Address
+          </label>
+          <textarea
+            rows={2}
+            value={form.current_address}
+            onChange={(e) => onChange("current_address", e.target.value)}
+            placeholder="Residential address, House/Street number, Khan/Sangkat, City/Province"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#253C7D]"
+          />
+        </div>
+
+        {/* Emergency Contact Name */}
+        <div>
+          <label className="block text-xs font-extrabold text-slate-700 mb-1">
+            Emergency Contact Name &amp; Relationship
+          </label>
+          <input
+            type="text"
+            value={form.emergency_contact_name}
+            onChange={(e) => onChange("emergency_contact_name", e.target.value)}
+            placeholder="e.g. Sok Chenda (Spouse / Parent)"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
+          />
+        </div>
+
+        {/* Emergency Phone Number */}
+        <div>
+          <label className="block text-xs font-extrabold text-slate-700 mb-1">
+            Emergency Phone Number
+          </label>
+          <input
+            type="tel"
+            value={form.emergency_phone_number}
+            onChange={(e) => onChange("emergency_phone_number", e.target.value)}
+            placeholder="e.g. +855 98 765 432"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
+          />
+        </div>
+      </div>
+
+      {/* Function Upload File: AWS S3 Document Attachments */}
+      <AddEmployeeAttachmentUpload
+        documents={form.documents || []}
+        onChangeDocuments={(docs) => onChange("documents", docs)}
+      />
+    </div>
+  );
+});

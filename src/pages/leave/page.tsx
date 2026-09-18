@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useState, useCallback } from "react";
 import { LeaveHeader } from "./components/LeaveHeader";
 import { LeaveTabsBar } from "./components/LeaveTabsBar";
 import { LeaveStatsRow } from "./components/LeaveStatsRow";
@@ -6,12 +6,16 @@ import { LeaveRequestsTabContent } from "./components/requests/LeaveRequestsTabC
 import { LeaveBalancesTabContent } from "./components/balances/LeaveBalancesTabContent";
 import { LeaveCalendarTabContent } from "./components/calendar/LeaveCalendarTabContent";
 import { LeaveModalsContainer } from "./components/modals/LeaveModalsContainer";
+import { CreateLeaveForm } from "./components/form/CreateLeaveForm";
+import { HolidaysModal } from "../attendance/components/holidays/HolidaysModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useLeave } from "./hooks/useLeave";
 import { INITIAL_LEAVE_FORM } from "./constants";
 
 export default function Leave() {
   const l = useLeave();
+  const [formMode, setFormMode] = useState<"self" | "for_employee">("self");
+  const [showHolidaysModal, setShowHolidaysModal] = useState(false);
 
   const handleOpenApprovalModal = useCallback((req: any, action: "approved" | "rejected") => {
     l.setSelectedRequest(req);
@@ -27,6 +31,7 @@ export default function Leave() {
   }, [l]);
 
   const handleOpenRequestModalForEmp = useCallback((empId: string) => {
+    setFormMode("for_employee");
     l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: empId });
     l.setShowForm(true);
   }, [l]);
@@ -41,15 +46,42 @@ export default function Leave() {
 
   if (l.isPartnerBranchBlocked) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+      <div className="min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-6">
         <LeaveHeader onLeaveTodayCount={0} filteredRequests={[]} onRequestLeave={() => {}} />
         <PartnerBranchPrivacyShield moduleName="Leave Management" userBranchName={l.userBranchName} hasNoBranch={!l.userBranchId} />
       </div>
     );
   }
 
+  if (l.showForm) {
+    const isSuperAdmin =
+      l.actorRole?.toLowerCase().includes("super admin") ||
+      l.actorRole?.toLowerCase().includes("superadmin");
+
+    return (
+      <CreateLeaveForm
+        onBack={() => {
+          l.setShowForm(false);
+          l.setFormData(INITIAL_LEAVE_FORM);
+        }}
+        employees={l.employees}
+        myEmployee={l.myEmployee}
+        formData={l.formData}
+        setFormData={l.setFormData}
+        submitting={l.submitting}
+        canManage={l.canManage}
+        isSuperAdmin={isSuperAdmin}
+        myApproverName={l.myApproverName}
+        hrApprovers={l.hrApprovers}
+        getLeaveTypeStats={l.getLeaveTypeStats}
+        onSubmit={l.handleSubmitRequest}
+        formMode={formMode}
+      />
+    );
+  }
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-6">
       {l.toast && (
         <div
           className={`fixed bottom-5 right-5 z-50 px-4 py-3 rounded-2xl shadow-xl border text-xs font-extrabold flex items-center gap-2 animate-in slide-in-from-bottom-3 duration-150 ${
@@ -77,8 +109,17 @@ export default function Leave() {
         onLeaveTodayCount={l.stats.onLeaveToday}
         filteredRequests={l.filteredRequests}
         onToast={l.setToast}
+        canManage={l.canManage}
+        onOpenHolidaysModal={() => setShowHolidaysModal(true)}
+        holidayCount={l.holidays?.length || 0}
         onRequestLeave={() => {
+          setFormMode("self");
           l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: l.myEmployee?.id || "" });
+          l.setShowForm(true);
+        }}
+        onRequestLeaveFor={() => {
+          setFormMode("for_employee");
+          l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: "" });
           l.setShowForm(true);
         }}
       />
@@ -90,6 +131,8 @@ export default function Leave() {
         setActiveTab={l.setActiveTab}
         pendingCount={l.stats.pending}
         onLeaveTodayCount={l.stats.onLeaveToday}
+        onOpenHolidaysModal={() => setShowHolidaysModal(true)}
+        holidayCount={l.holidays?.length || 0}
       />
 
       {l.activeTab === "requests" && (
@@ -156,7 +199,10 @@ export default function Leave() {
           todayMonth={l.todayMonth}
           selectedDayDateStr={l.selectedDayDateStr}
           selectedDayLeaves={l.selectedDayLeaves}
+          selectedDayHoliday={l.selectedDayHoliday}
           onInspectRequest={l.setInspectRequest}
+          onOpenHolidaysModal={() => setShowHolidaysModal(true)}
+          holidayCount={l.holidays?.length || 0}
         />
       )}
 
@@ -164,6 +210,20 @@ export default function Leave() {
         {...l}
         onOpenApprovalModal={handleOpenApprovalModal}
         onOpenCancelModal={handleOpenCancelModal}
+      />
+
+      <HolidaysModal
+        isOpen={showHolidaysModal}
+        onClose={() => setShowHolidaysModal(false)}
+        year={l.holidaysState.year}
+        setYear={l.holidaysState.setYear}
+        holidays={l.holidaysState.holidays}
+        loading={l.holidaysState.loading}
+        syncing={l.holidaysState.syncing}
+        onSync={l.holidaysState.syncYear}
+        onAddHoliday={l.holidaysState.addHoliday}
+        onDeleteHoliday={l.holidaysState.removeHoliday}
+        canManage={l.canManage}
       />
     </div>
   );

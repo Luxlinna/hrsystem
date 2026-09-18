@@ -51,12 +51,24 @@ export const LeaveCardView = memo(function LeaveCardView({
                 </div>
               </div>
 
-              <span
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border shrink-0 ${statusCfg.bg}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-                {statusCfg.label}
-              </span>
+              {r.status === "pending" && r.reason?.includes("[Stage: Manager Endorsed") ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border shrink-0 bg-amber-50 text-amber-700 border-amber-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  Step 2: HR Pending
+                </span>
+              ) : r.status === "pending" ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border shrink-0 bg-sky-50 text-sky-700 border-sky-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+                  Step 1: Manager
+                </span>
+              ) : (
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border shrink-0 ${statusCfg.bg}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                  {statusCfg.label}
+                </span>
+              )}
             </div>
 
             <div className="flex items-center justify-between text-xs bg-gray-50 p-2.5 rounded-xl">
@@ -84,13 +96,13 @@ export const LeaveCardView = memo(function LeaveCardView({
                 <>
                   <button
                     onClick={() => onOpenApprovalModal(r, "approved")}
-                    className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
                   >
-                    Approve
+                    {r.reason?.includes("[Stage: Manager Endorsed") ? "HR Approve" : "Endorse"}
                   </button>
                   <button
                     onClick={() => onOpenApprovalModal(r, "rejected")}
-                    className="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
                   >
                     Reject
                   </button>

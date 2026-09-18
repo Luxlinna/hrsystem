@@ -1,15 +1,19 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import type { AttendanceRecord } from "../types";
 import { STATUS_CONFIG, formatTime, calcHours, initials } from "../constants";
+import { formatBiometricId } from "@/lib/biometricUtils";
+import type { Holiday } from "@/services/holidays/holidaysService";
 
 interface AttendanceCardsViewProps {
   records: AttendanceRecord[];
   todayYMD: string;
   canManage: boolean;
   isFourPunchMode?: boolean;
+  holidays?: Holiday[];
   onSelectRecord: (record: AttendanceRecord) => void;
   onEditRecord: (record: AttendanceRecord) => void;
   onDeleteRecord: (id: number) => void;
+  onLogTimeForEmployee?: (employeeId: string) => void;
 }
 
 export const AttendanceCardsView = memo(function AttendanceCardsView({
@@ -17,14 +21,32 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
   todayYMD,
   canManage,
   isFourPunchMode = false,
+  holidays = [],
   onSelectRecord,
   onEditRecord,
   onDeleteRecord,
+  onLogTimeForEmployee,
 }: AttendanceCardsViewProps) {
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, Holiday>();
+    holidays.forEach((h) => map.set(h.date, h));
+    return map;
+  }, [holidays]);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {records.map((r) => {
-        const cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.ontime || STATUS_CONFIG.present;
+        const holiday = holidayMap.get(r.date);
+        let cfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.ontime || STATUS_CONFIG.present;
+        let badgeLabel = cfg.label;
+
+        if (r.status === "holiday" || (!r.clock_in && holiday)) {
+          cfg = STATUS_CONFIG.holiday;
+          badgeLabel = holiday ? `Holiday · ${holiday.name}` : "Holiday / Off";
+        } else if (r.clock_in && holiday) {
+          cfg = STATUS_CONFIG.holiday;
+          badgeLabel = "Holiday Work (2.0x OT)";
+        }
         const emp = r.employees;
         const isWorkingNow = r.clock_in && !r.clock_out && r.date === todayYMD;
 
@@ -45,10 +67,25 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
                     )}
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-gray-900 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-sky-400 transition-colors text-sm">
-                      {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
-                    </h4>
-                    <p className="text-[11px] text-gray-400 dark:text-slate-400 font-medium">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h4 className="font-extrabold text-gray-900 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-sky-400 transition-colors text-sm">
+                        {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+                      </h4>
+                      {emp?.biometric_user_id ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
+                          title={`BU Biometric ID: ${emp.biometric_user_id}`}
+                        >
+                          <i className="ri-fingerprint-line text-[10px]" />
+                          {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                        </span>
+                      ) : emp?.employee_code ? (
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300 shrink-0">
+                          {emp.employee_code}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-[11px] text-gray-400 dark:text-slate-400 font-medium mt-0.5">
                       {emp?.role} · {emp?.department}
                     </p>
                   </div>
@@ -56,7 +93,7 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
 
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.bg} ${cfg.text} border ${cfg.border} shrink-0`}>
                   <i className={cfg.icon} />
-                  {cfg.label}
+                  {badgeLabel}
                 </span>
               </div>
 
@@ -103,16 +140,14 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
                 </div>
               )}
 
-              {r.work_location?.name && (
-                <div className="mb-2 flex items-center justify-between text-[11px]">
-                  <span className="text-gray-400 dark:text-slate-400 flex items-center gap-1 font-medium">
-                    <i className="ri-building-2-line" /> Work Site
-                  </span>
-                  <span className={`font-bold ${r.work_location_id !== emp?.default_work_location_id ? "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60 dark:border-amber-800/60 px-2 py-0.5 rounded-md" : "text-gray-800 dark:text-slate-200"}`}>
-                    {r.work_location.name}
-                  </span>
-                </div>
-              )}
+              <div className="mb-2 flex items-center justify-between text-[11px]">
+                <span className="text-gray-400 dark:text-slate-400 flex items-center gap-1 font-medium">
+                  <i className="ri-building-2-line" /> Work Site
+                </span>
+                <span className={`font-bold ${r.work_location_id !== emp?.default_work_location_id && emp?.default_work_location_id ? "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60 dark:border-amber-800/60 px-2 py-0.5 rounded-md" : "text-gray-800 dark:text-slate-200"}`}>
+                  {r.work_location?.name || "Main Office"}
+                </span>
+              </div>
 
               {r.notes && (
                 <p className="text-xs text-gray-500 dark:text-slate-400 italic bg-gray-50/50 dark:bg-slate-800/50 p-2 rounded-xl border border-gray-100/60 dark:border-slate-800 mb-2 truncate">
@@ -133,6 +168,16 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
 
               {canManage && (
                 <div className="flex items-center gap-1">
+                  {onLogTimeForEmployee && (
+                    <button
+                      type="button"
+                      onClick={() => onLogTimeForEmployee(r.employee_id)}
+                      className="w-7 h-7 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
+                      title={`Create Time Log for ${emp ? `${emp.first_name} ${emp.last_name}` : "this employee"}`}
+                    >
+                      <i className="ri-time-line text-xs" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => onEditRecord(r)}

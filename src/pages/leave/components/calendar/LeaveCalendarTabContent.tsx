@@ -1,7 +1,9 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { LeaveRequest } from "../../types";
-import { LEAVE_TYPE_CONFIG } from "../../constants";
+import { LeaveCalendarHeader } from "./LeaveCalendarHeader";
+import { LeaveCalendarGrid } from "./LeaveCalendarGrid";
 import { LeaveCalendarDayAgenda } from "./LeaveCalendarDayAgenda";
+import type { Holiday } from "@/services/holidays/holidaysService";
 
 interface LeaveCalendarTabContentProps {
   calendarYear: number;
@@ -11,14 +13,22 @@ interface LeaveCalendarTabContentProps {
   calDeptFilter: string;
   setCalDeptFilter: (dept: string) => void;
   departments: string[];
-  calendarDays: { day: number; dateStr: string; leaves: LeaveRequest[] }[];
+  calendarDays: {
+    day: number;
+    dateStr: string;
+    leaves: LeaveRequest[];
+    holiday?: Holiday;
+  }[];
   firstDayOfWeek: number;
   prevMonth: () => void;
   nextMonth: () => void;
   todayMonth: () => void;
   selectedDayDateStr: string | null;
   selectedDayLeaves: LeaveRequest[];
+  selectedDayHoliday?: Holiday | null;
   onInspectRequest: (req: LeaveRequest) => void;
+  onOpenHolidaysModal?: () => void;
+  holidayCount?: number;
 }
 
 export const LeaveCalendarTabContent = memo(function LeaveCalendarTabContent({
@@ -35,132 +45,59 @@ export const LeaveCalendarTabContent = memo(function LeaveCalendarTabContent({
   nextMonth,
   todayMonth,
   selectedDayLeaves,
+  selectedDayHoliday,
   onInspectRequest,
+  onOpenHolidaysModal,
+  holidayCount,
 }: LeaveCalendarTabContentProps) {
-  const monthNames = [
+  const [calendarLang, setCalendarLang] = useState<"en" | "km">(() => {
+    try {
+      return (localStorage.getItem("leave_calendar_lang") as "en" | "km") || "en";
+    } catch {
+      return "en";
+    }
+  });
+
+  const handleToggleLang = (lang: "en" | "km") => {
+    setCalendarLang(lang);
+    try {
+      localStorage.setItem("leave_calendar_lang", lang);
+    } catch {
+      // Fallback if localStorage is unavailable
+    }
+  };
+
+  const monthNamesEn = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
   ];
-  const dayHeaders = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-black text-gray-900">
-              {monthNames[calendarMonth]} {calendarYear}
-            </h3>
-            <button
-              type="button"
-              onClick={todayMonth}
-              className="px-2.5 py-1 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
-            >
-              Today
-            </button>
-          </div>
+        <LeaveCalendarHeader
+          calendarYear={calendarYear}
+          calendarMonth={calendarMonth}
+          calendarLang={calendarLang}
+          onToggleLang={handleToggleLang}
+          todayMonth={todayMonth}
+          prevMonth={prevMonth}
+          nextMonth={nextMonth}
+          onOpenHolidaysModal={onOpenHolidaysModal}
+          holidayCount={holidayCount}
+          departments={departments}
+          calDeptFilter={calDeptFilter}
+          setCalDeptFilter={setCalDeptFilter}
+          monthNamesEn={monthNamesEn}
+        />
 
-          <div className="flex items-center gap-2">
-            {departments.length > 0 && (
-              <select
-                value={calDeptFilter}
-                onChange={(e) => setCalDeptFilter(e.target.value)}
-                className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 font-medium focus:outline-none focus:border-[#253C7D] cursor-pointer"
-              >
-                <option value="all">All Departments</option>
-                {departments.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={prevMonth}
-                className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors cursor-pointer"
-              >
-                <i className="ri-arrow-left-s-line text-base" />
-              </button>
-              <button
-                type="button"
-                onClick={nextMonth}
-                className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors cursor-pointer"
-              >
-                <i className="ri-arrow-right-s-line text-base" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 text-center mb-2">
-          {dayHeaders.map((d) => (
-            <span key={d} className="text-[11px] font-bold text-gray-400 uppercase tracking-wider py-1">
-              {d}
-            </span>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-1.5">
-          {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-            <div key={`empty-${i}`} className="min-h-[72px] sm:min-h-[90px] rounded-2xl bg-gray-50/40 p-1.5" />
-          ))}
-
-          {calendarDays.map(({ day, dateStr, leaves }) => {
-            const isSelected = selectedCalendarDay === day;
-            const hasLeaves = leaves.length > 0;
-
-            return (
-              <div
-                key={dateStr}
-                onClick={() => setSelectedCalendarDay(day)}
-                className={`min-h-[72px] sm:min-h-[90px] rounded-2xl p-1.5 border transition-all cursor-pointer flex flex-col justify-between ${
-                  isSelected
-                    ? "bg-[#253C7D]/5 border-[#253C7D] ring-2 ring-[#253C7D]/20 shadow-xs"
-                    : hasLeaves
-                    ? "bg-white border-gray-200/80 hover:border-gray-300"
-                    : "bg-white border-gray-100 hover:bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center ${
-                      isSelected ? "bg-[#253C7D] text-white" : "text-gray-700"
-                    }`}
-                  >
-                    {day}
-                  </span>
-                  {hasLeaves && (
-                    <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800">
-                      {leaves.length}
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-1 mt-1">
-                  {leaves.slice(0, 2).map((l) => {
-                    const cfg = LEAVE_TYPE_CONFIG[l.leave_type] || LEAVE_TYPE_CONFIG.annual;
-                    return (
-                      <div
-                        key={l.id}
-                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded truncate ${cfg.badgeBg}`}
-                      >
-                        {l.employees?.first_name} ({cfg.label.slice(0, 3)})
-                      </div>
-                    );
-                  })}
-                  {leaves.length > 2 && (
-                    <span className="text-[9px] font-bold text-gray-400 block text-right">
-                      +{leaves.length - 2} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <LeaveCalendarGrid
+          calendarDays={calendarDays}
+          firstDayOfWeek={firstDayOfWeek}
+          selectedCalendarDay={selectedCalendarDay}
+          setSelectedCalendarDay={setSelectedCalendarDay}
+          calendarLang={calendarLang}
+        />
       </div>
 
       <LeaveCalendarDayAgenda
@@ -168,7 +105,9 @@ export const LeaveCalendarTabContent = memo(function LeaveCalendarTabContent({
         calendarMonth={calendarMonth}
         calendarYear={calendarYear}
         selectedDayLeaves={selectedDayLeaves}
-        monthNames={monthNames}
+        selectedDayHoliday={selectedDayHoliday}
+        monthNames={monthNamesEn}
+        calendarLang={calendarLang}
         onInspectRequest={onInspectRequest}
       />
     </div>

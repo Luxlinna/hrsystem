@@ -28,8 +28,11 @@ export default function BottomNav() {
   }, [unreadCount]);
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <div className="flex items-stretch h-16">
+    <nav
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-100 dark:border-slate-800 transition-colors"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
+      <div className="flex items-stretch h-16 max-w-lg mx-auto">
         {NAV_ITEMS.map((item) => {
           const isActive = item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
           const isNotif = item.path === "/notifications";
@@ -38,12 +41,12 @@ export default function BottomNav() {
               key={item.path}
               to={item.path}
               className={`flex-1 flex flex-col items-center justify-center gap-1 relative transition-colors ${
-                isActive ? "text-[#253C7D]" : "text-gray-400"
+                isActive ? "text-[#253C7D] dark:text-sky-400 font-semibold" : "text-gray-400 dark:text-slate-400"
               }`}
             >
               {/* Active indicator */}
               {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#253C7D] rounded-full" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#253C7D] dark:bg-sky-400 rounded-full" />
               )}
               {/* Icon wrapper */}
               <div className="relative w-6 h-6 flex items-center justify-center">
@@ -60,7 +63,7 @@ export default function BottomNav() {
                   </>
                 )}
               </div>
-              <span className={`text-[10px] font-medium leading-none ${isActive ? "text-[#253C7D]" : "text-gray-400"}`}>
+              <span className={`text-[10px] leading-none ${isActive ? "text-[#253C7D] dark:text-sky-400 font-bold" : "text-gray-400 dark:text-slate-400"}`}>
                 {item.label}
               </span>
             </Link>

@@ -122,7 +122,18 @@ function ShiftSnapshot(props: Props) {
             )}
           </div>
           <p className="text-[15px] font-bold tabular-nums mt-0.5">
-            {todayRecord?.clock_in?.slice(0, 5) || (activeOutsideWork?.work_checked_in_at ? new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—")}
+            {todayRecord?.clock_in?.slice(0, 5) || (() => {
+              if (!activeOutsideWork?.work_checked_in_at) return "—";
+              try {
+                const tz = scheduleSettings.timezone || "Asia/Phnom_Penh";
+                const startDay = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(activeOutsideWork.work_checked_in_at));
+                const currentDay = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
+                if (startDay < currentDay) return "08:00";
+                return new Date(activeOutsideWork.work_checked_in_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: tz });
+              } catch {
+                return "08:00";
+              }
+            })()}
           </p>
           {(todayRecord?.status === "late" || (todayRecord?.late_minutes || 0) > 0) && (
             <p className="text-amber-200 text-[10px] font-semibold mt-0.5">{todayRecord?.late_minutes}m late</p>
@@ -143,7 +154,7 @@ function ShiftSnapshot(props: Props) {
           </p>
           <p className="text-[15px] font-bold tabular-nums mt-0.5">
             {hasOutsideToday
-              ? "Outside"
+              ? "Outside Working"
               : isCheckedIn && !isCheckedOut
               ? fmtHM(elapsedHours)
               : todayRecord?.hours_worked

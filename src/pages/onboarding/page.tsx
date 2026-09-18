@@ -97,6 +97,10 @@ export default function Onboarding() {
           onBulkSetDeadline={o.bulkSetStageDeadline}
           onRefresh={o.loadData}
           onStartOnboarding={o.openStartOnboarding}
+          hireDocumentsByRequestId={o.hireDocumentsByRequestId}
+          onSyncHireDocs={o.syncHireDocuments}
+          onAttachHireDoc={o.attachHireDoc}
+          onAddHireDocToChecklist={o.addHireDocToChecklist}
         />
       )}
 

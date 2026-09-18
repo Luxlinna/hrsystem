@@ -1,9 +1,12 @@
-import React, { memo } from "react";
-import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
-import type { Employee, NewRecord, Branch } from "../types";
+import React, { memo, useCallback } from "react";
+import type { Employee, NewRecord, Branch, DisciplinarySeverity } from "../types";
 import { DisciplinaryScopePicker } from "./DisciplinaryScopePicker";
 import { DisciplinaryTypePicker } from "./DisciplinaryTypePicker";
 import { DisciplinarySeverityPicker } from "./DisciplinarySeverityPicker";
+import { WarningFileUpload } from "./WarningFileUpload";
+import { DisciplinaryEmployeeSection } from "./DisciplinaryEmployeeSection";
+import { DisciplinaryFormFields } from "./DisciplinaryFormFields";
+import { useDisciplinaryEmployeeFilter } from "../hooks/useDisciplinaryEmployeeFilter";
 
 interface DisciplinaryModalProps {
   isOpen: boolean;
@@ -30,6 +33,48 @@ export const DisciplinaryModal = memo(function DisciplinaryModal({
   saving,
   onSubmit,
 }: DisciplinaryModalProps) {
+  const { searchableEmployees, branchHasZeroStaff, selectedBranchName } =
+    useDisciplinaryEmployeeFilter({
+      employees,
+      branches,
+      newRecord,
+      activeBranchName,
+    });
+
+  const selectedEmp = employees.find((e) => e.id === newRecord.employee_id);
+
+  const handleSelectEmployeeId = useCallback(
+    (id: string) => {
+      setNewRecord((prev) => ({ ...prev, employee_id: id }));
+    },
+    [setNewRecord]
+  );
+
+  const handleSelectType = useCallback(
+    (type: string) => {
+      setNewRecord((prev) => ({
+        ...prev,
+        type,
+        warning_type: type,
+      }));
+    },
+    [setNewRecord]
+  );
+
+  const handleSelectSeverity = useCallback(
+    (severity: DisciplinarySeverity) => {
+      setNewRecord((prev) => ({ ...prev, severity }));
+    },
+    [setNewRecord]
+  );
+
+  const handleFileChange = useCallback(
+    (file: File | null) => {
+      setNewRecord((prev) => ({ ...prev, document_file: file }));
+    },
+    [setNewRecord]
+  );
+
   if (!isOpen) return null;
 
   return (
@@ -38,20 +83,21 @@ export const DisciplinaryModal = memo(function DisciplinaryModal({
       onClick={() => !saving && onClose()}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100/90 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150 max-h-[92vh]"
+        className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100/90 dark:border-slate-800 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150 max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-5 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-slate-50 via-gray-50/50 to-white flex items-center justify-between shrink-0">
+        {/* Header */}
+        <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 via-gray-50/50 to-white dark:from-slate-900 dark:to-slate-850 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-[#253C7D] text-white flex items-center justify-center font-bold text-xl shrink-0 shadow-xs">
               <i className="ri-file-shield-line" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                Log Disciplinary Record / PIP
+              <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-tight">
+                Log Disciplinary Record / Issue Warning
               </h3>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Document a warning, policy violation, workplace incident, or performance plan
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Issue a formal warning, record corrective action, employee promise, and attach signed documents
               </p>
             </div>
           </div>
@@ -59,7 +105,7 @@ export const DisciplinaryModal = memo(function DisciplinaryModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 cursor-pointer"
+            className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
           >
             <i className="ri-close-line text-lg" />
           </button>
@@ -74,95 +120,63 @@ export const DisciplinaryModal = memo(function DisciplinaryModal({
             setNewRecord={setNewRecord}
           />
 
-          <div>
-            <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Select Employee <span className="text-rose-500">*</span>
-            </label>
-            <EmployeeSearchSelect
-              employees={employees}
-              value={newRecord.employee_id}
-              onChange={(id) => setNewRecord({ ...newRecord, employee_id: id })}
-            />
-          </div>
+          <DisciplinaryEmployeeSection
+            searchableEmployees={searchableEmployees}
+            employeeId={newRecord.employee_id}
+            selectedEmp={selectedEmp}
+            branchHasZeroStaff={branchHasZeroStaff}
+            selectedBranchName={selectedBranchName}
+            onSelectEmployeeId={handleSelectEmployeeId}
+          />
 
           <DisciplinaryTypePicker
             selectedType={newRecord.type}
-            onSelectType={(type) => setNewRecord({ ...newRecord, type })}
+            onSelectType={handleSelectType}
           />
 
           <DisciplinarySeverityPicker
             selectedSeverity={newRecord.severity}
-            onSelectSeverity={(severity) => setNewRecord({ ...newRecord, severity })}
+            onSelectSeverity={handleSelectSeverity}
           />
 
-          <div>
-            <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Case Title / Subject <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={newRecord.title}
-              onChange={(e) => setNewRecord({ ...newRecord, title: e.target.value })}
-              placeholder="e.g. Unexcused repeated tardiness, Client protocol breach..."
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
+          <DisciplinaryFormFields
+            newRecord={newRecord}
+            setNewRecord={setNewRecord}
+          />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Incident Date <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="date"
-                required
-                value={newRecord.incident_date}
-                onChange={(e) => setNewRecord({ ...newRecord, incident_date: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-1.5">
-                Follow-up / Review Target Date
-              </label>
-              <input
-                type="date"
-                value={newRecord.follow_up_date}
-                onChange={(e) => setNewRecord({ ...newRecord, follow_up_date: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-          </div>
+          <WarningFileUpload
+            documentFile={newRecord.document_file || null}
+            onFileChange={handleFileChange}
+            existingUrl={newRecord.document_url}
+            existingName={newRecord.document_name}
+          />
 
-          <div>
-            <label className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider block mb-1.5">
-              Incident Details &amp; Summary
-            </label>
-            <textarea
-              rows={3}
-              value={newRecord.description}
-              onChange={(e) => setNewRecord({ ...newRecord, description: e.target.value })}
-              placeholder="Outline what happened, witnesses, evidence, or previous discussions..."
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
-
+          {/* Action Buttons */}
           <div className="pt-2 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving || !newRecord.employee_id || !newRecord.title.trim()}
-              className="px-5 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+              className="px-5 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
             >
-              {saving ? "Saving Record..." : "Log Record"}
+              {saving ? (
+                <>
+                  <i className="ri-loader-4-line animate-spin" />
+                  <span>Saving Record...</span>
+                </>
+              ) : (
+                <>
+                  <i className="ri-check-line" />
+                  <span>Save Warning Record</span>
+                </>
+              )}
             </button>
           </div>
         </form>

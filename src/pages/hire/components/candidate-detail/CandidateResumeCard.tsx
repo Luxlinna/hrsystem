@@ -84,7 +84,7 @@ export const CandidateResumeCard = memo(function CandidateResumeCard({
 
       {/* Document List */}
       {documents.length > 0 ? (
-        <div className="space-y-2.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {documents.map((doc, idx) => (
             <CandidateDocumentItem
               key={`${doc.url}-${idx}`}

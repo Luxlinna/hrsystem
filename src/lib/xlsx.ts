@@ -316,6 +316,230 @@ export function downloadXlsx(wb: WorkBook, filename = "export.xlsx"): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function letterToCol(letters: string): number {
+  let col = 0;
+  const upper = letters.toUpperCase();
+  for (let i = 0; i < upper.length; i++) {
+    col = col * 26 + (upper.charCodeAt(i) - 64);
+  }
+  return col - 1;
+}
+
+function parseCsvText(text: string): any[][] {
+  const clean = text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const lines: any[][] = [];
+  let curLine: string[] = [];
+  let curCell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < clean.length; i++) {
+    const ch = clean[i];
+    const next = clean[i + 1];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (next === '"') {
+          curCell += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        curCell += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === "," || ch === "\t") {
+        curLine.push(curCell.trim());
+        curCell = "";
+      } else if (ch === "\n") {
+        curLine.push(curCell.trim());
+        if (curLine.some((c) => c !== "")) lines.push(curLine);
+        curLine = [];
+        curCell = "";
+      } else {
+        curCell += ch;
+      }
+    }
+  }
+  if (curCell || curLine.length > 0) {
+    curLine.push(curCell.trim());
+    if (curLine.some((c) => c !== "")) lines.push(curLine);
+  }
+  return lines;
+}
+
+async function parseZipEntries(buffer: ArrayBuffer | Uint8Array): Promise<Record<string, Uint8Array>> {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  const entries: Record<string, Uint8Array> = {};
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let pos = 0;
+
+  while (pos < bytes.length - 30) {
+    const sig = view.getUint32(pos, true);
+    if (sig !== 0x04034b50) {
+      break;
+    }
+    const compression = view.getUint16(pos + 8, true);
+    const compSize = view.getUint32(pos + 18, true);
+    const nameLen = view.getUint16(pos + 26, true);
+    const extraLen = view.getUint16(pos + 28, true);
+
+    const nameBuf = bytes.subarray(pos + 30, pos + 30 + nameLen);
+    const name = new TextDecoder().decode(nameBuf);
+    const dataOffset = pos + 30 + nameLen + extraLen;
+    const compData = bytes.subarray(dataOffset, dataOffset + compSize);
+
+    if (compression === 0) {
+      entries[name] = compData;
+    } else if (compression === 8 && typeof DecompressionStream !== "undefined") {
+      try {
+        const ds = new DecompressionStream("deflate-raw");
+        const writer = ds.writable.getWriter();
+        writer.write(compData);
+        writer.close();
+        const reader = ds.readable.getReader();
+        const chunks: Uint8Array[] = [];
+        while (true) {
+          const res = await reader.read();
+          if (res.done) break;
+          if (res.value) chunks.push(res.value);
+        }
+        const total = chunks.reduce((a, b) => a + b.length, 0);
+        const out = new Uint8Array(total);
+        let cur = 0;
+        for (const c of chunks) {
+          out.set(c, cur);
+          cur += c.length;
+        }
+        entries[name] = out;
+      } catch (_e) {
+        // Skip unparseable
+      }
+    }
+    pos = dataOffset + compSize;
+  }
+  return entries;
+}
+
+export async function read(buffer: ArrayBuffer | Uint8Array, _options?: any): Promise<WorkBook> {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+
+  if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
+    const text = new TextDecoder("utf-8").decode(bytes);
+    const csvData = parseCsvText(text);
+    return {
+      SheetNames: ["Sheet1"],
+      Sheets: {
+        Sheet1: {
+          data: csvData,
+        },
+      },
+    };
+  }
+
+  const entries = await parseZipEntries(bytes);
+  const sharedStrings: string[] = [];
+
+  const ssEntry = entries["xl/sharedStrings.xml"];
+  if (ssEntry) {
+    const ssXml = new TextDecoder("utf-8").decode(ssEntry);
+    const siRegex = /<si>(.*?)<\/si>/gs;
+    let siMatch;
+    while ((siMatch = siRegex.exec(ssXml)) !== null) {
+      const siInner = siMatch[1];
+      const tRegex = /<t[^>]*>(.*?)<\/t>/gs;
+      let tMatch;
+      let textVal = "";
+      while ((tMatch = tRegex.exec(siInner)) !== null) {
+        textVal += tMatch[1]
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, '"')
+          .replace(/&apos;/g, "'");
+      }
+      sharedStrings.push(textVal);
+    }
+  }
+
+  const sheetEntries = Object.keys(entries).filter((k) => k.startsWith("xl/worksheets/sheet") && k.endsWith(".xml"));
+  const sheetNames: string[] = [];
+  const sheets: Record<string, WorkSheet> = {};
+
+  for (let s = 0; s < sheetEntries.length; s++) {
+    const entryKey = sheetEntries[s];
+    const sheetName = `Sheet${s + 1}`;
+    const sheetXml = new TextDecoder("utf-8").decode(entries[entryKey]);
+
+    const rows: any[][] = [];
+    const rowRegex = /<row[^>]*r="(\d+)"[^>]*>(.*?)<\/row>/gs;
+    let rowMatch;
+
+    while ((rowMatch = rowRegex.exec(sheetXml)) !== null) {
+      const rowIdx = parseInt(rowMatch[1], 10) - 1;
+      const rowContent = rowMatch[2];
+      const cellRegex = /<c\s+r="([A-Z]+)(\d+)"(?:\s+s="[^"]*")?(?:\s+t="([^"]*)")?[^>]*>(?:<is><t>([\s\S]*?)<\/t><\/is>|<v>([\s\S]*?)<\/v>)?<\/c>/g;
+      let cellMatch;
+
+      if (!rows[rowIdx]) rows[rowIdx] = [];
+
+      while ((cellMatch = cellRegex.exec(rowContent)) !== null) {
+        const colLetters = cellMatch[1];
+        const colIdx = letterToCol(colLetters);
+        const cellType = cellMatch[3];
+        const inlineText = cellMatch[4];
+        const vText = cellMatch[5];
+
+        let val: any = "";
+        if (inlineText !== undefined) {
+          val = inlineText
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'");
+        } else if (vText !== undefined) {
+          if (cellType === "s") {
+            const sIdx = parseInt(vText, 10);
+            val = sharedStrings[sIdx] ?? "";
+          } else {
+            val = vText;
+          }
+        }
+        rows[rowIdx][colIdx] = val;
+      }
+    }
+
+    const dense: any[][] = [];
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r] || [];
+      const cleanRow: any[] = [];
+      for (let c = 0; c < row.length; c++) {
+        cleanRow.push(row[c] !== undefined ? row[c] : "");
+      }
+      dense.push(cleanRow);
+    }
+
+    sheetNames.push(sheetName);
+    sheets[sheetName] = {
+      data: dense,
+      name: sheetName,
+    };
+  }
+
+  if (sheetNames.length === 0) {
+    sheetNames.push("Sheet1");
+    sheets["Sheet1"] = { data: [] };
+  }
+
+  return {
+    SheetNames: sheetNames,
+    Sheets: sheets,
+  };
+}
+
 export const utils = {
   book_new: (): WorkBook => ({
     SheetNames: [],
@@ -346,6 +570,21 @@ export const utils = {
     }
     wb.Sheets[cleanName] = ws;
   },
+
+  sheet_to_json: (ws: WorkSheet, _opts?: any): any[] => {
+    if (!ws || !ws.data || ws.data.length < 2) return [];
+    const headers = ws.data[0].map((h) => String(h ?? "").trim());
+    const rows = ws.data.slice(1);
+    return rows
+      .filter((r) => r.some((cell) => cell !== undefined && cell !== null && String(cell).trim() !== ""))
+      .map((r) => {
+        const obj: Record<string, any> = {};
+        headers.forEach((h, i) => {
+          obj[h] = r[i] !== undefined ? r[i] : "";
+        });
+        return obj;
+      });
+  },
 };
 
 export const writeFile = downloadXlsx;
@@ -357,4 +596,5 @@ export default {
   write,
   generateXlsxBuffer,
   downloadXlsx,
+  read,
 };

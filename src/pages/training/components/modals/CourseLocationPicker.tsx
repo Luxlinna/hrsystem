@@ -1,9 +1,8 @@
-import { memo, useMemo, useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { memo, useMemo, useCallback } from "react";
 import type { CourseFormState, MeetingRoomOption, Branch } from "../../types";
-import { decodeCourseDescription, type LocationType } from "./courseModalUtils";
-import { RequirementsSelectDropdown } from "@/pages/meeting-rooms/components/modals/RequirementsSelectDropdown";
-import { RefreshmentsSelectDropdown } from "@/pages/meeting-rooms/components/modals/RefreshmentsSelectDropdown";
+import type { LocationType } from "./courseModalUtils";
+import { useRoomSchedule } from "./useRoomSchedule";
+import { CourseRoomSelector } from "./CourseRoomSelector";
 
 interface CourseLocationPickerProps {
   form: CourseFormState;
@@ -22,11 +21,6 @@ export const CourseLocationPicker = memo(function CourseLocationPicker({
   meetingRooms,
   branches,
 }: CourseLocationPickerProps) {
-  const [roomBookings, setRoomBookings] = useState<
-    { id: string; title: string; start_time: string; end_time: string }[]
-  >([]);
-  const [loadingSchedule, setLoadingSchedule] = useState(false);
-
   // Available meeting rooms filtered by course branch scope
   const availableRooms = useMemo(() => {
     if (form.is_admin_course || !form.branch_id) {
@@ -41,101 +35,26 @@ export const CourseLocationPicker = memo(function CourseLocationPicker({
     return availableRooms.find((r) => form.location.includes(r.name)) || null;
   }, [availableRooms, form.location]);
 
-  // Fetch booked times for this room on the scheduled date
-  useEffect(() => {
-    if (!selectedRoom || !form.scheduled_date) {
-      setRoomBookings([]);
-      return;
-    }
-    let cancelled = false;
-    setLoadingSchedule(true);
+  const { roomBookings, loadingSchedule, conflict } = useRoomSchedule(
+    selectedRoom,
+    form.scheduled_date,
+    form.title,
+    form.start_time,
+    form.end_time
+  );
 
-    const loadRoomSchedule = async () => {
-      // 1. Regular room bookings from room_bookings table
-      const { data: rb } = await supabase
-        .from("room_bookings")
-        .select("id, title, start_time, end_time, status")
-        .eq("room_id", selectedRoom.id)
-        .eq("date", form.scheduled_date)
-        .neq("status", "rejected")
-        .neq("status", "cancelled");
-
-      // 2. Training courses decoded from description
-      const { data: tc } = await supabase
-        .from("training_courses")
-        .select("id, title, description")
-        .is("deleted_at", null);
-
-      if (cancelled) return;
-
-      const merged: { id: string; title: string; start_time: string; end_time: string }[] = [];
-      const seenTimes = new Set<string>();
-
-      (rb || []).forEach((b) => {
-        if (b.start_time && b.end_time) {
-          const sTime = b.start_time.slice(0, 5);
-          const eTime = b.end_time.slice(0, 5);
-          const timeKey = `${sTime}-${eTime}`;
-          seenTimes.add(timeKey);
-          merged.push({ id: b.id, title: b.title, start_time: sTime, end_time: eTime });
-        }
-      });
-
-      (tc || []).forEach((c) => {
-        if (c.title === form.title) return;
-        const { meta } = decodeCourseDescription(c.description);
-        if (
-          meta.scheduled_date === form.scheduled_date &&
-          meta.location &&
-          meta.location.toLowerCase().includes(selectedRoom.name.toLowerCase()) &&
-          meta.start_time &&
-          meta.end_time
-        ) {
-          const sTime = meta.start_time.slice(0, 5);
-          const eTime = meta.end_time.slice(0, 5);
-          const timeKey = `${sTime}-${eTime}`;
-          if (!seenTimes.has(timeKey)) {
-            seenTimes.add(timeKey);
-            merged.push({
-              id: c.id,
-              title: `🎓 Training: ${c.title}`,
-              start_time: sTime,
-              end_time: eTime,
-            });
-          }
-        }
-      });
-
-      merged.sort((a, b) => a.start_time.localeCompare(b.start_time));
-      setRoomBookings(merged);
-      setLoadingSchedule(false);
-    };
-
-    loadRoomSchedule();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedRoom, form.scheduled_date, form.title]);
-
-  // Detect time overlap / conflict
-  const conflict = useMemo(() => {
-    if (!form.start_time || !form.end_time || roomBookings.length === 0) return null;
-    return (
-      roomBookings.find((b) => {
-        return form.start_time < b.end_time && form.end_time > b.start_time;
-      }) || null
-    );
-  }, [roomBookings, form.start_time, form.end_time]);
-
-  const handleRoomSelect = (roomId: string) => {
-    const room = availableRooms.find((r) => r.id === roomId);
-    if (!room) {
-      setForm((prev) => ({ ...prev, location: "" }));
-      return;
-    }
-    const roomLabel = room.floor ? `${room.name} (Floor ${room.floor})` : room.name;
-    setForm((prev) => ({ ...prev, location: roomLabel }));
-  };
+  const handleRoomSelect = useCallback(
+    (roomId: string) => {
+      const room = availableRooms.find((r) => r.id === roomId);
+      if (!room) {
+        setForm((prev) => ({ ...prev, location: "" }));
+        return;
+      }
+      const roomLabel = room.floor ? `${room.name} (Floor ${room.floor})` : room.name;
+      setForm((prev) => ({ ...prev, location: roomLabel }));
+    },
+    [availableRooms, setForm]
+  );
 
   return (
     <div className="space-y-3">
@@ -189,178 +108,18 @@ export const CourseLocationPicker = memo(function CourseLocationPicker({
 
       {/* Mode-Specific Input */}
       {locType === "room" ? (
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-500 font-medium">
-              Select from registered branch rooms:
-            </span>
-            <span className="text-[11px] font-semibold text-blue-700 bg-blue-100/60 px-2 py-0.5 rounded-full">
-              {availableRooms.length} {availableRooms.length === 1 ? "room" : "rooms"} available
-            </span>
-          </div>
-
-          {availableRooms.length > 0 ? (
-            <div className="space-y-2.5">
-              <select
-                value={selectedRoom?.id || ""}
-                onChange={(e) => handleRoomSelect(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs sm:text-sm font-bold text-gray-900 focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/10 cursor-pointer shadow-xs"
-              >
-                <option value="">-- Choose a Meeting Room --</option>
-                {availableRooms.map((room) => {
-                  const branchName = branches.find((b) => b.id === room.branch_id)?.name;
-                  const details = [
-                    room.floor ? `Floor ${room.floor}` : null,
-                    room.capacity ? `Cap: ${room.capacity} seats` : null,
-                    branchName && form.is_admin_course ? branchName : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ");
-
-                  return (
-                    <option key={room.id} value={room.id}>
-                      🏢 {room.name} {details ? `(${details})` : ""}
-                    </option>
-                  );
-                })}
-              </select>
-
-              {selectedRoom && (
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-white rounded-2xl border border-blue-200 text-xs shadow-xs">
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className="w-3.5 h-3.5 rounded-full shrink-0 ring-2 ring-white shadow-xs"
-                        style={{ backgroundColor: selectedRoom.color || "#253C7D" }}
-                      />
-                      <span className="font-extrabold text-sm text-gray-900">
-                        {selectedRoom.name}
-                      </span>
-                      {selectedRoom.floor && (
-                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-md font-bold text-xs">
-                          Floor {selectedRoom.floor}
-                        </span>
-                      )}
-                      {selectedRoom.capacity && (
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md font-bold text-xs flex items-center gap-1">
-                          <i className="ri-team-line" /> {selectedRoom.capacity} Seats
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-                      <i className="ri-checkbox-circle-fill text-emerald-500 text-sm" /> Reserved for
-                      Training
-                    </span>
-                  </div>
-
-                  {/* Room Meeting Schedule & Booked Times for this Day */}
-                  <div className="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/70 text-xs space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-gray-700 flex items-center gap-1.5">
-                        <i className="ri-calendar-schedule-line text-[#253C7D]" />
-                        Room Schedule on {typeof form.scheduled_date === "string" && form.scheduled_date ? form.scheduled_date : "Selected Date"}:
-                      </span>
-                      {loadingSchedule && (
-                        <span className="text-[10px] text-gray-400">Checking…</span>
-                      )}
-                    </div>
-
-                    {conflict && (
-                      <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 font-bold flex items-center gap-2 text-xs">
-                        <i className="ri-alarm-warning-line text-base text-rose-600 shrink-0" />
-                        <div>
-                          <span>Time Conflict: Room is already booked ({conflict.start_time} – {conflict.end_time}) for &ldquo;{conflict.title}&rdquo;.</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {roomBookings.length === 0 ? (
-                      <div className="flex items-center gap-1.5 text-emerald-700 font-semibold py-0.5">
-                        <i className="ri-checkbox-circle-line text-sm" />
-                        <span>Room is completely free all day on this date!</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                          Booked Meeting Times:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {roomBookings.map((b) => (
-                            <span
-                              key={b.id}
-                              className="px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-[11px] font-bold text-gray-700 flex items-center gap-1 shadow-2xs"
-                            >
-                              <i className="ri-time-line text-[#253C7D]" />
-                              <strong>
-                                {b.start_time} – {b.end_time}
-                              </strong>
-                              <span className="text-gray-400 font-normal truncate max-w-[120px]">
-                                ({b.title})
-                              </span>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Required Equipment & Support and Refreshments & Catering */}
-                  <div className="pt-2.5 space-y-3.5 border-t border-slate-200/80">
-                    <RequirementsSelectDropdown
-                      selectedRequirements={form.special_requirements || []}
-                      onToggleRequirement={(req) => {
-                        const current = form.special_requirements || [];
-                        const updated = current.includes(req)
-                          ? current.filter((r) => r !== req)
-                          : [...current, req];
-                        setForm((prev) => ({ ...prev, special_requirements: updated }));
-                      }}
-                      onSetRequirements={(reqs) => {
-                        setForm((prev) => ({ ...prev, special_requirements: reqs }));
-                      }}
-                      customReq={form.custom_requirement || ""}
-                      setCustomReq={(val) => {
-                        setForm((prev) => ({ ...prev, custom_requirement: val }));
-                      }}
-                    />
-
-                    <RefreshmentsSelectDropdown
-                      selectedRefreshments={form.refreshments || []}
-                      onToggleRefreshment={(ref) => {
-                        const current = form.refreshments || [];
-                        const updated = current.includes(ref)
-                          ? current.filter((r) => r !== ref)
-                          : [...current, ref];
-                        setForm((prev) => ({ ...prev, refreshments: updated }));
-                      }}
-                      onSetRefreshments={(refs) => {
-                        setForm((prev) => ({ ...prev, refreshments: refs }));
-                      }}
-                      customRef={form.custom_refreshment || ""}
-                      setCustomRef={(val) => {
-                        setForm((prev) => ({ ...prev, custom_refreshment: val }));
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <i className="ri-information-line text-base text-amber-600" />
-                <span>No meeting rooms registered for this branch yet.</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setLocType("custom")}
-                className="font-bold text-[#253C7D] hover:underline cursor-pointer"
-              >
-                Type custom location →
-              </button>
-            </div>
-          )}
-        </div>
+        <CourseRoomSelector
+          availableRooms={availableRooms}
+          selectedRoom={selectedRoom}
+          branches={branches}
+          form={form}
+          setForm={setForm}
+          setLocType={setLocType}
+          onRoomSelect={handleRoomSelect}
+          roomBookings={roomBookings}
+          loadingSchedule={loadingSchedule}
+          conflict={conflict}
+        />
       ) : locType === "online" ? (
         <div>
           <label className="block font-bold text-gray-700 text-xs mb-1.5 flex items-center gap-1.5">

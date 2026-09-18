@@ -2,6 +2,7 @@ import { escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
 import { sendDualRecruitmentNotification } from "./recruitmentNotifyEngine";
 import { resolveUserIdForEmployee } from "./recruitmentRecipients";
 import { notify } from "@/lib/notify";
+import { notifyInterviewScheduled } from "@/services/notifications/recruitmentNotificationTriggers";
 
 export interface InterviewNotifyParams {
   isCompleted: boolean;
@@ -89,6 +90,17 @@ export async function notifyInterviewScheduledOrCompleted(params: InterviewNotif
   const recruiterMsg = isCompleted
     ? `Evaluation ready: ${candidateName} interview was completed by ${actorName}. Score: ${score || "n/a"}/5.`
     : `Interview booked: ${candidateName} (${jobTitle}) scheduled for ${dateStr} by ${actorName}.`;
+
+  // Canonical Notification Engine Dispatch
+  if (!isCompleted) {
+    void notifyInterviewScheduled({
+      candidate: { id: candidateId, full_name: candidateName },
+      jobTitle,
+      interviewType,
+      scheduledTime: dateStr || "Scheduled Time",
+      interviewerNames: allNames.join(", ") || actorName,
+    }).catch((e) => console.error("[notifyInterviewScheduled] error:", e));
+  }
 
   // 1. Send primary dual notification (interviewer #1 + recruiter)
   await sendDualRecruitmentNotification({

@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { EmployeesHeader } from "./components/EmployeesHeader";
 import { EmployeesStatsRow } from "./components/EmployeesStatsRow";
 import { EmployeesFilterBar } from "./components/EmployeesFilterBar";
@@ -11,7 +12,8 @@ import { AddEmployeeModal } from "./components/AddEmployeeModal";
 import { SetUpPhoneAccountModal } from "./components/SetUpPhoneAccountModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useEmployees } from "./hooks/useEmployees";
-import { INITIAL_EMPLOYEE_FORM } from "./constants";
+import { useEmployeePermission } from "./hooks/useEmployeePermission";
+import { INITIAL_EMPLOYEE_FORM, getBranchCode, deriveBuHandle } from "./constants";
 
 export default function EmployeesPage() {
   const {
@@ -30,6 +32,9 @@ export default function EmployeesPage() {
     deleteEmployee, roles,
   } = useEmployees();
 
+  const navigate = useNavigate();
+  const { canManageEmployeeSettings } = useEmployeePermission();
+
   const handleOpenAddModal = useCallback(() => {
     const isSite = selectedBranchId && selectedBranchId.startsWith("site:");
     const branchId = isSite
@@ -37,13 +42,23 @@ export default function EmployeesPage() {
       : (selectedBranchId || targetBranch || userBranchId || "");
     const siteId = isSite ? selectedBranchId.substring(5) : "";
 
+    const branch = branches.find((b) => b.id === branchId);
+    const branchName = branch?.name || "";
+    const code = branchName ? getBranchCode(branchName) : "";
+    const handle = branchName ? deriveBuHandle(branchName, code) : "";
+
     setForm({
       ...INITIAL_EMPLOYEE_FORM,
       branch_id: branchId,
+      code_bu: code,
+      bu_full_name: branchName,
+      handle_bu: handle,
+      site: branchName ? `Main Office (${branchName})` : "Main Office",
+      working_location: branch?.location || "Phnom Penh",
       default_work_location_id: siteId,
     });
     setShowAddModal(true);
-  }, [selectedBranchId, targetBranch, userBranchId, visibleBranches, setForm, setShowAddModal]);
+  }, [selectedBranchId, targetBranch, userBranchId, visibleBranches, branches, setForm, setShowAddModal]);
 
   const handleInviteEmployee = useCallback(
     (e: any) => inviteUser(e.email, e.first_name, e.last_name, e.role),
@@ -57,6 +72,8 @@ export default function EmployeesPage() {
           branchCount={branchCount}
           canManage={false}
           onOpenAddModal={() => {}}
+          canManageSettings={canManageEmployeeSettings}
+          onOpenSettings={() => navigate("/employees/settings")}
         />
         <PartnerBranchPrivacyShield
           moduleName="Employee Directory"
@@ -73,6 +90,8 @@ export default function EmployeesPage() {
         branchCount={branchCount}
         canManage={canManage}
         onOpenAddModal={handleOpenAddModal}
+        canManageSettings={canManageEmployeeSettings}
+        onOpenSettings={() => navigate("/employees/settings")}
       />
 
       <EmployeesStatsRow stats={stats} branchCount={branchCount} />

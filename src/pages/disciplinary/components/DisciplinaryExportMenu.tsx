@@ -1,7 +1,6 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
 import type { DisciplinaryRecord } from "../types";
 import {
-  exportDisciplinaryPDF,
   exportDisciplinaryXLSX,
   exportDisciplinaryCSV,
 } from "../exportUtils";
@@ -11,7 +10,7 @@ interface DisciplinaryExportMenuProps {
   disabled?: boolean;
 }
 
-type Format = "pdf" | "xlsx" | "csv";
+type Format = "xlsx" | "csv";
 
 export const DisciplinaryExportMenu = memo(function DisciplinaryExportMenu({
   records,
@@ -36,8 +35,7 @@ export const DisciplinaryExportMenu = memo(function DisciplinaryExportMenu({
       setExporting(fmt);
       setOpen(false);
       try {
-        if (fmt === "pdf") exportDisciplinaryPDF(records);
-        else if (fmt === "xlsx") await exportDisciplinaryXLSX(records);
+        if (fmt === "xlsx") await exportDisciplinaryXLSX(records);
         else if (fmt === "csv") exportDisciplinaryCSV(records);
       } finally {
         setTimeout(() => setExporting(null), 700);
@@ -48,24 +46,16 @@ export const DisciplinaryExportMenu = memo(function DisciplinaryExportMenu({
 
   const exportOptions = [
     {
-      fmt: "pdf" as Format,
-      label: "PDF Incidents Report",
-      ext: ".pdf",
-      desc: "Print-ready summary report with severity & PIP status",
-      icon: "ri-file-pdf-line",
-      color: "text-rose-600 bg-rose-50 group-hover:bg-rose-100",
-    },
-    {
       fmt: "xlsx" as Format,
-      label: "Excel Disciplinary Log",
+      label: "Excel Disciplinary & Warning Log",
       ext: ".xlsx",
-      desc: "Multi-column structured case spreadsheet with PIP details",
+      desc: "Multi-column structured case spreadsheet with warning & action details",
       icon: "ri-file-excel-2-line",
       color: "text-emerald-600 bg-emerald-50 group-hover:bg-emerald-100",
     },
     {
       fmt: "csv" as Format,
-      label: "CSV Case Records",
+      label: "CSV Warning Records",
       ext: ".csv",
       desc: "Raw comma-separated incident & warning records",
       icon: "ri-file-text-line",

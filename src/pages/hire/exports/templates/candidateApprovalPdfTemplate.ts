@@ -4,45 +4,8 @@ import {
   getOfficialCompanyNameKhmer,
   getOfficialCompanyNameEnglish,
 } from "@/services/formLogoService";
-
-function renderSignatoryBox(
-  title: string,
-  assignedName: string,
-  sigData?: {
-    comment?: string | null;
-    checked_by?: string | null;
-    status: string;
-    signed_at?: string | null;
-  }
-): string {
-  const isApproved = sigData?.status === "approved";
-  const comment = sigData?.comment || "";
-  const dateStr = sigData?.signed_at
-    ? new Date(sigData.signed_at).toLocaleDateString("en-GB")
-    : "____/_____/_____";
-
-  return `
-    <div style="flex: 1; border-right: 1px solid #111; padding: 6px 8px; display: flex; flex-direction: column; justify-content: space-between; font-size: 10px;">
-      <div>
-        <div style="font-weight: bold; text-decoration: underline; margin-bottom: 3px;">Comment:</div>
-        <div style="min-height: 40px; font-size: 9.5px; color: ${comment ? "#111" : "#777"}; line-height: 1.3;">
-          ${comment || "…………………………………"}
-        </div>
-        <div style="margin-top: 6px; font-weight: bold; text-decoration: underline;">Checked by:</div>
-        <div style="min-height: 26px; display: flex; align-items: flex-end; padding-bottom: 2px;">
-          <div style="width: 100%; border-bottom: 1px dashed #444; font-family: 'Segoe Script', cursive, sans-serif; font-size: 11px; color: #1e3a8a;">
-            ${isApproved ? (sigData?.checked_by || assignedName) : "&nbsp;"}
-          </div>
-        </div>
-      </div>
-      <div style="margin-top: 10px; text-align: center;">
-        <div style="font-weight: bold; font-size: 10.5px; margin-bottom: 2px;">${assignedName}</div>
-        <div style="font-size: 9.5px; color: #222; margin-bottom: 4px;">${title}</div>
-        <div style="font-size: 9.5px; font-weight: bold;">Date: <span style="font-weight: normal;">${dateStr}</span></div>
-      </div>
-    </div>
-  `;
-}
+import { candidateApprovalPdfStyles } from "./candidateApprovalPdfStyles";
+import { renderSignatoryBox } from "./candidateApprovalPdfSignatoryBox";
 
 export function buildCandidateApprovalHtml(
   approval: CandidateApproval,
@@ -92,55 +55,7 @@ export function buildCandidateApprovalHtml(
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    @page {
-      size: A4 portrait;
-      margin: 8mm;
-    }
-    * {
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    body {
-      font-family: 'Inter', 'Kantumruy Pro', sans-serif;
-      color: #111;
-      margin: 0;
-      padding: 0;
-      background: #fff;
-      font-size: 10.5px;
-      line-height: 1.3;
-    }
-    .caf-page {
-      width: 100%;
-      max-width: 194mm;
-      margin: 0 auto;
-    }
-    .caf-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 6px;
-    }
-    .caf-table td, .caf-table th {
-      border: 1px solid #111;
-      padding: 3.5px 6px;
-    }
-    .label-cell {
-      font-weight: bold;
-      background-color: #fafafa;
-      width: 22%;
-      font-size: 10px;
-    }
-    .value-cell {
-      width: 28%;
-      font-size: 10px;
-    }
-    .sec-header {
-      font-size: 11px;
-      font-weight: bold;
-      margin-top: 5px;
-      margin-bottom: 3px;
-      text-decoration: underline;
-    }
+    ${candidateApprovalPdfStyles}
   </style>
 </head>
 <body>
@@ -204,13 +119,13 @@ export function buildCandidateApprovalHtml(
       </tr>
       <tr>
         <td class="label-cell">Current Salary:</td>
-        <td class="value-cell">${approval.current_salary || "$1,200"}</td>
+        <td class="value-cell">${approval.current_salary || "—"}</td>
         <td class="label-cell">Expectation Salary:</td>
-        <td class="value-cell" style="background-color: #0284c7; color: #fff; font-weight: bold;">${approval.expectation_salary || "$1,500"}</td>
+        <td class="value-cell" style="background-color: #0284c7; color: #fff; font-weight: bold;">${approval.expectation_salary || "—"}</td>
       </tr>
       <tr>
         <td class="label-cell">Current Benefit:</td>
-        <td class="value-cell">${approval.current_benefit || "Standard benefits"}</td>
+        <td class="value-cell">${approval.current_benefit || "—"}</td>
         <td class="label-cell">Notice Period:</td>
         <td class="value-cell">${approval.notice_period || "1 Month"}</td>
       </tr>
@@ -265,9 +180,9 @@ export function buildCandidateApprovalHtml(
     <div class="sec-header">III. Final Approval</div>
     <div style="display: flex; border: 1px solid #111; min-height: 125px;">
       ${renderSignatoryBox("CEO (Business Unit)", sigs?.ceo?.assigned_name || "CEO (Business Unit)", sigs?.ceo)}
-      ${renderSignatoryBox("HR Manager (HR Division)", sigs?.hr_manager?.assigned_name || "Ms. Chea TiengChanvathna", sigs?.hr_manager)}
-      ${renderSignatoryBox("HR Admin Director", sigs?.division_director?.assigned_name || "Mr. Chey Tola", sigs?.division_director)}
-      ${renderSignatoryBox("Chairwoman", sigs?.chairwoman?.assigned_name || "Mrs. Pin Phiroum", sigs?.chairwoman)}
+      ${renderSignatoryBox("HR Manager (HR Division)", sigs?.hr_manager?.assigned_name || "", sigs?.hr_manager)}
+      ${renderSignatoryBox("HR Admin Director", sigs?.division_director?.assigned_name || "", sigs?.division_director)}
+      ${renderSignatoryBox("Chairwoman", sigs?.chairwoman?.assigned_name || "", sigs?.chairwoman)}
     </div>
   </div>
 

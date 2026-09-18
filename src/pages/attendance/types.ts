@@ -8,6 +8,8 @@ export interface Employee {
   branch_id?: string | null;
   branches?: { id: string; name: string } | null;
   default_work_location_id?: string | null;
+  employee_code?: string | null;
+  biometric_user_id?: string | null;
 }
 
 export interface BiometricDevice {
@@ -96,4 +98,7 @@ export interface MatrixDay {
   dateStr: string;
   dayName: string;
   isWeekend: boolean;
+  isHoliday?: boolean;
+  holidayName?: string;
+  holidayLocalName?: string | null;
 }

@@ -133,8 +133,18 @@ export function useEmployeesMutations({
   const handleAddEmployee = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!form.first_name?.trim() || !form.last_name?.trim()) {
-        toast("Required fields", "Please fill in first name and last name.", "error");
+
+      const resolvedFullName = form.full_name?.trim() || `${form.first_name || ""} ${form.last_name || ""}`.trim();
+      let resolvedFirstName = form.first_name?.trim() || "";
+      let resolvedLastName = form.last_name?.trim() || "";
+      if ((!resolvedFirstName || !resolvedLastName) && resolvedFullName) {
+        const parts = resolvedFullName.split(/\s+/);
+        resolvedFirstName = parts[0] || "";
+        resolvedLastName = parts.slice(1).join(" ") || parts[0] || "";
+      }
+
+      if (!resolvedFirstName && !resolvedFullName) {
+        toast("Required fields", "Please fill in employee full name.", "error");
         return;
       }
       setSubmitting(true);
@@ -225,17 +235,105 @@ export function useEmployeesMutations({
         }
 
         const payload = {
-          first_name: form.first_name.trim(),
-          last_name: form.last_name.trim(),
+          // Personal Info & Identity
+          title: form.title || "Mr",
+          first_name: resolvedFirstName,
+          last_name: resolvedLastName,
+          full_name: resolvedFullName,
+          display_name: form.display_name?.trim() || resolvedFullName,
+          foreign_name: form.foreign_name?.trim() || null,
+          employee_code: form.employee_code?.trim() || resolvedBiometricId || null,
+          kh_name: form.kh_name?.trim() || null,
+          gender: form.gender || "Male",
+          date_of_birth: form.date_of_birth || null,
+          marital_status: form.marital_status || "Single",
+          nationality: form.nationality || "Khmer",
+          is_resident: form.is_resident !== false,
+          fringe_benefit: Boolean(form.fringe_benefit),
+          blood_group: form.blood_group || "None",
+          religion: form.religion || "None",
+          employee_tax_number: form.employee_tax_number?.trim() || null,
+          national_id_number: form.national_id_number?.trim() || form.identifications?.[0]?.identification_number?.trim() || null,
+          bank_accounts: form.bank_accounts || [],
+          identifications: form.identifications || [],
+          permanent_address: form.permanent_address?.trim() || null,
+          permanent_city: form.permanent_city?.trim() || null,
+          permanent_province: form.permanent_province?.trim() || null,
+          permanent_postal_code: form.permanent_postal_code?.trim() || null,
+          permanent_country: form.permanent_country || "Cambodia",
+          same_as_present_address: form.same_as_present_address !== false,
+          home_phone: form.home_phone?.trim() || null,
+          office_phone: form.office_phone?.trim() || null,
+          emergency_contacts: form.emergency_contacts || [],
+          family_members: form.family_members || [],
+          education_history: form.education_history || [],
+          training_history: form.training_history || [],
+          employment_history: form.employment_history || [],
+          achievement_history: form.achievement_history || [],
+          personal_attachments: form.personal_attachments || [],
+
+          code_bu: form.code_bu?.trim() || null,
+          bu_full_name: form.bu_full_name?.trim() || null,
+          handle_bu: form.handle_bu?.trim() || null,
+          division: form.division?.trim() || null,
+          department: form.department || null,
+          position: form.position?.trim() || form.role?.trim() || "Staff",
+          role: form.role?.trim() || form.position?.trim() || "Staff",
+          site: form.site?.trim() || null,
+          working_location: form.working_location?.trim() || null,
+
+          working_hour: form.working_hour?.trim() || null,
+          total_working_days: form.total_working_days?.trim() || null,
+          employment_type: form.employment_type || "Full Time",
+          start_date: form.start_date || form.join_date || new Date().toISOString().split("T")[0],
+          join_date: form.join_date || form.start_date || new Date().toISOString().split("T")[0],
+          line_manager: form.line_manager?.trim() || null,
+          reports_to: form.reports_to || null,
+          contract_type: form.contract_type || "FDC",
+          fdc_end_date: form.fdc_end_date || null,
+          contract_effective_date: form.contract_effective_date || null,
+          contract_end_date: form.contract_end_date || null,
+          contract_rate: form.contract_rate ? parseFloat(String(form.contract_rate)) : null,
+          contract_rate_currency: form.contract_rate_currency || "USD",
+          contract_rate_frequency: form.contract_rate_frequency || "Monthly",
+          contract_rate_after: form.contract_rate_after ? parseFloat(String(form.contract_rate_after)) : null,
+          contract_rate_after_currency: form.contract_rate_after_currency || "USD",
+          contract_rate_after_frequency: form.contract_rate_after_frequency || "Monthly",
+          contract_remark: form.contract_remark?.trim() || null,
+          hiring_status: form.hiring_status || "probation",
+          status: form.status || "onboarding",
+
+          basic_salary: form.basic_salary ? parseFloat(String(form.basic_salary)) : null,
+          tax_method: form.tax_method || "Resident",
+          allowance: form.allowance?.trim() || null,
+          bank_account_number: form.bank_account_number?.trim() || null,
+          bank_name: form.bank_name?.trim() || null,
+          nssf_number: form.nssf_info?.identity_code?.trim() || form.nssf_number?.trim() || null,
+          register_nssf: Boolean(form.register_nssf || form.nssf_info?.register_nssf || form.nssf_info?.identity_code?.trim() || form.nssf_number?.trim()),
+          hiring_info: {
+            nssf_info: form.nssf_info || null,
+          },
+          payroll_structure: form.payroll_structure || "Standard Monthly",
+          apply_day_in_month: Boolean(form.apply_day_in_month),
+          apply_working_hours_per_day: Boolean(form.apply_working_hours_per_day),
+          tax_salary: form.tax_salary ? parseFloat(String(form.tax_salary)) : null,
+          tax_salary_currency: form.tax_salary_currency || "USD",
+          tax_salary_frequency: form.tax_salary_frequency || "Monthly",
+          rate_items: form.rate_items || [],
+          payroll_attachments: form.payroll_attachments || [],
+          asset_bookings: form.asset_bookings || [],
+          asset_attachments: form.asset_attachments || [],
+
           email: cleanEmail,
           phone: cleanPhone,
-          role: form.role?.trim() || "Staff",
-          department: form.department,
-          status: form.status,
+          current_address: form.current_address?.trim() || null,
+          emergency_contact_name: form.emergency_contact_name?.trim() || null,
+          emergency_phone_number: form.emergency_phone_number?.trim() || null,
+          avatar_url: form.avatar_url?.trim() || null,
+          documents: form.documents || [],
+
           branch_id: resolvedBranch,
           default_work_location_id: resolvedLocation,
-          join_date: form.join_date || new Date().toISOString().split("T")[0],
-          reports_to: form.reports_to || null,
           biometric_user_id: resolvedBiometricId,
         };
 
@@ -251,7 +349,22 @@ export function useEmployeesMutations({
           }
         }
 
-        toast("Success", `${form.first_name} ${form.last_name} has been added.`, "success");
+        // Link booked assets in it_assets table
+        if (form.asset_bookings && form.asset_bookings.length > 0 && newEmp?.id) {
+          try {
+            const tags = form.asset_bookings.map((b) => b.tag).filter(Boolean);
+            if (tags.length > 0) {
+              await supabase
+                .from("it_assets")
+                .update({ employee_id: newEmp.id, status: "active" })
+                .in("asset_tag", tags);
+            }
+          } catch (assetErr) {
+            console.warn("Failed to update it_assets status for new employee:", assetErr);
+          }
+        }
+
+        toast("Success", `${resolvedFullName} has been added with hiring records.`, "success");
         await logActivity({
           module: "employees",
           action: "created",
@@ -259,7 +372,7 @@ export function useEmployeesMutations({
           entityId: newEmp.id,
           actorName,
           actorRole: roleName,
-          description: `Added new employee ${form.first_name} ${form.last_name}${cleanEmail ? ` (${cleanEmail})` : cleanPhone ? ` (${cleanPhone})` : " (Biometric only)"}`,
+          description: `Added new employee ${resolvedFullName}${cleanEmail ? ` (${cleanEmail})` : cleanPhone ? ` (${cleanPhone})` : " (Biometric only)"}`,
         });
 
         await notify({
@@ -270,6 +383,12 @@ export function useEmployeesMutations({
           entityId: newEmp.id,
           branchId: form.branch_id || targetBranch || null,
         });
+
+        try {
+          localStorage.removeItem("hr_add_employee_draft");
+        } catch {
+          /* ignore */
+        }
 
         setShowAddModal(false);
         setForm(INITIAL_EMPLOYEE_FORM);

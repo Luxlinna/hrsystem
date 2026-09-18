@@ -3,65 +3,65 @@
     background-color: transparent !important;
   }
 
-  html.dark .bg-white,
-  html.dark .bg-white\/60,
-  html.dark .bg-white\/80,
-  html.dark .bg-white\/90,
-  html.dark .bg-\[\#FAFAFA\],
-  html.dark .bg-\[\#FAFAF8\],
-  html.dark .bg-\[\#F5F5F0\],
-  html.dark .bg-\[\#F8F8F6\],
-  html.dark .bg-\[\#F8F8F7\],
-  html.dark .bg-gray-50,
-  html.dark .bg-gray-50\/30,
-  html.dark .bg-gray-50\/50,
-  html.dark .bg-gray-100,
-  html.dark [class*="bg-white"],
-  html.dark [class*="bg-white/"],
+  /* 1. Page-level Canvas & Body Backdrop */
+  html.dark,
+  html.dark body,
+  html.dark main,
+  html.dark .attendance-hub,
+  html.dark .training-hub,
+  html.dark [class*="bg-[#F8F9FB]"],
+  html.dark [class*="bg-[#F8F9FA]"],
+  html.dark [class*="bg-[#F8FAFC]"],
+  html.dark [class*="bg-[#F8F9FC]"],
   html.dark [class*="bg-[#FAFAFA]"],
   html.dark [class*="bg-[#FAFAF8]"],
-  html.dark [class*="bg-[#F8FAFC]"],
   html.dark [class*="bg-[#F5F5F0]"],
   html.dark [class*="bg-[#F8F8F6]"],
   html.dark [class*="bg-[#F8F8F7]"],
-  html.dark [class*="bg-gray-50"],
-  html.dark [class*="bg-gray-50/"],
-  html.dark [class*="bg-gray-100"],
-  html.dark [class*="bg-gray-100/"],
-  html.dark [class*="bg-slate-50"],
-  html.dark [class*="bg-slate-100"] {
-    background-color: #111827 !important;
+  html.dark [class*="bg-slate-50/"],
+  html.dark [class*="bg-gray-50/"] {
+    background-color: #0b0f19 !important;
+  }
+
+  /* 2. Elevated Card & Panel Surfaces */
+  html.dark .bg-white,
+  html.dark .bg-white\/80,
+  html.dark .bg-white\/90,
+  html.dark .bg-white\/95,
+  html.dark [class*="bg-white"]:not([class*="hover:"]):not(input):not(select):not(textarea):not(.pac-container):not(.pac-item):not(.recharts-default-tooltip) {
+    background-color: #151e2e !important;
+  }
+
+  html.dark .bg-white\/60 {
+    background-color: rgb(21 30 46 / 0.75) !important;
+  }
+
+  /* 3. Sub-surfaces & Inset Elements (Table headers, filters, badge pills) */
+  html.dark .bg-gray-50,
+  html.dark .bg-gray-100,
+  html.dark [class*="bg-gray-50"]:not([class*="hover:"]):not([class*="/"]):not(input):not(select):not(textarea),
+  html.dark [class*="bg-gray-100"]:not([class*="hover:"]):not([class*="/"]),
+  html.dark [class*="bg-slate-100"]:not([class*="hover:"]):not([class*="/"]) {
+    background-color: #101726 !important;
   }
 
   html.dark .bg-gray-200,
   html.dark [class*="bg-gray-200"],
   html.dark [class*="bg-slate-200"] {
-    background-color: #1f2937 !important;
+    background-color: #1a2538 !important;
   }
 
-  html.dark .bg-black\/40 {
-    background-color: rgb(0 0 0 / 0.68) !important;
+  /* 4. Modal and drawer backdrop overlays */
+  html.dark .bg-black\/30,
+  html.dark .bg-black\/40,
+  html.dark .bg-black\/50,
+  html.dark .bg-black\/60,
+  html.dark .bg-black\/70,
+  html.dark .bg-black\/80 {
+    background-color: rgb(0 0 0 / 0.72) !important;
   }
 
-  /* Page-level surfaces for the Time & Attendance and Training hubs. */
-  html.dark .attendance-hub,
-  html.dark .training-hub {
-    background-color: #0f172a !important;
-  }
-
-  /* Page-level background override for all hub pages that use bg-[#F8F9FB]. */
-  html.dark [class*="bg-[#F8F9FB]"],
-  html.dark [class*="bg-[#F8F9FA]"],
-  html.dark [class*="bg-[#F8FAFC]"],
-  html.dark [class*="bg-[#FAFAFA]"],
-  html.dark [class*="bg-[#FAFAF8]"],
-  html.dark [class*="bg-[#F5F5F0]"],
-  html.dark [class*="bg-[#F8F8F6]"],
-  html.dark [class*="bg-[#F8F8F7]"] {
-    background-color: #0f172a !important;
-  }
-
-  /* Modal and drawer gradient header backgrounds */
+  /* 5. Modal and drawer gradient header backgrounds */
   html.dark [class*="from-slate-50"],
   html.dark [class*="from-gray-50"],
   html.dark [class*="from-white"] {
@@ -74,35 +74,48 @@
   html.dark [class*="to-white"],
   html.dark [class*="to-gray-50"],
   html.dark [class*="to-slate-50"] {
-    --tw-gradient-to: #111827 !important;
+    --tw-gradient-to: #151e2e !important;
   }
 
-  /* Text color for [#0F172A] and similar dark-text-on-light defaults */
-  html.dark [class*="text-[#0F172A]"] {
-    color: #f8fafc !important;
-  }
-
+  /* 6. Cohesive Slate Borders */
   html.dark .border-gray-50,
   html.dark .border-gray-100,
   html.dark .border-gray-200,
   html.dark .border-gray-300,
   html.dark [class*="border-gray-"],
   html.dark [class*="border-slate-"] {
-    border-color: #263244 !important;
+    border-color: #24334a !important;
   }
 
+  /* 7. Typography and Contrast */
   html.dark .text-\[\#1A1A1A\],
   html.dark .text-gray-900,
   html.dark .text-gray-800,
-  html.dark .text-gray-700,
   html.dark [class*="text-gray-900"],
   html.dark [class*="text-gray-800"],
-  html.dark [class*="text-gray-700"],
   html.dark [class*="text-slate-900"],
   html.dark [class*="text-slate-800"],
   html.dark [class*="text-[#1A1A1A]"],
   html.dark [class*="text-[#0F172A]"] {
     color: #f8fafc !important;
+  }
+
+  html.dark .text-gray-700,
+  html.dark .text-gray-600,
+  html.dark [class*="text-gray-700"],
+  html.dark [class*="text-gray-600"],
+  html.dark [class*="text-slate-700"],
+  html.dark [class*="text-slate-600"] {
+    color: #cbd5e1 !important;
+  }
+
+  html.dark .text-gray-500,
+  html.dark .text-gray-400,
+  html.dark [class*="text-gray-500"],
+  html.dark [class*="text-gray-400"],
+  html.dark [class*="text-slate-500"],
+  html.dark [class*="text-slate-400"] {
+    color: #94a3b8 !important;
   }
 
   html.dark .text-\[\#253C7D\],
@@ -131,21 +144,7 @@
     --tw-ring-color: rgb(125 211 252 / 0.3) !important;
   }
 
-  html.dark .text-gray-600,
-  html.dark .text-gray-500,
-  html.dark [class*="text-gray-600"],
-  html.dark [class*="text-gray-500"],
-  html.dark [class*="text-slate-600"],
-  html.dark [class*="text-slate-500"] {
-    color: #cbd5e1 !important;
-  }
-
-  html.dark .text-gray-400,
-  html.dark [class*="text-gray-400"],
-  html.dark [class*="text-slate-400"] {
-    color: #94a3b8 !important;
-  }
-
+  /* 8. Interactive Hover States */
   html.dark [class*="hover:bg-gray-50"]:hover,
   html.dark [class*="hover:bg-gray-100"]:hover,
   html.dark [class*="hover:bg-gray-200"]:hover,
@@ -157,7 +156,7 @@
   html.dark .hover\:bg-black\/5:hover,
   html.dark .hover\:bg-slate-50\/80:hover,
   html.dark [class*="hover:bg-slate-50"]:hover {
-    background-color: #1e293b !important;
+    background-color: #1e2a3e !important;
   }
 
   html.dark .hover\:text-gray-900:hover,
@@ -166,10 +165,13 @@
     color: #ffffff !important;
   }
 
+  /* 9. Elevation Shadows */
   html.dark .shadow-xl,
   html.dark .shadow-2xl,
-  html.dark .shadow-md {
-    box-shadow: 0 18px 50px rgb(0 0 0 / 0.45) !important;
+  html.dark .shadow-md,
+  html.dark [class*="shadow-xl"],
+  html.dark [class*="shadow-2xl"] {
+    box-shadow: 0 20px 60px rgb(0 0 0 / 0.6) !important;
   }
 
   html.dark .ring-\[\#253C7D\]\/10 {
@@ -188,7 +190,7 @@
 
   html.dark option,
   html.dark optgroup {
-    background-color: #111827 !important;
+    background-color: #0c121e !important;
     color: #f8fafc !important;
   }
 }

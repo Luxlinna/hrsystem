@@ -1,5 +1,9 @@
 import { escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
 import { sendDualRecruitmentNotification } from "./recruitmentNotifyEngine";
+import {
+  notifyApprovalPending,
+  notifyCandidateSelected,
+} from "@/services/notifications/recruitmentNotificationTriggers";
 import type { Candidate, CandidateApproval } from "../../types";
 
 export type ApprovalStepKey = "ceo" | "hr_manager" | "division_director" | "chairwoman";
@@ -37,6 +41,20 @@ export async function notifyCandidateApprovalStepSigned({
 
   switch (signedStep) {
     case "ceo": {
+      void notifyApprovalPending({
+        entityType: "candidate_approval",
+        entityId: candidate.id,
+        entityCode: approval.form_number || "CAF",
+        entityTitle: `${candidateName} (${position})`,
+        approverRole: "HR Manager",
+        actorName,
+        actorRole: `CEO of BU${delegateTag}`,
+        businessUnit: buName,
+        targetBusinessUnit: "HR Division",
+        isCrossBu: true,
+        actionUrl: `/hire/candidates/${candidate.id}?openApproval=true`,
+      }).catch((e) => console.error("[CAF Step 1] canonical notify error:", e));
+
       await sendDualRecruitmentNotification({
         title: `📋 CAF Step 1 Signed: ${formNum}${candidateName}`,
         approverMessage: `${actorName}${delegateTag} signed Step 1 (CEO of BU). Forwarded to HR Manager at HR Division for Step 2 Review.`,
@@ -64,6 +82,20 @@ export async function notifyCandidateApprovalStepSigned({
     }
 
     case "hr_manager": {
+      void notifyApprovalPending({
+        entityType: "candidate_approval",
+        entityId: candidate.id,
+        entityCode: approval.form_number || "CAF",
+        entityTitle: `${candidateName} (${position})`,
+        approverRole: "HR Admin Director",
+        actorName,
+        actorRole: `HR Manager${delegateTag}`,
+        businessUnit: "HR Division",
+        targetBusinessUnit: buName,
+        isCrossBu: true,
+        actionUrl: `/hire/candidates/${candidate.id}?openApproval=true`,
+      }).catch((e) => console.error("[CAF Step 2] canonical notify error:", e));
+
       await sendDualRecruitmentNotification({
         title: `📑 CAF Step 2 Reviewed: ${formNum}${candidateName}`,
         approverMessage: `HR Manager ${actorName}${delegateTag} reviewed Step 2. Forwarded to HR Admin Director for Step 3 Approval.`,
@@ -91,6 +123,20 @@ export async function notifyCandidateApprovalStepSigned({
     }
 
     case "division_director": {
+      void notifyApprovalPending({
+        entityType: "candidate_approval",
+        entityId: candidate.id,
+        entityCode: approval.form_number || "CAF",
+        entityTitle: `${candidateName} (${position})`,
+        approverRole: "Chairwoman",
+        actorName,
+        actorRole: `HR Admin Director${delegateTag}`,
+        businessUnit: "HR Division",
+        targetBusinessUnit: "Corporate Executive Office",
+        isCrossBu: true,
+        actionUrl: `/hire/candidates/${candidate.id}?openApproval=true`,
+      }).catch((e) => console.error("[CAF Step 3] canonical notify error:", e));
+
       await sendDualRecruitmentNotification({
         title: `🏛️ CAF Step 3 Approved: ${formNum}${candidateName}`,
         approverMessage: `HR Admin Director ${actorName}${delegateTag} approved Step 3. Forwarded to Chairwoman for final executive authorization.`,
@@ -118,6 +164,13 @@ export async function notifyCandidateApprovalStepSigned({
     }
 
     case "chairwoman": {
+      void notifyCandidateSelected({
+        candidate,
+        jobTitle: position,
+        selectedBy: actorName,
+        businessUnit: buName,
+      }).catch((e) => console.error("[CAF Step 4] canonical notify error:", e));
+
       await sendDualRecruitmentNotification({
         title: `👑 CAF Fully Authorized: ${formNum}${candidateName}`,
         approverMessage: `Chairwoman ${actorName}${delegateTag} signed final authorization for ${candidateName}. All 4 approvals complete! Candidate ready for Salary Negotiation.`,

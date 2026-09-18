@@ -117,9 +117,9 @@ export function initCandidateApproval(
     hiring_manager: reqDetails?.hiringManager || (candidate.assigned_recruiter
       ? `${candidate.assigned_recruiter.first_name} ${candidate.assigned_recruiter.last_name}`
       : "Hiring Manager"),
-    current_salary: reqDetails?.currentSalary || "$1,200",
+    current_salary: reqDetails?.currentSalary || "",
     expectation_salary: reqDetails?.expectationSalary || expectationSalaryStr,
-    current_benefit: "Standard Health & Annual Bonus",
+    current_benefit: "",
     notice_period: reqDetails?.noticePeriod || candidate.notice_period || "1 Month",
 
     // Section II: Candidate Evaluation Summary
@@ -127,19 +127,16 @@ export function initCandidateApproval(
       candidate.education ||
       (candidate.skills && candidate.skills.length > 0
         ? `Skills: ${candidate.skills.join(", ")}`
-        : "Bachelor's Degree in relevant discipline with professional certifications."),
+        : ""),
     work_experience:
       candidate.work_experience ||
-      "Solid 3+ years demonstrated experience with a consistent track record of execution in similar responsibilities.",
+      "",
     strengths:
-      feedbackSynthesis.strengths ||
-      "High accountability, rapid learner, strong communication clarity, proactive collaboration, and great alignment with company core values.",
+      feedbackSynthesis.strengths || "",
     improvement:
-      feedbackSynthesis.improvement ||
-      "Can further expand depth in company-specific proprietary tools and enterprise workflow methodologies.",
+      feedbackSynthesis.improvement || "",
     overall_assessment:
-      feedbackSynthesis.overallAssessment ||
-      "Candidate performed exceptionally well across all interview stages. Cultural fit, technical capabilities, and leadership potential are strongly endorsed by all evaluators.",
+      feedbackSynthesis.overallAssessment || "",
     interview_panels: panels,
 
     // Section III: 4 Signatories dynamically mapped to actual role holders
@@ -148,7 +145,7 @@ export function initCandidateApproval(
         role_key: "ceo",
         title: "CEO (Business Unit)",
         default_name: "CEO (Business Unit)",
-        assigned_name: resolvedSignatories?.ceo || "James HI",
+        assigned_name: resolvedSignatories?.ceo || "",
         status: "pending",
         comment: "",
         checked_by: "",
@@ -158,7 +155,7 @@ export function initCandidateApproval(
         role_key: "hr_manager",
         title: "HR Manager (HR Division)",
         default_name: "HR Manager",
-        assigned_name: resolvedSignatories?.hr_manager || "Sokkhoeurn Leng",
+        assigned_name: resolvedSignatories?.hr_manager || "",
         status: "pending",
         comment: "",
         checked_by: "",
@@ -168,7 +165,7 @@ export function initCandidateApproval(
         role_key: "division_director",
         title: "HR Admin Director",
         default_name: "HR Admin Director",
-        assigned_name: resolvedSignatories?.division_director || "Phat Seign",
+        assigned_name: resolvedSignatories?.division_director || "",
         status: "pending",
         comment: "",
         checked_by: "",
@@ -178,7 +175,7 @@ export function initCandidateApproval(
         role_key: "chairwoman",
         title: "Chairwoman",
         default_name: "Chairwoman",
-        assigned_name: resolvedSignatories?.chairwoman || "Mrs. Pin Phiroum",
+        assigned_name: resolvedSignatories?.chairwoman || "",
         status: "pending",
         comment: "",
         checked_by: "",

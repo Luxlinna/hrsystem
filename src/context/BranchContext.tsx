@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { BranchInfo, BranchContextType } from "./branchTypes";
@@ -136,10 +136,13 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   }, [effectiveBranchId, selectedBranchId, branches, userSiteName, userBranchName]);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && effectiveBranchName) {
-      localStorage.setItem("hrm_selected_branch_name", effectiveBranchName);
+    if (typeof window !== "undefined") {
+      if (effectiveBranchName) {
+        localStorage.setItem("hrm_selected_branch_name", effectiveBranchName);
+      }
+      localStorage.setItem("hrm_is_hr_division", isHrDivision ? "true" : "false");
     }
-  }, [effectiveBranchName]);
+  }, [effectiveBranchName, isHrDivision]);
 
   const isBranchScoped = Boolean(effectiveBranchId);
 

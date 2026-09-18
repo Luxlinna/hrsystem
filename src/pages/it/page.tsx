@@ -8,6 +8,7 @@ import { TicketsTabContent } from "./components/tickets/TicketsTabContent";
 import { TicketDetailDrawer } from "./components/tickets/TicketDetailDrawer";
 import { SecurityTabContent } from "./components/security/SecurityTabContent";
 import { StationeryTabContent } from "./components/stationery/StationeryTabContent";
+import { AssetCategoriesTabContent } from "./components/categories/AssetCategoriesTabContent";
 import { ITModalsContainer } from "./components/modals/ITModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useITManagement } from "./hooks/useITManagement";
@@ -110,6 +111,28 @@ export default function ITManagement() {
         </>
       )}
 
+      {it.tab === "categories" && (
+        <AssetCategoriesTabContent
+          assets={it.assets}
+          canManage={it.canManage}
+          onSelectCategory={(categoryName) => {
+            it.setAssetSearch(categoryName.split(":")[0] || categoryName);
+            it.setTab("assets");
+          }}
+          onOpenAssetModalForCategory={(categoryName) => {
+            it.setEditingAsset(null);
+            it.setAssetForm((prev) => ({
+              ...prev,
+              category: categoryName,
+              type: categoryName.includes("Laptop") ? "Laptop" :
+                categoryName.includes("Desktop") ? "Display" :
+                categoryName.includes("Phone") || categoryName.includes("Contact") ? "Mobile" : "Other",
+            }));
+            it.setAssetModal(true);
+          }}
+        />
+      )}
+
       {it.tab === "tickets" && (
         <>
           <TicketsFilterBar
@@ -158,6 +181,8 @@ export default function ITManagement() {
         savingAsset={it.savingAsset}
         employees={it.employees}
         branches={it.branches}
+        activeBranchId={it.targetBranch || it.userBranchId || activeBranch?.id || null}
+        activeBranchName={activeBranchName || null}
         handleSaveAssetEdit={it.handleSaveAssetEdit}
         handleCreateAsset={it.handleCreateAsset}
         ticketModal={it.ticketModal}

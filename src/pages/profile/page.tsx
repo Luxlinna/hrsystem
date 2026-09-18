@@ -5,98 +5,39 @@ import { ProfileAccountForm } from "./components/ProfileAccountForm";
 import { ProfileProfessionalSection } from "./components/ProfileProfessionalSection";
 import { ProfileWorkInfoSidebar } from "./components/ProfileWorkInfoSidebar";
 import AvatarCropModal from "@/components/AvatarCropModal";
-import { toast } from "@/components/Toast";
 import { useProfile } from "./hooks/useProfile";
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState<"candidate" | "account">("candidate");
+  const profile = useProfile();
 
-  const {
-    user,
-    role,
-    roleLoading,
-    can,
-    displayName,
-    setDisplayName,
-    employee,
-    employeeLoading,
-    managerName,
-    directReports,
-    phone,
-    setPhone,
-    avatarUrl,
-    avatarSrc,
-    savingCrop,
-    removingAvatar,
-    editMenuOpen,
-    setEditMenuOpen,
-    fileInputRef,
-    savingName,
-    newPassword,
-    setNewPassword,
-    confirmPassword,
-    setConfirmPassword,
-    savingPassword,
-    savingPhone,
-    tenure,
-    initials,
-    handleSavePhone,
-    handleAvatarSelect,
-    handleCropConfirm,
-    handleEditAvatar,
-    closeCropModal,
-    handleRemoveAvatar,
-    handleSaveName,
-    handleChangePassword,
-
-    location,
-    setLocation,
-    education,
-    setEducation,
-    workExperience,
-    setWorkExperience,
-    skills,
-    setSkills,
-    languages,
-    setLanguages,
-    expectedSalary,
-    setExpectedSalary,
-    noticePeriod,
-    setNoticePeriod,
-    resumeUrl,
-    resumeName,
-    savingProfessional,
-    uploadingResume,
-    handleSaveProfessional,
-    handleResumeUpload,
-    handleRemoveResume,
-  } = useProfile();
-
-  const candidateId = employee?.candidate_code || (employee?.candidate_id ? `CAN-2026-${employee.candidate_id.slice(0, 6).toUpperCase()}` : null);
+  const candidateId =
+    profile.employee?.candidate_code ||
+    (profile.employee?.candidate_id
+      ? `CAN-2026-${profile.employee.candidate_id.slice(0, 6).toUpperCase()}`
+      : null);
 
   return (
     <div className="p-6 lg:p-10 min-h-screen bg-[#F8FAFC] font-sans">
-      {/* Header */}
       <ProfileHeader />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl">
         {/* ── LEFT: account & candidate master ── */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Avatar + name */}
           <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs">
             <ProfileAvatarSection
-              avatarUrl={avatarUrl}
-              displayName={displayName}
-              email={user?.email}
-              initials={initials}
-              savingCrop={savingCrop}
-              removingAvatar={removingAvatar}
-              editMenuOpen={editMenuOpen}
-              setEditMenuOpen={setEditMenuOpen}
-              fileInputRef={fileInputRef}
-              onAvatarSelect={handleAvatarSelect}
-              onEditAvatar={handleEditAvatar}
-              onRemoveAvatar={handleRemoveAvatar}
+              avatarUrl={profile.avatarUrl}
+              displayName={profile.displayName}
+              email={profile.user?.email}
+              initials={profile.initials}
+              savingCrop={profile.savingCrop}
+              removingAvatar={profile.removingAvatar}
+              editMenuOpen={profile.editMenuOpen}
+              setEditMenuOpen={profile.setEditMenuOpen}
+              fileInputRef={profile.fileInputRef}
+              onAvatarSelect={profile.handleAvatarSelect}
+              onEditAvatar={profile.handleEditAvatar}
+              onRemoveAvatar={profile.handleRemoveAvatar}
             />
 
             {/* Segmented Tab Navigation */}
@@ -134,83 +75,79 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Tab 1: Candidate Master & CV */}
           {activeTab === "candidate" && (
             <ProfileProfessionalSection
-              employee={employee}
-              location={location}
-              setLocation={setLocation}
-              education={education}
-              setEducation={setEducation}
-              workExperience={workExperience}
-              setWorkExperience={setWorkExperience}
-              skills={skills}
-              setSkills={setSkills}
-              languages={languages}
-              setLanguages={setLanguages}
-              expectedSalary={expectedSalary}
-              setExpectedSalary={setExpectedSalary}
-              noticePeriod={noticePeriod}
-              setNoticePeriod={setNoticePeriod}
-              resumeUrl={resumeUrl}
-              resumeName={resumeName}
-              savingProfessional={savingProfessional}
-              uploadingResume={uploadingResume}
-              onSaveProfessional={handleSaveProfessional}
-              onResumeUpload={handleResumeUpload}
-              onRemoveResume={handleRemoveResume}
+              employee={profile.employee}
+              location={profile.location}
+              setLocation={profile.setLocation}
+              education={profile.education}
+              setEducation={profile.setEducation}
+              workExperience={profile.workExperience}
+              setWorkExperience={profile.setWorkExperience}
+              skills={profile.skills}
+              setSkills={profile.setSkills}
+              languages={profile.languages}
+              setLanguages={profile.setLanguages}
+              expectedSalary={profile.expectedSalary}
+              setExpectedSalary={profile.setExpectedSalary}
+              noticePeriod={profile.noticePeriod}
+              setNoticePeriod={profile.setNoticePeriod}
+              resumeUrl={profile.resumeUrl}
+              resumeName={profile.resumeName}
+              savingProfessional={profile.savingProfessional}
+              uploadingResume={profile.uploadingResume}
+              onSaveProfessional={profile.handleSaveProfessional}
+              onResumeUpload={profile.handleResumeUpload}
+              onRemoveResume={profile.handleRemoveResume}
             />
           )}
 
-          {/* Tab 2: Account & Security Form */}
           {activeTab === "account" && (
-            <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs">
-              <ProfileAccountForm
-                displayName={displayName}
-                setDisplayName={setDisplayName}
-                savingName={savingName}
-                onSaveName={handleSaveName}
-                email={user?.email}
-                employee={employee}
-                phone={phone}
-                setPhone={setPhone}
-                savingPhone={savingPhone}
-                onSavePhone={handleSavePhone}
-                newPassword={newPassword}
-                setNewPassword={setNewPassword}
-                confirmPassword={confirmPassword}
-                setConfirmPassword={setConfirmPassword}
-                savingPassword={savingPassword}
-                onChangePassword={handleChangePassword}
-              />
-            </div>
+            <ProfileAccountForm
+              displayName={profile.displayName}
+              setDisplayName={profile.setDisplayName}
+              savingName={profile.savingName}
+              onSaveName={profile.handleSaveName}
+              email={profile.user?.email}
+              employee={profile.employee}
+              phone={profile.phone}
+              setPhone={profile.setPhone}
+              savingPhone={profile.savingPhone}
+              onSavePhone={profile.handleSavePhone}
+              newPassword={profile.newPassword}
+              setNewPassword={profile.setNewPassword}
+              confirmPassword={profile.confirmPassword}
+              setConfirmPassword={profile.setConfirmPassword}
+              savingPassword={profile.savingPassword}
+              onChangePassword={profile.handleChangePassword}
+            />
           )}
         </div>
 
-        {/* ── RIGHT: work info (read only) ── */}
+        {/* ── RIGHT: read-only work info sidebar ── */}
         <ProfileWorkInfoSidebar
-          role={role}
-          roleLoading={roleLoading}
-          employee={employee}
-          employeeLoading={employeeLoading}
-          tenure={tenure}
-          managerName={managerName}
-          userCreatedAt={user?.created_at}
-          userLastSignInAt={user?.last_sign_in_at}
-          directReports={directReports}
-          canViewEmployees={can("employees")}
-          email={user?.email}
+          role={profile.role}
+          roleLoading={profile.roleLoading}
+          employee={profile.employee}
+          employeeLoading={profile.employeeLoading}
+          tenure={profile.tenure}
+          managerName={profile.managerName}
+          userCreatedAt={profile.user?.created_at}
+          userLastSignInAt={profile.user?.last_sign_in_at}
+          directReports={profile.directReports}
+          canViewEmployees={profile.can("employees.read")}
+          email={profile.user?.email}
         />
       </div>
 
-      {/* Crop modal for new photos */}
-      <AvatarCropModal
-        imageSrc={avatarSrc}
-        saving={savingCrop}
-        onCancel={closeCropModal}
-        onConfirm={handleCropConfirm}
-        onError={(msg) => toast("Crop failed", msg, "error")}
-      />
+      {profile.avatarSrc && (
+        <AvatarCropModal
+          imageSrc={profile.avatarSrc}
+          onConfirm={profile.handleCropConfirm}
+          onCancel={profile.closeCropModal}
+          saving={profile.savingCrop}
+        />
+      )}
     </div>
   );
 }

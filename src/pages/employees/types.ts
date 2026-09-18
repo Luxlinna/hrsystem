@@ -2,6 +2,83 @@ export interface Employee {
   id: string;
   first_name: string;
   last_name: string;
+  title?: string | null;
+  display_name?: string | null;
+  foreign_name?: string | null;
+  nationality?: string | null;
+  is_resident?: boolean | null;
+  fringe_benefit?: boolean | null;
+  blood_group?: string | null;
+  religion?: string | null;
+  employee_tax_number?: string | null;
+  full_name?: string | null;
+  kh_name?: string | null;
+  gender?: string | null;
+  date_of_birth?: string | null;
+  marital_status?: string | null;
+  national_id_number?: string | null;
+  bank_accounts?: EmployeeBankAccountItem[] | null;
+  identifications?: EmployeeIdentificationItem[] | null;
+  permanent_address?: string | null;
+  permanent_city?: string | null;
+  permanent_province?: string | null;
+  permanent_postal_code?: string | null;
+  permanent_country?: string | null;
+  same_as_present_address?: boolean | null;
+  home_phone?: string | null;
+  office_phone?: string | null;
+  emergency_contacts?: EmployeeEmergencyContactItem[] | null;
+  family_members?: EmployeeFamilyMemberItem[] | null;
+  education_history?: EmployeeEducationItem[] | null;
+  training_history?: EmployeeTrainingItem[] | null;
+  employment_history?: EmployeeEmploymentHistoryItem[] | null;
+  achievement_history?: EmployeeAchievementItem[] | null;
+  personal_attachments?: (EmployeePersonalAttachment | string)[] | null;
+  code_bu?: string | null;
+  bu_full_name?: string | null;
+  handle_bu?: string | null;
+  division?: string | null;
+  position?: string | null;
+  site?: string | null;
+  working_location?: string | null;
+  working_hour?: string | null;
+  total_working_days?: string | null;
+  employment_type?: string | null;
+  start_date?: string | null;
+  line_manager?: string | null;
+  contract_type?: string | null;
+  fdc_end_date?: string | null;
+  contract_effective_date?: string | null;
+  contract_end_date?: string | null;
+  contract_rate?: number | string | null;
+  contract_rate_currency?: string | null;
+  contract_rate_frequency?: string | null;
+  contract_rate_after?: number | string | null;
+  contract_rate_after_currency?: string | null;
+  contract_rate_after_frequency?: string | null;
+  contract_remark?: string | null;
+  basic_salary?: number | string | null;
+  tax_method?: string | null;
+  allowance?: string | null;
+  bank_account_number?: string | null;
+  bank_name?: string | null;
+  nssf_number?: string | null;
+  register_nssf?: boolean | null;
+  nssf_info?: EmployeeNssfInfo | null;
+  payroll_structure?: string | null;
+  apply_day_in_month?: boolean | null;
+  apply_working_hours_per_day?: boolean | null;
+  tax_salary?: number | string | null;
+  tax_salary_currency?: string | null;
+  tax_salary_frequency?: string | null;
+  rate_items?: EmployeeRateItem[] | null;
+  payroll_attachments?: EmployeePayrollAttachment[] | null;
+  asset_bookings?: EmployeeAssetBookingItem[] | null;
+  asset_attachments?: EmployeeAssetAttachment[] | null;
+  current_address?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_phone_number?: string | null;
+  employee_code?: string | null;
   email?: string | null;
   phone?: string | null;
   role?: string | null;
@@ -19,9 +96,94 @@ export interface Employee {
   documents?: any[] | null;
 }
 
+export interface EmployeeBankAccountItem {
+  payment_method: string;
+  account_number: string;
+}
+
+export interface EmployeeIdentificationItem {
+  identification_type: string;
+  identification_number: string;
+  expiration_date: string;
+}
+
+export interface EmployeeEmergencyContactItem {
+  contact_person: string;
+  relationship: string;
+  phone_number: string;
+}
+
+export interface EmployeeFamilyMemberItem {
+  name: string;
+  relationship: string;
+  date_of_birth: string;
+  gender: string;
+  nationality: string;
+  tax_filing: boolean | string;
+  phone_number: string;
+  remark: string;
+  attachment?: string;
+}
+
+export interface EmployeeEducationItem {
+  institue: string;
+  subject: string;
+  degree: string;
+  start_date: string;
+  end_date: string;
+  remark: string;
+}
+
+export interface EmployeeTrainingItem {
+  institue: string;
+  subject: string;
+  start_date: string;
+  end_date: string;
+  remark: string;
+  attachment?: string;
+}
+
+export interface EmployeeEmploymentHistoryItem {
+  company_name: string;
+  start_date: string;
+  end_date: string;
+  designation: string;
+  supervisor_name: string;
+  supervisor_phone_number: string;
+  remark: string;
+  rate: string;
+  reason_for_leaving: string;
+}
+
+export interface EmployeeAchievementItem {
+  title: string;
+  year_awarded: string;
+  country: string;
+  program_name: string;
+  organizer_name: string;
+  remark: string;
+  attachment?: string;
+}
+
+export interface EmployeeNssfInfo {
+  register_nssf?: boolean;
+  identity_code?: string;
+  joining_date?: string;
+  first_name_kh?: string;
+  last_name_kh?: string;
+  first_name_latin?: string;
+  last_name_latin?: string;
+  monthly_wage_type?: string;
+  monthly_wage?: string;
+  seniority_pension_fund?: string;
+  remark?: string;
+  status?: "Active" | "Inactive";
+}
+
 export interface Branch {
   id: string;
   name: string;
+  location?: string;
   is_site?: boolean;
   branch_id?: string;
 }
@@ -57,18 +219,170 @@ export function isEmployeeBiometricEligible(
   });
 }
 
+export interface EmployeeRateItem {
+  name: string;
+  amount: number | string;
+  remark: string;
+}
+
+export interface EmployeePayrollAttachment {
+  name: string;
+  url: string;
+  size?: number;
+  type?: string;
+  uploaded_at?: string;
+}
+
+export interface EmployeePersonalAttachment {
+  name: string;
+  url: string;
+  size?: number;
+  type?: string;
+  uploaded_at?: string;
+  key?: string;
+}
+
+export interface EmployeeAssetBookingItem {
+  id: string;
+  name: string;
+  category: string;
+  tag: string;
+  assign_for: "Full Day" | "Half Day" | "Hourly" | string;
+  from_date: string;
+  to_date_never: boolean;
+  to_date: string;
+  remark: string;
+  status: "Assigned" | "Booked" | "Pending Handover" | string;
+  branch_id?: string | null;
+  bu_name?: string | null;
+  bu_code?: string | null;
+}
+
+export interface EmployeeAssetAttachment {
+  name: string;
+  url: string;
+  size?: number;
+  type?: string;
+  uploaded_at?: string;
+  key?: string;
+}
+
 export interface EmployeeFormState {
+  // 1. Personal & Legal Identity
+  title: string;
   first_name: string;
   last_name: string;
+  display_name: string;
+  display_name_format?: string;
+  foreign_name: string;
+  foreign_name_format?: string;
+  employee_code?: string;
+  full_name: string;
+  kh_name: string;
+  date_of_birth: string;
+  dob_day?: string;
+  dob_month?: string;
+  dob_year?: string;
+  gender: string;
+  marital_status: string;
+  nationality: string;
+  is_resident: boolean;
+  fringe_benefit: boolean;
+  blood_group: string;
+  religion: string;
+  employee_tax_number: string;
+  national_id_number: string;
+
+  // Bank Accounts & Identifications (Personal Info tab tables)
+  bank_accounts: EmployeeBankAccountItem[];
+  identifications: EmployeeIdentificationItem[];
+
+  // Permanent Address Info
+  permanent_address: string;
+  permanent_city: string;
+  permanent_province: string;
+  permanent_postal_code: string;
+  permanent_country: string;
+  same_as_present_address: boolean;
+
+  // Additional Personal Info sections
+  home_phone: string;
+  office_phone: string;
+  emergency_contacts: EmployeeEmergencyContactItem[];
+  family_members: EmployeeFamilyMemberItem[];
+  education_history: EmployeeEducationItem[];
+  training_history: EmployeeTrainingItem[];
+  employment_history: EmployeeEmploymentHistoryItem[];
+  achievement_history: EmployeeAchievementItem[];
+  personal_attachments: (EmployeePersonalAttachment | string)[];
+  register_nssf: boolean;
+  nssf_info?: EmployeeNssfInfo;
+
+  // 2. Org & Workplace Site
+  branch_id: string;
+  code_bu: string;
+  bu_full_name: string;
+  handle_bu: string;
+  division: string;
+  department: string;
+  role: string;
+  position: string;
+  site: string;
+  working_location: string;
+  default_work_location_id: string;
+
+  // 3. Terms & Employment Schedule
+  working_hour: string;
+  total_working_days: string;
+  employment_type: string;
+  start_date: string;
+  join_date: string;
+  line_manager: string;
+  reports_to: string;
+  contract_type: string;
+  fdc_end_date: string;
+  contract_effective_date?: string;
+  contract_end_date?: string;
+  contract_rate?: string | number;
+  contract_rate_currency?: string;
+  contract_rate_frequency?: string;
+  contract_rate_after?: string | number;
+  contract_rate_after_currency?: string;
+  contract_rate_after_frequency?: string;
+  contract_remark?: string;
+  hiring_status: string;
+  status: string;
+
+  // 4. Compensation & Tax
+  basic_salary: string;
+  tax_method: string;
+  allowance: string;
+  bank_account_number: string;
+  bank_name: string;
+  nssf_number: string;
+  payroll_structure: string;
+  apply_day_in_month: boolean;
+  apply_working_hours_per_day: boolean;
+  tax_salary: string | number;
+  tax_salary_currency: string;
+  tax_salary_frequency: string;
+  rate_items: EmployeeRateItem[];
+  payroll_attachments: EmployeePayrollAttachment[];
+
+  // 5. Asset Assignment & Booking
+  asset_bookings: EmployeeAssetBookingItem[];
+  asset_attachments: EmployeeAssetAttachment[];
+
+  // 6. Contacts & Emergency Information
   email: string;
   phone: string;
-  role: string;
-  department: string;
-  branch_id: string;
-  status: string;
-  join_date: string;
-  reports_to: string;
-  default_work_location_id: string;
+  current_address: string;
+  emergency_contact_name: string;
+  emergency_phone_number: string;
+  avatar_url?: string;
+  documents?: any[];
+
+  // Biometric / Device
   biometric_user_id?: string;
   send_invite?: boolean;
 }

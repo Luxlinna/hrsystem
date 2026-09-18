@@ -14,6 +14,8 @@ export interface StepGateStatus {
   requiresPermissionHint: string;
 }
 
+export type StepGateResult = StepGateStatus;
+
 /**
  * Checks if the active user possesses permission to sign the given step.
  * Normal staff can sign if their role has been granted the corresponding action permission.

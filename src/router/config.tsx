@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactElement } from "react";
-import type { RouteObject } from "react-router-dom";
+import { type RouteObject, Navigate } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { RequireAdmin, RequireModule, RequireRecycleBin } from "@/components/RequirePermission";
@@ -11,6 +11,7 @@ const ForgotPassword = lazy(() => import("../pages/auth/forgot-password"));
 const ResetPassword = lazy(() => import("../pages/auth/reset-password"));
 const Employees = lazy(() => import("../pages/employees/page"));
 const EmployeeProfile = lazy(() => import("../pages/employees/EmployeeProfile"));
+const EmployeeSettingsPage = lazy(() => import("../pages/employees/settings/EmployeeSettingsPage"));
 const Onboarding = lazy(() => import("../pages/onboarding/page"));
 const Leave = lazy(() => import("../pages/leave/page"));
 const PayrollModule = lazy(() => import("../pages/payroll/page"));
@@ -19,6 +20,9 @@ const ITManagement = lazy(() => import("../pages/it/page"));
 const Hire = lazy(() => import("../pages/hire/page"));
 const CandidateDetail = lazy(() => import("../pages/hire/CandidateDetail"));
 const Offboard = lazy(() => import("../pages/offboard/page"));
+const ExitPage = lazy(() => import("../pages/exit/page"));
+const ExitSettingsPage = lazy(() => import("../pages/exit/settings/ExitSettingsPage"));
+const ComplaintsPage = lazy(() => import("../pages/complaints/page"));
 const OrgChart = lazy(() => import("../pages/orgchart/page"));
 const Tools = lazy(() => import("../pages/tools/page"));
 const Benefits = lazy(() => import("../pages/benefits/page"));
@@ -41,7 +45,9 @@ const Tasks = lazy(() => import("../pages/tasks/page"));
 const Attendance = lazy(() => import("../pages/attendance/page"));
 const Training = lazy(() => import("../pages/training/page"));
 const Disciplinary = lazy(() => import("../pages/disciplinary/page"));
+const WarningSettingsPage = lazy(() => import("../pages/disciplinary/settings/WarningSettingsPage"));
 const Documents = lazy(() => import("../pages/documents/page"));
+const Movements = lazy(() => import("../pages/movements/page"));
 const AdminPortal = lazy(() => import("../pages/admin/page"));
 const RecycleBin = lazy(() => import("../pages/recycle-bin/page"));
 const Profile = lazy(() => import("../pages/profile/page"));
@@ -68,6 +74,7 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: mod("dashboard", <Home />) },
       { path: "employees", element: mod("employees", <Employees />) },
+      { path: "employees/settings", element: mod("employees", <EmployeeSettingsPage />) },
       { path: "employees/:id", element: mod("employees", <EmployeeProfile />) },
       { path: "onboarding", element: mod("onboarding", <Onboarding />) },
       { path: "leave", element: mod("leave", <Leave />) },
@@ -78,6 +85,9 @@ const routes: RouteObject[] = [
       { path: "hire/candidate/:id", element: mod("hire", <CandidateDetail />) },
       { path: "hire/candidates/:id", element: mod("hire", <CandidateDetail />) },
       { path: "offboard", element: mod("offboard", <Offboard />) },
+      { path: "exit", element: mod("exit", <ExitPage />) },
+      { path: "exit/settings", element: mod("exit", <ExitSettingsPage />) },
+      { path: "complaints", element: mod("complaints", <ComplaintsPage />) },
       { path: "org-chart", element: mod("org-chart", <OrgChart />) },
       { path: "tools", element: mod("tools", <Tools />) },
       { path: "benefits", element: mod("benefits", <Benefits />) },
@@ -90,7 +100,7 @@ const routes: RouteObject[] = [
       { path: "audit-log", element: mod("audit-log", <AuditLog />) },
       { path: "self-service", element: mod("self-service", <SelfService />) },
       { path: "onboarding-checklist", element: mod("onboarding-checklist", <OnboardingChecklist />) },
-      { path: "leave-calendar", element: mod("leave-calendar", <LeaveCalendar />) },
+      { path: "leave-calendar", element: <Navigate to="/leave?tab=calendar" replace /> },
       { path: "payroll-approval", element: mod("payroll-approval", <PayrollApproval />) },
       { path: "performance", element: mod("performance", <Performance />) },
       { path: "announcements", element: mod("announcements", <Announcements />) },
@@ -100,7 +110,13 @@ const routes: RouteObject[] = [
       { path: "attendance", element: mod("attendance", <Attendance />) },
       { path: "training", element: mod("training", <Training />) },
       { path: "disciplinary", element: mod("disciplinary", <Disciplinary />) },
+      { path: "disciplinary/create", element: mod("disciplinary", <Disciplinary />) },
+      { path: "disciplinary/settings", element: mod("disciplinary", <WarningSettingsPage />) },
+      { path: "warnings", element: mod("disciplinary", <Disciplinary />) },
+      { path: "warnings/create", element: mod("disciplinary", <Disciplinary />) },
+      { path: "warnings/settings", element: mod("disciplinary", <WarningSettingsPage />) },
       { path: "documents", element: mod("documents", <Documents />) },
+      { path: "movements", element: mod("employees", <Movements />) },
       { path: "profile", element: <Suspense fallback={fallback}><Profile /></Suspense> },
       {
         path: "admin",

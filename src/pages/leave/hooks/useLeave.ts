@@ -4,6 +4,7 @@ import { useLeaveBalances } from "./useLeaveBalances";
 import { useLeaveFilters } from "./useLeaveFilters";
 import { useLeaveMutations } from "./useLeaveMutations";
 import { useLeaveCalendar } from "./useLeaveCalendar";
+import { useHolidays } from "@/hooks/useHolidays";
 
 export function useLeave() {
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
@@ -40,14 +41,22 @@ export function useLeave() {
     myEmployee: data.myEmployee,
     actorName,
     actorRole,
+    canApproveLeave: data.canApproveLeave,
+    isAdmin: data.isAdmin,
+    isSuperAdmin: data.isSuperAdmin,
+    hasRoleApprovalAccess: !!data.role?.leave_approve || !!data.role?.is_admin,
     getRemaining: balances.getRemaining,
     loadData: data.loadData,
     setToast,
   });
 
-  // 5. Calendar hook
+  // 5. Holidays hook
+  const holidaysState = useHolidays(data.targetBranch);
+
+  // 6. Calendar hook
   const calendar = useLeaveCalendar({
     calendarRequests: data.calendarRequests,
+    holidays: holidaysState.holidays,
   });
 
   return {
@@ -55,6 +64,8 @@ export function useLeave() {
     actorRole,
     toast,
     setToast,
+    holidays: holidaysState.holidays,
+    holidaysState,
     ...data,
     ...balances,
     ...filters,

@@ -1,10 +1,15 @@
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
-import { handleZkAdmsRequest } from "./zkteco-adms-handler.mjs";
+import { handleZkAdmsRequest, checkBiometricDeviceHealth } from "./zkteco-adms-handler.mjs";
 
 const ROOT = join(import.meta.dirname, "out");
 const PORT = Number(process.env.PORT) || 3000;
+
+// Biometric Device Health & Telegram Offline Watchdog (Runs every 5 minutes)
+const WATCHDOG_INTERVAL_MS = 5 * 60 * 1000;
+setInterval(checkBiometricDeviceHealth, WATCHDOG_INTERVAL_MS);
+setTimeout(checkBiometricDeviceHealth, 10000);
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",

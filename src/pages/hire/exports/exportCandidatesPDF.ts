@@ -1,6 +1,11 @@
 import type { Candidate } from "../types";
+import { resolveDocumentBranding } from "@/services/formLogoService";
 
 export function exportCandidatesPDF(candidates: Candidate[], title = "Candidate Applicants Roster"): boolean {
+  const branding = resolveDocumentBranding();
+  const logo = branding.logo;
+  const compName = branding.isHrDivision ? "UNI Holding — HR Division" : "HRM_OPS";
+
   const total = candidates.length;
   const hired = candidates.filter((c) => c.stage === "hired").length;
   const interviewing = candidates.filter((c) => c.stage === "interview").length;
@@ -63,9 +68,12 @@ export function exportCandidatesPDF(candidates: Candidate[], title = "Candidate 
   </head>
   <body>
     <div class="header-box">
-      <div>
-        <h1>HRM_OPS — ${title}</h1>
-        <div class="meta">Talent Acquisition &middot; Candidate Applicants Pipeline</div>
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <img src="${logo}" alt="Logo" style="max-height: 46px; max-width: 140px; object-fit: contain;" />
+        <div>
+          <h1>${compName} — ${title}</h1>
+          <div class="meta">Talent Acquisition &middot; Candidate Applicants Pipeline</div>
+        </div>
       </div>
       <div class="meta" style="text-align:right">
         <div><strong>Generated:</strong> ${new Date().toLocaleString("en-US")}</div>

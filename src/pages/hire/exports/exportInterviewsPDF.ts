@@ -1,6 +1,11 @@
 import type { Interview } from "../types";
+import { resolveDocumentBranding } from "@/services/formLogoService";
 
 export function exportInterviewsPDF(interviews: Interview[], title = "Candidate Interviews Schedule"): boolean {
+  const branding = resolveDocumentBranding();
+  const logo = branding.logo;
+  const compName = branding.isHrDivision ? "UNI Holding — HR Division" : "HRM_OPS";
+
   const total = interviews.length;
   const completed = interviews.filter((i) => i.status === "completed").length;
   const scheduled = interviews.filter((i) => i.status === "scheduled").length;
@@ -56,9 +61,12 @@ export function exportInterviewsPDF(interviews: Interview[], title = "Candidate 
   </head>
   <body>
     <div class="header-box">
-      <div>
-        <h1>HRM_OPS — ${title}</h1>
-        <div class="meta">Talent Acquisition &middot; Interview Assessment &amp; Evaluation Log</div>
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <img src="${logo}" alt="Logo" style="max-height: 46px; max-width: 140px; object-fit: contain;" />
+        <div>
+          <h1>${compName} — ${title}</h1>
+          <div class="meta">Talent Acquisition &middot; Interview Assessment &amp; Evaluation Log</div>
+        </div>
       </div>
       <div class="meta" style="text-align:right">
         <div><strong>Generated:</strong> ${new Date().toLocaleString("en-US")}</div>

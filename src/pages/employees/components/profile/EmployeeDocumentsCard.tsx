@@ -18,8 +18,32 @@ export const EmployeeDocumentsCard = memo(function EmployeeDocumentsCard({
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
 
   useEffect(() => {
-    if (employee.documents && employee.documents.length > 0) {
-      setDocuments(employee.documents);
+    const combined = Array.isArray(employee.documents) ? [...employee.documents] : [];
+
+    if (Array.isArray(employee.personal_attachments)) {
+      employee.personal_attachments.forEach((att: any) => {
+        if (typeof att === "string" && att) {
+          combined.push({
+            name: "Hiring Setup Document",
+            url: att,
+            uploaded_at: new Date().toISOString(),
+            verification_status: "verified",
+          });
+        } else if (att && att.url) {
+          combined.push({
+            name: att.name || "Hiring Setup Document",
+            url: att.url,
+            size: att.size,
+            type: att.type,
+            uploaded_at: att.uploaded_at || new Date().toISOString(),
+            verification_status: "verified",
+          });
+        }
+      });
+    }
+
+    if (combined.length > 0) {
+      setDocuments(combined);
       return;
     }
 
@@ -40,7 +64,7 @@ export const EmployeeDocumentsCard = memo(function EmployeeDocumentsCard({
       }
     };
     loadCandidateDocs();
-  }, [employee.candidate_id, employee.email, employee.documents]);
+  }, [employee.candidate_id, employee.email, employee.documents, employee.personal_attachments]);
 
   const handleUpload = useCallback(
     async (slotKey: string, slotTitle: string, file: File) => {

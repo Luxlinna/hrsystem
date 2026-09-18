@@ -98,7 +98,7 @@ export const AttendanceKpiBar = memo(function AttendanceKpiBar({
       {/* Absent */}
       <div
         onClick={() => setFilterStatus(filterStatus === "absent" ? "all" : "absent")}
-        className={`bg-white dark:bg-slate-900 border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
+        className={`col-span-2 md:col-span-1 bg-white dark:bg-slate-900 border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
           filterStatus === "absent" ? "border-rose-500 ring-2 ring-rose-500/15" : "border-gray-200/80 dark:border-slate-800"
         }`}
       >

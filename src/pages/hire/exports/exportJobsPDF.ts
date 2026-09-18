@@ -1,6 +1,11 @@
 import type { Job } from "../types";
+import { resolveDocumentBranding } from "@/services/formLogoService";
 
 export function exportJobsPDF(jobs: Job[], title = "Job Postings & Vacancies Report"): boolean {
+  const branding = resolveDocumentBranding();
+  const logo = branding.logo;
+  const compName = branding.isHrDivision ? "UNI Holding — HR Division" : "HRM_OPS";
+
   const total = jobs.length;
   const activeCount = jobs.filter((j) => j.status === "active").length;
   const closedCount = jobs.filter((j) => j.status === "closed" || j.status === "filled").length;
@@ -47,9 +52,12 @@ export function exportJobsPDF(jobs: Job[], title = "Job Postings & Vacancies Rep
   </head>
   <body>
     <div class="header-box">
-      <div>
-        <h1>HRM_OPS — ${title}</h1>
-        <div class="meta">Talent Acquisition &middot; Job Openings &amp; Vacancies Directory</div>
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <img src="${logo}" alt="Logo" style="max-height: 46px; max-width: 140px; object-fit: contain;" />
+        <div>
+          <h1>${compName} — ${title}</h1>
+          <div class="meta">Talent Acquisition &middot; Job Openings &amp; Vacancies Directory</div>
+        </div>
       </div>
       <div class="meta" style="text-align:right">
         <div><strong>Generated:</strong> ${new Date().toLocaleString("en-US")}</div>

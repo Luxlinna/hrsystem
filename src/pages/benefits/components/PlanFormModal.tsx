@@ -1,6 +1,8 @@
-import React, { memo } from "react";
+import React, { memo, useEffect } from "react";
 import type { BenefitPlan, PlanFormState } from "../types";
 import { PLAN_TYPE_CONFIG } from "../constants";
+
+const VALID_TYPES = Object.keys(PLAN_TYPE_CONFIG);
 
 interface PlanFormModalProps {
   isOpen: boolean;
@@ -21,6 +23,13 @@ export const PlanFormModal = memo(function PlanFormModal({
   saving,
   onSubmit,
 }: PlanFormModalProps) {
+  // Reset stale type if it's no longer valid
+  useEffect(() => {
+    if (isOpen && !VALID_TYPES.includes(planForm.type)) {
+      setPlanForm((prev) => ({ ...prev, type: "health" }));
+    }
+  }, [isOpen, planForm.type, setPlanForm]);
+
   if (!isOpen) return null;
 
   return (

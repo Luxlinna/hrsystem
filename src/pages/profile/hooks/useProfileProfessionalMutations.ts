@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { uploadFileToS3 } from "@/lib/s3-storage";
 import type { MyEmployee } from "../types";
+import { syncEmployeeAndCandidate } from "../profileUtils";
 
 interface UseProfileProfessionalMutationsProps {
   employee: MyEmployee | null;
@@ -34,7 +34,11 @@ export function useProfileProfessionalMutations({
     setWorkExperience(employee.work_experience || "");
     setSkills(employee.skills || []);
     setLanguages(employee.languages || []);
-    setExpectedSalary(employee.expected_salary !== null && employee.expected_salary !== undefined ? String(employee.expected_salary) : "");
+    setExpectedSalary(
+      employee.expected_salary !== null && employee.expected_salary !== undefined
+        ? String(employee.expected_salary)
+        : ""
+    );
     setNoticePeriod(employee.notice_period || "1 Month");
     setResumeUrl(employee.resume_url || null);
     setResumeName(employee.resume_name || null);
@@ -61,31 +65,8 @@ export function useProfileProfessionalMutations({
         resume_name: resumeName,
       };
 
-      // 1. Update employee record
-      const { error: empError } = await supabase
-        .from("employees")
-        .update(updatePayload)
-        .eq("id", employee.id);
-
-      if (empError) throw empError;
-
-      // 2. Sync to candidate record if linked
-      if (employee.candidate_id) {
-        await supabase
-          .from("candidates")
-          .update(updatePayload)
-          .eq("id", employee.candidate_id);
-      }
-
-      // 3. Update local state
-      setEmployee((prev) =>
-        prev
-          ? {
-              ...prev,
-              ...updatePayload,
-            }
-          : null
-      );
+      await syncEmployeeAndCandidate(employee.id, employee.candidate_id, updatePayload);
+      setEmployee((prev) => (prev ? { ...prev, ...updatePayload } : null));
 
       toast("Saved", "Professional profile updated successfully", "success");
     } catch (err: any) {
@@ -104,36 +85,9 @@ export function useProfileProfessionalMutations({
       setResumeUrl(uploaded.url);
       setResumeName(uploaded.name);
 
-      // Auto-save resume to database immediately
-      const { error } = await supabase
-        .from("employees")
-        .update({
-          resume_url: uploaded.url,
-          resume_name: uploaded.name,
-        })
-        .eq("id", employee.id);
-
-      if (error) throw error;
-
-      if (employee.candidate_id) {
-        await supabase
-          .from("candidates")
-          .update({
-            resume_url: uploaded.url,
-            resume_name: uploaded.name,
-          })
-          .eq("id", employee.candidate_id);
-      }
-
-      setEmployee((prev) =>
-        prev
-          ? {
-              ...prev,
-              resume_url: uploaded.url,
-              resume_name: uploaded.name,
-            }
-          : null
-      );
+      const payload = { resume_url: uploaded.url, resume_name: uploaded.name };
+      await syncEmployeeAndCandidate(employee.id, employee.candidate_id, payload);
+      setEmployee((prev) => (prev ? { ...prev, ...payload } : null));
 
       toast("Resume Uploaded", "Your CV was uploaded successfully", "success");
     } catch (err: any) {
@@ -147,37 +101,12 @@ export function useProfileProfessionalMutations({
   const handleRemoveResume = async () => {
     if (!employee?.id) return;
     try {
-      const { error } = await supabase
-        .from("employees")
-        .update({
-          resume_url: null,
-          resume_name: null,
-        })
-        .eq("id", employee.id);
-
-      if (error) throw error;
-
-      if (employee.candidate_id) {
-        await supabase
-          .from("candidates")
-          .update({
-            resume_url: null,
-            resume_name: null,
-          })
-          .eq("id", employee.candidate_id);
-      }
+      const payload = { resume_url: null, resume_name: null };
+      await syncEmployeeAndCandidate(employee.id, employee.candidate_id, payload);
 
       setResumeUrl(null);
       setResumeName(null);
-      setEmployee((prev) =>
-        prev
-          ? {
-              ...prev,
-              resume_url: null,
-              resume_name: null,
-            }
-          : null
-      );
+      setEmployee((prev) => (prev ? { ...prev, ...payload } : null));
 
       toast("Resume Removed", "Your CV was removed", "success");
     } catch (err: any) {

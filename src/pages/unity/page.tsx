@@ -43,7 +43,7 @@ export default function UnityApps() {
   }
 
   return (
-    <div className="p-6 lg:p-10 min-h-screen bg-white">
+    <div className="p-6 lg:p-10 min-h-screen bg-[#F8F9FB] dark:bg-[#0b0f19]">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">Unity Apps</h1>

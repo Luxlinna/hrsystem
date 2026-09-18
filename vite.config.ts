@@ -85,7 +85,7 @@ export default defineConfig({
   server: {
     port,
     host: "0.0.0.0",
-    allowedHosts: [".onrender.com"],
+    allowedHosts: [".opssolution.tech", "hrsystem.opssolution.tech"],
   },
   optimizeDeps: {
     include: ["react", "react-dom", "react-router-dom", "react-easy-crop", "@supabase/supabase-js"],
@@ -93,6 +93,6 @@ export default defineConfig({
   preview: {
     port,
     host: "0.0.0.0",
-    allowedHosts: [".onrender.com"],
+    allowedHosts: [".opssolution.tech", "hrsystem.opssolution.tech"],
   },
 });

@@ -1,27 +1,43 @@
 import type { AuditLog, ExportFormat } from "./types";
+import { formatAuditTimestamp } from "./constants";
 
 export const getExportCols = () => [
   "Timestamp",
-  "Branch",
+  "Business Unit",
+  "Scope",
   "Module",
   "Action",
   "Entity Type",
   "Actor",
   "Role",
   "Description",
+  "Old Value",
+  "New Value",
+  "Reason",
 ];
 
 export const getExportRows = (logs: AuditLog[]) =>
-  logs.map((l) => [
-    new Date(l.created_at).toLocaleString(),
-    l.branches?.name || "All Branches",
-    l.module,
-    l.action,
-    l.entity_type,
-    l.actor_name,
-    l.actor_role,
-    l.description,
-  ]);
+  logs.map((l) => {
+    const isCrossBu = Boolean(l.metadata?.is_cross_bu);
+    const primaryBu = (l.metadata?.business_unit as string) || l.branches?.name || "Corporate";
+    const targetBu = l.metadata?.target_business_unit as string;
+    const scopeLabel = isCrossBu ? `Across-Site BU (${primaryBu} → ${targetBu || "BU"})` : "Local BU";
+
+    return [
+      formatAuditTimestamp(l.created_at),
+      primaryBu,
+      scopeLabel,
+      l.module,
+      l.action,
+      l.entity_type,
+      l.actor_name,
+      l.actor_role,
+      l.description,
+      l.metadata?.old_value != null ? String(l.metadata.old_value) : "",
+      l.metadata?.new_value != null ? String(l.metadata.new_value) : "",
+      l.metadata?.reason ? String(l.metadata.reason) : "",
+    ];
+  });
 
 export const getExportFilename = () => `audit-log-${new Date().toISOString().substring(0, 10)}`;
 

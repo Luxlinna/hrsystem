@@ -13,6 +13,8 @@ interface ITModalsContainerProps {
   savingAsset: boolean;
   employees: any[];
   branches: any[];
+  activeBranchId?: string | null;
+  activeBranchName?: string | null;
   handleSaveAssetEdit: (e: React.FormEvent) => void;
   handleCreateAsset: (e: React.FormEvent) => void;
 
@@ -39,6 +41,8 @@ export const ITModalsContainer = memo(function ITModalsContainer(props: ITModals
         saving={props.savingAsset}
         employees={props.employees}
         branches={props.branches}
+        activeBranchId={props.activeBranchId}
+        activeBranchName={props.activeBranchName}
         onSubmit={props.editingAsset ? props.handleSaveAssetEdit : props.handleCreateAsset}
       />
 

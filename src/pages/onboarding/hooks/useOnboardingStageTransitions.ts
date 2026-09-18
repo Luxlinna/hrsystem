@@ -71,11 +71,17 @@ export function useOnboardingStageTransitions({
       const currentIndex = STAGES.findIndex((s) => s.key === req.stage);
       if (currentIndex <= 0) return;
       const prevStage = STAGES[currentIndex - 1].key;
-      const { error } = await supabase.from("onboarding_requests").update({ stage: prevStage }).eq("id", req.id);
+      const nextStatus = req.status === "completed" ? "approved" : req.status;
+      const { error } = await supabase
+        .from("onboarding_requests")
+        .update({ stage: prevStage, status: nextStatus })
+        .eq("id", req.id);
       if (error) {
         toast("Failed", "Failed to revert stage", "error");
       } else {
-        setRequests((prev) => prev.map((r) => (r.id === req.id ? { ...r, stage: prevStage } : r)));
+        setRequests((prev) =>
+          prev.map((r) => (r.id === req.id ? { ...r, stage: prevStage, status: nextStatus } : r))
+        );
         const targetLabel = STAGES[currentIndex - 1].label;
         toast("Stage Reverted", `Moved back to ${targetLabel}`, "success");
       }

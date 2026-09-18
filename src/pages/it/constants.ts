@@ -129,14 +129,110 @@ export const TICKET_CATEGORIES = [
   "Other",
 ];
 
+export interface AssetCategoryCardConfig {
+  id: string;
+  name: string;
+  subType: "Electronic Hardware" | "Office Supply" | "Furniture" | string;
+  trackingBadges: string[];
+  keywords: string[];
+}
+
+export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
+  {
+    id: "contact_phone_sim",
+    name: "Contact: Phone, Sim Card Number",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["phone", "mobile", "sim", "cell", "contact", "telecom"],
+  },
+  {
+    id: "desktop_bundle",
+    name: "Desktop: Mouse, Pad, Keyboard, Monitor, System Unit, Extension Cord",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["desktop", "workstation", "pc", "tower", "system unit"],
+  },
+  {
+    id: "laptop_bundle",
+    name: "Laptop: Mouse, Pad, Charger, Bag, Extension",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["laptop", "notebook", "thinkpad", "macbook", "latitude"],
+  },
+  {
+    id: "office_equipment",
+    name: "Off. Equipment: Name Tage, Officer Card",
+    subType: "Office Supply",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["badge", "card", "tag", "equipment", "stamp", "office supply"],
+  },
+  {
+    id: "peripherals",
+    name: "Peripherals: Headset, Mouse, Keyboard, Webcam",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["peripheral", "mouse", "keyboard", "headset", "webcam", "accessory"],
+  },
+  {
+    id: "displays",
+    name: "Display: 24\" & 27\" LED Workstation Monitors",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["display", "monitor", "screen"],
+  },
+  {
+    id: "furniture",
+    name: "Office Furniture: Ergonomic Chair, Desk, Cabinet",
+    subType: "Office Supply",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["furniture", "chair", "desk", "table", "cabinet"],
+  },
+  {
+    id: "server_network",
+    name: "Network & Server: Router, Access Point, Switch, Rack",
+    subType: "Electronic Hardware",
+    trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
+    keywords: ["server", "network", "router", "switch", "access point"],
+  },
+];
+
+export const ASSET_CATEGORIES = [
+  "Contact: Phone, Sim Card Number",
+  "Desktop: Mouse, Pad, Keyboard, Monitor, System Unit, Extension Cord",
+  "Laptop: Mouse, Pad, Charger, Bag, Extension",
+  "Off. Equipment: Name Tage, Officer Card",
+  "Peripherals: Headset, Mouse, Keyboard, Webcam",
+  "Display: 24\" & 27\" LED Workstation Monitors",
+  "Office Furniture: Ergonomic Chair, Desk, Cabinet",
+  "Network & Server: Router, Access Point, Switch, Rack",
+  "Other",
+];
+
+export const ASSET_CONDITIONS = [
+  "New",
+  "Good",
+  "Fair",
+  "Poor",
+  "Damaged",
+];
+
 export const INITIAL_ASSET_FORM: AssetFormState = {
   name: "",
   asset_tag: "",
   type: "Laptop",
+  category: "",
+  purchase_date: new Date().toISOString().split("T")[0],
+  description: "",
+  condition: "New",
+  price: 0,
+  price_currency: "USD",
+  site: "",
   serial_number: "",
   branch_id: "",
   employee_id: "",
-  status: "active",
+  status: "inventory",
+  photo_url: null,
+  attachments: [],
 };
 
 export const INITIAL_TICKET_FORM: TicketFormState = {
@@ -208,77 +304,5 @@ export const INITIAL_STATIONERY_REQUEST_FORM: StationeryRequestFormState = {
   branch_id: "",
 };
 
-export const SAMPLE_STATIONERY_ITEMS: StationeryItem[] = [
-  {
-    id: "stat-1",
-    name: "Double A A4 Copier Paper (80gsm)",
-    category: "Paper & Notebooks",
-    sku: "PAP-A4-80G",
-    stock_quantity: 42,
-    min_stock_level: 10,
-    unit: "reams",
-    unit_cost: 4.5,
-    location: "Cabinet A-1",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "stat-2",
-    name: "Pilot G2 Gel Pen 0.7mm (Black)",
-    category: "Writing & Pens",
-    sku: "PEN-PLT-BLK",
-    stock_quantity: 65,
-    min_stock_level: 20,
-    unit: "pieces",
-    unit_cost: 1.2,
-    location: "Drawer B-2",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "stat-3",
-    name: "Pilot G2 Gel Pen 0.7mm (Blue)",
-    category: "Writing & Pens",
-    sku: "PEN-PLT-BLU",
-    stock_quantity: 3,
-    min_stock_level: 15,
-    unit: "pieces",
-    unit_cost: 1.2,
-    location: "Drawer B-2",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "stat-4",
-    name: "HP LaserJet 85A Toner Cartridge (Black)",
-    category: "Printer & Toner",
-    sku: "TNR-HP-85A",
-    stock_quantity: 2,
-    min_stock_level: 3,
-    unit: "cartridges",
-    unit_cost: 48.0,
-    location: "IT Storage Closet",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "stat-5",
-    name: "Post-it Sticky Notes 3x3 Yellow (6-Pack)",
-    category: "Paper & Notebooks",
-    sku: "NT-PST-YEL",
-    stock_quantity: 18,
-    min_stock_level: 5,
-    unit: "packs",
-    unit_cost: 3.5,
-    location: "Cabinet A-2",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "stat-6",
-    name: "Heavy Duty Two-Hole Punch",
-    category: "Desk & Fasteners",
-    sku: "DSK-PNC-2H",
-    stock_quantity: 8,
-    min_stock_level: 2,
-    unit: "units",
-    unit_cost: 9.5,
-    location: "Shelf C-1",
-    created_at: new Date().toISOString(),
-  },
-];
+
+

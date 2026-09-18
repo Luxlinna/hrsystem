@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import type { OnboardingDoc, OnboardingRequest } from "../../types";
+import type { OnboardingDoc, OnboardingRequest, HireDocument } from "../../types";
 import { DOC_TO_TASK } from "@/lib/onboarding";
 
 interface OnboardingDocumentItemProps {
@@ -10,6 +10,10 @@ interface OnboardingDocumentItemProps {
   isOverdue: boolean;
   onOpenEditDocModal: (req: OnboardingRequest, doc: OnboardingDoc) => void;
   onRefresh: () => void;
+  matchingHireDoc?: HireDocument;
+  onAttachHireDoc?: (hireDoc: HireDocument) => void;
+  isActiveStage?: boolean;
+  isCompletedStage?: boolean;
 }
 
 export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
@@ -18,10 +22,22 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
   isOverdue,
   onOpenEditDocModal,
   onRefresh,
+  matchingHireDoc,
+  onAttachHireDoc,
+  isActiveStage = true,
+  isCompletedStage = false,
 }: OnboardingDocumentItemProps) {
   const isDone = doc.status === "complete";
+  // Completed items are locked unless the stage is active (user must move back to uncheck).
+  // Skipped/pending items (!isDone) can be checked or edited anytime, even after stage or journey is completed!
+  const canToggle = isActiveStage || !isDone;
+  const canEdit = isActiveStage || !isDone;
 
   const toggleStatus = async () => {
+    if (!canToggle) {
+      toast("Stage Completed", "This requirement is already verified. Click 'Move Back' to make adjustments.", "info");
+      return;
+    }
     const nextStatus = isDone ? "pending" : "complete";
     const { error } = await supabase
       .from("onboarding_documents")
@@ -122,14 +138,29 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
     >
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <button
-          onClick={toggleStatus}
-          className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-            isDone
-              ? "bg-emerald-500 border-emerald-600 text-white shadow-2xs"
-              : "border-gray-300 hover:border-[#253C7D] bg-white"
+          onClick={canToggle ? toggleStatus : undefined}
+          disabled={!canToggle}
+          title={
+            !canToggle
+              ? "This requirement is completed. Click 'Move Back' to edit."
+              : isDone
+              ? "Uncheck requirement"
+              : !isActiveStage
+              ? "Complete skipped requirement"
+              : "Check requirement"
+          }
+          className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
+            !canToggle
+              ? "bg-emerald-500/70 border-emerald-600 text-white cursor-not-allowed"
+              : isDone
+              ? "bg-emerald-500 border-emerald-600 text-white shadow-2xs cursor-pointer hover:bg-emerald-600"
+              : !isActiveStage
+              ? "border-amber-400 hover:border-amber-600 bg-amber-50 hover:bg-amber-100 text-amber-700 cursor-pointer shadow-2xs"
+              : "border-gray-300 hover:border-[#253C7D] bg-white cursor-pointer"
           }`}
         >
           {isDone && <i className="ri-check-line text-xs font-black" />}
+          {!isDone && !isActiveStage && <i className="ri-add-line text-xs font-black" />}
         </button>
 
         <div className="min-w-0 flex-1">
@@ -138,15 +169,40 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
               {doc.document_name}
             </p>
             {doc.file_url && (
-              <a
-                href={doc.file_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[10px] font-bold text-sky-600 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200 flex items-center gap-0.5 hover:underline"
+              <div className="flex items-center gap-1">
+                {doc.file_url.startsWith("#") ? (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                    <i className="ri-checkbox-circle-fill text-emerald-600 text-[11px]" />
+                    <span>Signed Offer Accepted</span>
+                  </span>
+                ) : (
+                  <a
+                    href={doc.file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-bold text-sky-600 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200 flex items-center gap-0.5 hover:underline"
+                  >
+                    <i className="ri-attachment-line" />
+                    <span>File attached</span>
+                  </a>
+                )}
+                {(doc.notes?.includes("Candidate Pre-boarding") || doc.notes?.includes("hiring") || doc.notes?.includes("recruitment")) && (
+                  <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
+                    From Hiring
+                  </span>
+                )}
+              </div>
+            )}
+            {canEdit && !doc.file_url && matchingHireDoc && onAttachHireDoc && (
+              <button
+                type="button"
+                onClick={() => onAttachHireDoc(matchingHireDoc)}
+                className="text-[9px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200 flex items-center gap-1 cursor-pointer transition-colors"
+                title={`Attach "${matchingHireDoc.name}" from hiring records`}
               >
                 <i className="ri-attachment-line" />
-                <span>File attached</span>
-              </a>
+                <span>Attach: {matchingHireDoc.name.slice(0, 16)}...</span>
+              </button>
             )}
           </div>
 
@@ -161,22 +217,26 @@ export const OnboardingDocumentItem = memo(function OnboardingDocumentItem({
         </div>
       </div>
 
-      <div className="flex items-center gap-1 shrink-0">
-        <button
-          onClick={() => onOpenEditDocModal(request, doc)}
-          className="p-1 text-gray-400 hover:text-[#253C7D] rounded hover:bg-gray-100 transition-colors cursor-pointer"
-          title="Edit"
-        >
-          <i className="ri-edit-line text-xs" />
-        </button>
-        <button
-          onClick={handleDelete}
-          className="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors cursor-pointer"
-          title="Delete"
-        >
-          <i className="ri-delete-bin-line text-xs" />
-        </button>
-      </div>
+      {canEdit && (
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => onOpenEditDocModal(request, doc)}
+            className="p-1 text-gray-400 hover:text-[#253C7D] rounded hover:bg-gray-100 transition-colors cursor-pointer"
+            title="Edit"
+          >
+            <i className="ri-edit-line text-xs" />
+          </button>
+          {isActiveStage && (
+            <button
+              onClick={handleDelete}
+              className="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors cursor-pointer"
+              title="Delete"
+            >
+              <i className="ri-delete-bin-line text-xs" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 });

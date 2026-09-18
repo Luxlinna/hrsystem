@@ -4,13 +4,12 @@ import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import type { BenefitPlan, PlanFormState } from "../types";
 
+const VALID_PLAN_TYPES = ["health", "dental", "retirement", "wellness", "commuter", "parental"] as const;
+
 interface UseBenefitsPlanMutationsProps {
   canManage: boolean;
   saving: boolean;
   setSaving: React.Dispatch<React.SetStateAction<boolean>>;
-  isSuperAdmin: boolean;
-  targetBranch: string | null;
-  userBranchId: string | null;
   actorName: string;
   actorRole: string;
   loadData: () => Promise<void>;
@@ -23,9 +22,6 @@ export function useBenefitsPlanMutations({
   canManage,
   saving,
   setSaving,
-  isSuperAdmin,
-  targetBranch,
-  userBranchId,
   actorName,
   actorRole,
   loadData,
@@ -37,18 +33,21 @@ export function useBenefitsPlanMutations({
     if (!canManage || !form.name.trim() || saving) return false;
     setSaving(true);
 
+    // Sanitize type — if stale/invalid value is in state, fall back to 'health'
+    const safeType = VALID_PLAN_TYPES.includes(form.type as any) ? form.type : "health";
+
     const payload = {
       name: form.name.trim(),
       provider: form.provider.trim(),
-      type: form.type,
+      type: safeType,
       coverage_amount: Number(form.coverage_amount) || 0,
       employee_contribution: Number(form.employee_contribution) || 0,
       eligible_count: Number(form.eligible_count) || 0,
       status: form.status,
       description: form.description.trim(),
-      branch_id: isSuperAdmin ? null : (userBranchId || targetBranch),
     };
 
+    console.log("[BenefitPlan] Inserting payload:", JSON.stringify(payload));
     const { error } = await supabase.from("benefit_plans").insert(payload);
     setSaving(false);
 
@@ -70,7 +69,7 @@ export function useBenefitsPlanMutations({
     setPlanModal(false);
     loadData();
     return true;
-  }, [canManage, saving, setSaving, isSuperAdmin, userBranchId, targetBranch, actorName, actorRole, setPlanModal, loadData]);
+  }, [canManage, saving, setSaving, actorName, actorRole, setPlanModal, loadData]);
 
   const handleSavePlanEdit = useCallback(async (form: PlanFormState, editingPlan: BenefitPlan) => {
     if (!canManage || !editingPlan || !form.name.trim() || saving) return false;

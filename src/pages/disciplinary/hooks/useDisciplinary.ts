@@ -14,8 +14,24 @@ export function useDisciplinary() {
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
   const { role, isAdmin } = usePermissions();
   const roleName = role?.name || "Staff";
-  const { isSuperAdmin, isBranchAdmin, userBranchName, targetBranch, isPartnerBranchBlocked } = useBranchScope();
+  const {
+    isSuperAdmin,
+    isBranchAdmin,
+    userBranchId,
+    userBranchName,
+    targetBranch,
+    selectedBranchId,
+    effectiveBranchId,
+    isPartnerBranchBlocked,
+  } = useBranchScope();
   const { employee: myEmployee } = useMyEmployee();
+
+  const activeBranchId =
+    (targetBranch && targetBranch !== "all" ? targetBranch : null) ||
+    (selectedBranchId && selectedBranchId !== "all" && !selectedBranchId.startsWith("site:") ? selectedBranchId : null) ||
+    effectiveBranchId ||
+    userBranchId ||
+    null;
 
   const isLeader =
     (isSuperAdmin ||
@@ -31,9 +47,10 @@ export function useDisciplinary() {
   const [newRecord, setNewRecord] = useState<NewRecord>(INITIAL_NEW_RECORD);
 
   const data = useDisciplinaryData({
-    targetBranch,
+    targetBranch: activeBranchId,
     isPartnerBranchBlocked,
     isLeader,
+    isSuperAdmin,
     myEmployeeId: myEmployee?.id,
   });
 
@@ -52,24 +69,76 @@ export function useDisciplinary() {
   });
 
   const openCreateModal = useCallback(() => {
+    const activeBuId =
+      activeBranchId ||
+      data.branches.find((b) => b.name === userBranchName)?.id ||
+      data.branches[0]?.id ||
+      "";
+
+    // Preselect employee from current BU if available
+    const buEmployees = data.employees.filter((e) => !activeBuId || e.branch_id === activeBuId);
+    const defaultEmpId = buEmployees[0]?.id || "";
+
     setNewRecord({
       ...INITIAL_NEW_RECORD,
-      employee_id: data.employees[0]?.id || "",
-      branch_id: targetBranch || "",
+      employee_id: defaultEmpId,
+      branch_id: activeBuId,
       is_admin_scope: isSuperAdmin,
     });
     setShowModal(true);
-  }, [data.employees, targetBranch, isSuperAdmin]);
+  }, [activeBranchId, data.employees, data.branches, userBranchName, isSuperAdmin]);
 
-  const handleCreateRecordSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    return mutations.handleCreateRecord(newRecord);
-  }, [mutations, newRecord]);
+  const handleEditRecord = useCallback(
+    (record: DisciplinaryRecord) => {
+      setNewRecord({
+        id: record.id,
+        employee_id: record.employee_id,
+        type: record.warning_type || record.type || "first_written_warning",
+        title: record.title || "",
+        description: record.description || "",
+        severity: record.severity || "medium",
+        status: record.status || "open",
+        incident_date: record.incident_date || record.warning_date || "",
+        follow_up_date: record.follow_up_date || "",
+        witnesses: record.witnesses || "",
+        action_taken: record.action_taken || record.action_to_take || "",
+        pip_start_date: record.pip_start_date || "",
+        pip_end_date: record.pip_end_date || "",
+        pip_goals: record.pip_goals || "",
+        branch_id: record.branch_id || undefined,
+        is_admin_scope: record.is_admin_scope,
+        warning_type: record.warning_type || record.type || "first_written_warning",
+        warning_date: record.warning_date || record.incident_date || "",
+        action_to_take: record.action_to_take || record.action_taken || "",
+        employee_promise: record.employee_promise || "",
+        remark: record.remark || record.notes || "",
+        document_url: record.document_url || "",
+        document_name: record.document_name || "",
+        document_file: null,
+      });
+      setShowModal(true);
+    },
+    [setShowModal]
+  );
+
+  const handleCreateRecordSubmit = useCallback(
+    async (payloadOrEvent?: NewRecord | React.FormEvent) => {
+      if (payloadOrEvent && typeof (payloadOrEvent as any).preventDefault === "function") {
+        (payloadOrEvent as any).preventDefault();
+      }
+      const targetPayload = (payloadOrEvent && typeof payloadOrEvent === "object" && "employee_id" in payloadOrEvent)
+        ? (payloadOrEvent as NewRecord)
+        : newRecord;
+      return mutations.handleCreateRecord(targetPayload);
+    },
+    [mutations, newRecord]
+  );
 
   return {
     canManage,
     isSuperAdmin,
     userBranchName,
+    activeBranchId,
     isPartnerBranchBlocked,
     records: data.records,
     employees: data.employees,
@@ -84,6 +153,8 @@ export function useDisciplinary() {
     setNewRecord,
     activeTab: filters.activeTab,
     setActiveTab: filters.setActiveTab,
+    handleSelectTab: filters.handleSelectTab,
+    totalCount: filters.totalCount,
     filterType: filters.filterType,
     setFilterType: filters.setFilterType,
     filterStatus: filters.filterStatus,
@@ -100,6 +171,7 @@ export function useDisciplinary() {
     setPageSize: filters.setPageSize,
     page: filters.page,
     setPage: filters.setPage,
+    warningCount: filters.warningCount,
     openCount: filters.openCount,
     pipCount: filters.pipCount,
     criticalCount: filters.criticalCount,
@@ -109,9 +181,9 @@ export function useDisciplinary() {
     totalPages: filters.totalPages,
     pagedRecords: filters.pagedRecords,
     handleCreateRecord: handleCreateRecordSubmit,
-    handleUpdateStatus: mutations.handleUpdateStatus,
+    handleEditRecord,
+    handleVoidRecord: mutations.handleVoidRecord,
     handleDeleteRecord: mutations.handleDeleteRecord,
-    handleSaveNotes: mutations.handleSaveNotes,
     handleExportCSV: filters.handleExportCSV,
     openCreateModal,
   };

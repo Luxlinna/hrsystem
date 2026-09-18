@@ -19,6 +19,8 @@ export interface UseSalaryProposalStateProps {
     benefits_summary: string;
     special_terms?: string;
     proposal_notes?: string;
+    previous_salary?: number | null;
+    change_reason?: string;
   }) => Promise<any>;
 }
 
@@ -149,6 +151,7 @@ export function useSalaryProposalState({
 
     setSubmitting(true);
     try {
+      const prevSal = candidateExistingOffer?.base_salary ?? (activeCandidate.expected_salary ?? null);
       await onSubmit({
         candidate: activeCandidate,
         requisition: matchedReq,
@@ -160,6 +163,8 @@ export function useSalaryProposalState({
         benefits_summary: benefitsSummary,
         special_terms: termsWithQual || undefined,
         proposal_notes: notesWithQual || undefined,
+        previous_salary: prevSal,
+        change_reason: proposalNotes || undefined,
       });
       onClose();
     } finally {

@@ -62,6 +62,11 @@ export default function AuditLogPage() {
         setModuleFilter={setModuleFilter}
         actionFilter={actionFilter}
         setActionFilter={setActionFilter}
+        buFilter={filters.buFilter}
+        setBuFilter={filters.setBuFilter}
+        availableBusinessUnits={filters.availableBusinessUnits}
+        scopeFilter={filters.scopeFilter}
+        setScopeFilter={filters.setScopeFilter}
         dateFrom={dateFrom}
         setDateFrom={setDateFrom}
         dateTo={dateTo}
@@ -76,6 +81,11 @@ export default function AuditLogPage() {
         pagedLogs={filters.pagedLogs}
         expanded={filters.expanded}
         toggleExpand={filters.toggleExpand}
+        selectedIds={filters.selectedIds}
+        toggleSelect={filters.toggleSelect}
+        selectAll={filters.selectAll}
+        clearSelection={filters.clearSelection}
+        onDeleteLogs={logsData.deleteLogs}
         pageSize={filters.pageSize}
         setPageSize={filters.setPageSize}
         page={filters.page}

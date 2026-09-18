@@ -59,9 +59,46 @@
     color: #e5e7eb !important;
   }
 
-  html.dark .recharts-sector:focus,
-  html.dark .recharts-rectangle:focus,
-  html.dark .recharts-surface:focus {
-    outline-color: rgb(41 171 226 / 0.5) !important;
+  /* Form Controls Dark Mode Styling */
+  html.dark input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]),
+  html.dark select,
+  html.dark textarea {
+    background-color: #0c121e !important;
+    border-color: #24334a !important;
+    color: #f8fafc !important;
+  }
+  html.dark input:focus,
+  html.dark select:focus,
+  html.dark textarea:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 1px #38bdf8 !important;
+  }
+  html.dark input::placeholder,
+  html.dark textarea::placeholder {
+    color: #64748b !important;
+  }
+  html.dark input[type="checkbox"],
+  html.dark input[type="radio"] {
+    background-color: #0c121e !important;
+    border-color: #334768 !important;
+    color-scheme: dark;
+  }
+
+  /* Unified Table Dark Mode Styling */
+  html.dark thead,
+  html.dark thead tr,
+  html.dark thead th {
+    background-color: #0e1523 !important;
+    color: #94a3b8 !important;
+    border-color: #24334a !important;
+  }
+  html.dark tbody tr {
+    border-color: #24334a !important;
+  }
+  html.dark tbody tr:hover {
+    background-color: rgba(30, 41, 59, 0.45) !important;
+  }
+  html.dark tbody td {
+    border-color: #24334a !important;
   }
 }

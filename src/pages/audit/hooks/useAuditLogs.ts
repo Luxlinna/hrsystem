@@ -94,6 +94,23 @@ export function useAuditLogs({
     };
   }, [isPartnerBranchBlocked, targetBranch, isSuperAdmin, userBranchId]);
 
+  const deleteLogs = useCallback(async (ids: string[]) => {
+    if (!ids.length) return;
+    try {
+      const { error } = await supabase
+        .from("audit_logs")
+        .delete()
+        .in("id", ids);
+      if (error) {
+        console.warn("Database delete returned error, updating locally:", error);
+      }
+      setLogs((prev) => prev.filter((l) => !ids.includes(l.id)));
+    } catch (err) {
+      console.warn("Delete logs error:", err);
+      setLogs((prev) => prev.filter((l) => !ids.includes(l.id)));
+    }
+  }, []);
+
   return {
     logs,
     loading,
@@ -103,5 +120,6 @@ export function useAuditLogs({
     userBranchName,
     userBranchId,
     fetchLogs,
+    deleteLogs,
   };
 }

@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toYMD } from "@/lib/date";
+import { CreateTimeLogForm } from "@/pages/attendance/components/CreateTimeLogForm";
+import type { Employee } from "../types";
 
 interface AttendanceRecord {
   id: string;
@@ -14,6 +16,7 @@ interface AttendanceRecord {
 
 interface Props {
   employeeId: string;
+  employee?: Employee;
 }
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; icon: string }> = {
@@ -47,22 +50,21 @@ function calcHours(clockIn: string | null, clockOut: string | null): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-export default function AttendanceTab({ employeeId }: Props) {
+export default function AttendanceTab({ employeeId, employee }: Props) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showTimeLogForm, setShowTimeLogForm] = useState(false);
+  const [workLocations, setWorkLocations] = useState<any[]>([]);
   const [filterMonth, setFilterMonth] = useState<string>(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
 
-  useEffect(() => {
+  const fetchRecords = useCallback(() => {
     if (!employeeId) return;
     setLoading(true);
     const [year, month] = filterMonth.split("-");
     const startDate = `${year}-${month}-01`;
-    // Local (not UTC) end-of-month — toISOString() shifts to UTC, which rolls
-    // the date back a day in timezones ahead of UTC (e.g. ICT) and silently
-    // drops the last day of the month from the query.
     const endDate = toYMD(new Date(parseInt(year), parseInt(month), 0));
 
     supabase
@@ -77,6 +79,22 @@ export default function AttendanceTab({ employeeId }: Props) {
         setLoading(false);
       });
   }, [employeeId, filterMonth]);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
+
+  useEffect(() => {
+    supabase
+      .from("work_locations")
+      .select("id, branch_id, name, description, is_default, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled")
+      .is("deleted_at", null)
+      .order("is_default", { ascending: false })
+      .order("name")
+      .then(({ data }) => {
+        if (data) setWorkLocations(data);
+      });
+  }, []);
 
   const stats = {
     ontime: records.filter((r) => r.status === "ontime" || r.status === "present").length,
@@ -112,23 +130,62 @@ export default function AttendanceTab({ employeeId }: Props) {
     );
   }
 
+  if (showTimeLogForm) {
+    const formattedEmp = employee
+      ? [
+          {
+            id: employee.id,
+            first_name: employee.first_name,
+            last_name: employee.last_name,
+            department: employee.department,
+            role: employee.role,
+            avatar_url: employee.avatar_url,
+            branch_id: employee.branch_id,
+          },
+        ]
+      : [];
+
+    return (
+      <CreateTimeLogForm
+        onBack={() => setShowTimeLogForm(false)}
+        employees={formattedEmp as any}
+        workLocations={workLocations}
+        initialEmployeeId={employeeId}
+        isEmployeeFixed={true}
+        onSaved={() => {
+          fetchRecords();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-5">
-      {/* Month filter */}
+      {/* Month filter & Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <i className="ri-calendar-line text-[#253C7D]" />
           <span className="text-sm font-semibold text-gray-800">My Attendance History</span>
         </div>
-        <select
-          value={filterMonth}
-          onChange={(e) => setFilterMonth(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
-        >
-          {monthOptions.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2.5">
+          <select
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
+          >
+            {monthOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => setShowTimeLogForm(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+          >
+            <i className="ri-add-line text-sm" />
+            Create Time Log
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -160,7 +217,10 @@ export default function AttendanceTab({ employeeId }: Props) {
       ) : (
         <div className="space-y-2">
           {records.map((r) => {
-            const meta = STATUS_META[r.status] || { label: r.status, bg: "bg-gray-100", text: "text-gray-600", icon: "ri-circle-line" };
+            const isOutsideWork = r.notes?.toLowerCase().includes("outside work");
+            const meta = isOutsideWork
+              ? { label: "Outside Working", bg: "bg-teal-50", text: "text-teal-700", icon: "ri-map-pin-user-line" }
+              : STATUS_META[r.status] || { label: r.status, bg: "bg-gray-100", text: "text-gray-600", icon: "ri-circle-line" };
             const d = new Date(r.date + "T00:00:00");
             const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
             const dayNum = d.getDate();

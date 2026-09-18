@@ -47,6 +47,8 @@ export const keyLabels: Record<string, string> = {
   telegram_notify_enabled: "Telegram Group Notifications",
   telegram_notifications_chat_id: "Action Notifications Telegram Group ID",
   telegram_otp_chat_id: "OTP Telegram Group ID",
+  biometric_offline_alert_enabled: "Biometric Device Offline Alerts",
+  biometric_offline_threshold_minutes: "Biometric Device Offline Threshold (Minutes)",
   official_form_logo: "Official Documents Form Logo",
   company_khmer_name: "Company Khmer Name",
   company_english_name: "Company English Name",

@@ -1,8 +1,14 @@
 import { memo } from "react";
-import { Link } from "react-router-dom";
 import type { Employee, ReportEntry } from "../../types";
-import { isPhoneSyntheticEmail } from "@/lib/phoneUtils";
-import { formatBiometricId, extractMachinePin } from "@/lib/biometricUtils";
+import {
+  ProfilePersonalInfoSection,
+  ProfileIdentificationSection,
+  ProfileContactAddressSection,
+  ProfileOrgTermsSection,
+  ProfileFamilySection,
+  ProfileAchievementsSection,
+  ProfileEditStickyBar,
+} from "./basic-info";
 
 interface BasicInfoCardProps {
   employee: Employee;
@@ -29,299 +35,68 @@ export const BasicInfoCard = memo(function BasicInfoCard({
   workSites = [],
   onSave,
 }: BasicInfoCardProps) {
-  // Filter sites for the currently selected branch in the form
-  const currentBranchId = form.branch_id || employee.branch_id;
-  const availableSites = workSites.filter((s) => !currentBranchId || s.branch_id === currentBranchId);
-
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-lg font-bold text-[#1A1A1A]">Profile Information</h2>
-        {editing && (
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={saving}
-            className="px-4 py-2 bg-[#253C7D] text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] disabled:opacity-60 cursor-pointer"
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        )}
-      </div>
+    <div className="space-y-6">
+      {/* 1. Personal Information & Identity */}
+      <ProfilePersonalInfoSection
+        employee={employee}
+        form={form}
+        setForm={setForm}
+        editing={editing}
+        saving={saving}
+        onSave={onSave}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">First Name</label>
-          {editing ? (
-            <input
-              value={form.first_name || ""}
-              onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
-            />
-          ) : (
-            <p className="text-[14px] text-gray-900 font-medium">{employee.first_name}</p>
-          )}
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Last Name</label>
-          {editing ? (
-            <input
-              value={form.last_name || ""}
-              onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
-            />
-          ) : (
-            <p className="text-[14px] text-gray-900 font-medium">{employee.last_name}</p>
-          )}
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Email
-          </label>
-          {editing ? (
-            <input
-              type="email"
-              value={isPhoneSyntheticEmail(form.email) ? "" : form.email || ""}
-              placeholder="Email address (or leave empty if using phone)"
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
-            />
-          ) : (
-            <p className="text-[14px] text-gray-900">
-              {employee.email && !isPhoneSyntheticEmail(employee.email) ? (
-                employee.email
-              ) : employee.phone ? (
-                <span className="text-gray-500 italic text-xs">Uses phone number for login</span>
-              ) : (
-                <span className="text-gray-400 italic text-xs">No email (Biometric only)</span>
-              )}
-            </p>
-          )}
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Phone</label>
-          {editing ? (
-            <input
-              value={form.phone || ""}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
-            />
-          ) : (
-            <p className="text-[14px] text-gray-900">{employee.phone || "—"}</p>
-          )}
-        </div>
+      {/* 2. Official Identification & Tax Credentials */}
+      <ProfileIdentificationSection
+        employee={employee}
+        form={form}
+        setForm={setForm}
+        editing={editing}
+      />
 
-        {/* Branch Selection */}
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Branch</label>
-          {editing ? (
-            <select
-              value={form.branch_id || ""}
-              onChange={(e) => {
-                const newBranchId = e.target.value || null;
-                setForm({
-                  ...form,
-                  branch_id: newBranchId,
-                  // Reset site if changing branch
-                  default_work_location_id: null,
-                });
-              }}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] cursor-pointer"
-            >
-              <option value="">No branch</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <i className="ri-building-line text-[#253C7D] text-sm" />
-              <p className="text-[14px] text-gray-900 font-medium">{employee.branches?.name || "No branch"}</p>
-            </div>
-          )}
-        </div>
+      {/* 3. Contact Channels & Residential Addresses */}
+      <ProfileContactAddressSection
+        employee={employee}
+        form={form}
+        setForm={setForm}
+        editing={editing}
+      />
 
-        {/* Work Site / Location */}
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Work Site / Location
-          </label>
-          {editing ? (
-            <select
-              value={form.default_work_location_id || ""}
-              onChange={(e) => setForm({ ...form, default_work_location_id: e.target.value || null })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] cursor-pointer"
-            >
-              <option value="">
-                {branches.find((b) => b.id === currentBranchId)?.name || employee.branches?.name || "Main Branch"} (Main Branch)
-              </option>
-              {availableSites.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <i className="ri-map-pin-2-line text-emerald-600 text-sm" />
-              <p className="text-[14px] text-gray-900 font-medium">
-                {employee.work_locations?.name || `${employee.branches?.name || "Main Branch"} (Main Branch)`}
-              </p>
-            </div>
-          )}
-        </div>
+      {/* 4. Organizational Hierarchy & Hiring Terms */}
+      <ProfileOrgTermsSection
+        employee={employee}
+        form={form}
+        setForm={setForm}
+        editing={editing}
+        manager={manager}
+        allEmployees={allEmployees}
+        branches={branches}
+        workSites={workSites}
+      />
 
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Role</label>
-          {editing ? (
-            <input
-              value={form.role || ""}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
-            />
-          ) : (
-            <p className="text-[14px] text-gray-900">{employee.role}</p>
-          )}
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Department</label>
-          {editing ? (
-            <input
-              value={form.department || ""}
-              onChange={(e) => setForm({ ...form, department: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
-            />
-          ) : (
-            <p className="text-[14px] text-gray-900">{employee.department}</p>
-          )}
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Join Date</label>
-          {editing ? (
-            <input
-              type="date"
-              value={form.join_date || ""}
-              onChange={(e) => setForm({ ...form, join_date: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D]"
-            />
-          ) : (
-            <p className="text-[14px] text-gray-900">{employee.join_date || "—"}</p>
-          )}
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Status</label>
-          {editing ? (
-            <select
-              value={form.status || ""}
-              onChange={(e) => setForm({ ...form, status: e.target.value as any })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] cursor-pointer"
-            >
-              <option value="active">Active</option>
-              <option value="onboarding">Onboarding</option>
-              <option value="on_leave">On Leave</option>
-              <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
-            </select>
-          ) : (
-            <p className="text-[14px] text-gray-900 capitalize">{employee.status}</p>
-          )}
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Reports To</label>
-          {editing ? (
-            <select
-              value={form.reports_to || ""}
-              onChange={(e) => setForm({ ...form, reports_to: e.target.value || null })}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] focus:outline-none focus:border-[#253C7D] cursor-pointer"
-            >
-              <option value="">No manager</option>
-              {allEmployees.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.first_name} {e.last_name} — {e.role}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div className="flex items-center gap-2">
-              {manager ? (
-                <>
-                  <Link
-                    to={`/employees/${manager.id}`}
-                    className="text-[14px] text-[#253C7D] font-medium hover:underline flex items-center gap-1"
-                  >
-                    <i className="ri-user-line" />
-                    {manager.first_name} {manager.last_name}
-                  </Link>
-                  <span className="text-[12px] text-gray-400">({manager.role})</span>
-                </>
-              ) : (
-                <p className="text-[14px] text-gray-500">No manager assigned</p>
-              )}
-            </div>
-          )}
-        </div>
+      {/* 5. Registered Family Members */}
+      <ProfileFamilySection
+        employee={employee}
+        form={form}
+        setForm={setForm}
+        editing={editing}
+      />
 
-        {/* Biometric Machine PIN / User ID */}
-        <div className="md:col-span-2 pt-3 border-t border-gray-100">
-          <div className="flex items-center justify-between mb-1">
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              BU Biometric ID / Machine PIN
-            </label>
-            <span className="text-[10px] text-gray-400">
-              Each BU has its own sequential ID (e.g. Pinex Agro 001 - 090)
-            </span>
-          </div>
-          {editing ? (
-            <div className="space-y-1.5 max-w-md">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                  <i className="ri-fingerprint-line text-sm" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="e.g. 001, 24, 090, 3085..."
-                  value={form.biometric_user_id || ""}
-                  onChange={(e) => setForm({ ...form, biometric_user_id: e.target.value })}
-                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-[13px] font-mono font-bold focus:outline-none focus:border-[#253C7D]"
-                />
-              </div>
-              {form.biometric_user_id?.trim() && (
-                <div className="flex items-center gap-2 text-[11px] text-indigo-700 bg-indigo-50/70 border border-indigo-100 px-2.5 py-1 rounded-md">
-                  <i className="ri-arrow-right-line text-xs" />
-                  <span>
-                    BU Format: <strong>{formatBiometricId(form.biometric_user_id, branches.find((b) => b.id === (form.branch_id || employee.branch_id))?.name || employee.branches?.name)}</strong>
-                  </span>
-                  <span className="text-gray-400">·</span>
-                  <span className="text-gray-600">
-                    Machine PIN: <code>{extractMachinePin(form.biometric_user_id)}</code>
-                  </span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 flex-wrap">
-              {employee.biometric_user_id ? (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20">
-                  <i className="ri-fingerprint-line text-sm" />
-                  <span className="text-xs font-mono font-bold">
-                    {formatBiometricId(employee.biometric_user_id, employee.branches?.name)}
-                  </span>
-                  <span className="text-[10px] bg-white text-gray-600 px-1.5 py-0.2 rounded border border-gray-200 font-mono">
-                    Terminal PIN: {extractMachinePin(employee.biometric_user_id)}
-                  </span>
-                </div>
-              ) : (
-                <span className="text-[13px] text-gray-400 italic flex items-center gap-1">
-                  <i className="ri-error-warning-line text-amber-500" />
-                  Not linked (No machine PIN assigned)
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      {/* 6. Honors, Awards & Recognized Achievements */}
+      <ProfileAchievementsSection
+        employee={employee}
+        form={form}
+        setForm={setForm}
+        editing={editing}
+      />
+
+      {/* 7. Sticky Bottom Action Bar */}
+      <ProfileEditStickyBar
+        editing={editing}
+        saving={saving}
+        onSave={onSave}
+      />
     </div>
   );
 });

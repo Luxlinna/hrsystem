@@ -28,18 +28,20 @@ const CORE_ITEMS: DrawerItem[] = [
 ];
 
 const WORKFORCE_ITEMS: DrawerItem[] = [
+  { path: "/movements", label: "Movements", sublabel: "Transfers & promotions", icon: "ri-route-line", module: "employees" },
   { path: "/onboarding", label: "Onboarding", sublabel: "New hire pipeline", icon: "ri-user-add-line", module: "onboarding" },
   { path: "/onboarding-checklist", label: "Checklists", sublabel: "Task assignments", icon: "ri-task-line", module: "onboarding-checklist" },
   { path: "/leave", label: "Leave", sublabel: "Approve / reject", icon: "ri-calendar-event-line", module: "leave" },
-  { path: "/leave-calendar", label: "Leave Calendar", sublabel: "Team availability", icon: "ri-calendar-2-line", module: "leave-calendar" },
   { path: "/shifts", label: "Shifts", sublabel: "Shift scheduling", icon: "ri-calendar-schedule-line", module: "shifts" },
   { path: "/hire", label: "Hire", sublabel: "Candidates & jobs", icon: "ri-briefcase-line", module: "hire" },
   { path: "/offboard", label: "Off Board", sublabel: "Exit workflows", icon: "ri-user-unfollow-line", module: "offboard" },
+  { path: "/exit", label: "Exit", sublabel: "Employee exits", icon: "ri-logout-box-r-line", module: "exit" },
+  { path: "/complaints", label: "Complaints & Suggestions", sublabel: "Workplace feedback & grievances", icon: "ri-feedback-line", module: "complaints" },
   { path: "/org-chart", label: "Org Chart", sublabel: "Reporting structure", icon: "ri-organization-chart", module: "org-chart" },
   { path: "/performance", label: "Performance", sublabel: "Reviews & goals", icon: "ri-star-line", module: "performance" },
   { path: "/attendance", label: "Attendance", sublabel: "Punch records", icon: "ri-fingerprint-line", module: "attendance" },
   { path: "/training", label: "Training", sublabel: "Courses & programs", icon: "ri-graduation-cap-line", module: "training" },
-  { path: "/disciplinary", label: "Disciplinary", sublabel: "Incidents & actions", icon: "ri-alert-line", module: "disciplinary" },
+  { path: "/disciplinary", label: "Disciplinary & Warnings", sublabel: "Warnings & incident actions", icon: "ri-file-shield-line", module: "disciplinary" },
   { path: "/meeting-rooms", label: "Meeting Rooms", sublabel: "Book a room", icon: "ri-door-open-line", module: "meeting-rooms" },
   { path: "/tasks", label: "Tasks", sublabel: "Track and assign work", icon: "ri-checkbox-multiple-line", module: "tasks" },
 ];

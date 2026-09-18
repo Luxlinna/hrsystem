@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import type { Employee, AccountStatus, VisibleColumns, SortField, SortDirection, ViewMode, EmployeeStats } from "../types";
 import { INITIAL_VISIBLE_COLUMNS, COLUMN_WIDTHS } from "../constants";
 import { exportEmployeesCSV } from "../exportUtils";
-import { compareBiometricIds } from "@/lib/biometricUtils";
+import { matchEmployeeSearch, compareEmployees } from "../searchUtils";
 
 interface UseEmployeesFiltersProps {
   employees: Employee[];
@@ -80,19 +80,7 @@ export function useEmployeesFilters({
   const filtered = useMemo(() => {
     return employees
       .filter((e) => {
-        const fullName = `${e.first_name || ""} ${e.last_name || ""}`.toLowerCase();
-        const email = (e.email || "").toLowerCase();
-        const phone = (e.phone || "").toLowerCase();
-        const role = (e.role || "").toLowerCase();
-        const dept = (e.department || "").toLowerCase();
-        const q = search.toLowerCase();
-        const matchesSearch =
-          !search ||
-          fullName.includes(q) ||
-          email.includes(q) ||
-          phone.includes(q) ||
-          role.includes(q) ||
-          dept.includes(q);
+        const matchesSearch = matchEmployeeSearch(e, search);
         const matchesDept = !filterDept || e.department === filterDept;
         const matchesStatus = !filterStatus || e.status === filterStatus;
         let matchesBranch = true;
@@ -122,30 +110,7 @@ export function useEmployeesFilters({
           (filterWorkLocation === "main" ? !e.default_work_location_id : e.default_work_location_id === filterWorkLocation);
         return matchesSearch && matchesDept && matchesStatus && matchesBranch && matchesLocation && matchesAccount;
       })
-      .sort((a, b) => {
-        if (!sortField) {
-          // Default sorting: strictly by BU ID from 001 until the last user
-          const idComp = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
-          if (idComp !== 0) return idComp;
-          return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
-        }
-        if (sortField === "biometric_user_id") {
-          const diff = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
-          return sortDirection === "asc" ? diff : -diff;
-        }
-        let aVal = a[sortField] || "";
-        let bVal = b[sortField] || "";
-        if (sortField === "first_name") {
-          aVal = `${a.first_name} ${a.last_name}`;
-          bVal = `${b.first_name} ${b.last_name}`;
-        } else if (sortField === "email") {
-          aVal = a.email || a.phone || "";
-          bVal = b.email || b.phone || "";
-        }
-        if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-        if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-        return 0;
-      });
+      .sort((a, b) => compareEmployees(a, b, sortField, sortDirection));
   }, [employees, search, filterDept, filterStatus, filterBranch, filterWorkLocation, filterAccount, sortField, sortDirection, accountStatus]);
 
   const empTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));

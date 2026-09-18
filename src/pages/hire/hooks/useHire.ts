@@ -13,6 +13,7 @@ import { useHireActions } from "./useHireActions";
 import { useHireCandidateActions } from "./useHireCandidateActions";
 import { useRecruitmentActions } from "./useRecruitmentActions";
 import { useRecruitmentSlaWatcher } from "./useRecruitmentSlaWatcher";
+import type { Interview } from "../types";
 
 export function useHire() {
   const { user } = useAuth();
@@ -88,7 +89,7 @@ export function useHire() {
   const requests = useHiringRequests({
     actorName, actorRole, actorEmail: user?.email, myEmployeeId: myEmployee?.id,
     userBranchId, userBranchName, targetBranch, isAdmin, isSuperAdmin, isBranchAdmin,
-    canChairmanApprove, canRequest, loadData: data.loadData, branches: data.branches,
+    canBranchApprove, canChairmanApprove, canRequest, loadData: data.loadData, branches: data.branches,
   });
 
   const modals = useHireModals({

@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import { uploadFile } from "@/lib/storage";
+import { uploadMediaToS3 } from "@/lib/s3-storage";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
-import { logActivity } from "@/lib/audit";
-import { normalizePhone } from "@/lib/phoneUtils";
-import { formatPaddedPin } from "@/lib/biometricUtils";
+import { executeSaveEmployeeProfile } from "./saveEmployeeProfile";
+import { loadEmployeeRelations } from "./employeeProfileLoader";
 import type { Employee, ReportEntry } from "../types";
 
 export function useEmployeeProfile(id: string | undefined) {
@@ -25,7 +24,9 @@ export function useEmployeeProfile(id: string | undefined) {
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
   const [form, setForm] = useState<Partial<Employee>>({});
-  const [allEmployees, setAllEmployees] = useState<ReportEntry[]>([]);
+  const [allEmployees, setAllEmployees] = useState<any[]>([]);
+  const [userManagementUsers, setUserManagementUsers] = useState<any[]>([]);
+  const [managersList, setManagersList] = useState<ReportEntry[]>([]);
   const loadRequestId = useRef(0);
 
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
@@ -58,8 +59,23 @@ export function useEmployeeProfile(id: string | undefined) {
       return;
     }
 
-    setEmployee(emp as Employee);
-    setForm(emp as Employee);
+    const nssfInfo = emp.nssf_info || emp.hiring_info?.nssf_info || {
+      register_nssf: Boolean(emp.register_nssf || emp.nssf_number),
+      identity_code: emp.nssf_number || "",
+      joining_date: emp.join_date || new Date().toISOString().slice(0, 10),
+      first_name_kh: emp.kh_name ? emp.kh_name.split(" ")[1] || "" : "",
+      last_name_kh: emp.kh_name ? emp.kh_name.split(" ")[0] || "" : "",
+      first_name_latin: emp.first_name || "",
+      last_name_latin: emp.last_name || "",
+      monthly_wage_type: "Formula",
+      monthly_wage: "Taxable Salary",
+      seniority_pension_fund: "",
+      remark: "",
+      status: "Active",
+    };
+    const resolvedEmp = { ...emp, nssf_info: nssfInfo };
+    setEmployee(resolvedEmp as Employee);
+    setForm(resolvedEmp as Employee);
 
     if (emp.branch_id) {
       supabase
@@ -83,63 +99,15 @@ export function useEmployeeProfile(id: string | undefined) {
       setHasBiometricDevice(false);
     }
 
-    // Load manager
-    if (emp.reports_to) {
-      const { data: mgr } = await supabase
-        .from("employees")
-        .select("id, first_name, last_name, role")
-        .eq("id", emp.reports_to)
-        .maybeSingle();
-      if (mgr) setManager(mgr);
-    } else {
-      setManager(null);
-    }
-
-    // Load direct reports
-    const { data: reps } = await supabase
-      .from("employees")
-      .select("id, first_name, last_name, role")
-      .eq("reports_to", empId);
-    setReports(reps || []);
-
-    // Load all employees for manager dropdown, filtered by system role
-    const [all, roleData] = await Promise.all([
-      supabase.from("employees").select("id, first_name, last_name, role, email"),
-      supabase.from("user_role_assignments").select("email, app_roles(name)").is("deleted_at", null),
-    ]);
-    const managerEmails = new Set<string>();
-    (roleData.data || []).forEach((row: any) => {
-      if (/manager/i.test(row.app_roles?.name || "")) managerEmails.add(row.email?.toLowerCase());
-    });
-    const allEmps = (all.data || []).filter((e: any) => e.id !== empId);
-    setAllEmployees(allEmps.filter((e: any) => managerEmails.has(e.email?.toLowerCase())));
-
-    // Load interviews as interviewer
-    const { data: ivs } = await supabase
-      .from("interviews")
-      .select("*, candidates(full_name, job_postings(title))")
-      .eq("interviewer_id", empId)
-      .is("deleted_at", null)
-      .order("scheduled_at", { ascending: false });
-    setInterviews(ivs || []);
-
-    // Load leave requests
-    const { data: leaves } = await supabase
-      .from("leave_requests")
-      .select("*")
-      .eq("employee_id", empId)
-      .order("created_at", { ascending: false })
-      .limit(5);
-    setLeaveRequests(leaves || []);
-
-    // Load payroll
-    const { data: pay } = await supabase
-      .from("payroll_records")
-      .select("*")
-      .eq("employee_id", empId)
-      .order("created_at", { ascending: false })
-      .limit(5);
-    setPayrollRecords(pay || []);
+    const rels = await loadEmployeeRelations(empId, emp);
+    setManager(rels.manager);
+    setReports(rels.reports);
+    setAllEmployees(rels.allEmployees);
+    setUserManagementUsers(rels.userManagementUsers || []);
+    setManagersList(rels.managersList);
+    setInterviews(rels.interviews);
+    setLeaveRequests(rels.leaveRequests);
+    setPayrollRecords(rels.payrollRecords);
 
     setLoading(false);
   }, []);
@@ -151,107 +119,17 @@ export function useEmployeeProfile(id: string | undefined) {
 
   const saveChanges = useCallback(async () => {
     if (!id || !employee || !canEdit) return;
-    setSaving(true);
-
-    const cleanEmail = form.email?.trim() ? form.email.trim().toLowerCase() : null;
-    const cleanPhone = form.phone?.trim() || null;
-
-    // Check duplicate phone
-    if (cleanPhone) {
-      const normPhone = normalizePhone(cleanPhone);
-      if (normPhone && normPhone.length >= 6) {
-        const { data: existingPhoneRows } = await supabase
-          .from("employees")
-          .select("id, first_name, last_name, phone")
-          .neq("id", id)
-          .is("deleted_at", null)
-          .or(`phone.ilike.%${normPhone}%,phone.eq.${cleanPhone}`)
-          .limit(10);
-
-        const dupPhoneEmp = (existingPhoneRows || []).find((e) => {
-          if (!e.phone) return false;
-          return normalizePhone(e.phone) === normPhone;
-        });
-
-        if (dupPhoneEmp) {
-          toast(
-            "Phone Number Already Registered",
-            `An employee (${dupPhoneEmp.first_name} ${dupPhoneEmp.last_name}) already has the phone number "${cleanPhone}". Duplicate phone numbers are not allowed.`,
-            "error"
-          );
-          setSaving(false);
-          return;
-        }
-      }
-    }
-
-    // Check duplicate email
-    if (cleanEmail) {
-      const { data: existingEmailRows } = await supabase
-        .from("employees")
-        .select("id, first_name, last_name, email")
-        .neq("id", id)
-        .is("deleted_at", null)
-        .ilike("email", cleanEmail)
-        .limit(1);
-
-      if (existingEmailRows && existingEmailRows.length > 0) {
-        const dupEmailEmp = existingEmailRows[0];
-        toast(
-          "Email Already Registered",
-          `An employee (${dupEmailEmp.first_name} ${dupEmailEmp.last_name}) already has the email "${cleanEmail}". Duplicate emails are not allowed.`,
-          "error"
-        );
-        setSaving(false);
-        return;
-      }
-    }
-
-    const { error } = await supabase
-      .from("employees")
-      .update({
-        first_name: form.first_name,
-        last_name: form.last_name,
-        email: cleanEmail,
-        phone: cleanPhone,
-        role: form.role,
-        department: form.department,
-        branch_id: form.branch_id || null,
-        default_work_location_id: form.default_work_location_id || null,
-        status: form.status,
-        join_date: form.join_date,
-        reports_to: form.reports_to,
-        biometric_user_id: form.biometric_user_id?.trim() ? formatPaddedPin(form.biometric_user_id.trim()) : null,
-      })
-      .eq("id", id);
-
-    if (error) {
-      if (error?.message?.includes("employees_phone_unique_idx") || (error?.code === "23505" && (error?.message?.includes("phone") || form.phone))) {
-        toast(
-          "Phone Number Already Registered",
-          `An employee with phone number "${form.phone}" already exists in the system. Duplicate phone numbers are not allowed.`,
-          "error"
-        );
-      } else if (error?.message?.includes("employees_email_unique_idx") || (error?.code === "23505" && form.email)) {
-        toast("Email Already Registered", `An employee with the email "${form.email}" already exists in the system. Please use a different email address.`, "error");
-      } else {
-        toast("Error", error.message, "error");
-      }
-    } else {
-      toast("Saved", "Employee profile updated successfully", "success");
-      setEditing(false);
-      logActivity({
-        module: "employees",
-        action: "updated",
-        entityType: "employee",
-        entityId: id,
-        actorName: (user?.user_metadata?.display_name as string) || user?.email || "Unknown",
-        actorRole: role?.name || "Unknown",
-        description: `Profile updated for ${form.first_name} ${form.last_name}`,
-      });
-      loadEmployee(id);
-    }
-    setSaving(false);
+    await executeSaveEmployeeProfile({
+      id,
+      employee,
+      form,
+      user,
+      roleName: role?.name,
+      toast,
+      loadEmployee,
+      setSaving,
+      setEditing,
+    });
   }, [id, employee, canEdit, form, user, role?.name, loadEmployee]);
 
   const uploadAvatar = useCallback(
@@ -259,12 +137,13 @@ export function useEmployeeProfile(id: string | undefined) {
       if (!id || !canEdit) return;
       setUploadingAvatar(true);
       try {
-        const url = await uploadFile("avatars", `employees/${id}/${Date.now()}_${file.name}`, file);
+        const media = await uploadMediaToS3(file, `employees/${id}/avatars`);
+        const url = media.url;
         await supabase.from("employees").update({ avatar_url: url }).eq("id", id);
         setEmployee((prev) => (prev ? { ...prev, avatar_url: url } : prev));
-        toast("Avatar updated", "Profile picture saved", "success");
+        toast("Avatar updated", "Profile picture stored on AWS S3", "success");
       } catch (err) {
-        toast("Upload failed", err instanceof Error ? err.message : "Could not upload avatar", "error");
+        toast("Upload failed", err instanceof Error ? err.message : "Could not upload avatar to AWS S3", "error");
       }
       setUploadingAvatar(false);
     },
@@ -287,9 +166,12 @@ export function useEmployeeProfile(id: string | undefined) {
     form,
     setForm,
     allEmployees,
+    userManagementUsers,
+    managersList,
     branches,
     workSites,
     hasBiometricDevice,
+    loadEmployee,
     saveChanges,
     uploadAvatar,
   };

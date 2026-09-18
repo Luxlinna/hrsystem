@@ -25,6 +25,7 @@ export interface AppRole {
   task_view_own_branch: boolean;
   meeting_rooms_approve: boolean;
   attendance_notify: boolean;
+  exit_manage_settings?: boolean;
   candidate_approval_ceo_sign?: boolean;
   candidate_approval_hr_sign?: boolean;
   candidate_approval_director_sign?: boolean;
@@ -112,6 +113,7 @@ export interface RoleFormState {
   task_view_own_branch: boolean;
   meeting_rooms_approve: boolean;
   attendance_notify: boolean;
+  exit_manage_settings?: boolean;
   candidate_approval_ceo_sign?: boolean;
   candidate_approval_hr_sign?: boolean;
   candidate_approval_director_sign?: boolean;

@@ -3,9 +3,9 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useBranchScope } from "@/context/BranchContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import type { OnboardingRequest, OnboardingDoc, EmployeeOption } from "../types";
-
-import { startOnboardingForCandidate, startOnboardingForEmployee } from "@/lib/onboarding";
+import type { OnboardingRequest, OnboardingDoc, EmployeeOption, HireDocument } from "../types";
+import { matchHireDocToOnboardingDoc } from "../utils/hireDocumentUtils";
+import { DOC_TO_TASK } from "@/lib/onboarding";
 
 export function useOnboardingData(
   onHighlight: (id: string) => void
@@ -45,6 +45,7 @@ export function useOnboardingData(
   const [requests, setRequests] = useState<OnboardingRequest[]>([]);
   const [documents, setDocuments] = useState<OnboardingDoc[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
+  const [hireDocumentsByRequestId, setHireDocumentsByRequestId] = useState<Record<string, HireDocument[]>>({});
   const [loading, setLoading] = useState(true);
 
   const [searchParams] = useSearchParams();
@@ -56,6 +57,7 @@ export function useOnboardingData(
       setRequests([]);
       setDocuments([]);
       setEmployees([]);
+      setHireDocumentsByRequestId({});
       setLoading(false);
       return;
     }
@@ -90,7 +92,6 @@ export function useOnboardingData(
         ...e,
         branches: Array.isArray(e.branches) ? e.branches[0] || null : e.branches || null,
       }));
-      const empIds = new Set(formattedEmps.map((e: any) => e.id));
 
       const currentOb = ob || [];
       const isCrossBranch = canViewCrossBranch || isHrDivisionBranch;
@@ -103,9 +104,197 @@ export function useOnboardingData(
       const requestIds = new Set(filteredRequests.map((r) => r.id));
       const filteredDocs = (docs || []).filter((d) => requestIds.has(d.onboarding_request_id));
 
+      // Batch-fetch candidate documents for all requests
+      const candidateIds = Array.from(
+        new Set(
+          filteredRequests
+            .map((r) => r.employees?.candidate_id)
+            .filter((id): id is string => Boolean(id))
+        )
+      );
+      const candidateCodes = Array.from(
+        new Set(
+          filteredRequests
+            .filter((r) => !r.employees?.candidate_id && r.employees?.candidate_code)
+            .map((r) => r.employees!.candidate_code)
+            .filter((c): c is string => Boolean(c))
+        )
+      );
+      const candidateEmails = Array.from(
+        new Set(
+          filteredRequests
+            .filter((r) => !r.employees?.candidate_id && !r.employees?.candidate_code && r.employees?.email)
+            .map((r) => r.employees!.email)
+            .filter((em): em is string => Boolean(em))
+        )
+      );
+
+      let candRows: any[] = [];
+      const candQueries: Promise<any[]>[] = [];
+
+      if (candidateIds.length > 0) {
+        candQueries.push(
+          (async () => {
+            const { data } = await supabase
+              .from("candidates")
+              .select("id, email, candidate_code, full_name, documents, resume_url, resume_name")
+              .in("id", candidateIds);
+            return data || [];
+          })()
+        );
+      }
+      if (candidateCodes.length > 0) {
+        candQueries.push(
+          (async () => {
+            const { data } = await supabase
+              .from("candidates")
+              .select("id, email, candidate_code, full_name, documents, resume_url, resume_name")
+              .in("candidate_code", candidateCodes);
+            return data || [];
+          })()
+        );
+      }
+      if (candidateEmails.length > 0) {
+        candQueries.push(
+          (async () => {
+            const { data } = await supabase
+              .from("candidates")
+              .select("id, email, candidate_code, full_name, documents, resume_url, resume_name")
+              .in("email", candidateEmails);
+            return data || [];
+          })()
+        );
+      }
+
+      if (candQueries.length > 0) {
+        const results = await Promise.all(candQueries);
+        candRows = results.flat();
+      }
+
+      const candById = new Map<string, any>();
+      const candByCode = new Map<string, any>();
+      const candByEmail = new Map<string, any>();
+
+      candRows.forEach((c) => {
+        if (c.id) candById.set(c.id, c);
+        if (c.candidate_code) candByCode.set(c.candidate_code, c);
+        if (c.email) candByEmail.set(c.email.toLowerCase(), c);
+      });
+
+      const hireDocsMap: Record<string, import("../types").HireDocument[]> = {};
+
+      filteredRequests.forEach((req) => {
+        const emp = req.employees;
+        const cand =
+          (emp?.candidate_id ? candById.get(emp.candidate_id) : null) ||
+          (emp?.candidate_code ? candByCode.get(emp.candidate_code) : null) ||
+          (emp?.email ? candByEmail.get(emp.email.toLowerCase()) : null);
+
+        const list: import("../types").HireDocument[] = [];
+
+        if (cand) {
+          const rawDocs = Array.isArray(cand.documents) ? cand.documents : [];
+          rawDocs.forEach((d: any) => {
+            if (!d || !d.url) return;
+            list.push({
+              name: d.name || "Candidate Document",
+              url: d.url,
+              size: d.size,
+              type: d.type,
+              uploaded_at: d.uploaded_at,
+              stage_key: d.stage_key,
+              notes: d.notes,
+              doc_slot_key: d.doc_slot_key,
+              verification_status: d.verification_status || "uploaded",
+              rejection_reason: d.rejection_reason,
+              reviewed_by: d.reviewed_by,
+              reviewed_at: d.reviewed_at,
+            });
+          });
+
+          if (cand.resume_url && !list.some((d) => d.url === cand.resume_url)) {
+            list.unshift({
+              name: cand.resume_name || "Resume / CV",
+              url: cand.resume_url,
+              type: "application/pdf",
+              notes: "Submitted with job application",
+              doc_slot_key: "resume",
+              verification_status: "verified",
+            });
+          }
+        }
+
+        if (emp?.resume_url && !list.some((d) => d.url === emp.resume_url)) {
+          list.unshift({
+            name: emp.resume_name || "Resume / CV",
+            url: emp.resume_url,
+            type: "application/pdf",
+            notes: "Employee resume on file",
+            doc_slot_key: "resume",
+            verification_status: "verified",
+          });
+        }
+
+        if (list.length > 0) {
+          hireDocsMap[req.id] = list;
+        }
+      });
+
+      // Auto-bridge matching hire documents into pending onboarding documents
+      const docsToUpdate: { docId: string; fileUrl: string; fileName: string; notes: string; reqId: string; taskName: string }[] = [];
+      const updatedDocs = filteredDocs.map((doc) => {
+        if (doc.stage === "document" && (doc.status !== "complete" || !doc.file_url)) {
+          const hireDocs = hireDocsMap[doc.onboarding_request_id] || [];
+          const match = matchHireDocToOnboardingDoc(doc.document_name, hireDocs);
+          if (match && match.url) {
+            const taskName = DOC_TO_TASK[doc.document_name] || doc.document_name;
+            docsToUpdate.push({
+              docId: doc.id,
+              fileUrl: match.url,
+              fileName: match.name,
+              notes: match.notes || `Transferred from candidate recruitment (${match.name})`,
+              reqId: doc.onboarding_request_id,
+              taskName,
+            });
+            return {
+              ...doc,
+              status: "complete",
+              file_url: match.url,
+              file_name: match.name,
+              notes: match.notes || `Transferred from candidate recruitment (${match.name})`,
+            };
+          }
+        }
+        return doc;
+      });
+
+      if (docsToUpdate.length > 0) {
+        Promise.all(
+          docsToUpdate.map(async (item) => {
+            await supabase
+              .from("onboarding_documents")
+              .update({
+                status: "complete",
+                file_url: item.fileUrl,
+                file_name: item.fileName,
+                notes: item.notes,
+              })
+              .eq("id", item.docId);
+
+            await supabase
+              .from("onboarding_checklist_tasks")
+              .update({ completed: true, completed_at: new Date().toISOString() })
+              .eq("onboarding_request_id", item.reqId)
+              .eq("task_name", item.taskName)
+              .is("deleted_at", null);
+          })
+        ).catch((e) => console.error("Error auto-bridging hire docs:", e));
+      }
+
       setRequests(filteredRequests);
-      setDocuments(filteredDocs);
+      setDocuments(updatedDocs);
       setEmployees(formattedEmps);
+      setHireDocumentsByRequestId(hireDocsMap);
     } catch (err) {
       console.error("Failed to load onboarding data:", err);
     } finally {
@@ -176,6 +365,7 @@ export function useOnboardingData(
     setRequests,
     documents,
     employees: scopedEmployees,
+    hireDocumentsByRequestId,
     loading,
     loadData,
   };

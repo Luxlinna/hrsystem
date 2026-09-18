@@ -3,9 +3,10 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
-import { uploadFileToR2 } from "@/lib/r2-storage";
 import { startOnboardingForCandidate } from "@/lib/onboarding";
 import type { Candidate, Job, Interview } from "../types";
+import { executeSaveJob } from "../utils/jobSaveHelper";
+import { dispatchCandidateStageNotification } from "../utils/candidateStageNotificationHelper";
 
 interface UseHireActionsProps {
   actorName: string;
@@ -30,41 +31,11 @@ export function useHireActions({
 
   const handleSaveJob = useCallback(
     async (jobForm: any, editingJob: Job | null) => {
-      if (!jobForm.title || !jobForm.department) {
-        toast("Validation Error", "Title and department are required.", "error");
-        return false;
-      }
       setPostingJob(true);
       try {
-        const isSite = jobForm.branch_id && jobForm.branch_id.startsWith("site:");
-        const siteObj = isSite ? branches.find((b: any) => b.id === jobForm.branch_id) : null;
-        const branchId = isSite ? siteObj?.branch_id : (jobForm.branch_id || null);
-        const resolvedLocation = isSite ? siteObj?.name : jobForm.location;
-
-        const payload: any = {
-          title: jobForm.title,
-          department: jobForm.department,
-          branch_id: branchId,
-          description: jobForm.description || null,
-          location: resolvedLocation || null,
-          salary_min: jobForm.salary_min ? Number(jobForm.salary_min) : null,
-          salary_max: jobForm.salary_max ? Number(jobForm.salary_max) : null,
-          type: jobForm.type,
-          closing_date: jobForm.closing_date || null,
-        };
-
-        if (editingJob) {
-          const { error } = await supabase.from("job_postings").update(payload).eq("id", editingJob.id);
-          if (error) throw error;
-          toast("Job Updated", `"${jobForm.title}" saved.`, "success");
-        } else {
-          payload.status = "active";
-          const { error } = await supabase.from("job_postings").insert(payload);
-          if (error) throw error;
-          toast("Job Posted", `"${jobForm.title}" is now open.`, "success");
-        }
-        await loadData();
-        return true;
+        const ok = await executeSaveJob(jobForm, editingJob, branches);
+        if (ok) await loadData();
+        return ok;
       } catch (err: any) {
         toast("Error", err.message || "Failed to save job posting.", "error");
         return false;
@@ -137,11 +108,20 @@ export function useHireActions({
       } else {
         toast("Stage Updated", `Candidate moved to ${stage}.`, "success");
       }
+
+      // Canonical Notification Engine Dispatch
+      await dispatchCandidateStageNotification({
+        candidateId,
+        stage,
+        actorName,
+        actorRole,
+      });
+
       await loadData();
     } catch (err: any) {
       toast("Error", err.message || "Failed to update stage.", "error");
     }
-  }, [loadData, actorName]);
+  }, [loadData, actorName, actorRole]);
 
   const rateCandidate = useCallback(async (candidateId: string, rating: number) => {
     try {

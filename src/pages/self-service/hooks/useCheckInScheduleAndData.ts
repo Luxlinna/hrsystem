@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { addDaysYMD, todayYMD, zonedDayOfWeek } from "@/lib/date";
 import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows } from "@/lib/workSchedule";
 import type { AttendanceRecord, BranchGeofence, OutsideWorkTask } from "../types";
+import { syncMultiDayOutsideWorkAttendance } from "@/pages/tasks/hooks/taskAttendanceSync";
 
 interface UseCheckInScheduleAndDataProps {
   employeeId: string;
@@ -113,32 +114,11 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
         setActiveOutsideWork(task?.work_status === "checked_in" ? task : null);
 
         if (task?.work_checked_in_at && task.work_status === "checked_in") {
-          const { data: existing } = await supabase
-            .from("attendance_records")
-            .select("id")
-            .eq("employee_id", employeeId)
-            .eq("date", today)
-            .maybeSingle();
-
-          if (!existing) {
-            const ci = new Date(task.work_checked_in_at);
-            const timeStr = `${String(ci.getHours()).padStart(2, "0")}:${String(ci.getMinutes()).padStart(2, "0")}:${String(ci.getSeconds()).padStart(2, "0")}`;
-            await supabase.from("attendance_records").upsert(
-              {
-                employee_id: employeeId,
-                date: today,
-                clock_in: timeStr,
-                status: "ontime",
-                notes: `Outside work: ${task.title}`,
-                work_location_id: defaultWorkLocationId || null,
-              },
-              { onConflict: "employee_id,date" }
-            );
-            loadRecords();
-          }
+          await syncMultiDayOutsideWorkAttendance(employeeId, scheduleSettings.timezone);
+          loadRecords();
         }
       });
-  }, [employeeId, today, defaultWorkLocationId, loadRecords]);
+  }, [employeeId, today, defaultWorkLocationId, loadRecords, scheduleSettings.timezone]);
 
   useEffect(() => {
     if (!employeeId) return;

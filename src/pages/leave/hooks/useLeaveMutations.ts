@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { logActivity } from "@/lib/audit";
 import { notify } from "@/lib/notify";
+import { uploadMediaToS3 } from "@/lib/s3-storage";
 import type { LeaveRequest, Employee, LeaveFormData } from "../types";
 import { INITIAL_LEAVE_FORM } from "../constants";
 import { calculateDays, rangesOverlap } from "../dateUtils";
@@ -13,6 +14,10 @@ interface UseLeaveMutationsProps {
   myEmployee: Employee | null;
   actorName: string;
   actorRole: string;
+  canApproveLeave?: boolean;
+  isAdmin?: boolean;
+  isSuperAdmin?: boolean;
+  hasRoleApprovalAccess?: boolean;
   getRemaining: (employeeId: string, type: string) => number | null;
   loadData: () => Promise<void>;
   setToast: (toast: { type: "success" | "error" | "info"; message: string } | null) => void;
@@ -24,6 +29,10 @@ export function useLeaveMutations({
   myEmployee,
   actorName,
   actorRole,
+  canApproveLeave,
+  isAdmin,
+  isSuperAdmin: isSuperAdminProp,
+  hasRoleApprovalAccess,
   getRemaining,
   loadData,
   setToast,
@@ -33,9 +42,18 @@ export function useLeaveMutations({
   const [submitting, setSubmitting] = useState(false);
   const [inspectRequest, setInspectRequest] = useState<LeaveRequest | null>(null);
 
+  const isSuperAdmin =
+    isSuperAdminProp ||
+    actorRole?.toLowerCase().includes("super admin") ||
+    actorRole?.toLowerCase().includes("superadmin");
+
   const decision = useLeaveApprovalDecision({
     actorName,
     actorRole,
+    canApproveLeave,
+    isAdmin,
+    isSuperAdmin,
+    hasRoleApprovalAccess,
     loadData,
     setToast,
   });
@@ -58,17 +76,17 @@ export function useLeaveMutations({
       }
 
       const cleanReason = (formData.reason || "").trim();
-      if (!cleanReason || cleanReason.length < 50) {
+      if (!cleanReason || cleanReason.length < 5) {
         setToast({
           type: "error",
-          message: "Please provide a detailed reason with at least 50 characters for managerial approval.",
+          message: "Please provide a valid reason for this leave request.",
         });
         return;
       }
 
       const days = calculateDays(formData.start_date, formData.end_date);
       const remaining = getRemaining(targetEmpId, formData.leave_type);
-      if (remaining !== null && days > remaining) {
+      if (remaining !== null && days > remaining && !isSuperAdmin) {
         setToast({
           type: "error",
           message: `Requested ${days} days exceeds remaining allowance (${remaining} days available).`,
@@ -93,6 +111,32 @@ export function useLeaveMutations({
 
       setSubmitting(true);
       try {
+        let uploadedUrl = formData.attachment_url || null;
+        if (formData.attachment_file) {
+          try {
+            const media = await uploadMediaToS3(formData.attachment_file, "leave/attachments");
+            uploadedUrl = media.url;
+          } catch (uploadErr) {
+            console.error("Leave attachment upload error:", uploadErr);
+            // Continue with submission even if storage upload fails, but warn user
+            setToast({ type: "info", message: "Attachment upload had an issue; continuing submission..." });
+          }
+        }
+
+        // Build composite reason with category, remark, and attachment link
+        let fullReason = cleanReason;
+        if (formData.category_law) {
+          fullReason = `[Category: ${formData.category_law}]\n${fullReason}`;
+        }
+        if (formData.remark?.trim()) {
+          fullReason = `${fullReason}\n\n[Remark: ${formData.remark.trim()}]`;
+        }
+        if (uploadedUrl) {
+          fullReason = `${fullReason}\n\n[Attachment: ${uploadedUrl}]`;
+        }
+
+        const newStatus = isSuperAdmin ? "approved" : "pending";
+
         const { data, error } = await supabase
           .from("leave_requests")
           .insert([
@@ -102,8 +146,8 @@ export function useLeaveMutations({
               start_date: formData.start_date,
               end_date: formData.end_date,
               days,
-              reason: formData.reason || null,
-              status: "pending",
+              reason: fullReason,
+              status: newStatus,
             },
           ])
           .select()
@@ -111,7 +155,12 @@ export function useLeaveMutations({
 
         if (error) throw error;
 
-        setToast({ type: "success", message: "Leave request submitted successfully" });
+        setToast({
+          type: "success",
+          message: isSuperAdmin
+            ? "Leave recorded and automatically approved (Super Admin)"
+            : "Leave request submitted successfully for approval",
+        });
         setShowForm(false);
         setFormData(INITIAL_LEAVE_FORM);
 
@@ -120,19 +169,21 @@ export function useLeaveMutations({
 
         logActivity({
           module: "leave",
-          action: "created",
+          action: isSuperAdmin ? "approved" : "created",
           entityType: "leave_request",
           entityId: data?.id,
           actorName,
           actorRole,
-          description: `Submitted ${formData.leave_type} leave request for ${days} days (${formData.start_date} to ${formData.end_date}) for ${empName}`,
+          description: `${isSuperAdmin ? "Created & Auto-Approved" : "Submitted"} ${formData.leave_type} leave request for ${days} days (${formData.start_date} to ${formData.end_date}) for ${empName}`,
         });
 
         notify({
           source: "leave",
-          type: "info",
-          title: "New Leave Request",
-          message: `${empName} requested ${days} day(s) ${formData.leave_type} leave (${formData.start_date} to ${formData.end_date})`,
+          type: isSuperAdmin ? "success" : "info",
+          title: isSuperAdmin ? "Leave Approved" : "New Leave Request",
+          message: isSuperAdmin
+            ? `${empName}'s ${formData.leave_type} leave for ${days} day(s) was approved directly.`
+            : `${empName} requested ${days} day(s) ${formData.leave_type} leave (${formData.start_date} to ${formData.end_date})`,
           entityId: data?.id,
         });
 
@@ -143,7 +194,7 @@ export function useLeaveMutations({
         setSubmitting(false);
       }
     },
-    [formData, myEmployee, employees, requests, actorName, actorRole, getRemaining, loadData, setToast]
+    [formData, myEmployee, employees, requests, actorName, actorRole, isSuperAdmin, getRemaining, loadData, setToast]
   );
 
   return {

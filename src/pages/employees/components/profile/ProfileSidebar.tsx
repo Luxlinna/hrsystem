@@ -6,24 +6,40 @@ interface ProfileSidebarProps {
   manager: ReportEntry | null;
   reports: ReportEntry[];
   interviews: any[];
+  canEdit?: boolean;
+  onEditManager?: () => void;
 }
 
 export const ProfileSidebar = memo(function ProfileSidebar({
   manager,
   reports,
   interviews,
+  canEdit = false,
+  onEditManager,
 }: ProfileSidebarProps) {
   return (
     <div className="space-y-6">
       {/* Org Drill-down */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-3">Reporting Line</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[14px] font-bold text-[#1A1A1A]">Reporting Line</h3>
+          {canEdit && onEditManager && (
+            <button
+              type="button"
+              onClick={onEditManager}
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#253C7D] hover:text-[#1F336A] hover:underline cursor-pointer transition-colors"
+            >
+              <i className="ri-edit-line" />
+              {manager ? "Change Manager" : "+ Assign Manager"}
+            </button>
+          )}
+        </div>
         {manager && (
           <Link
             to={`/employees/${manager.id}`}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group cursor-pointer"
+            className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group cursor-pointer border border-gray-100/60"
           >
-            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-bold">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#253C7D] flex items-center justify-center font-bold">
               {manager.first_name[0]}
               {manager.last_name[0]}
             </div>
@@ -31,12 +47,25 @@ export const ProfileSidebar = memo(function ProfileSidebar({
               <p className="text-[13px] font-semibold text-gray-900 group-hover:text-[#253C7D] transition-colors">
                 {manager.first_name} {manager.last_name}
               </p>
-              <p className="text-[11px] text-gray-500">{manager.role} — Manager</p>
+              <p className="text-[11px] text-gray-500">{manager.role} — Direct Manager</p>
             </div>
             <i className="ri-arrow-right-s-line text-gray-400 ml-auto" />
           </Link>
         )}
-        {!manager && <p className="text-[13px] text-gray-400">No manager assigned</p>}
+        {!manager && (
+          <div className="p-3 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center space-y-2">
+            <p className="text-[12px] text-gray-500 font-medium">No direct manager assigned</p>
+            {canEdit && onEditManager && (
+              <button
+                type="button"
+                onClick={onEditManager}
+                className="px-3 py-1 bg-[#253C7D] hover:bg-[#1F336A] text-white text-[11px] font-bold rounded-lg cursor-pointer transition-colors"
+              >
+                + Assign Line Manager
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Direct Reports */}

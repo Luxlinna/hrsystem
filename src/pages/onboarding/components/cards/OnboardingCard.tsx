@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from "react";
-import type { OnboardingRequest, OnboardingDoc } from "../../types";
+import type { OnboardingRequest, OnboardingDoc, HireDocument } from "../../types";
 import { STAGES } from "../../constants";
 import { getOverallProgress } from "../../onboardingUtils";
 import { OnboardingStageColumn } from "./OnboardingStageColumn";
@@ -25,6 +25,10 @@ interface OnboardingCardProps {
   onOpenEditDocModal: (req: OnboardingRequest, doc: OnboardingDoc) => void;
   onBulkSetDeadline: (req: OnboardingRequest, stageKey: string, days: number) => void;
   onRefresh: () => void;
+  hireDocs?: HireDocument[];
+  onSyncHireDocs?: (req: OnboardingRequest, hireDocs: HireDocument[]) => void;
+  onAttachHireDoc?: (req: OnboardingRequest, doc: OnboardingDoc, hireDoc: HireDocument) => void;
+  onAddHireDocToChecklist?: (req: OnboardingRequest, hireDoc: HireDocument, stageKey: string) => void;
 }
 
 export const OnboardingCard = memo(function OnboardingCard({
@@ -45,6 +49,10 @@ export const OnboardingCard = memo(function OnboardingCard({
   onOpenEditDocModal,
   onBulkSetDeadline,
   onRefresh,
+  hireDocs = [],
+  onSyncHireDocs,
+  onAttachHireDoc,
+  onAddHireDocToChecklist,
 }: OnboardingCardProps) {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const emp = request.employees;
@@ -77,6 +85,7 @@ export const OnboardingCard = memo(function OnboardingCard({
         onToggleExpand={onToggleExpand}
         onDeleteRequest={onDeleteRequest}
         onOpenSetupModal={() => setShowSetupModal(true)}
+        hireDocsCount={hireDocs.length}
       />
 
       {/* Progress Bar */}
@@ -136,6 +145,7 @@ export const OnboardingCard = memo(function OnboardingCard({
               stageDocs={stageDocs}
               stageProgress={stageProgress}
               currentStageIdx={currentStageIdx}
+              onApprove={onApprove}
               onAdvanceStage={onAdvanceStage}
               onRegressStage={onRegressStage}
               onCompleteOnboarding={onCompleteOnboarding}
@@ -144,6 +154,10 @@ export const OnboardingCard = memo(function OnboardingCard({
               onBulkSetDeadline={onBulkSetDeadline}
               isDocOverdue={isDocOverdue}
               onRefresh={onRefresh}
+              hireDocs={hireDocs}
+              onSyncHireDocs={onSyncHireDocs}
+              onAttachHireDoc={onAttachHireDoc}
+              onAddHireDocToChecklist={onAddHireDocToChecklist}
             />
           ))}
         </div>

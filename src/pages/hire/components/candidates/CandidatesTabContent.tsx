@@ -1,9 +1,10 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Candidate } from "../../types";
 import { STAGE_CONFIG, PIPELINE_STAGES } from "../../constants";
 import { initials, formatRelative } from "../../hireUtils";
 import { CandidateCard } from "./CandidateCard";
+import { EditHiringInfoModal } from "../candidate-detail/EditHiringInfoModal";
 
 interface CandidatesTabContentProps {
   candidates: Candidate[];
@@ -18,6 +19,7 @@ interface CandidatesTabContentProps {
   onMoveToOnboarding: (c: Candidate) => void;
   onUploadResume?: (id: string, file: File) => void;
   onOpenInterview?: (c: Candidate) => void;
+  onOpenImport?: () => void;
 }
 
 export const CandidatesTabContent = memo(function CandidatesTabContent({
@@ -31,7 +33,16 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
   onMoveToOnboarding,
   onUploadResume,
   onOpenInterview,
+  onOpenImport,
 }: CandidatesTabContentProps) {
+  const [hiringInfoCandidate, setHiringInfoCandidate] = useState<Candidate | null>(null);
+
+  const handleHiringInfoSaved = (updated: Partial<Candidate>) => {
+    if (hiringInfoCandidate) {
+      Object.assign(hiringInfoCandidate, updated);
+    }
+  };
+
   if (candidates.length === 0) {
     return (
       <div className="text-center py-20 bg-white rounded-3xl border border-gray-200/80 shadow-2xs">
@@ -42,26 +53,38 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
         <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
           No applicants match your search query or selected stage filters.
         </p>
-        <button
-          type="button"
-          onClick={onOpenCreate}
-          className="mt-4 px-4 py-2 bg-[#253C7D] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#1E3064] transition-all cursor-pointer"
-        >
-          + Add Candidate
-        </button>
+        <div className="flex items-center justify-center gap-2.5 mt-4">
+          <button
+            type="button"
+            onClick={onOpenCreate}
+            className="px-4 py-2 bg-[#253C7D] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#1E3064] transition-all cursor-pointer"
+          >
+            + Add Candidate
+          </button>
+          {onOpenImport && (
+            <button
+              type="button"
+              onClick={onOpenImport}
+              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-bold rounded-xl shadow-2xs hover:bg-slate-50 transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <i className="ri-upload-cloud-2-line text-sm" />
+              <span>Import Hiring Info</span>
+            </button>
+          )}
+        </div>
       </div>
     );
   }
 
   if (viewMode === "list") {
     return (
-      <div className="bg-white rounded-3xl border border-gray-200/80 shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-3xl border border-gray-200/80 overflow-hidden shadow-2xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/70 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="px-5 py-3.5">Candidate ID & Name</th>
-                <th className="px-5 py-3.5">Target Job</th>
+          <table className="w-full text-left text-xs text-gray-600">
+            <thead className="bg-slate-50/80 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-gray-100">
+              <tr>
+                <th className="px-5 py-3.5">Candidate</th>
+                <th className="px-5 py-3.5">Job Opening</th>
                 <th className="px-5 py-3.5">Recruiter</th>
                 <th className="px-5 py-3.5">Pipeline Stage</th>
                 <th className="px-5 py-3.5">Rating</th>
@@ -142,6 +165,15 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
                     </td>
                     <td className="px-5 py-3.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setHiringInfoCandidate(c)}
+                          className="px-2.5 py-1 text-xs font-bold text-[#253C7D] bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-blue-200/70"
+                          title="Add or Edit 33 Standard Hiring Information Fields"
+                        >
+                          <i className="ri-file-user-line text-xs" />
+                          <span>Hiring Info</span>
+                        </button>
                         {c.stage === "hired" && (
                           <button
                             type="button"
@@ -166,25 +198,46 @@ export const CandidatesTabContent = memo(function CandidatesTabContent({
             </tbody>
           </table>
         </div>
+
+        {hiringInfoCandidate && (
+          <EditHiringInfoModal
+            isOpen={Boolean(hiringInfoCandidate)}
+            onClose={() => setHiringInfoCandidate(null)}
+            candidate={hiringInfoCandidate}
+            onSaved={handleHiringInfoSaved}
+          />
+        )}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {candidates.map((c) => (
-        <CandidateCard
-          key={c.id}
-          candidate={c}
-          onUpdateStage={onUpdateStage}
-          onRate={onRate}
-          onMoveToOnboarding={onMoveToOnboarding}
-          onUploadResume={onUploadResume}
-          onEdit={onOpenEdit}
-          onDelete={onDelete}
-          onScheduleInterview={onOpenInterview ? () => onOpenInterview(c) : undefined}
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {candidates.map((c) => (
+          <CandidateCard
+            key={c.id}
+            candidate={c}
+            onUpdateStage={onUpdateStage}
+            onRate={onRate}
+            onMoveToOnboarding={onMoveToOnboarding}
+            onUploadResume={onUploadResume}
+            onEdit={onOpenEdit}
+            onDelete={onDelete}
+            onScheduleInterview={onOpenInterview ? () => onOpenInterview(c) : undefined}
+            onOpenHiringInfo={setHiringInfoCandidate}
+          />
+        ))}
+      </div>
+
+      {hiringInfoCandidate && (
+        <EditHiringInfoModal
+          isOpen={Boolean(hiringInfoCandidate)}
+          onClose={() => setHiringInfoCandidate(null)}
+          candidate={hiringInfoCandidate}
+          onSaved={handleHiringInfoSaved}
         />
-      ))}
-    </div>
+      )}
+    </>
   );
 });

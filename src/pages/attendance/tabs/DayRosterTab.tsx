@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { EmployeeSummaryItem } from "../types";
 import { formatTime, calcHours, initials } from "../constants";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface DayRosterTabProps {
   rosterDate: string;
@@ -9,6 +10,7 @@ interface DayRosterTabProps {
   todayYMD: string;
   filteredSummary: EmployeeSummaryItem[];
   onChangeRosterDate: (offset: number) => void;
+  onLogTimeForEmployee?: (employeeId: string) => void;
 }
 
 export const DayRosterTab = memo(function DayRosterTab({
@@ -17,6 +19,7 @@ export const DayRosterTab = memo(function DayRosterTab({
   todayYMD,
   filteredSummary,
   onChangeRosterDate,
+  onLogTimeForEmployee,
 }: DayRosterTabProps) {
   return (
     <div>
@@ -117,13 +120,24 @@ export const DayRosterTab = memo(function DayRosterTab({
                     </div>
 
                     <div className="min-w-0">
-                      <Link
-                        to={`/employees/${emp.id}`}
-                        className="font-extrabold text-gray-900 hover:text-[#253C7D] transition-colors truncate text-sm block"
-                      >
-                        {emp.first_name} {emp.last_name}
-                      </Link>
-                      <p className="text-[11px] text-gray-400 truncate">{emp.role}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Link
+                          to={`/employees/${emp.id}`}
+                          className="font-extrabold text-gray-900 hover:text-[#253C7D] transition-colors truncate text-sm"
+                        >
+                          {emp.first_name} {emp.last_name}
+                        </Link>
+                        {emp.biometric_user_id && (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
+                            title={`BU Biometric ID: ${emp.biometric_user_id}`}
+                          >
+                            <i className="ri-fingerprint-line text-[10px]" />
+                            {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-400 truncate mt-0.5">{emp.role}</p>
                       <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.2 rounded-md inline-block mt-0.5">
                         {emp.department}
                       </span>
@@ -183,10 +197,23 @@ export const DayRosterTab = memo(function DayRosterTab({
                 </div>
               </div>
 
-              {/* Bottom Stats */}
+              {/* Bottom Stats & Quick Log Time */}
               <div className="flex items-center justify-between text-[11px] pt-3 border-t border-gray-100 text-gray-400">
                 <span>Attendance: {emp.attendanceRate}%</span>
-                <span className="text-[#253C7D] font-bold">{emp.totalHours}h logged</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#253C7D] font-bold">{emp.totalHours}h logged</span>
+                  {onLogTimeForEmployee && (
+                    <button
+                      type="button"
+                      onClick={() => onLogTimeForEmployee(emp.id)}
+                      className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800 font-bold hover:underline cursor-pointer"
+                      title={`Create Time Log for ${emp.first_name} ${emp.last_name}`}
+                    >
+                      <i className="ri-time-line text-xs" />
+                      Log Time
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );

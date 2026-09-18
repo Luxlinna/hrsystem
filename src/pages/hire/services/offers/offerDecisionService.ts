@@ -3,6 +3,10 @@ import type { OfferLetter } from "../../types";
 import { saveOfferLetter } from "./offerStorage";
 import { sendDualRecruitmentNotification } from "../notifications/recruitmentNotifyEngine";
 import { escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
+import {
+  notifyOfferAccepted,
+  notifyRejected,
+} from "@/services/notifications/recruitmentNotificationTriggers";
 
 export async function issueOffer(
   offer: OfferLetter,
@@ -56,6 +60,7 @@ export async function issueOffer(
   }
 
   try {
+    const targetBu = offer.business_unit || "OPS Solutions Co ., Ltd";
     await sendDualRecruitmentNotification({
       title: `📬 Official Offer Letter Issued: ${offer.candidate_name}`,
       approverMessage: `Official offer letter ${offer.offer_number} issued to ${offer.candidate_name} by ${issuerName}. Valid until ${formattedExpiry}.`,
@@ -63,19 +68,24 @@ export async function issueOffer(
       type: "info",
       entityId: offer.candidate_id,
       actorName: issuerName,
-      description: `Offer issued to candidate (${offer.offer_number})`,
+      businessUnit: "HR Division",
+      targetBusinessUnit: targetBu,
+      isCrossBu: true,
+      branchId: offer.branch_id || null,
+      description: `${issuerName} (HR Division) issued official offer ${offer.offer_number} to ${offer.candidate_name}. Business Unit: ${targetBu}.`,
       telegramHtml:
         `📬 <b>Official Offer Letter Issued</b>\n` +
         `📄 <b>Offer #:</b> ${escapeTelegramHtml(offer.offer_number)}\n` +
         `👤 <b>Candidate:</b> ${escapeTelegramHtml(offer.candidate_name)}\n` +
         `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)}\n` +
+        `🏢 <b>Target BU:</b> ${escapeTelegramHtml(targetBu)}\n` +
         `📅 <b>Valid Until:</b> ${escapeTelegramHtml(formattedExpiry)}\n` +
         `✍️ <b>Issued By:</b> ${escapeTelegramHtml(issuerName)} (HR Division)`,
       telegramButtonText: "View Issued Offer",
       telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
       auditAction: "offer_official_issued",
     });
-  } catch {}
+  } catch (_e) { /* notification errors are non-fatal; offer issuance continues */ }
 
   return await saveOfferLetter(updated);
 }
@@ -138,18 +148,28 @@ export async function recordCandidateDecision(
   }
 
   try {
+    const buName = offer.business_unit || "OPS Solutions Co ., Ltd";
     if (decision === "accepted") {
+      // Canonical Notification Engine Dispatch (Event 12: Offer accepted)
+      void notifyOfferAccepted({
+        offer,
+        confirmedStartDate: offer.target_start_date,
+      }).catch((e) => console.error("[notifyOfferAccepted] error:", e));
+
       await sendDualRecruitmentNotification({
         title: `🎉 Offer Accepted: ${offer.candidate_name}`,
         approverMessage: `${offer.candidate_name} accepted the offer letter (${offer.offer_number})! Confirmed start date: ${offer.target_start_date || "Confirmed"}.`,
         recruiterMessage: `${offer.candidate_name} accepted employment offer! Ready for onboarding.`,
         type: "success",
         entityId: offer.candidate_id,
-        description: `Candidate accepted offer (${offer.offer_number})`,
+        actorName: offer.candidate_name,
+        businessUnit: buName,
+        branchId: offer.branch_id || null,
+        description: `${offer.candidate_name} accepted offer ${offer.offer_number} ($${Number(offer.base_salary).toLocaleString()}/mo). Business Unit: ${buName}.`,
         telegramHtml:
           `🎉 <b>Candidate Accepted Employment Offer!</b>\n` +
           `👤 <b>Candidate:</b> ${escapeTelegramHtml(offer.candidate_name)}\n` +
-          `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)} · ${escapeTelegramHtml(offer.business_unit || "BU")}\n` +
+          `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)} · ${escapeTelegramHtml(buName)}\n` +
           `🚀 <b>Target Joining Date:</b> ${escapeTelegramHtml(offer.target_start_date || "To be confirmed")}\n` +
           `✅ <b>Status:</b> Accepted. Candidate cleared for Onboarding Journey.`,
         telegramButtonText: "View Accepted Candidate",
@@ -157,24 +177,42 @@ export async function recordCandidateDecision(
         auditAction: "offer_candidate_accepted",
       });
     } else {
+      // Canonical Notification Engine Dispatch (Event 4: Rejected)
+      void notifyRejected({
+        entityType: "offer_letter",
+        entityId: offer.candidate_id,
+        entityCode: offer.offer_number,
+        entityTitle: `Offer for ${offer.candidate_name}`,
+        rejectedBy: offer.candidate_name,
+        rejectorRole: "Candidate",
+        reason: rejectionReason || "Candidate declined offer",
+        businessUnit: buName,
+        branchId: offer.branch_id || null,
+      }).catch((e) => console.error("[notifyRejected offer] error:", e));
+
       await sendDualRecruitmentNotification({
         title: `⚠️ Offer Declined: ${offer.candidate_name}`,
         approverMessage: `${offer.candidate_name} declined offer (${offer.offer_number}). Reason: ${rejectionReason || "Not specified"}.`,
         recruiterMessage: `${offer.candidate_name} declined offer.`,
         type: "warning",
         entityId: offer.candidate_id,
-        description: `Candidate declined offer (${offer.offer_number})`,
+        actorName: offer.candidate_name,
+        businessUnit: buName,
+        branchId: offer.branch_id || null,
+        reason: rejectionReason || "Candidate declined",
+        description: `${offer.candidate_name} declined offer ${offer.offer_number}. Reason: ${rejectionReason || "Candidate declined"}.`,
         telegramHtml:
           `⚠️ <b>Candidate Declined Employment Offer</b>\n` +
           `👤 <b>Candidate:</b> ${escapeTelegramHtml(offer.candidate_name)}\n` +
           `💼 <b>Position:</b> ${escapeTelegramHtml(offer.job_title)}\n` +
+          `🏢 <b>Business Unit:</b> ${escapeTelegramHtml(buName)}\n` +
           `❌ <b>Reason:</b> ${escapeTelegramHtml(rejectionReason || "Candidate declined")}`,
         telegramButtonText: "View Candidate Profile",
         telegramUrl: hrNexusUrl(`/hire/candidates/${offer.candidate_id}?openOffer=true`),
         auditAction: "offer_candidate_declined",
       });
     }
-  } catch {}
+  } catch (_e) { /* notification errors are non-fatal; decision recording continues */ }
 
   return await saveOfferLetter(updated);
 }

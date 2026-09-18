@@ -2,6 +2,7 @@ import type { OfferLetter, Candidate, HiringRequest } from "../../types";
 import { saveOfferLetter } from "./offerStorage";
 import { sendDualRecruitmentNotification } from "../notifications/recruitmentNotifyEngine";
 import { escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
+import { notifySalaryApprovalRequired } from "@/services/notifications/recruitmentNotificationTriggers";
 
 export function generateOfferNumber(): string {
   const prefix = "OFF";
@@ -23,6 +24,8 @@ export interface CreateProposalPayload {
   proposal_notes?: string;
   proposed_by_name: string;
   proposed_by_id?: string | null;
+  previous_salary?: number | null;
+  change_reason?: string;
 }
 
 export async function createSalaryProposal(payload: CreateProposalPayload): Promise<OfferLetter> {
@@ -124,8 +127,23 @@ export async function createSalaryProposal(payload: CreateProposalPayload): Prom
 
   const saved = await saveOfferLetter(newOffer);
 
-  // Send notification to BU CEO for initial approval
+  // Send notification & audit log for salary proposal
   try {
+    const prevSalary = payload.previous_salary ?? (candidate.expected_salary && candidate.expected_salary !== payload.base_salary ? candidate.expected_salary : null);
+    const hasSalaryChange = prevSalary != null && Number(prevSalary) !== Number(payload.base_salary);
+    const reasonText = payload.change_reason || payload.proposal_notes || "candidate negotiation";
+
+    const auditDescription = hasSalaryChange
+      ? `${proposed_by_name || "Manager"} changed salary from $${prevSalary} to $${payload.base_salary}. Reason: ${reasonText}.`
+      : `${proposed_by_name || "Manager"} proposed salary of $${payload.base_salary}/mo for ${candidate.full_name} (${offerNumber}). Business Unit: ${businessUnit}.`;
+
+    // Canonical Notification Engine Dispatch (Event 10: Salary approval required)
+    void notifySalaryApprovalRequired({
+      offer: saved,
+      proposedBy: proposed_by_name || "Manager",
+      approverRole: "BU CEO",
+    }).catch((e) => console.error("[notifySalaryApprovalRequired] error:", e));
+
     await sendDualRecruitmentNotification({
       title: `📋 Salary Proposal Created: ${candidate.full_name}`,
       approverMessage: `Salary proposal for ${candidate.full_name} (${jobTitle}) is awaiting your approval as BU CEO.`,
@@ -133,12 +151,18 @@ export async function createSalaryProposal(payload: CreateProposalPayload): Prom
       approverRole: "CEO / Division Director",
       entityId: candidate.id,
       actorName: proposed_by_name || "Manager",
-      description: `Salary proposal pending BU CEO sign-off (${offerNumber})`,
+      businessUnit: businessUnit,
+      branchId: requisition?.branch_id || candidate.job_postings?.branch_id || null,
+      oldValue: hasSalaryChange ? prevSalary : undefined,
+      newValue: hasSalaryChange ? payload.base_salary : undefined,
+      reason: hasSalaryChange ? reasonText : undefined,
+      description: auditDescription,
       telegramHtml:
         `📋 <b>New Salary Proposal Created</b>\n` +
         `👤 <b>Candidate:</b> ${escapeTelegramHtml(candidate.full_name)}\n` +
         `💼 <b>Position:</b> ${escapeTelegramHtml(jobTitle)} · ${escapeTelegramHtml(businessUnit)}\n` +
         `💰 <b>Proposed Base:</b> $${Number(payload.base_salary).toLocaleString()}/mo\n` +
+        (hasSalaryChange ? `🔄 <b>Changed From:</b> $${Number(prevSalary).toLocaleString()} (Reason: ${escapeTelegramHtml(reasonText)})\n` : "") +
         `✍️ <b>Submitted By:</b> ${escapeTelegramHtml(proposed_by_name || "Manager")}\n` +
         `⏩ <b>Next Action:</b> BU CEO Approval Required`,
       telegramButtonText: "Review Proposal (BU CEO)",

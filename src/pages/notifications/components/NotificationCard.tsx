@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { Notification } from "../types";
-import { TYPE_CONFIG, SOURCE_LABELS } from "../constants";
+import { TYPE_CONFIG, SOURCE_LABELS, getCanonicalEventBadge } from "../constants";
 import { relativeTime } from "../notificationUtils";
 
 interface NotificationCardProps {
@@ -23,6 +23,7 @@ export const NotificationCard = memo(function NotificationCard({
   onDeleteNotification,
 }: NotificationCardProps) {
   const cfg = TYPE_CONFIG[notification.type] || TYPE_CONFIG.info;
+  const canonicalBadge = getCanonicalEventBadge(notification.title, notification.message);
 
   return (
     <div
@@ -72,6 +73,12 @@ export const NotificationCard = memo(function NotificationCard({
           >
             {notification.title}
           </p>
+          {canonicalBadge && (
+            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border flex items-center gap-1 ${canonicalBadge.color}`}>
+              <span>{canonicalBadge.emoji}</span>
+              <span>{canonicalBadge.label}</span>
+            </span>
+          )}
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
             {SOURCE_LABELS[notification.source] || notification.source}
           </span>

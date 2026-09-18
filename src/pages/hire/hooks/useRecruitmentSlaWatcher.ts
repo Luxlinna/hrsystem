@@ -1,8 +1,12 @@
 import { useEffect, useRef, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 import type { HiringRequest, Candidate } from "../types";
 import { evaluateStageSla, StageSlaEvaluation } from "../constants/slaConfig";
-import { sendDualRecruitmentNotification } from "../services/notifications/recruitmentNotifyEngine";
-import { escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
+import { todayYMD } from "@/lib/date";
+import {
+  notifySlaExceeded,
+  notifyInterviewFeedbackOverdue,
+} from "@/services/notifications/recruitmentNotificationTriggers";
 
 interface UseRecruitmentSlaWatcherProps {
   hiringRequests: HiringRequest[];
@@ -10,11 +14,27 @@ interface UseRecruitmentSlaWatcherProps {
   enabled?: boolean;
 }
 
-const alertedStages = new Set<string>();
+function hasAlertedToday(key: string): boolean {
+  try {
+    const today = todayYMD();
+    return localStorage.getItem(`hrm_sla_alert_${key}_${today}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markAlertedToday(key: string): void {
+  try {
+    const today = todayYMD();
+    localStorage.setItem(`hrm_sla_alert_${key}_${today}`, "1");
+  } catch {
+    // Ignore storage quota
+  }
+}
 
 export function useRecruitmentSlaWatcher({
   hiringRequests,
-  candidates: _candidates,
+  candidates,
   enabled = true,
 }: UseRecruitmentSlaWatcherProps) {
   const isCheckingRef = useRef(false);
@@ -24,6 +44,9 @@ export function useRecruitmentSlaWatcher({
     isCheckingRef.current = true;
 
     try {
+      const today = todayYMD();
+
+      // 1. Check Requisition SLAs
       for (const req of hiringRequests) {
         if (req.status === "approved" || req.status === "rejected" || req.status === "fulfilled") {
           continue;
@@ -34,37 +57,90 @@ export function useRecruitmentSlaWatcher({
 
         if (evaluation?.isOverdue) {
           const alertKey = `req-${req.id}-${req.status}`;
-          if (alertedStages.has(alertKey)) continue;
+          if (hasAlertedToday(alertKey)) continue;
 
-          alertedStages.add(alertKey);
+          // Check DB deduplication so other clients or tabs don't re-dispatch today
+          const { data: dbNotif } = await supabase
+            .from("notifications")
+            .select("id")
+            .eq("entity_id", req.id)
+            .gte("created_at", `${today}T00:00:00Z`)
+            .limit(1);
+
+          if (dbNotif && dbNotif.length > 0) {
+            markAlertedToday(alertKey);
+            continue;
+          }
+
+          markAlertedToday(alertKey);
           const reqCode = req.requisition_id ? `[${req.requisition_id}] ` : "";
-          const recruiterId = req.assigned_recruiter_id || req.hr_assigned_to_id || null;
-          const recruiterName = req.assigned_recruiter_name || req.hr_assigned_to_name || "Assigned Recruiter";
-          const daysOverdue = Math.max(1, Math.floor(evaluation.overdueHours / 24));
+          const buName = req.branches?.name || req.business_unit || "OPS sulotion";
 
-          await sendDualRecruitmentNotification({
-            title: `⚠️ SLA Exceeded: ${reqCode}${req.title}`,
-            approverMessage: `Requisition ${reqCode}${req.title} has exceeded the stage turnaround SLA by ${daysOverdue} day(s) (Stage: ${req.status.replace(/_/g, " ")}). Please review promptly.`,
-            recruiterMessage: `Standing SLA Alert: Requisition ${reqCode}${req.title} is ${daysOverdue} day(s) overdue in ${req.status.replace(/_/g, " ")}. Expedited action needed.`,
-            type: "warning",
+          // Canonical Notification Engine Dispatch (Event 16: SLA exceeded)
+          await notifySlaExceeded({
+            entityType: "hiring_request",
             entityId: req.id,
-            approverBranchId: req.branch_id || null,
-            recruiterEmployeeId: recruiterId,
-            recruiterName,
-            telegramHtml:
-              `⏱️ <b>Recruitment SLA Exceeded</b>\n` +
-              `💼 <b>Requisition:</b> ${escapeTelegramHtml(reqCode)}${escapeTelegramHtml(req.title)}\n` +
-              `🏢 <b>Department:</b> ${escapeTelegramHtml(req.department)}\n` +
-              `⚠️ <b>Current Stage:</b> ${escapeTelegramHtml(req.status)}\n` +
-              `🚨 <b>Overdue By:</b> ${daysOverdue} day(s) (${evaluation.overdueHours}h)\n` +
-              `🎯 <b>Assigned Recruiter:</b> ${escapeTelegramHtml(recruiterName)}`,
-            telegramButtonText: "Expedite Requisition",
-            telegramUrl: hrNexusUrl("/hire"),
-            auditAction: "sla_exceeded",
-            actorName: "SLA Watcher",
-            actorRole: "Automated Monitor",
-            description: `Requisition ${reqCode}${req.title} breached ${req.status} SLA by ${evaluation.overdueHours}h`,
-          });
+            entityCode: req.requisition_id || "REQ",
+            entityTitle: req.title,
+            stageName: req.status.replace(/_/g, " "),
+            daysInStage: Math.floor(evaluation.hoursElapsed / 24),
+            slaLimitDays: Math.floor(evaluation.allowedHours / 24),
+            businessUnit: buName,
+            branchId: req.branch_id || null,
+          }).catch((e) => console.error("[notifySlaExceeded] error:", e));
+        }
+      }
+
+      // 2. Check Candidate SLAs & Feedback Overdue
+      for (const cand of candidates) {
+        if (cand.stage === "hired" || cand.stage === "rejected") continue;
+
+        const stageTimestamp = cand.applied_at;
+        const evaluation = evaluateStageSla(cand.stage, stageTimestamp, true);
+
+        if (evaluation?.isOverdue) {
+          const alertKey = `cand-sla-${cand.id}-${cand.stage}`;
+          if (hasAlertedToday(alertKey)) continue;
+
+          // Check DB deduplication
+          const { data: dbNotif } = await supabase
+            .from("notifications")
+            .select("id")
+            .eq("entity_id", cand.id)
+            .gte("created_at", `${today}T00:00:00Z`)
+            .limit(1);
+
+          if (dbNotif && dbNotif.length > 0) {
+            markAlertedToday(alertKey);
+            continue;
+          }
+
+          markAlertedToday(alertKey);
+
+          // If in interview stage, alert interview feedback overdue (Event 8)
+          if (cand.stage.includes("interview")) {
+            void notifyInterviewFeedbackOverdue({
+              candidate: cand,
+              jobTitle: cand.job_postings?.title || "Specialist",
+              interviewerName: "Interview Panel",
+              interviewDate: cand.applied_at ? new Date(cand.applied_at).toLocaleDateString() : "Recent",
+              hoursElapsed: evaluation.hoursElapsed,
+              businessUnit: cand.job_postings?.branches?.name || "OPS sulotion",
+            }).catch((e) => console.error("[notifyInterviewFeedbackOverdue] error:", e));
+          } else {
+            // Otherwise dispatch general SLA exceeded (Event 16)
+            void notifySlaExceeded({
+              entityType: "candidate",
+              entityId: cand.id,
+              entityCode: cand.full_name,
+              entityTitle: `Candidate: ${cand.full_name}`,
+              stageName: cand.stage.replace(/_/g, " "),
+              daysInStage: Math.floor(evaluation.hoursElapsed / 24),
+              slaLimitDays: Math.floor(evaluation.allowedHours / 24),
+              businessUnit: cand.job_postings?.branches?.name || "OPS sulotion",
+              branchId: cand.job_postings?.branch_id || null,
+            }).catch((e) => console.error("[notifySlaExceeded candidate] error:", e));
+          }
         }
       }
     } catch (err) {
@@ -72,7 +148,7 @@ export function useRecruitmentSlaWatcher({
     } finally {
       isCheckingRef.current = false;
     }
-  }, [enabled, hiringRequests]);
+  }, [enabled, hiringRequests, candidates]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

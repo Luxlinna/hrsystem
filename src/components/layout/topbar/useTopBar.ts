@@ -8,8 +8,8 @@ import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { getNotificationTarget, canSeeNotification } from "@/lib/notificationRoutes";
 import { toast } from "@/components/Toast";
-import type { NotificationRow, SearchResult } from "./types";
-import { MODULE_SEARCH_RESULTS, pathToModule } from "./constants";
+import type { NotificationRow } from "./types";
+import { useGlobalSearch } from "./useGlobalSearch";
 
 /**
  * Encapsulates ALL state, effects, and handlers for the TopBar.
@@ -131,84 +131,7 @@ export function useTopBar() {
   }, [logout, navigate]);
 
   // ── Global Search ───────────────────────────────────────────────────────────
-  const [searchQuery,   setSearchQuery]   = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [searchOpen,    setSearchOpen]    = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
-
-  const runSearch = useCallback(async (q: string) => {
-    const query = q.trim().toLowerCase();
-    if (!query || query.length < 2) {
-      setSearchResults([]);
-      setSearchOpen(false);
-      return;
-    }
-    setSearchLoading(true);
-
-    const [empRes, candRes] = await Promise.all([
-      supabase
-        .from("employees")
-        .select("id, first_name, last_name, role, department, status")
-        .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,role.ilike.%${query}%,department.ilike.%${query}%`)
-        .limit(5),
-      supabase
-        .from("candidates")
-        .select("id, full_name, email, stage, job_postings(title)")
-        .is("deleted_at", null)
-        .or(`full_name.ilike.%${query}%,email.ilike.%${query}%`)
-        .limit(4),
-    ]);
-
-    const results: SearchResult[] = [];
-
-    (empRes.data ?? []).forEach((e: any) => {
-      results.push({
-        id: `emp-${e.id}`,
-        label: `${e.first_name} ${e.last_name}`,
-        sublabel: `${e.role} · ${e.department}`,
-        icon: "ri-user-line",
-        path: `/employees/${e.id}`,
-        category: "Employee",
-      });
-    });
-
-    (candRes.data ?? []).forEach((c: any) => {
-      results.push({
-        id: `cand-${c.id}`,
-        label: c.full_name,
-        sublabel: `${c.job_postings?.title ?? "Candidate"} · ${c.stage}`,
-        icon: "ri-briefcase-line",
-        path: `/hire/candidate/${c.id}`,
-        category: "Candidate",
-      });
-    });
-
-    const matchedModules = MODULE_SEARCH_RESULTS
-      .filter((m) => can(pathToModule(m.path)) &&
-        (m.label.toLowerCase().includes(query) || m.sublabel.toLowerCase().includes(query)))
-      .slice(0, 4);
-    results.push(...matchedModules);
-
-    setSearchResults(results);
-    setSearchOpen(results.length > 0);
-    setSearchLoading(false);
-  }, [can]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => runSearch(searchQuery), 280);
-    return () => clearTimeout(timer);
-  }, [searchQuery, runSearch]);
-
-  const handleSelectResult = useCallback((result: SearchResult) => {
-    navigate(result.path);
-    setSearchQuery("");
-    setSearchOpen(false);
-  }, [navigate]);
-
-  const clearSearch = useCallback(() => {
-    setSearchQuery("");
-    setSearchOpen(false);
-  }, []);
+  const search = useGlobalSearch(can);
 
   return {
     // Auth / identity
@@ -230,11 +153,6 @@ export function useTopBar() {
     markRead,
     openNotification,
     // Search
-    searchQuery, setSearchQuery,
-    searchResults,
-    searchOpen, setSearchOpen,
-    searchLoading,
-    handleSelectResult,
-    clearSearch,
+    ...search,
   };
 }

@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import type { Employee, AttendanceRecord, WorkLocation, EmployeeSummaryItem, MatrixDay } from "../types";
 import { calcHoursNum } from "../constants";
+import { compareBiometricIds, formatBiometricId } from "@/lib/biometricUtils";
+
+import type { Holiday } from "@/services/holidays/holidaysService";
 
 interface UseAttendanceMetricsProps {
   records: AttendanceRecord[];
@@ -13,6 +16,7 @@ interface UseAttendanceMetricsProps {
   matrixMonth: string;
   filterDepartment: string;
   searchQuery: string;
+  holidays?: Holiday[];
 }
 
 export function useAttendanceMetrics({
@@ -26,6 +30,7 @@ export function useAttendanceMetrics({
   matrixMonth,
   filterDepartment,
   searchQuery,
+  holidays = [],
 }: UseAttendanceMetricsProps) {
   const presentCount = useMemo(
     () => activeScopeRecords.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "remote").length,
@@ -89,7 +94,7 @@ export function useAttendanceMetrics({
   const rosterRecords = useMemo(() => records.filter((r) => r.date === rosterDate), [records, rosterDate]);
 
   const employeeSummary: EmployeeSummaryItem[] = useMemo(() => {
-    return employees.map((emp) => {
+    const items = employees.map((emp) => {
       const empRecords = activeScopeRecords.filter((r) => r.employee_id === emp.id);
       const present = empRecords.filter((r) => r.status === "ontime" || r.status === "present" || r.status === "remote").length;
       const late = empRecords.filter((r) => r.status === "late").length;
@@ -116,6 +121,9 @@ export function useAttendanceMetrics({
         rosterRecord,
       };
     });
+
+    items.sort((a, b) => compareBiometricIds(a.biometric_user_id, b.biometric_user_id));
+    return items;
   }, [employees, activeScopeRecords, rosterRecords]);
 
   const filteredSummary = useMemo(() => {
@@ -126,11 +134,29 @@ export function useAttendanceMetrics({
         const name = `${e.first_name} ${e.last_name}`.toLowerCase();
         const roleName = (e.role || "").toLowerCase();
         const dept = (e.department || "").toLowerCase();
-        if (!name.includes(q) && !roleName.includes(q) && !dept.includes(q)) return false;
+        const bioId = (e.biometric_user_id || "").toLowerCase();
+        const fullBuId = formatBiometricId(e.biometric_user_id, e.branches?.name).toLowerCase();
+        const code = (e.employee_code || "").toLowerCase();
+        if (
+          !name.includes(q) &&
+          !roleName.includes(q) &&
+          !dept.includes(q) &&
+          !bioId.includes(q) &&
+          !fullBuId.includes(q) &&
+          !code.includes(q)
+        ) {
+          return false;
+        }
       }
       return true;
     });
   }, [employeeSummary, filterDepartment, searchQuery]);
+
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, Holiday>();
+    holidays.forEach((h) => map.set(h.date, h));
+    return map;
+  }, [holidays]);
 
   const matrixDays: MatrixDay[] = useMemo(() => {
     if (!matrixMonth) return [];
@@ -145,14 +171,18 @@ export function useAttendanceMetrics({
       const d = new Date(year, month - 1, dayNum);
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
       const dayOfWeek = d.getDay();
+      const hol = holidayMap.get(dateStr);
       return {
         dayNum,
         dateStr,
         dayName: dayNames[dayOfWeek],
         isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+        isHoliday: Boolean(hol),
+        holidayName: hol?.name,
+        holidayLocalName: hol?.local_name,
       };
     });
-  }, [matrixMonth]);
+  }, [matrixMonth, holidayMap]);
 
   return {
     presentCount,

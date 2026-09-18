@@ -4,6 +4,8 @@ import { Pagination } from "../components/Pagination";
 import { AttendanceTableView } from "../components/AttendanceTableView";
 import { AttendanceCardsView } from "../components/AttendanceCardsView";
 
+import type { Holiday } from "@/services/holidays/holidaysService";
+
 interface RecordsTabProps {
   filteredRecords: AttendanceRecord[];
   pagedRecords: AttendanceRecord[];
@@ -11,6 +13,7 @@ interface RecordsTabProps {
   todayYMD: string;
   canManage: boolean;
   isFourPunchMode?: boolean;
+  holidays?: Holiday[];
   pageSize: number;
   setPageSize: (size: number) => void;
   page: number;
@@ -19,6 +22,10 @@ interface RecordsTabProps {
   onSelectRecord: (record: AttendanceRecord) => void;
   onEditRecord: (record: AttendanceRecord) => void;
   onDeleteRecord: (id: number) => void;
+  onLogTimeForEmployee?: (employeeId: string) => void;
+  totalRecordsCount?: number;
+  onResetFilters?: () => void;
+  isFiltered?: boolean;
 }
 
 export const RecordsTab = memo(function RecordsTab({
@@ -28,6 +35,7 @@ export const RecordsTab = memo(function RecordsTab({
   todayYMD,
   canManage,
   isFourPunchMode = false,
+  holidays = [],
   pageSize,
   setPageSize,
   page,
@@ -36,6 +44,10 @@ export const RecordsTab = memo(function RecordsTab({
   onSelectRecord,
   onEditRecord,
   onDeleteRecord,
+  onLogTimeForEmployee,
+  totalRecordsCount,
+  onResetFilters,
+  isFiltered,
 }: RecordsTabProps) {
   if (filteredRecords.length === 0) {
     return (
@@ -53,15 +65,37 @@ export const RecordsTab = memo(function RecordsTab({
 
   return (
     <div>
+      {isFiltered && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 mb-3 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/60 rounded-2xl text-xs text-blue-900 dark:text-blue-200 shadow-2xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <i className="ri-filter-3-fill text-[#253C7D] dark:text-sky-400 text-sm" />
+            <span>
+              Filters are active: Showing <strong>{filteredRecords.length}</strong> {totalRecordsCount !== undefined ? `of ${totalRecordsCount}` : ""} records.
+            </span>
+          </div>
+          {onResetFilters && (
+            <button
+              type="button"
+              onClick={onResetFilters}
+              className="inline-flex items-center gap-1 font-bold text-[#253C7D] dark:text-sky-400 hover:underline cursor-pointer text-xs shrink-0"
+            >
+              <i className="ri-refresh-line" /> Clear Filters (Show All Dates)
+            </button>
+          )}
+        </div>
+      )}
+
       {viewMode === "table" ? (
         <AttendanceTableView
           records={pagedRecords}
           todayYMD={todayYMD}
           canManage={canManage}
           isFourPunchMode={isFourPunchMode}
+          holidays={holidays}
           onSelectRecord={onSelectRecord}
           onEditRecord={onEditRecord}
           onDeleteRecord={onDeleteRecord}
+          onLogTimeForEmployee={onLogTimeForEmployee}
         />
       ) : (
         <AttendanceCardsView
@@ -69,9 +103,11 @@ export const RecordsTab = memo(function RecordsTab({
           todayYMD={todayYMD}
           canManage={canManage}
           isFourPunchMode={isFourPunchMode}
+          holidays={holidays}
           onSelectRecord={onSelectRecord}
           onEditRecord={onEditRecord}
           onDeleteRecord={onDeleteRecord}
+          onLogTimeForEmployee={onLogTimeForEmployee}
         />
       )}
 

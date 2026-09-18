@@ -117,7 +117,7 @@ function getAppResetPasswordRedirectUrl(): string {
     }
     return `${window.location.origin}/reset-password`;
   }
-  return `${prodUrl || "https://hrsystem-quit.onrender.com"}/reset-password`;
+  return `${prodUrl || "https://hrsystem.opssolution.tech"}/reset-password`;
 }
 
 export async function sendUserInvite(payload: {

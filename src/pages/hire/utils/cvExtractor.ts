@@ -1,9 +1,9 @@
 import * as pdfjsLib from "pdfjs-dist";
 
 // Configure worker for pdfjs in Vite / browser environment
-if (typeof window !== "undefined" && "Worker" in window) {
-  // Use a stable, standard CDN worker matching pdfjs-dist 3.11.174
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+if (typeof window !== "undefined") {
+  const version = pdfjsLib.version || "6.3.289";
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
 }
 
 export interface ExtractedCvData {
@@ -27,8 +27,17 @@ export interface ExtractedCvData {
 export async function extractTextFromPdf(file: File): Promise<string> {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-    const pdfDoc = await loadingTask.promise;
+    let pdfDoc;
+    try {
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      pdfDoc = await loadingTask.promise;
+    } catch (workerErr) {
+      console.warn("Primary PDF worker error, attempting unpkg fallback:", workerErr);
+      const version = pdfjsLib.version || "6.3.289";
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+      const fallbackTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      pdfDoc = await fallbackTask.promise;
+    }
 
     let fullText = "";
     const maxPages = Math.min(pdfDoc.numPages, 10); // Process up to 10 pages for speed

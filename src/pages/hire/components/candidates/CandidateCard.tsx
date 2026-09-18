@@ -15,6 +15,7 @@ interface CandidateCardProps {
   onEdit?: (c: Candidate) => void;
   onDelete?: (id: string, name: string) => void;
   onScheduleInterview?: () => void;
+  onOpenHiringInfo?: (c: Candidate) => void;
 }
 
 export const CandidateCard = memo(function CandidateCard({
@@ -25,6 +26,7 @@ export const CandidateCard = memo(function CandidateCard({
   onUploadResume,
   onEdit,
   onDelete,
+  onOpenHiringInfo,
 }: CandidateCardProps) {
   const normStage =
     candidate.stage === "applied" ? "cv_received" : candidate.stage === "interview" ? "hr_interview" : candidate.stage;
@@ -158,12 +160,25 @@ export const CandidateCard = memo(function CandidateCard({
 
       {/* Card Bottom Actions */}
       <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-1.5">
-        <Link
-          to={`/hire/candidates/${candidate.id}`}
-          className="text-xs font-bold text-gray-600 hover:text-[#253C7D] transition-colors"
-        >
-          View Profile →
-        </Link>
+        <div className="flex items-center gap-2">
+          {onOpenHiringInfo && (
+            <button
+              type="button"
+              onClick={() => onOpenHiringInfo(candidate)}
+              className="px-2 py-1 text-[11px] font-bold text-[#253C7D] bg-blue-50 hover:bg-blue-100 rounded-lg cursor-pointer flex items-center gap-1 border border-blue-200/70"
+              title="Add or Edit 33 Standard Hiring Information Fields"
+            >
+              <i className="ri-file-user-line text-xs" />
+              <span>Hiring Info</span>
+            </button>
+          )}
+          <Link
+            to={`/hire/candidates/${candidate.id}`}
+            className="text-xs font-bold text-gray-600 hover:text-[#253C7D] transition-colors"
+          >
+            View Profile →
+          </Link>
+        </div>
 
         <div className="flex items-center gap-1">
           {candidate.stage === "hired" && (

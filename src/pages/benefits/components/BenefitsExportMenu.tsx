@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
-import type { BenefitPlan, Enrollment } from "../types";
+import type { BenefitPlan, Enrollment, BenefitTabKey } from "../types";
 import {
   exportBenefitPlansPDF,
   exportBenefitPlansXLSX,
@@ -10,7 +10,7 @@ import {
 } from "../exportUtils";
 
 interface BenefitsExportMenuProps {
-  tab: "plans" | "enrollment" | "providers";
+  tab: BenefitTabKey;
   plans: BenefitPlan[];
   enrollments: Enrollment[];
   disabled?: boolean;

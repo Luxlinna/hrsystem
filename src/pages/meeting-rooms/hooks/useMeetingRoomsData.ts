@@ -3,11 +3,11 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
-import type { MeetingRoom, Booking, BookingEmployee } from "../types";
-import { ROOM_FLOORS, ROOM_AMENITIES, DEFAULT_AMENITIES } from "../constants";
+import type { Booking } from "../types";
 import { toYMD } from "../roomUtils";
-import { decodeCourseDescription } from "@/pages/training/components/modals/courseModalUtils";
-import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
+import { useRoomsManagement } from "./useRoomsManagement";
+import { useCurrentBookingEmployee } from "./useCurrentBookingEmployee";
+import { mapTrainingCoursesToBookings } from "../trainingBookingAdapter";
 
 export function useMeetingRoomsData(selectedDate: string) {
   const { user } = useAuth();
@@ -28,130 +28,41 @@ export function useMeetingRoomsData(selectedDate: string) {
 
   const isHrDivisionBranch =
     /hr\s*division/i.test(effectiveBranchName || "") ||
-    Boolean(userBranchName && /hr\s*division/i.test(userBranchName) && (!effectiveBranchId || effectiveBranchId === userBranchId));
+    Boolean(
+      userBranchName &&
+        /hr\s*division/i.test(userBranchName) &&
+        (!effectiveBranchId || effectiveBranchId === userBranchId)
+    );
   const isAllBranches = !effectiveBranchId || effectiveBranchId === "all";
   const canViewCrossBranch = Boolean((isSuperAdmin || isHrDivision) && (isAllBranches || isHrDivisionBranch));
 
   const canApprove = Boolean(
     (isAdmin ||
-    isSuperAdmin ||
-    isBranchAdmin ||
-    canViewCrossBranch ||
-    role?.name === "Super Admin" ||
-    /branch\s*admin|bu\s*.*admin|bu\s*ceo/i.test(role?.name || "") ||
-    role?.name === "Admin" ||
-    role?.name === "HR Manager" ||
-    role?.meeting_rooms_approve) && !isPartnerBranchBlocked
+      isSuperAdmin ||
+      isBranchAdmin ||
+      canViewCrossBranch ||
+      role?.name === "Super Admin" ||
+      /branch\s*admin|bu\s*.*admin|bu\s*ceo/i.test(role?.name || "") ||
+      role?.name === "Admin" ||
+      role?.name === "HR Manager" ||
+      role?.meeting_rooms_approve) &&
+      !isPartnerBranchBlocked
   );
 
-  const [rooms, setRooms] = useState<MeetingRoom[]>([]);
+  const { rooms, loadRooms, deleteRoom } = useRoomsManagement({
+    isPartnerBranchBlocked,
+    targetBranch,
+    canViewCrossBranch,
+  });
+
+  const { employeeId, currentEmployee } = useCurrentBookingEmployee(
+    user?.email,
+    isPartnerBranchBlocked,
+    targetBranch
+  );
+
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [employeeId, setEmployeeId] = useState<string>("");
-  const [currentEmployee, setCurrentEmployee] = useState<BookingEmployee | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Fetch rooms
-  const loadRooms = useCallback(async () => {
-    if (isPartnerBranchBlocked) {
-      setRooms([]);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("meeting_rooms")
-      .select("id, name, capacity, color, floor, branch_id, deleted_at, amenities, branches(id, name)")
-      .is("deleted_at", null)
-      .order("capacity");
-
-    if (error) {
-      console.error("Failed to load rooms:", error);
-      return;
-    }
-
-    // Rooms belonging to this branch or shared company rooms (branch_id null),
-    // or all rooms when in cross-branch HR Division scope
-    const roomsToEnrich = (data || []).filter((r: any) => {
-      if (canViewCrossBranch || !targetBranch) {
-        return true;
-      }
-      return !r.branch_id || r.branch_id === targetBranch;
-    });
-
-    const enrichedRooms: MeetingRoom[] = roomsToEnrich.map((r: any) => {
-      const floor = r.floor || ROOM_FLOORS[r.name] || (r.name.toLowerCase().includes("vip") ? 5 : 3);
-      const amenities = (Array.isArray(r.amenities) && r.amenities.length > 0)
-        ? r.amenities
-        : (ROOM_AMENITIES[r.name] || DEFAULT_AMENITIES);
-
-      return {
-        ...r,
-        floor,
-        amenities,
-        branch_name: r.branches?.name || undefined,
-      };
-    });
-
-    setRooms(enrichedRooms);
-  }, [isPartnerBranchBlocked, targetBranch, canViewCrossBranch]);
-
-  const deleteRoom = useCallback(async (roomId: string, roomName: string) => {
-    if (!confirm(`Are you sure you want to remove room "${roomName}"?`)) return false;
-    try {
-      const { error } = await supabase
-        .from("meeting_rooms")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", roomId);
-
-      if (error) throw error;
-      await loadRooms();
-      return true;
-    } catch (err: any) {
-      console.error("Failed to delete room:", err);
-      return false;
-    }
-  }, [loadRooms]);
-
-  useEffect(() => {
-    loadRooms();
-  }, [loadRooms]);
-
-  // Fetch current user employee profile
-  useEffect(() => {
-    if (!user?.email || isPartnerBranchBlocked) {
-      setCurrentEmployee(null);
-      setEmployeeId("");
-      return;
-    }
-    const empQuery = applyUserEmployeeFilter(
-      supabase
-        .from("employees")
-        .select("id, first_name, last_name, department, role, avatar_url, email, branch_id"),
-      user.email
-    );
-    empQuery
-      .limit(5)
-      .then(({ data: rows }) => {
-        if (!rows || rows.length === 0) {
-          setCurrentEmployee(null);
-          setEmployeeId("");
-          return;
-        }
-        const data = (targetBranch ? rows.find((r: any) => r.branch_id === targetBranch) : null) || rows[0];
-        if (data) {
-          setEmployeeId(data.id);
-          setCurrentEmployee({
-            id: data.id,
-            first_name: data.first_name,
-            last_name: data.last_name,
-            department: data.department,
-            role: data.role,
-            avatar_url: data.avatar_url,
-            email: data.email,
-            branch_id: data.branch_id,
-          });
-        }
-      });
-  }, [user?.email, isPartnerBranchBlocked, targetBranch]);
 
   // Load Bookings
   const loadBookings = useCallback(async () => {
@@ -173,22 +84,18 @@ export function useMeetingRoomsData(selectedDate: string) {
       .lte("date", to)
       .order("start_time");
 
-    // Also load meeting rooms directly so matching never depends on initial state
     const { data: dbRooms } = await supabase
       .from("meeting_rooms")
       .select("id, name, floor, capacity, color, branch_id")
       .is("deleted_at", null);
 
-    // Also load training courses that booked meeting rooms
     const { data: trainingData } = await supabase
       .from("training_courses")
       .select("*")
       .is("deleted_at", null);
 
     const roomsList = (dbRooms && dbRooms.length > 0 ? dbRooms : rooms).filter((r: any) => {
-      if (canViewCrossBranch || !targetBranch) {
-        return true;
-      }
+      if (canViewCrossBranch || !targetBranch) return true;
       return !r.branch_id || r.branch_id === targetBranch;
     });
     const validRoomIds = new Set(roomsList.map((r: any) => r.id));
@@ -205,81 +112,14 @@ export function useMeetingRoomsData(selectedDate: string) {
         refreshments: b.refreshments || "None",
       }));
 
-      // Map training courses to meeting room bookings
-      const trainingBookings: Booking[] = [];
-
-      (trainingData || []).forEach((rawTc) => {
-        const { meta } = decodeCourseDescription(rawTc.description);
-        const scheduledDate = rawTc.scheduled_date || meta.scheduled_date;
-        const startTime = rawTc.start_time || meta.start_time;
-        const endTime = rawTc.end_time || meta.end_time;
-        const location = rawTc.location || meta.location;
-
-        if (!location || !scheduledDate || !startTime || !endTime) return;
-        const dateStr = scheduledDate.slice(0, 10);
-        if (dateStr < from || dateStr > to) return;
-
-        // Find room by matching name
-        const locLower = location.toLowerCase().trim();
-        const matchedRoom = roomsList.find((r: any) => {
-          const rNameLower = r.name.toLowerCase().trim();
-          return (
-            locLower === rNameLower ||
-            locLower.includes(rNameLower) ||
-            rNameLower.includes(locLower.split(" (")[0].trim())
-          );
-        });
-
-        if (matchedRoom) {
-          const alreadyInRoomBookings = (data || []).some(
-            (b: any) =>
-              b.room_id === matchedRoom.id &&
-              b.date === dateStr &&
-              ((b.start_time || "").slice(0, 5) === (startTime || "").slice(0, 5) ||
-                (b.title && b.title.toLowerCase().includes(rawTc.title.toLowerCase())))
-          );
-          if (alreadyInRoomBookings) {
-            return;
-          }
-
-          // If branch filtering applies, ensure room or course matches targetBranch
-          if (
-            !canViewCrossBranch &&
-            targetBranch &&
-            matchedRoom.branch_id &&
-            matchedRoom.branch_id !== targetBranch &&
-            rawTc.branch_id &&
-            rawTc.branch_id !== targetBranch
-          ) {
-            return;
-          }
-
-          const hostName = rawTc.created_by_name || meta.created_by_name || rawTc.instructor || "Training Host";
-          const nameParts = hostName.split(" ");
-          const fName = nameParts[0] || "Training";
-          const lName = nameParts.slice(1).join(" ") || "Host";
-
-          trainingBookings.push({
-            id: `training-${rawTc.id}`,
-            room_id: matchedRoom.id,
-            title: `🎓 Training: ${rawTc.title}`,
-            booked_by: hostName,
-            date: dateStr,
-            start_time: startTime,
-            end_time: endTime,
-            attendees_count: matchedRoom.capacity || 10,
-            status: "pending",
-            special_requirements: `Category: ${rawTc.category || "Training"} · Host: ${hostName} · Purpose: Training Course Session`,
-            refreshments: "None",
-            employees: {
-              first_name: fName,
-              last_name: lName,
-              department: rawTc.category || "Training",
-              role: "Instructor",
-              branch_id: rawTc.branch_id || matchedRoom.branch_id || targetBranch,
-            },
-          });
-        }
+      const trainingBookings = mapTrainingCoursesToBookings({
+        trainingData: trainingData || [],
+        roomsList,
+        from,
+        to,
+        canViewCrossBranch,
+        targetBranch,
+        existingBookings: data || [],
       });
 
       setBookings([...normalized, ...trainingBookings]);
@@ -291,7 +131,7 @@ export function useMeetingRoomsData(selectedDate: string) {
     loadBookings();
   }, [loadBookings]);
 
-  // Real-time subscription for both room_bookings and training_courses
+  // Real-time subscription for room_bookings and training_courses
   useEffect(() => {
     const channel = supabase
       .channel("room_bookings_realtime")

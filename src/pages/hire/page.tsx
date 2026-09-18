@@ -13,15 +13,18 @@ import { OffersTabContent } from "./components/offers/OffersTabContent";
 import { CreateSalaryProposalModal } from "./components/offers/CreateSalaryProposalModal";
 import { OfferWorkflowModal } from "./components/offers/OfferWorkflowModal";
 import { HireModalsContainer } from "./components/modals/HireModalsContainer";
+import { ImportHiringInfoModal } from "./components/modals/ImportHiringInfoModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { useHire } from "./hooks/useHire";
 import { useOfferLetters } from "./hooks/useOfferLetters";
+import { useState } from "react";
 
 export default function HirePage() {
   const h = useHire();
   const offersManager = useOfferLetters(h.actorName, h.loadData);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   if (h.loading && h.jobs.length === 0 && h.candidates.length === 0) {
     return (
@@ -63,6 +66,7 @@ export default function HirePage() {
         canManage={h.canRequest}
         onOpenCreateJob={h.openCreateJob}
         onOpenCreateCandidate={() => h.openCreateCandidate()}
+        onOpenImportCandidates={() => setShowImportModal(true)}
         onOpenCreateInterview={() => h.openCreateInterview()}
         onOpenCreateRequest={() => h.openCreateRequest()}
         candidates={h.candidates}
@@ -173,6 +177,7 @@ export default function HirePage() {
           }}
           onMoveToOnboarding={h.openMoveToOnboarding}
           onOpenInterview={(c) => h.openCreateInterview(c.id)}
+          onOpenImport={() => setShowImportModal(true)}
         />
       )}
 
@@ -273,6 +278,12 @@ export default function HirePage() {
       />
 
       <HireModalsContainer {...h} />
+
+      <ImportHiringInfoModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={h.loadData}
+      />
     </div>
   );
 }

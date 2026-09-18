@@ -50,7 +50,14 @@ export async function executeApprovalStep(ctx: ProcessDecisionContext) {
       "HR Manager",
       actorName,
       actorRole,
-      hrBranch?.id || null
+      hrBranch?.id || null,
+      {
+        businessUnit: originatingBranch,
+        targetBusinessUnit: "HR Division",
+        isCrossBu: originatingBranch !== "HR Division",
+        auditAction: "requisition_branch_approved",
+        description: `${actorName} (${actorRole}) approved requisition ${targetRequest.requisition_id || targetRequest.title}. Business Unit: ${originatingBranch}.`,
+      }
     );
     return { title: "Endorsed", message: `Requisition endorsed by ${actorName} and forwarded to HR Manager.` };
   }
@@ -74,7 +81,14 @@ export async function executeApprovalStep(ctx: ProcessDecisionContext) {
       "HR Admin Director",
       actorName,
       actorRole,
-      null
+      null,
+      {
+        businessUnit: originatingBranch,
+        targetBusinessUnit: "HR Division",
+        isCrossBu: true,
+        auditAction: "requisition_hr_manager_reviewed",
+        description: `${actorName} (HR Manager) reviewed & endorsed requisition ${targetRequest.requisition_id || targetRequest.title} for ${originatingBranch}.`,
+      }
     );
     return { title: "Reviewed & Forwarded", message: `Requisition reviewed by HR Manager ${actorName} and forwarded to HR Admin Director.` };
   }
@@ -98,7 +112,14 @@ export async function executeApprovalStep(ctx: ProcessDecisionContext) {
       "Chairwoman / Executive Chairman",
       actorName,
       actorRole,
-      null
+      null,
+      {
+        businessUnit: originatingBranch,
+        targetBusinessUnit: "Supreme Executive",
+        isCrossBu: true,
+        auditAction: "requisition_hr_director_authorized",
+        description: `${actorName} (HR Admin Director) authorized requisition ${targetRequest.requisition_id || targetRequest.title} for ${originatingBranch}. Forwarded to Chairwoman.`,
+      }
     );
     return { title: "Approved & Escalated", message: `Requisition approved by HR Admin Director ${actorName} and forwarded to Chairwoman/Chairman.` };
   }
@@ -139,7 +160,11 @@ export async function executeApprovalStep(ctx: ProcessDecisionContext) {
 
   if (reqErr) throw reqErr;
 
-  await notifyFullRequisitionApproval(targetRequest, actorName, actorRole, jobData?.id);
+  await notifyFullRequisitionApproval(targetRequest, actorName, actorRole, jobData?.id, {
+    businessUnit: originatingBranch,
+    isCrossBu: true,
+    description: `${actorName} (${actorRole}) granted supreme authorization for requisition ${targetRequest.requisition_id || targetRequest.title}. Business Unit: ${originatingBranch}. Job opening live.`,
+  });
   return { title: "Authorized & Live", message: `Requisition authorized by ${actorName}. Recruiter sourcing triggered & job opening live!` };
 }
 

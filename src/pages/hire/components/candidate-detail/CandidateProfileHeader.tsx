@@ -1,9 +1,14 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { Candidate } from "../../types";
-import { STAGE_CONFIG, PIPELINE_STAGES } from "../../constants";
+import { STAGE_CONFIG } from "../../constants";
 import { evaluateStageSla } from "../../constants/slaConfig";
 import { initials, formatDateTime } from "../../hireUtils";
+import {
+  RECRUITMENT_PHASES,
+  getPhaseForStage,
+  getPhaseIndex,
+} from "../../constants/processPhasesConfig";
 
 interface CandidateProfileHeaderProps {
   candidate: Candidate;
@@ -22,7 +27,8 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
   const isHired = normStage === "hired";
   const isRejected = normStage === "rejected";
   const candSla = evaluateStageSla(candidate.stage, candidate.applied_at, true);
-
+  const currentPhase = getPhaseForStage(normStage);
+  const currentPhaseIdx = currentPhase ? getPhaseIndex(currentPhase.id) : 0;
 
   return (
     <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs mb-6">
@@ -33,14 +39,19 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
             {initials(candidate.full_name)}
           </div>
             <div className="space-y-2">
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               {candidate.candidate_code && (
                 <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-[#253C7D] font-mono font-extrabold text-xs tracking-wider">
                   {candidate.candidate_code}
                 </span>
               )}
-              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 capitalize tracking-tight">
-                {candidate.full_name}
+              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 capitalize tracking-tight flex items-center gap-2 flex-wrap">
+                <span>{candidate.full_name}</span>
+                {candidate.kh_name && (
+                  <span className="text-lg sm:text-xl font-bold text-slate-500 font-khmer">
+                    ({candidate.kh_name})
+                  </span>
+                )}
               </h1>
               <span
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${cfg.bg} ${cfg.text} ${cfg.border}`}
@@ -48,6 +59,12 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cfg.hex }} />
                 {cfg.label}
               </span>
+              {currentPhase && normStage !== "rejected" && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  <i className={`${currentPhase.icon} text-xs text-[#253C7D]`} />
+                  Phase {currentPhaseIdx + 1}: {currentPhase.name}
+                </span>
+              )}
             </div>
 
             {/* Tags Row */}
@@ -127,11 +144,18 @@ export const CandidateProfileHeader = memo(function CandidateProfileHeader({
               onChange={(e) => onUpdateStage(e.target.value)}
               className="px-3.5 py-2.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 shadow-2xs focus:outline-none focus:border-[#172B4D] cursor-pointer appearance-none pr-8"
             >
-              {PIPELINE_STAGES.map((st) => (
-                <option key={st} value={st}>
-                  Stage: {STAGE_CONFIG[st]?.label || st}
-                </option>
+              {RECRUITMENT_PHASES.map((ph, pIdx) => (
+                <optgroup key={ph.id} label={`Phase ${pIdx + 1}: ${ph.name}`}>
+                  {ph.stages.map((st) => (
+                    <option key={st} value={st}>
+                      {STAGE_CONFIG[st]?.label || st}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
+              <optgroup label="Terminal">
+                <option value="rejected">Rejected</option>
+              </optgroup>
             </select>
             <i className="ri-arrow-down-s-line absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm" />
           </div>

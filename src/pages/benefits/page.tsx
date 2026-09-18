@@ -7,6 +7,7 @@ import { PlanFormModal } from "./components/PlanFormModal";
 import { PlansTab } from "./tabs/PlansTab";
 import { EnrollmentTab } from "./tabs/EnrollmentTab";
 import { ProvidersTab } from "./tabs/ProvidersTab";
+import { NssfTab } from "./tabs/NssfTab";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useBenefits } from "./hooks/useBenefits";
 
@@ -79,6 +80,7 @@ export default function Benefits() {
         plansCount={data.plans.length}
         enrollmentsCount={data.enrollments.length}
         providersCount={metrics.providersList.length}
+        nssfCount={data.employees.length}
         viewMode={filters.viewMode}
         setViewMode={filters.setViewMode}
       />
@@ -130,6 +132,8 @@ export default function Benefits() {
           onSelectPlan={setSelectedPlan}
         />
       )}
+
+      {tab === "nssf" && <NssfTab />}
 
       <PlanDrawer
         selectedPlan={selectedPlan}

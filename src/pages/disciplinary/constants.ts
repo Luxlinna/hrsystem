@@ -9,21 +9,42 @@ export const TYPE_CONFIG: Record<
     color: "text-slate-700 dark:text-slate-300",
     bg: "bg-slate-100 border-slate-200 dark:bg-slate-700/50 dark:border-slate-600",
     icon: "ri-discuss-line",
-    desc: "First-level policy review",
+    desc: "1st level informal verbal warning",
+  },
+  first_written_warning: {
+    label: "1st Written Warning",
+    color: "text-amber-700 dark:text-amber-400",
+    bg: "bg-amber-50 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30",
+    icon: "ri-file-warning-line",
+    desc: "Formal 1st written warning letter",
   },
   written_warning: {
     label: "Written Warning",
-    color: "text-slate-700 dark:text-slate-300",
-    bg: "bg-slate-100 border-slate-200 dark:bg-slate-700/50 dark:border-slate-600",
+    color: "text-amber-700 dark:text-amber-400",
+    bg: "bg-amber-50 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30",
     icon: "ri-file-warning-line",
     desc: "Formal documented notice",
   },
+  second_written_warning: {
+    label: "2nd Written Warning",
+    color: "text-orange-700 dark:text-orange-400",
+    bg: "bg-orange-50 border-orange-200 dark:bg-orange-500/15 dark:border-orange-500/30",
+    icon: "ri-file-damage-line",
+    desc: "Repeated violation or escalated notice",
+  },
   final_warning: {
     label: "Final Warning",
-    color: "text-amber-700 dark:text-amber-400",
-    bg: "bg-amber-50 border-amber-200 dark:bg-amber-500/15 dark:border-amber-500/30",
+    color: "text-rose-700 dark:text-rose-400",
+    bg: "bg-rose-50 border-rose-200 dark:bg-rose-500/15 dark:border-rose-500/30",
     icon: "ri-error-warning-line",
-    desc: "Last notice before escalation",
+    desc: "Final notice prior to termination",
+  },
+  show_cause: {
+    label: "Show Cause Letter",
+    color: "text-purple-700 dark:text-purple-400",
+    bg: "bg-purple-50 border-purple-200 dark:bg-purple-500/15 dark:border-purple-500/30",
+    icon: "ri-question-line",
+    desc: "Notice to explain serious infraction",
   },
   pip: {
     label: "Performance Plan (PIP)",
@@ -54,6 +75,16 @@ export const TYPE_CONFIG: Record<
     desc: "Employment separation",
   },
 };
+
+export const WARNING_TYPES = [
+  { value: "verbal_warning", label: "Verbal Warning", description: "First-level oral advisory / hearing" },
+  { value: "first_written_warning", label: "1st Written Warning", description: "Official documented initial warning" },
+  { value: "second_written_warning", label: "2nd Written Warning", description: "Second notice for recurring misconduct" },
+  { value: "final_warning", label: "Final Warning", description: "Final warning letter before termination" },
+  { value: "show_cause", label: "Show Cause Letter", description: "Formal request for employee explanation" },
+  { value: "pip", label: "PIP Notice", description: "Performance Improvement Plan (PIP)" },
+];
+
 
 export const SEVERITY_CONFIG: Record<
   string,
@@ -133,4 +164,13 @@ export const INITIAL_NEW_RECORD: NewRecord = {
   pip_start_date: "",
   pip_end_date: "",
   pip_goals: "",
+  warning_type: "first_written_warning",
+  warning_date: new Date().toISOString().split("T")[0],
+  action_to_take: "",
+  employee_promise: "",
+  remark: "",
+  document_url: "",
+  document_name: "",
+  document_file: null,
 };
+

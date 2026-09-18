@@ -20,7 +20,8 @@ export const OrgChartListView = memo(function OrgChartListView({
 }: OrgChartListViewProps) {
   return (
     <div className="border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs dark:bg-slate-900 transition-colors">
-      <table className="w-full text-left">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left min-w-[700px]">
         <thead>
           <tr className="bg-gray-50 dark:bg-slate-800/80">
             <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Employee</th>
@@ -107,6 +108,7 @@ export const OrgChartListView = memo(function OrgChartListView({
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 });
