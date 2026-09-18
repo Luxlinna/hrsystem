@@ -248,6 +248,13 @@ export function isExportAtHrDivision(params?: {
  * - If export is at HR Division -> MUST strictly use the UNI logo (NO OPS), even if employee or request is from OPS.
  * - If export is at an operational BU (e.g. OPS) -> strictly uses the BU Logo (OPS Logo) and respective BU name.
  */
+export type FormBrandingResult = {
+  logo: string;
+  companyName: string;
+  companyKhmer: string;
+  isHrDivision: boolean;
+};
+
 export function resolveDocumentBranding(params?: {
   businessUnit?: string | null;
   department?: string | null;
