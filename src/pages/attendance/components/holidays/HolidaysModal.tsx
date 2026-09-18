@@ -1,6 +1,9 @@
-import { memo, useState, useMemo } from "react";
+import { memo, useState, useMemo, useCallback } from "react";
 import type { Holiday } from "@/services/holidays/holidaysService";
 import { toast } from "@/components/Toast";
+import { HolidaysModalControls } from "./HolidaysModalControls";
+import { AddHolidayForm } from "./AddHolidayForm";
+import { HolidayCardItem } from "./HolidayCardItem";
 
 interface HolidaysModalProps {
   isOpen: boolean;
@@ -31,13 +34,6 @@ export const HolidaysModal = memo(function HolidaysModal({
 }: HolidaysModalProps) {
   const [search, setSearch] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newDate, setNewDate] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newKhName, setNewKhName] = useState("");
-  const [newIsPaid, setNewIsPaid] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-
-  const availableYears = [2024, 2025, 2026, 2027, 2028];
 
   const filteredHolidays = useMemo(() => {
     if (!search.trim()) return holidays;
@@ -50,7 +46,7 @@ export const HolidaysModal = memo(function HolidaysModal({
     );
   }, [holidays, search]);
 
-  const handleSync = async () => {
+  const handleSync = useCallback(async () => {
     try {
       const res = await onSync(year);
       if (res.success) {
@@ -61,41 +57,9 @@ export const HolidaysModal = memo(function HolidaysModal({
     } catch (err: any) {
       toast("Sync Error", err?.message || "Error syncing holidays", "error");
     }
-  };
+  }, [onSync, year]);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newDate || !newName.trim()) {
-      toast("Error", "Please provide date and holiday name", "error");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const res = await onAddHoliday({
-        date: newDate,
-        name: newName.trim(),
-        local_name: newKhName.trim() || null,
-        year: parseInt(newDate.substring(0, 4), 10) || year,
-        is_paid: newIsPaid,
-      });
-
-      if (res.success) {
-        toast("Success", "Custom holiday added successfully", "success");
-        setShowAddForm(false);
-        setNewDate("");
-        setNewName("");
-        setNewKhName("");
-        setNewIsPaid(true);
-      } else {
-        toast("Error", res.error || "Failed to add holiday", "error");
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDelete = async (h: Holiday) => {
+  const handleDelete = useCallback(async (h: Holiday) => {
     if (!confirm(`Are you sure you want to remove holiday: "${h.name}"?`)) return;
     const res = await onDeleteHoliday(h.id || h.date, year);
     if (res.success) {
@@ -103,7 +67,7 @@ export const HolidaysModal = memo(function HolidaysModal({
     } else {
       toast("Error", res.error || "Could not delete holiday", "error");
     }
-  };
+  }, [onDeleteHoliday, year]);
 
   if (!isOpen) return null;
 
@@ -146,108 +110,22 @@ export const HolidaysModal = memo(function HolidaysModal({
           </button>
         </div>
 
-        {/* Action Controls & Filter */}
-        <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 flex flex-wrap items-center justify-between gap-3">
-          {/* Year selector pills */}
-          <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-gray-200/80 dark:border-slate-700 shadow-2xs">
-            {availableYears.map((y) => (
-              <button
-                key={y}
-                type="button"
-                onClick={() => setYear(y)}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  year === y
-                    ? "bg-purple-600 text-white shadow-2xs"
-                    : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white"
-                }`}
-              >
-                {y}
-              </button>
-            ))}
-          </div>
+        <HolidaysModalControls
+          year={year}
+          setYear={setYear}
+          canManage={canManage}
+          syncing={syncing}
+          showAddForm={showAddForm}
+          onSync={handleSync}
+          onToggleAddForm={() => setShowAddForm((p) => !p)}
+        />
 
-          {/* Sync Button & Add Button */}
-          <div className="flex items-center gap-2">
-            {canManage && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleSync}
-                  disabled={syncing}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-xs font-bold transition-all shadow-2xs cursor-pointer disabled:opacity-50"
-                  title="Sync official 21 Cambodia Labor Law holidays from API"
-                >
-                  <i className={`ri-refresh-line text-xs ${syncing ? "animate-spin" : ""}`} />
-                  <span>{syncing ? "Syncing..." : `Sync ${year} Holidays`}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(!showAddForm)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer"
-                >
-                  <i className={`ri-${showAddForm ? "subtract" : "add"}-line text-xs`} />
-                  <span>{showAddForm ? "Cancel" : "Add Holiday"}</span>
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Custom Holiday Form */}
         {showAddForm && (
-          <form onSubmit={handleCreate} className="p-4 sm:p-5 bg-purple-50/40 dark:bg-purple-950/20 border-b border-purple-100 dark:border-purple-900/40 animate-in slide-in-from-top duration-150">
-            <h4 className="text-xs font-bold text-purple-900 dark:text-purple-300 mb-3 flex items-center gap-1.5">
-              <i className="ri-add-circle-fill text-purple-600" />
-              Add Custom Company Holiday / Compensatory Day
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                  Date <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-900 dark:text-slate-100 focus:outline-none focus:border-purple-600"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                  Holiday Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Company Anniversary"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-900 dark:text-slate-100 focus:outline-none focus:border-purple-600"
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-3 pt-1">
-              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-700 dark:text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={newIsPaid}
-                  onChange={(e) => setNewIsPaid(e.target.checked)}
-                  className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-                />
-                <span>Paid Holiday (100% Salary, 2.0x OT if worked)</span>
-              </label>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
-              >
-                {submitting ? "Saving..." : "Save Holiday"}
-              </button>
-            </div>
-          </form>
+          <AddHolidayForm
+            year={year}
+            onAddHoliday={onAddHoliday}
+            onClose={() => setShowAddForm(false)}
+          />
         )}
 
         {/* Search bar & count */}
@@ -285,60 +163,14 @@ export const HolidaysModal = memo(function HolidaysModal({
               No holidays found for {year}
             </div>
           ) : (
-            filteredHolidays.map((h) => {
-              const dateObj = new Date(`${h.date}T00:00:00`);
-              const dayName = dateObj.toLocaleDateString("en-US", { weekday: "short" });
-              const monthName = dateObj.toLocaleDateString("en-US", { month: "short" });
-              const dayNum = dateObj.getDate();
-
-              return (
-                <div
-                  key={h.id || h.date}
-                  className="bg-white dark:bg-slate-800/80 border border-gray-200/80 dark:border-slate-700/80 rounded-2xl p-3 sm:p-3.5 hover:border-purple-300 dark:hover:border-purple-800 transition-all flex items-center justify-between gap-3 shadow-2xs group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* Date Block */}
-                    <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-purple-300 flex flex-col items-center justify-center shrink-0">
-                      <span className="text-[9px] font-bold uppercase leading-none">{monthName}</span>
-                      <span className="text-base font-black leading-tight">{dayNum}</span>
-                      <span className="text-[9px] font-semibold text-purple-500/80 leading-none">{dayName}</span>
-                    </div>
-
-                    {/* Names */}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-slate-100 truncate">
-                          {h.name}
-                        </h4>
-                        {h.is_paid && (
-                          <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60 shrink-0">
-                            Paid (100%)
-                          </span>
-                        )}
-                        <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60 shrink-0">
-                          2.0x OT
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-gray-400 dark:text-slate-500 font-mono mt-0.5">
-                        {h.date}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  {canManage && (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(h)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 flex items-center justify-center cursor-pointer shrink-0"
-                      title="Remove holiday"
-                    >
-                      <i className="ri-delete-bin-line text-sm" />
-                    </button>
-                  )}
-                </div>
-              );
-            })
+            filteredHolidays.map((h) => (
+              <HolidayCardItem
+                key={h.id || h.date}
+                holiday={h}
+                canManage={canManage}
+                onDelete={handleDelete}
+              />
+            ))
           )}
         </div>
 
