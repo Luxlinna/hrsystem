@@ -4,7 +4,7 @@ import { notifyCandidateApprovalStepSigned } from "../services/notifications/can
 import { exportCandidateApprovalPdf } from "../exports/exportCandidateApprovalPdf";
 import { exportCandidateApprovalWord } from "../exports/exportCandidateApprovalWord";
 import { isExportAtHrDivision } from "@/services/formLogoService";
-import type { ApprovalStepKey, StepGateResult } from "../services/candidateApprovalPermissions";
+import type { ApprovalStepKey, StepGateStatus } from "../services/candidateApprovalPermissions";
 
 export function syncCandidateApprovalSignatories(params: {
   res: CandidateApproval;
@@ -65,7 +65,7 @@ export function syncCandidateApprovalSignatories(params: {
 export async function executeSignApprovalStep(params: {
   data: CandidateApproval;
   roleKey: keyof CandidateApproval["signatories"];
-  stepGates: Record<ApprovalStepKey, StepGateResult>;
+  stepGates: Record<ApprovalStepKey, StepGateStatus>;
   currentUserName: string;
   role?: any;
   candidate: Candidate;
