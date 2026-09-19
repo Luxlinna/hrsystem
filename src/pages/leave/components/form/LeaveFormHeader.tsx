@@ -10,22 +10,22 @@ export function LeaveFormHeader({ onBack, isSuperAdmin, formMode = "self" }: Lea
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+        <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider mb-1">
           <span>Time &amp; Attendance</span>
           <i className="ri-arrow-right-s-line text-xs" />
           <span>Absence &amp; Leave</span>
           <i className="ri-arrow-right-s-line text-xs" />
-          <span className="text-[#253C7D] font-bold">Create Leave</span>
+          <span className="text-[#253C7D] dark:text-sky-400 font-bold">Create Leave</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
           Create Leave
           <span
             className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
               isSuperAdmin
-                ? "bg-emerald-100 text-emerald-800"
+                ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border dark:border-emerald-800/60"
                 : formMode === "for_employee"
-                ? "bg-[#253C7D]/10 text-[#253C7D]"
-                : "bg-blue-50 text-blue-700"
+                ? "bg-[#253C7D]/10 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-300 border dark:border-blue-800/60"
+                : "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border dark:border-blue-800/60"
             }`}
           >
             {isSuperAdmin
@@ -35,7 +35,7 @@ export function LeaveFormHeader({ onBack, isSuperAdmin, formMode = "self" }: Lea
               : "Self Request"}
           </span>
         </h1>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
           {isSuperAdmin
             ? "Directly record and approve employee leave without managerial review."
             : formMode === "for_employee"
@@ -47,9 +47,9 @@ export function LeaveFormHeader({ onBack, isSuperAdmin, formMode = "self" }: Lea
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-gray-700 text-xs font-bold shadow-2xs transition-all cursor-pointer self-start sm:self-auto"
+        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-700 dark:text-slate-200 text-xs font-bold shadow-2xs transition-all cursor-pointer self-start sm:self-auto"
       >
-        <i className="ri-arrow-left-line text-sm text-[#253C7D]" />
+        <i className="ri-arrow-left-line text-sm text-[#253C7D] dark:text-sky-400" />
         Back to Leave Hub
       </button>
     </div>

@@ -45,9 +45,9 @@ export function LeaveFormActions({
         <button
           type="button"
           onClick={onExportSlip}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
         >
-          <i className="ri-printer-line text-sm text-[#253C7D]" />
+          <i className="ri-printer-line text-sm text-[#253C7D] dark:text-sky-400" />
           <span>Export Leave Form</span>
         </button>
       </div>
@@ -56,7 +56,7 @@ export function LeaveFormActions({
         type="button"
         onClick={onBack}
         disabled={submitting}
-        className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+        className="px-4 py-2.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 border border-transparent dark:border-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
       >
         <i className="ri-close-line mr-1" />
         Discard

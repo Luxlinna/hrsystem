@@ -9,12 +9,14 @@ export function getApplicantTier(
   if (isDirectHr) return "bu_admin";
   const role = (employee?.role || "").toLowerCase();
   if (
+    role.includes("ceo") ||
     role.includes("bu admin") ||
     role.includes("be admin") ||
     role.includes("branch admin") ||
-    role.includes("branch ceo") ||
     role.includes("super admin") ||
-    role.includes("superadmin")
+    role.includes("superadmin") ||
+    (role.includes("bu") && (role.includes("admin") || role.includes("ceo"))) ||
+    (role.includes("branch") && (role.includes("admin") || role.includes("ceo")))
   ) {
     return "bu_admin";
   }
@@ -52,16 +54,26 @@ export function isBuAdminApprover(
   return (
     isBranchAdmin ||
     isSuperAdmin ||
+    r.includes("ceo") ||
     r.includes("bu admin") ||
     r.includes("be admin") ||
     r.includes("branch admin") ||
-    r.includes("branch ceo") ||
     r.includes("super admin") ||
-    r.includes("superadmin")
+    r.includes("superadmin") ||
+    (r.includes("bu") && (r.includes("admin") || r.includes("ceo"))) ||
+    (r.includes("branch") && (r.includes("admin") || r.includes("ceo")))
   );
 }
 
 export function getRequestTier(request: LeaveRequest): ApplicantTier {
+  const reason = request.reason || "";
+  if (
+    reason.includes("[Stage: Final Approved by HR Division") &&
+    !reason.includes("[Stage: Manager Endorsed") &&
+    !reason.includes("[Stage: BU Admin Endorsed")
+  ) {
+    return "bu_admin";
+  }
   return getApplicantTier(request.employees);
 }
 

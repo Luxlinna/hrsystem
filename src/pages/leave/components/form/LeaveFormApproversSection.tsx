@@ -19,19 +19,19 @@ export function LeaveFormApproversSection({
   const isManager = applicantTier === "manager";
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs space-y-5">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-extrabold text-[#4A72B2] uppercase tracking-wider flex items-center gap-2">
+        <h2 className="text-xs font-extrabold text-[#4A72B2] dark:text-sky-400 uppercase tracking-wider flex items-center gap-2">
           <i className="ri-shield-check-line text-base" />
           Approvers Info
         </h2>
         {isBuAdmin ? (
-          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/70 flex items-center gap-1.5">
-            <i className="ri-checkbox-circle-fill text-xs text-emerald-600" />
+          <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg border border-emerald-200/70 dark:border-emerald-800/60 flex items-center gap-1.5">
+            <i className="ri-checkbox-circle-fill text-xs text-emerald-600 dark:text-emerald-400" />
             1-Step Direct HR Approval
           </span>
         ) : (
-          <span className="text-[11px] font-semibold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/60">
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/60 dark:border-slate-700">
             2-Step Approval Chain
           </span>
         )}
@@ -40,24 +40,24 @@ export function LeaveFormApproversSection({
       <div className="space-y-4">
         {/* Step 1: BU Admin (for Manager) OR Line Manager (for Employee) */}
         {!isBuAdmin && (
-          <div className="rounded-xl border border-gray-200 overflow-hidden shadow-2xs">
+          <div className="rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-2xs">
             <div className="bg-[#4A72B2] text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between">
               <span>{isManager ? "Step 1 — BU Admin Endorsement" : "Step 1 — Employee Direct Manager"}</span>
               <span className="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-md">First Endorsement</span>
             </div>
-            <div className="p-4 bg-white">
+            <div className="p-4 bg-white dark:bg-slate-900">
               {isManager ? (
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-[#253C7D] font-bold text-xs flex items-center justify-center border border-indigo-200">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-[#253C7D] dark:text-indigo-300 font-bold text-xs flex items-center justify-center border border-indigo-200 dark:border-indigo-800/60">
                       <i className="ri-shield-user-line text-lg" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-900">BU Admin / Branch Leadership</p>
-                      <p className="text-[11px] text-gray-500">Authorized BU Admin reviews manager requests</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-slate-100">BU Admin / Branch Leadership</p>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400">Authorized BU Admin reviews manager requests</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
                     BU Admin Endorsement
                   </span>
                 </div>
@@ -68,41 +68,41 @@ export function LeaveFormApproversSection({
                       <img
                         src={lineManager.avatar_url}
                         alt={`${lineManager.first_name} ${lineManager.last_name}`}
-                        className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                        className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-slate-700"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-blue-100 text-[#253C7D] font-bold text-xs flex items-center justify-center border border-blue-200">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-300 font-bold text-xs flex items-center justify-center border border-blue-200 dark:border-blue-800/60">
                         {lineManager.first_name?.[0]}
                         {lineManager.last_name?.[0]}
                       </div>
                     )}
                     <div>
-                      <p className="text-xs font-bold text-gray-900">{lineManager.first_name} {lineManager.last_name}</p>
-                      <p className="text-[11px] text-gray-500">{lineManager.role || "Line Manager"}{lineManager.department ? ` • ${lineManager.department}` : ""}</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-slate-100">{lineManager.first_name} {lineManager.last_name}</p>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400">{lineManager.role || "Line Manager"}{lineManager.department ? ` • ${lineManager.department}` : ""}</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-[#253C7D] border border-blue-200">
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
                     Direct Supervisor
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 text-[#253C7D] font-bold text-xs flex items-center justify-center border border-blue-200">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-300 font-bold text-xs flex items-center justify-center border border-blue-200 dark:border-blue-800/60">
                       {myApproverName ? myApproverName.charAt(0) : <i className="ri-user-follow-line text-sm" />}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-900">{myApproverName || "Department Manager / Supervisor"}</p>
-                      <p className="text-[11px] text-gray-500">Direct Line Manager</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-slate-100">{myApproverName || "Department Manager / Supervisor"}</p>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400">Direct Line Manager</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-[#253C7D] border border-blue-200">
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
                     Direct Supervisor
                   </span>
                 </div>
               )}
-              <p className="text-[11px] text-gray-400 mt-2.5 pt-2 border-t border-gray-100 flex items-center gap-1.5">
-                <i className="ri-information-line text-[#253C7D]" />
+              <p className="text-[11px] text-gray-400 dark:text-slate-400 mt-2.5 pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center gap-1.5">
+                <i className="ri-information-line text-[#253C7D] dark:text-sky-400" />
                 {isManager
                   ? "Manager requests → BU Admin reviews and endorses → Forwards to HR Division for final approval."
                   : "Employee requests → Direct manager reviews and endorses → Forwards to HR Division for final approval."}
@@ -112,28 +112,28 @@ export function LeaveFormApproversSection({
         )}
 
         {/* Step 2 (or Step 1 for BU Admin): HR Division Final Authorization */}
-        <div className="rounded-xl border border-gray-200 overflow-hidden shadow-2xs">
+        <div className="rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-2xs">
           <div className="bg-[#4A72B2] text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between">
             <span>{isBuAdmin ? "Step 1 — Final Authorization (HR Division)" : "Step 2 — Final Authorization (HR Division)"}</span>
             <span className="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-md">Final Approval</span>
           </div>
-          <div className="p-4 bg-white">
+          <div className="p-4 bg-white dark:bg-slate-900">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center justify-center border border-emerald-200 shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
                   <i className="ri-shield-check-line text-lg" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-900">HR Division / Final Approval Authority</p>
-                  <p className="text-[11px] text-gray-500 font-medium">Authorized leave approval team (HR Division)</p>
+                  <p className="text-xs font-bold text-gray-900 dark:text-slate-100">HR Division / Final Approval Authority</p>
+                  <p className="text-[11px] text-gray-500 dark:text-slate-400 font-medium">Authorized leave approval team (HR Division)</p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
                 Final Authority
               </span>
             </div>
-            <p className="text-[11px] text-gray-500 mt-2.5 pt-2 border-t border-gray-100 flex items-center gap-1.5">
-              <i className="ri-checkbox-circle-line text-emerald-600 text-xs flex-shrink-0" />
+            <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-2.5 pt-2 border-t border-gray-100 dark:border-slate-800 flex items-center gap-1.5">
+              <i className="ri-checkbox-circle-line text-emerald-600 dark:text-emerald-400 text-xs flex-shrink-0" />
               {isBuAdmin ? (
                 <span>BU Admin request: Manager endorsement is not required. Directly routed to HR Division for final approval.</span>
               ) : isManager ? (

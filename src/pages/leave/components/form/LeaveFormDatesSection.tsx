@@ -38,7 +38,7 @@ export function LeaveFormDatesSection({
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-        <label className="md:col-span-3 text-xs font-bold text-gray-700">
+        <label className="md:col-span-3 text-xs font-bold text-gray-700 dark:text-slate-300">
           From Date <span className="text-rose-500">*</span>
         </label>
         <div className="md:col-span-9">
@@ -47,13 +47,13 @@ export function LeaveFormDatesSection({
             required
             value={formData.start_date}
             onChange={handleStartDateChange}
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D]"
+            className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-        <label className="md:col-span-3 text-xs font-bold text-gray-700">
+        <label className="md:col-span-3 text-xs font-bold text-gray-700 dark:text-slate-300">
           To Date <span className="text-rose-500">*</span>
         </label>
         <div className="md:col-span-9 flex items-center gap-3">
@@ -62,10 +62,10 @@ export function LeaveFormDatesSection({
             required
             value={formData.end_date}
             onChange={(e) => setFormData((prev) => ({ ...prev, end_date: e.target.value }))}
-            className="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D]"
+            className="flex-1 px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400"
           />
           {requestedDays > 0 && (
-            <span className="px-3 py-2 bg-blue-50 text-[#253C7D] border border-blue-200 rounded-xl text-xs font-extrabold whitespace-nowrap">
+            <span className="px-3 py-2 bg-blue-50 dark:bg-blue-950/60 text-[#253C7D] dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs font-extrabold whitespace-nowrap">
               {requestedDays} {requestedDays === 1 ? "Day" : "Days"}
             </span>
           )}
@@ -73,7 +73,7 @@ export function LeaveFormDatesSection({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-        <label className="md:col-span-3 text-xs font-bold text-gray-700 pt-2">
+        <label className="md:col-span-3 text-xs font-bold text-gray-700 dark:text-slate-300 pt-2">
           Reason <span className="text-rose-500">*</span>
         </label>
         <div className="md:col-span-9">
@@ -83,13 +83,13 @@ export function LeaveFormDatesSection({
             value={formData.reason}
             onChange={(e) => setFormData((prev) => ({ ...prev, reason: e.target.value }))}
             placeholder="State the reason or purpose for taking leave..."
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D]"
+            className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-        <label className="md:col-span-3 text-xs font-bold text-gray-700 pt-2">
+        <label className="md:col-span-3 text-xs font-bold text-gray-700 dark:text-slate-300 pt-2">
           Remark
         </label>
         <div className="md:col-span-9">
@@ -98,7 +98,7 @@ export function LeaveFormDatesSection({
             value={formData.remark}
             onChange={(e) => setFormData((prev) => ({ ...prev, remark: e.target.value }))}
             placeholder="Additional remarks or handover notes for manager/colleagues..."
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D]"
+            className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400"
           />
         </div>
       </div>
@@ -116,10 +116,10 @@ export function LeaveFormDatesSection({
           </button>
 
           {showDeductionPeriod && (
-            <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2.5 animate-in fade-in-50">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 rounded-2xl space-y-2.5 animate-in fade-in-50">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-gray-500">Period Duration:</span>
-                <strong className="text-gray-900">
+                <span className="font-medium text-gray-500 dark:text-slate-400">Period Duration:</span>
+                <strong className="text-gray-900 dark:text-slate-100">
                   {formData.start_date && formData.end_date
                     ? `${formData.start_date} → ${formData.end_date} (${requestedDays} day${requestedDays === 1 ? "" : "s"})`
                     : "Please select start and end dates"}
@@ -127,24 +127,24 @@ export function LeaveFormDatesSection({
               </div>
 
               <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-gray-500">Current Available Balance:</span>
-                <strong className="text-emerald-700">{currentStats.available} days</strong>
+                <span className="font-medium text-gray-500 dark:text-slate-400">Current Available Balance:</span>
+                <strong className="text-emerald-700 dark:text-emerald-400">{currentStats.available} days</strong>
               </div>
 
               <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-gray-500">Days to Deduct:</span>
-                <strong className="text-amber-700">-{requestedDays} days</strong>
+                <span className="font-medium text-gray-500 dark:text-slate-400">Days to Deduct:</span>
+                <strong className="text-amber-700 dark:text-amber-400">-{requestedDays} days</strong>
               </div>
 
-              <div className="pt-2 border-t border-gray-200 flex items-center justify-between text-xs font-bold">
-                <span className="text-gray-700">Remaining Balance After Approval:</span>
-                <span className={`text-sm ${isOverBalance ? "text-rose-600" : "text-[#253C7D]"}`}>
+              <div className="pt-2 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between text-xs font-bold">
+                <span className="text-gray-700 dark:text-slate-300">Remaining Balance After Approval:</span>
+                <span className={`text-sm ${isOverBalance ? "text-rose-600 dark:text-rose-400" : "text-[#253C7D] dark:text-sky-400"}`}>
                   {remainingAfterLeave} days
                 </span>
               </div>
 
               {isOverBalance && (
-                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-[11px] font-bold flex items-center gap-1.5">
+                <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl text-rose-700 dark:text-rose-300 text-[11px] font-bold flex items-center gap-1.5">
                   <i className="ri-error-warning-fill text-sm" />
                   Warning: Requested days exceed the employee's available balance!
                 </div>

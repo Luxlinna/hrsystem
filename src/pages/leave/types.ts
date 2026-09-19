@@ -22,6 +22,7 @@ export interface LeaveRequest {
     employee_code?: string | null;
     biometric_user_id?: string | null;
     branch_id?: string | null;
+    reports_to?: string | null;
   } | null;
 }
 
@@ -40,7 +41,7 @@ export interface Employee {
   employee_code?: string | null;
   biometric_user_id?: string | null;
   branches?: {
-    id: string;
+    id?: string;
     name: string;
     location?: string | null;
   } | null;

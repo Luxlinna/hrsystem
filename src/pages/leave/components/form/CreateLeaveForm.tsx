@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useMemo } from "react";
 import type { Employee, LeaveFormData, LeaveTypeBalanceStats } from "../../types";
 import { useCreateLeaveFormState } from "./useCreateLeaveFormState";
 import { LeaveFormHeader } from "./LeaveFormHeader";
@@ -107,7 +107,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
   }, [formMode, myEmployee, selectedEmployee, isDirectApproval]);
 
   return (
-    <div className={isEmbedded ? "w-full space-y-6 font-sans" : "min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 font-sans"}>
+    <div className={isEmbedded ? "w-full space-y-6 font-sans" : "min-h-screen bg-slate-50/60 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans"}>
       <div className="w-full space-y-6">
         <LeaveFormHeader onBack={onBack} isSuperAdmin={isSuperAdmin} formMode={formMode} />
 
@@ -125,8 +125,8 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
             onSelectEmployee={(empId) => setFormData((prev) => ({ ...prev, employee_id: empId }))}
           />
 
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
-            <h2 className="text-xs font-extrabold text-[#253C7D] uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-4">
+            <h2 className="text-xs font-extrabold text-[#253C7D] dark:text-sky-400 uppercase tracking-wider mb-2 flex items-center gap-2">
               <i className="ri-calendar-todo-line text-base" />
               Leave Type Info
             </h2>

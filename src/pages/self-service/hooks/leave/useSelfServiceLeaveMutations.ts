@@ -124,13 +124,16 @@ export function useSelfServiceLeaveMutations({
           ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
           : "Employee";
 
+        const actorRole = currentEmployee?.role || "Employee";
+
         logActivity({
-          actorId: employeeId,
+          module: "leave",
+          action: "created",
+          entityType: "leave_request",
+          entityId: newRow?.id,
           actorName,
-          action: "create",
-          targetType: "leave_request",
-          targetId: newRow?.id,
-          details: `Self-requested ${formData.leave_type} leave (${days} days) from ${formData.start_date} to ${formData.end_date}`,
+          actorRole,
+          description: `Self-requested ${formData.leave_type} leave (${days} days) from ${formData.start_date} to ${formData.end_date}`,
         });
 
         const roleLower = currentEmployee?.role?.toLowerCase() || "";

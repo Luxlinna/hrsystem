@@ -153,7 +153,7 @@ export function useLeaveApprovalDecision({
     } finally {
       setProcessingApproval(false);
     }
-  }, [selectedRequest, approvalAction, approvalNote, actorName, actorRole, myEmployeeId, myDepartment, canApproveLeave, hasRoleApprovalAccess, isAdmin, isSuperAdmin, isBranchAdmin, loadData, setToast]);
+  }, [selectedRequest, approvalAction, approvalNote, actorName, actorRole, myEmployeeId, myDepartment, hasRoleApprovalAccess, hasManagerEndorseAccess, hasBuAdminEndorseAccess, isAdmin, isSuperAdmin, isBranchAdmin, loadData, setToast]);
 
   const handleCancelRequest = useCallback(async () => {
     if (!cancelTargetRequest) return;

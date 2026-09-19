@@ -2,6 +2,7 @@
 @import "./styles/dark-surfaces.css";
 @import "./styles/dark-palettes.css";
 @import "./styles/dark-components.css";
+@import "./styles/dark-employee-modal.css";
 
 @tailwind base;
 @tailwind components;

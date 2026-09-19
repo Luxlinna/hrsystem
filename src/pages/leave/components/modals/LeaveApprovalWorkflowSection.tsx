@@ -13,8 +13,7 @@ export const LeaveApprovalWorkflowSection = memo(function LeaveApprovalWorkflowS
   const reason = inspectRequest.reason || "";
   const hasStep1Endorsed =
     reason.includes("[Stage: BU Admin Endorsed") ||
-    reason.includes("[Stage: Manager Endorsed") ||
-    inspectRequest.status === "approved";
+    reason.includes("[Stage: Manager Endorsed");
   const isApproved = inspectRequest.status === "approved";
   const isRejected = inspectRequest.status === "rejected";
 

@@ -1,5 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import nodemailer from "npm:nodemailer@6";
+import { createClient } from "@supabase/supabase-js";
+import nodemailer from "nodemailer";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -179,9 +179,9 @@ Deno.serve(async (req) => {
           html: emailHtml,
         });
         emailSent = true;
-      } catch (mailErr: any) {
+      } catch (mailErr) {
         console.error("SMTP send failed:", mailErr);
-        emailError = mailErr.message || String(mailErr);
+        emailError = mailErr instanceof Error ? mailErr.message : String(mailErr);
       }
 
       if (!emailSent) {
@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
     }
 
     let userData = null;
-    let createUserError = null;
+    let createUserError: { message?: string } | Error | null = null;
 
     try {
       const isPhoneSynthetic = isPhoneSyntheticEmail(email);
@@ -233,8 +233,8 @@ Deno.serve(async (req) => {
       });
       userData = result.data;
       createUserError = result.error;
-    } catch (e: any) {
-      createUserError = e;
+    } catch (e) {
+      createUserError = e instanceof Error ? e : new Error(String(e));
     }
 
     let userId: string | null = null;
@@ -324,9 +324,9 @@ Deno.serve(async (req) => {
         html: emailHtml,
       });
       emailSent = true;
-    } catch (mailErr: any) {
+    } catch (mailErr) {
       console.error("SMTP send failed:", mailErr);
-      emailError = mailErr.message || String(mailErr);
+      emailError = mailErr instanceof Error ? mailErr.message : String(mailErr);
     }
 
     if (!emailSent) {
@@ -343,8 +343,9 @@ Deno.serve(async (req) => {
       message: "Invitation sent successfully",
       user: userData?.user ?? { id: userId, email },
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Function error:", err);
-    return json({ error: err.message || "Internal server error" }, 500);
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return json({ error: message }, 500);
   }
 });
