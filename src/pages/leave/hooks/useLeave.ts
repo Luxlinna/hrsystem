@@ -31,10 +31,7 @@ export function useLeave() {
     leaveTypePolicies: data.leaveTypePolicies,
   });
 
-  // 3. Filters hook
-  const filters = useLeaveFilters(data.requests, data.employees);
-
-  // 4. Mutations hook
+  // 3. Mutations hook
   const mutations = useLeaveMutations({
     requests: data.requests,
     employees: data.employees,
@@ -49,6 +46,9 @@ export function useLeave() {
     loadData: data.loadData,
     setToast,
   });
+
+  // 4. Filters hook
+  const filters = useLeaveFilters(data.requests, data.employees, mutations.setInspectRequest);
 
   // 5. Holidays hook
   const holidaysState = useHolidays(data.targetBranch);

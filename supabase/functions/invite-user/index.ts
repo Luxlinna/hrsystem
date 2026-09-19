@@ -151,23 +151,22 @@ Deno.serve(async (req) => {
 
       const inviteLink = linkData.properties.action_link;
       const resolvedName = display_name || authUserData?.user?.user_metadata?.display_name || email.split("@")[0];
+      const cleanBase = resolvedRedirectTo.split("?")[0].replace(/\/$/, "");
+      const safeDirectLink = linkData?.properties?.hashed_token
+        ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
+        : inviteLink;
 
       if (isPhoneSyntheticEmail(email)) {
-        const cleanBase = resolvedRedirectTo.split("?")[0].replace(/\/$/, "");
-        const safeLink = linkData?.properties?.hashed_token
-          ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
-          : inviteLink;
-
         return json({
           success: true,
           message: "Invitation link generated successfully",
-          invite_link: safeLink,
+          invite_link: safeDirectLink,
           channel: "telegram",
           user: { id: userId, email },
         });
       }
 
-      const emailHtml = buildInviteEmail(resolvedName, inviteLink);
+      const emailHtml = buildInviteEmail(resolvedName, safeDirectLink);
 
       let emailSent = false;
       let emailError: string | null = null;
@@ -296,23 +295,22 @@ Deno.serve(async (req) => {
     }
 
     const inviteLink = linkData.properties.action_link;
+    const cleanBase = resolvedRedirectTo.split("?")[0].replace(/\/$/, "");
+    const safeDirectLink = linkData?.properties?.hashed_token
+      ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
+      : inviteLink;
 
     if (isPhoneSyntheticEmail(email)) {
-      const cleanBase = (redirect_to || "http://localhost:3000/reset-password").split("?")[0].replace(/\/$/, "");
-      const safeLink = linkData?.properties?.hashed_token
-        ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
-        : inviteLink;
-
       return json({
         success: true,
         message: "Invitation link generated successfully",
-        invite_link: safeLink,
+        invite_link: safeDirectLink,
         channel: "telegram",
         user: userData?.user ?? { id: userId, email },
       });
     }
 
-    const emailHtml = buildInviteEmail(display_name || email.split("@")[0], inviteLink);
+    const emailHtml = buildInviteEmail(display_name || email.split("@")[0], safeDirectLink);
 
     let emailSent = false;
     let emailError: string | null = null;

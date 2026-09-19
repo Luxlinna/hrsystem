@@ -143,6 +143,10 @@ Deno.serve(async (req) => {
     }
 
     const inviteLink = linkData.properties.action_link;
+    const cleanBase = resolvedRedirectTo.split("?")[0].replace(/\/$/, "");
+    const safeDirectLink = linkData?.properties?.hashed_token
+      ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
+      : inviteLink;
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -159,7 +163,7 @@ Deno.serve(async (req) => {
     <p style="font-size: 16px; margin-top: 0;">Hello <strong>${display_name || email.split("@")[0]}</strong>,</p>
     <p style="font-size: 16px;">You have been invited to join <strong>HR System</strong>. Click the button below to set up your account and create your password.</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${inviteLink}" style="display: inline-block; background: #1e40af; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Set Up Account</a>
+      <a href="${safeDirectLink}" style="display: inline-block; background: #1e40af; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Set Up Account</a>
     </div>
     <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
     <p style="font-size: 12px; color: #94a3b8; margin: 0;">This link expires in 24 hours. If you didn't expect this invitation, please ignore this email.</p>

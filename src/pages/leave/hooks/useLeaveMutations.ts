@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { logActivity } from "@/lib/audit";
-import { notify } from "@/lib/notify";
+import { notifyNewLeaveRequest } from "../services/leaveNotificationService";
 import { uploadMediaToS3 } from "@/lib/s3-storage";
 import type { LeaveRequest, Employee, LeaveFormData } from "../types";
 import { INITIAL_LEAVE_FORM } from "../constants";
@@ -62,36 +62,19 @@ export function useLeaveMutations({
     async (e: React.FormEvent) => {
       e.preventDefault();
       const targetEmpId = formData.employee_id || myEmployee?.id;
-      if (!targetEmpId) {
-        setToast({ type: "error", message: "Please select an employee" });
-        return;
-      }
-      if (!formData.start_date || !formData.end_date) {
-        setToast({ type: "error", message: "Please select start and end dates" });
-        return;
-      }
-      if (new Date(formData.end_date) < new Date(formData.start_date)) {
-        setToast({ type: "error", message: "End date cannot be before start date" });
-        return;
-      }
+      if (!targetEmpId) return setToast({ type: "error", message: "Please select an employee" });
+      if (!formData.start_date || !formData.end_date) return setToast({ type: "error", message: "Please select start and end dates" });
+      if (new Date(formData.end_date) < new Date(formData.start_date)) return setToast({ type: "error", message: "End date cannot be before start date" });
 
       const cleanReason = (formData.reason || "").trim();
       if (!cleanReason || cleanReason.length < 5) {
-        setToast({
-          type: "error",
-          message: "Please provide a valid reason for this leave request.",
-        });
-        return;
+        return setToast({ type: "error", message: "Please provide a valid reason for this leave request." });
       }
 
       const days = calculateDays(formData.start_date, formData.end_date);
       const remaining = getRemaining(targetEmpId, formData.leave_type);
       if (remaining !== null && days > remaining && !isSuperAdmin) {
-        setToast({
-          type: "error",
-          message: `Requested ${days} days exceeds remaining allowance (${remaining} days available).`,
-        });
-        return;
+        return setToast({ type: "error", message: `Requested ${days} days exceeds remaining allowance (${remaining} days available).` });
       }
 
       const overlap = requests.find(
@@ -125,15 +108,9 @@ export function useLeaveMutations({
 
         // Build composite reason with category, remark, and attachment link
         let fullReason = cleanReason;
-        if (formData.category_law) {
-          fullReason = `[Category: ${formData.category_law}]\n${fullReason}`;
-        }
-        if (formData.remark?.trim()) {
-          fullReason = `${fullReason}\n\n[Remark: ${formData.remark.trim()}]`;
-        }
-        if (uploadedUrl) {
-          fullReason = `${fullReason}\n\n[Attachment: ${uploadedUrl}]`;
-        }
+        if (formData.category_law) fullReason = `[Category: ${formData.category_law}]\n${fullReason}`;
+        if (formData.remark?.trim()) fullReason = `${fullReason}\n\n[Remark: ${formData.remark.trim()}]`;
+        if (uploadedUrl) fullReason = `${fullReason}\n\n[Attachment: ${uploadedUrl}]`;
 
         const newStatus = isSuperAdmin ? "approved" : "pending";
 
@@ -177,14 +154,23 @@ export function useLeaveMutations({
           description: `${isSuperAdmin ? "Created & Auto-Approved" : "Submitted"} ${formData.leave_type} leave request for ${days} days (${formData.start_date} to ${formData.end_date}) for ${empName}`,
         });
 
-        notify({
-          source: "leave",
-          type: isSuperAdmin ? "success" : "info",
-          title: isSuperAdmin ? "Leave Approved" : "New Leave Request",
-          message: isSuperAdmin
-            ? `${empName}'s ${formData.leave_type} leave for ${days} day(s) was approved directly.`
-            : `${empName} requested ${days} day(s) ${formData.leave_type} leave (${formData.start_date} to ${formData.end_date})`,
-          entityId: data?.id,
+        const roleLower = requester?.role?.toLowerCase() || "";
+        const isApplicantDirectHr = Boolean(
+          isSuperAdmin || roleLower.includes("super admin") || roleLower.includes("branch admin") || roleLower.includes("bu admin") || roleLower.includes("be admin")
+        );
+
+        await notifyNewLeaveRequest({
+          request: {
+            id: data?.id,
+            leave_type: formData.leave_type,
+            days,
+            start_date: formData.start_date,
+            end_date: formData.end_date,
+            reason: fullReason,
+          },
+          requester,
+          actorName,
+          isDirectHr: isApplicantDirectHr,
         });
 
         await loadData();
@@ -204,24 +190,7 @@ export function useLeaveMutations({
     setFormData,
     submitting,
     handleSubmitRequest,
-    selectedRequest: decision.selectedRequest,
-    setSelectedRequest: decision.setSelectedRequest,
-    approvalNote: decision.approvalNote,
-    setApprovalNote: decision.setApprovalNote,
-    showApprovalModal: decision.showApprovalModal,
-    setShowApprovalModal: decision.setShowApprovalModal,
-    approvalAction: decision.approvalAction,
-    setApprovalAction: decision.setApprovalAction,
-    processingApproval: decision.processingApproval,
-    handleProcessApproval: decision.handleProcessApproval,
-    cancelTargetRequest: decision.cancelTargetRequest,
-    setCancelTargetRequest: decision.setCancelTargetRequest,
-    cancelReason: decision.cancelReason,
-    setCancelReason: decision.setCancelReason,
-    showCancelModal: decision.showCancelModal,
-    setShowCancelModal: decision.setShowCancelModal,
-    processingCancel: decision.processingCancel,
-    handleCancelRequest: decision.handleCancelRequest,
+    ...decision,
     inspectRequest,
     setInspectRequest,
   };

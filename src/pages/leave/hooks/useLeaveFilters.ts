@@ -2,7 +2,11 @@ import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { LeaveRequest, Employee } from "../types";
 
-export function useLeaveFilters(requests: LeaveRequest[], employees: Employee[]) {
+export function useLeaveFilters(
+  requests: LeaveRequest[],
+  employees: Employee[],
+  onInspectRequest?: (req: LeaveRequest) => void
+) {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState<"requests" | "balances" | "calendar">(
@@ -32,15 +36,18 @@ export function useLeaveFilters(requests: LeaveRequest[], employees: Employee[])
   }, [tabParam]);
 
   useEffect(() => {
-    if (!highlightId || requests.length === 0) return;
-    const idx = requests.findIndex((r) => r.id === highlightId);
-    if (idx === -1) return;
+    const targetId = highlightId || searchParams.get("requestId");
+    if (!targetId || requests.length === 0) return;
+    const req = requests.find((r) => r.id === targetId);
+    if (!req) return;
+    const idx = requests.indexOf(req);
     setStatusFilter("all");
     setPage(Math.floor(idx / pageSize) + 1);
     setActiveTab("requests");
+    onInspectRequest?.(req);
     const t = setTimeout(() => {
-      const desktopEl = document.getElementById(`leave-request-desktop-${highlightId}`);
-      const mobileEl = document.getElementById(`leave-request-mobile-${highlightId}`);
+      const desktopEl = document.getElementById(`leave-request-desktop-${targetId}`);
+      const mobileEl = document.getElementById(`leave-request-mobile-${targetId}`);
       const el =
         (desktopEl && desktopEl.offsetParent !== null && desktopEl) ||
         (mobileEl && mobileEl.offsetParent !== null && mobileEl) ||
@@ -50,7 +57,7 @@ export function useLeaveFilters(requests: LeaveRequest[], employees: Employee[])
       el?.focus({ preventScroll: true });
     }, 150);
     return () => clearTimeout(t);
-  }, [highlightId, requests, pageSize]);
+  }, [highlightId, searchParams, requests, pageSize, onInspectRequest]);
 
   const departments = useMemo(() => {
     const set = new Set<string>();

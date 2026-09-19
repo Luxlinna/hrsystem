@@ -15,6 +15,19 @@ export function getNotificationTarget(
   const highlight = entityId ? `?highlight=${entityId}` : "";
   const text = `${title || ""} ${message || ""}`.toLowerCase();
 
+  // Any notification regarding leave requests, endorsements, or decisions
+  // must route straight to the Leave Management page for approval.
+  if (
+    source === "leave" ||
+    text.includes("leave request") ||
+    text.includes("leave endorsed") ||
+    text.includes("leave approved") ||
+    text.includes("leave rejected") ||
+    text.includes("leave")
+  ) {
+    return { path: `/leave${highlight}`, module: "leave" };
+  }
+
   switch (source) {
     case "hiring_request":
       return {

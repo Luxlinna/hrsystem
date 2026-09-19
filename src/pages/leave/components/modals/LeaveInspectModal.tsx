@@ -226,7 +226,11 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
                 }}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
               >
-                {inspectRequest.reason?.includes("[Stage: Manager Endorsed") ? "HR Approve" : "Endorse"}
+                {(() => {
+                  const roleLower = inspectRequest.employees?.role?.toLowerCase() || "";
+                  const isAdminReq = roleLower.includes("super admin") || roleLower.includes("branch admin") || roleLower.includes("bu admin") || roleLower.includes("be admin");
+                  return inspectRequest.reason?.includes("[Stage: Manager Endorsed") || isAdminReq ? "HR Approve" : "Endorse";
+                })()}
               </button>
               <button
                 onClick={() => {

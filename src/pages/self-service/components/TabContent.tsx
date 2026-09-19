@@ -22,7 +22,7 @@ export function TabContent({ activeTab, employee, employeeName, quickCheckIn, qu
         <PayslipTab employeeId={employee.id} employeeName={employeeName} />
       )}
       {activeTab === "leave" && (
-        <LeaveTab employeeId={employee.id} />
+        <LeaveTab employeeId={employee.id} employee={employee} />
       )}
       {activeTab === "attendance" && (
         <AttendanceTab employeeId={employee.id} employee={employee} />

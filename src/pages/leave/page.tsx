@@ -9,11 +9,16 @@ import { LeaveModalsContainer } from "./components/modals/LeaveModalsContainer";
 import { CreateLeaveForm } from "./components/form/CreateLeaveForm";
 import { HolidaysModal } from "../attendance/components/holidays/HolidaysModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
+import { LeaveSettingsView } from "./components/settings/LeaveSettingsView";
+import { LeaveTypeForm } from "./components/settings/LeaveTypeForm";
+import { useLeaveSettings } from "./hooks/useLeaveSettings";
 import { useLeave } from "./hooks/useLeave";
 import { INITIAL_LEAVE_FORM } from "./constants";
 
 export default function Leave() {
   const l = useLeave();
+  const settings = useLeaveSettings();
+  const [viewMode, setViewMode] = useState<"hub" | "settings" | "create_type">("hub");
   const [formMode, setFormMode] = useState<"self" | "for_employee">("self");
   const [showHolidaysModal, setShowHolidaysModal] = useState(false);
 
@@ -71,12 +76,90 @@ export default function Leave() {
         submitting={l.submitting}
         canManage={l.canManage}
         isSuperAdmin={isSuperAdmin}
+        isBranchAdmin={l.isBranchAdmin}
+        isDirectHrApproval={formMode === "self" ? (isSuperAdmin || l.isBranchAdmin) : undefined}
         myApproverName={l.myApproverName}
         hrApprovers={l.hrApprovers}
         getLeaveTypeStats={l.getLeaveTypeStats}
         onSubmit={l.handleSubmitRequest}
         formMode={formMode}
       />
+    );
+  }
+
+  const canModifyLeaveSettings = l.isSuperAdmin || l.isBranchAdmin || l.isAdmin;
+
+  if (viewMode === "create_type") {
+    if (!canModifyLeaveSettings) {
+      return (
+        <div className="min-h-screen bg-slate-50/60 p-6 font-sans">
+          <div className="p-6 bg-white border border-gray-200 rounded-2xl max-w-md mx-auto text-center space-y-3">
+            <i className="ri-shield-keyhole-line text-3xl text-rose-500" />
+            <h3 className="text-base font-bold text-gray-900">Permission Denied</h3>
+            <p className="text-xs text-gray-500">Only BU Admin and Super Admin have permission to create or modify leave types.</p>
+            <button
+              onClick={() => setViewMode("hub")}
+              className="px-4 py-2 bg-[#253C7D] text-white text-xs font-bold rounded-xl"
+            >
+              Back to Leave Hub
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-6">
+        <LeaveTypeForm
+          initialData={settings.editingType}
+          onSave={async (data) => {
+            const success = await settings.handleSave(data);
+            if (success) setViewMode("settings");
+            return success;
+          }}
+          onBack={() => {
+            settings.setEditingType(null);
+            setViewMode("settings");
+          }}
+          saving={settings.saving}
+        />
+      </div>
+    );
+  }
+
+  if (viewMode === "settings") {
+    return (
+      <div className="min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-6">
+        {settings.toast && (
+          <div
+            className={`fixed bottom-5 right-5 z-50 px-4 py-3 rounded-2xl shadow-xl border text-xs font-extrabold flex items-center gap-2 ${
+              settings.toast.type === "success"
+                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                : "bg-rose-50 text-rose-800 border-rose-200"
+            }`}
+          >
+            <span>{settings.toast.message}</span>
+          </div>
+        )}
+        <LeaveSettingsView
+          leaveTypes={settings.leaveTypes}
+          loading={settings.loading}
+          searchQuery={settings.searchQuery}
+          setSearchQuery={settings.setSearchQuery}
+          canModify={canModifyLeaveSettings}
+          onCreateNew={() => {
+            settings.setEditingType(null);
+            setViewMode("create_type");
+          }}
+          onEdit={(type) => {
+            settings.setEditingType(type);
+            setViewMode("create_type");
+          }}
+          onDelete={settings.handleDelete}
+          onToggleActive={settings.handleToggleActive}
+          onBack={() => setViewMode("hub")}
+        />
+      </div>
     );
   }
 
@@ -112,6 +195,8 @@ export default function Leave() {
         canManage={l.canManage}
         onOpenHolidaysModal={() => setShowHolidaysModal(true)}
         holidayCount={l.holidays?.length || 0}
+        canManageSettings={canModifyLeaveSettings}
+        onOpenLeaveSettings={() => setViewMode("settings")}
         onRequestLeave={() => {
           setFormMode("self");
           l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: l.myEmployee?.id || "" });

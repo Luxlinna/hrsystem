@@ -18,11 +18,14 @@ export interface CreateLeaveFormProps {
   submitting: boolean;
   canManage: boolean;
   isSuperAdmin: boolean;
+  isBranchAdmin?: boolean;
+  isDirectHrApproval?: boolean;
   myApproverName: string;
   hrApprovers?: Employee[];
   getLeaveTypeStats: (empId: string, type: string) => LeaveTypeBalanceStats;
   onSubmit: (e: React.FormEvent) => Promise<void>;
   formMode?: "self" | "for_employee";
+  isEmbedded?: boolean;
 }
 
 export const CreateLeaveForm = memo(function CreateLeaveForm({
@@ -34,10 +37,13 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
   submitting,
   canManage,
   isSuperAdmin,
+  isBranchAdmin = false,
+  isDirectHrApproval,
   myApproverName,
   getLeaveTypeStats,
   onSubmit,
   formMode = "self",
+  isEmbedded = false,
 }: CreateLeaveFormProps) {
   const {
     activeEmpId,
@@ -78,8 +84,24 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
 
   const isEmployeeSelectorEditable = canManage && formMode !== "self" && employees.length > 1;
 
+  const isDirectApproval = useMemo(() => {
+    if (isDirectHrApproval !== undefined) return isDirectHrApproval;
+    const target = formMode === "self" ? (myEmployee || selectedEmployee) : selectedEmployee;
+    const targetRole = target?.role?.toLowerCase() || "";
+    const isTargetAdmin =
+      targetRole.includes("super admin") ||
+      targetRole.includes("superadmin") ||
+      targetRole.includes("branch admin") ||
+      targetRole.includes("bu admin") ||
+      targetRole.includes("be admin");
+    if (formMode === "self") {
+      return Boolean(isSuperAdmin || isBranchAdmin || isTargetAdmin);
+    }
+    return isTargetAdmin;
+  }, [isDirectHrApproval, formMode, myEmployee, selectedEmployee, isSuperAdmin, isBranchAdmin]);
+
   return (
-    <div className="min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 font-sans">
+    <div className={isEmbedded ? "w-full space-y-6 font-sans" : "min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 font-sans"}>
       <div className="w-full space-y-6">
         <LeaveFormHeader onBack={onBack} isSuperAdmin={isSuperAdmin} formMode={formMode} />
 
@@ -125,7 +147,11 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
             />
           </div>
 
-          <LeaveFormApproversSection lineManager={lineManager} myApproverName={myApproverName} />
+          <LeaveFormApproversSection
+            lineManager={lineManager}
+            myApproverName={myApproverName}
+            isDirectHrApproval={isDirectApproval}
+          />
 
           <LeaveFormAttachmentSection
             formData={formData}

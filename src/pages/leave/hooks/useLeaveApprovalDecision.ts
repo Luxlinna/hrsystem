@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { logActivity } from "@/lib/audit";
-import { notify } from "@/lib/notify";
-import { notifyTelegramEvent, escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
+import {
+  notifyLeaveManagerEndorsed,
+  notifyLeaveFinalDecision,
+} from "../services/leaveNotificationService";
 import type { LeaveRequest } from "../types";
-import { LEAVE_TYPE_CONFIG } from "../constants";
 
 interface UseLeaveApprovalDecisionProps {
   actorName: string;
@@ -42,25 +43,10 @@ export function useLeaveApprovalDecision({
     if (!selectedRequest) return;
     setProcessingApproval(true);
     try {
-      const isSuperAdminRole =
-        isSuperAdmin ||
-        actorRole?.toLowerCase().includes("super admin") ||
-        actorRole?.toLowerCase().includes("superadmin");
-
-      const isHrManager =
-        actorRole?.toLowerCase().includes("hr manager") ||
-        actorRole?.toLowerCase().includes("hr admin") ||
-        actorRole?.toLowerCase().includes("hr officer") ||
-        actorRole?.toLowerCase().includes("director");
-
-      // Can be HR manager, or the one who has this access at role permission
-      const hasPermissionAccess =
-        isAdmin ||
-        canApproveLeave ||
-        hasRoleApprovalAccess ||
-        isHrManager;
-
-      const isFinalApprover = isSuperAdminRole || hasPermissionAccess;
+      const roleLower = actorRole?.toLowerCase() || "";
+      const isSuperAdminRole = isSuperAdmin || roleLower.includes("super admin") || roleLower.includes("superadmin");
+      const isHrManager = roleLower.includes("hr manager") || roleLower.includes("hr admin") || roleLower.includes("hr officer") || roleLower.includes("director");
+      const isFinalApprover = isSuperAdminRole || isAdmin || canApproveLeave || hasRoleApprovalAccess || isHrManager;
 
       const isApprove = approvalAction === "approved";
       const hasManagerEndorsed = (selectedRequest.reason || "").includes("[Stage: Manager Endorsed");
@@ -68,40 +54,29 @@ export function useLeaveApprovalDecision({
       let finalStatus: "pending" | "approved" | "rejected" = approvalAction;
       let stageTag = "";
       let toastMessage = "";
-      let notifyTitle = "";
-      let notifyMessage = "";
 
       const empName = selectedRequest.employees
         ? `${selectedRequest.employees.first_name} ${selectedRequest.employees.last_name}`
         : "Employee";
 
       if (!isApprove) {
-        // Rejection at any step
         finalStatus = "rejected";
         stageTag = `\n\n[Stage: Rejected by ${actorName} (${actorRole})]${
           approvalNote ? `\n[Reject Reason: ${approvalNote}]` : ""
         }`;
         toastMessage = `Leave request rejected by ${actorName}`;
-        notifyTitle = "Leave Request Rejected";
-        notifyMessage = `Your ${selectedRequest.leave_type} leave was rejected by ${actorName}.`;
       } else if (!isFinalApprover && !hasManagerEndorsed) {
-        // Step 1: Manager Endorsement (Leaves status as 'pending' for Step 2 HR review)
         finalStatus = "pending";
         stageTag = `\n\n[Stage: Manager Endorsed by ${actorName} (${actorRole})]${
           approvalNote ? `\n[Manager Note: ${approvalNote}]` : ""
         }`;
         toastMessage = "Step 1: Endorsed by Manager. Forwarded for HR / Role Permission final approval.";
-        notifyTitle = "Leave Endorsed by Manager";
-        notifyMessage = `Manager ${actorName} endorsed ${empName}'s leave request. Ready for final approval.`;
       } else {
-        // Step 2: Final HR / Role Permission Approval (or Super Admin Direct Approval)
         finalStatus = "approved";
         stageTag = `\n\n[Stage: Final Approved by ${actorName} (${actorRole})]${
           approvalNote ? `\n[Approval Note: ${approvalNote}]` : ""
         }`;
         toastMessage = "Step 2: Granted final approval (HR / Role Permission).";
-        notifyTitle = "Leave Request Fully Approved";
-        notifyMessage = `Your ${selectedRequest.leave_type} leave was granted final approval by ${actorName}.`;
       }
 
       const { error } = await supabase
@@ -131,32 +106,22 @@ export function useLeaveApprovalDecision({
         description: `${toastMessage} for ${empName} (${selectedRequest.days} days)`,
       });
 
-      notify({
-        source: "leave",
-        type: finalStatus === "approved" ? "success" : finalStatus === "rejected" ? "error" : "info",
-        title: notifyTitle,
-        message: notifyMessage,
-        entityId: selectedRequest.id,
-        skipTelegram: true,
-      });
-
-      notifyTelegramEvent(
-        `<b>${
-          finalStatus === "approved"
-            ? "✅ Leave Request Approved (Final HR)"
-            : finalStatus === "rejected"
-            ? "❌ Leave Request Rejected"
-            : "📋 Step 1: Leave Endorsed by Manager"
-        }</b>\n\n` +
-          `<b>Employee:</b> ${escapeTelegramHtml(empName)}\n` +
-          `<b>Type:</b> ${escapeTelegramHtml(
-            LEAVE_TYPE_CONFIG[selectedRequest.leave_type]?.label || selectedRequest.leave_type
-          )}\n` +
-          `<b>Duration:</b> ${selectedRequest.days} day(s) (${selectedRequest.start_date} → ${selectedRequest.end_date})\n` +
-          `<b>Reviewer:</b> ${escapeTelegramHtml(actorName)} (${escapeTelegramHtml(actorRole)})\n` +
-          (approvalNote ? `<b>Note:</b> ${escapeTelegramHtml(approvalNote)}\n` : ""),
-        { text: "View Leave", url: hrNexusUrl(`/leave?highlight=${selectedRequest.id}`) }
-      );
+      if (isApprove && !isFinalApprover && !hasManagerEndorsed) {
+        await notifyLeaveManagerEndorsed({
+          request: selectedRequest,
+          managerName: actorName,
+          managerRole: actorRole,
+          note: approvalNote,
+        });
+      } else {
+        await notifyLeaveFinalDecision({
+          request: selectedRequest,
+          approverName: actorName,
+          approverRole: actorRole,
+          isApproved: isApprove,
+          note: approvalNote,
+        });
+      }
 
       await loadData();
     } catch (err: any) {

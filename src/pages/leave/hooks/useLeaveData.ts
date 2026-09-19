@@ -177,6 +177,7 @@ export function useLeaveData() {
     role,
     isAdmin,
     isSuperAdmin,
+    isBranchAdmin,
     isPartnerBranchBlocked,
     userBranchId,
     userBranchName,
