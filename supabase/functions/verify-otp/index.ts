@@ -55,11 +55,19 @@ Deno.serve(async (req) => {
     }
     const submittedOtp = otp.trim();
 
+    const emailVariants = [normalizedEmail];
+    if (isPhone) {
+      const cleanDigits = normalizedEmail.slice(0, -PHONE_EMAIL_DOMAIN.length);
+      const stripped = cleanDigits.replace(/^0+/, "");
+      emailVariants.push(`${stripped}${PHONE_EMAIL_DOMAIN}`);
+      emailVariants.push(`0${stripped}${PHONE_EMAIL_DOMAIN}`);
+    }
+
     // Find the latest unverified, non-expired OTP
     const { data: otpRecord, error: lookupError } = await admin
       .from("email_otps")
       .select("*")
-      .eq("email", normalizedEmail)
+      .in("email", Array.from(new Set(emailVariants)))
       .eq("verified", false)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })

@@ -216,47 +216,104 @@ Deno.serve(async (req: Request) => {
 
       console.log(`[telegram-bot] Received contact for phone: ${rawContactPhone} -> ${cleanPhone}, chatId: ${chatId}`);
 
-      const settingKey = `tg_chat_${cleanPhone}`;
-      await admin.from("system_settings").upsert({
-        key: settingKey,
-        value: String(chatId),
-        type: "text",
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "key" });
+      const stripped = cleanPhone.replace(/^0+/, "");
+      const settingKeys = Array.from(new Set([
+        `tg_chat_${cleanPhone}`,
+        `tg_chat_0${stripped}`,
+        `tg_chat_${stripped}`,
+      ]));
 
-      // Look up user in auth.users
+      for (const sk of settingKeys) {
+        await admin.from("system_settings").upsert({
+          key: sk,
+          value: String(chatId),
+          type: "text",
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "key" });
+      }
+
+      // Look up the specific user in auth.users / user_role_assignments / employees
       let userFound = false;
-      const userRes = await fetch(
-        `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(syntheticEmail)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${serviceRoleKey}`,
-            apikey: serviceRoleKey,
-          },
-        }
-      );
-      const userList = await userRes.json();
-      const user = userList?.users?.[0];
+      const candidateEmails = [
+        syntheticEmail.toLowerCase(),
+        `${stripped}${PHONE_EMAIL_DOMAIN}`.toLowerCase(),
+        `0${stripped}${PHONE_EMAIL_DOMAIN}`.toLowerCase(),
+      ];
 
-      if (user) {
+      let targetUser: any = null;
+
+      // 1. Check user_role_assignments
+      for (const emailCand of candidateEmails) {
+        const { data: assignment } = await admin
+          .from("user_role_assignments")
+          .select("user_id, display_name, email")
+          .ilike("email", emailCand)
+          .is("deleted_at", null)
+          .maybeSingle();
+
+        if (assignment?.user_id) {
+          const { data: userData, error: userError } = await admin.auth.admin.getUserById(assignment.user_id);
+          if (!userError && userData?.user) {
+            targetUser = userData.user;
+            break;
+          }
+        }
+      }
+
+      // 2. Check employees table
+      const { data: emp } = await admin
+        .from("employees")
+        .select("id, first_name, last_name, phone, email")
+        .is("deleted_at", null)
+        .or(`phone.eq.${cleanPhone},phone.eq.0${stripped},phone.eq.${stripped},phone.eq.855${stripped}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (emp) {
         userFound = true;
-        await admin.auth.admin.updateUserById(user.id, {
+        if (!targetUser && emp.email) {
+          const { data: assignment } = await admin
+            .from("user_role_assignments")
+            .select("user_id")
+            .ilike("email", emp.email)
+            .is("deleted_at", null)
+            .maybeSingle();
+
+          if (assignment?.user_id) {
+            const { data: userData } = await admin.auth.admin.getUserById(assignment.user_id);
+            if (userData?.user) targetUser = userData.user;
+          }
+        }
+      }
+
+      // 3. Fallback: listUsers scan
+      if (!targetUser) {
+        for (let page = 1; page <= 20; page++) {
+          const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+          if (error || !data?.users) break;
+
+          const matched = data.users.find((u: any) => {
+            const uEmail = u.email?.toLowerCase();
+            return candidateEmails.some((ce) => ce === uEmail);
+          });
+
+          if (matched) {
+            targetUser = matched;
+            break;
+          }
+          if (data.users.length < 1000) break;
+        }
+      }
+
+      if (targetUser) {
+        userFound = true;
+        await admin.auth.admin.updateUserById(targetUser.id, {
           user_metadata: {
-            ...user.user_metadata,
+            ...targetUser.user_metadata,
             telegram_chat_id: String(chatId),
             telegram_username: message.from?.username || null,
           },
         });
-      } else {
-        const { data: emp } = await admin
-          .from("employees")
-          .select("id, first_name, last_name, phone")
-          .or(`phone.eq.${cleanPhone},phone.eq.${rawContactPhone},phone.eq.0${cleanPhone}`)
-          .maybeSingle();
-
-        if (emp) {
-          userFound = true;
-        }
       }
 
       const replyText = userFound

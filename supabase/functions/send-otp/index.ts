@@ -76,6 +76,78 @@ function getTransporter() {
   });
 }
 
+async function findAuthUser(admin: any, normalizedEmail: string, cleanPhone?: string) {
+  const candidateEmails = [normalizedEmail.toLowerCase()];
+  if (cleanPhone) {
+    const rawDigits = cleanPhone.replace(/^0+/, "");
+    candidateEmails.push(`${rawDigits}${PHONE_EMAIL_DOMAIN}`.toLowerCase());
+    candidateEmails.push(`0${rawDigits}${PHONE_EMAIL_DOMAIN}`.toLowerCase());
+  }
+
+  // 1. First attempt: Direct lookup in user_role_assignments by email
+  for (const emailCandidate of candidateEmails) {
+    const { data: assignment } = await admin
+      .from("user_role_assignments")
+      .select("user_id, display_name, email")
+      .ilike("email", emailCandidate)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (assignment?.user_id) {
+      const { data: userData, error: userError } = await admin.auth.admin.getUserById(assignment.user_id);
+      if (!userError && userData?.user) {
+        return { user: userData.user, assignment };
+      }
+    }
+  }
+
+  // 2. Second attempt: Direct lookup in employees table by phone
+  if (cleanPhone) {
+    const stripped = cleanPhone.replace(/^0+/, "");
+    const { data: emp } = await admin
+      .from("employees")
+      .select("id, first_name, last_name, phone, email")
+      .is("deleted_at", null)
+      .or(`phone.eq.${cleanPhone},phone.eq.0${stripped},phone.eq.${stripped},phone.eq.855${stripped}`)
+      .limit(1)
+      .maybeSingle();
+
+    if (emp?.email) {
+      const { data: assignment } = await admin
+        .from("user_role_assignments")
+        .select("user_id, display_name, email")
+        .ilike("email", emp.email)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      if (assignment?.user_id) {
+        const { data: userData, error: userError } = await admin.auth.admin.getUserById(assignment.user_id);
+        if (!userError && userData?.user) {
+          return { user: userData.user, assignment, employee: emp };
+        }
+      }
+    }
+  }
+
+  // 3. Third attempt: Scan auth users via listUsers with pagination
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error || !data?.users) break;
+
+    const matched = data.users.find((u: any) => {
+      const uEmail = u.email?.toLowerCase();
+      return candidateEmails.some((ce) => ce === uEmail);
+    });
+
+    if (matched) {
+      return { user: matched, assignment: null };
+    }
+    if (data.users.length < 1000) break;
+  }
+
+  return { user: null, assignment: null };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -95,25 +167,15 @@ Deno.serve(async (req: Request) => {
     }
 
     const isPhone = isPhoneSyntheticEmail(rawIdentifier) || !rawIdentifier.includes("@");
+    const cleanPhoneDigits = isPhone ? normalizePhone(rawIdentifier) : undefined;
     const normalizedEmail = isPhone
       ? (isPhoneSyntheticEmail(rawIdentifier)
           ? rawIdentifier.toLowerCase()
-          : `${normalizePhone(rawIdentifier)}${PHONE_EMAIL_DOMAIN}`)
+          : `${cleanPhoneDigits}${PHONE_EMAIL_DOMAIN}`)
       : rawIdentifier.toLowerCase();
 
-    // Look up user in auth.users by normalized synthetic email / regular email
-    const userRes = await fetch(
-      `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(normalizedEmail)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${serviceRoleKey}`,
-          apikey: serviceRoleKey,
-        },
-      }
-    );
-
-    const userList = await userRes.json();
-    const user = userList?.users?.[0];
+    // Look up the specific user in auth.users / user_role_assignments
+    const { user, assignment } = await findAuthUser(admin, normalizedEmail, cleanPhoneDigits);
 
     if (!user) {
       return json({
@@ -147,10 +209,29 @@ Deno.serve(async (req: Request) => {
       const e164Phone = toE164(cleanPhone);
       const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
 
-      // Get user display name for clean message display
-      const displayName = user.user_metadata?.display_name || (user.user_metadata?.first_name 
-        ? `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`.trim()
-        : cleanPhone);
+      // Resolve accurate user display name: check employee record, role assignment, metadata, then phone
+      let employeeName: string | null = null;
+      const strippedDigits = cleanPhone.replace(/^0+/, "");
+      const { data: emp } = await admin
+        .from("employees")
+        .select("id, first_name, last_name, phone")
+        .is("deleted_at", null)
+        .or(`phone.eq.${cleanPhone},phone.eq.0${strippedDigits},phone.eq.${strippedDigits},phone.eq.855${strippedDigits}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (emp) {
+        const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim();
+        if (fullName) employeeName = fullName;
+      }
+
+      const displayName = employeeName
+        || assignment?.display_name
+        || user.user_metadata?.display_name
+        || (user.user_metadata?.first_name 
+          ? `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`.trim()
+          : null)
+        || cleanPhone;
 
       // 1. Check if user has personal Telegram connected
       let userChatId = user.user_metadata?.telegram_chat_id;
