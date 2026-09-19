@@ -27,6 +27,13 @@ interface LeaveRequestsTabContentProps {
   totalPages: number;
   canApproveLeave: boolean;
   myEmployeeId: string;
+  myDepartment?: string;
+  actorRole?: string;
+  isSuperAdmin?: boolean;
+  isBranchAdmin?: boolean;
+  hasRoleApprovalAccess?: boolean;
+  hasManagerEndorseAccess?: boolean;
+  hasBuAdminEndorseAccess?: boolean;
   onRequestLeave: () => void;
   onOpenApprovalModal: (req: LeaveRequest, action: "approved" | "rejected") => void;
   onOpenCancelModal: (req: LeaveRequest) => void;
@@ -54,6 +61,13 @@ export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
   totalPages,
   canApproveLeave,
   myEmployeeId,
+  myDepartment,
+  actorRole,
+  isSuperAdmin,
+  isBranchAdmin,
+  hasRoleApprovalAccess,
+  hasManagerEndorseAccess,
+  hasBuAdminEndorseAccess,
   onRequestLeave,
   onOpenApprovalModal,
   onOpenCancelModal,
@@ -101,6 +115,13 @@ export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
               requests={pagedRows}
               canApproveLeave={canApproveLeave}
               myEmployeeId={myEmployeeId}
+              myDepartment={myDepartment}
+              actorRole={actorRole}
+              isSuperAdmin={isSuperAdmin}
+              isBranchAdmin={isBranchAdmin}
+              hasRoleApprovalAccess={hasRoleApprovalAccess}
+              hasManagerEndorseAccess={hasManagerEndorseAccess}
+              hasBuAdminEndorseAccess={hasBuAdminEndorseAccess}
               onOpenApprovalModal={onOpenApprovalModal}
               onOpenCancelModal={onOpenCancelModal}
               onInspectRequest={onInspectRequest}
@@ -110,6 +131,13 @@ export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
               requests={pagedRows}
               canApproveLeave={canApproveLeave}
               myEmployeeId={myEmployeeId}
+              myDepartment={myDepartment}
+              actorRole={actorRole}
+              isSuperAdmin={isSuperAdmin}
+              isBranchAdmin={isBranchAdmin}
+              hasRoleApprovalAccess={hasRoleApprovalAccess}
+              hasManagerEndorseAccess={hasManagerEndorseAccess}
+              hasBuAdminEndorseAccess={hasBuAdminEndorseAccess}
               onOpenApprovalModal={onOpenApprovalModal}
               onOpenCancelModal={onOpenCancelModal}
               onInspectRequest={onInspectRequest}

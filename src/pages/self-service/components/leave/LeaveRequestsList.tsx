@@ -61,13 +61,26 @@ export const LeaveRequestsList: React.FC<LeaveRequestsListProps> = ({ requests }
                 {r.status === "pending" && (
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 )}
-                <span
-                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-full capitalize ${
-                    STATUS_COLOR[r.status] || "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {r.status}
-                </span>
+                {(() => {
+                  const hasEndorsed = (r.reason || "").includes("[Stage: Manager Endorsed") || (r.reason || "").includes("[Stage: BU Admin Endorsed");
+                  if (r.status === "pending" && hasEndorsed) {
+                    return (
+                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        Step 2: HR Pending
+                      </span>
+                    );
+                  }
+                  return (
+                    <span
+                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-full capitalize ${
+                        STATUS_COLOR[r.status] || "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {r.status}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-[11px] text-gray-400 mt-1">
                 {new Date(r.created_at).toLocaleDateString("en-US", {

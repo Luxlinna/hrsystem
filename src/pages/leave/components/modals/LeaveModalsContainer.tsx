@@ -38,6 +38,12 @@ interface LeaveModalsContainerProps {
   inspectRequest: LeaveRequest | null;
   setInspectRequest: (req: LeaveRequest | null) => void;
   canApproveLeave: boolean;
+  actorRole?: string;
+  isSuperAdmin?: boolean;
+  isBranchAdmin?: boolean;
+  hasRoleApprovalAccess?: boolean;
+  hasManagerEndorseAccess?: boolean;
+  hasBuAdminEndorseAccess?: boolean;
   onOpenApprovalModal: (req: LeaveRequest, action: "approved" | "rejected") => void;
   onOpenCancelModal: (req: LeaveRequest) => void;
 }
@@ -72,6 +78,12 @@ export const LeaveModalsContainer = memo(function LeaveModalsContainer({
   inspectRequest,
   setInspectRequest,
   canApproveLeave,
+  actorRole,
+  isSuperAdmin,
+  isBranchAdmin,
+  hasRoleApprovalAccess,
+  hasManagerEndorseAccess,
+  hasBuAdminEndorseAccess,
   onOpenApprovalModal,
   onOpenCancelModal,
 }: LeaveModalsContainerProps) {
@@ -117,6 +129,13 @@ export const LeaveModalsContainer = memo(function LeaveModalsContainer({
         onClose={() => setInspectRequest(null)}
         canApproveLeave={canApproveLeave}
         myEmployeeId={myEmployee?.id || ""}
+        myDepartment={myEmployee?.department || ""}
+        actorRole={actorRole}
+        isSuperAdmin={isSuperAdmin}
+        isBranchAdmin={isBranchAdmin}
+        hasRoleApprovalAccess={hasRoleApprovalAccess}
+        hasManagerEndorseAccess={hasManagerEndorseAccess}
+        hasBuAdminEndorseAccess={hasBuAdminEndorseAccess}
         onOpenApprovalModal={onOpenApprovalModal}
         onOpenCancelModal={onOpenCancelModal}
       />

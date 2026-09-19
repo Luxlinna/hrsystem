@@ -10,7 +10,9 @@ export const COLORS = [
 ] as const;
 
 export const ACTION_OVERRIDES = [
-  { group: "action" as const, key: "leave_approve", label: "Can approve / reject leave requests", hint: SCOPE_HINTS.leave_approve },
+  { group: "action" as const, key: "leave_manager_endorse", label: "Leave Stage 1: Can endorse team member leave requests (Line Manager)", hint: SCOPE_HINTS.leave_manager_endorse },
+  { group: "action" as const, key: "leave_bu_admin_endorse", label: "Leave Stage 1: Can endorse department manager leave requests (BU Admin)", hint: SCOPE_HINTS.leave_bu_admin_endorse },
+  { group: "action" as const, key: "leave_approve", label: "Leave Stage 2: Can grant final HR Division authorization (Final Sign-off)", hint: SCOPE_HINTS.leave_approve },
   { group: "action" as const, key: "meeting_rooms_approve", label: "Can approve / reject meeting room bookings", hint: SCOPE_HINTS.meeting_rooms_approve },
   { group: "action" as const, key: "hiring_requests_branch_approve", label: "Stage 1: Can approve branch hiring requests (Forward to HR)", hint: SCOPE_HINTS.hiring_requests_branch_approve },
   { group: "action" as const, key: "hiring_requests_hr_review", label: "Stage 2: Can review requisitions in HR Division (Forward to HR Admin)", hint: SCOPE_HINTS.hiring_requests_hr_review },

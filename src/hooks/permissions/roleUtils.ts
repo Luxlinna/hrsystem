@@ -40,6 +40,8 @@ export function toUserRole(data: any): UserRole | null {
     employees_manage: !!r.employees_manage,
     self_service_all_employees: !!r.self_service_all_employees,
     leave_view_all_employees: !!r.leave_view_all_employees,
+    leave_manager_endorse: !!(r.leave_manager_endorse ?? localScopes.leave_manager_endorse),
+    leave_bu_admin_endorse: !!(r.leave_bu_admin_endorse ?? localScopes.leave_bu_admin_endorse),
     leave_approve: !!r.leave_approve,
     payroll_view_all_employees: !!r.payroll_view_all_employees,
     attendance_view_all_employees: !!r.attendance_view_all_employees,

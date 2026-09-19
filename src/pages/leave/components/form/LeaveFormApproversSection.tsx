@@ -1,17 +1,23 @@
 import React from "react";
 import type { Employee } from "../../types";
+import type { ApplicantTier } from "../../utils/leaveApprovalChain";
 
 interface LeaveFormApproversSectionProps {
   lineManager: Employee | null;
   myApproverName: string;
   isDirectHrApproval?: boolean;
+  applicantTier?: ApplicantTier;
 }
 
 export function LeaveFormApproversSection({
   lineManager,
   myApproverName,
   isDirectHrApproval = false,
+  applicantTier = isDirectHrApproval ? "bu_admin" : "employee",
 }: LeaveFormApproversSectionProps) {
+  const isBuAdmin = applicantTier === "bu_admin" || isDirectHrApproval;
+  const isManager = applicantTier === "manager";
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs space-y-5">
       <div className="flex items-center justify-between">
@@ -19,10 +25,10 @@ export function LeaveFormApproversSection({
           <i className="ri-shield-check-line text-base" />
           Approvers Info
         </h2>
-        {isDirectHrApproval ? (
+        {isBuAdmin ? (
           <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/70 flex items-center gap-1.5">
             <i className="ri-checkbox-circle-fill text-xs text-emerald-600" />
-            1-Step Direct Approval Chain
+            1-Step Direct HR Approval
           </span>
         ) : (
           <span className="text-[11px] font-semibold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/60">
@@ -32,17 +38,30 @@ export function LeaveFormApproversSection({
       </div>
 
       <div className="space-y-4">
-        {/* If Super Admin or BE/BU Admin: Step 1 (Manager) is bypassed completely */}
-        {!isDirectHrApproval && (
+        {/* Step 1: BU Admin (for Manager) OR Line Manager (for Employee) */}
+        {!isBuAdmin && (
           <div className="rounded-xl border border-gray-200 overflow-hidden shadow-2xs">
             <div className="bg-[#4A72B2] text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between">
-              <span>Step 1 — Employee Direct Manager</span>
-              <span className="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-md">
-                First Endorsement
-              </span>
+              <span>{isManager ? "Step 1 — BU Admin Endorsement" : "Step 1 — Employee Direct Manager"}</span>
+              <span className="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-md">First Endorsement</span>
             </div>
             <div className="p-4 bg-white">
-              {lineManager ? (
+              {isManager ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-[#253C7D] font-bold text-xs flex items-center justify-center border border-indigo-200">
+                      <i className="ri-shield-user-line text-lg" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-900">BU Admin / Branch Leadership</p>
+                      <p className="text-[11px] text-gray-500">Authorized BU Admin reviews manager requests</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    BU Admin Endorsement
+                  </span>
+                </div>
+              ) : lineManager ? (
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     {lineManager.avatar_url ? (
@@ -58,73 +77,46 @@ export function LeaveFormApproversSection({
                       </div>
                     )}
                     <div>
-                      <p className="text-xs font-bold text-gray-900">
-                        {lineManager.first_name} {lineManager.last_name}
-                      </p>
-                      <p className="text-[11px] text-gray-500">
-                        {lineManager.role || "Line Manager"}
-                        {lineManager.department ? ` • ${lineManager.department}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-[#253C7D] border border-blue-200 whitespace-nowrap">
-                    Direct Supervisor
-                  </span>
-                </div>
-              ) : myApproverName ? (
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 text-[#253C7D] font-bold text-xs flex items-center justify-center border border-blue-200">
-                      {myApproverName.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-gray-900">{myApproverName}</p>
-                      <p className="text-[11px] text-gray-500">Direct Line Manager</p>
+                      <p className="text-xs font-bold text-gray-900">{lineManager.first_name} {lineManager.last_name}</p>
+                      <p className="text-[11px] text-gray-500">{lineManager.role || "Line Manager"}{lineManager.department ? ` • ${lineManager.department}` : ""}</p>
                     </div>
                   </div>
                   <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-[#253C7D] border border-blue-200">
-                    Assigned Manager
+                    Direct Supervisor
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 font-bold text-xs flex items-center justify-center border border-gray-200">
-                      <i className="ri-user-follow-line text-sm" />
+                    <div className="w-10 h-10 rounded-full bg-blue-100 text-[#253C7D] font-bold text-xs flex items-center justify-center border border-blue-200">
+                      {myApproverName ? myApproverName.charAt(0) : <i className="ri-user-follow-line text-sm" />}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-800">
-                        Department Manager / Supervisor
-                      </p>
-                      <p className="text-[11px] text-gray-400">
-                        Employee must request first; line manager will review and endorse before HR
-                      </p>
+                      <p className="text-xs font-bold text-gray-900">{myApproverName || "Department Manager / Supervisor"}</p>
+                      <p className="text-[11px] text-gray-500">Direct Line Manager</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-                    Department Lead
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-[#253C7D] border border-blue-200">
+                    Direct Supervisor
                   </span>
                 </div>
               )}
               <p className="text-[11px] text-gray-400 mt-2.5 pt-2 border-t border-gray-100 flex items-center gap-1.5">
                 <i className="ri-information-line text-[#253C7D]" />
-                Employee requests &rarr; Direct manager reviews and endorses &rarr; Forwards to HR Manager.
+                {isManager
+                  ? "Manager requests → BU Admin reviews and endorses → Forwards to HR Division for final approval."
+                  : "Employee requests → Direct manager reviews and endorses → Forwards to HR Division for final approval."}
               </p>
             </div>
           </div>
         )}
 
-        {/* HR Division Final Authorization */}
+        {/* Step 2 (or Step 1 for BU Admin): HR Division Final Authorization */}
         <div className="rounded-xl border border-gray-200 overflow-hidden shadow-2xs">
           <div className="bg-[#4A72B2] text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between">
-            <span>
-              {isDirectHrApproval ? "Step 1 — Final Authorization (HR Division)" : "Step 2 — Final Authorization"}
-            </span>
-            <span className="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-md">
-              Final Sign-Off
-            </span>
+            <span>{isBuAdmin ? "Step 1 — Final Authorization (HR Division)" : "Step 2 — Final Authorization (HR Division)"}</span>
+            <span className="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-md">Final Approval</span>
           </div>
-
           <div className="p-4 bg-white">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -132,24 +124,22 @@ export function LeaveFormApproversSection({
                   <i className="ri-shield-check-line text-lg" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-900">
-                    HR Division / Final Approval Authority
-                  </p>
-                  <p className="text-[11px] text-gray-500 font-medium">
-                    Authorized leave approval team (HR Division)
-                  </p>
+                  <p className="text-xs font-bold text-gray-900">HR Division / Final Approval Authority</p>
+                  <p className="text-[11px] text-gray-500 font-medium">Authorized leave approval team (HR Division)</p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 Final Authority
               </span>
             </div>
             <p className="text-[11px] text-gray-500 mt-2.5 pt-2 border-t border-gray-100 flex items-center gap-1.5">
               <i className="ri-checkbox-circle-line text-emerald-600 text-xs flex-shrink-0" />
-              {isDirectHrApproval ? (
-                <span>Admin request: Direct manager review is not required. Directly routed to HR Division for final approval.</span>
+              {isBuAdmin ? (
+                <span>BU Admin request: Manager endorsement is not required. Directly routed to HR Division for final approval.</span>
+              ) : isManager ? (
+                <span>After BU Admin endorsement, automatically routed to HR Division for final approval.</span>
               ) : (
-                <span>After line manager endorsement, automatically routed for final sign-off.</span>
+                <span>After line manager endorsement, automatically routed to HR Division for final approval.</span>
               )}
             </p>
           </div>

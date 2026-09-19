@@ -2,11 +2,19 @@ import { memo } from "react";
 import type { LeaveRequest } from "../../types";
 import { LEAVE_TYPE_CONFIG, STATUS_CONFIG } from "../../constants";
 import { formatDate, formatDateShort } from "../../dateUtils";
+import { canUserActOnRequest, getRequestTier } from "../../utils/leaveApprovalChain";
 
 interface LeaveTableViewProps {
   requests: LeaveRequest[];
   canApproveLeave: boolean;
   myEmployeeId: string;
+  myDepartment?: string;
+  actorRole?: string;
+  isSuperAdmin?: boolean;
+  isBranchAdmin?: boolean;
+  hasRoleApprovalAccess?: boolean;
+  hasManagerEndorseAccess?: boolean;
+  hasBuAdminEndorseAccess?: boolean;
   onOpenApprovalModal: (req: LeaveRequest, action: "approved" | "rejected") => void;
   onOpenCancelModal: (req: LeaveRequest) => void;
   onInspectRequest: (req: LeaveRequest) => void;
@@ -14,8 +22,15 @@ interface LeaveTableViewProps {
 
 export const LeaveTableView = memo(function LeaveTableView({
   requests,
-  canApproveLeave,
+  canApproveLeave: _canApproveLeave,
   myEmployeeId,
+  myDepartment,
+  actorRole,
+  isSuperAdmin,
+  isBranchAdmin,
+  hasRoleApprovalAccess,
+  hasManagerEndorseAccess,
+  hasBuAdminEndorseAccess,
   onOpenApprovalModal,
   onOpenCancelModal,
   onInspectRequest,
@@ -40,6 +55,13 @@ export const LeaveTableView = memo(function LeaveTableView({
             const statusCfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.pending;
             const isOwn = r.employee_id === myEmployeeId;
             const canCancel = isOwn && (r.status === "pending" || r.status === "approved");
+            const tier = getRequestTier(r);
+            const hasEndorsed = (r.reason || "").includes("[Stage: Manager Endorsed") || (r.reason || "").includes("[Stage: BU Admin Endorsed");
+            const { canAct, actionLabel } = canUserActOnRequest({
+              request: r, myEmployeeId, myDepartment, actorRole,
+              isSuperAdmin, isBranchAdmin, hasRoleApprovalAccess,
+              hasManagerEndorseAccess, hasBuAdminEndorseAccess,
+            });
 
             return (
               <tr
@@ -85,10 +107,20 @@ export const LeaveTableView = memo(function LeaveTableView({
                 </td>
 
                 <td className="px-5 py-3.5 whitespace-nowrap">
-                  {r.status === "pending" && r.reason?.includes("[Stage: Manager Endorsed") ? (
+                  {r.status === "pending" && hasEndorsed ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border bg-amber-50 text-amber-700 border-amber-200">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                       Step 2: HR Pending
+                    </span>
+                  ) : r.status === "pending" && tier === "bu_admin" ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border bg-indigo-50 text-indigo-700 border-indigo-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                      HR Review
+                    </span>
+                  ) : r.status === "pending" && tier === "manager" ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border bg-purple-50 text-purple-700 border-purple-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                      Step 1: BU Admin Review
                     </span>
                   ) : r.status === "pending" ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border bg-sky-50 text-sky-700 border-sky-200">
@@ -114,13 +146,13 @@ export const LeaveTableView = memo(function LeaveTableView({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center justify-end gap-1.5">
-                    {canApproveLeave && r.status === "pending" && (
+                    {canAct && (
                       <>
                         <button
                           onClick={() => onOpenApprovalModal(r, "approved")}
                           className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer shadow-2xs"
                         >
-                          {r.reason?.includes("[Stage: Manager Endorsed") ? "HR Approve" : "Endorse"}
+                          {actionLabel}
                         </button>
                         <button
                           onClick={() => onOpenApprovalModal(r, "rejected")}

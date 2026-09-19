@@ -46,9 +46,12 @@ export function RequireRecycleBin({ children }: { children: ReactNode }) {
 }
 
 export function RequireModule({ module, children }: { module: string; children: ReactNode }) {
-  const { can, loading } = usePermissions();
+  const { can, loading, role } = usePermissions();
 
   if (loading) return <LoadingScreen />;
+  if (module === "leave" && (can("leave") || role?.leave_approve)) {
+    return <ErrorBoundary fallbackTitle="Error loading leave module">{children}</ErrorBoundary>;
+  }
   if (!can(module)) {
     return <AccessDenied message="You don't have permission to access this module. Ask an admin to grant it in the Admin Portal." />;
   }

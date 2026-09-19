@@ -120,7 +120,7 @@ export function useTopBar() {
     if (!n.is_read) markRead(n.id);
     setNotifOpen(false);
     const target = getNotificationTarget(n.source, n.entity_id, n.title, n.message);
-    if (target && can(target.module)) navigate(target.path);
+    if (target && (target.module === "leave" || can(target.module))) navigate(target.path);
   }, [markRead, can, navigate]);
 
   // ── Auth ────────────────────────────────────────────────────────────────────

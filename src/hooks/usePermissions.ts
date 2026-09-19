@@ -165,23 +165,17 @@ export function usePermissions(): UsePermissionsReturn {
     };
   }, [user, authLoading, resolveRole]);
 
-  const isBranchAdmin =
-    !loading &&
-    !!role &&
-    !role.is_admin &&
-    (/(branch|bu)\s*.*admin/i.test(role.name?.trim() || "") ||
-      /(branch|bu)\s*ceo/i.test(role.name?.trim() || "") ||
-      role.allowed_modules.includes("admin"));
+  const isBranchAdmin = !loading && !!role && !role.is_admin &&
+    (/(branch|bu)\s*.*admin/i.test(role.name?.trim() || "") || /(branch|bu)\s*ceo/i.test(role.name?.trim() || "") || role.allowed_modules.includes("admin"));
 
   const can = useCallback(
     (module: string): boolean => {
-      if (loading) return false;
-      if (!role) return false;
-      if (role.is_admin) return true;
-      if (role.allowed_modules.includes("*")) return true;
+      if (loading || !role) return false;
+      if (role.is_admin || role.allowed_modules.includes("*")) return true;
       const roleName = (role.name || "").trim().toLowerCase();
       if (/(branch|bu)\s*.*admin/i.test(roleName) || /(branch|bu)\s*ceo/i.test(roleName)) return true;
       if (module === "dashboard" || module === "home") return true;
+      if (module === "leave" && (role.leave_approve || role.leave_view_all_employees || role.leave_view_own_branch)) return true;
       return role.allowed_modules.includes(module);
     },
     [loading, role]

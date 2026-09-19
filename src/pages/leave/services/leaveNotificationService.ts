@@ -3,6 +3,7 @@ import { notify } from "@/lib/notify";
 import { notifyTelegramEvent, escapeTelegramHtml, hrNexusUrl } from "@/lib/telegramNotify";
 import type { Employee, LeaveRequest } from "../types";
 import { LEAVE_TYPE_CONFIG } from "../constants";
+import { getApplicantTier } from "../utils/leaveApprovalChain";
 
 export async function notifyNewLeaveRequest({
   request,
@@ -18,14 +19,24 @@ export async function notifyNewLeaveRequest({
   const empName = requester ? `${requester.first_name} ${requester.last_name}`.trim() : actorName;
   const leaveLabel = LEAVE_TYPE_CONFIG[request.leave_type]?.label || request.leave_type;
   const durationStr = `${request.days} day(s) (${request.start_date} → ${request.end_date})`;
+  const tier = getApplicantTier(requester, isDirectHr);
 
   // 1. In-App Notifications
-  if (isDirectHr) {
+  if (tier === "bu_admin") {
     notify({
       source: "leave",
       type: "action_required",
-      title: "Admin Leave Request — Final HR Approval",
-      message: `${empName} (${requester?.role || "Admin"}) submitted a ${leaveLabel} leave request (${durationStr}). Directly routed to HR Division for final approval.`,
+      title: "BU Admin Leave Request — Final HR Approval",
+      message: `${empName} (${requester?.role || "BU Admin"}) submitted a ${leaveLabel} leave request (${durationStr}). Directly routed to HR Division for final approval.`,
+      entityId: request.id,
+      skipTelegram: true,
+    });
+  } else if (tier === "manager") {
+    notify({
+      source: "leave",
+      type: "action_required",
+      title: "Manager Leave Request — BU Admin Endorsement Required",
+      message: `${empName} (${requester?.role || "Manager"}) submitted a ${leaveLabel} leave request (${durationStr}). Please review and endorse.`,
       entityId: request.id,
       skipTelegram: true,
     });
@@ -51,13 +62,20 @@ export async function notifyNewLeaveRequest({
   }
 
   // 2. Telegram Group: HRM_OPS_Notifications
-  const actionButtonText = isDirectHr ? "Review & Approve (HR)" : "Review & Endorse";
-  const statusStr = isDirectHr
+  const actionButtonText = tier === "bu_admin"
+    ? "Review & Approve (HR)"
+    : tier === "manager"
+    ? "Review & Endorse (BU Admin)"
+    : "Review & Endorse";
+
+  const statusStr = tier === "bu_admin"
     ? "Awaiting HR Division Final Approval"
+    : tier === "manager"
+    ? "Awaiting BU Admin Endorsement (Step 1)"
     : "Awaiting Line Manager Endorsement (Step 1)";
 
   await notifyTelegramEvent(
-    `<b>${isDirectHr ? "⭐ Admin Leave Request Submitted" : "📋 New Leave Request Submitted"}</b>\n\n` +
+    `<b>${tier === "bu_admin" ? "⭐ BU Admin Leave Request Submitted" : tier === "manager" ? "💼 Manager Leave Request Submitted" : "📋 New Leave Request Submitted"}</b>\n\n` +
       `<b>Employee:</b> ${escapeTelegramHtml(empName)}\n` +
       `<b>Role / Dept:</b> ${escapeTelegramHtml(requester?.role || "Staff")} • ${escapeTelegramHtml(requester?.department || "General")}\n` +
       `<b>Leave Type:</b> ${escapeTelegramHtml(leaveLabel)}\n` +
@@ -73,17 +91,20 @@ export async function notifyLeaveManagerEndorsed({
   managerName,
   managerRole,
   note,
+  isBuAdminEndorsement = false,
 }: {
   request: LeaveRequest;
   managerName: string;
   managerRole: string;
   note?: string;
+  isBuAdminEndorsement?: boolean;
 }) {
   const empName = request.employees
     ? `${request.employees.first_name} ${request.employees.last_name}`.trim()
     : "Employee";
   const leaveLabel = LEAVE_TYPE_CONFIG[request.leave_type]?.label || request.leave_type;
   const durationStr = `${request.days} day(s) (${request.start_date} → ${request.end_date})`;
+  const endorserTitle = isBuAdminEndorsement ? "BU Admin" : "Line Manager";
 
   // 1. Notify the Employee that Step 1 was endorsed
   if (request.employee_id) {
@@ -91,8 +112,8 @@ export async function notifyLeaveManagerEndorsed({
       recipientUserId: request.employee_id,
       source: "leave",
       type: "info",
-      title: "Leave Endorsed by Manager",
-      message: `Your line manager ${managerName} endorsed your ${leaveLabel} leave request. Forwarded to HR Division for final approval.`,
+      title: `Leave Endorsed by ${endorserTitle}`,
+      message: `${endorserTitle} ${managerName} endorsed your ${leaveLabel} leave request. Forwarded to HR Division for final approval.`,
       entityId: request.id,
       skipTelegram: true,
     });
@@ -102,8 +123,8 @@ export async function notifyLeaveManagerEndorsed({
   notify({
     source: "leave",
     type: "action_required",
-    title: "Step 1 Endorsed — Final HR Approval Required",
-    message: `Manager ${managerName} endorsed ${empName}'s ${leaveLabel} leave (${durationStr}). Ready for final authorization.`,
+    title: `Step 1 Endorsed (${endorserTitle}) — Final HR Approval Required`,
+    message: `${endorserTitle} ${managerName} endorsed ${empName}'s ${leaveLabel} leave (${durationStr}). Ready for final authorization.`,
     entityId: request.id,
     skipTelegram: true,
   });
@@ -114,8 +135,8 @@ export async function notifyLeaveManagerEndorsed({
       `<b>Employee:</b> ${escapeTelegramHtml(empName)}\n` +
       `<b>Leave Type:</b> ${escapeTelegramHtml(leaveLabel)}\n` +
       `<b>Duration:</b> ${durationStr}\n` +
-      `<b>Endorsed By:</b> ${escapeTelegramHtml(managerName)} (${escapeTelegramHtml(managerRole)})\n` +
-      (note ? `<b>Manager Note:</b> ${escapeTelegramHtml(note)}\n` : "") +
+      `<b>Endorsed By:</b> ${escapeTelegramHtml(managerName)} (${escapeTelegramHtml(endorserTitle)})\n` +
+      (note ? `<b>Note:</b> ${escapeTelegramHtml(note)}\n` : "") +
       `<b>Next Step:</b> Final sign-off by HR Division`,
     { text: "Review for Final Approval", url: hrNexusUrl(`/leave?highlight=${request.id}`) }
   );

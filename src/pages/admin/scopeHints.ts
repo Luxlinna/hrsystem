@@ -1,5 +1,7 @@
 export const SCOPE_HINTS: Record<string, string> = {
-  leave_approve: "Off by default. Required to act on someone else's leave request.",
+  leave_manager_endorse: "Stage 1: Can review & endorse Step 1 leave applications for direct team members (Line Manager).",
+  leave_bu_admin_endorse: "Stage 1: Can review & endorse Step 1 leave applications for Department Managers at Business Unit / Branch level.",
+  leave_approve: "Stage 2: Authorized to perform final HR Division sign-off on leave requests (for employee, manager, and BU Admin requests).",
   meeting_rooms_approve: "Allows this role to approve, reject, and adjust meeting room bookings.",
   hiring_requests_branch_approve: "Stage 1: Endorse requisitions for branch and route to HR.",
   hiring_requests_hr_review: "Stage 2: Review and endorse incoming branch requisitions.",

@@ -12,6 +12,8 @@ export interface AppRole {
   employees_manage: boolean;
   self_service_all_employees: boolean;
   leave_view_all_employees: boolean;
+  leave_manager_endorse?: boolean;
+  leave_bu_admin_endorse?: boolean;
   leave_approve: boolean;
   payroll_view_all_employees: boolean;
   attendance_view_all_employees: boolean;
@@ -100,6 +102,8 @@ export interface RoleFormState {
   employees_manage: boolean;
   self_service_all_employees: boolean;
   leave_view_all_employees: boolean;
+  leave_manager_endorse?: boolean;
+  leave_bu_admin_endorse?: boolean;
   leave_approve: boolean;
   payroll_view_all_employees: boolean;
   attendance_view_all_employees: boolean;

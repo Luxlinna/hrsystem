@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 import type { LeaveRequest, Employee } from "../types";
 
 export function useLeaveFilters(
@@ -27,6 +28,7 @@ export function useLeaveFilters(
 
   // Deep link highlight
   const highlightId = searchParams.get("highlight");
+  const handledTargetRef = useRef<string | null>(null);
 
   const tabParam = searchParams.get("tab");
   useEffect(() => {
@@ -37,26 +39,49 @@ export function useLeaveFilters(
 
   useEffect(() => {
     const targetId = highlightId || searchParams.get("requestId");
-    if (!targetId || requests.length === 0) return;
-    const req = requests.find((r) => r.id === targetId);
-    if (!req) return;
-    const idx = requests.indexOf(req);
-    setStatusFilter("all");
-    setPage(Math.floor(idx / pageSize) + 1);
-    setActiveTab("requests");
-    onInspectRequest?.(req);
-    const t = setTimeout(() => {
-      const desktopEl = document.getElementById(`leave-request-desktop-${targetId}`);
-      const mobileEl = document.getElementById(`leave-request-mobile-${targetId}`);
-      const el =
-        (desktopEl && desktopEl.offsetParent !== null && desktopEl) ||
-        (mobileEl && mobileEl.offsetParent !== null && mobileEl) ||
-        desktopEl ||
-        mobileEl;
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      el?.focus({ preventScroll: true });
-    }, 150);
-    return () => clearTimeout(t);
+    if (!targetId || handledTargetRef.current === targetId) return;
+
+    const req = requests.find((r) => r.id === targetId || r.employee_id === targetId);
+    if (req) {
+      handledTargetRef.current = targetId;
+      setStatusFilter("all");
+      const idx = requests.indexOf(req);
+      if (idx !== -1) setPage(Math.floor(idx / pageSize) + 1);
+      setActiveTab("requests");
+      onInspectRequest?.(req);
+      const t = setTimeout(() => {
+        const desktopEl = document.getElementById(`leave-request-desktop-${req.id}`);
+        const mobileEl = document.getElementById(`leave-request-mobile-${req.id}`);
+        const el =
+          (desktopEl && desktopEl.offsetParent !== null && desktopEl) ||
+          (mobileEl && mobileEl.offsetParent !== null && mobileEl) ||
+          desktopEl ||
+          mobileEl;
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 150);
+      return () => clearTimeout(t);
+    }
+
+    // Direct fallback fetch if request is cross-branch or not yet in array
+    supabase
+      .from("leave_requests")
+      .select("id, employee_id, leave_type, start_date, end_date, days, status, reason, created_at, employees(first_name, last_name, role, department, avatar_url, email, branch_id, reports_to)")
+      .or(`id.eq.${targetId},employee_id.eq.${targetId}`)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data: fetched }) => {
+        if (fetched) {
+          handledTargetRef.current = targetId;
+          const normalized = {
+            ...fetched,
+            employees: Array.isArray(fetched.employees) ? fetched.employees[0] : fetched.employees || null,
+          } as LeaveRequest;
+          setStatusFilter("all");
+          setActiveTab("requests");
+          onInspectRequest?.(normalized);
+        }
+      });
   }, [highlightId, searchParams, requests, pageSize, onInspectRequest]);
 
   const departments = useMemo(() => {

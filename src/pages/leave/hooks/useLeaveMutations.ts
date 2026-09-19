@@ -17,7 +17,10 @@ interface UseLeaveMutationsProps {
   canApproveLeave?: boolean;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  isBranchAdmin?: boolean;
   hasRoleApprovalAccess?: boolean;
+  hasManagerEndorseAccess?: boolean;
+  hasBuAdminEndorseAccess?: boolean;
   getRemaining: (employeeId: string, type: string) => number | null;
   loadData: () => Promise<void>;
   setToast: (toast: { type: "success" | "error" | "info"; message: string } | null) => void;
@@ -32,7 +35,10 @@ export function useLeaveMutations({
   canApproveLeave,
   isAdmin,
   isSuperAdmin: isSuperAdminProp,
+  isBranchAdmin,
   hasRoleApprovalAccess,
+  hasManagerEndorseAccess,
+  hasBuAdminEndorseAccess,
   getRemaining,
   loadData,
   setToast,
@@ -50,10 +56,15 @@ export function useLeaveMutations({
   const decision = useLeaveApprovalDecision({
     actorName,
     actorRole,
+    myEmployeeId: myEmployee?.id,
+    myDepartment: myEmployee?.department,
     canApproveLeave,
     isAdmin,
     isSuperAdmin,
+    isBranchAdmin,
     hasRoleApprovalAccess,
+    hasManagerEndorseAccess,
+    hasBuAdminEndorseAccess,
     loadData,
     setToast,
   });
@@ -65,11 +76,8 @@ export function useLeaveMutations({
       if (!targetEmpId) return setToast({ type: "error", message: "Please select an employee" });
       if (!formData.start_date || !formData.end_date) return setToast({ type: "error", message: "Please select start and end dates" });
       if (new Date(formData.end_date) < new Date(formData.start_date)) return setToast({ type: "error", message: "End date cannot be before start date" });
-
       const cleanReason = (formData.reason || "").trim();
-      if (!cleanReason || cleanReason.length < 5) {
-        return setToast({ type: "error", message: "Please provide a valid reason for this leave request." });
-      }
+      if (!cleanReason || cleanReason.length < 5) return setToast({ type: "error", message: "Please provide a valid reason for this leave request." });
 
       const days = calculateDays(formData.start_date, formData.end_date);
       const remaining = getRemaining(targetEmpId, formData.leave_type);
@@ -184,14 +192,7 @@ export function useLeaveMutations({
   );
 
   return {
-    showForm,
-    setShowForm,
-    formData,
-    setFormData,
-    submitting,
-    handleSubmitRequest,
-    ...decision,
-    inspectRequest,
-    setInspectRequest,
+    showForm, setShowForm, formData, setFormData, submitting,
+    handleSubmitRequest, ...decision, inspectRequest, setInspectRequest,
   };
 }

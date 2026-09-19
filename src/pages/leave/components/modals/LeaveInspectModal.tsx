@@ -1,24 +1,31 @@
 import { memo } from "react";
 import type { LeaveRequest } from "../../types";
 import { LEAVE_TYPE_CONFIG, STATUS_CONFIG } from "../../constants";
-import { formatDate, formatDateShort } from "../../dateUtils";
+import { formatDate } from "../../dateUtils";
+import { LeaveApprovalWorkflowSection } from "./LeaveApprovalWorkflowSection";
+import { canUserActOnRequest } from "../../utils/leaveApprovalChain";
 
 interface LeaveInspectModalProps {
   inspectRequest: LeaveRequest | null;
   onClose: () => void;
-  canApproveLeave: boolean;
-  myEmployeeId: string;
+  canApproveLeave?: boolean;
+  myEmployeeId?: string;
+  myDepartment?: string;
+  actorRole?: string;
+  isSuperAdmin?: boolean;
+  isBranchAdmin?: boolean;
+  hasRoleApprovalAccess?: boolean;
+  hasManagerEndorseAccess?: boolean;
+  hasBuAdminEndorseAccess?: boolean;
   onOpenApprovalModal: (req: LeaveRequest, action: "approved" | "rejected") => void;
   onOpenCancelModal: (req: LeaveRequest) => void;
 }
 
 export const LeaveInspectModal = memo(function LeaveInspectModal({
-  inspectRequest,
-  onClose,
-  canApproveLeave,
-  myEmployeeId,
-  onOpenApprovalModal,
-  onOpenCancelModal,
+  inspectRequest, onClose, canApproveLeave: _canApproveLeave,
+  myEmployeeId, myDepartment, actorRole, isSuperAdmin, isBranchAdmin,
+  hasRoleApprovalAccess, hasManagerEndorseAccess, hasBuAdminEndorseAccess,
+  onOpenApprovalModal, onOpenCancelModal,
 }: LeaveInspectModalProps) {
   if (!inspectRequest) return null;
 
@@ -68,123 +75,35 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
             <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Leave Type</span>
               <span className={`text-xs font-extrabold mt-1 inline-flex items-center gap-1 ${typeCfg.text}`}>
-                <i className={typeCfg.icon} />
-                {typeCfg.label}
+                <i className={typeCfg.icon} /> {typeCfg.label}
               </span>
             </div>
-
             <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Status</span>
               <span className={`text-xs font-extrabold mt-1 inline-flex items-center gap-1 ${statusCfg.text}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-                {statusCfg.label}
+                <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} /> {statusCfg.label}
               </span>
             </div>
           </div>
 
           {/* Duration info */}
-          <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 text-xs space-y-1">
+          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 text-xs space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-gray-400">Total Duration:</span>
-              <strong className="font-extrabold text-gray-900">
-                {inspectRequest.days} working {inspectRequest.days === 1 ? "day" : "days"}
-              </strong>
+              <strong className="font-extrabold text-gray-900">{inspectRequest.days} working {inspectRequest.days === 1 ? "day" : "days"}</strong>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-400">Dates:</span>
-              <span className="font-semibold text-gray-700">
-                {formatDate(inspectRequest.start_date)} &rarr; {formatDate(inspectRequest.end_date)}
-              </span>
+              <span className="font-semibold text-gray-700">{formatDate(inspectRequest.start_date)} &rarr; {formatDate(inspectRequest.end_date)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-400">Submitted On:</span>
-              <span className="text-gray-500 font-medium">
-                {formatDate(inspectRequest.created_at?.slice(0, 10))}
-              </span>
+              <span className="text-gray-500 font-medium">{formatDate(inspectRequest.created_at?.slice(0, 10))}</span>
             </div>
           </div>
 
           {/* 2-Step Approval Workflow Progress */}
-          {(() => {
-            const hasManagerEndorsed = (inspectRequest.reason || "").includes("[Stage: Manager Endorsed");
-            const isApproved = inspectRequest.status === "approved";
-            const isRejected = inspectRequest.status === "rejected";
-
-            return (
-              <div className="p-3.5 bg-slate-50/90 rounded-2xl border border-slate-200/80 text-xs space-y-2">
-                <span className="text-[10px] font-extrabold text-[#4A72B2] uppercase tracking-wider block">
-                  2-Step Approval Status
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Step 1 */}
-                  <div
-                    className={`p-2.5 rounded-xl border ${
-                      hasManagerEndorsed || isApproved
-                        ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
-                        : isRejected
-                        ? "bg-rose-50/80 border-rose-200 text-rose-900"
-                        : "bg-sky-50/80 border-sky-200 text-sky-900"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span
-                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                          hasManagerEndorsed || isApproved
-                            ? "bg-emerald-600 text-white"
-                            : "bg-sky-600 text-white"
-                        }`}
-                      >
-                        1
-                      </span>
-                      <span className="font-bold text-[11px]">Line Manager</span>
-                    </div>
-                    <p className="text-[10px] font-medium opacity-80">
-                      {hasManagerEndorsed || isApproved
-                        ? "✓ Endorsed"
-                        : isRejected
-                        ? "Rejected"
-                        : "Awaiting Review"}
-                    </p>
-                  </div>
-
-                  {/* Step 2 */}
-                  <div
-                    className={`p-2.5 rounded-xl border ${
-                      isApproved
-                        ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
-                        : isRejected
-                        ? "bg-rose-50/80 border-rose-200 text-rose-900"
-                        : hasManagerEndorsed
-                        ? "bg-amber-50/80 border-amber-200 text-amber-900"
-                        : "bg-gray-50 border-gray-200 text-gray-400"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span
-                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                          isApproved
-                            ? "bg-emerald-600 text-white"
-                            : hasManagerEndorsed
-                            ? "bg-amber-500 text-white"
-                            : "bg-gray-300 text-gray-600"
-                        }`}
-                      >
-                        2
-                      </span>
-                      <span className="font-bold text-[11px]">HR / Role Authority</span>
-                    </div>
-                    <p className="text-[10px] font-medium opacity-80">
-                      {isApproved
-                        ? "✓ Final Approved"
-                        : hasManagerEndorsed
-                        ? "Pending Final Sign-Off"
-                        : "Awaiting Step 1"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+          <LeaveApprovalWorkflowSection inspectRequest={inspectRequest} />
 
           {/* Reason */}
           {inspectRequest.reason && (
@@ -216,40 +135,36 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-5 mt-4 border-t border-gray-100 flex items-center justify-end gap-2">
-          {canApproveLeave && inspectRequest.status === "pending" && (
-            <>
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenApprovalModal(inspectRequest, "approved");
-                }}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
-              >
-                {(() => {
-                  const roleLower = inspectRequest.employees?.role?.toLowerCase() || "";
-                  const isAdminReq = roleLower.includes("super admin") || roleLower.includes("branch admin") || roleLower.includes("bu admin") || roleLower.includes("be admin");
-                  return inspectRequest.reason?.includes("[Stage: Manager Endorsed") || isAdminReq ? "HR Approve" : "Endorse";
-                })()}
-              </button>
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenApprovalModal(inspectRequest, "rejected");
-                }}
-                className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-all cursor-pointer"
-              >
-                Reject
-              </button>
-            </>
-          )}
+        <div className="pt-4 mt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+          {(() => {
+            const { canAct, actionLabel } = canUserActOnRequest({
+              request: inspectRequest, myEmployeeId, myDepartment, actorRole,
+              isSuperAdmin, isBranchAdmin, hasRoleApprovalAccess,
+              hasManagerEndorseAccess, hasBuAdminEndorseAccess,
+            });
+            if (!canAct) return null;
+
+            return (
+              <>
+                <button
+                  onClick={() => { onClose(); onOpenApprovalModal(inspectRequest, "approved"); }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+                >
+                  {actionLabel}
+                </button>
+                <button
+                  onClick={() => { onClose(); onOpenApprovalModal(inspectRequest, "rejected"); }}
+                  className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  Reject
+                </button>
+              </>
+            );
+          })()}
 
           {canCancel && (
             <button
-              onClick={() => {
-                onClose();
-                onOpenCancelModal(inspectRequest);
-              }}
+              onClick={() => { onClose(); onOpenCancelModal(inspectRequest); }}
               className="px-4 py-2 bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-all cursor-pointer"
             >
               Cancel Leave

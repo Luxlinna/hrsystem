@@ -8,6 +8,7 @@ import { LeaveFormDatesSection } from "./LeaveFormDatesSection";
 import { LeaveFormApproversSection } from "./LeaveFormApproversSection";
 import { LeaveFormAttachmentSection } from "./LeaveFormAttachmentSection";
 import { LeaveFormActions } from "./LeaveFormActions";
+import { getApplicantTier } from "../../utils/leaveApprovalChain";
 
 export interface CreateLeaveFormProps {
   onBack: () => void;
@@ -100,6 +101,11 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
     return isTargetAdmin;
   }, [isDirectHrApproval, formMode, myEmployee, selectedEmployee, isSuperAdmin, isBranchAdmin]);
 
+  const applicantTier = useMemo(() => {
+    const target = formMode === "self" ? (myEmployee || selectedEmployee) : selectedEmployee;
+    return getApplicantTier(target, isDirectApproval);
+  }, [formMode, myEmployee, selectedEmployee, isDirectApproval]);
+
   return (
     <div className={isEmbedded ? "w-full space-y-6 font-sans" : "min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 font-sans"}>
       <div className="w-full space-y-6">
@@ -151,6 +157,7 @@ export const CreateLeaveForm = memo(function CreateLeaveForm({
             lineManager={lineManager}
             myApproverName={myApproverName}
             isDirectHrApproval={isDirectApproval}
+            applicantTier={applicantTier}
           />
 
           <LeaveFormAttachmentSection

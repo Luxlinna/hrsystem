@@ -364,6 +364,24 @@ export const RolesTab = memo(function RolesTab({
                           </span>
                         );
                       })}
+                      {role.leave_manager_endorse && (
+                        <span className="text-[10px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/60 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <i className="ri-user-follow-line text-[11px]" />
+                          Manager Endorse
+                        </span>
+                      )}
+                      {role.leave_bu_admin_endorse && (
+                        <span className="text-[10px] font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <i className="ri-building-line text-[11px]" />
+                          BU Admin Endorse
+                        </span>
+                      )}
+                      {role.leave_approve && (
+                        <span className="text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <i className="ri-shield-check-line text-[11px]" />
+                          HR Leave Approval
+                        </span>
+                      )}
                       {role.allowed_modules.length > 6 && (
                         <span className="text-[10px] text-gray-400 dark:text-slate-500 font-medium">
                           +{role.allowed_modules.length - 6} more

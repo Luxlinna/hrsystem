@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { LeaveRequest } from "../../types";
 import { LEAVE_TYPE_CONFIG } from "../../constants";
 import { formatDateShort } from "../../dateUtils";
+import { getRequestTier } from "../../utils/leaveApprovalChain";
 
 interface LeaveApprovalModalProps {
   isOpen: boolean;
@@ -45,18 +46,24 @@ export const LeaveApprovalModal = memo(function LeaveApprovalModal({
             </div>
             <div>
               <h3 className="text-base font-extrabold text-gray-900">
-                {isApprove
-                  ? hasManagerEndorsed
-                    ? "Step 2: Final Authorization"
-                    : "Step 1: Manager Endorsement"
-                  : "Reject Leave Request"}
+                {(() => {
+                  if (!isApprove) return "Reject Leave Request";
+                  const tier = getRequestTier(selectedRequest);
+                  if (tier === "bu_admin") return "Final Authorization (HR Division)";
+                  const hasEndorsed = (selectedRequest.reason || "").includes("[Stage: BU Admin Endorsed") || (selectedRequest.reason || "").includes("[Stage: Manager Endorsed");
+                  if (tier === "manager") return hasEndorsed ? "Step 2: Final Authorization (HR Division)" : "Step 1: BU Admin Endorsement";
+                  return hasEndorsed ? "Step 2: Final Authorization (HR Division)" : "Step 1: Manager Endorsement";
+                })()}
               </h3>
               <p className="text-[11px] text-gray-500 font-medium">
-                {isApprove
-                  ? hasManagerEndorsed
-                    ? "Manager endorsed • Authorized by HR Manager or Role Permission"
-                    : "Endorse request & forward to HR Manager or authorized role"
-                  : "Decline and terminate this leave request"}
+                {(() => {
+                  if (!isApprove) return "Decline and terminate this leave request";
+                  const tier = getRequestTier(selectedRequest);
+                  if (tier === "bu_admin") return "BU Admin request • Authorized directly by HR Division team";
+                  const hasEndorsed = (selectedRequest.reason || "").includes("[Stage: BU Admin Endorsed") || (selectedRequest.reason || "").includes("[Stage: Manager Endorsed");
+                  if (tier === "manager") return hasEndorsed ? "BU Admin endorsed • Final sign-off by HR Division team" : "Endorse manager request & forward to HR Division team";
+                  return hasEndorsed ? "Manager endorsed • Final sign-off by HR Division team" : "Endorse request & forward to HR Division team";
+                })()}
               </p>
             </div>
           </div>

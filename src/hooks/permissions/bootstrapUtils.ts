@@ -22,6 +22,8 @@ export function bootstrapAdminRole(): UserRole {
     employees_manage: true,
     self_service_all_employees: true,
     leave_view_all_employees: true,
+    leave_manager_endorse: true,
+    leave_bu_admin_endorse: true,
     leave_approve: true,
     payroll_view_all_employees: true,
     attendance_view_all_employees: true,

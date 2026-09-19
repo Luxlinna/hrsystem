@@ -138,6 +138,8 @@ export function useAdminRoleMutations({
         delete (fallbackPayload as any).candidate_approval_hr_sign;
         delete (fallbackPayload as any).candidate_approval_director_sign;
         delete (fallbackPayload as any).candidate_approval_chairwoman_sign;
+        delete (fallbackPayload as any).leave_manager_endorse;
+        delete (fallbackPayload as any).leave_bu_admin_endorse;
         ({ error } = await supabase.from("app_roles").update(fallbackPayload).eq("id", editingRole.id));
       }
     } else {
@@ -148,6 +150,8 @@ export function useAdminRoleMutations({
         delete (fallbackPayload as any).candidate_approval_hr_sign;
         delete (fallbackPayload as any).candidate_approval_director_sign;
         delete (fallbackPayload as any).candidate_approval_chairwoman_sign;
+        delete (fallbackPayload as any).leave_manager_endorse;
+        delete (fallbackPayload as any).leave_bu_admin_endorse;
         insertRes = await supabase.from("app_roles").insert(fallbackPayload).select("id").maybeSingle();
       }
       error = insertRes.error;
@@ -163,6 +167,8 @@ export function useAdminRoleMutations({
           candidate_approval_hr_sign: roleForm.candidate_approval_hr_sign,
           candidate_approval_director_sign: roleForm.candidate_approval_director_sign,
           candidate_approval_chairwoman_sign: roleForm.candidate_approval_chairwoman_sign,
+          leave_manager_endorse: roleForm.leave_manager_endorse,
+          leave_bu_admin_endorse: roleForm.leave_bu_admin_endorse,
         };
         localStorage.setItem("hrm_role_custom_scopes", JSON.stringify(allLocal));
       } catch (_e) { /* localStorage may be unavailable in some environments */ }

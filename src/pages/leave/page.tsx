@@ -243,6 +243,13 @@ export default function Leave() {
           totalPages={l.totalPages}
           canApproveLeave={l.canApproveLeave}
           myEmployeeId={l.myEmployee?.id || ""}
+          myDepartment={l.myEmployee?.department || ""}
+          actorRole={l.actorRole}
+          isSuperAdmin={l.isSuperAdmin}
+          isBranchAdmin={l.isBranchAdmin}
+          hasRoleApprovalAccess={!!l.role?.leave_approve || !!l.role?.is_admin}
+          hasManagerEndorseAccess={!!l.role?.leave_manager_endorse}
+          hasBuAdminEndorseAccess={!!l.role?.leave_bu_admin_endorse}
           onRequestLeave={() => {
             l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: l.myEmployee?.id || "" });
             l.setShowForm(true);
