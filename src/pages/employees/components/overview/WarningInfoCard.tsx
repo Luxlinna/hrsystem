@@ -369,7 +369,7 @@ export const WarningInfoCard: React.FC<WarningInfoCardProps> = ({ employee, onCo
                 department: employee.department || "",
                 role: employee.role || "",
                 avatar_url: employee.avatar_url || null,
-                employee_id: employee.employee_id,
+                employee_id: employee.employee_code || null,
               },
             } as DisciplinaryRecord
           }
