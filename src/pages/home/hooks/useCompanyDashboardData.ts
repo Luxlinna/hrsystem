@@ -66,32 +66,47 @@ export function useCompanyDashboardData({
       supabase.from("branches").select("id, name").eq("id", branchId),
       supabase.from("employees").select("id, first_name, last_name, department, status, join_date, branch_id, branches(name)").is("deleted_at", null).eq("branch_id", branchId),
       supabase.from("onboarding_requests").select("id, stage, status, created_at, employees(first_name, last_name, role, branch_id)").is("deleted_at", null).neq("status", "completed").order("created_at", { ascending: false }),
-      supabase.from("leave_requests").select("id, status, leave_type, start_date, end_date, created_at, employees(first_name, last_name, role, department, branch_id)").is("deleted_at", null).gte("start_date", fromDate).lte("start_date", toDate).order("created_at", { ascending: false }).limit(50),
+      supabase.from("leave_requests").select("id, employee_id, status, leave_type, start_date, end_date, created_at, employees(id, first_name, last_name, role, department, branch_id)").is("deleted_at", null).lte("start_date", toDate).gte("end_date", fromDate).order("created_at", { ascending: false }).limit(200),
       userId ? supabase.from("notifications").select("id").or(`recipient_user_id.is.null,recipient_user_id.eq.${userId}`).or(`branch_id.is.null,branch_id.eq.${branchId}`).eq("is_read", false).limit(3) : Promise.resolve({ data: [] }),
       supabase.from("job_postings").select("id, title, status, department, location, salary_min, branch_id").is("deleted_at", null).eq("branch_id", branchId),
       supabase.from("candidates").select("id, stage, full_name, applied_at, job_posting_id, job_postings(branch_id)").is("deleted_at", null),
       supabase.from("announcements").select("id, title, content, category, pinned, published_at, author_name, branch_id").is("deleted_at", null).or(`branch_id.eq.${branchId},branch_id.is.null`).order("pinned", { ascending: false }).order("published_at", { ascending: false }).limit(4),
-      supabase.from("attendance_records").select("status, date, hours_worked, employees(branch_id)").is("deleted_at", null).gte("date", fromDate).lte("date", toDate),
+      supabase.from("attendance_records").select("id, employee_id, status, date, hours_worked, employees(branch_id)").is("deleted_at", null).gte("date", fromDate).lte("date", toDate).limit(5000),
       supabase.from("training_enrollments").select("status, employees(branch_id)").is("deleted_at", null),
       supabase.from("disciplinary_records").select("status, branch_id").is("deleted_at", null).or(`branch_id.eq.${branchId},branch_id.is.null`),
       supabase.from("offboarding_requests").select("last_day, created_at, employees(branch_id)"),
     ]);
 
-    const filteredLr = (lr || []).filter((x: any) => x.employees?.branch_id === branchId);
-    const filteredAtt = (attData || []).filter((a: any) => a.employees?.branch_id === branchId);
-    const filteredOb = (ob || []).filter((o: any) => o.employees?.branch_id === branchId);
+    const empList = e || [];
+    const empIdSet = new Set(empList.map((emp: any) => emp.id));
+    const filteredLr = (lr || []).filter((x: any) => x.employees?.branch_id === branchId || empIdSet.has(x.employee_id));
+    const filteredAtt = (attData || []).filter((a: any) => a.employees?.branch_id === branchId || empIdSet.has(a.employee_id));
+    const filteredOb = (ob || []).filter((o: any) => o.employees?.branch_id === branchId || empIdSet.has(o.employee_id));
     const filteredCand = (c || []).filter((cand: any) => !cand.job_postings?.branch_id || cand.job_postings?.branch_id === branchId);
-    const filteredTrain = (trainEnroll || []).filter((t: any) => !t.employees?.branch_id || t.employees?.branch_id === branchId);
-    const filteredOff = (offData || []).filter((o: any) => !o.employees?.branch_id || o.employees?.branch_id === branchId);
+    const filteredTrain = (trainEnroll || []).filter((t: any) => !t.employees?.branch_id || t.employees?.branch_id === branchId || empIdSet.has(t.employee_id));
+    const filteredOff = (offData || []).filter((o: any) => !o.employees?.branch_id || o.employees?.branch_id === branchId || empIdSet.has(o.employee_id));
 
-    setHrKpis(computeHrKpis(filteredAtt, filteredTrain, discData || []));
-    setAttendanceData(computeAttendanceBreakdown(filteredAtt, dateRange.from, dateRange.to));
-    setHiringTrend(computeHiringTrend(e || [], filteredOff));
+    setHrKpis(computeHrKpis(filteredAtt, filteredTrain, discData || [], empList, filteredLr));
+    setAttendanceData(computeAttendanceBreakdown(filteredAtt, dateRange.from, dateRange.to, empList, filteredLr));
+    setHiringTrend(computeHiringTrend(empList, filteredOff));
     setAnnouncements((announcementsData as unknown as AnnouncementItem[]) || []);
 
-    const empList = e || [];
     const depts = empList.reduce((acc: Record<string, number>, x: any) => {
-      acc[x.department] = (acc[x.department] || 0) + 1;
+      const raw = (x.department || "Unassigned").trim();
+      const lower = raw.toLowerCase();
+      let normalized = raw;
+      if (lower === "production") normalized = "Production";
+      else if (lower === "it" || lower === "i.t.") normalized = "IT";
+      else if (lower === "hr" || lower === "h.r.") normalized = "HR";
+      else if (lower === "accounting and finance" || lower === "accounting & finance" || lower === "finance") normalized = "Accounting & Finance";
+      else if (lower === "management") normalized = "Management";
+      else if (lower === "sales") normalized = "Sales";
+      else if (lower === "operations") normalized = "Operations";
+      else if (lower === "green zone") normalized = "Green Zone";
+      else if (raw === raw.toUpperCase() && raw.length > 3) {
+        normalized = raw.charAt(0) + raw.slice(1).toLowerCase();
+      }
+      acc[normalized] = (acc[normalized] || 0) + 1;
       return acc;
     }, {});
 

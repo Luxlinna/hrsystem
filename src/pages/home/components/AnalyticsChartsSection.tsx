@@ -44,9 +44,21 @@ export const AnalyticsChartsSection = memo(function AnalyticsChartsSection({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Weekly Attendance Overview */}
         <div className="border border-gray-100 rounded-xl p-4">
-          <h3 className="text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-3">
-            Weekly Attendance Overview
-          </h3>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 className="text-[12px] font-bold text-gray-700 uppercase tracking-wider">
+              Weekly Attendance Overview
+            </h3>
+            <div className="flex items-center gap-3 text-[11px]">
+              <span className="inline-flex items-center gap-1 font-semibold text-[#253C7D]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#253C7D]" />
+                Present
+              </span>
+              <span className="inline-flex items-center gap-1 font-semibold text-[#E11D48]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#E11D48]" />
+                Absent (No Scan)
+              </span>
+            </div>
+          </div>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={attendanceData}>
@@ -64,8 +76,8 @@ export const AnalyticsChartsSection = memo(function AnalyticsChartsSection({
                 <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-                <Area type="monotone" dataKey="present" stroke="#253C7D" fill="url(#colorPresent)" strokeWidth={2} />
-                <Area type="monotone" dataKey="absent" stroke="#E11D48" fill="url(#colorAbsent)" strokeWidth={2} />
+                <Area type="monotone" dataKey="present" stroke="#253C7D" fill="url(#colorPresent)" strokeWidth={2} name="Present" />
+                <Area type="monotone" dataKey="absent" stroke="#E11D48" fill="url(#colorAbsent)" strokeWidth={2} name="Absent (No Scan)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

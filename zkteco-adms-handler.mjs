@@ -253,36 +253,45 @@ export async function processZkPunchRecord(punch) {
     .eq("device_serial", deviceSerial)
     .maybeSingle();
 
-  // 1b. Find employee by biometric_user_id or employee ID (prioritizing the device's branch)
+  // 1b. Find employee by biometric_user_id or employee ID across the directory
+  // Prioritize matching the device's branch first, but if not found, look across the entire directory
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(userId));
-  let empQuery = supabase
-    .from("employees")
-    .select(`
-      id, first_name, last_name, branch_id, default_work_location_id,
-      branches(name, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end),
-      work_locations:default_work_location_id(name, work_start_time, break_start_time, break_end_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, is_four_punch_enabled, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end)
-    `);
-
-  if (device?.branch_id) {
-    empQuery = empQuery.eq("branch_id", device.branch_id);
-  }
-
   const cleanId = String(userId).trim();
   const numMatch = cleanId.match(/\d+/);
   const numVal = numMatch ? parseInt(numMatch[0], 10) : NaN;
   const rawNumStr = !isNaN(numVal) ? String(numVal) : cleanId;
   const padded3Str = !isNaN(numVal) ? String(numVal).padStart(3, "0") : cleanId;
 
-  if (isUuid) {
-    empQuery = empQuery.or(`biometric_user_id.eq.${userId},id.eq.${userId}`);
-  } else {
-    empQuery = empQuery.or(`biometric_user_id.eq.${rawNumStr},biometric_user_id.eq.${padded3Str},biometric_user_id.ilike.%${padded3Str},biometric_user_id.ilike.% ${rawNumStr}`);
+  const selectCols = `
+    id, first_name, last_name, branch_id, default_work_location_id,
+    branches(name, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end),
+    work_locations:default_work_location_id(name, work_start_time, break_start_time, break_end_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, is_four_punch_enabled, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end)
+  `;
+
+  const applyIdFilter = (query) => {
+    if (isUuid) {
+      return query.or(`biometric_user_id.eq.${userId},id.eq.${userId}`);
+    }
+    return query.or(`biometric_user_id.eq.${rawNumStr},biometric_user_id.eq.${padded3Str},biometric_user_id.ilike.%${padded3Str},biometric_user_id.ilike.% ${rawNumStr}`);
+  };
+
+  let employee = null;
+  if (device?.branch_id) {
+    const { data: branchEmp } = await applyIdFilter(
+      supabase.from("employees").select(selectCols).is("deleted_at", null).eq("branch_id", device.branch_id)
+    ).maybeSingle();
+    if (branchEmp) employee = branchEmp;
   }
 
-  const { data: employee, error: empErr } = await empQuery.maybeSingle();
+  if (!employee) {
+    const { data: dirEmp } = await applyIdFilter(
+      supabase.from("employees").select(selectCols).is("deleted_at", null)
+    ).maybeSingle();
+    if (dirEmp) employee = dirEmp;
+  }
 
-  if (empErr || !employee) {
-    console.warn(`[ZKTeco ADMS] User ID [${userId}] is not mapped to any employee in branch [${device?.branch_id || "unassigned"}].`);
+  if (!employee) {
+    console.warn(`[ZKTeco ADMS] User ID [${userId}] is not mapped to any employee in the directory.`);
     // Still record raw punch for hardware auditing so no scan is lost
     await supabase.from("biometric_raw_logs").insert({
       device_serial: deviceSerial || "ZK-ADMS",
