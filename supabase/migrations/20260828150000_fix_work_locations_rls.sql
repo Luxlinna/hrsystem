@@ -9,7 +9,7 @@ stable
 as $$
   select e.branch_id
   from employees e
-  where (e.user_id = auth.uid() or lower(e.email) = lower(auth.jwt() ->> 'email'))
+  where lower(e.email) = lower(auth.jwt() ->> 'email')
     and e.deleted_at is null
   limit 1;
 $$;
