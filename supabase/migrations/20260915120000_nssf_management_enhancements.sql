@@ -26,6 +26,15 @@ from (
 where e.id = p.employee_id
   and (e.basic_salary is null or e.basic_salary = 0);
 
+-- candidates already carries these fields in production (added ad hoc, outside of
+-- migrations); declare them here too so this backfill works on any environment.
+alter table candidates
+  add column if not exists kh_name text,
+  add column if not exists nssf_number text,
+  add column if not exists gender text,
+  add column if not exists date_of_birth date,
+  add column if not exists basic_salary numeric(12,2);
+
 -- Backfill kh_name, nssf_number, date_of_birth, gender from candidates table where linked
 update employees e
 set
