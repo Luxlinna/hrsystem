@@ -1,0 +1,22 @@
+[Unit]
+Description=hrmsystem (HR OPS website)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hrmapp
+WorkingDirectory=/opt/hrmsystem/app
+EnvironmentFile=/etc/hrmsystem.env
+Environment=NODE_ENV=production
+Environment=PORT=3002
+ExecStart=/usr/bin/node serve.mjs
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target
