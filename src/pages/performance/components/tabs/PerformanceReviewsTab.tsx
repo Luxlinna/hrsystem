@@ -14,6 +14,8 @@ interface PerformanceReviewsTabProps {
   filterDept: string;
   setFilterDept: (d: string) => void;
   departments: string[];
+  canManage?: boolean;
+  onStartAppraisal?: (review: Review) => void;
 }
 
 export const PerformanceReviewsTab = memo(function PerformanceReviewsTab({
@@ -27,6 +29,8 @@ export const PerformanceReviewsTab = memo(function PerformanceReviewsTab({
   filterDept,
   setFilterDept,
   departments,
+  canManage,
+  onStartAppraisal,
 }: PerformanceReviewsTabProps) {
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -39,8 +43,10 @@ export const PerformanceReviewsTab = memo(function PerformanceReviewsTab({
             className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
           >
             <option value="all">All Quarters</option>
-            <option value="Q1">Q1 2026</option>
-            <option value="Q2">Q2 2026</option>
+            <option value="Q1">Q1</option>
+            <option value="Q2">Q2</option>
+            <option value="Q3">Q3</option>
+            <option value="Q4">Q4</option>
           </select>
           <select
             value={filterStatus}
@@ -48,7 +54,8 @@ export const PerformanceReviewsTab = memo(function PerformanceReviewsTab({
             className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer"
           >
             <option value="all">All Status</option>
-            <option value="submitted">Submitted</option>
+            <option value="submitted">Completed / Approved</option>
+            <option value="self_review">Self-Review Submitted</option>
             <option value="draft">Draft</option>
           </select>
           <select
@@ -88,6 +95,8 @@ export const PerformanceReviewsTab = memo(function PerformanceReviewsTab({
       <PerformanceReviewDetailPanel
         review={selectedReview}
         onClose={() => onSelectReview(null)}
+        canManage={canManage}
+        onStartAppraisal={onStartAppraisal}
       />
     </div>
   );

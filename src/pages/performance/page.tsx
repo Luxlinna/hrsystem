@@ -9,40 +9,15 @@ import { usePerformance } from "./hooks/usePerformance";
 
 export default function PerformanceReviews() {
   const {
-    isPartnerBranchBlocked,
-    userBranchName,
-    userBranchId,
-    canManage,
-    reviews,
-    goals,
-    employees,
-    loading,
-    activeTab,
-    setActiveTab,
-    selectedReview,
-    setSelectedReview,
-    filterQ,
-    setFilterQ,
-    filterStatus,
-    setFilterStatus,
-    filterDept,
-    setFilterDept,
-    departments,
-    avgScore,
-    submitted,
-    drafts,
-    filteredReviews,
-    showGoalModal,
-    setShowGoalModal,
-    goalForm,
-    setGoalForm,
-    reviewForm,
-    setReviewForm,
-    submitting,
-    taskStats,
-    handleSubmitReview,
-    handleAddGoal,
-    updateGoalProgress,
+    isPartnerBranchBlocked, userBranchName, userBranchId, canManage,
+    reviews, goals, employees, evaluators, currentEmployee, loading,
+    activeTab, setActiveTab, selectedReview, setSelectedReview,
+    filterQ, setFilterQ, filterStatus, setFilterStatus, filterDept, setFilterDept,
+    departments, avgScore, submitted, drafts, filteredReviews,
+    showGoalModal, setShowGoalModal, goalForm, setGoalForm,
+    reviewForm, setReviewForm, submitting, taskStats,
+    handleSubmitReview, handleSelfAssessmentSubmit, handleStartAppraisal,
+    handleAddGoal, updateGoalProgress,
   } = usePerformance();
 
   if (loading) {
@@ -56,113 +31,70 @@ export default function PerformanceReviews() {
   if (isPartnerBranchBlocked) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] p-6 lg:p-10">
-        <PerformanceHeader
-          canManage={false}
-          onOpenAddGoal={() => {}}
-          onOpenSubmitReview={() => {}}
-        />
-        <PartnerBranchPrivacyShield
-          moduleName="Performance & Appraisals"
-          userBranchName={userBranchName}
-          hasNoBranch={!userBranchId}
-        />
+        <PerformanceHeader canManage={false} onOpenAddGoal={() => {}} onOpenSubmitReview={() => {}} />
+        <PartnerBranchPrivacyShield moduleName="Performance & Appraisals" userBranchName={userBranchName} hasNoBranch={!userBranchId} />
       </div>
     );
   }
 
+  const tabOptions = canManage
+    ? (["reviews", "goals", "submit", "self"] as const)
+    : (["reviews", "goals", "self"] as const);
+
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
       <div className="p-6 lg:p-10">
-        {/* Header */}
         <PerformanceHeader
-          canManage={canManage}
-          onOpenAddGoal={() => setShowGoalModal(true)}
-          onOpenSubmitReview={() => setActiveTab("submit")}
-          activeTab={activeTab}
-          reviews={filteredReviews.length > 0 ? filteredReviews : reviews}
-          goals={goals}
-          employees={employees}
+          canManage={canManage} onOpenAddGoal={() => setShowGoalModal(true)}
+          onOpenSubmitReview={() => setActiveTab("submit")} activeTab={activeTab}
+          reviews={filteredReviews.length > 0 ? filteredReviews : reviews} goals={goals} employees={employees}
         />
 
-        {/* Stats Row */}
-        <PerformanceStatsRow
-          totalReviews={reviews.length}
-          submitted={submitted}
-          drafts={drafts}
-          avgScore={avgScore}
-        />
+        <PerformanceStatsRow totalReviews={reviews.length} submitted={submitted} drafts={drafts} avgScore={avgScore} />
 
         {/* Navigation Tabs */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
-          {(canManage
-            ? (["reviews", "goals", "submit"] as const)
-            : (["reviews", "goals"] as const)
-          ).map((t) => (
-            <button
-              key={t}
-              onClick={() => setActiveTab(t)}
-              className={`px-5 py-2 rounded-lg text-[13px] font-semibold transition-all capitalize cursor-pointer ${
+        <div className="flex flex-wrap gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
+          {tabOptions.map((t) => (
+            <button key={t} onClick={() => setActiveTab(t)}
+              className={`px-5 py-2 rounded-lg text-[13px] font-semibold transition-all cursor-pointer ${
                 activeTab === t ? "bg-white text-gray-900 shadow-xs" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {t === "submit"
-                ? "Submit Review"
-                : t === "goals"
-                ? "Goals Tracker"
-                : canManage
-                ? "All Reviews"
-                : "My Reviews"}
+              }`}>
+              {t === "submit" ? "Manager Evaluation" : t === "self" ? "Self-Assessment" : t === "goals" ? "Goals Tracker" : canManage ? "All Reviews" : "My Reviews"}
             </button>
           ))}
         </div>
 
-        {/* Reviews Tab */}
         {activeTab === "reviews" && (
           <PerformanceReviewsTab
-            reviews={filteredReviews}
-            selectedReview={selectedReview}
-            onSelectReview={setSelectedReview}
-            filterQ={filterQ}
-            setFilterQ={setFilterQ}
-            filterStatus={filterStatus}
-            setFilterStatus={setFilterStatus}
-            filterDept={filterDept}
-            setFilterDept={setFilterDept}
-            departments={departments}
+            reviews={filteredReviews} selectedReview={selectedReview} onSelectReview={setSelectedReview}
+            filterQ={filterQ} setFilterQ={setFilterQ} filterStatus={filterStatus} setFilterStatus={setFilterStatus}
+            filterDept={filterDept} setFilterDept={setFilterDept} departments={departments}
+            canManage={canManage} onStartAppraisal={handleStartAppraisal}
           />
         )}
 
-        {/* Goals Tab */}
         {activeTab === "goals" && (
-          <PerformanceGoalsTab
-            goals={goals}
-            employees={employees}
-            onUpdateProgress={updateGoalProgress}
-          />
+          <PerformanceGoalsTab goals={goals} employees={employees} onUpdateProgress={updateGoalProgress} />
         )}
 
-        {/* Submit Review Tab */}
         {activeTab === "submit" && canManage && (
           <SubmitReviewTab
-            form={reviewForm}
-            setForm={setReviewForm}
-            employees={employees}
-            taskStats={taskStats}
-            submitting={submitting}
-            onSubmit={handleSubmitReview}
+            mode="manager" form={reviewForm} setForm={setReviewForm} employees={employees} evaluators={evaluators}
+            currentEmployee={currentEmployee} goals={goals} taskStats={taskStats} submitting={submitting} onSubmit={handleSubmitReview}
+          />
+        )}
+
+        {activeTab === "self" && (
+          <SubmitReviewTab
+            mode="self" form={reviewForm} setForm={setReviewForm} employees={employees} evaluators={evaluators}
+            currentEmployee={currentEmployee} goals={goals} taskStats={taskStats} submitting={submitting} onSubmit={handleSelfAssessmentSubmit}
           />
         )}
       </div>
 
-      {/* Add Goal Modal */}
       <AddGoalModal
-        isOpen={showGoalModal}
-        onClose={() => setShowGoalModal(false)}
-        form={goalForm}
-        setForm={setGoalForm}
-        employees={employees}
-        submitting={submitting}
-        onSubmit={handleAddGoal}
+        isOpen={showGoalModal} onClose={() => setShowGoalModal(false)}
+        form={goalForm} setForm={setGoalForm} employees={employees} submitting={submitting} onSubmit={handleAddGoal}
       />
     </div>
   );

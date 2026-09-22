@@ -24,6 +24,7 @@ export function usePerformance() {
     loadData: data.loadData,
     setActiveTab: filters.setActiveTab,
     setGoals: data.setGoals,
+    employees: data.employees,
   });
 
   return {

@@ -1,193 +1,98 @@
-import { memo } from "react";
-import type { ReviewForm, Employee, TaskStats } from "../../types";
+import { memo, useEffect } from "react";
+import type { ReviewForm, Employee, TaskStats, Goal } from "../../types";
 import { MIN_COMMENT_LENGTH } from "../../constants";
-import { scoreColor } from "../../performanceUtils";
-import EmployeeSearchSelect from "@/components/EmployeeSearchSelect";
+import { EvalInfoSection } from "./eval/EvalInfoSection";
+import { EvalCriteriaSection } from "./eval/EvalCriteriaSection";
+import { EvalGoalsSection } from "./eval/EvalGoalsSection";
+import { EvalTextSections } from "./eval/EvalTextSections";
 
 interface SubmitReviewTabProps {
+  mode?: "manager" | "self";
   form: ReviewForm;
   setForm: React.Dispatch<React.SetStateAction<ReviewForm>>;
   employees: Employee[];
+  evaluators?: Employee[];
+  currentEmployee?: Employee | null;
+  goals: Goal[];
   taskStats: TaskStats | null;
   submitting: boolean;
   onSubmit: (e: React.FormEvent) => Promise<void>;
 }
 
 export const SubmitReviewTab = memo(function SubmitReviewTab({
-  form,
-  setForm,
-  employees,
-  taskStats,
-  submitting,
-  onSubmit,
+  mode = "manager", form, setForm, employees, evaluators = employees, currentEmployee,
+  goals, taskStats, submitting, onSubmit,
 }: SubmitReviewTabProps) {
-  const overall =
-    (form.communication_score + form.teamwork_score + form.technical_score + form.leadership_score) / 4;
+  const isSelf = mode === "self";
+  const set = <K extends keyof ReviewForm>(key: K, value: ReviewForm[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  useEffect(() => {
+    if (isSelf && currentEmployee?.id && form.employee_id !== currentEmployee.id) {
+      set("employee_id", currentEmployee.id);
+    }
+    const emp = (isSelf ? currentEmployee : employees.find((e) => e.id === form.employee_id)) || null;
+    if (emp?.reports_to && !form.reviewer_id) {
+      set("reviewer_id", emp.reports_to);
+    }
+  }, [isSelf, currentEmployee, form.employee_id, form.reviewer_id]);
+
+  const canSubmit = isSelf
+    ? !submitting && !!form.employee_id && !!form.reviewer_id && form.employee_id !== form.reviewer_id && form.employee_comments.trim().length > 0
+    : !submitting && !!form.employee_id && !!form.reviewer_id && form.employee_id !== form.reviewer_id && form.comments.trim().length >= MIN_COMMENT_LENGTH;
 
   return (
-    <div className="max-w-2xl">
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-2xs">
-        <h2 className="text-[16px] font-bold text-gray-900 mb-5">Submit Quarterly Review</h2>
-        <form onSubmit={onSubmit} className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Employee *</label>
-              <EmployeeSearchSelect
-                employees={employees}
-                value={form.employee_id}
-                onChange={(id) =>
-                  setForm((p) => ({
-                    ...p,
-                    employee_id: id,
-                    reviewer_id: p.reviewer_id === id ? "" : p.reviewer_id,
-                  }))
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Reviewer *</label>
-              <EmployeeSearchSelect
-                employees={employees}
-                value={form.reviewer_id}
-                onChange={(id) => setForm({ ...form, reviewer_id: id })}
-                excludeIds={[form.employee_id]}
-                placeholder="Search reviewer by name..."
-              />
-            </div>
+    <div className="w-full">
+      {/* Header */}
+      <div className={`rounded-2xl p-7 mb-6 text-white relative overflow-hidden shadow-sm ${
+        isSelf
+          ? "bg-gradient-to-r from-[#3b2d71] via-[#5b40b2] to-[#7c3aed]"
+          : "bg-gradient-to-r from-[#1a2f6b] via-[#253C7D] to-[#1a5fb4]"
+      }`}>
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 80% 50%, #fff 0%, transparent 60%)" }} />
+        <div className="relative flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm">
+            <i className={`${isSelf ? "ri-user-star-line" : "ri-survey-line"} text-2xl`} />
           </div>
-
-          {taskStats && (
-            <div className="bg-gray-50 border border-gray-100 rounded-lg px-4 py-3 flex items-center gap-5 text-[12px]">
-              <span className="text-gray-500 font-medium flex items-center gap-1.5">
-                <i className="ri-checkbox-multiple-line" /> Task record:
-              </span>
-              <span className="text-gray-700">{taskStats.total} total</span>
-              <span className="text-emerald-600 font-semibold">{taskStats.done} completed</span>
-              <span className={taskStats.overdue > 0 ? "text-red-500 font-semibold" : "text-gray-400"}>
-                {taskStats.overdue} overdue
-              </span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Quarter</label>
-              <select
-                value={form.quarter}
-                onChange={(e) => setForm({ ...form, quarter: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer"
-              >
-                <option>Q1</option>
-                <option>Q2</option>
-                <option>Q3</option>
-                <option>Q4</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Year</label>
-              <select
-                value={form.year}
-                onChange={(e) => setForm({ ...form, year: parseInt(e.target.value) })}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] cursor-pointer"
-              >
-                <option value={2026}>2026</option>
-                <option value={2025}>2025</option>
-              </select>
-            </div>
-          </div>
-
           <div>
-            <p className="text-[12px] font-semibold text-gray-700 mb-3">Scores (1–5)</p>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { key: "communication_score", label: "Communication" },
-                { key: "teamwork_score", label: "Teamwork" },
-                { key: "technical_score", label: "Technical" },
-                { key: "leadership_score", label: "Leadership" },
-              ].map((m) => (
-                <div key={m.key}>
-                  <label className="block text-[11px] text-gray-500 mb-1.5">{m.label}</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min={1}
-                      max={5}
-                      step={0.5}
-                      value={(form as any)[m.key]}
-                      onChange={(e) => setForm({ ...form, [m.key]: parseFloat(e.target.value) })}
-                      className="flex-1 accent-[#253C7D] cursor-pointer"
-                    />
-                    <span className={`text-[14px] font-bold w-8 text-right ${scoreColor((form as any)[m.key])}`}>
-                      {(form as any)[m.key]}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 bg-[#253C7D]/5 rounded-lg p-3 text-center">
-              <p className="text-[11px] text-gray-500">Overall Score</p>
-              <p className={`text-2xl font-black ${scoreColor(overall)}`}>{overall.toFixed(1)}</p>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Comments *</label>
-            <textarea
-              value={form.comments}
-              onChange={(e) => setForm({ ...form, comments: e.target.value })}
-              rows={3}
-              required
-              minLength={MIN_COMMENT_LENGTH}
-              placeholder="Overall performance summary..."
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] resize-none"
-            />
-            <p
-              className={`text-[11px] mt-1 ${
-                form.comments.trim().length < MIN_COMMENT_LENGTH ? "text-gray-400" : "text-emerald-600"
-              }`}
-            >
-              {form.comments.trim().length}/{MIN_COMMENT_LENGTH} minimum characters
+            <h2 className="text-[22px] font-black tracking-tight">
+              {isSelf ? "Employee Self-Assessment" : "Employee Performance Evaluation"}
+            </h2>
+            <p className="text-white/70 text-[13px] mt-0.5">
+              {isSelf
+                ? "Rate your performance · Detail your achievements & development goals · Submit to your manager"
+                : form.id
+                ? "Appraise employee's self-evaluation · Enter official manager ratings and feedback"
+                : "Complete all 6 sections · Self-assessment + Manager rating · Standard HR format"}
             </p>
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Strengths</label>
-              <textarea
-                value={form.strengths}
-                onChange={(e) => setForm({ ...form, strengths: e.target.value })}
-                rows={2}
-                placeholder="Key strengths..."
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] resize-none"
-              />
-            </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Areas for Improvement</label>
-              <textarea
-                value={form.areas_for_improvement}
-                onChange={(e) => setForm({ ...form, areas_for_improvement: e.target.value })}
-                rows={2}
-                placeholder="Growth areas..."
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D] resize-none"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={
-              submitting ||
-              !form.employee_id ||
-              !form.reviewer_id ||
-              form.employee_id === form.reviewer_id ||
-              form.comments.trim().length < MIN_COMMENT_LENGTH
-            }
-            className="w-full py-3 bg-[#253C7D] text-white font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {submitting ? "Submitting..." : "Submit Review"}
-          </button>
-        </form>
+        </div>
       </div>
+
+      <form onSubmit={onSubmit} className="space-y-6">
+        <EvalInfoSection form={form} set={set} setForm={setForm} employees={employees}
+          evaluators={evaluators} taskStats={taskStats} isSelfAssessment={isSelf} />
+        <EvalCriteriaSection form={form} set={set} isSelfAssessment={isSelf} />
+        <EvalGoalsSection goals={goals} employeeId={form.employee_id} />
+        <EvalTextSections form={form} set={set} isSelfAssessment={isSelf} />
+
+        <button type="submit" disabled={!canSubmit}
+          className={`w-full py-4 text-white font-bold rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-[15px] flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl ${
+            isSelf
+              ? "bg-gradient-to-r from-[#5b40b2] to-[#7c3aed] hover:from-[#4c339c] hover:to-[#6d28d9]"
+              : "bg-gradient-to-r from-[#253C7D] to-[#1a5fb4] hover:from-[#1F336A] hover:to-[#1a4fa0]"
+          }`}>
+          {submitting ? (
+            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Submitting...</>
+          ) : isSelf ? (
+            <><i className="ri-send-plane-fill" />Submit Self-Assessment to Evaluator</>
+          ) : form.id ? (
+            <><i className="ri-check-double-line" />Complete & Finalize Appraisal</>
+          ) : (
+            <><i className="ri-send-plane-fill" />Submit Performance Evaluation</>
+          )}
+        </button>
+      </form>
     </div>
   );
 });

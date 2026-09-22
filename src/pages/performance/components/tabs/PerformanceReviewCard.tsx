@@ -36,16 +36,20 @@ export const PerformanceReviewCard = memo(function PerformanceReviewCard({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="text-[11px] text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
             {r.quarter} {r.year}
           </span>
           <span
-            className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-              r.status === "submitted" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+            className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${
+              r.status === "submitted"
+                ? "bg-emerald-50 text-emerald-700"
+                : r.status === "self_review"
+                ? "bg-purple-50 text-purple-700 border border-purple-200"
+                : "bg-amber-50 text-amber-700"
             }`}
           >
-            {r.status}
+            {r.status === "self_review" ? "Self-Review" : r.status}
           </span>
           {r.overall_score && (
             <span className={`text-[15px] font-bold ${scoreColor(r.overall_score)}`}>
@@ -71,9 +75,9 @@ export const PerformanceReviewCard = memo(function PerformanceReviewCard({
         </div>
       )}
 
-      {r.comments && (
+      {(r.comments || r.employee_comments) && (
         <p className="mt-3 text-[12px] text-gray-600 line-clamp-2 border-t border-gray-50 pt-3">
-          &ldquo;{r.comments}&rdquo;
+          &ldquo;{r.comments || r.employee_comments}&rdquo;
         </p>
       )}
     </div>
