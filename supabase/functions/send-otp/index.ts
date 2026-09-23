@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import nodemailer from "npm:nodemailer@6";
+import nodemailer from "nodemailer";
+import { getClientIp, checkRateLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,7 +25,7 @@ function normalizePhone(phone: string): string {
 }
 
 function toE164(phone: string): string {
-  let digits = (phone || "").replace(/\D/g, "");
+  const digits = (phone || "").replace(/\D/g, "");
   if (digits.startsWith("855")) {
     return `+${digits}`;
   }
@@ -173,6 +174,33 @@ Deno.serve(async (req: Request) => {
           ? rawIdentifier.toLowerCase()
           : `${cleanPhoneDigits}${PHONE_EMAIL_DOMAIN}`)
       : rawIdentifier.toLowerCase();
+
+    // 1. IP rate limit check (max 10 OTP requests per 10 minutes per IP)
+    const clientIp = getClientIp(req);
+    const ipLimit = await checkRateLimit(admin, `otp:ip:${clientIp}`, 10, 600);
+    if (!ipLimit.allowed) {
+      return rateLimitResponse(ipLimit.retryAfterSeconds, undefined, corsHeaders);
+    }
+
+    // 2. Cooldown check (minimum 60 seconds between OTP requests for the same target)
+    const cooldownLimit = await checkRateLimit(admin, `otp:cooldown:${normalizedEmail}`, 1, 60);
+    if (!cooldownLimit.allowed) {
+      return rateLimitResponse(
+        cooldownLimit.retryAfterSeconds,
+        `Please wait ${cooldownLimit.retryAfterSeconds} seconds before requesting another code.`,
+        corsHeaders
+      );
+    }
+
+    // 3. Target identifier rate limit (max 4 OTP requests per 15 minutes per phone/email)
+    const targetLimit = await checkRateLimit(admin, `otp:target:${normalizedEmail}`, 4, 900);
+    if (!targetLimit.allowed) {
+      return rateLimitResponse(
+        targetLimit.retryAfterSeconds,
+        `Too many OTP requests for this account. Please wait ${Math.ceil(targetLimit.retryAfterSeconds / 60)} minutes before trying again.`,
+        corsHeaders
+      );
+    }
 
     // Look up the specific user in auth.users / user_role_assignments
     const { user, assignment } = await findAuthUser(admin, normalizedEmail, cleanPhoneDigits);

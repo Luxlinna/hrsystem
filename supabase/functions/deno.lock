@@ -1,0 +1,408 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:@aws-sdk/client-s3@*": "3.1116.0",
+    "npm:@aws-sdk/s3-request-presigner@*": "3.1116.0",
+    "npm:nodemailer@6": "6.10.1"
+  },
+  "npm": {
+    "@aws-sdk/checksums@3.1000.29": {
+      "integrity": "sha512-Dtu0gr4dnATZAPwEYbpCsG+MpLM7OAliy2gTepEFQwl1vZ6DL3QMH2FveMa3HLvPsOdhJsPRB3KtxVhph9T75A==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/client-s3@3.1116.0": {
+      "integrity": "sha512-UKRl9qSVW0rZpvSOauQNpYAy8+ONBAVYnpfKVtCyOF+FZVT1tl6MunYuHvuarCrroD2/YJs+tHTALYNgAlec3Q==",
+      "dependencies": [
+        "@aws-sdk/checksums",
+        "@aws-sdk/core",
+        "@aws-sdk/credential-provider-node",
+        "@aws-sdk/middleware-sdk-s3",
+        "@aws-sdk/signature-v4-multi-region",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/fetch-http-handler",
+        "@smithy/node-http-handler",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/core@3.977.9": {
+      "integrity": "sha512-reqPFEQrZxDZpeGj4PFMepBeR5LGYHRqq/L0motTzgFkCRBA4rFdaVXDSLYyGHhxVz7sT2PDnPN9CluGSfgyJA==",
+      "dependencies": [
+        "@aws-sdk/types",
+        "@aws-sdk/xml-builder",
+        "@aws/lambda-invoke-store",
+        "@smithy/core",
+        "@smithy/signature-v4",
+        "@smithy/types",
+        "bowser",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/credential-provider-env@3.972.70": {
+      "integrity": "sha512-H404B7dJl2mCrBqahDEYsanB0xhdDp6tXnXcTUnXmmpy2Q3J0Ho0bUajZ2jr/RdwzCyS59Gi8xXIFwPLGBl6Uw==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/credential-provider-http@3.972.72": {
+      "integrity": "sha512-X98zYOrVOeuosCX+6ktf29FC2N2GHPLia7qv6mzPzTc+RPAuHWCDS++Z6JK7eGYqb/v6uaW7bAXaOvDBfol+0w==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/fetch-http-handler",
+        "@smithy/node-http-handler",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/credential-provider-ini@3.973.15": {
+      "integrity": "sha512-Rykg6s5ceBuynMOGWgoowO4N+27JfnqXAnVaSunZl0hOO1XodSrxGNz6sCEbnmS0lAfQZDKyb3fbr46gSuv6Sg==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/credential-provider-env",
+        "@aws-sdk/credential-provider-http",
+        "@aws-sdk/credential-provider-login",
+        "@aws-sdk/credential-provider-process",
+        "@aws-sdk/credential-provider-sso",
+        "@aws-sdk/credential-provider-web-identity",
+        "@aws-sdk/nested-clients",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/credential-provider-imds",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/credential-provider-login@3.972.77": {
+      "integrity": "sha512-Jb59xfEISoN5mmbnA+HYqdtrSX3CgCtJoof+V5D8/TgUI56W63GEEd5Y58WijU3Ou6+WEgaLD1feVzaRXV5IDQ==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/nested-clients",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/credential-provider-node@3.972.81": {
+      "integrity": "sha512-Rml+WitoFvXmv6JZ18U/xGdGDGGvB/mOin0ya0lTnTrdC0Z1lrVxTYh7iNklZBcvcRMrs4DoEf6xy1KWyrLQQw==",
+      "dependencies": [
+        "@aws-sdk/credential-provider-env",
+        "@aws-sdk/credential-provider-http",
+        "@aws-sdk/credential-provider-ini",
+        "@aws-sdk/credential-provider-process",
+        "@aws-sdk/credential-provider-sso",
+        "@aws-sdk/credential-provider-web-identity",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/credential-provider-imds",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/credential-provider-process@3.972.70": {
+      "integrity": "sha512-2ry03fGRJr4sV3jI+ocjj5JqALnFD6ymM5KiNCDZMvq8bX2GSbE0vji4aM43TVCl2nXqqLRZaUxdq/KeWRAY4Q==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/credential-provider-sso@3.973.14": {
+      "integrity": "sha512-jkhg/8ocAAoc0RFyLMhCw+/zZh7gystQgd4F4hznNa8P4Cc501PQmxd+jGLiMHodPJ+7Zv/3znM62gZojyasmA==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/nested-clients",
+        "@aws-sdk/token-providers",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/credential-provider-web-identity@3.972.76": {
+      "integrity": "sha512-d3AGyVu759PGr35mEB2s22xxlNEA5rpdxtSPJthfPFJvoQ8dt357iVPECqWfUxXp1toJAvKmbtcIYVGigaGsCA==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/nested-clients",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/middleware-sdk-s3@3.972.75": {
+      "integrity": "sha512-wMIsNumRVKaNMKhvU/s9VrdEwE8S6gSzXp4RygFG5BEMnGkkXf8cjh8zf7cKJBpUDpqTWqwbz5isEgp9rH6Lng==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/signature-v4-multi-region",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/nested-clients@3.997.44": {
+      "integrity": "sha512-NhEgryjlBF9w38ZXqGymQV28IhkYa1mKhlbYnqIis57AYwWGVYfUPgg/qC2rLRqOUfblxx++irvju10kVTa8Vw==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/signature-v4-multi-region",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/fetch-http-handler",
+        "@smithy/node-http-handler",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/s3-request-presigner@3.1116.0": {
+      "integrity": "sha512-WwaaVpvrZyML5L8SNY7sUGsYlMeCHzQ/8A/ms7dz/7sfYRvPn+qf0OasUWk+zuT8qGwjsYhILD0WVtlqUU08pQ==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/signature-v4-multi-region",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/signature-v4-multi-region@3.996.46": {
+      "integrity": "sha512-L+2xZTye/2T96f3lwCws0Zw6GG2JHZW9e8FpVgGBeeExSKyeoZ6CWRpBml/7DNiK/O26jrgPM9F+Ay8VkgzUWQ==",
+      "dependencies": [
+        "@aws-sdk/types",
+        "@smithy/signature-v4",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/token-providers@3.1116.0": {
+      "integrity": "sha512-ygIivKqh8aHzNkucOCXHyIBgBpLPfrSI0mCqXF+vLBsPTUKqj0VSqAY0GFPe7lQl4HntjOcQ+KSyS7oUV2C54Q==",
+      "dependencies": [
+        "@aws-sdk/core",
+        "@aws-sdk/nested-clients",
+        "@aws-sdk/types",
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/types@3.974.5": {
+      "integrity": "sha512-LkwLL2BLbC6wNNm4JaH9mbEqBMdOZCct6VAYqhdN4U1xrWM+fUJQEfbHwQgDypapOWTRtlk25akb5afM0P8CIQ==",
+      "dependencies": [
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws-sdk/xml-builder@3.972.40": {
+      "integrity": "sha512-wlFmCIGUlwF4zx/kncw+bmxTQh1HeSJq4mYV/V5cZUSJadDP3kXvGW8Rn21cimj/7y9ju+47oYWXi97vF7czaA==",
+      "dependencies": [
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@aws/lambda-invoke-store@0.3.0": {
+      "integrity": "sha512-sl4Bm6yiMNYrZKkqqDFWN0UfnWhlS8ivKxrYl+6t0gCLrqr8y3B2IqZZbFRkfaVVp7C/baApyh71P+LeE1A2sQ=="
+    },
+    "@smithy/core@3.33.3": {
+      "integrity": "sha512-CsOeKq/9kA3y6VJHt+/+VTCtBaxJ4OTFpgrjIUhPpDIKxBci1k2bJaQASF2h/ELWrulGp+t97DZ0mevfAD8idg==",
+      "dependencies": [
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@smithy/credential-provider-imds@4.5.2": {
+      "integrity": "sha512-A9uSdn72ozbRUSit0eib0TW7nXuNPlaeM0zcGkJ+nE6tFcSDbnmtwoxbTCFBukVQcszDAyvsd7+rTduPTXpygg==",
+      "dependencies": [
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@smithy/fetch-http-handler@5.7.2": {
+      "integrity": "sha512-nZyWTmSpJEXl6VtWVMBJve/7x12DZu6sIX1z1a+ZMaHlQQRs9Zpu6NbTe/gmxYXVRpkjxyDYpZ5gx2IM6f/Wkw==",
+      "dependencies": [
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@smithy/node-http-handler@4.11.3": {
+      "integrity": "sha512-2jY1tSpERfPfWqyBV2pH+iGFaghVsIJszJNsT7hxtQYhVJpWDyc0LqOWI+nXOxOAHaEfZ4PXXtp1wW1TGpHhkA==",
+      "dependencies": [
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@smithy/signature-v4@5.7.3": {
+      "integrity": "sha512-7ImGm+FkHRLcBaRttIAMZ6bzJZWb2cJGoYjq46F2UjycujWzrL9GEN9h4w7eQyXJYnltrUhxbbieBAIRrdqpow==",
+      "dependencies": [
+        "@smithy/core",
+        "@smithy/types",
+        "tslib"
+      ]
+    },
+    "@smithy/types@4.17.2": {
+      "integrity": "sha512-FOKpVZob9MPTn2znRzGrnsMHv7BOsKVw3XiP/cOyYLDVZ9qKp4nifIiSCuUU/fIj5Vu0UOAxCFr+qRAtG0NUkA==",
+      "dependencies": [
+        "tslib"
+      ]
+    },
+    "bowser@2.14.1": {
+      "integrity": "sha512-tzPjzCxygAKWFOJP011oxFHs57HzIhOEracIgAePE4pqB3LikALKnSzUyU4MGs9/iCEUuHlAJTjTc5M+u7YEGg=="
+    },
+    "nodemailer@6.10.1": {
+      "integrity": "sha512-Z+iLaBGVaSjbIzQ4pX6XV41HrooLsQ10ZWPUehGmuantvzWoDVBnmsdUcOIDM1t+yPor5pDhVlDESgOMEGxhHA=="
+    },
+    "tslib@2.8.1": {
+      "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="
+    }
+  },
+  "redirects": {
+    "https://esm.sh/@hexagon/base64@^1.1.27?target=deno": "https://esm.sh/@hexagon/base64@1.1.28?target=deno",
+    "https://esm.sh/@levischuck/tiny-cbor@^0.2.2?target=deno": "https://esm.sh/@levischuck/tiny-cbor@0.2.11?target=deno",
+    "https://esm.sh/@peculiar/asn1-android@^2.3.10?target=deno": "https://esm.sh/@peculiar/asn1-android@2.9.5?target=deno",
+    "https://esm.sh/@peculiar/asn1-ecc@^2.3.8?target=deno": "https://esm.sh/@peculiar/asn1-ecc@2.9.5?target=deno",
+    "https://esm.sh/@peculiar/asn1-rsa@^2.3.8?target=deno": "https://esm.sh/@peculiar/asn1-rsa@2.9.5?target=deno",
+    "https://esm.sh/@peculiar/asn1-schema@^2.3.8?target=deno": "https://esm.sh/@peculiar/asn1-schema@2.9.5?target=deno",
+    "https://esm.sh/@peculiar/asn1-schema@^2.9.5?target=deno": "https://esm.sh/@peculiar/asn1-schema@2.9.5?target=deno",
+    "https://esm.sh/@peculiar/asn1-x509@^2.3.8?target=deno": "https://esm.sh/@peculiar/asn1-x509@2.9.5?target=deno",
+    "https://esm.sh/@peculiar/asn1-x509@^2.9.5?target=deno": "https://esm.sh/@peculiar/asn1-x509@2.9.5?target=deno",
+    "https://esm.sh/@peculiar/utils@^2.0.2/bytes?target=deno": "https://esm.sh/@peculiar/utils@2.0.3/bytes?target=deno",
+    "https://esm.sh/@peculiar/utils@^2.0.2/encoding?target=deno": "https://esm.sh/@peculiar/utils@2.0.3/encoding?target=deno",
+    "https://esm.sh/@peculiar/utils@^2.0.2?target=deno": "https://esm.sh/@peculiar/utils@2.0.3?target=deno",
+    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.112.3",
+    "https://esm.sh/asn1js@^3.0.10?target=deno": "https://esm.sh/asn1js@3.0.10?target=deno",
+    "https://esm.sh/iceberg-js@^0.8.1?target=denonext": "https://esm.sh/iceberg-js@0.8.1?target=denonext",
+    "https://esm.sh/pvtsutils@^1.3.6?target=deno": "https://esm.sh/pvtsutils@1.3.6?target=deno",
+    "https://esm.sh/pvutils@^1.1.5?target=deno": "https://esm.sh/pvutils@1.2.0?target=deno",
+    "https://esm.sh/tslib@^2.8.1?target=deno": "https://esm.sh/tslib@2.8.1?target=deno"
+  },
+  "remote": {
+    "https://deno.land/std@0.177.1/_util/asserts.ts": "178dfc49a464aee693a7e285567b3d0b555dc805ff490505a8aae34f9cfb1462",
+    "https://deno.land/std@0.177.1/_util/os.ts": "d932f56d41e4f6a6093d56044e29ce637f8dcc43c5a90af43504a889cf1775e3",
+    "https://deno.land/std@0.177.1/bytes/index_of_needle.ts": "65c939607df609374c4415598fa4dad04a2f14c4d98cd15775216f0aaf597f24",
+    "https://deno.land/std@0.177.1/encoding/base64.ts": "7de04c2f8aeeb41453b09b186480be90f2ff357613b988e99fabb91d2eeceba1",
+    "https://deno.land/std@0.177.1/encoding/base64url.ts": "3f1178f6446834457b16bfde8b559c1cd3481727fe384d3385e4a9995dc2d851",
+    "https://deno.land/std@0.177.1/node/_core.ts": "9a58c0ef98ee77e9b8fcc405511d1b37a003a705eb6a9b6e95f75434d8009adc",
+    "https://deno.land/std@0.177.1/node/_utils.ts": "7fd55872a0cf9275e3c080a60e2fa6d45b8de9e956ebcde9053e72a344185884",
+    "https://deno.land/std@0.177.1/node/buffer.ts": "85617be2063eccaf177dbb84c7580d1e32023724ed14bd9df4e453b152a26167",
+    "https://deno.land/std@0.177.1/node/internal/buffer.mjs": "e92303a3cc6d9aaabcd270a937ad9319825d9ba08cb332650944df4562029b27",
+    "https://deno.land/std@0.177.1/node/internal/crypto/_keys.ts": "8f3c3b5a141aa0331a53c205e9338655f1b3b307a08085fd6ff6dda6f7c4190b",
+    "https://deno.land/std@0.177.1/node/internal/crypto/constants.ts": "544d605703053218499b08214f2e25cf4310651d535b7ab995891c4b7a217693",
+    "https://deno.land/std@0.177.1/node/internal/error_codes.ts": "8495e33f448a484518d76fa3d41d34fc20fe03c14b30130ad8e936b0035d4b8b",
+    "https://deno.land/std@0.177.1/node/internal/errors.ts": "1c699b8a3cb93174f697a348c004b1c6d576b66688eac8a48ebb78e65c720aae",
+    "https://deno.land/std@0.177.1/node/internal/hide_stack_frames.ts": "9dd1bad0a6e62a1042ce3a51eb1b1ecee2f246907bff44835f86e8f021de679a",
+    "https://deno.land/std@0.177.1/node/internal/normalize_encoding.mjs": "fd1d9df61c44d7196432f6e8244621468715131d18cc79cd299fc78ac549f707",
+    "https://deno.land/std@0.177.1/node/internal/primordials.mjs": "a72d86b5aa55d3d50b8e916b6a59b7cc0dc5a31da8937114b4a113ad5aa08c74",
+    "https://deno.land/std@0.177.1/node/internal/util.mjs": "f7fe2e1ca5e66f550ad0856b9f5ee4d666f0c071fe212ea7fc7f37cfa81f97a5",
+    "https://deno.land/std@0.177.1/node/internal/util/inspect.mjs": "11d7c9cab514b8e485acc3978c74b837263ff9c08ae4537fa18ad56bae633259",
+    "https://deno.land/std@0.177.1/node/internal/util/types.ts": "0e587b44ec5e017cf228589fc5ce9983b75beece6c39409c34170cfad49d6417",
+    "https://deno.land/std@0.177.1/node/internal/validators.mjs": "e02f2b02dd072a5d623970292588d541204dc82207b4c58985d933a5f4b382e6",
+    "https://deno.land/std@0.177.1/node/internal_binding/_libuv_winerror.ts": "30c9569603d4b97a1f1a034d88a3f74800d5ea1f12fcc3d225c9899d4e1a518b",
+    "https://deno.land/std@0.177.1/node/internal_binding/_node.ts": "cb2389b0eab121df99853eb6a5e3a684e4537e065fb8bf2cca0cbf219ce4e32e",
+    "https://deno.land/std@0.177.1/node/internal_binding/_utils.ts": "7c58a2fbb031a204dee9583ba211cf9c67922112fe77e7f0b3226112469e9fe1",
+    "https://deno.land/std@0.177.1/node/internal_binding/_winerror.ts": "3e8cfdfe22e89f13d2b28529bab35155e6b1730c0221ec5a6fc7077dc037be13",
+    "https://deno.land/std@0.177.1/node/internal_binding/buffer.ts": "31729e0537921d6c730ad0afea44a7e8a0a1044d070ade8368226cb6f7390c8b",
+    "https://deno.land/std@0.177.1/node/internal_binding/constants.ts": "21ff9d1ee71d0a2086541083a7711842fc6ae25e264dbf45c73815aadce06f4c",
+    "https://deno.land/std@0.177.1/node/internal_binding/string_decoder.ts": "54c3c1cbd5a9254881be58bf22637965dc69535483014dab60487e299cb95445",
+    "https://deno.land/std@0.177.1/node/internal_binding/types.ts": "2187595a58d2cf0134f4db6cc2a12bf777f452f52b15b6c3aed73fa072aa5fc3",
+    "https://deno.land/std@0.177.1/node/internal_binding/util.ts": "808ff3b92740284184ab824adfc420e75398c88c8bccf5111f0c24ac18c48f10",
+    "https://deno.land/std@0.177.1/node/internal_binding/uv.ts": "eb0048e30af4db407fb3f95563e30d70efd6187051c033713b0a5b768593a3a3",
+    "https://esm.sh/@hexagon/base64@1.1.28/deno/base64.mjs": "784ff7867fd715e848eb9c342628c784ac198372dfa44acae0fe18d741f1428f",
+    "https://esm.sh/@hexagon/base64@1.1.28?target=deno": "7239254b43562dae34a44c4027abc4ed8f90de60244599c89386131d78a9ad64",
+    "https://esm.sh/@levischuck/tiny-cbor@0.2.11/deno/tiny-cbor.mjs": "a9e7aef65a906cc4b7fa667882e8b430bf8e2361136f897e081473e356628c6c",
+    "https://esm.sh/@levischuck/tiny-cbor@0.2.11?target=deno": "3ff6b4895f7217cef62f12ebc78be3d4eca7c9c07e855e870c8faddbde326ba4",
+    "https://esm.sh/@peculiar/asn1-android@2.9.5/deno/asn1-android.mjs": "7df497df9759e9a8c9d112e25951c4f7ddac6cdba3ac7db89701282fc70196d0",
+    "https://esm.sh/@peculiar/asn1-android@2.9.5?target=deno": "6997724740ea97d5bbf674a158e8e60fd45911909da027ee49e783a89f54793f",
+    "https://esm.sh/@peculiar/asn1-ecc@2.9.5/deno/asn1-ecc.mjs": "dbb4dc65f0a8438b853fdeaff3101a83425e0124ac5a36a8ce3f97e2140c5ed9",
+    "https://esm.sh/@peculiar/asn1-ecc@2.9.5?target=deno": "f876cd52dccd01aad72aaa6a0b0f675be830d68df1642ee629fd15b7ccd8fe20",
+    "https://esm.sh/@peculiar/asn1-rsa@2.9.5/deno/asn1-rsa.mjs": "515748a4a1736c6f7fc2331e1df014349f42ff0525a578d966f760193d6ed555",
+    "https://esm.sh/@peculiar/asn1-rsa@2.9.5?target=deno": "edad58395f73b19d2571863e4db60afd3a695de72e71c8667df70ab37ccbcc6a",
+    "https://esm.sh/@peculiar/asn1-schema@2.9.5/deno/asn1-schema.mjs": "b183ae9689eb25d12f3b268024e61e4a890a7ef1bea14c827949ea8fae840347",
+    "https://esm.sh/@peculiar/asn1-schema@2.9.5?target=deno": "9e92e895b452d2c0f2bb1b226eaa37aaab2d592cfef6c6262f0cc7f35d015627",
+    "https://esm.sh/@peculiar/asn1-x509@2.9.5/deno/asn1-x509.mjs": "4d34b87294c8a70d4753560b36be6e35ac8f0cd1d794a1808da894abac08cf17",
+    "https://esm.sh/@peculiar/asn1-x509@2.9.5?target=deno": "edad3bd60a12538f97b2f57f1401b4f9e8e69e9365db232444fb6707044602ad",
+    "https://esm.sh/@peculiar/utils@2.0.3/bytes?target=deno": "70fd1f1c3958ecef37977632fc2f77e0ef137b70815bf98672f7dd1ce5a3c4eb",
+    "https://esm.sh/@peculiar/utils@2.0.3/deno/build/esm/encoding/base64.mjs": "75a20f5a51d5c6127dc2d93cd8406a1f05d83a3059fec60d1ac2a2af794e23a9",
+    "https://esm.sh/@peculiar/utils@2.0.3/deno/build/esm/encoding/binary.mjs": "2edbc0af976d1578ea35d6fa5f163b5f6a1c26fb041c0c5a6f15a499e9e1a050",
+    "https://esm.sh/@peculiar/utils@2.0.3/deno/bytes.mjs": "732726721d0f4a1465119a881c3a833c6527b74b9a81ef7cefb135915ab84765",
+    "https://esm.sh/@peculiar/utils@2.0.3/deno/converters.mjs": "84a4f8a225a5633b6e18acbcbe1fe9f623a1d874008c199b87f6e7f45ba71087",
+    "https://esm.sh/@peculiar/utils@2.0.3/deno/encoding.mjs": "b6d6b4636f1a2a9e14bd7964e06065b48c946a3ac308841d775f37a22f64ffd9",
+    "https://esm.sh/@peculiar/utils@2.0.3/deno/legacy.mjs": "f608515ac1d30d1ab1e73933fc7db405a4a3cf9bf76bfe6b42cd87a7b6380a10",
+    "https://esm.sh/@peculiar/utils@2.0.3/deno/pem.mjs": "188aff05dfc4fb07d7e1ed4f0e385082a0f7ff45a1e31017b7995b16ff88d8c4",
+    "https://esm.sh/@peculiar/utils@2.0.3/deno/utils.mjs": "80f9ba59c67c42337beb1e16ec7a17a72389a41bb78832079bd4b16697b3f68c",
+    "https://esm.sh/@peculiar/utils@2.0.3/encoding?target=deno": "71d7a5eac4abef8c8230828fc5ce3e0db5e4f2125bc523d1997d9d4150dd9ae1",
+    "https://esm.sh/@peculiar/utils@2.0.3?target=deno": "b6832bb0662c5842d4d5743eaeabc477d17f737398e9813ca24d74356034c123",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/deps.mjs": "fe591d1478e75239abd1b516676a90ac161618c1a0144da3a31ed13e38d76f72",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/convertAAGUIDToString.mjs": "70a9a72a342556a43b2e19c47717f1a9f3fee15c85fe668ae47ae6d517b6d865",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/convertCOSEtoPKCS.mjs": "019e56d035100e5f68f0aae029332fd25d42ba87013ede6674cae98de7b70ff9",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/convertCertBufferToPEM.mjs": "1c50651a8fbcf09f270a3480a4d7a83da374d0b01c211fd4f5cf134e729aff2b",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/convertPEMToBytes.mjs": "e545cbfc34f0549e9aa2d866a96a9ae1706d238f62d93b671bd2c0c8053cccb8",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/convertX509PublicKeyToCOSE.mjs": "1ab8ebc1dc9db06409ba0b7206ecebc25f7f693fb410f024e20acef131a717b6",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/cose.mjs": "447a15ae6f9445c1be9eea809f691d9968e7ac8a57a47d72887c6057b190d9f1",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/decodeAttestationObject.mjs": "4920661716586aa72eb7026ce46ba4339b816ad132d4be0df2097c378ff239c7",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/decodeClientDataJSON.mjs": "1cbd7cc164029c4ee993108d510ae25bad1c45c77815279e8269d0c40b6365b5",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/decodeCredentialPublicKey.mjs": "5f08c7f8683b07716394584eb68bf8e9354e6e4b42a13df6c76ac0f11ed3c511",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/fetch.mjs": "673e01606f25b12b73d233317f1baab1c50d2358b99f57e730ed895755412ec4",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/generateChallenge.mjs": "037c78512429abf31c640e92ad9e5641f8f79dbb0ae981b0da511f43bad5057c",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/generateUserID.mjs": "b5ba2bf8d9d364701b3994998f785186952d228512fa465e175629dbe8e1b9c4",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/getCertificateInfo.mjs": "8ebac9e23d33b1523200811b72bac6f5c14ea131d3f762f1159d46f1a17ff8fb",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/isCertRevoked.mjs": "77d3467e1c481082302c27fc622436751e24285fe7f3b5c17aad08e78cb854c7",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/iso/index.mjs": "3341f649e1f67cc9b5786ca89f264efcd722ba3a4873ee6dc7283ede2f2e8ad1",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/iso/isoCrypto/getWebCrypto.mjs": "76a42810922bbd1cc45fc0e035b56eeeae592051fc8d140adcf7d240a5e8b060",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/iso/isoCrypto/importKey.mjs": "4b8511930d103d35012aed99c7f41593e1371651e17960dfd313902f19775746",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/iso/isoCrypto/mapCoseAlgToWebCryptoAlg.mjs": "42044dbcde00cde5fc287e1fd57818f15509e2162cc31ea97c7f88177c0abe08",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/iso/isoCrypto/verifyEC2.mjs": "40523f3867108166c4adf1cc896fe55bc5cc76521096ccc9347d358a59bb742d",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/iso/isoCrypto/verifyRSA.mjs": "e32e6271bbb8169111043823ebe671d86387617adec50c998fe77c291a27a9ec",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/mapX509SignatureAlgToCOSEAlg.mjs": "e7be17a703da24aad6d849389fb53db6f10bfef9a3d5db8fbd3866a6df2bd7d1",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/parseAuthenticatorData.mjs": "5fa2ca0ef561cc338bc56306e7f395e2dffffd87c43a1593dd67e906e11ac253",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/toHash.mjs": "b566926e969d8b61680fc2403f67c32d49c056e5132ed490c8b99edeb438eb6c",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/validateCertificatePath.mjs": "93c9f45535eec9391a5ed88490658f78a9280a52b847720c1ce79649ebcc9a4f",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/esm/helpers/verifySignature.mjs": "ec344d49076f4abfab5f48ddf8edb39bb510629f7c25e2bc197b132522f0fe2f",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/helpers.mjs": "fe7852a3db80f3bf186d3291f38cd18baf164f49807c0ba841ca7ee898e1bb97",
+    "https://esm.sh/@simplewebauthn/server@10.0.1/deno/server.mjs": "0fd9e71a026473546c4faf16afa63639741be5e8cc02e104884189a590823835",
+    "https://esm.sh/@simplewebauthn/server@10.0.1?target=deno": "e09973b46579e17f8aa5bbe2facf310a4778d2cb4ef53cbff51e0e4b6b6bc84e",
+    "https://esm.sh/@supabase/auth-js@2.112.3/denonext/auth-js.mjs": "aef62c72178112ff2d0106d9418d6f40e811a9967a55d9cbf88000ada0525ab7",
+    "https://esm.sh/@supabase/functions-js@2.112.3/denonext/functions-js.mjs": "ce408d1254a08ce23746fec5a186f97d1af7b60a8ee3f3d989078953fff64533",
+    "https://esm.sh/@supabase/phoenix@0.4.5/denonext/phoenix.mjs": "40bd2a70829cd847848baac58e635bacd83fd62188f6624b44e2c295341004eb",
+    "https://esm.sh/@supabase/postgrest-js@2.112.3/denonext/postgrest-js.mjs": "afc43bf63bc66d42d2be9b3620f5ebc6a4cfadb44ed33bb7c6f6f86e351889f8",
+    "https://esm.sh/@supabase/realtime-js@2.112.3/denonext/realtime-js.mjs": "6a404d084080a2ccc860b15887f640f7d89b564597b9ac8de8b3211fad93d47d",
+    "https://esm.sh/@supabase/storage-js@2.112.3/denonext/storage-js.mjs": "e2073d5010e5e90e34bff604f710f09249de544030605963bb5d04640e22d1a0",
+    "https://esm.sh/@supabase/supabase-js@2.112.3": "f6b9130984301066587e8917dfab3b3d60be47dc966bd3d04c733bc9423c1cf9",
+    "https://esm.sh/@supabase/supabase-js@2.112.3/denonext/dist/tracingRegistry.mjs": "2e0f9f6da49144408ffdca4af7b92a99bc09f73b7334b11ffd85e47df76d379d",
+    "https://esm.sh/@supabase/supabase-js@2.112.3/denonext/supabase-js.mjs": "546d90fcc225da82acc3cd383db2f0a9301ff67b156d3e0638923830804c1d30",
+    "https://esm.sh/asn1js@3.0.10/deno/asn1js.mjs": "bb75e1a9e3d9292f7cafae6aa8f7a30cd95ecf27c85743d30040ec5c9720e366",
+    "https://esm.sh/asn1js@3.0.10?target=deno": "6b52d7d56205495024391537871b6eb1ec3567a8c52aac1261bcfeab0591660a",
+    "https://esm.sh/iceberg-js@0.8.1/denonext/iceberg-js.mjs": "d839d81a2e3966500ca2cdd0c1cb458e9608bacfc91f7bb67a69b2e878dcdb4f",
+    "https://esm.sh/iceberg-js@0.8.1?target=denonext": "58c849d7fe2bf4eca4a84eb501e83c161a7d8c34ca1bec15a962b3bec3062633",
+    "https://esm.sh/pvtsutils@1.3.6/deno/pvtsutils.mjs": "c9a67d9e844f66c85f329dc6c30af933ae9d9b3eef171e0ac3aa6307e095b027",
+    "https://esm.sh/pvtsutils@1.3.6?target=deno": "0c31dbc59e03818257023b1795a016db8ae840961e08f68ff3db96d95066bfb4",
+    "https://esm.sh/pvutils@1.2.0/deno/pvutils.mjs": "3639e7b8580aaa35ba60d670aa6d75c0be1fd07a716080c45454bb0f77b13083",
+    "https://esm.sh/pvutils@1.2.0?target=deno": "0d6a76b61ef8f07065cf67e5fde09498a092ad89a39a8adca30f93ad910813ff",
+    "https://esm.sh/tslib@2.8.1/deno/tslib.mjs": "c38da5dd6da6281964435002ce204cd586634fe3bdfb24a0ee116f48cf3292e9",
+    "https://esm.sh/tslib@2.8.1/denonext/tslib.mjs": "c38da5dd6da6281964435002ce204cd586634fe3bdfb24a0ee116f48cf3292e9",
+    "https://esm.sh/tslib@2.8.1?target=deno": "4d0e42f46dd75e7bf7243a872fe5a720c347242f41eb9327c63eec0024d8211a"
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:@aws-sdk/client-s3@*",
+      "npm:@aws-sdk/s3-request-presigner@*",
+      "npm:nodemailer@6"
+    ]
+  }
+}

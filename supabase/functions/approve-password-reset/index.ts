@@ -1,5 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
-import nodemailer from "npm:nodemailer@6";
+import { createClient } from "@supabase/supabase-js";
+import nodemailer from "nodemailer";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,7 +60,16 @@ Deno.serve(async (req) => {
       .eq("user_id", callerUser.id)
       .is("deleted_at", null)
       .maybeSingle();
-    const role = Array.isArray((assignment as any)?.app_roles) ? (assignment as any).app_roles[0] : (assignment as any)?.app_roles;
+    interface AppRole {
+      is_admin?: boolean;
+      allowed_modules?: string[];
+    }
+    const rawRoles = assignment?.app_roles;
+    const role: AppRole | null = Array.isArray(rawRoles)
+      ? (rawRoles[0] as unknown as AppRole)
+      : rawRoles
+      ? (rawRoles as unknown as AppRole)
+      : null;
     const canApprove = role?.is_admin || role?.allowed_modules?.includes("*") || role?.allowed_modules?.includes("settings");
     if (!canApprove) return json({ error: "Not authorized to approve password resets" }, 403);
 
@@ -142,8 +151,9 @@ Deno.serve(async (req) => {
     await admin.from("notifications").update({ is_read: true }).eq("source", "password_reset").eq("entity_id", request_id);
 
     return json({ success: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal server error";
     console.error("approve-password-reset error:", err);
-    return json({ error: err.message || "Internal server error" }, 500);
+    return json({ error: message }, 500);
   }
 });

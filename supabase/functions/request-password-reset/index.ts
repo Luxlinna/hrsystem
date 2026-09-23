@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getClientIp, checkRateLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,6 +58,23 @@ Deno.serve(async (req) => {
     const normalizedEmail = isPhone
       ? `${cleanDigits}${PHONE_EMAIL_DOMAIN}`
       : rawInput.toLowerCase().trim();
+
+    // 1. IP rate limit check (max 5 reset requests per 15 minutes per IP)
+    const clientIp = getClientIp(req);
+    const ipLimit = await checkRateLimit(admin, `pwd-reset:ip:${clientIp}`, 5, 900);
+    if (!ipLimit.allowed) {
+      return rateLimitResponse(ipLimit.retryAfterSeconds, undefined, corsHeaders);
+    }
+
+    // 2. Target rate limit check (max 2 reset requests per 15 minutes per account)
+    const targetLimit = await checkRateLimit(admin, `pwd-reset:target:${normalizedEmail}`, 2, 900);
+    if (!targetLimit.allowed) {
+      return rateLimitResponse(
+        targetLimit.retryAfterSeconds,
+        `Too many password reset requests for this account. Please wait ${Math.ceil(targetLimit.retryAfterSeconds / 60)} minutes.`,
+        corsHeaders
+      );
+    }
 
     const generic = {
       success: true,

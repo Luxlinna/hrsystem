@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,8 +56,9 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
     return json({ assignment: data || null });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal server error";
     console.error("Get my role error:", err);
-    return json({ error: err.message || "Internal server error" }, 500);
+    return json({ error: message }, 500);
   }
 });

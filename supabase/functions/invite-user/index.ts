@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import { getClientIp, checkRateLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,15 +70,69 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return json({ error: "Missing Supabase configuration" }, 500);
+    }
+
+    // Require authentication
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return json({ error: "Not authenticated" }, 401);
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    // Validate caller token
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: serviceRoleKey },
+    });
+    if (!authResponse.ok) {
+      return json({ error: "Not authenticated" }, 401);
+    }
+    const currentUser = await authResponse.json();
+
+    // Verify caller is admin or authorized role via PostgreSQL RBAC
+    const callerEmail = currentUser.email?.toLowerCase() || "";
+    const { data: assignment, error: assignmentError } = await supabaseAdmin
+      .from("user_role_assignments")
+      .select("app_roles(name, is_admin)")
+      .or(`user_id.eq.${currentUser.id},email.eq.${callerEmail}`)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle();
+
+    if (assignmentError) throw assignmentError;
+
+    const role = assignment?.app_roles as { name?: string; is_admin?: boolean } | null;
+    const isAllowedAdmin = Boolean(
+      role?.is_admin || (role?.name && (/admin|manager|bu\s*ceo/i.test(role.name)))
     );
+    if (!isAllowedAdmin) {
+      return json({ error: "Not authorized to invite users" }, 403);
+    }
+
+    // Rate limit: max 20 invites per hour per user / IP
+    const clientIp = getClientIp(req);
+    const ipLimit = await checkRateLimit(supabaseAdmin, `invite:ip:${clientIp}`, 25, 3600);
+    if (!ipLimit.allowed) {
+      return rateLimitResponse(ipLimit.retryAfterSeconds, undefined, corsHeaders);
+    }
 
     const { email, display_name, role_id, redirect_to } = await req.json();
 
     if (!email) {
       return json({ error: "Email is required" }, 400);
+    }
+
+    const userLimit = await checkRateLimit(supabaseAdmin, `invite:user:${currentUser.id}`, 20, 3600);
+    if (!userLimit.allowed) {
+      return rateLimitResponse(
+        userLimit.retryAfterSeconds,
+        "You have sent too many invitations. Please wait before inviting more users.",
+        corsHeaders
+      );
     }
 
     const { data: existing } = await supabaseAdmin

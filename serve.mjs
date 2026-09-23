@@ -11,6 +11,48 @@ const WATCHDOG_INTERVAL_MS = 5 * 60 * 1000;
 setInterval(checkBiometricDeviceHealth, WATCHDOG_INTERVAL_MS);
 setTimeout(checkBiometricDeviceHealth, 10000);
 
+// --- In-Memory Rate Limiter ---
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const MAX_REQUESTS_PER_WINDOW = 200; // Max 200 requests/min per IP (ample for loading SPA assets)
+const ipRequestHistory = new Map();
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const history = (ipRequestHistory.get(ip) || []).filter((time) => time > cutoff);
+
+  if (history.length >= MAX_REQUESTS_PER_WINDOW) {
+    return true;
+  }
+
+  history.push(now);
+  ipRequestHistory.set(ip, history);
+  return false;
+}
+
+// Clean up stale IPs every 5 minutes to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  for (const [ip, history] of ipRequestHistory.entries()) {
+    const valid = history.filter((time) => time > cutoff);
+    if (valid.length === 0) {
+      ipRequestHistory.delete(ip);
+    } else {
+      ipRequestHistory.set(ip, valid);
+    }
+  }
+}, 5 * 60 * 1000);
+
+function getRequestIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) {
+    const first = String(forwarded).split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return req.headers["x-real-ip"] || req.socket.remoteAddress || "unknown";
+}
+
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -47,6 +89,16 @@ async function resolveFile(urlPath) {
 
 const server = createServer(async (req, res) => {
   try {
+    const clientIp = getRequestIp(req);
+    if (isRateLimited(clientIp)) {
+      res.writeHead(429, {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Retry-After": "60",
+      });
+      res.end("429 Too Many Requests: Rate limit exceeded. Please retry in 60 seconds.");
+      return;
+    }
+
     const isAdms = await handleZkAdmsRequest(req, res);
     if (isAdms) return;
 

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getClientIp, checkRateLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,13 @@ Deno.serve(async (req) => {
     }
     if (!otp || typeof otp !== "string") {
       return json({ error: "OTP code is required" }, 400);
+    }
+
+    // IP rate limit check (max 20 verification attempts per 10 minutes per IP)
+    const clientIp = getClientIp(req);
+    const ipLimit = await checkRateLimit(admin, `verify-otp:ip:${clientIp}`, 20, 600);
+    if (!ipLimit.allowed) {
+      return rateLimitResponse(ipLimit.retryAfterSeconds, undefined, corsHeaders);
     }
 
     const raw = email.trim();

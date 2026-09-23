@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import nodemailer from "npm:nodemailer@6";
+import nodemailer from "nodemailer";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,8 +68,8 @@ Deno.serve(async (req) => {
       if (insertError) throw insertError;
     }
 
-    let userData = null;
-    let createUserError = null;
+    let userData: any = null;
+    let createUserError: any = null;
 
     try {
       const result = await supabaseAdmin.auth.admin.createUser({

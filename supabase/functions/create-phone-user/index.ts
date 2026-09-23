@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,15 +25,6 @@ function normalizePhone(phone: string): string {
 function isPhoneSyntheticEmail(email?: string | null): boolean {
   if (!email) return false;
   return email.toLowerCase().endsWith(PHONE_EMAIL_DOMAIN);
-}
-
-function isBootstrapAdminEmail(email?: string | null) {
-  const bootstrapEmails = (Deno.env.get("BOOTSTRAP_ADMIN_EMAILS") || "admin@hrmops.com")
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-
-  return !!email && bootstrapEmails.includes(email.toLowerCase());
 }
 
 Deno.serve(async (req) => {
@@ -68,26 +59,24 @@ Deno.serve(async (req) => {
     }
     const currentUser = await authResponse.json();
 
-    // Verify caller is admin or branch admin
-    if (!isBootstrapAdminEmail(currentUser.email)) {
-      const email = currentUser.email?.toLowerCase() || "";
-      const { data: assignment, error: assignmentError } = await admin
-        .from("user_role_assignments")
-        .select("app_roles(name, is_admin)")
-        .or(`user_id.eq.${currentUser.id},email.eq.${email}`)
-        .is("deleted_at", null)
-        .limit(1)
-        .maybeSingle();
+    // Verify caller is admin or branch admin via PostgreSQL RBAC
+    const email = currentUser.email?.toLowerCase() || "";
+    const { data: assignment, error: assignmentError } = await admin
+      .from("user_role_assignments")
+      .select("app_roles(name, is_admin)")
+      .or(`user_id.eq.${currentUser.id},email.eq.${email}`)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle();
 
-      if (assignmentError) throw assignmentError;
+    if (assignmentError) throw assignmentError;
 
-      const role = assignment?.app_roles as { name?: string; is_admin?: boolean } | null;
-      const isAllowedBranchAdmin = Boolean(
-        role?.name && (/branch\s*admin|bu\s*.*admin|bu\s*ceo/i.test(role.name))
-      );
-      if (!role?.is_admin && !isAllowedBranchAdmin) {
-        return json({ error: "Not authorized to create employee accounts" }, 403);
-      }
+    const role = assignment?.app_roles as { name?: string; is_admin?: boolean } | null;
+    const isAllowedBranchAdmin = Boolean(
+      role?.name && (/branch\s*admin|bu\s*.*admin|bu\s*ceo/i.test(role.name))
+    );
+    if (!role?.is_admin && !isAllowedBranchAdmin) {
+      return json({ error: "Not authorized to create employee accounts" }, 403);
     }
 
     const body = await req.json();
@@ -127,7 +116,7 @@ Deno.serve(async (req) => {
     // Check if auth user already exists for this synthetic email
     const listResult = await admin.auth.admin.listUsers({ perPage: 1000 });
     const existingUser = (listResult.data?.users || []).find(
-      (u) => u.email?.toLowerCase() === syntheticEmail.toLowerCase()
+      (u: any) => u.email?.toLowerCase() === syntheticEmail.toLowerCase()
     );
 
     if (existingUser) {

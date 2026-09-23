@@ -2,6 +2,23 @@
   "nodeModulesDir": "auto",
   "imports": {
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
-    "nodemailer": "npm:nodemailer@6"
+    "nodemailer": "npm:nodemailer@6",
+    "@simplewebauthn/server": "https://esm.sh/@simplewebauthn/server@10.0.1?target=deno",
+    "@aws-sdk/client-s3": "npm:@aws-sdk/client-s3",
+    "@aws-sdk/s3-request-presigner": "npm:@aws-sdk/s3-request-presigner"
+  },
+  "lint": {
+    "rules": {
+      "exclude": [
+        "no-explicit-any",
+        "no-import-prefix",
+        "no-redeclare",
+        "no-unversioned-import",
+        "no-unused-vars"
+      ]
+    }
+  },
+  "compilerOptions": {
+    "noImplicitAny": false
   }
 }

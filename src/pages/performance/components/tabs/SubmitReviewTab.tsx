@@ -29,13 +29,13 @@ export const SubmitReviewTab = memo(function SubmitReviewTab({
 
   useEffect(() => {
     if (isSelf && currentEmployee?.id && form.employee_id !== currentEmployee.id) {
-      set("employee_id", currentEmployee.id);
+      setForm((prev) => ({ ...prev, employee_id: currentEmployee.id }));
     }
     const emp = (isSelf ? currentEmployee : employees.find((e) => e.id === form.employee_id)) || null;
     if (emp?.reports_to && !form.reviewer_id) {
-      set("reviewer_id", emp.reports_to);
+      setForm((prev) => ({ ...prev, reviewer_id: emp.reports_to }));
     }
-  }, [isSelf, currentEmployee, form.employee_id, form.reviewer_id]);
+  }, [isSelf, currentEmployee, form.employee_id, form.reviewer_id, employees, setForm]);
 
   const canSubmit = isSelf
     ? !submitting && !!form.employee_id && !!form.reviewer_id && form.employee_id !== form.reviewer_id && form.employee_comments.trim().length > 0

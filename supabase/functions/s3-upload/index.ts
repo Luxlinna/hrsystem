@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
       ContentType: contentType || "application/octet-stream",
     });
 
-    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+    const uploadUrl = await getSignedUrl(s3 as any, command as any, { expiresIn: 300 });
 
     const publicUrl = Deno.env.get("VITE_S3_PUBLIC_URL") || "";
     const fileUrl = `${publicUrl.replace(/\/$/, "")}/${key}`;

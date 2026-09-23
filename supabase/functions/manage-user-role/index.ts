@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,15 +10,6 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-}
-
-function isBootstrapAdminEmail(email?: string | null) {
-  const bootstrapEmails = (Deno.env.get("BOOTSTRAP_ADMIN_EMAILS") || "admin@hrmops.com")
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-
-  return !!email && bootstrapEmails.includes(email.toLowerCase());
 }
 
 function parseAssignmentId(value: unknown) {
@@ -65,24 +56,22 @@ Deno.serve(async (req) => {
     }
     const currentUser = await authResponse.json();
 
-    if (!isBootstrapAdminEmail(currentUser.email)) {
-      const email = currentUser.email?.toLowerCase() || "";
-      const { data: assignment, error: assignmentError } = await admin
-        .from("user_role_assignments")
-        .select("app_roles(name, is_admin)")
-        .or(`user_id.eq.${currentUser.id},email.eq.${email}`)
-        .is("deleted_at", null)
-        .limit(1)
-        .maybeSingle();
+    const callerEmail = currentUser.email?.toLowerCase() || "";
+    const { data: assignment, error: assignmentError } = await admin
+      .from("user_role_assignments")
+      .select("app_roles(name, is_admin)")
+      .or(`user_id.eq.${currentUser.id},email.eq.${callerEmail}`)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle();
 
-      if (assignmentError) throw assignmentError;
+    if (assignmentError) throw assignmentError;
 
-      const role = assignment?.app_roles as { name?: string; is_admin?: boolean } | null;
-      const isAllowedBranchAdmin = Boolean(
-        role?.name && (/branch\s*admin|bu\s*.*admin|bu\s*ceo/i.test(role.name))
-      );
-      if (!role?.is_admin && !isAllowedBranchAdmin) return json({ error: "Not authorized" }, 403);
-    }
+    const role = assignment?.app_roles as { name?: string; is_admin?: boolean } | null;
+    const isAllowedBranchAdmin = Boolean(
+      role?.name && (/branch\s*admin|bu\s*.*admin|bu\s*ceo/i.test(role.name))
+    );
+    if (!role?.is_admin && !isAllowedBranchAdmin) return json({ error: "Not authorized" }, 403);
 
     const { action, assignment_id, role_id, email, display_name } = await req.json();
     if (action === "list_deleted_users") {
