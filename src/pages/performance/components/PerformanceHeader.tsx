@@ -1,12 +1,12 @@
 import { memo } from "react";
-import type { Review, Goal, Employee } from "../types";
+import type { Review, Goal, Employee, PerformanceTab } from "../types";
 import { PerformanceExportMenu } from "./PerformanceExportMenu";
 
 interface PerformanceHeaderProps {
   canManage: boolean;
   onOpenAddGoal: () => void;
   onOpenSubmitReview: () => void;
-  activeTab?: "reviews" | "goals" | "submit";
+  activeTab?: PerformanceTab;
   reviews?: Review[];
   goals?: Goal[];
   employees?: Employee[];

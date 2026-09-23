@@ -166,3 +166,5 @@ export interface TaskStats {
   done: number;
   overdue: number;
 }
+
+export type PerformanceTab = "reviews" | "goals" | "submit" | "self";

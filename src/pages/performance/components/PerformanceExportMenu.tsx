@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
-import type { Review, Goal, Employee } from "../types";
+import type { Review, Goal, Employee, PerformanceTab } from "../types";
 import {
   exportReviewsPDF,
   exportReviewsXLSX,
@@ -10,7 +10,7 @@ import {
 } from "../exportUtils";
 
 interface PerformanceExportMenuProps {
-  activeTab: "reviews" | "goals" | "submit";
+  activeTab: PerformanceTab;
   reviews: Review[];
   goals: Goal[];
   employees: Employee[];

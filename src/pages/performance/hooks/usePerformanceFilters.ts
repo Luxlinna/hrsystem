@@ -1,7 +1,7 @@
 import { useState } from "react";
-import type { Review } from "../types";
+import type { Review, PerformanceTab } from "../types";
 
-export type PerformanceTab = "reviews" | "goals" | "submit" | "self";
+export type { PerformanceTab };
 
 export function usePerformanceFilters() {
   const [activeTab, setActiveTab] = useState<PerformanceTab>("reviews");
