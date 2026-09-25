@@ -56,6 +56,10 @@ export default function AdminPortal() {
               onOpenEditRole={admin.roles.openEditRole}
               onCloneRole={admin.roles.cloneRoleToBU}
               onDeleteRole={admin.roles.deleteRole}
+              onNavigateToUsers={(roleName) => {
+                admin.setActiveTab("users");
+                admin.setSearchQuery(roleName);
+              }}
             />
           )}
 

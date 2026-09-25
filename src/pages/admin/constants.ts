@@ -7,10 +7,15 @@ export { ALL_MODULES, MODULE_GROUPS };
 export interface RoleCategoryDefinition {
   key: string;
   name: string;
+  order: number;
   badge: string;
   badgeColor: string;
   icon: string;
   color: string;
+  gradient: string;
+  lightBg: string;
+  borderClass: string;
+  tagline: string;
   summary: string;
   scopeSummary: string;
   highlights: string[];
@@ -21,67 +26,87 @@ export const ROLE_CATEGORIES: RoleCategoryDefinition[] = [
   {
     key: "super_admin",
     name: "Super Admin",
-    badge: "All Functions",
-    badgeColor: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800/40",
-    icon: "ri-shield-star-line",
+    order: 1,
+    badge: "All Functions of System",
+    badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200/80 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800/50",
+    icon: "ri-shield-star-fill",
     color: "#253C7D",
+    gradient: "from-[#1E2E5D] via-[#253C7D] to-[#1E2E5D]",
+    lightBg: "bg-indigo-50/40 dark:bg-indigo-950/20",
+    borderClass: "border-indigo-200/80 dark:border-indigo-800/40 hover:border-indigo-400 dark:hover:border-indigo-600",
+    tagline: "Total Authority · System Administration",
     summary: "Complete and unrestricted access across all system modules, configurations, salaries, and user accounts.",
     scopeSummary: "System-wide full control across all Business Units",
     highlights: [
-      "All functions of system",
+      "All functions of system without restriction",
       "Full view, create, edit & delete capabilities",
       "Full access to salary, compensation & payroll modules",
-      "System administration & user role management",
+      "System administration, user account & permission management",
     ],
     restrictions: [],
   },
   {
     key: "admin",
     name: "Admin",
-    badge: "All Except Salary",
-    badgeColor: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800/40",
-    icon: "ri-admin-line",
+    order: 2,
+    badge: "All Functions (Except Salary)",
+    badgeColor: "bg-violet-50 text-violet-700 border-violet-200/80 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800/50",
+    icon: "ri-admin-fill",
     color: "#7C3AED",
+    gradient: "from-[#5B21B6] via-[#7C3AED] to-[#5B21B6]",
+    lightBg: "bg-violet-50/40 dark:bg-violet-950/20",
+    borderClass: "border-violet-200/80 dark:border-violet-800/40 hover:border-violet-400 dark:hover:border-violet-600",
+    tagline: "Full Operations · Salary Excluded",
     summary: "Full operational administration across employee profiles, recruitment, leaves, and attendance, strictly excluding salary.",
     scopeSummary: "Full operational access across all modules except salary",
     highlights: [
       "All operational functions (employees, attendance, leaves, recruitment)",
-      "Manage and edit employee records and organizational data",
+      "Manage, create and edit employee records & organizational structures",
       "Approve requests and manage user assignments",
       "Full access to Admin Portal",
     ],
     restrictions: [
       "Blocked from salary & payroll modules (/payroll-module, /payroll-approval)",
-      "Cannot view employee salary or compensation figures",
+      "Cannot view employee salary or compensation figures across the system",
     ],
   },
   {
     key: "chairperson",
     name: "Chairwoman and Chairman",
-    badge: "All Except Edit",
-    badgeColor: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/40",
-    icon: "ri-vip-crown-line",
+    order: 3,
+    badge: "All Functions (Except Edit)",
+    badgeColor: "bg-amber-50 text-amber-800 border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/50",
+    icon: "ri-vip-crown-fill",
     color: "#D97706",
+    gradient: "from-[#B45309] via-[#D97706] to-[#B45309]",
+    lightBg: "bg-amber-50/40 dark:bg-amber-950/20",
+    borderClass: "border-amber-200/80 dark:border-amber-800/40 hover:border-amber-400 dark:hover:border-amber-600",
+    tagline: "Executive Board Oversight · View-Only",
     summary: "Executive board oversight across all system functions in view-only mode without editing or modifying records.",
     scopeSummary: "All functions of system in view-only mode (except edit)",
     highlights: [
-      "Access to all system functions and modules",
-      "Executive overview, financial reports, analytics & audit log",
-      "Review candidates, requisitions & company metrics",
-      "Executive board-level visibility across all BUs",
+      "Access to all system functions and modules across all BUs",
+      "Executive overview, financial reports, analytics & audit logs",
+      "Review candidates, requisitions & company KPIs",
+      "Executive board-level visibility across all Business Units",
     ],
     restrictions: [
-      "Cannot edit or mutate records (view-only mode)",
-      "Creation and deletion actions are disabled",
+      "Cannot edit or mutate records (system-wide view-only mode)",
+      "Creation, edit, and deletion actions are disabled",
     ],
   },
   {
     key: "line_manager",
     name: "Line Manager",
-    badge: "Supervisor & Dept Scope",
-    badgeColor: "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800/40",
-    icon: "ri-team-line",
-    color: "#2563EB",
+    order: 4,
+    badge: "Supervisory Scope (Except Salary & Edit)",
+    badgeColor: "bg-sky-50 text-sky-700 border-sky-200/80 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800/50",
+    icon: "ri-team-fill",
+    color: "#0284C7",
+    gradient: "from-[#0369A1] via-[#0284C7] to-[#0369A1]",
+    lightBg: "bg-sky-50/40 dark:bg-sky-950/20",
+    borderClass: "border-sky-200/80 dark:border-sky-800/40 hover:border-sky-400 dark:hover:border-sky-600",
+    tagline: "Direct Supervisees & Dept · Team Attendance",
     summary: "Supervisory role over staff under your direct supervision, division or department. Can check team attendance, except salary and edit.",
     scopeSummary: "Scope limited to supervised staff & own division/department",
     highlights: [
@@ -93,16 +118,21 @@ export const ROLE_CATEGORIES: RoleCategoryDefinition[] = [
     restrictions: [
       "Excluded from viewing salary & compensation information",
       "Cannot edit employee master profiles or system configurations",
-      "Cannot view staff outside your department/supervision chain",
+      "Cannot view staff outside your department or supervision chain",
     ],
   },
   {
     key: "employee",
     name: "Employee",
+    order: 5,
     badge: "Self-Service Only",
-    badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/40",
-    icon: "ri-user-line",
+    badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/50",
+    icon: "ri-user-smile-fill",
     color: "#059669",
+    gradient: "from-[#047857] via-[#059669] to-[#047857]",
+    lightBg: "bg-emerald-50/40 dark:bg-emerald-950/20",
+    borderClass: "border-emerald-200/80 dark:border-emerald-800/40 hover:border-emerald-400 dark:hover:border-emerald-600",
+    tagline: "Personal Information · Self Attendance Check",
     summary: "Standard staff access limited to your own information, personal attendance punching, leave requests, and company announcements.",
     scopeSummary: "Self-service scope for personal information only",
     highlights: [
