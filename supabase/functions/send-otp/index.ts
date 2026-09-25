@@ -235,7 +235,17 @@ Deno.serve(async (req: Request) => {
     if (isPhone) {
       const cleanPhone = syntheticEmailToPhone(normalizedEmail);
       const e164Phone = toE164(cleanPhone);
-      const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
+      let botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
+      if (!botToken) {
+        const { data: tokenSetting } = await admin
+          .from("system_settings")
+          .select("value")
+          .eq("key", "telegram_bot_token")
+          .maybeSingle();
+        if (tokenSetting?.value) {
+          botToken = tokenSetting.value.trim();
+        }
+      }
 
       // Resolve accurate user display name: check employee record, role assignment, metadata, then phone
       let employeeName: string | null = null;
@@ -351,7 +361,17 @@ Deno.serve(async (req: Request) => {
       }
 
       // 3. Optional fallback to Telegram Gateway if configured and has balance
-      const tgGatewayToken = Deno.env.get("TELEGRAM_GATEWAY_TOKEN");
+      let tgGatewayToken = Deno.env.get("TELEGRAM_GATEWAY_TOKEN");
+      if (!tgGatewayToken) {
+        const { data: gwSetting } = await admin
+          .from("system_settings")
+          .select("value")
+          .eq("key", "telegram_gateway_token")
+          .maybeSingle();
+        if (gwSetting?.value) {
+          tgGatewayToken = gwSetting.value.trim();
+        }
+      }
       if (tgGatewayToken) {
         try {
           const tgRes = await fetch("https://gatewayapi.telegram.org/sendVerificationMessage", {

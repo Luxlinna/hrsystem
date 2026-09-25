@@ -23,7 +23,19 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || anonKey;
-    const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    const admin = createClient(supabaseUrl, serviceRoleKey);
+    let botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+
+    if (!botToken) {
+      const { data: tokenSetting } = await admin
+        .from("system_settings")
+        .select("value")
+        .eq("key", "telegram_bot_token")
+        .maybeSingle();
+      if (tokenSetting?.value) {
+        botToken = tokenSetting.value.trim();
+      }
+    }
 
     if (!botToken) {
       return json(
@@ -31,8 +43,6 @@ Deno.serve(async (req) => {
         501
       );
     }
-
-    const admin = createClient(supabaseUrl, serviceRoleKey);
 
     // Look up action notifications group chat ID
     let targetChatId: string | null = null;

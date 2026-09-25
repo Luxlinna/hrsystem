@@ -27,15 +27,24 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "";
+  const admin = createClient(supabaseUrl, serviceRoleKey);
+  let botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "";
+
+  if (!botToken) {
+    const { data: tokenSetting } = await admin
+      .from("system_settings")
+      .select("value")
+      .eq("key", "telegram_bot_token")
+      .maybeSingle();
+    if (tokenSetting?.value) {
+      botToken = tokenSetting.value.trim();
+    }
+  }
 
   if (!botToken) {
     return json({ error: "TELEGRAM_BOT_TOKEN secret not configured" }, 500);
   }
 
-  const admin = createClient(supabaseUrl, serviceRoleKey);
   const url = new URL(req.url);
 
   // Handle GET request: Check bot status or auto-register webhook
