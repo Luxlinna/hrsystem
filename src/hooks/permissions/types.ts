@@ -34,10 +34,20 @@ export interface UserRole {
   candidate_approval_chairwoman_sign?: boolean;
 }
 
+export type RoleCategoryKey = "super_admin" | "admin" | "chairperson" | "line_manager" | "employee";
+
 export interface UsePermissionsReturn {
   role: UserRole | null;
   loading: boolean;
   can: (module: string) => boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isBranchAdmin: boolean;
+  isChairperson: boolean;
+  isLineManager: boolean;
+  isEmployee: boolean;
+  canEdit: boolean;
+  isReadOnly: boolean;
+  canViewSalary: boolean;
+  roleCategory: RoleCategoryKey;
 }

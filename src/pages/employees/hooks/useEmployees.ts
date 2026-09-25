@@ -1,6 +1,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
+import { useMyEmployee } from "@/hooks/useMyEmployee";
 import { useEmployeesData } from "./useEmployeesData";
 import { useEmployeesFilters } from "./useEmployeesFilters";
 import { useEmployeesSelection } from "./useEmployeesSelection";
@@ -8,7 +9,8 @@ import { useEmployeesMutations } from "./useEmployeesMutations";
 
 export function useEmployees() {
   const { user } = useAuth();
-  const { role, isAdmin } = usePermissions();
+  const { role, isAdmin, isLineManager, isEmployee, canEdit: permsCanEdit, isReadOnly } = usePermissions();
+  const { employee: myEmployee } = useMyEmployee();
   const roleName = role?.name || "Staff";
   const {
     isSuperAdmin,
@@ -24,7 +26,7 @@ export function useEmployees() {
     visibleBranches,
   } = useBranchScope();
   const actorName = (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
-  const canManage = (isAdmin || isBranchAdmin || !!role?.employees_manage) && !isPartnerBranchBlocked;
+  const canManage = permsCanEdit && !isReadOnly && (isAdmin || isBranchAdmin || !!role?.employees_manage) && !isPartnerBranchBlocked;
 
   const data = useEmployeesData({
     isPartnerBranchBlocked,
@@ -47,6 +49,9 @@ export function useEmployees() {
     canManage,
     workSites: activeBranchSites,
     currentBranchName: activeBranchName,
+    isLineManager,
+    isEmployee,
+    currentEmployee: myEmployee,
   });
 
   const mutations = useEmployeesMutations({

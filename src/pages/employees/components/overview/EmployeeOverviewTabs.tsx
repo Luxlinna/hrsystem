@@ -22,14 +22,16 @@ interface EmployeeOverviewTabsProps {
   activeTab: OverviewTabKey;
   onSelectTab: (tab: OverviewTabKey) => void;
   counts?: Partial<Record<OverviewTabKey, number>>;
+  canViewSalary?: boolean;
 }
 
 export const EmployeeOverviewTabs: React.FC<EmployeeOverviewTabsProps> = ({
   activeTab,
   onSelectTab,
   counts = {},
+  canViewSalary = true,
 }) => {
-  const tabs: TabConfig[] = [
+  const allTabs: TabConfig[] = [
     { key: "info", label: "Employee Information", shortLabel: "Employee Info", icon: "ri-user-3-line" },
     { key: "movement", label: "Movement Info", shortLabel: "Movement", icon: "ri-route-line", badge: counts.movement },
     { key: "warning", label: "Warning Info", shortLabel: "Warnings", icon: "ri-alarm-warning-line", badge: counts.warning },
@@ -39,6 +41,8 @@ export const EmployeeOverviewTabs: React.FC<EmployeeOverviewTabsProps> = ({
     { key: "assets", label: "Asset Info", shortLabel: "Assets", icon: "ri-macbook-line", badge: counts.assets },
     { key: "payroll", label: "Payroll Info", shortLabel: "Payroll", icon: "ri-wallet-3-line", badge: counts.payroll },
   ];
+
+  const tabs = canViewSalary ? allTabs : allTabs.filter((t) => t.key !== "payroll");
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-6 overflow-hidden">

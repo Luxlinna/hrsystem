@@ -9,9 +9,9 @@ import { loadEmployeeRelations } from "./employeeProfileLoader";
 import type { Employee, ReportEntry } from "../types";
 
 export function useEmployeeProfile(id: string | undefined) {
-  const { role, isAdmin } = usePermissions();
+  const { role, isAdmin, canEdit: permsCanEdit, isReadOnly, canViewSalary } = usePermissions();
   const { user } = useAuth();
-  const canEdit = isAdmin || !!role?.employees_manage;
+  const canEdit = permsCanEdit && (isAdmin || !!role?.employees_manage) && !isReadOnly;
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,6 +152,7 @@ export function useEmployeeProfile(id: string | undefined) {
 
   return {
     canEdit,
+    canViewSalary,
     employee,
     loading,
     editing,

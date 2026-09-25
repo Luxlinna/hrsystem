@@ -10,7 +10,8 @@ import { compareBiometricIds } from "@/lib/biometricUtils";
 export function useAttendanceData(
   isLeader: boolean,
   canViewAllBranches: boolean = false,
-  fallbackEmployee?: Employee | null
+  fallbackEmployee?: Employee | null,
+  isLineManager: boolean = false
 ) {
   const { user } = useAuth();
   const { targetBranch, isPartnerBranchBlocked, userBranchName, userBranchId } = useBranchScope();
@@ -75,13 +76,31 @@ export function useAttendanceData(
         // Fetch all employees belonging to the selected branch
         const { data: team, error: empErr } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id")
+          .select("id, first_name, last_name, department, division, line_manager, reports_to, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id")
           .is("deleted_at", null)
           .eq("branch_id", targetBranch)
           .order("first_name");
         if (empErr) console.warn("Error fetching attendance employees:", empErr);
 
-        const empList = (team as unknown as Employee[]) || [];
+        let empList = (team as unknown as Employee[]) || [];
+        if (isLineManager && empRecord) {
+          const myId = empRecord.id;
+          const myName = `${empRecord.first_name || ""} ${empRecord.last_name || ""}`.trim().toLowerCase();
+          const myEmail = (user?.email || "").toLowerCase().trim();
+          const myDept = (empRecord.department || "").trim().toLowerCase();
+          const myDiv = ((empRecord as any).division || "").trim().toLowerCase();
+
+          empList = empList.filter((e: any) => {
+            if (e.id === myId) return true;
+            if (e.reports_to === myId) return true;
+            const eLm = (e.line_manager || "").trim().toLowerCase();
+            if (eLm && (eLm === myName || eLm === myEmail)) return true;
+            if (myDept && e.department && e.department.trim().toLowerCase() === myDept) return true;
+            if (myDiv && e.division && e.division.trim().toLowerCase() === myDiv) return true;
+            return false;
+          });
+        }
+
         // Natural numerical sorting by BU Biometric ID (001, 002, 003...)
         empList.sort((a, b) => compareBiometricIds(a.biometric_user_id, b.biometric_user_id));
         setEmployees(empList);

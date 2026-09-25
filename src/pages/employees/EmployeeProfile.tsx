@@ -26,6 +26,7 @@ export default function EmployeeProfile() {
 
   const {
     canEdit,
+    canViewSalary,
     employee,
     loading,
     editing,
@@ -125,8 +126,9 @@ export default function EmployeeProfile() {
         onSelectTab={setActiveTab}
         counts={{
           ...counts,
-          payroll: payrollRecords?.length,
+          payroll: canViewSalary ? payrollRecords?.length : undefined,
         }}
+        canViewSalary={canViewSalary}
       />
 
       {/* Tab Content Display */}
@@ -172,7 +174,7 @@ export default function EmployeeProfile() {
       {activeTab === "assets" && (
         <AssetInfoCard employee={employee} onCountLoaded={handleAssetsCount} />
       )}
-      {activeTab === "payroll" && (
+      {activeTab === "payroll" && canViewSalary && (
         <div className="max-w-5xl">
           <PayrollHistoryCard employee={employee} payrollRecords={payrollRecords} />
         </div>

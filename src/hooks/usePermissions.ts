@@ -1,13 +1,24 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import type { UserRole, UsePermissionsReturn } from "./permissions/types";
+import type { UserRole, UsePermissionsReturn, RoleCategoryKey } from "./permissions/types";
 import { isBootstrapAdminEmail, bootstrapAdminRole } from "./permissions/bootstrapUtils";
 import { fetchRoleFromFunction, toUserRole } from "./permissions/roleUtils";
 import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
 
-export type { UserRole, UsePermissionsReturn };
+export type { UserRole, UsePermissionsReturn, RoleCategoryKey };
 export { isBootstrapAdminEmail };
+
+export function getRoleCategory(role: UserRole | null, userEmail?: string | null): RoleCategoryKey {
+  if (isBootstrapAdminEmail(userEmail) || role?.is_admin || role?.name === "Super Admin") {
+    return "super_admin";
+  }
+  const name = (role?.name || "").trim().toLowerCase();
+  if (/chair/i.test(name)) return "chairperson";
+  if (/line\s*manager|supervisor/i.test(name)) return "line_manager";
+  if (/employee|staff/i.test(name) && !/admin|manager/i.test(name)) return "employee";
+  return "admin";
+}
 
 let cachedRole: UserRole | null = null;
 let cachedUid: string | null = null;
@@ -165,25 +176,86 @@ export function usePermissions(): UsePermissionsReturn {
     };
   }, [user, authLoading, resolveRole]);
 
-  const isBranchAdmin = !loading && !!role && !role.is_admin &&
-    (/(branch|bu)\s*.*admin/i.test(role.name?.trim() || "") || /(branch|bu)\s*ceo/i.test(role.name?.trim() || "") || role.allowed_modules.includes("admin"));
+  const roleCategory = useMemo(() => getRoleCategory(role, user?.email), [role, user?.email]);
+  const isSuperAdmin = !loading && roleCategory === "super_admin";
+  const isChairperson = !loading && roleCategory === "chairperson";
+  const isLineManager = !loading && roleCategory === "line_manager";
+  const isEmployee = !loading && roleCategory === "employee";
+  const isAdmin = !loading && (isSuperAdmin || roleCategory === "admin");
+  const isBranchAdmin = !loading && isAdmin && !isSuperAdmin;
+
+  // canEdit: Super Admin and Admin can edit. Chairwoman/Chairman (all function except edit), Line Manager (except edit), Employee cannot edit.
+  const canEdit = !loading && (isSuperAdmin || (isAdmin && !isChairperson && !isLineManager && !isEmployee));
+  const isReadOnly = !loading && isChairperson;
+
+  // canViewSalary: Super Admin and Chairwoman/Chairman can view. Admin (all function except salary), Line Manager (except salary), Employee cannot view salary.
+  const canViewSalary = !loading && (isSuperAdmin || isChairperson);
 
   const can = useCallback(
     (module: string): boolean => {
       if (loading || !role) return false;
-      if (role.is_admin || role.allowed_modules.includes("*")) return true;
-      const roleName = (role.name || "").trim().toLowerCase();
-      if (/(branch|bu)\s*.*admin/i.test(roleName) || /(branch|bu)\s*ceo/i.test(roleName)) return true;
+      const cat = getRoleCategory(role, user?.email);
+
+      // Super Admin: all function of system
+      if (cat === "super_admin") return true;
+
+      // Base dashboard access for any active user
       if (module === "dashboard" || module === "home") return true;
-      if (module === "leave" && (role.leave_approve || role.leave_view_all_employees || role.leave_view_own_branch)) return true;
-      return role.allowed_modules.includes(module);
+
+      // Admin: all function, except salary
+      if (cat === "admin") {
+        if (module === "payroll" || module === "payroll-approval") return false;
+        return true;
+      }
+
+      // Chairwoman and Chairman: all function of system except edit (view-only)
+      if (cat === "chairperson") {
+        return true;
+      }
+
+      // Line Manager: view staff under supervisor/division/dept, check staff attendance, leave endorse, tasks, performance, training, meeting rooms, etc.
+      if (cat === "line_manager") {
+        if (module === "payroll" || module === "payroll-approval") return false;
+        if (module === "admin" || module === "settings" || module === "branches") return false;
+        const managerModules = [
+          "dashboard", "home", "employees", "attendance", "leave",
+          "leave-calendar", "tasks", "performance", "training",
+          "meeting-rooms", "announcements", "notifications",
+          "documents", "self-service", "org-chart"
+        ];
+        return managerModules.includes(module) || (role.allowed_modules || []).includes(module);
+      }
+
+      // Employee: can only your information, can check attendance yourself
+      if (cat === "employee") {
+        const employeeModules = [
+          "dashboard", "home", "self-service", "attendance",
+          "leave", "leave-calendar", "notifications",
+          "announcements", "training", "meeting-rooms", "tasks"
+        ];
+        return employeeModules.includes(module);
+      }
+
+      return (role.allowed_modules || []).includes(module);
     },
-    [loading, role]
+    [loading, role, user?.email]
   );
 
-  const isAdmin = !loading && !!role && (role.is_admin || role.allowed_modules.includes("*"));
-
-  return { role, loading, can, isAdmin, isBranchAdmin };
+  return {
+    role,
+    loading,
+    can,
+    isAdmin,
+    isSuperAdmin,
+    isBranchAdmin,
+    isChairperson,
+    isLineManager,
+    isEmployee,
+    canEdit,
+    isReadOnly,
+    canViewSalary,
+    roleCategory,
+  };
 }
 
 export function invalidatePermissionsCache() {

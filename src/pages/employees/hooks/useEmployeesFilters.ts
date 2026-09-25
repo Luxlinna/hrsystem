@@ -11,6 +11,9 @@ interface UseEmployeesFiltersProps {
   canManage: boolean;
   workSites?: { id: string; name: string; branch_id: string; is_default?: boolean }[];
   currentBranchName?: string;
+  isLineManager?: boolean;
+  isEmployee?: boolean;
+  currentEmployee?: any | null;
 }
 
 export function useEmployeesFilters({
@@ -20,6 +23,9 @@ export function useEmployeesFilters({
   canManage,
   workSites = [],
   currentBranchName,
+  isLineManager = false,
+  isEmployee = false,
+  currentEmployee = null,
 }: UseEmployeesFiltersProps) {
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
@@ -36,9 +42,36 @@ export function useEmployeesFilters({
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>(INITIAL_VISIBLE_COLUMNS);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
+  // Role Category scope filter: Line Manager sees supervised staff & division/dept; Employee sees only themselves
+  const scopedEmployees = useMemo(() => {
+    if (isLineManager && currentEmployee) {
+      const myId = currentEmployee.id;
+      const myName = `${currentEmployee.first_name || ""} ${currentEmployee.last_name || ""}`.trim().toLowerCase();
+      const myEmail = (currentEmployee.email || "").trim().toLowerCase();
+      const myDept = (currentEmployee.department || "").trim().toLowerCase();
+      const myDiv = (currentEmployee.division || "").trim().toLowerCase();
+
+      return employees.filter((e) => {
+        if (e.id === myId) return true;
+        if (e.reports_to === myId) return true;
+        const eLm = (e.line_manager || "").trim().toLowerCase();
+        if (eLm && (eLm === myName || eLm === myEmail)) return true;
+        if (myDept && e.department && e.department.trim().toLowerCase() === myDept) return true;
+        if (myDiv && e.division && e.division.trim().toLowerCase() === myDiv) return true;
+        return false;
+      });
+    }
+
+    if (isEmployee && currentEmployee) {
+      return employees.filter((e) => e.id === currentEmployee.id);
+    }
+
+    return employees;
+  }, [employees, isLineManager, isEmployee, currentEmployee]);
+
   const employeeLocations = useMemo(() => {
     if (!workSites || workSites.length === 0) return [];
-    const mainCount = employees.filter((e) => !e.default_work_location_id).length;
+    const mainCount = scopedEmployees.filter((e) => !e.default_work_location_id).length;
     return [
       {
         id: "main",
@@ -49,36 +82,36 @@ export function useEmployeesFilters({
       ...workSites.map((ws) => ({
         id: ws.id,
         name: ws.name,
-        count: employees.filter((e) => e.default_work_location_id === ws.id).length,
+        count: scopedEmployees.filter((e) => e.default_work_location_id === ws.id).length,
         isMain: false,
       })),
     ];
-  }, [workSites, employees, currentBranchName]);
+  }, [workSites, scopedEmployees, currentBranchName]);
 
-  const depts = useMemo(() => Array.from(new Set(employees.map((e) => e.department).filter(Boolean))), [employees]);
-  const branchCount = useMemo(() => new Set(employees.map((e) => e.branch_id).filter(Boolean)).size, [employees]);
+  const depts = useMemo(() => Array.from(new Set(scopedEmployees.map((e) => e.department).filter(Boolean))), [scopedEmployees]);
+  const branchCount = useMemo(() => new Set(scopedEmployees.map((e) => e.branch_id).filter(Boolean)).size, [scopedEmployees]);
   const managers = useMemo(
-    () => employees.filter((employee) => managerEmails.has(employee.email?.toLowerCase())),
-    [employees, managerEmails]
+    () => scopedEmployees.filter((employee) => managerEmails.has(employee.email?.toLowerCase())),
+    [scopedEmployees, managerEmails]
   );
 
   const stats: EmployeeStats = useMemo(
     () => ({
-      total: employees.length,
-      active: employees.filter((e) => e.status === "active").length,
-      onboarding: employees.filter((e) => e.status === "onboarding").length,
+      total: scopedEmployees.length,
+      active: scopedEmployees.filter((e) => e.status === "active").length,
+      onboarding: scopedEmployees.filter((e) => e.status === "onboarding").length,
       withAccounts: Object.values(accountStatus).filter((acc) => acc.hasAccount).length,
       invited: Object.values(accountStatus).filter((acc) => acc.invited && !acc.hasAccount).length,
       byDepartment: depts.reduce((acc, dept) => {
-        if (dept) acc[dept] = employees.filter((e) => e.department === dept).length;
+        if (dept) acc[dept] = scopedEmployees.filter((e) => e.department === dept).length;
         return acc;
       }, {} as Record<string, number>),
     }),
-    [employees, accountStatus, depts]
+    [scopedEmployees, accountStatus, depts]
   );
 
   const filtered = useMemo(() => {
-    return employees
+    return scopedEmployees
       .filter((e) => {
         const matchesSearch = matchEmployeeSearch(e, search);
         const matchesDept = !filterDept || e.department === filterDept;

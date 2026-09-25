@@ -11,7 +11,7 @@ import { useAttendanceMutations } from "./useAttendanceMutations";
 import { useHolidays } from "@/hooks/useHolidays";
 
 export function useAttendance() {
-  const { role, isAdmin, loading: permsLoading, can } = usePermissions();
+  const { role, isAdmin, loading: permsLoading, can, isLineManager, canEdit: permsCanEdit, isReadOnly } = usePermissions();
   const { isSuperAdmin, isBranchAdmin, userBranchName, userBranchId, effectiveBranchName, isPartnerBranchBlocked } = useBranchScope();
   const { employee: currentEmp } = useMyEmployee();
 
@@ -28,10 +28,11 @@ export function useAttendance() {
       return false;
     }
     return (
+      isLineManager ||
       /manager|lead|director|chief|president|head\b/i.test(rName) ||
       /manager|lead|director|supervisor|head\b/i.test(empTitle)
     );
-  }, [role?.name, currentEmp?.role]);
+  }, [role?.name, currentEmp?.role, isLineManager]);
 
   // Super Admin, BU Admin, or Department/Branch Manager
   const isSuperOrAdminOrManager =
@@ -48,11 +49,11 @@ export function useAttendance() {
     isSuperOrAdminOrManager &&
     (!isPartnerBranchBlocked || canViewAllBranches);
 
-  const canManage = isLeader;
+  const canManage = permsCanEdit && !isReadOnly && isLeader;
   const canViewAll = isLeader;
   const todayYMD = todayYMDLib();
 
-  const data = useAttendanceData(isLeader, canViewAllBranches, currentEmp as unknown as Employee);
+  const data = useAttendanceData(isLeader, canViewAllBranches, currentEmp as unknown as Employee, isLineManager);
   const { fetchData } = data;
 
   const isManager = useMemo(() => {
