@@ -197,6 +197,13 @@ export default function Leave() {
         holidayCount={l.holidays?.length || 0}
         canManageSettings={canModifyLeaveSettings}
         onOpenLeaveSettings={() => setViewMode("settings")}
+        onCreateNewLeave={() => {
+          settings.setEditingType(null);
+          setViewMode("create_type");
+        }}
+        onOpenLeaveDeductions={() => {
+          l.setActiveTab("balances");
+        }}
         onRequestLeave={() => {
           setFormMode("self");
           l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: l.myEmployee?.id || "" });
