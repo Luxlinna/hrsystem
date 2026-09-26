@@ -21,6 +21,7 @@ interface LeaveInspectModalProps {
   hasBuAdminEndorseAccess?: boolean;
   onOpenApprovalModal: (req: LeaveRequest, action: "approved" | "rejected") => void;
   onOpenCancelModal: (req: LeaveRequest) => void;
+  onOpenFlowSettings?: () => void;
 }
 
 export const LeaveInspectModal = memo(function LeaveInspectModal({
@@ -37,6 +38,7 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
   hasBuAdminEndorseAccess,
   onOpenApprovalModal,
   onOpenCancelModal,
+  onOpenFlowSettings,
 }: LeaveInspectModalProps) {
   if (!inspectRequest) return null;
 
@@ -81,7 +83,10 @@ export const LeaveInspectModal = memo(function LeaveInspectModal({
         <LeaveDetailTypeInfo request={inspectRequest} />
 
         {/* 4. Approvers Info */}
-        <LeaveDetailApproversInfo request={inspectRequest} />
+        <LeaveDetailApproversInfo
+          request={inspectRequest}
+          onOpenFlowSettings={onOpenFlowSettings}
+        />
 
         {/* 5. Attachment Info */}
         <LeaveDetailAttachmentSection request={inspectRequest} />

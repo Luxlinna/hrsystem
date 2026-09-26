@@ -11,6 +11,7 @@ interface LeaveHeaderProps {
   onCreateNewLeave?: () => void;
   onOpenLeaveSettings?: () => void;
   onOpenLeaveDeductions?: () => void;
+  onOpenApproverFlow?: () => void;
   canManageSettings?: boolean;
   onToast?: (toast: { type: "success" | "info" | "error"; message: string }) => void;
   onOpenHolidaysModal?: () => void;
@@ -26,6 +27,7 @@ export const LeaveHeader = memo(function LeaveHeader({
   onCreateNewLeave,
   onOpenLeaveSettings,
   onOpenLeaveDeductions,
+  onOpenApproverFlow,
   canManageSettings = true,
   onToast,
   onOpenHolidaysModal,
@@ -53,7 +55,6 @@ export const LeaveHeader = memo(function LeaveHeader({
       </div>
 
       <div className="flex items-center gap-2.5">
-        {/* Hidden Export Menu trigger */}
         <div className="hidden">
           <LeaveExportMenu filteredRequests={filteredRequests} onToast={onToast} />
         </div>
@@ -75,7 +76,7 @@ export const LeaveHeader = memo(function LeaveHeader({
           </button>
         )}
 
-        {/* Leaves Dropdown Menu matching Image */}
+        {/* Leaves Dropdown Menu matching Image with Approver Flow option */}
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
@@ -155,6 +156,22 @@ export const LeaveHeader = memo(function LeaveHeader({
               >
                 <i className="ri-file-list-3-line text-slate-500 text-sm" />
                 <span>Leave Deductions</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDropdownOpen(false);
+                  if (onOpenApproverFlow) {
+                    onOpenApproverFlow();
+                  } else if (onToast) {
+                    onToast({ type: "info", message: "Opening Approver Flow Setting" });
+                  }
+                }}
+                className="w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium border-t border-gray-100 text-[#0284c7]"
+              >
+                <i className="ri-node-tree text-sky-600 text-sm" />
+                <span className="font-semibold">Approver Flow Setting</span>
               </button>
             </div>
           )}
