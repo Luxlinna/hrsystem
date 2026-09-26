@@ -5,18 +5,32 @@ import type { CellScheduleData } from "./types";
 interface ScheduleMatrixCellProps {
   empId: string;
   empName: string;
+  employeeCode: string;
   dateString: string;
   dayNumber: number;
   cellData?: CellScheduleData;
   isHoliday: boolean;
   isWeekend: boolean;
-  onClick: (empId: string, empName: string, dateString: string, dayNumber: number, code: string) => void;
+  onClick: (data: {
+    empId: string;
+    empName: string;
+    employeeCode: string;
+    dateString: string;
+    dayNumber: number;
+    code: string;
+    status?: string;
+    clockIn?: string | null;
+    clockOut?: string | null;
+    x: number;
+    y: number;
+  }) => void;
   onHover: (data: { empId: string; dateString: string; text: string; x: number; y: number } | null) => void;
 }
 
 export const ScheduleMatrixCell = memo(function ScheduleMatrixCell({
   empId,
   empName,
+  employeeCode,
   dateString,
   dayNumber,
   cellData,
@@ -29,9 +43,29 @@ export const ScheduleMatrixCell = memo(function ScheduleMatrixCell({
   const pillStyle = getShiftPillStyle(code, isHoliday);
   const underlineColor = getStatusUnderlineColor(cellData?.status || "future");
 
+  const handleClick = (clientX: number, clientY: number) => {
+    onClick({
+      empId,
+      empName,
+      employeeCode,
+      dateString,
+      dayNumber,
+      code,
+      status: cellData?.status,
+      clockIn: cellData?.clockIn,
+      clockOut: cellData?.clockOut,
+      x: clientX,
+      y: clientY,
+    });
+  };
+
   return (
     <td
-      onClick={() => onClick(empId, empName, dateString, dayNumber, code)}
+      onClick={(e) => handleClick(e.clientX, e.clientY)}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        handleClick(e.clientX, e.clientY);
+      }}
       onMouseEnter={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         onHover({
@@ -48,17 +82,12 @@ export const ScheduleMatrixCell = memo(function ScheduleMatrixCell({
       } hover:ring-2 hover:ring-blue-400 hover:z-10`}
     >
       <div className="flex flex-col items-center justify-center py-0.5">
-        {/* Shift Code Pill */}
         <span
           className={`w-full max-w-[60px] py-1 px-1 rounded text-[10px] font-bold tracking-tight text-center leading-none select-none shadow-2xs truncate block ${pillStyle.bg} ${pillStyle.text}`}
         >
           {code}
         </span>
-
-        {/* Clean Status Underline Indicator */}
-        <div
-          className={`w-6 h-[2px] rounded-full mt-1 transition-opacity ${underlineColor}`}
-        />
+        <div className={`w-6 h-[2px] rounded-full mt-1 transition-opacity ${underlineColor}`} />
       </div>
     </td>
   );

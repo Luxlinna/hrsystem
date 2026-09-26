@@ -9,7 +9,7 @@ interface ScheduleMatrixTableProps {
   selectedIds: Set<string>;
   toggleSelectAll: () => void;
   toggleSelectOne: (id: string) => void;
-  onCellClick: (empId: string, empName: string, dateString: string, dayNumber: number, code: string) => void;
+  onCellClick: (data: any) => void;
   onCellHover: (data: { empId: string; dateString: string; text: string; x: number; y: number } | null) => void;
 }
 

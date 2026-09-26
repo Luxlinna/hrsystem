@@ -80,11 +80,6 @@ export function useAttendanceScheduleMatrix() {
     return cols;
   }, [currentDate]);
 
-  const defaultShiftCode = useMemo(() => {
-    const firstNonOff = availableShifts.find((s) => !s.isOff);
-    return firstNonOff ? firstNonOff.code : "DAY";
-  }, [availableShifts]);
-
   const rosterRows: EmployeeRosterRow[] = useMemo(() => {
     return buildRosterRows({
       rawEmployees,
@@ -94,7 +89,6 @@ export function useAttendanceScheduleMatrix() {
       attendanceRecords,
       manualCellOverrides,
       shiftAssignmentsByEmpDate,
-      defaultShiftCode,
     });
   }, [
     rawEmployees,
@@ -104,7 +98,6 @@ export function useAttendanceScheduleMatrix() {
     attendanceRecords,
     manualCellOverrides,
     shiftAssignmentsByEmpDate,
-    defaultShiftCode,
   ]);
 
   const filteredRoster = useMemo(() => {
@@ -125,6 +118,16 @@ export function useAttendanceScheduleMatrix() {
     });
   }, [rosterRows, search, filterDept]);
 
+  const scheduledEmployees = useMemo(
+    () => filteredRoster.filter((r) => r.hasSchedule),
+    [filteredRoster]
+  );
+
+  const unscheduledEmployees = useMemo(
+    () => filteredRoster.filter((r) => !r.hasSchedule),
+    [filteredRoster]
+  );
+
   const departmentList = useMemo(() => {
     const set = new Set(rawEmployees.map((e) => e.department).filter(Boolean));
     return Array.from(set).sort();
@@ -137,13 +140,15 @@ export function useAttendanceScheduleMatrix() {
     }));
   }, []);
 
+  const currentDisplayList = activeTab === "schedules" ? scheduledEmployees : unscheduledEmployees;
+
   const toggleSelectAll = useCallback(() => {
-    if (selectedIds.size === filteredRoster.length) {
+    if (selectedIds.size === currentDisplayList.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredRoster.map((e) => e.id)));
+      setSelectedIds(new Set(currentDisplayList.map((e) => e.id)));
     }
-  }, [selectedIds.size, filteredRoster]);
+  }, [selectedIds.size, currentDisplayList]);
 
   const toggleSelectOne = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -168,8 +173,8 @@ export function useAttendanceScheduleMatrix() {
     nextMonth,
     dayColumns,
     availableShifts,
-    scheduledEmployees: filteredRoster,
-    unscheduledEmployees: [],
+    scheduledEmployees,
+    unscheduledEmployees,
     departmentList,
     search,
     setSearch,

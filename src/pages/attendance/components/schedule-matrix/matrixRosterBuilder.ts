@@ -8,7 +8,6 @@ interface BuildRosterParams {
   attendanceRecords: Record<string, any>;
   manualCellOverrides: Record<string, string>;
   shiftAssignmentsByEmpDate?: Record<string, string>;
-  defaultShiftCode?: string;
 }
 
 export function buildRosterRows({
@@ -19,11 +18,20 @@ export function buildRosterRows({
   attendanceRecords,
   manualCellOverrides,
   shiftAssignmentsByEmpDate = {},
-  defaultShiftCode = "DAY",
 }: BuildRosterParams): EmployeeRosterRow[] {
   return rawEmployees.map((emp, empIdx) => {
     const templateId = templateAssignments[emp.id];
     const template = templateId ? templatesById[templateId] : null;
+    const hasTemplate = Boolean(template && template.days);
+
+    const hasAnyOverride = Object.keys(manualCellOverrides).some((k) =>
+      k.startsWith(`${emp.id}_`)
+    );
+    const hasAnyDbAssign = Object.keys(shiftAssignmentsByEmpDate).some((k) =>
+      k.startsWith(`${emp.id}_`)
+    );
+
+    const hasSchedule = Boolean(hasTemplate || hasAnyOverride || hasAnyDbAssign);
 
     const dailySchedules: Record<string, CellScheduleData> = {};
 
@@ -47,18 +55,20 @@ export function buildRosterRows({
       else if (dbAssignedShift) {
         baseShift = dbAssignedShift;
       }
-      // 3. Assigned schedule template
-      else if (template && template.days && template.days[dayKey]) {
+      // 3. Assigned schedule template for that day of the week
+      else if (template?.days && template.days[dayKey]) {
         baseShift = template.days[dayKey];
       }
-      // 4. Default: Sunday is OFF, weekdays follow default system shift
+      // 4. If no template assigned, default to OFF (no arbitrary mock shift)
       else {
-        baseShift = dayOfWeek === 0 ? "OFF" : defaultShiftCode;
+        baseShift = "OFF";
       }
 
       let displayCode = baseShift;
-      if (col.isHoliday && col.holidayCode) {
+      if (col.isHoliday && col.holidayCode && baseShift !== "OFF") {
         displayCode = `${col.holidayCode}_${baseShift}`;
+      } else if (col.isHoliday && col.holidayCode && baseShift === "OFF") {
+        displayCode = `${col.holidayCode}_OFF`;
       }
 
       const att = attendanceRecords[overrideKey];
@@ -69,7 +79,9 @@ export function buildRosterRows({
 
       if (baseShift === "OFF") {
         status = "off";
-        tooltipText = col.isHoliday ? `${col.holidayName || "Public Holiday"} (Rest Day)` : "Rest Day";
+        tooltipText = col.isHoliday
+          ? `${col.holidayName || "Public Holiday"} (Rest Day)`
+          : "Rest Day";
       } else if (isPastOrToday) {
         if (att?.clock_in) {
           status = att.status === "late" ? "late" : "present";
@@ -99,9 +111,9 @@ export function buildRosterRows({
       role: emp.role || "Staff",
       department: emp.department || "Operations",
       avatarUrl: emp.avatar_url,
-      templateTitle: template?.title || "Standard Shift Roster",
+      templateTitle: template?.title || (hasSchedule ? "Custom Assignment" : "No Schedule Template"),
       dailySchedules,
-      hasSchedule: true,
+      hasSchedule,
     };
   });
 }

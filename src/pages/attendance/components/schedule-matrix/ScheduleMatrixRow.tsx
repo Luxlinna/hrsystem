@@ -8,7 +8,7 @@ interface ScheduleMatrixRowProps {
   isSelected: boolean;
   dayColumns: DayColumn[];
   onToggleSelect: (id: string) => void;
-  onCellClick: (empId: string, empName: string, dateString: string, dayNumber: number, code: string) => void;
+  onCellClick: (data: any) => void;
   onCellHover: (data: { empId: string; dateString: string; text: string; x: number; y: number } | null) => void;
 }
 
@@ -81,6 +81,7 @@ export const ScheduleMatrixRow = memo(function ScheduleMatrixRow({
           key={col.dayNumber}
           empId={emp.id}
           empName={emp.name}
+          employeeCode={emp.employeeCode}
           dateString={col.dateString}
           dayNumber={col.dayNumber}
           cellData={emp.dailySchedules[col.dateString]}

@@ -41,34 +41,69 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
         .is("deleted_at", null)
         .order("name");
 
-      const assignShiftQuery = supabase
-        .from("shift_assignments")
-        .select("id, shift_id, employee_id, status");
+      const sysSettingsQuery = supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "schedule_templates")
+        .maybeSingle();
 
-      const [empRes, attRes, tmplRes, assignRes, shiftRes, shiftAssignRes] = await Promise.all([
+      const [empRes, attRes, sysRes, tmplRes, assignRes, shiftRes, shiftAssignRes] = await Promise.all([
         empQuery,
         attQuery,
+        sysSettingsQuery,
         supabase.from("schedule_templates").select("*").is("deleted_at", null),
         supabase.from("schedule_template_assignments").select("*"),
         shiftQuery,
-        assignShiftQuery,
+        supabase.from("shift_assignments").select("id, shift_id, employee_id, status"),
       ]);
 
       setRawEmployees(empRes.data || []);
-      setRawTemplates(tmplRes.data || []);
       setRawShifts(shiftRes.data || []);
       setShiftAssignments(shiftAssignRes.data || []);
 
-      const tmplMap: Record<string, any> = {};
-      (tmplRes.data || []).forEach((t: any) => {
-        tmplMap[t.id] = t;
-      });
-      setTemplatesById(tmplMap);
+      const allTemplates: any[] = [];
+      if (sysRes.data?.value) {
+        try {
+          const parsed = typeof sysRes.data.value === "string" ? JSON.parse(sysRes.data.value) : sysRes.data.value;
+          if (Array.isArray(parsed)) allTemplates.push(...parsed);
+        } catch {}
+      }
 
+      try {
+        const local = localStorage.getItem("hrm_ops_schedule_templates_v1");
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((lt) => {
+              if (!allTemplates.some((t) => t.id === lt.id)) allTemplates.push(lt);
+            });
+          }
+        }
+      } catch {}
+
+      (tmplRes.data || []).forEach((t: any) => {
+        if (!allTemplates.some((existing) => existing.id === t.id)) {
+          allTemplates.push(t);
+        }
+      });
+      setRawTemplates(allTemplates);
+
+      const tmplMap: Record<string, any> = {};
       const assignMap: Record<string, any> = {};
+      allTemplates.forEach((t: any) => {
+        tmplMap[t.id] = t;
+        if (Array.isArray(t.assigned_employee_ids)) {
+          t.assigned_employee_ids.forEach((empId: string) => {
+            assignMap[empId] = t.id;
+          });
+        }
+      });
+
       (assignRes.data || []).forEach((a: any) => {
         assignMap[a.employee_id] = a.template_id;
       });
+
+      setTemplatesById(tmplMap);
       setTemplateAssignments(assignMap);
 
       const attMap: Record<string, any> = {};

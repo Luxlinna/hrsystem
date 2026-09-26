@@ -4,7 +4,8 @@ import { ScheduleMatrixHeader } from "./ScheduleMatrixHeader";
 import { ScheduleMatrixToolbar } from "./ScheduleMatrixToolbar";
 import { ScheduleMatrixTable } from "./ScheduleMatrixTable";
 import { ScheduleMatrixNoSchedules } from "./ScheduleMatrixNoSchedules";
-import { ScheduleMatrixEditModal } from "./ScheduleMatrixEditModal";
+import { ScheduleMatrixContextMenu, type ContextMenuTarget } from "./ScheduleMatrixContextMenu";
+import { ScheduleMatrixModalsContainer } from "./ScheduleMatrixModalsContainer";
 
 interface AttendanceScheduleMatrixViewProps {
   onNavigateToTemplates?: () => void;
@@ -47,6 +48,11 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
     y: number;
   } | null>(null);
 
+  const [contextMenu, setContextMenu] = useState<{
+    position: { x: number; y: number };
+    target: ContextMenuTarget;
+  } | null>(null);
+
   const [editingCell, setEditingCell] = useState<{
     empId: string;
     empName: string;
@@ -55,8 +61,21 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
     currentCode: string;
   } | null>(null);
 
-  const handleCellClick = (empId: string, empName: string, dateString: string, dayNumber: number, currentCode: string) => {
-    setEditingCell({ empId, empName, dateString, dayNumber, currentCode });
+  const [logModalTarget, setLogModalTarget] = useState<ContextMenuTarget | null>(null);
+  const [leaveModal, setLeaveModal] = useState<{
+    target: ContextMenuTarget;
+    mode: "self" | "for_employee";
+  } | null>(null);
+  const [missionModal, setMissionModal] = useState<{
+    target: ContextMenuTarget;
+    mode: "self" | "for_employee";
+  } | null>(null);
+
+  const handleCellClick = (data: ContextMenuTarget & { x: number; y: number }) => {
+    setContextMenu({
+      position: { x: data.x, y: data.y },
+      target: data,
+    });
   };
 
   const handleSelectShift = (code: string) => {
@@ -102,7 +121,10 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
           onCellHover={setHoveredCell}
         />
       ) : (
-        <ScheduleMatrixNoSchedules onNavigateToTemplates={onNavigateToTemplates} />
+        <ScheduleMatrixNoSchedules
+          unscheduledEmployees={unscheduledEmployees}
+          onNavigateToTemplates={onNavigateToTemplates}
+        />
       )}
 
       {/* 4. Hover Tooltip Overlay */}
@@ -122,12 +144,43 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
         </div>
       )}
 
-      {/* 5. Quick Shift Edit Modal */}
-      <ScheduleMatrixEditModal
+      {/* 5. Cell Context Menu */}
+      <ScheduleMatrixContextMenu
+        position={contextMenu?.position || null}
+        target={contextMenu?.target || null}
+        onClose={() => setContextMenu(null)}
+        onChangeShift={() => {
+          if (contextMenu?.target) {
+            setEditingCell({
+              empId: contextMenu.target.empId,
+              empName: contextMenu.target.empName,
+              dateString: contextMenu.target.dateString,
+              dayNumber: contextMenu.target.dayNumber,
+              currentCode: contextMenu.target.currentCode,
+            });
+          }
+        }}
+        onViewAttendanceLog={() => setLogModalTarget(contextMenu?.target || null)}
+        onCreateLeave={(mode) => {
+          if (contextMenu?.target) setLeaveModal({ target: contextMenu.target, mode });
+        }}
+        onCreateMission={(mode) => {
+          if (contextMenu?.target) setMissionModal({ target: contextMenu.target, mode });
+        }}
+      />
+
+      {/* 6. Modals Container */}
+      <ScheduleMatrixModalsContainer
         editingCell={editingCell}
         availableShifts={availableShifts}
-        onClose={() => setEditingCell(null)}
+        logModalTarget={logModalTarget}
+        leaveModal={leaveModal}
+        missionModal={missionModal}
+        onCloseEdit={() => setEditingCell(null)}
         onSelectShift={handleSelectShift}
+        onCloseLog={() => setLogModalTarget(null)}
+        onCloseLeave={() => setLeaveModal(null)}
+        onCloseMission={() => setMissionModal(null)}
       />
     </div>
   );
