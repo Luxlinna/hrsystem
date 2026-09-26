@@ -7,7 +7,22 @@ import { formatBiometricId } from "@/lib/biometricUtils";
 
 export function useAttendanceFilters(records: AttendanceRecord[], employees: Employee[], todayYMD: string) {
   const [activeTab, setActiveTab] = useState<AttendanceTabKey>("records");
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [viewModeState, setViewModeState] = useState<ViewMode>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("hrm_attendance_view_mode");
+      if (saved === "table" || saved === "cards") return saved;
+    }
+    return "cards"; // Default to Block / Cards grid UI
+  });
+
+  const setViewMode = useCallback((mode: ViewMode) => {
+    setViewModeState(mode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("hrm_attendance_view_mode", mode);
+    }
+  }, []);
+
+  const viewMode = viewModeState;
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterEmployeeId, setFilterEmployeeId] = useState("all");

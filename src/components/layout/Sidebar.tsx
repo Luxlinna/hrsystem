@@ -9,6 +9,7 @@ import { useTheme } from "@/context/ThemeContext";
 
 import { DRAWER_GROUPS as navGroups } from "./topbar/constants";
 
+
 export default function Sidebar() {
   const location = useLocation();
   const { collapsed, setCollapsed } = useSidebar();
@@ -86,6 +87,7 @@ export default function Sidebar() {
                 const itemBasePath = item.path.split("?")[0];
                 const isActive = itemBasePath === "/admin" ? location.pathname === "/admin" : location.pathname === itemBasePath;
                 const isNotifications = item.module === "notifications";
+
                 return (
                   <Link
                     key={item.path}

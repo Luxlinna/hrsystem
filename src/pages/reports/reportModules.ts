@@ -2,7 +2,7 @@ import type { ModuleItem } from "./types";
 
 export const MODULES: ModuleItem[] = [
   { id: "leave", label: "Leave Summary", icon: "ri-calendar-event-line", color: "bg-amber-50 text-amber-700 border-amber-200", desc: "All leave requests by employee, type, and status" },
-  { id: "shifts", label: "Shift Scheduling", icon: "ri-time-line", color: "bg-blue-50 text-blue-700 border-blue-200", desc: "Shift rosters, employee allocations, coverage, and scheduled hours" },
+  { id: "shifts", label: "Attendance Schedules", icon: "ri-time-line", color: "bg-blue-50 text-blue-700 border-blue-200", desc: "Shift rosters, employee allocations, coverage, and scheduled hours" },
   { id: "attendance", label: "Attendance Records", icon: "ri-user-follow-line", color: "bg-indigo-50 text-indigo-700 border-indigo-200", desc: "Daily check-in / check-out logs, hours worked, tardiness and absences" },
   { id: "attendance-summary", label: "Attendance Summary", icon: "ri-pie-chart-line", color: "bg-purple-50 text-purple-700 border-purple-200", desc: "Per-employee attendance rate, logged hours and punctuality scores" },
   { id: "payroll", label: "Payroll Report", icon: "ri-money-dollar-circle-line", color: "bg-emerald-50 text-emerald-700 border-emerald-200", desc: "Salary, bonuses, deductions and net pay records" },

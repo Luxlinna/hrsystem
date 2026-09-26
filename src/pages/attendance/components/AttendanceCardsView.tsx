@@ -66,28 +66,33 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
                       <span>{initials(emp?.first_name, emp?.last_name)}</span>
                     )}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <h4 className="font-extrabold text-gray-900 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-sky-400 transition-colors text-sm">
-                        {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
-                      </h4>
-                      {emp?.biometric_user_id ? (
-                        <span
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
-                          title={`BU Biometric ID: ${emp.biometric_user_id}`}
-                        >
-                          <i className="ri-fingerprint-line text-[10px]" />
-                          {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
-                        </span>
-                      ) : emp?.employee_code ? (
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300 shrink-0">
-                          {emp.employee_code}
-                        </span>
-                      ) : null}
+                  <div className="min-w-0">
+                    <h4 className="font-extrabold text-gray-900 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-sky-400 transition-colors text-sm truncate">
+                      {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+                    </h4>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[11px] text-gray-400 dark:text-slate-400 font-medium truncate max-w-[120px]">
+                        {emp?.role || "Team Member"}
+                      </span>
+                      {(emp?.biometric_user_id || emp?.employee_code) && (
+                        <>
+                          <span className="text-gray-300 dark:text-slate-600 text-[10px]">·</span>
+                          {emp?.biometric_user_id ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
+                              title={`BU Biometric ID: ${formatBiometricId(emp.biometric_user_id, emp.branches?.name)}`}
+                            >
+                              <i className="ri-fingerprint-line text-[10px]" />
+                              {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300 shrink-0">
+                              {emp?.employee_code}
+                            </span>
+                          )}
+                        </>
+                      )}
                     </div>
-                    <p className="text-[11px] text-gray-400 dark:text-slate-400 font-medium mt-0.5">
-                      {emp?.role} · {emp?.department}
-                    </p>
                   </div>
                 </div>
 
@@ -140,19 +145,38 @@ export const AttendanceCardsView = memo(function AttendanceCardsView({
                 </div>
               )}
 
-              <div className="mb-2 flex items-center justify-between text-[11px]">
-                <span className="text-gray-400 dark:text-slate-400 flex items-center gap-1 font-medium">
-                  <i className="ri-building-2-line" /> Work Site
-                </span>
-                <span className={`font-bold ${r.work_location_id !== emp?.default_work_location_id && emp?.default_work_location_id ? "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60 dark:border-amber-800/60 px-2 py-0.5 rounded-md" : "text-gray-800 dark:text-slate-200"}`}>
+              <div className="mb-2.5 flex items-center justify-between gap-2 text-[11px]">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="font-semibold text-gray-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px]">
+                    {emp?.department || "General"}
+                  </span>
+                  {emp?.branches?.name && (
+                    <span className="text-gray-400 dark:text-slate-500 text-[10px] font-medium truncate max-w-[120px]" title={emp.branches.name}>
+                      {emp.branches.name}
+                    </span>
+                  )}
+                </div>
+                <span className={`font-bold text-[10px] shrink-0 ${r.work_location_id !== emp?.default_work_location_id && emp?.default_work_location_id ? "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60 dark:border-amber-800/60 px-1.5 py-0.5 rounded" : "text-gray-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-100 dark:border-slate-700"}`}>
+                  <i className="ri-building-line text-[9px] mr-1" />
                   {r.work_location?.name || "Main Office"}
                 </span>
               </div>
 
               {r.notes && (
-                <p className="text-xs text-gray-500 dark:text-slate-400 italic bg-gray-50/50 dark:bg-slate-800/50 p-2 rounded-xl border border-gray-100/60 dark:border-slate-800 mb-2 truncate">
-                  "{r.notes}"
-                </p>
+                <div className="text-xs bg-gray-50/70 dark:bg-slate-800/50 p-2 rounded-xl border border-gray-100/80 dark:border-slate-800 mb-2 truncate" title={r.notes}>
+                  {r.notes.startsWith("[Time Log]") ? (
+                    <span className="inline-flex items-center gap-1.5 text-[11px]">
+                      <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-sky-300 font-bold text-[9px] border border-blue-200/60 dark:border-blue-800/60 uppercase shrink-0">
+                        Time Log
+                      </span>
+                      <span className="truncate text-gray-600 dark:text-slate-400">
+                        {r.notes.replace(/^\[Time Log\]\s*/, "")}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-gray-500 dark:text-slate-400 italic">"{r.notes}"</span>
+                  )}
+                </div>
               )}
             </div>
 

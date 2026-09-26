@@ -35,7 +35,7 @@ export const ShiftHeader = memo(function ShiftHeader({
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">
-          Shift Scheduling
+          Attendance Schedules
         </h1>
         <p className="text-[13px] text-gray-500 mt-1">
           {kpiTotalShiftsThisWeek} shifts this week &middot; {kpiTotalWeeklyHours} total scheduled hours &middot; {kpiCoveragePercentage}% staffing coverage

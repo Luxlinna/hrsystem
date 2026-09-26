@@ -33,6 +33,7 @@ export const CreateTimeLogForm = memo(function CreateTimeLogForm({
     saveMenuRef, selectedEmployee, filteredEmployees, handleSelectEmployee,
     handleHourBlur, handleMinuteBlur, handleSave, employeeBranchName,
     workStartTime, setWorkStartTime, graceMinutes, statusMode, setStatusMode, liveEvaluation,
+    existingRecord,
   } = useCreateTimeLog({
     employees, initialWorkLocations, initialEmployeeId,
     isEmployeeFixed, onSaved, onBack, activeBranchId,
@@ -44,25 +45,25 @@ export const CreateTimeLogForm = memo(function CreateTimeLogForm({
   };
 
   return (
-    <div className="attendance-hub min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+    <div className="attendance-hub min-h-screen bg-[#F8F9FB] dark:bg-slate-950 p-5 sm:p-7 lg:p-8 font-sans">
       <div className="max-w-3xl mx-auto">
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider mb-1">
               <span>Workforce Operations</span>
               <i className="ri-arrow-right-s-line text-xs" />
               <span>Attendance &amp; Timesheets</span>
               <i className="ri-arrow-right-s-line text-xs" />
-              <span className="text-[#253C7D] font-bold">New Punch</span>
+              <span className="text-[#253C7D] dark:text-sky-400 font-bold">New Punch</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
               Create New Time Log
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D]">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950/60 dark:text-sky-300">
                 Manual Entry
               </span>
             </h1>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
               Record a single time-in or time-out punch for the employee's work location.
             </p>
           </div>
@@ -70,9 +71,9 @@ export const CreateTimeLogForm = memo(function CreateTimeLogForm({
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-gray-50 border border-gray-200/80 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-200/80 dark:border-slate-800 text-gray-700 dark:text-slate-200 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer self-start sm:self-auto"
           >
-            <i className="ri-arrow-left-line text-sm text-[#253C7D]" />
+            <i className="ri-arrow-left-line text-sm text-[#253C7D] dark:text-sky-400" />
             Back to Hub
           </button>
         </div>
@@ -89,6 +90,7 @@ export const CreateTimeLogForm = memo(function CreateTimeLogForm({
             setEmployeeSearchQuery={setEmployeeSearchQuery}
             filteredEmployees={filteredEmployees}
             handleSelectEmployee={handleSelectEmployee}
+            employeeBranchName={employeeBranchName}
           />
 
           <TimeLogInfoSection
@@ -112,6 +114,13 @@ export const CreateTimeLogForm = memo(function CreateTimeLogForm({
             statusMode={statusMode}
             setStatusMode={setStatusMode}
             liveEvaluation={liveEvaluation}
+            existingRecord={existingRecord}
+            employeeBranchName={employeeBranchName}
+            sites={sites}
+            logSiteId={logSiteId}
+            setLogSiteId={setLogSiteId}
+            refreshingSites={refreshingSites}
+            handleRefreshSites={handleRefreshSites}
           />
 
           <TimeLogActions

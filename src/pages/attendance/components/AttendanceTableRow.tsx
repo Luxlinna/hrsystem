@@ -48,39 +48,52 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
               <span>{initials(emp?.first_name, emp?.last_name)}</span>
             )}
           </div>
-          <div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="font-bold text-gray-900 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-sky-400 transition-colors">
-                {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
-              </p>
-              {emp?.biometric_user_id ? (
-                <span
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
-                  title={`BU Biometric ID: ${emp.biometric_user_id}`}
-                >
-                  <i className="ri-fingerprint-line text-[10px]" />
-                  {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
-                </span>
-              ) : emp?.employee_code ? (
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300 shrink-0">
-                  {emp.employee_code}
-                </span>
-              ) : null}
+          <div className="min-w-0">
+            <p className="font-bold text-gray-900 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-sky-400 transition-colors text-xs truncate">
+              {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-[11px] text-gray-400 dark:text-slate-400 font-medium truncate max-w-[110px]">
+                {emp?.role || "Team Member"}
+              </span>
+              {(emp?.biometric_user_id || emp?.employee_code) && (
+                <>
+                  <span className="text-gray-300 dark:text-slate-600 text-[10px]">·</span>
+                  {emp?.biometric_user_id ? (
+                    <span
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
+                      title={`BU Biometric ID: ${formatBiometricId(emp.biometric_user_id, emp.branches?.name)}`}
+                    >
+                      <i className="ri-fingerprint-line text-[10px]" />
+                      {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300 shrink-0">
+                      {emp?.employee_code}
+                    </span>
+                  )}
+                </>
+              )}
             </div>
-            <p className="text-[11px] text-gray-400 dark:text-slate-400 mt-0.5">{emp?.role || "Team Member"}</p>
           </div>
         </div>
       </td>
 
       {/* Department & Site */}
       <td className="px-5 py-3.5 whitespace-nowrap">
-        <span className="font-semibold text-gray-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full text-[11px]">
-          {emp?.department || "General"}
-        </span>
-        {emp?.branches?.name && <span className="text-gray-400 dark:text-slate-500 block text-[10px] mt-0.5">{emp.branches.name}</span>}
-        {r.work_location?.name ? (
-          <div className="mt-1">
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800/60 px-1.5 py-0.5 rounded-md shadow-2xs">
+        <div className="flex items-center gap-1.5">
+          <span className="font-semibold text-gray-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[11px]">
+            {emp?.department || "General"}
+          </span>
+          {emp?.branches?.name && (
+            <span className="text-gray-500 dark:text-slate-400 text-[11px] font-medium truncate max-w-[120px]" title={emp.branches.name}>
+              {emp.branches.name}
+            </span>
+          )}
+        </div>
+        <div className="mt-1">
+          {r.work_location?.name ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800/60 px-1.5 py-0.5 rounded shadow-2xs">
               <i className="ri-map-pin-2-fill text-[9px] text-emerald-500 dark:text-emerald-400" />
               <span>{r.work_location.name}</span>
               {r.work_location_id !== emp?.default_work_location_id && emp?.default_work_location_id && (
@@ -89,15 +102,13 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
                 </span>
               )}
             </span>
-          </div>
-        ) : (
-          <div className="mt-1">
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 px-1.5 py-0.5 rounded-md shadow-2xs">
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 px-1.5 py-0.5 rounded shadow-2xs">
               <i className="ri-building-line text-[9px] text-slate-400" />
               <span>Main Office</span>
             </span>
-          </div>
-        )}
+          )}
+        </div>
       </td>
 
       {/* Date */}
@@ -131,7 +142,26 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
       </td>
 
       {/* Notes */}
-      <td className="px-4 py-3.5 text-gray-500 dark:text-slate-400 max-w-[160px] truncate">{r.notes || "—"}</td>
+      <td className="px-4 py-3.5 whitespace-nowrap max-w-[200px]">
+        {r.notes ? (
+          <span className="truncate block text-gray-600 dark:text-slate-300 text-xs" title={r.notes}>
+            {r.notes.startsWith("[Time Log]") ? (
+              <span className="inline-flex items-center gap-1 text-[11px]">
+                <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-sky-300 font-bold text-[9px] border border-blue-200/60 dark:border-blue-800/60 uppercase shrink-0">
+                  Time Log
+                </span>
+                <span className="truncate text-gray-600 dark:text-slate-400">
+                  {r.notes.replace(/^\[Time Log\]\s*/, "")}
+                </span>
+              </span>
+            ) : (
+              <span className="truncate text-gray-500 dark:text-slate-400">{r.notes}</span>
+            )}
+          </span>
+        ) : (
+          <span className="text-gray-300 dark:text-slate-600 select-none font-bold text-sm">—</span>
+        )}
+      </td>
 
       {/* Actions */}
       <td className="px-4 py-3.5 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>

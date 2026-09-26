@@ -18,8 +18,8 @@ interface AttendanceHeaderProps {
   onCreateOvertimeRequest?: () => void;
   onCreateOvertimeRequestFor?: () => void;
   onOpenOvertimeSettings?: () => void;
-  activeMainTab?: "attendance" | "overtime";
-  setActiveMainTab?: (tab: "attendance" | "overtime") => void;
+  activeMainTab?: "attendance" | "schedule-templates" | "shifts" | "overtime";
+  setActiveMainTab?: (tab: "attendance" | "schedule-templates" | "shifts" | "overtime") => void;
   records?: AttendanceRecord[];
   summaries?: EmployeeSummaryItem[];
   isFourPunchMode?: boolean;
@@ -106,35 +106,64 @@ export const AttendanceHeader = memo(function AttendanceHeader({
         </div>
       </div>
 
-      {/* Secondary Bar: Tab Switcher on Left, Full Report & Export on Right */}
+      {/* Secondary Bar: Module Tab Switcher on Left, Full Report & Export on Right */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-gray-200/70 dark:border-slate-800">
-        {/* Attendance vs Overtime Switcher (Only visible if user has overtime access) */}
-        {setActiveMainTab && canAccessOvertime && (
-          <div className="inline-flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl border border-gray-200/80 dark:border-slate-700">
+        {/* Module Switcher: Attendance Logs, Schedule Templates, Shifts, Overtime */}
+        {setActiveMainTab && (
+          <div className="inline-flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl border border-gray-200/80 dark:border-slate-700 overflow-x-auto max-w-full">
             <button
               type="button"
               onClick={() => setActiveMainTab("attendance")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 activeMainTab === "attendance"
                   ? "bg-[#253C7D] text-white shadow-xs"
                   : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               <i className="ri-calendar-check-line text-xs" />
-              Attendance
+              Attendance Logs
             </button>
+
             <button
               type="button"
-              onClick={() => setActiveMainTab("overtime")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeMainTab === "overtime"
+              onClick={() => setActiveMainTab("schedule-templates")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                activeMainTab === "schedule-templates"
                   ? "bg-[#253C7D] text-white shadow-xs"
                   : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
-              <i className="ri-timer-flash-line text-xs" />
-              Overtime
+              <i className="ri-calendar-schedule-line text-xs" />
+              Schedule Templates
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveMainTab("shifts")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                activeMainTab === "shifts"
+                  ? "bg-[#253C7D] text-white shadow-xs"
+                  : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white"
+              }`}
+            >
+              <i className="ri-time-line text-xs" />
+              Shifts
+            </button>
+
+            {canAccessOvertime && (
+              <button
+                type="button"
+                onClick={() => setActiveMainTab("overtime")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                  activeMainTab === "overtime"
+                    ? "bg-[#253C7D] text-white shadow-xs"
+                    : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                <i className="ri-timer-flash-line text-xs" />
+                Overtime
+              </button>
+            )}
           </div>
         )}
 

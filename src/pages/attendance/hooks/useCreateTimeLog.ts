@@ -36,7 +36,10 @@ export function useCreateTimeLog({
   const [refreshingSites, setRefreshingSites] = useState(false);
   const [date, setDate] = useState<string>(() => toYMD(new Date()));
 
-  // Work Schedule & Late Arrival Controls (e.g. 09:00 AM start, 15 min grace)
+  // Existing attendance record on this date (if any)
+  const [existingRecord, setExistingRecord] = useState<any | null>(null);
+
+  // Work Schedule & Late Arrival Controls (dynamic from shift/branch/location/existing log)
   const [workStartTime, setWorkStartTime] = useState<string>("09:00");
   const [graceMinutes, setGraceMinutes] = useState<number>(15);
   const [statusMode, setStatusMode] = useState<"auto" | "ontime" | "late">("auto");
@@ -57,7 +60,7 @@ export function useCreateTimeLog({
     try {
       const { data, error } = await supabase
         .from("work_locations")
-        .select("id, branch_id, name, description, is_default, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled")
+        .select("id, branch_id, name, description, is_default, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled, late_grace_minutes")
         .is("deleted_at", null).eq("branch_id", buId)
         .order("is_default", { ascending: false }).order("name");
 
@@ -72,9 +75,14 @@ export function useCreateTimeLog({
     }
   }, []);
 
+  // Fetch employee BU, sites, and configured work start schedule
   useEffect(() => {
     if (!employeeId) {
-      setEmployeeBuId(null); setEmployeeBranchName(null); setSites([]); setLogSiteId(""); return;
+      setEmployeeBuId(null);
+      setEmployeeBranchName(null);
+      setSites([]);
+      setLogSiteId("");
+      return;
     }
     const localEmp = employees.find((e) => e.id === employeeId);
     if (localEmp?.branch_id) {
@@ -85,17 +93,127 @@ export function useCreateTimeLog({
     let cancelled = false;
     supabase
       .from("employees")
-      .select("id, branch_id, default_work_location_id, branches(id, name)")
-      .eq("id", employeeId).maybeSingle()
+      .select("id, branch_id, default_work_location_id, working_hour, shift_id, branches(id, name, work_start_time, late_grace_minutes), work_locations:default_work_location_id(id, work_start_time, late_grace_minutes)")
+      .eq("id", employeeId)
+      .maybeSingle()
       .then(({ data: empData }) => {
         if (cancelled || !empData) return;
         const buId = empData.branch_id || activeBranchId;
         setEmployeeBuId(buId);
         setEmployeeBranchName((empData.branches as any)?.name || null);
         if (buId) loadSitesForBu(buId, empData.default_work_location_id);
+
+        // Dynamically resolve scheduled work start time & grace minutes
+        let resolvedStart: string | null = null;
+        let resolvedGrace: number | null = null;
+
+        const wl = (empData as any)?.work_locations;
+        if (wl?.work_start_time) {
+          resolvedStart = wl.work_start_time.slice(0, 5);
+          if (wl.late_grace_minutes != null) resolvedGrace = wl.late_grace_minutes;
+        } else if ((empData as any)?.branches?.work_start_time) {
+          resolvedStart = (empData as any).branches.work_start_time.slice(0, 5);
+          if ((empData as any).branches.late_grace_minutes != null) {
+            resolvedGrace = (empData as any).branches.late_grace_minutes;
+          }
+        }
+
+        // Parse custom working_hour string if configured (e.g. "10:00 AM - 7:00 PM" or "10:00")
+        if (empData.working_hour) {
+          const m = empData.working_hour.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+          if (m) {
+            let whH = parseInt(m[1], 10);
+            const whM = m[2];
+            const whPeriod = m[3]?.toUpperCase();
+            if (whPeriod === "PM" && whH < 12) whH += 12;
+            if (whPeriod === "AM" && whH === 12) whH = 0;
+            resolvedStart = `${String(whH).padStart(2, "0")}:${whM}`;
+          }
+        }
+
+        if (resolvedStart) {
+          setWorkStartTime(resolvedStart);
+        }
+        if (resolvedGrace != null) {
+          setGraceMinutes(resolvedGrace);
+        }
       });
     return () => { cancelled = true; };
   }, [employeeId, employees, activeBranchId, loadSitesForBu]);
+
+  // Check existing attendance record on selected date for this employee
+  useEffect(() => {
+    if (!employeeId || !date) {
+      setExistingRecord(null);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from("attendance_records")
+      .select("*")
+      .eq("employee_id", employeeId)
+      .eq("date", date)
+      .is("deleted_at", null)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setExistingRecord(data || null);
+
+        if (data) {
+          // If check-in already exists, load what was set for them (Time In: 10:00 AM, On Time, Notes)
+          // Do NOT automatically switch to checkout — keep on Time In so user never accidentally checks out
+          if (data.clock_in) {
+            setLogType("in");
+            const [inH, inM] = data.clock_in.slice(0, 5).split(":").map(Number);
+            setHour(String(inH % 12 || 12).padStart(2, "0"));
+            setMinute(String(inM).padStart(2, "0"));
+            setPeriod(inH >= 12 ? "PM" : "AM");
+            if (data.status) setStatusMode(data.status);
+            if (data.notes) setRemark(data.notes.replace(/^\[Time Log\]\s*/, ""));
+            setWorkStartTime(data.clock_in.slice(0, 5));
+          }
+        }
+      });
+    return () => { cancelled = true; };
+  }, [employeeId, date]);
+
+  // Switch punch type with smart prefill from existing record
+  const handleSelectLogType = (type: "in" | "out") => {
+    setLogType(type);
+    if (type === "in") {
+      if (existingRecord?.clock_in) {
+        const [inH, inM] = existingRecord.clock_in.slice(0, 5).split(":").map(Number);
+        setHour(String(inH % 12 || 12).padStart(2, "0"));
+        setMinute(String(inM).padStart(2, "0"));
+        setPeriod(inH >= 12 ? "PM" : "AM");
+        if (existingRecord.status) setStatusMode(existingRecord.status);
+        if (existingRecord.notes) setRemark(existingRecord.notes.replace(/^\[Time Log\]\s*/, ""));
+        if (existingRecord.status === "ontime") setWorkStartTime(existingRecord.clock_in.slice(0, 5));
+      } else {
+        const refNow = new Date();
+        const rH = refNow.getHours();
+        setHour(String(rH % 12 || 12).padStart(2, "0"));
+        setMinute(String(refNow.getMinutes()).padStart(2, "0"));
+        setPeriod(rH >= 12 ? "PM" : "AM");
+        setRemark("");
+        setStatusMode("auto");
+      }
+    } else {
+      if (existingRecord?.clock_out) {
+        const [outH, outM] = existingRecord.clock_out.slice(0, 5).split(":").map(Number);
+        setHour(String(outH % 12 || 12).padStart(2, "0"));
+        setMinute(String(outM).padStart(2, "0"));
+        setPeriod(outH >= 12 ? "PM" : "AM");
+      } else {
+        const refNow = new Date();
+        const rH = refNow.getHours();
+        setHour(String(rH % 12 || 12).padStart(2, "0"));
+        setMinute(String(refNow.getMinutes()).padStart(2, "0"));
+        setPeriod(rH >= 12 ? "PM" : "AM");
+        setRemark("");
+      }
+    }
+  };
 
   useEffect(() => { if (initialEmployeeId) setEmployeeId(initialEmployeeId); }, [initialEmployeeId]);
 
@@ -126,7 +244,7 @@ export function useCreateTimeLog({
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
   };
 
-  // Live evaluation: scan <= 9:15 is ontime; scan > 9:15 counts late starting from 9:15
+  // Live evaluation: scan <= workStartTime + grace is ontime; scan > grace counts late
   const liveEvaluation = useMemo(() => {
     let h = parseInt(hour, 10) || 9;
     const m = parseInt(minute, 10) || 0;
@@ -185,9 +303,10 @@ export function useCreateTimeLog({
     isEmployeeDropdownOpen, setIsEmployeeDropdownOpen, employeeDropdownRef,
     sites, logSiteId, setLogSiteId, refreshingSites, handleRefreshSites: () => loadSitesForBu(employeeBuId || "", logSiteId),
     date, setDate, hour, setHour, minute, setMinute, period, setPeriod,
-    logType, setLogType, remark, setRemark, saving, saveMenuOpen, setSaveMenuOpen,
+    logType, setLogType: handleSelectLogType, remark, setRemark, saving, saveMenuOpen, setSaveMenuOpen,
     saveMenuRef, selectedEmployee, filteredEmployees, handleSelectEmployee: (id: string) => { setEmployeeId(id); setIsEmployeeDropdownOpen(false); },
     handleHourBlur, handleMinuteBlur, handleSave, employeeBranchName, employeeBuId,
     workStartTime, setWorkStartTime, graceMinutes, setGraceMinutes, statusMode, setStatusMode, liveEvaluation,
+    existingRecord,
   };
 }
