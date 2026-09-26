@@ -19,8 +19,8 @@ interface AttendanceHeaderProps {
   onCreateOvertimeRequest?: () => void;
   onCreateOvertimeRequestFor?: () => void;
   onOpenOvertimeSettings?: () => void;
-  activeMainTab?: "attendance" | "schedule-templates" | "shifts" | "overtime";
-  setActiveMainTab?: (tab: "attendance" | "schedule-templates" | "shifts" | "overtime") => void;
+  activeMainTab?: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime";
+  setActiveMainTab?: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime") => void;
   records?: AttendanceRecord[];
   summaries?: EmployeeSummaryItem[];
   isFourPunchMode?: boolean;
@@ -192,6 +192,19 @@ export const AttendanceHeader = memo(function AttendanceHeader({
             >
               <i className="ri-calendar-check-line text-xs" />
               Attendance Logs
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveMainTab("attendance-schedule")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                activeMainTab === "attendance-schedule"
+                  ? "bg-[#253C7D] text-white shadow-xs"
+                  : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white"
+              }`}
+            >
+              <i className="ri-table-line text-xs" />
+              Attendance Schedule
             </button>
 
             <button

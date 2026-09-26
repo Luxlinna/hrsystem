@@ -42,7 +42,7 @@ export interface ShiftAssignment {
   };
 }
 
-export type ViewMode = "week" | "day" | "list" | "month";
+export type ViewMode = "week" | "day" | "list" | "month" | "roster";
 export type QuickFilter = "all" | "open" | "filled";
 export type DensityMode = "comfortable" | "compact";
 

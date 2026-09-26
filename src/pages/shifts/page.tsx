@@ -11,6 +11,7 @@ import { ListView } from "./components/ListView";
 import { MonthView } from "./components/MonthView";
 import { ShiftDetailDrawer } from "./components/drawers/ShiftDetailDrawer";
 import { ShiftModalsContainer } from "./components/modals/ShiftModalsContainer";
+import { AttendanceScheduleMatrixView } from "../attendance/components/schedule-matrix/AttendanceScheduleMatrixView";
 
 export default function Shifts() {
   const shiftsState = useShifts();
@@ -40,65 +41,72 @@ export default function Shifts() {
       {/* Main Content Area */}
       <div className={`flex-1 min-w-0 transition-all duration-200 ${shiftsState.selectedShift ? "sm:mr-[380px] lg:mr-[400px]" : ""}`}>
         <div className="p-6 lg:p-10">
-          <ShiftHeader
-            kpiTotalShiftsThisWeek={shiftsState.kpiTotalShiftsThisWeek}
-            kpiTotalWeeklyHours={shiftsState.kpiTotalWeeklyHours}
-            kpiCoveragePercentage={shiftsState.kpiCoveragePercentage}
-            weekDates={shiftsState.weekDates}
-            weekShiftsCount={shiftsState.weekShifts.length}
-            filteredShifts={shiftsState.filteredShifts}
-            assignments={shiftsState.assignments}
-            currentDate={shiftsState.currentDate}
-            onOpenWorkload={() => shiftsState.setShowWorkloadDrawer(true)}
-            onOpenCopyWeek={() => shiftsState.setShowCopyWeekModal(true)}
-            onOpenCreate={() => shiftsState.openCreateModal()}
-          />
+          {shiftsState.viewMode === "roster" ? (
+            <AttendanceScheduleMatrixView
+              onNavigateToShifts={() => shiftsState.setViewMode("list")}
+              onViewModeChange={(mode) => shiftsState.setViewMode(mode as any)}
+            />
+          ) : (
+            <>
+              <ShiftHeader
+                kpiTotalShiftsThisWeek={shiftsState.kpiTotalShiftsThisWeek}
+                kpiTotalWeeklyHours={shiftsState.kpiTotalWeeklyHours}
+                kpiCoveragePercentage={shiftsState.kpiCoveragePercentage}
+                weekDates={shiftsState.weekDates}
+                weekShiftsCount={shiftsState.weekShifts.length}
+                filteredShifts={shiftsState.filteredShifts}
+                assignments={shiftsState.assignments}
+                currentDate={shiftsState.currentDate}
+                onOpenWorkload={() => shiftsState.setShowWorkloadDrawer(true)}
+                onOpenCopyWeek={() => shiftsState.setShowCopyWeekModal(true)}
+                onOpenCreate={() => shiftsState.openCreateModal()}
+              />
 
-          <ShiftStatsBar
-            kpiTotalShiftsThisWeek={shiftsState.kpiTotalShiftsThisWeek}
-            kpiCoveragePercentage={shiftsState.kpiCoveragePercentage}
-            kpiTotalOpenSpots={shiftsState.kpiTotalOpenSpots}
-            kpiTotalWeeklyAssigned={shiftsState.kpiTotalWeeklyAssigned}
-            kpiTotalWeeklyCapacity={shiftsState.kpiTotalWeeklyCapacity}
-            kpiTotalWeeklyHours={shiftsState.kpiTotalWeeklyHours}
-            totalShiftsCount={shiftsState.shifts.length}
-            branchesCount={shiftsState.branches.length}
-          />
+              <ShiftStatsBar
+                kpiTotalShiftsThisWeek={shiftsState.kpiTotalShiftsThisWeek}
+                kpiCoveragePercentage={shiftsState.kpiCoveragePercentage}
+                kpiTotalOpenSpots={shiftsState.kpiTotalOpenSpots}
+                kpiTotalWeeklyAssigned={shiftsState.kpiTotalWeeklyAssigned}
+                kpiTotalWeeklyCapacity={shiftsState.kpiTotalWeeklyCapacity}
+                kpiTotalWeeklyHours={shiftsState.kpiTotalWeeklyHours}
+                totalShiftsCount={shiftsState.shifts.length}
+                branchesCount={shiftsState.branches.length}
+              />
 
-          <ShiftToolbar
-            viewMode={shiftsState.viewMode}
-            setViewMode={shiftsState.setViewMode}
-            density={shiftsState.density}
-            setDensity={shiftsState.setDensity}
-            currentDate={shiftsState.currentDate}
-            weekDates={shiftsState.weekDates}
-            searchQuery={shiftsState.searchQuery}
-            setSearchQuery={shiftsState.setSearchQuery}
-            filterBranch={shiftsState.filterBranch}
-            setFilterBranch={shiftsState.setFilterBranch}
-            filterDept={shiftsState.filterDept}
-            setFilterDept={shiftsState.setFilterDept}
-            branches={shiftsState.branches}
-            departments={shiftsState.departments}
-            quickFilter={shiftsState.quickFilter}
-            setQuickFilter={shiftsState.setQuickFilter}
-            totalShiftsCount={shiftsState.shifts.length}
-            totalOpenShiftsCount={shiftsState.totalOpenShiftsCount}
-            totalFilledShiftsCount={shiftsState.totalFilledShiftsCount}
-            navigatePrev={shiftsState.navigatePrev}
-            navigateNext={shiftsState.navigateNext}
-            navigateToday={shiftsState.navigateToday}
-            clearFilters={shiftsState.clearFilters}
-          />
+              <ShiftToolbar
+                viewMode={shiftsState.viewMode}
+                setViewMode={shiftsState.setViewMode}
+                density={shiftsState.density}
+                setDensity={shiftsState.setDensity}
+                currentDate={shiftsState.currentDate}
+                weekDates={shiftsState.weekDates}
+                searchQuery={shiftsState.searchQuery}
+                setSearchQuery={shiftsState.setSearchQuery}
+                filterBranch={shiftsState.filterBranch}
+                setFilterBranch={shiftsState.setFilterBranch}
+                filterDept={shiftsState.filterDept}
+                setFilterDept={shiftsState.setFilterDept}
+                branches={shiftsState.branches}
+                departments={shiftsState.departments}
+                quickFilter={shiftsState.quickFilter}
+                setQuickFilter={shiftsState.setQuickFilter}
+                totalShiftsCount={shiftsState.shifts.length}
+                totalOpenShiftsCount={shiftsState.totalOpenShiftsCount}
+                totalFilledShiftsCount={shiftsState.totalFilledShiftsCount}
+                navigatePrev={shiftsState.navigatePrev}
+                navigateNext={shiftsState.navigateNext}
+                navigateToday={shiftsState.navigateToday}
+                clearFilters={shiftsState.clearFilters}
+              />
 
-          <BulkActionBar
-            count={shiftsState.selectedShiftIds.length}
-            onBulkDelete={shiftsState.handleBulkDelete}
-            onDeselect={() => shiftsState.setSelectedShiftIds([])}
-          />
+              <BulkActionBar
+                count={shiftsState.selectedShiftIds.length}
+                onBulkDelete={shiftsState.handleBulkDelete}
+                onDeselect={() => shiftsState.setSelectedShiftIds([])}
+              />
 
-          {shiftsState.viewMode === "week" && (
-            <WeekView
+              {shiftsState.viewMode === "week" && (
+                <WeekView
               weekDates={shiftsState.weekDates}
               getShiftsForDay={shiftsState.getShiftsForDay}
               getDaySummary={shiftsState.getDaySummary}
@@ -146,7 +154,9 @@ export default function Shifts() {
             />
           )}
 
-          <DepartmentLegend />
+              <DepartmentLegend />
+            </>
+          )}
         </div>
       </div>
 

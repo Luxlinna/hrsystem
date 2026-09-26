@@ -29,6 +29,7 @@ interface ShiftToolbarProps {
 }
 
 const VIEW_OPTIONS: { id: ViewMode; label: string; icon: string }[] = [
+  { id: "roster", label: "Roster Matrix", icon: "ri-table-line" },
   { id: "week", label: "Week", icon: "ri-calendar-view" },
   { id: "day", label: "Day", icon: "ri-time-line" },
   { id: "list", label: "List", icon: "ri-list-check" },

@@ -18,13 +18,13 @@ import { ScheduleTemplatesView } from "./components/schedule-templates/ScheduleT
 import { CreateScheduleTemplateForm } from "./components/schedule-templates/CreateScheduleTemplateForm";
 import { useShiftsManager } from "./components/shifts-manager/useShiftsManager";
 import { ShiftsListView } from "./components/shifts-manager/ShiftsListView";
-import { CreateShiftManagerForm } from "./components/shifts-manager/CreateShiftManagerForm";
 import { ViewTimeLogDetailView } from "./components/ViewTimeLogDetailView";
+import { AttendanceScheduleMatrixView } from "./components/schedule-matrix/AttendanceScheduleMatrixView";
 
 export default function AttendancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlTab = searchParams.get("tab") as "attendance" | "schedule-templates" | "shifts" | "overtime" | null;
-  const [activeMainTab, setActiveMainTab] = useState<"attendance" | "schedule-templates" | "shifts" | "overtime">(
+  const urlTab = searchParams.get("tab") as "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime" | null;
+  const [activeMainTab, setActiveMainTab] = useState<"attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime">(
     urlTab || "attendance"
   );
 
@@ -66,7 +66,7 @@ export default function AttendancePage() {
     }
   }, [searchParams]);
 
-  const handleTabChange = (tab: "attendance" | "schedule-templates" | "shifts" | "overtime") => {
+  const handleTabChange = (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime") => {
     setActiveMainTab(tab);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -206,7 +206,12 @@ export default function AttendancePage() {
         isFourPunchMode={isFourPunchMode}
       />
 
-      {activeMainTab === "schedule-templates" ? (
+      {activeMainTab === "attendance-schedule" ? (
+        <AttendanceScheduleMatrixView
+          onNavigateToTemplates={() => handleTabChange("schedule-templates")}
+          onNavigateToShifts={() => handleTabChange("shifts")}
+        />
+      ) : activeMainTab === "schedule-templates" ? (
         <ScheduleTemplatesView
           templates={scheduleTemplates.templates}
           onCreateNew={() => scheduleTemplates.setActiveFormTemplate("new")}

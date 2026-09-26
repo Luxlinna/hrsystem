@@ -32,7 +32,6 @@ const WORKFORCE_ITEMS: DrawerItem[] = [
   { path: "/onboarding", label: "Onboarding", sublabel: "New hire pipeline", icon: "ri-user-add-line", module: "onboarding" },
   { path: "/onboarding-checklist", label: "Checklists", sublabel: "Task assignments", icon: "ri-task-line", module: "onboarding-checklist" },
   { path: "/leave", label: "Leave", sublabel: "Approve / reject", icon: "ri-calendar-event-line", module: "leave" },
-  { path: "/shifts", label: "Attendance Schedules", sublabel: "Roster & schedule planning", icon: "ri-calendar-schedule-line", module: "shifts" },
   { path: "/hire", label: "Hire", sublabel: "Candidates & jobs", icon: "ri-briefcase-line", module: "hire" },
   { path: "/offboard", label: "Off Board", sublabel: "Exit workflows", icon: "ri-user-unfollow-line", module: "offboard" },
   { path: "/exit", label: "Exit", sublabel: "Employee exits", icon: "ri-logout-box-r-line", module: "exit" },
