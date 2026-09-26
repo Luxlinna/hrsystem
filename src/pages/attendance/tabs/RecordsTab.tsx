@@ -14,6 +14,7 @@ interface RecordsTabProps {
   canManage: boolean;
   isFourPunchMode?: boolean;
   holidays?: Holiday[];
+  shifts?: import("../components/shifts-manager/types").ManagedShift[];
   pageSize: number;
   setPageSize: (size: number) => void;
   page: number;
@@ -36,6 +37,7 @@ export const RecordsTab = memo(function RecordsTab({
   canManage,
   isFourPunchMode = false,
   holidays = [],
+  shifts = [],
   pageSize,
   setPageSize,
   page,
@@ -92,6 +94,7 @@ export const RecordsTab = memo(function RecordsTab({
           canManage={canManage}
           isFourPunchMode={isFourPunchMode}
           holidays={holidays}
+          shifts={shifts}
           onSelectRecord={onSelectRecord}
           onEditRecord={onEditRecord}
           onDeleteRecord={onDeleteRecord}

@@ -44,7 +44,7 @@ export const ShiftsListView = memo(function ShiftsListView({
             Shifts
           </h2>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-            Configure working hours, shift codes, break allowances, and punch tolerance windows.
+            Configure working hours, shift codes, and break allowances.
           </p>
         </div>
 

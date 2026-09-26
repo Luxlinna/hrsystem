@@ -19,6 +19,7 @@ import { CreateScheduleTemplateForm } from "./components/schedule-templates/Crea
 import { useShiftsManager } from "./components/shifts-manager/useShiftsManager";
 import { ShiftsListView } from "./components/shifts-manager/ShiftsListView";
 import { CreateShiftManagerForm } from "./components/shifts-manager/CreateShiftManagerForm";
+import { ViewTimeLogDetailView } from "./components/ViewTimeLogDetailView";
 
 export default function AttendancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -165,6 +166,23 @@ export default function AttendancePage() {
     );
   }
 
+  if (selectedRecord !== null) {
+    return (
+      <ViewTimeLogDetailView
+        record={selectedRecord}
+        onBack={() => setSelectedRecord(null)}
+        onEdit={(r) => {
+          setSelectedRecord(null);
+          setEditingRecord(r);
+        }}
+        onDelete={(id) => {
+          setSelectedRecord(null);
+          mutations.handleDeleteRecord(id);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="attendance-hub min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
       <AttendanceHeader
@@ -288,6 +306,7 @@ export default function AttendancePage() {
             canManage={canManage}
             isFourPunchMode={isFourPunchMode}
             holidays={holidays}
+            shifts={shiftsManager.shifts}
             pageSize={filters.pageSize}
             setPageSize={filters.setPageSize}
             page={filters.page}

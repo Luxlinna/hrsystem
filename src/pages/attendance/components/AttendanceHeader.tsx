@@ -1,8 +1,8 @@
-import { memo } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { Link } from "react-router-dom";
 import type { AttendanceTabKey, AttendanceRecord, EmployeeSummaryItem } from "../types";
 import { AttendanceExportMenu } from "./AttendanceExportMenu";
-import { OvertimeActionDropdown } from "./overtime/OvertimeActionDropdown";
+import { toast } from "@/components/Toast";
 
 interface AttendanceHeaderProps {
   currentTime: Date;
@@ -14,6 +14,7 @@ interface AttendanceHeaderProps {
   hasEmployee: boolean;
   onExportCSV?: () => void;
   onOpenLogModal: () => void;
+  onSyncDevices?: () => void;
   onCreateNewOvertime?: () => void;
   onCreateOvertimeRequest?: () => void;
   onCreateOvertimeRequestFor?: () => void;
@@ -33,7 +34,9 @@ export const AttendanceHeader = memo(function AttendanceHeader({
   canAccessOvertime = false,
   canManageOvertimeSettings = false,
   hasEmployee,
+  onExportCSV,
   onOpenLogModal,
+  onSyncDevices,
   onCreateNewOvertime,
   onCreateOvertimeRequest,
   onCreateOvertimeRequestFor,
@@ -44,6 +47,20 @@ export const AttendanceHeader = memo(function AttendanceHeader({
   summaries = [],
   isFourPunchMode = false,
 }: AttendanceHeaderProps) {
+  const [logsMenuOpen, setLogsMenuOpen] = useState(false);
+  const logsMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (logsMenuRef.current && !logsMenuRef.current.contains(e.target as Node)) {
+        setLogsMenuOpen(false);
+      }
+    }
+    if (logsMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [logsMenuOpen]);
   return (
     <div className="space-y-4 mb-6">
       {/* Primary Top Row: Title / Subtitle on Left, Clock + Actions on Right */}
@@ -82,26 +99,79 @@ export const AttendanceHeader = memo(function AttendanceHeader({
             </div>
           </div>
 
-          {/* Overtime Actions Dropdown (Only visible to Manager, BU Admin, Super Admin, or permitted role) */}
-          {canAccessOvertime && onCreateNewOvertime && (
-            <OvertimeActionDropdown
-              onCreateNew={onCreateNewOvertime}
-              onCreateRequest={onCreateOvertimeRequest || onCreateNewOvertime}
-              onCreateRequestFor={onCreateOvertimeRequestFor || onCreateNewOvertime}
-              onOpenSettings={onOpenOvertimeSettings || (() => {})}
-              canManage={canViewAll}
-              canManageSettings={canManageOvertimeSettings}
-            />
-          )}
+          {/* Attendance Logs Action Dropdown matching screenshot */}
+          <div ref={logsMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setLogsMenuOpen((p) => !p)}
+              className="inline-flex items-center justify-center gap-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer whitespace-nowrap"
+            >
+              <span>Attendance Logs</span>
+              <i className={`ri-arrow-${logsMenuOpen ? "up" : "down"}-s-line text-sm`} />
+            </button>
+
+            {logsMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-52 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl py-2 z-40 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogsMenuOpen(false);
+                    if (onSyncDevices) onSyncDevices();
+                    else toast("Device Sync", "Syncing logs from connected biometric devices...", "info");
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2.5 cursor-pointer font-medium"
+                >
+                  <i className="ri-refresh-line text-sm text-[#253C7D] dark:text-sky-400" />
+                  <span>Sync From Device</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogsMenuOpen(false);
+                    onOpenLogModal();
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2.5 cursor-pointer font-medium"
+                >
+                  <i className="ri-time-line text-sm text-[#253C7D] dark:text-sky-400" />
+                  <span>Time Request</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogsMenuOpen(false);
+                    if (setActiveMainTab) setActiveMainTab("schedule-templates");
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2.5 cursor-pointer font-medium"
+                >
+                  <i className="ri-calendar-schedule-line text-sm text-[#253C7D] dark:text-sky-400" />
+                  <span>Schedule Request</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogsMenuOpen(false);
+                    if (onExportCSV) onExportCSV();
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2.5 cursor-pointer font-medium border-t border-gray-100 dark:border-slate-700 mt-1 pt-1.5"
+                >
+                  <i className="ri-file-excel-2-line text-sm text-emerald-600 dark:text-emerald-400" />
+                  <span>Export to Excel</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Manual Log Button (Can choose any old date) */}
           <button
             onClick={onOpenLogModal}
             disabled={!canViewAll && !hasEmployee}
-            className="inline-flex items-center justify-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50 whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 bg-[#253C7D]/10 dark:bg-sky-950/60 hover:bg-[#253C7D]/20 text-[#253C7D] dark:text-sky-300 border border-[#253C7D]/20 px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
             <i className="ri-add-circle-line text-base font-bold" />
-            Log Attendance
+            <span>Log Attendance</span>
           </button>
         </div>
       </div>

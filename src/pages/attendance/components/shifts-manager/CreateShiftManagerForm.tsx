@@ -1,5 +1,5 @@
 import { useState, memo } from "react";
-import type { ManagedShift, ShiftTimeTableRow, ShiftToleranceRule } from "./types";
+import type { ManagedShift, ShiftTimeTableRow } from "./types";
 
 interface CreateShiftManagerFormProps {
   initialData?: ManagedShift | null;
@@ -27,20 +27,6 @@ export const CreateShiftManagerForm = memo(function CreateShiftManagerForm({
     ]
   );
 
-  // Tolerances
-  const [comeEarliest, setComeEarliest] = useState<ShiftToleranceRule[]>(
-    initialData?.come_earliest || []
-  );
-  const [comeLates, setComeLates] = useState<ShiftToleranceRule[]>(
-    initialData?.come_lates || []
-  );
-  const [leaveEarliest, setLeaveEarliest] = useState<ShiftToleranceRule[]>(
-    initialData?.leave_earliest || []
-  );
-  const [leaveLates, setLeaveLates] = useState<ShiftToleranceRule[]>(
-    initialData?.leave_lates || []
-  );
-
   const [remark, setRemark] = useState(initialData?.remark || "");
 
   // Helpers to add rows
@@ -61,26 +47,9 @@ export const CreateShiftManagerForm = memo(function CreateShiftManagerForm({
     setTimeTable((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const handleAddToleranceRow = (setter: React.Dispatch<React.SetStateAction<ShiftToleranceRule[]>>) => {
-    setter((prev) => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        name: "Standard Tolerance",
-        from_min: 0,
-        to_min: 15,
-      },
-    ]);
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleRemoveToleranceRow = (
-    setter: React.Dispatch<React.SetStateAction<ShiftToleranceRule[]>>,
-    id: string
-  ) => {
-    setter((prev) => prev.filter((r) => r.id !== id));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim() || !name.trim()) {
       alert("Please provide both Shift Code and Shift Name.");
@@ -99,14 +68,15 @@ export const CreateShiftManagerForm = memo(function CreateShiftManagerForm({
       must_mark_check_in: mustCheckIn,
       must_mark_check_out: mustCheckOut,
       time_table: timeTable,
-      come_earliest: comeEarliest,
-      come_lates: comeLates,
-      leave_earliest: leaveEarliest,
-      leave_lates: leaveLates,
       remark: remark.trim(),
     };
 
-    onSave(shiftData);
+    setIsSubmitting(true);
+    try {
+      await onSave(shiftData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -337,110 +307,6 @@ export const CreateShiftManagerForm = memo(function CreateShiftManagerForm({
           </div>
         </div>
 
-        {/* TOLERANCES: COME EARLIEST, COME LATES, LEAVE EARLIEST, LEAVE LATES */}
-        {[
-          { title: "COME EARLIEST", state: comeEarliest, setter: setComeEarliest },
-          { title: "COME LATES", state: comeLates, setter: setComeLates },
-          { title: "LEAVE EARLIEST", state: leaveEarliest, setter: setLeaveEarliest },
-          { title: "LEAVE LATES", state: leaveLates, setter: setLeaveLates },
-        ].map((sec) => (
-          <div
-            key={sec.title}
-            className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-gray-200/80 dark:border-slate-800 shadow-2xs space-y-4"
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-800">
-              <h3 className="text-xs font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider">
-                {sec.title}
-              </h3>
-              <button
-                type="button"
-                onClick={() => handleAddToleranceRow(sec.setter)}
-                className="text-xs font-bold text-[#253C7D] dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <i className="ri-add-circle-line" />
-                <span>Add Rule</span>
-              </button>
-            </div>
-
-            <div className="overflow-x-auto border border-gray-200/80 dark:border-slate-800 rounded-xl">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-gray-50/80 dark:bg-slate-800/60 text-gray-500 dark:text-slate-400 font-bold border-b border-gray-200/80 dark:border-slate-800">
-                    <th className="py-2.5 px-3 w-10 text-center">No.</th>
-                    <th className="py-2.5 px-3">Late or Early Name</th>
-                    <th className="py-2.5 px-3 w-28">From Min</th>
-                    <th className="py-2.5 px-3 w-28">To Min</th>
-                    <th className="py-2.5 px-3 w-12 text-center"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                  {sec.state.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-4 text-center text-gray-400">
-                        No records found
-                      </td>
-                    </tr>
-                  ) : (
-                    sec.state.map((r, idx) => (
-                      <tr key={r.id}>
-                        <td className="py-2 px-3 text-center font-bold text-gray-400">{idx + 1}</td>
-                        <td className="py-2 px-3">
-                          <input
-                            type="text"
-                            value={r.name}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              sec.setter((prev) =>
-                                prev.map((x) => (x.id === r.id ? { ...x, name: val } : x))
-                              );
-                            }}
-                            className="w-full px-2 py-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs"
-                          />
-                        </td>
-                        <td className="py-2 px-3">
-                          <input
-                            type="number"
-                            value={r.from_min}
-                            onChange={(e) => {
-                              const val = Number(e.target.value);
-                              sec.setter((prev) =>
-                                prev.map((x) => (x.id === r.id ? { ...x, from_min: val } : x))
-                              );
-                            }}
-                            className="w-20 px-2 py-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs"
-                          />
-                        </td>
-                        <td className="py-2 px-3">
-                          <input
-                            type="number"
-                            value={r.to_min}
-                            onChange={(e) => {
-                              const val = Number(e.target.value);
-                              sec.setter((prev) =>
-                                prev.map((x) => (x.id === r.id ? { ...x, to_min: val } : x))
-                              );
-                            }}
-                            className="w-20 px-2 py-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs"
-                          />
-                        </td>
-                        <td className="py-2 px-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveToleranceRow(sec.setter, r.id)}
-                            className="text-gray-400 hover:text-rose-500 cursor-pointer"
-                          >
-                            <i className="ri-delete-bin-line text-sm" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ))}
-
         {/* Remark */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-gray-200/80 dark:border-slate-800 shadow-2xs space-y-2">
           <label className="block text-xs font-bold text-gray-700 dark:text-slate-300">
@@ -459,15 +325,17 @@ export const CreateShiftManagerForm = memo(function CreateShiftManagerForm({
         <div className="pt-2 flex items-center gap-3 border-t border-gray-200 dark:border-slate-800">
           <button
             type="submit"
-            className="px-4 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
+            disabled={isSubmitting}
+            className="px-4 py-2.5 bg-[#253C7D] hover:bg-[#1E3064] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer flex items-center gap-2 transition-all"
           >
-            <i className="ri-save-3-line text-sm" />
-            <span>Save Shift</span>
+            <i className={isSubmitting ? "ri-loader-4-line animate-spin text-sm" : "ri-save-3-line text-sm"} />
+            <span>{isSubmitting ? "Saving..." : "Save Shift"}</span>
           </button>
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={onBack}
-            className="px-4 py-2.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-4 py-2.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 disabled:opacity-50 text-gray-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
           >
             <i className="ri-close-line text-sm text-gray-400" />
             <span>Discard</span>

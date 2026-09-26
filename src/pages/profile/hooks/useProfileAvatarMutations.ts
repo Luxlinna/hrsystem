@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { invalidateMyEmployeeCache } from "@/hooks/useMyEmployee";
+import { invalidateMyEmployeeCache, useMyEmployee } from "@/hooks/useMyEmployee";
 import { toast } from "@/components/Toast";
 import { uploadMediaToS3, deleteS3File, getS3KeyFromUrl } from "@/lib/s3-storage";
 import type { MyEmployee } from "../types";
@@ -12,13 +12,17 @@ interface UseProfileAvatarMutationsProps {
 
 export function useProfileAvatarMutations({ employee }: UseProfileAvatarMutationsProps) {
   const { user, updateProfile } = useAuth();
+  const { employee: myEmpCached } = useMyEmployee();
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const [savingCrop, setSavingCrop] = useState(false);
   const [removingAvatar, setRemovingAvatar] = useState(false);
   const [editMenuOpen, setEditMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+  const avatarUrl =
+    employee?.avatar_url ||
+    myEmpCached?.avatar_url ||
+    (user?.user_metadata?.avatar_url as string | undefined);
 
   const handleAvatarSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

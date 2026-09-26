@@ -15,15 +15,47 @@ function emit() {
   toastListeners.forEach((fn) => fn([...toasts]));
 }
 
-export function toast(title: string, message: string, type: Toast["type"] = "info") {
+export function toast(titleOrMessage: string, messageOrType?: string, type: Toast["type"] = "info") {
+  let finalTitle = titleOrMessage;
+  let finalMessage = messageOrType || "";
+  let finalType = type;
+
+  // If only one argument is provided: toast("Item saved successfully")
+  if (messageOrType === undefined) {
+    finalTitle = "Notification";
+    finalMessage = titleOrMessage;
+    finalType = "info";
+  } else if (messageOrType === "info" || messageOrType === "success" || messageOrType === "warning" || messageOrType === "error") {
+    // If called as toast("Success message", "success")
+    finalTitle = messageOrType.charAt(0).toUpperCase() + messageOrType.slice(1);
+    finalMessage = titleOrMessage;
+    finalType = messageOrType as Toast["type"];
+  }
+
   const id = Math.random().toString(36).slice(2);
-  toasts = [...toasts, { id, title, message, type }];
+  toasts = [...toasts, { id, title: finalTitle, message: finalMessage, type: finalType }];
   emit();
   setTimeout(() => {
     toasts = toasts.filter((t) => t.id !== id);
     emit();
   }, 5000);
 }
+
+toast.success = (message: string, title: string = "Success") => {
+  toast(title, message, "success");
+};
+
+toast.error = (message: string, title: string = "Error") => {
+  toast(title, message, "error");
+};
+
+toast.info = (message: string, title: string = "Info") => {
+  toast(title, message, "info");
+};
+
+toast.warning = (message: string, title: string = "Warning") => {
+  toast(title, message, "warning");
+};
 
 export function dismissToast(id: string) {
   toasts = toasts.filter((t) => t.id !== id);

@@ -27,7 +27,7 @@ export function useProfileData() {
       let empQuery = supabase
         .from("employees")
         .select(
-          `id, first_name, last_name, role, department, status, join_date, phone, reports_to, branches(name), email,
+          `id, first_name, last_name, avatar_url, role, department, status, join_date, phone, reports_to, branches(name), email,
            location, education, work_experience, skills, languages, expected_salary, notice_period, resume_url, resume_name,
            candidate_code, candidate_id`
         );

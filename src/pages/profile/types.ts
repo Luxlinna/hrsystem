@@ -19,6 +19,7 @@ export interface MyEmployee {
   id: string;
   first_name: string;
   last_name: string;
+  avatar_url?: string | null;
   role: string;
   department: string;
   status: string;

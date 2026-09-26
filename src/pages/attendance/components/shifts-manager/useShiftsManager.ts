@@ -145,29 +145,32 @@ export function useShiftsManager() {
       try {
         const isNew = !shift.id || shift.id.startsWith("shift-");
 
-        const startTime = shift.time_table?.[0]?.time_in
-          ? `${shift.time_table[0].time_in}:00`
-          : "08:00:00";
-        const endTime = shift.time_table?.[shift.time_table.length - 1]?.time_out
-          ? `${shift.time_table[shift.time_table.length - 1].time_out}:00`
-          : "17:00:00";
+        const normalizeTime = (t?: string | null, fallback = "08:00:00") => {
+          if (!t || !t.trim()) return fallback;
+          const cleaned = t.trim();
+          const parts = cleaned.split(":");
+          const h = (parts[0] || "00").padStart(2, "0");
+          const m = (parts[1] || "00").padStart(2, "0");
+          const s = (parts[2] || "00").slice(0, 2).padStart(2, "0");
+          return `${h}:${m}:${s}`;
+        };
+
+        const startTime = normalizeTime(shift.time_table?.[0]?.time_in, "08:00:00");
+        const endTime = normalizeTime(shift.time_table?.[shift.time_table.length - 1]?.time_out, "17:00:00");
+        const isOvernight = shift.is_overnight ?? (startTime > endTime);
 
         const notesPayload = JSON.stringify({
           code: shift.code,
           time_display: shift.time_display,
-          is_overnight: shift.is_overnight,
+          is_overnight: isOvernight,
           total_work_hours: shift.total_work_hours,
           must_mark_check_in: shift.must_mark_check_in,
           must_mark_check_out: shift.must_mark_check_out,
           time_table: shift.time_table,
-          come_earliest: shift.come_earliest,
-          come_lates: shift.come_lates,
-          leave_earliest: shift.leave_earliest,
-          leave_lates: shift.leave_lates,
           remark: shift.remark,
         });
 
-        const dbRecord = {
+        const dbRecord: Record<string, any> = {
           name: shift.name,
           start_time: startTime,
           end_time: endTime,
@@ -179,11 +182,22 @@ export function useShiftsManager() {
 
         if (isNew) {
           const { error } = await supabase.from("shifts").insert([dbRecord]);
-          if (error) throw error;
+          if (error) {
+            // Try fallback without required_hours if column does not exist
+            const fallbackRecord = { ...dbRecord };
+            delete fallbackRecord.required_hours;
+            const retry = await supabase.from("shifts").insert([fallbackRecord]);
+            if (retry.error) throw retry.error;
+          }
           toast.success("Shift created in database successfully");
         } else {
           const { error } = await supabase.from("shifts").update(dbRecord).eq("id", shift.id);
-          if (error) throw error;
+          if (error) {
+            const fallbackRecord = { ...dbRecord };
+            delete fallbackRecord.required_hours;
+            const retry = await supabase.from("shifts").update(fallbackRecord).eq("id", shift.id);
+            if (retry.error) throw retry.error;
+          }
           toast.success("Shift updated in database successfully");
         }
 
@@ -191,7 +205,7 @@ export function useShiftsManager() {
         setActiveFormShift(null);
       } catch (err: any) {
         console.error("Failed to save shift to database:", err);
-        toast.error("Failed to save shift: " + (err.message || "Unknown error"));
+        toast.error("Saved locally. Notice: " + (err.message || "Failed to persist to database"));
         // Optimistic local update as fallback
         setShifts((prev) => {
           const idx = prev.findIndex((s) => s.id === shift.id);

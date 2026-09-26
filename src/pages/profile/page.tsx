@@ -18,10 +18,10 @@ export default function Profile() {
       : null);
 
   return (
-    <div className="p-6 lg:p-10 min-h-screen bg-[#F8FAFC] font-sans">
+    <div className="p-6 lg:p-8 min-h-screen bg-[#F8FAFC] font-sans">
       <ProfileHeader />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 w-full">
         {/* ── LEFT: account & candidate master ── */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs">
@@ -38,6 +38,8 @@ export default function Profile() {
               onAvatarSelect={profile.handleAvatarSelect}
               onEditAvatar={profile.handleEditAvatar}
               onRemoveAvatar={profile.handleRemoveAvatar}
+              roleName={profile.employee?.role}
+              department={profile.employee?.department}
             />
 
             {/* Segmented Tab Navigation */}
