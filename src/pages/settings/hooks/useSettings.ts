@@ -4,18 +4,12 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import type { Setting } from "../types";
-import { resolveScheduleFieldValue } from "./settingsScheduleUtils";
 import { useSettingsSaveActions } from "./useSettingsSaveActions";
 
 export function useSettings() {
   const { user } = useAuth();
   const { role } = usePermissions();
-  const {
-    visibleBranches,
-    selectedBranchId,
-    setSelectedBranchId,
-    refreshBranches,
-  } = useBranchScope();
+  const { refreshBranches } = useBranchScope();
 
   const actorName =
     (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
@@ -25,15 +19,7 @@ export function useSettings() {
   const [loading, setLoading] = useState(true);
   const [edited, setEdited] = useState<Record<string, string>>({});
 
-  // Active scope in settings: "all" for company-wide, or branch/site ID
-  const [settingsScope, setSettingsScope] = useState<string>(() => selectedBranchId || "all");
-
-  useEffect(() => {
-    if (selectedBranchId) {
-      setSettingsScope(selectedBranchId);
-      setEdited({});
-    }
-  }, [selectedBranchId]);
+  const settingsScope = "all";
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
@@ -51,8 +37,6 @@ export function useSettings() {
     loadSettings();
   }, [loadSettings]);
 
-  const currentBranchOrSite = visibleBranches.find((b) => b.id === settingsScope);
-
   const updateValue = useCallback((key: string, value: string) => {
     setEdited((prev) => ({ ...prev, [key]: value }));
   }, []);
@@ -60,17 +44,9 @@ export function useSettings() {
   const getVal = useCallback(
     (key: string) => {
       if (edited[key] !== undefined) return edited[key];
-
-      if (currentBranchOrSite && settingsScope !== "all") {
-        const scheduleVal = resolveScheduleFieldValue(currentBranchOrSite, key);
-        if (scheduleVal !== null) {
-          return scheduleVal;
-        }
-      }
-
       return settings?.[key]?.value || "";
     },
-    [edited, currentBranchOrSite, settingsScope, settings]
+    [edited, settings]
   );
 
   const hasChanges = useCallback(
@@ -78,22 +54,11 @@ export function useSettings() {
     [edited]
   );
 
-  const handleScopeChange = useCallback(
-    (newScope: string) => {
-      setSettingsScope(newScope);
-      setEdited({});
-      if (newScope !== "all") {
-        setSelectedBranchId(newScope);
-      }
-    },
-    [setSelectedBranchId]
-  );
-
   const { saving, saveSetting, saveAllGeneral, saveAllNotifications } =
     useSettingsSaveActions({
       edited,
       setEdited,
-      currentBranchOrSite,
+      currentBranchOrSite: undefined,
       settingsScope,
       refreshBranches,
       loadSettings,
@@ -109,10 +74,6 @@ export function useSettings() {
     loading,
     saving,
     edited,
-    settingsScope,
-    setSettingsScope: handleScopeChange,
-    visibleBranches,
-    currentBranchOrSite,
     getVal,
     hasChanges,
     updateValue,

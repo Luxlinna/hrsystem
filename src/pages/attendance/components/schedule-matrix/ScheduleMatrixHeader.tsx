@@ -1,4 +1,5 @@
 import { useState, memo } from "react";
+import { useBranchScope } from "@/context/BranchContext";
 
 interface ScheduleMatrixHeaderProps {
   activeTab: "schedules" | "no_schedules";
@@ -16,12 +17,25 @@ export const ScheduleMatrixHeader = memo(function ScheduleMatrixHeader({
   onNavigateToShifts,
 }: ScheduleMatrixHeaderProps) {
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const { selectedBranchId, visibleBranches } = useBranchScope();
+  const currentBranchOrSite = visibleBranches.find((b) => b.id === selectedBranchId);
+  const isFourPunch = Boolean(currentBranchOrSite?.is_four_punch_enabled);
 
   return (
     <div className="space-y-4">
       {/* Top Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Attendance Schedule</h1>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-slate-100 tracking-tight">
+            Attendance Schedule
+          </h1>
+          {isFourPunch && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 shadow-2xs">
+              <i className="ri-fingerprint-line text-xs" />
+              4-Punch Policy ({currentBranchOrSite?.name})
+            </span>
+          )}
+        </div>
 
         <div className="relative">
           <button
@@ -77,32 +91,31 @@ export const ScheduleMatrixHeader = memo(function ScheduleMatrixHeader({
         </div>
       </div>
 
-      {/* Subheader Tabs */}
-      <div className="flex items-center gap-6 border-b border-gray-200">
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-gray-200">
         <button
           type="button"
           onClick={() => setActiveTab("schedules")}
-          className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
             activeTab === "schedules"
-              ? "text-[#2563EB] border-b-2 border-[#2563EB]"
-              : "text-gray-500 hover:text-gray-900"
+              ? "border-[#2563EB] text-[#2563EB]"
+              : "border-transparent text-gray-500 hover:text-gray-700"
           }`}
         >
-          Schedules
+          Scheduled Staff
         </button>
-
         <button
           type="button"
           onClick={() => setActiveTab("no_schedules")}
-          className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
             activeTab === "no_schedules"
-              ? "text-[#2563EB] border-b-2 border-[#2563EB]"
-              : "text-gray-500 hover:text-gray-900"
+              ? "border-[#2563EB] text-[#2563EB]"
+              : "border-transparent text-gray-500 hover:text-gray-700"
           }`}
         >
-          No Schedules
+          <span>Unscheduled Staff</span>
           {unscheduledCount > 0 && (
-            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] bg-gray-100 text-gray-600 font-mono">
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
               {unscheduledCount}
             </span>
           )}

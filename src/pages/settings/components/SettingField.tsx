@@ -1,8 +1,12 @@
+import { memo } from "react";
+
+export type SettingOption = string | { value: string; label: string };
+
 interface SettingFieldProps {
   label: string;
   description?: string;
   inputType: string;
-  options?: string[];
+  options?: SettingOption[];
   settingKey: string;
   getVal: (key: string) => string;
   updateValue: (key: string, value: string) => void;
@@ -11,7 +15,7 @@ interface SettingFieldProps {
   edited: Record<string, string>;
 }
 
-export function SettingField({
+export const SettingField = memo(function SettingField({
   label,
   description,
   inputType,
@@ -36,13 +40,17 @@ export function SettingField({
           <select
             value={getVal(settingKey)}
             onChange={(e) => updateValue(settingKey, e.target.value)}
-            className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-[13px] text-gray-700 dark:text-slate-200 focus:outline-none focus:border-[#253C7D] dark:focus:border-blue-500"
+            className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-[13px] text-gray-700 dark:text-slate-200 focus:outline-none focus:border-[#253C7D] dark:focus:border-blue-500 cursor-pointer"
           >
-            {options.map((o) => (
-              <option key={o} value={o} className="dark:bg-slate-800 dark:text-slate-200">
-                {o}
-              </option>
-            ))}
+            {options.map((o) => {
+              const val = typeof o === "string" ? o : o.value;
+              const lbl = typeof o === "string" ? o : o.label;
+              return (
+                <option key={val} value={val} className="dark:bg-slate-800 dark:text-slate-200">
+                  {lbl}
+                </option>
+              );
+            })}
           </select>
         ) : (
           <input
@@ -58,13 +66,13 @@ export function SettingField({
             disabled={saving}
             className="px-4 py-2 bg-[#253C7D] dark:bg-blue-600 text-white text-[12px] font-semibold rounded-lg hover:bg-[#1F336A] dark:hover:bg-blue-700 transition-colors disabled:opacity-40 whitespace-nowrap cursor-pointer"
           >
-            Save
+            {saving ? "Saving..." : "Save"}
           </button>
         )}
       </div>
     </div>
   );
-}
+});
 
 interface ToggleFieldProps {
   id: string;
@@ -77,7 +85,7 @@ interface ToggleFieldProps {
   edited: Record<string, string>;
 }
 
-export function ToggleField({
+export const ToggleField = memo(function ToggleField({
   id,
   label,
   settingKey,
@@ -87,27 +95,30 @@ export function ToggleField({
   saving,
   edited,
 }: ToggleFieldProps) {
+  const checked = getVal(settingKey) === "true";
   return (
-    <div className="flex items-center gap-3 py-2">
-      <input
-        type="checkbox"
-        id={id}
-        checked={getVal(settingKey) === "true"}
-        onChange={(e) => updateValue(settingKey, String(e.target.checked))}
-        className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-[#253C7D] accent-[#253C7D] cursor-pointer"
-      />
-      <label htmlFor={id} className="text-[13px] text-gray-700 dark:text-slate-200 cursor-pointer">
+    <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-800">
+      <label htmlFor={id} className="text-[13px] text-gray-700 dark:text-slate-300 font-medium cursor-pointer">
         {label}
       </label>
-      {edited[settingKey] !== undefined && (
-        <button
-          onClick={() => saveSetting(settingKey)}
-          disabled={saving}
-          className="px-3 py-1 bg-[#253C7D] dark:bg-blue-600 text-white text-[11px] font-semibold rounded-md hover:bg-[#1F336A] dark:hover:bg-blue-700 transition-colors disabled:opacity-40 whitespace-nowrap cursor-pointer"
-        >
-          Save
-        </button>
-      )}
+      <div className="flex items-center gap-3">
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => updateValue(settingKey, String(e.target.checked))}
+          className="w-4 h-4 text-[#253C7D] rounded border-gray-300 focus:ring-[#253C7D] cursor-pointer"
+        />
+        {edited[settingKey] !== undefined && (
+          <button
+            onClick={() => saveSetting(settingKey)}
+            disabled={saving}
+            className="px-3 py-1 bg-[#253C7D] dark:bg-blue-600 text-white text-[11px] font-semibold rounded hover:bg-[#1F336A] transition-colors disabled:opacity-40 cursor-pointer"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        )}
+      </div>
     </div>
   );
-}
+});

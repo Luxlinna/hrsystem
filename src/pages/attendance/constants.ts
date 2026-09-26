@@ -94,5 +94,45 @@ export function calcHoursNum(clockIn: string | null, clockOut: string | null): n
   return +(mins / 60).toFixed(1);
 }
 
+export function calcNetHours(
+  clockIn: string | null,
+  clockOut: string | null,
+  breakOut?: string | null,
+  breakIn?: string | null,
+  hoursWorked?: number | null
+): string {
+  if (hoursWorked != null && hoursWorked > 0) {
+    const h = Math.floor(hoursWorked);
+    const m = Math.round((hoursWorked - h) * 60);
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  }
+  if (!clockIn || !clockOut) return "—";
+
+  if (breakOut && breakIn) {
+    const [ih, im] = clockIn.split(":").map(Number);
+    const [boh, bom] = breakOut.split(":").map(Number);
+    const [bih, bim] = breakIn.split(":").map(Number);
+    const [oh, om] = clockOut.split(":").map(Number);
+    const m1 = Math.max(0, boh * 60 + bom - (ih * 60 + im));
+    const m2 = Math.max(0, oh * 60 + om - (bih * 60 + bim));
+    const total = m1 + m2;
+    return `${Math.floor(total / 60)}h ${total % 60}m`;
+  }
+
+  const [ih, im] = clockIn.split(":").map(Number);
+  const [oh, om] = clockOut.split(":").map(Number);
+  const inMin = ih * 60 + im;
+  const outMin = oh * 60 + om;
+  let span = outMin - inMin;
+  if (span < 0) span += 24 * 60;
+
+  // Deduct 1 hour (12:00 - 13:00) lunch break if attendance spans across lunch
+  if (inMin < 12 * 60 && outMin > 13 * 60 && span > 60) {
+    span -= 60;
+  }
+  if (span <= 0) return "0h";
+  return `${Math.floor(span / 60)}h ${span % 60}m`;
+}
+
 export const initials = (first?: string, last?: string) =>
   `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase();

@@ -18,6 +18,7 @@ import { ScheduleTemplatesView } from "./components/schedule-templates/ScheduleT
 import { CreateScheduleTemplateForm } from "./components/schedule-templates/CreateScheduleTemplateForm";
 import { useShiftsManager } from "./components/shifts-manager/useShiftsManager";
 import { ShiftsListView } from "./components/shifts-manager/ShiftsListView";
+import { CreateShiftManagerForm } from "./components/shifts-manager/CreateShiftManagerForm";
 import { ViewTimeLogDetailView } from "./components/ViewTimeLogDetailView";
 import { AttendanceScheduleMatrixView } from "./components/schedule-matrix/AttendanceScheduleMatrixView";
 
@@ -61,8 +62,6 @@ export default function AttendancePage() {
     const action = searchParams.get("action");
     if (action === "new-log") {
       handleOpenTimeLog();
-    } else if (action === "holidays") {
-      holidaysState.setShowHolidaysModal(true);
     }
   }, [searchParams]);
 

@@ -16,10 +16,6 @@ export default function Settings() {
     loading,
     saving,
     edited,
-    settingsScope,
-    setSettingsScope,
-    visibleBranches,
-    currentBranchOrSite,
     getVal,
     hasChanges,
     updateValue,
@@ -43,8 +39,7 @@ export default function Settings() {
           System Settings
         </h1>
         <p className="text-[13px] text-gray-500 dark:text-slate-400 mt-1">
-          Configure HR platform preferences — all changes are saved to the
-          database
+          Configure HR platform preferences — all changes are saved to the database
         </p>
       </div>
 
@@ -61,10 +56,6 @@ export default function Settings() {
           saveAllGeneral={saveAllGeneral}
           saving={saving}
           edited={edited}
-          settingsScope={settingsScope}
-          setSettingsScope={setSettingsScope}
-          visibleBranches={visibleBranches}
-          currentBranchOrSite={currentBranchOrSite}
         />
       )}
 
@@ -81,9 +72,7 @@ export default function Settings() {
       )}
 
       {section === "permissions" && isAdmin && <PermissionsSection />}
-
       {section === "branches" && can("branches") && <BranchesSection />}
-
       {section === "integrations" && <IntegrationsSection />}
     </div>
   );

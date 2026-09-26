@@ -34,8 +34,9 @@ export const WorkSiteItem = memo(function WorkSiteItem({
             </span>
           )}
           {site.is_four_punch_enabled && (
-            <span className="bg-indigo-50 text-indigo-700 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border border-indigo-100">
-              4-Punch
+            <span className="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-indigo-200/80 dark:border-indigo-800/60 inline-flex items-center gap-1 shadow-2xs">
+              <i className="ri-fingerprint-line text-[11px]" />
+              4-Punch Biometric Site
             </span>
           )}
         </div>

@@ -77,6 +77,8 @@ export type DatePreset =
   | "last_month"
   | "this_year"
   | "last_year"
+  | "single"
+  | "range"
   | "single_date"
   | "custom_range";
 

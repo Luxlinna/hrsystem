@@ -14,6 +14,15 @@ interface WorkSiteModalProps {
   onSubmit: (data: WorkSiteFormState) => void;
 }
 
+const DEFAULT_FORM: WorkSiteFormState = {
+  name: "", description: "", latitude: "", longitude: "", geofence_radius_m: "100",
+  work_start_time: "07:30", work_end_time: "17:00", break_start_time: "11:30", break_end_time: "13:00",
+  late_grace_minutes: "15", early_leave_grace_minutes: "15", morning_check_in_start: "06:00",
+  morning_check_in_end: "09:00", morning_check_out_start: "10:00", morning_check_out_end: "12:00",
+  afternoon_check_in_start: "12:00", afternoon_check_in_end: "14:00", afternoon_check_out_start: "16:00",
+  afternoon_check_out_end: "18:00", is_four_punch_enabled: false,
+};
+
 export const WorkSiteModal = memo(function WorkSiteModal({
   isOpen,
   editingSite,
@@ -21,37 +30,11 @@ export const WorkSiteModal = memo(function WorkSiteModal({
   onClose,
   onSubmit,
 }: WorkSiteModalProps) {
-  const [form, setForm] = useState<WorkSiteFormState>({
-    name: "",
-    description: "",
-    latitude: "",
-    longitude: "",
-    geofence_radius_m: "100",
-    work_start_time: "07:30",
-    work_end_time: "17:00",
-    break_start_time: "11:30",
-    break_end_time: "13:00",
-    late_grace_minutes: "15",
-    early_leave_grace_minutes: "15",
-    morning_check_in_start: "06:00",
-    morning_check_in_end: "09:00",
-    morning_check_out_start: "10:00",
-    morning_check_out_end: "12:00",
-    afternoon_check_in_start: "12:00",
-    afternoon_check_in_end: "14:00",
-    afternoon_check_out_start: "16:00",
-    afternoon_check_out_end: "18:00",
-    is_four_punch_enabled: false,
-  });
+  const [form, setForm] = useState<WorkSiteFormState>(DEFAULT_FORM);
 
   const {
-    locating,
-    geocoding,
-    addressLookup,
-    setAddressLookup,
-    addressInputRef,
-    useCurrentLocation,
-    handleGeocodeAddress,
+    locating, geocoding, addressLookup, setAddressLookup, addressInputRef,
+    useCurrentLocation, handleGeocodeAddress,
   } = useWorkSiteLocation({ isOpen, setForm });
 
   useEffect(() => {
@@ -80,38 +63,14 @@ export const WorkSiteModal = memo(function WorkSiteModal({
       });
       setAddressLookup(editingSite.description || "");
     } else {
-      setForm({
-        name: "",
-        description: "",
-        latitude: "",
-        longitude: "",
-        geofence_radius_m: "100",
-        work_start_time: "07:30",
-        work_end_time: "17:00",
-        break_start_time: "11:30",
-        break_end_time: "13:00",
-        late_grace_minutes: "15",
-        early_leave_grace_minutes: "15",
-        morning_check_in_start: "06:00",
-        morning_check_in_end: "09:00",
-        morning_check_out_start: "10:00",
-        morning_check_out_end: "12:00",
-        afternoon_check_in_start: "12:00",
-        afternoon_check_in_end: "14:00",
-        afternoon_check_out_start: "16:00",
-        afternoon_check_out_end: "18:00",
-        is_four_punch_enabled: false,
-      });
+      setForm(DEFAULT_FORM);
       setAddressLookup("");
     }
   }, [editingSite, isOpen, setAddressLookup]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) {
-      toast("Name required", "Please provide a site name.", "error");
-      return;
-    }
+    if (!form.name.trim()) return toast("Name required", "Please provide a site name.", "error");
     onSubmit(form);
   };
 
@@ -129,7 +88,7 @@ export const WorkSiteModal = memo(function WorkSiteModal({
               {editingSite ? "Edit Branch Site" : "Add New Branch Site"}
             </h2>
             <p className="text-[12px] text-gray-500 mt-0.5">
-              {editingSite ? "Update branch site location, geofence and attendance rules" : "Create a new branch site, farm, or factory"}
+              {editingSite ? "Update branch site location, geofence and 4-punch attendance rules" : "Create a new branch site, farm, or factory"}
             </p>
           </div>
           <button
@@ -141,33 +100,19 @@ export const WorkSiteModal = memo(function WorkSiteModal({
           </button>
         </div>
 
-        <div className="p-6 space-y-5 overflow-y-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Branch Site Name *</label>
-              <input
-                type="text"
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g., Kampong Thom Site"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Location / City *</label>
-              <input
-                type="text"
-                required
-                value={form.description}
-                onChange={(e) => {
-                  setForm({ ...form, description: e.target.value });
-                  setAddressLookup(e.target.value);
-                }}
-                placeholder="e.g., National Road 62, Kampong Thom, Cambodia"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
-              />
-            </div>
+        <div className="p-6 overflow-y-auto space-y-5 flex-1">
+          <div>
+            <label className="block text-[12px] font-bold text-gray-700 mb-1">
+              Site Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#253C7D]"
+              placeholder="e.g. Kampong Thom Site, Farm A"
+            />
           </div>
 
           <WorkSiteGeofenceSection
@@ -185,20 +130,20 @@ export const WorkSiteModal = memo(function WorkSiteModal({
           <WorkSiteScheduleSection form={form} setForm={setForm} />
         </div>
 
-        <div className="flex gap-3 p-6 border-t border-gray-100 shrink-0">
+        <div className="p-6 border-t border-gray-100 flex items-center justify-end gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 border border-gray-200 text-gray-700 text-[13px] font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+            className="px-4 py-2 border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 py-2.5 bg-[#253C7D] text-white text-[13px] font-semibold rounded-lg hover:bg-[#1F336A] transition-colors disabled:opacity-60 cursor-pointer"
+            className="px-5 py-2 bg-[#253C7D] hover:bg-[#1f3268] text-white rounded-lg text-xs font-semibold shadow-xs disabled:opacity-50 transition-colors cursor-pointer"
           >
-            {saving ? "Saving..." : editingSite ? "Save Changes" : "Create Work Site"}
+            {saving ? "Saving..." : editingSite ? "Update Site" : "Create Site"}
           </button>
         </div>
       </form>

@@ -24,7 +24,14 @@ export function useBranchData(userEmail?: string | null) {
       .is("deleted_at", null)
       .order("is_default", { ascending: false });
 
+    const { data: settingsData } = await supabase
+      .from("system_settings")
+      .select("key, value")
+      .like("key", "bu_four_punch_%");
+
     if (branchesData) {
+      const buMap = new Map((settingsData || []).map((s) => [s.key, s.value === "true"]));
+
       const sitesList = (locationsData || []).map((loc) => ({
         id: `site:${loc.id}`,
         name: loc.name,
@@ -51,28 +58,36 @@ export function useBranchData(userEmail?: string | null) {
 
       const sortedBranches = [...branchesData]
         .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-        .map((b) => ({
-          id: b.id,
-          name: b.name,
-          location: b.location,
-          status: b.status,
-          is_site: false as const,
-          work_start_time: b.work_start_time || null,
-          work_end_time: b.work_end_time || null,
-          break_start_time: null,
-          break_end_time: null,
-          late_grace_minutes: b.late_grace_minutes ?? 15,
-          early_leave_grace_minutes: b.early_leave_grace_minutes ?? 15,
-          morning_check_in_start: b.morning_check_in_start,
-          morning_check_in_end: b.morning_check_in_end,
-          morning_check_out_start: b.morning_check_out_start,
-          morning_check_out_end: b.morning_check_out_end,
-          afternoon_check_in_start: b.afternoon_check_in_start,
-          afternoon_check_in_end: b.afternoon_check_in_end,
-          afternoon_check_out_start: b.afternoon_check_out_start,
-          afternoon_check_out_end: b.afternoon_check_out_end,
-          is_four_punch_enabled: false,
-        }));
+        .map((b) => {
+          const settingVal = buMap.get(`bu_four_punch_${b.id}`);
+          const has4PunchLoc = (locationsData || []).some(
+            (loc) => loc.branch_id === b.id && Boolean(loc.is_four_punch_enabled)
+          );
+          const isFourPunch = settingVal !== undefined ? settingVal : has4PunchLoc;
+
+          return {
+            id: b.id,
+            name: b.name,
+            location: b.location,
+            status: b.status,
+            is_site: false as const,
+            work_start_time: b.work_start_time || null,
+            work_end_time: b.work_end_time || null,
+            break_start_time: null,
+            break_end_time: null,
+            late_grace_minutes: b.late_grace_minutes ?? 15,
+            early_leave_grace_minutes: b.early_leave_grace_minutes ?? 15,
+            morning_check_in_start: b.morning_check_in_start,
+            morning_check_in_end: b.morning_check_in_end,
+            morning_check_out_start: b.morning_check_out_start,
+            morning_check_out_end: b.morning_check_out_end,
+            afternoon_check_in_start: b.afternoon_check_in_start,
+            afternoon_check_in_end: b.afternoon_check_in_end,
+            afternoon_check_out_start: b.afternoon_check_out_start,
+            afternoon_check_out_end: b.afternoon_check_out_end,
+            is_four_punch_enabled: isFourPunch,
+          };
+        });
 
       const combined: BranchInfo[] = [...sortedBranches, ...sitesList];
       setBranches(combined);
