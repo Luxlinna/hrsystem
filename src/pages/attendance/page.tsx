@@ -1,31 +1,18 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAttendance } from "./hooks/useAttendance";
-import { useAttendanceOvertime } from "./hooks/useAttendanceOvertime";
 import { AttendanceHeader } from "./components/AttendanceHeader";
-import { SelfCheckInBanner } from "./components/SelfCheckInBanner";
-import { AttendanceKpiBar } from "./components/AttendanceKpiBar";
-import { AttendanceWorkSitePills } from "./components/AttendanceWorkSitePills";
-import { AttendanceControlBar } from "./components/AttendanceControlBar";
-import { CreateTimeLogForm } from "./components/CreateTimeLogForm";
-import { CreateOvertimeForm } from "./components/overtime/CreateOvertimeForm";
-import { OvertimeTab } from "./tabs/OvertimeTab";
-import { RecordsTab } from "./tabs/RecordsTab";
 import { AttendanceModals } from "./components/AttendanceModals";
-import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useScheduleTemplates } from "./components/schedule-templates/useScheduleTemplates";
-import { ScheduleTemplatesView } from "./components/schedule-templates/ScheduleTemplatesView";
-import { CreateScheduleTemplateForm } from "./components/schedule-templates/CreateScheduleTemplateForm";
 import { useShiftsManager } from "./components/shifts-manager/useShiftsManager";
-import { ShiftsListView } from "./components/shifts-manager/ShiftsListView";
-import { CreateShiftManagerForm } from "./components/shifts-manager/CreateShiftManagerForm";
-import { ViewTimeLogDetailView } from "./components/ViewTimeLogDetailView";
-import { AttendanceScheduleMatrixView } from "./components/schedule-matrix/AttendanceScheduleMatrixView";
+import { AttendanceTabsRouter } from "./components/AttendanceTabsRouter";
+import { AttendanceFullViewOverlay } from "./components/AttendanceFullViewOverlay";
+import { useAttendanceLogNavigation } from "./hooks/useAttendanceLogNavigation";
 
 export default function AttendancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlTab = searchParams.get("tab") as "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime" | null;
-  const [activeMainTab, setActiveMainTab] = useState<"attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime">(
+  const urlTab = searchParams.get("tab") as "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | null;
+  const [activeMainTab, setActiveMainTab] = useState<"attendance" | "attendance-schedule" | "schedule-templates" | "shifts">(
     urlTab || "attendance"
   );
 
@@ -36,7 +23,7 @@ export default function AttendancePage() {
   const shiftsManager = useShiftsManager();
 
   const {
-    canManage, canViewAll, canAccessOvertime, canManageOvertimeSettings,
+    canManage, canViewAll,
     todayYMD, userBranchName, userBranchId, isFourPunchMode,
     selectedRecord, setSelectedRecord, editingRecord, setEditingRecord,
     showLogModal, setShowLogModal, newRecord, setNewRecord,
@@ -45,35 +32,20 @@ export default function AttendancePage() {
     handleSaveNewRecord, handleUpdateRecord,
   } = useAttendance();
 
-  const overtime = useAttendanceOvertime({
-    targetBranch: data.targetBranch,
-    myEmployeeId: data.myEmployee?.id,
-    canViewAll,
-    canAccessOvertime,
-  });
-
   useEffect(() => {
-    if (urlTab && urlTab !== activeMainTab) {
-      setActiveMainTab(urlTab);
-    }
+    if (urlTab && urlTab !== activeMainTab) setActiveMainTab(urlTab);
   }, [urlTab]);
 
   useEffect(() => {
-    const action = searchParams.get("action");
-    if (action === "new-log") {
-      handleOpenTimeLog();
-    }
+    if (searchParams.get("action") === "new-log") handleOpenTimeLog();
   }, [searchParams]);
 
-  const handleTabChange = (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime") => {
+  const handleTabChange = (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts") => {
     setActiveMainTab(tab);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (tab === "attendance") {
-        next.delete("tab");
-      } else {
-        next.set("tab", tab);
-      }
+      if (tab === "attendance") next.delete("tab");
+      else next.set("tab", tab);
       return next;
     });
   };
@@ -83,104 +55,49 @@ export default function AttendancePage() {
     setShowTimeLogForm(true);
   };
 
-  if (data.loading && data.records.length === 0) {
-    return (
-      <div className="attendance-hub min-h-screen flex flex-col items-center justify-center bg-[#F8F9FB]">
-        <div className="w-9 h-9 border-3 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
-        <p className="text-xs font-semibold text-gray-500">Loading attendance control center...</p>
-      </div>
-    );
-  }
+  const handleViewAttendanceLog = useAttendanceLogNavigation({
+    handleTabChange,
+    filters,
+    data,
+    shifts: shiftsManager.shifts,
+  });
 
-  if (data.isPartnerBranchBlocked) {
-    return (
-      <div className="attendance-hub min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
-        <AttendanceHeader
-          currentTime={data.currentTime}
-          activeTab={filters.activeTab}
-          dateRangeBounds={filters.dateRangeBounds}
-          canViewAll={false}
-          canAccessOvertime={false}
-          hasEmployee={false}
-          onExportCSV={() => {}}
-          onOpenLogModal={() => {}}
-        />
-        <PartnerBranchPrivacyShield moduleName="Time & Attendance" userBranchName={userBranchName} hasNoBranch={!userBranchId} />
-      </div>
-    );
-  }
+  const overlayView = (
+    <AttendanceFullViewOverlay
+      loading={data.loading}
+      hasRecords={data.records.length > 0}
+      isPartnerBranchBlocked={data.isPartnerBranchBlocked}
+      currentTime={data.currentTime}
+      activeTab={filters.activeTab}
+      dateRangeBounds={filters.dateRangeBounds}
+      userBranchName={userBranchName}
+      userBranchId={userBranchId}
+      showTimeLogForm={showTimeLogForm}
+      onCloseTimeLog={() => {
+        setShowTimeLogForm(false);
+        setTimeLogInitialEmployeeId(undefined);
+      }}
+      employees={data.employees}
+      workLocations={data.workLocations}
+      timeLogInitialEmployeeId={timeLogInitialEmployeeId}
+      canViewAll={canViewAll}
+      myEmployee={data.myEmployee}
+      onRefreshData={data.fetchData}
+      scheduleTemplates={scheduleTemplates}
+      shiftsManager={shiftsManager}
+      selectedRecord={selectedRecord}
+      onCloseRecordDetail={() => setSelectedRecord(null)}
+      onEditRecord={(r) => setEditingRecord(r)}
+      onDeleteRecord={mutations.handleDeleteRecord}
+    />
+  );
 
-  if (showTimeLogForm) {
-    return (
-      <CreateTimeLogForm
-        onBack={() => {
-          setShowTimeLogForm(false);
-          setTimeLogInitialEmployeeId(undefined);
-        }}
-        employees={data.employees}
-        workLocations={data.workLocations}
-        initialEmployeeId={timeLogInitialEmployeeId}
-        isEmployeeFixed={!canViewAll && !!data.myEmployee}
-        onSaved={data.fetchData}
-        activeBranchId={userBranchId || null}
-      />
-    );
-  }
-
-  if (scheduleTemplates.activeFormTemplate !== null) {
-    return (
-      <CreateScheduleTemplateForm
-        initialData={typeof scheduleTemplates.activeFormTemplate === "object" ? scheduleTemplates.activeFormTemplate : null}
-        employees={data.employees}
-        workLocations={data.workLocations}
-        shifts={shiftsManager.shifts}
-        onBack={() => scheduleTemplates.setActiveFormTemplate(null)}
-        onSave={scheduleTemplates.handleSaveTemplate}
-      />
-    );
-  }
-
-  if (shiftsManager.activeFormShift !== null) {
-    return (
-      <CreateShiftManagerForm
-        initialData={typeof shiftsManager.activeFormShift === "object" ? shiftsManager.activeFormShift : null}
-        onBack={() => shiftsManager.setActiveFormShift(null)}
-        onSave={shiftsManager.handleSaveShift}
-      />
-    );
-  }
-
-  if (overtime.showOvertimeForm && canAccessOvertime) {
-    const isSelf = overtime.formMode === "request";
-    return (
-      <CreateOvertimeForm
-        onBack={() => overtime.setShowOvertimeForm(false)}
-        employees={data.employees}
-        initialEmployeeId={isSelf ? data.myEmployee?.id : canViewAll ? undefined : data.myEmployee?.id}
-        isEmployeeFixed={isSelf || (!canViewAll && !!data.myEmployee)}
-        formMode={overtime.formMode}
-        onSaved={overtime.fetchOvertime}
-        activeBranchId={userBranchId || null}
-      />
-    );
-  }
-
-  if (selectedRecord !== null) {
-    return (
-      <ViewTimeLogDetailView
-        record={selectedRecord}
-        onBack={() => setSelectedRecord(null)}
-        onEdit={(r) => {
-          setSelectedRecord(null);
-          setEditingRecord(r);
-        }}
-        onDelete={(id) => {
-          setSelectedRecord(null);
-          mutations.handleDeleteRecord(id);
-        }}
-      />
-    );
-  }
+  if (data.loading && data.records.length === 0) return overlayView;
+  if (data.isPartnerBranchBlocked) return overlayView;
+  if (showTimeLogForm) return overlayView;
+  if (scheduleTemplates.activeFormTemplate !== null) return overlayView;
+  if (shiftsManager.activeFormShift !== null) return overlayView;
+  if (selectedRecord !== null) return overlayView;
 
   return (
     <div className="attendance-hub min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
@@ -189,15 +106,9 @@ export default function AttendancePage() {
         activeTab={filters.activeTab}
         dateRangeBounds={filters.dateRangeBounds}
         canViewAll={canViewAll}
-        canAccessOvertime={canAccessOvertime}
-        canManageOvertimeSettings={canManageOvertimeSettings}
         hasEmployee={!!data.myEmployee}
         onExportCSV={filters.handleExportCSV}
         onOpenLogModal={() => handleOpenTimeLog()}
-        onCreateNewOvertime={overtime.handleCreateNew}
-        onCreateOvertimeRequest={overtime.handleCreateRequest}
-        onCreateOvertimeRequestFor={overtime.handleCreateRequestFor}
-        onOpenOvertimeSettings={overtime.handleOpenSettings}
         activeMainTab={activeMainTab}
         setActiveMainTab={handleTabChange}
         records={filters.filteredRecords.length > 0 ? filters.filteredRecords : data.records}
@@ -205,127 +116,32 @@ export default function AttendancePage() {
         isFourPunchMode={isFourPunchMode}
       />
 
-      {activeMainTab === "attendance-schedule" ? (
-        <AttendanceScheduleMatrixView
-          onNavigateToTemplates={() => handleTabChange("schedule-templates")}
-          onNavigateToShifts={() => handleTabChange("shifts")}
-        />
-      ) : activeMainTab === "schedule-templates" ? (
-        <ScheduleTemplatesView
-          templates={scheduleTemplates.templates}
-          onCreateNew={() => scheduleTemplates.setActiveFormTemplate("new")}
-          onEdit={(t) => scheduleTemplates.setActiveFormTemplate(t)}
-          onDelete={scheduleTemplates.handleDeleteTemplate}
-          onToggleStatus={scheduleTemplates.handleToggleStatus}
-          onDuplicate={scheduleTemplates.handleDuplicateTemplate}
-          onNavigateToShifts={() => handleTabChange("shifts")}
-          onNavigateToLateEarly={() => handleTabChange("shifts")}
-        />
-      ) : activeMainTab === "shifts" ? (
-        <ShiftsListView
-          shifts={shiftsManager.shifts}
-          onCreateNew={() => shiftsManager.setActiveFormShift("new")}
-          onEdit={(s) => shiftsManager.setActiveFormShift(s)}
-          onDelete={shiftsManager.handleDeleteShift}
-          onDuplicate={shiftsManager.handleDuplicateShift}
-          onNavigateToScheduleTemplates={() => handleTabChange("schedule-templates")}
-          onNavigateToLateEarly={() => {}}
-        />
-      ) : canAccessOvertime && activeMainTab === "overtime" ? (
-        <OvertimeTab
-          records={overtime.overtimeRecords}
-          canManage={canManage}
-          canManageSettings={canManageOvertimeSettings}
-          onOpenCreate={overtime.handleCreateNew}
-          onCreateNew={overtime.handleCreateNew}
-          onCreateRequest={overtime.handleCreateRequest}
-          onCreateRequestFor={overtime.handleCreateRequestFor}
-          onOpenSettings={overtime.handleOpenSettings}
-          onExport={overtime.handleExport}
-          onApprove={overtime.handleApprove}
-          onReject={overtime.handleReject}
-          onDelete={overtime.handleDelete}
-        />
-      ) : (
-        <>
-          <SelfCheckInBanner
-            myEmployee={data.myEmployee}
-            myTodayRecord={myTodayRecord}
-            todayHoliday={holidaysState.todayHoliday}
-          />
-
-          <AttendanceKpiBar
-            filterDatePreset={filters.filterDatePreset}
-            filterStatus={filters.filterStatus}
-            setFilterStatus={filters.setFilterStatus}
-            presentCount={metrics.presentCount}
-            workingNow={metrics.workingNow}
-            lateCount={metrics.lateCount}
-            remoteCount={metrics.remoteCount}
-            absentCount={metrics.absentCount}
-          />
-
-          {canManage && (
-            <AttendanceWorkSitePills
-              todayByWorkSite={metrics.todayByWorkSite}
-              filterWorkLocation={filters.filterWorkLocation}
-              setFilterWorkLocation={filters.setFilterWorkLocation}
-            />
-          )}
-
-          <AttendanceControlBar
-            canManage={canManage}
-            filteredRecordsCount={filters.filteredRecords.length}
-            searchQuery={filters.searchQuery}
-            setSearchQuery={filters.setSearchQuery}
-            filterDatePreset={filters.filterDatePreset}
-            setFilterDatePreset={filters.setFilterDatePreset}
-            singleDate={filters.singleDate}
-            setSingleDate={filters.setSingleDate}
-            fromDate={filters.fromDate}
-            setFromDate={filters.setFromDate}
-            toDate={filters.toDate}
-            setToDate={filters.setToDate}
-            departments={filters.departments}
-            filterDepartment={filters.filterDepartment}
-            setFilterDepartment={filters.setFilterDepartment}
-            employees={data.employees}
-            filterEmployeeId={filters.filterEmployeeId}
-            setFilterEmployeeId={filters.setFilterEmployeeId}
-            filterStatus={filters.filterStatus}
-            setFilterStatus={filters.setFilterStatus}
-            workLocations={data.workLocations}
-            filterWorkLocation={filters.filterWorkLocation}
-            setFilterWorkLocation={filters.setFilterWorkLocation}
-            viewMode={filters.viewMode}
-            setViewMode={filters.setViewMode}
-            todayYMD={todayYMD}
-          />
-
-          <RecordsTab
-            filteredRecords={filters.filteredRecords}
-            pagedRecords={filters.pagedRecords}
-            viewMode={filters.viewMode}
-            todayYMD={todayYMD}
-            canManage={canManage}
-            isFourPunchMode={isFourPunchMode}
-            holidays={holidays}
-            shifts={shiftsManager.shifts}
-            pageSize={filters.pageSize}
-            setPageSize={filters.setPageSize}
-            page={filters.page}
-            setPage={filters.setPage}
-            totalPages={filters.totalPages}
-            onSelectRecord={setSelectedRecord}
-            onEditRecord={setEditingRecord}
-            onDeleteRecord={mutations.handleDeleteRecord}
-            onLogTimeForEmployee={handleOpenTimeLog}
-            totalRecordsCount={data.records.length}
-            onResetFilters={filters.handleResetFilters}
-            isFiltered={filters.isFiltered}
-          />
-        </>
-      )}
+      <AttendanceTabsRouter
+        activeMainTab={activeMainTab}
+        onTabChange={handleTabChange}
+        scheduleTemplates={scheduleTemplates}
+        shiftsManager={shiftsManager}
+        onViewAttendanceLog={handleViewAttendanceLog}
+        logsProps={{
+          myEmployee: data.myEmployee,
+          myTodayRecord,
+          todayHoliday: holidaysState.todayHoliday,
+          metrics,
+          filters,
+          employees: data.employees,
+          workLocations: data.workLocations,
+          todayYMD,
+          canManage,
+          isFourPunchMode,
+          holidays,
+          shifts: shiftsManager.shifts,
+          totalRecordsCount: data.records.length,
+          onSelectRecord: setSelectedRecord,
+          onEditRecord: setEditingRecord,
+          onDeleteRecord: mutations.handleDeleteRecord,
+          onOpenTimeLog: handleOpenTimeLog,
+        }}
+      />
 
       <AttendanceModals
         selectedRecord={selectedRecord}
@@ -337,7 +153,6 @@ export default function AttendancePage() {
         newRecord={newRecord}
         setNewRecord={setNewRecord}
         canManage={canManage}
-        canManageSettings={canManageOvertimeSettings}
         employees={data.employees}
         workLocations={data.workLocations}
         myEmployee={data.myEmployee}
@@ -345,8 +160,6 @@ export default function AttendancePage() {
         onSaveNewRecord={handleSaveNewRecord}
         onUpdateRecord={handleUpdateRecord}
         onDeleteRecord={mutations.handleDeleteRecord}
-        showOvertimeSettings={canAccessOvertime && canManageOvertimeSettings && overtime.showOvertimeSettings}
-        onCloseOvertimeSettings={() => overtime.setShowOvertimeSettings(false)}
       />
     </div>
   );

@@ -24,9 +24,16 @@ export const AttendanceLogModal = memo(function AttendanceLogModal({
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div>
             <h4 className="text-sm font-bold text-gray-900">Attendance Log Details</h4>
-            <p className="text-[11px] text-gray-500">
-              {target.empName} · {target.dateString}
-            </p>
+            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+              <span className="text-xs font-semibold text-gray-800">{target.empName}</span>
+              {target.employeeCode && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 shrink-0">
+                  <i className="ri-fingerprint-line text-[10px]" />
+                  {target.employeeCode}
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-500 mt-0.5">{target.dateString}</p>
           </div>
           <button
             type="button"

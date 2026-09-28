@@ -1,5 +1,6 @@
 import type { AttendanceRecord } from "../types";
 import { formatTime, calcHours } from "../constants";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 export function exportAttendanceRecordsPDF(
   records: AttendanceRecord[],
@@ -34,6 +35,10 @@ export function exportAttendanceRecordsPDF(
     ? records
         .map((r) => {
           const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Employee";
+          const rawBio = r.employees?.biometric_user_id || r.employees?.employee_code;
+          const bName = Array.isArray(r.employees?.branches) ? r.employees.branches[0]?.name : (r.employees?.branches?.name || r.work_location?.name || "");
+          const bioId = formatBiometricId(rawBio, bName);
+          const empDisplay = bioId ? `${empName} [${bioId}]` : empName;
           const dept = r.employees?.department || "—";
           const location = r.work_location?.name || r.employees?.branches?.name || "Main Office";
           const status = (r.status || "present").replace(/_/g, " ").toUpperCase();
@@ -42,7 +47,7 @@ export function exportAttendanceRecordsPDF(
 
           if (isFourPunchMode) {
             return `<tr>
-              <td style="font-weight:700;color:#1e293b">${empName}</td>
+              <td style="font-weight:700;color:#1e293b">${empDisplay}</td>
               <td style="color:#64748b">${dept}</td>
               <td style="color:#64748b">${location}</td>
               <td style="font-weight:600;color:#334155">${r.date}</td>
@@ -69,7 +74,7 @@ export function exportAttendanceRecordsPDF(
           }
 
           return `<tr>
-            <td style="font-weight:700;color:#1e293b">${empName}</td>
+            <td style="font-weight:700;color:#1e293b">${empDisplay}</td>
             <td style="color:#64748b">${dept}</td>
             <td style="color:#64748b">${location}</td>
             <td style="font-weight:600;color:#334155">${r.date}</td>

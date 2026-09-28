@@ -58,9 +58,19 @@ export const ScheduleMatrixRow = memo(function ScheduleMatrixRow({
             <p className="text-[12px] font-semibold text-gray-900 truncate leading-tight">
               {emp.name}
             </p>
-            <p className="text-[10px] font-mono text-gray-400 leading-tight">
-              {emp.employeeCode}
-            </p>
+            {emp.displayId ? (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 shrink-0 mt-0.5 max-w-full"
+                title={`Biometric ID: ${emp.displayId}`}
+              >
+                <i className="ri-fingerprint-line text-[10px]" />
+                <span className="truncate">{emp.displayId}</span>
+              </span>
+            ) : (
+              <p className="text-[10px] font-mono text-gray-400 leading-tight">
+                {emp.employeeCode}
+              </p>
+            )}
           </div>
         </div>
       </td>

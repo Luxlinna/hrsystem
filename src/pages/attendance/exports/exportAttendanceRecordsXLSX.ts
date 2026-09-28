@@ -1,5 +1,6 @@
 import type { AttendanceRecord } from "../types";
 import { formatTime, calcHours } from "../constants";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -12,6 +13,9 @@ export async function exportAttendanceRecordsXLSX(
   const data = records.length > 0
     ? records.map((r) => {
         const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Employee";
+        const rawBio = r.employees?.biometric_user_id || r.employees?.employee_code;
+        const bName = Array.isArray(r.employees?.branches) ? r.employees.branches[0]?.name : (r.employees?.branches?.name || r.work_location?.name || "");
+        const bioId = formatBiometricId(rawBio, bName);
         const dept = r.employees?.department || "—";
         const location = r.work_location?.name || r.employees?.branches?.name || "Main Office";
         const totalHours = r.hours_worked ? `${r.hours_worked}h` : calcHours(r.clock_in, r.clock_out);
@@ -20,6 +24,7 @@ export async function exportAttendanceRecordsXLSX(
           return {
             "Log ID": r.id,
             "Employee Name": empName,
+            "Biometric ID": bioId || "—",
             Department: dept,
             Location: location,
             Date: r.date,
@@ -37,6 +42,7 @@ export async function exportAttendanceRecordsXLSX(
         return {
           "Log ID": r.id,
           "Employee Name": empName,
+          "Biometric ID": bioId || "—",
           Department: dept,
           Location: location,
           Date: r.date,

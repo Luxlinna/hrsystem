@@ -15,6 +15,7 @@ export function resolveRecordSchedule(
 ): ResolvedShiftSchedule {
   const matchedShift = shifts.find((s) => {
     if ((r as any).shift_id && s.id === (r as any).shift_id) return true;
+    if ((r as any).shift_code && s.code?.toLowerCase() === String((r as any).shift_code).toLowerCase()) return true;
     if ((emp as any)?.shift_id && s.id === (emp as any).shift_id) return true;
     return false;
   });

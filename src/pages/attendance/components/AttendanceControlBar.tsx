@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect, memo } from "react";
+import { memo } from "react";
 import type { DatePreset, ViewMode, WorkLocation, Employee } from "../types";
-import { STATUS_CONFIG } from "../constants";
 import { AttendanceDateRangePicker } from "./AttendanceDateRangePicker";
-import { formatBiometricId } from "@/lib/biometricUtils";
+import { AttendanceFilterSelects } from "./AttendanceFilterSelects";
 
 interface AttendanceControlBarProps {
   canManage: boolean;
@@ -11,39 +10,18 @@ interface AttendanceControlBarProps {
   setSearchQuery: (query: string) => void;
   filterDatePreset: DatePreset;
   setFilterDatePreset: (preset: DatePreset) => void;
-  singleDate: string;
-  setSingleDate: (date: string) => void;
-  fromDate: string;
-  setFromDate: (date: string) => void;
-  toDate: string;
-  setToDate: (date: string) => void;
-  departments: string[];
-  filterDepartment: string;
-  setFilterDepartment: (dept: string) => void;
-  employees?: Employee[];
-  filterEmployeeId?: string;
-  setFilterEmployeeId?: (empId: string) => void;
-  filterStatus: string;
-  setFilterStatus: (status: string) => void;
-  workLocations: WorkLocation[];
-  filterWorkLocation: string;
-  setFilterWorkLocation: (id: string) => void;
-  viewMode: ViewMode;
-  setViewMode: (mode: ViewMode) => void;
+  singleDate: string; setSingleDate: (date: string) => void;
+  fromDate: string; setFromDate: (date: string) => void;
+  toDate: string; setToDate: (date: string) => void;
+  departments: string[]; filterDepartment: string; setFilterDepartment: (dept: string) => void;
+  employees?: Employee[]; filterEmployeeId?: string; setFilterEmployeeId?: (empId: string) => void;
+  filterStatus: string; setFilterStatus: (status: string) => void;
+  workLocations: WorkLocation[]; filterWorkLocation: string; setFilterWorkLocation: (id: string) => void;
+  viewMode: ViewMode; setViewMode: (mode: ViewMode) => void;
   todayYMD: string;
-  onBulkSelectAll?: () => void;
-  onBulkClear?: () => void;
-}
-
-function formatDMYStr(dStr?: string): string {
-  if (!dStr) return "";
-  const parts = dStr.split("-");
-  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  return dStr;
 }
 
 export const AttendanceControlBar = memo(function AttendanceControlBar({
-  canManage,
   filteredRecordsCount,
   searchQuery,
   setSearchQuery,
@@ -63,43 +41,21 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   setFilterEmployeeId,
   filterStatus,
   setFilterStatus,
-  workLocations,
   filterWorkLocation,
   setFilterWorkLocation,
   viewMode,
   setViewMode,
   todayYMD,
-  onBulkSelectAll,
-  onBulkClear,
 }: AttendanceControlBarProps) {
-  const [localSearch, setLocalSearch] = useState(searchQuery);
-  const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const bulkMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setLocalSearch(searchQuery);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (bulkMenuRef.current && !bulkMenuRef.current.contains(e.target as Node)) {
-        setBulkMenuOpen(false);
-      }
-    }
-    if (bulkMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [bulkMenuOpen]);
-
-  const handleApplySearch = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setSearchQuery(localSearch);
-  };
+  const isFiltered =
+    searchQuery ||
+    filterDepartment !== "all" ||
+    (filterEmployeeId && filterEmployeeId !== "all") ||
+    filterStatus !== "all" ||
+    filterWorkLocation !== "all" ||
+    filterDatePreset !== "all";
 
   const handleResetFilters = () => {
-    setLocalSearch("");
     setSearchQuery("");
     setFilterDepartment("all");
     if (setFilterEmployeeId) setFilterEmployeeId("all");
@@ -111,64 +67,6 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
     setSingleDate(todayYMD);
   };
 
-  const handlePrevDate = () => {
-    if (filterDatePreset === "single" || (!fromDate && !toDate)) {
-      const cur = new Date(singleDate || todayYMD);
-      cur.setDate(cur.getDate() - 1);
-      const prev = cur.toISOString().split("T")[0];
-      setSingleDate(prev);
-      setFilterDatePreset("single");
-    } else {
-      const start = new Date(fromDate || todayYMD);
-      const end = new Date(toDate || todayYMD);
-      const diff = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-      start.setDate(start.getDate() - diff);
-      end.setDate(end.getDate() - diff);
-      setFromDate(start.toISOString().split("T")[0]);
-      setToDate(end.toISOString().split("T")[0]);
-      setFilterDatePreset("range");
-    }
-  };
-
-  const handleNextDate = () => {
-    if (filterDatePreset === "single" || (!fromDate && !toDate)) {
-      const cur = new Date(singleDate || todayYMD);
-      cur.setDate(cur.getDate() + 1);
-      const next = cur.toISOString().split("T")[0];
-      setSingleDate(next);
-      setFilterDatePreset("single");
-    } else {
-      const start = new Date(fromDate || todayYMD);
-      const end = new Date(toDate || todayYMD);
-      const diff = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-      start.setDate(start.getDate() + diff);
-      end.setDate(end.getDate() + diff);
-      setFromDate(start.toISOString().split("T")[0]);
-      setToDate(end.toISOString().split("T")[0]);
-      setFilterDatePreset("range");
-    }
-  };
-
-  // Date label formatted e.g. 26/09/2026 - 26/09/2026
-  const dateDisplayLabel = (() => {
-    if (filterDatePreset === "single" || (!fromDate && !toDate)) {
-      const d = formatDMYStr(singleDate || todayYMD);
-      return `${d} - ${d}`;
-    }
-    if (fromDate && toDate) {
-      return `${formatDMYStr(fromDate)} - ${formatDMYStr(toDate)}`;
-    }
-    return "All Dates";
-  })();
-
-  const isFiltered =
-    searchQuery ||
-    filterDepartment !== "all" ||
-    (filterEmployeeId && filterEmployeeId !== "all") ||
-    filterStatus !== "all" ||
-    filterWorkLocation !== "all" ||
-    filterDatePreset !== "all";
-
   const availableEmployees =
     filterWorkLocation === "all"
       ? employees
@@ -177,161 +75,106 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
         );
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-3.5 shadow-2xs mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-      {/* LEFT: Search bar with blue button */}
-      <form onSubmit={handleApplySearch} className="flex items-center max-w-sm w-full">
-        <input
-          type="text"
-          value={localSearch}
-          onChange={(e) => setLocalSearch(e.target.value)}
-          placeholder="Search..."
-          className="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-l-xl text-xs text-gray-800 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:border-[#253C7D] transition-colors"
-        />
-        <button
-          type="submit"
-          className="px-3.5 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-r-xl border border-[#253C7D] transition-colors flex items-center justify-center cursor-pointer shadow-2xs"
-          title="Search"
-        >
-          <i className="ri-search-line text-sm" />
-        </button>
-      </form>
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-3.5 shadow-2xs mb-6 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
+      {/* Left: Attendance Records Count Badge */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#253C7D]/10 dark:bg-sky-950/50 text-[#253C7D] dark:text-sky-300 rounded-xl font-bold text-xs border border-transparent dark:border-sky-800/40">
+          <i className="ri-calendar-check-line text-sm" />
+          <span>Attendance Records</span>
+          <span className="bg-[#253C7D] dark:bg-sky-500 text-white dark:text-slate-950 text-[10px] px-1.5 py-0.5 rounded-full font-extrabold leading-none">
+            {filteredRecordsCount}
+          </span>
+        </div>
+      </div>
 
-      {/* RIGHT: Bulk Action & Date Range Navigator */}
-      <div className="flex items-center gap-2.5 flex-wrap self-end md:self-auto">
-        {/* Bulk Action Dropdown */}
-        <div ref={bulkMenuRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setBulkMenuOpen((p) => !p)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-2xs"
-          >
-            <span>Bulk Action</span>
-            <i className="ri-arrow-down-s-line text-gray-400" />
-          </button>
-
-          {bulkMenuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg py-1 z-30 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setBulkMenuOpen(false);
-                  if (onBulkSelectAll) onBulkSelectAll();
-                }}
-                className="w-full px-3 py-1.5 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
-              >
-                <i className="ri-checkbox-line text-[#253C7D] dark:text-sky-400" />
-                <span>Select All on Page</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setBulkMenuOpen(false);
-                  if (onBulkClear) onBulkClear();
-                }}
-                className="w-full px-3 py-1.5 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
-              >
-                <i className="ri-checkbox-blank-line text-gray-400" />
-                <span>Deselect All</span>
-              </button>
-              {isFiltered && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBulkMenuOpen(false);
-                    handleResetFilters();
-                  }}
-                  className="w-full px-3 py-1.5 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer border-t border-gray-100 dark:border-slate-700 mt-1 pt-1.5"
-                >
-                  <i className="ri-refresh-line text-gray-400" />
-                  <span>Reset All Filters</span>
-                </button>
-              )}
-            </div>
+      {/* Right Filters Bar: Search, Date, Selects, Reset, View Mode */}
+      <div className="flex items-center gap-2.5 flex-wrap">
+        {/* Search Input */}
+        <div className="relative w-full sm:w-44">
+          <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400 text-xs" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search name, notes..."
+            className="w-full pl-8 pr-7 py-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-500 focus:ring-1 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 transition-all font-medium"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
+            >
+              <i className="ri-close-circle-fill text-xs" />
+            </button>
           )}
         </div>
 
-        {/* Date Range Navigator: [ < ] [ 📅 26/09/2026 - 26/09/2026 ] [ > ] */}
-        <div className="inline-flex items-center rounded-xl border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-2xs text-xs">
+        {/* Date Range Picker Dropdown */}
+        <AttendanceDateRangePicker
+          filterDatePreset={filterDatePreset}
+          setFilterDatePreset={setFilterDatePreset}
+          singleDate={singleDate}
+          setSingleDate={setSingleDate}
+          fromDate={fromDate}
+          setFromDate={setFromDate}
+          toDate={toDate}
+          setToDate={setToDate}
+        />
+
+        {/* Employee, Department, Status Dropdowns */}
+        <AttendanceFilterSelects
+          employees={employees}
+          availableEmployees={availableEmployees}
+          filterEmployeeId={filterEmployeeId}
+          setFilterEmployeeId={setFilterEmployeeId}
+          departments={departments}
+          filterDepartment={filterDepartment}
+          setFilterDepartment={setFilterDepartment}
+          filterStatus={filterStatus}
+          setFilterStatus={setFilterStatus}
+        />
+
+        {/* Reset Filter Button */}
+        {isFiltered && (
           <button
             type="button"
-            onClick={handlePrevDate}
-            className="px-2.5 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 border-r border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 transition-colors cursor-pointer"
-            title="Previous Day / Period"
+            onClick={handleResetFilters}
+            className="px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-300 hover:text-gray-700 dark:hover:text-slate-100 text-xs font-bold transition-colors cursor-pointer"
+            title="Reset Filters"
           >
-            <i className="ri-arrow-left-s-line text-sm" />
+            <i className="ri-refresh-line mr-1" />
+            Reset
           </button>
-
-          <button
-            type="button"
-            onClick={() => setDatePickerOpen((p) => !p)}
-            className="px-3 py-2 flex items-center gap-2 font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-          >
-            <i className="ri-calendar-line text-[#253C7D] dark:text-sky-400 text-xs" />
-            <span>{dateDisplayLabel}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleNextDate}
-            className="px-2.5 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 border-l border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 transition-colors cursor-pointer"
-            title="Next Day / Period"
-          >
-            <i className="ri-arrow-right-s-line text-sm" />
-          </button>
-        </div>
-
-        {/* Expanded date picker modal / popover if open */}
-        {datePickerOpen && (
-          <div className="fixed inset-0 bg-black/20 z-40 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl max-w-md w-full space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800">
-                <h4 className="text-xs font-bold text-gray-800 dark:text-slate-200">
-                  Select Date Range
-                </h4>
-                <button
-                  type="button"
-                  onClick={() => setDatePickerOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200"
-                >
-                  <i className="ri-close-line text-base" />
-                </button>
-              </div>
-
-              <AttendanceDateRangePicker
-                filterDatePreset={filterDatePreset}
-                setFilterDatePreset={setFilterDatePreset}
-                singleDate={singleDate}
-                setSingleDate={setSingleDate}
-                fromDate={fromDate}
-                setFromDate={setFromDate}
-                toDate={toDate}
-                setToDate={setToDate}
-              />
-
-              <div className="pt-2 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setDatePickerOpen(false)}
-                  className="px-3.5 py-1.5 bg-[#253C7D] text-white text-xs font-bold rounded-xl"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
         )}
 
-        {/* Status Filter */}
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-2.5 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl text-xs text-gray-700 dark:text-slate-200 focus:outline-none focus:border-[#253C7D] cursor-pointer font-medium shadow-2xs"
-        >
-          <option value="all">All Statuses</option>
-          {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-            <option key={k} value={k}>{v.label}</option>
-          ))}
-        </select>
+        {/* View Mode Switcher (Table / Cards) */}
+        <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-0.5 rounded-xl border border-gray-200 dark:border-slate-700">
+          <button
+            type="button"
+            onClick={() => setViewMode("table")}
+            className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "table"
+                ? "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-xs"
+                : "text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
+            }`}
+            title="Table View"
+          >
+            <i className="ri-table-line" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("cards")}
+            className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "cards"
+                ? "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-xs"
+                : "text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
+            }`}
+            title="Cards View"
+          >
+            <i className="ri-grid-fill" />
+          </button>
+        </div>
       </div>
     </div>
   );

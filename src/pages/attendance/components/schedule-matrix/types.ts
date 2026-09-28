@@ -34,6 +34,7 @@ export interface CellScheduleData {
 export interface EmployeeRosterRow {
   id: string;
   employeeCode: string;
+  displayId?: string;
   name: string;
   role: string;
   department: string;

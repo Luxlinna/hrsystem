@@ -9,17 +9,11 @@ interface AttendanceHeaderProps {
   activeTab?: AttendanceTabKey;
   dateRangeBounds: { start: string; end: string } | null;
   canViewAll: boolean;
-  canAccessOvertime?: boolean;
-  canManageOvertimeSettings?: boolean;
   hasEmployee: boolean;
   onExportCSV?: () => void;
   onOpenLogModal: () => void;
-  onCreateNewOvertime?: () => void;
-  onCreateOvertimeRequest?: () => void;
-  onCreateOvertimeRequestFor?: () => void;
-  onOpenOvertimeSettings?: () => void;
-  activeMainTab?: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime";
-  setActiveMainTab?: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime") => void;
+  activeMainTab?: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts";
+  setActiveMainTab?: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts") => void;
   records?: AttendanceRecord[];
   summaries?: EmployeeSummaryItem[];
   isFourPunchMode?: boolean;
@@ -30,7 +24,6 @@ export const AttendanceHeader = memo(function AttendanceHeader({
   activeTab = "records",
   dateRangeBounds,
   canViewAll,
-  canAccessOvertime = false,
   hasEmployee,
   onExportCSV,
   onOpenLogModal,
@@ -113,10 +106,11 @@ export const AttendanceHeader = memo(function AttendanceHeader({
                     setLogsMenuOpen(false);
                     onOpenLogModal();
                   }}
-                  className="w-full px-3.5 py-2 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2.5 cursor-pointer font-medium"
+                  disabled={!canViewAll && !hasEmployee}
+                  className="w-full px-3.5 py-2 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2.5 cursor-pointer font-medium disabled:opacity-50"
                 >
-                  <i className="ri-time-line text-sm text-[#253C7D] dark:text-sky-400" />
-                  <span>Time Request</span>
+                  <i className="ri-add-circle-line text-sm text-[#253C7D] dark:text-sky-400" />
+                  <span>Log Attendance</span>
                 </button>
 
                 <button
@@ -145,15 +139,6 @@ export const AttendanceHeader = memo(function AttendanceHeader({
               </div>
             )}
           </div>
-
-          <button
-            onClick={onOpenLogModal}
-            disabled={!canViewAll && !hasEmployee}
-            className="inline-flex items-center justify-center gap-2 bg-[#253C7D]/10 dark:bg-sky-950/60 hover:bg-[#253C7D]/20 text-[#253C7D] dark:text-sky-300 border border-[#253C7D]/20 px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
-          >
-            <i className="ri-add-circle-line text-base font-bold" />
-            <span>Log Attendance</span>
-          </button>
         </div>
       </div>
 
@@ -162,7 +147,6 @@ export const AttendanceHeader = memo(function AttendanceHeader({
           <AttendanceMainTabs
             activeMainTab={activeMainTab}
             setActiveMainTab={setActiveMainTab}
-            canAccessOvertime={canAccessOvertime}
           />
         )}
 

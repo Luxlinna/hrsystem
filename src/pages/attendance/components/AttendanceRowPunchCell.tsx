@@ -21,7 +21,7 @@ export const AttendanceRowPunchCell = memo(function AttendanceRowPunchCell({
 
   return (
     <td className="py-3 px-4 whitespace-nowrap">
-      {isRowFourPunch && (r.break_out || r.break_in) ? (
+      {isRowFourPunch ? (
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-slate-300 text-[11px]">
             <span>

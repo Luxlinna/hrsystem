@@ -1,4 +1,5 @@
 import type { DayColumn, EmployeeRosterRow, CellScheduleData } from "./types";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface BuildRosterParams {
   rawEmployees: any[];
@@ -104,9 +105,13 @@ export function buildRosterRows({
       };
     });
 
+    const bioId = formatBiometricId(emp.biometric_user_id, emp.branches?.name);
+    const displayId = bioId || emp.employee_code || "";
+
     return {
       id: emp.id,
-      employeeCode: emp.employee_code || String(1000 + empIdx),
+      employeeCode: displayId || String(1000 + empIdx),
+      displayId: displayId || undefined,
       name: `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || "Employee",
       role: emp.role || "Staff",
       department: emp.department || "Operations",

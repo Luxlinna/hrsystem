@@ -6,6 +6,7 @@ import type { ManagedShift } from "./shifts-manager/types";
 import { AttendanceRowPunchCell } from "./AttendanceRowPunchCell";
 import { AttendanceRowActions } from "./AttendanceRowActions";
 import { resolveRecordSchedule } from "../utils/scheduleDisplayUtils";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface AttendanceTableRowProps {
   record: AttendanceRecord;
@@ -60,15 +61,14 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
 
   let statusBadge: { label: string; bg: string; text: string } | null = null;
   if (isHoliday) statusBadge = { label: "Holiday", bg: "bg-blue-600", text: "text-white" };
-  else if (!hasClockIn && !hasClockOut) statusBadge = { label: "Error : No clock in and clock out", bg: "bg-rose-500", text: "text-white" };
+  else if (!hasClockIn && !hasClockOut) statusBadge = { label: "Error : No clock in", bg: "bg-rose-500", text: "text-white" };
   else if (!hasClockIn) statusBadge = { label: "Error : No clock in", bg: "bg-rose-500", text: "text-white" };
   else if (!hasClockOut && r.date < todayYMD) statusBadge = { label: "Error : No clock out", bg: "bg-rose-500", text: "text-white" };
   else if (!hasClockOut && r.date === todayYMD) statusBadge = { label: "Working Now", bg: "bg-emerald-600", text: "text-white" };
   else if (r.status === "late" || (r.late_minutes && r.late_minutes > 0)) statusBadge = { label: `Late ${r.late_minutes}m`, bg: "bg-amber-500", text: "text-white" };
   else statusBadge = { label: "On Time", bg: "bg-emerald-600", text: "text-white" };
 
-  const branchTag = (r.work_location?.name || emp?.branches?.name || "HBHQ")
-    .split(/[\s\-()]+/).map((w) => w[0]).join("").toUpperCase() || "HBHQ";
+  const locationName = r.work_location?.name || emp?.branches?.name || "Main Office";
 
   return (
     <tr className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors border-b border-gray-100 dark:border-slate-800/80 text-xs">
@@ -109,9 +109,22 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
             >
               {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
             </button>
-            <p className="text-[11px] font-mono text-gray-400 dark:text-slate-500">
-              {emp?.employee_code || (emp as any)?.biometric_user_id || "—"}
-            </p>
+            {(() => {
+              const rawBio = emp?.biometric_user_id || emp?.employee_code;
+              const bName = Array.isArray(emp?.branches) ? emp.branches[0]?.name : (emp?.branches?.name || r.work_location?.name || "");
+              const bioId = formatBiometricId(rawBio, bName);
+              return bioId ? (
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-[#253C7D]/10 dark:bg-sky-950/60 text-[#253C7D] dark:text-sky-300 border border-[#253C7D]/20 dark:border-sky-800/40 shrink-0 mt-0.5"
+                  title={`Biometric ID: ${bioId}`}
+                >
+                  <i className="ri-fingerprint-line text-[10px]" />
+                  {bioId}
+                </span>
+              ) : (
+                <p className="text-[11px] font-mono text-gray-400 dark:text-slate-500">—</p>
+              );
+            })()}
           </div>
         </div>
       </td>
@@ -126,8 +139,12 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
         <p className="font-bold text-gray-800 dark:text-slate-200 uppercase tracking-tight text-[11px]">
           {emp?.department || "OPERATIONS"}
         </p>
-        <span className="inline-block mt-0.5 px-1.5 py-0.5 text-[9px] font-bold text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 tracking-wider">
-          {branchTag}
+        <span
+          className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 max-w-[150px] truncate"
+          title={locationName}
+        >
+          <i className="ri-building-line text-[10px] text-gray-400 dark:text-slate-500 shrink-0" />
+          <span className="truncate">{locationName}</span>
         </span>
       </td>
 

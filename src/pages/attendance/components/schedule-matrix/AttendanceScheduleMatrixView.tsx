@@ -11,12 +11,14 @@ interface AttendanceScheduleMatrixViewProps {
   onNavigateToTemplates?: () => void;
   onNavigateToShifts?: () => void;
   onViewModeChange?: (mode: string) => void;
+  onViewAttendanceLog?: (target: ContextMenuTarget) => void;
 }
 
 export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatrixView({
   onNavigateToTemplates,
   onNavigateToShifts,
   onViewModeChange,
+  onViewAttendanceLog,
 }: AttendanceScheduleMatrixViewProps) {
   const {
     dateRangeLabel,
@@ -152,15 +154,18 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
         onChangeShift={() => {
           if (contextMenu?.target) {
             setEditingCell({
-              empId: contextMenu.target.empId,
-              empName: contextMenu.target.empName,
-              dateString: contextMenu.target.dateString,
-              dayNumber: contextMenu.target.dayNumber,
+              empId: contextMenu.target.empId, empName: contextMenu.target.empName,
+              dateString: contextMenu.target.dateString, dayNumber: contextMenu.target.dayNumber,
               currentCode: contextMenu.target.currentCode,
             });
           }
         }}
-        onViewAttendanceLog={() => setLogModalTarget(contextMenu?.target || null)}
+        onViewAttendanceLog={() => {
+          if (contextMenu?.target) {
+            if (onViewAttendanceLog) onViewAttendanceLog(contextMenu.target);
+            else setLogModalTarget(contextMenu.target);
+          }
+        }}
         onCreateLeave={(mode) => {
           if (contextMenu?.target) setLeaveModal({ target: contextMenu.target, mode });
         }}

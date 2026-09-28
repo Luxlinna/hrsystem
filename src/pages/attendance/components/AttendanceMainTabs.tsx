@@ -1,18 +1,16 @@
 import { memo } from "react";
 
 interface Props {
-  activeMainTab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime";
-  setActiveMainTab: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime") => void;
-  canAccessOvertime?: boolean;
+  activeMainTab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts";
+  setActiveMainTab: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts") => void;
 }
 
 export const AttendanceMainTabs = memo(function AttendanceMainTabs({
   activeMainTab,
   setActiveMainTab,
-  canAccessOvertime = false,
 }: Props) {
   const tabs: Array<{
-    id: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "overtime";
+    id: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts";
     label: string;
     icon: string;
   }> = [
@@ -21,10 +19,6 @@ export const AttendanceMainTabs = memo(function AttendanceMainTabs({
     { id: "schedule-templates", label: "Schedule Templates", icon: "ri-calendar-schedule-line" },
     { id: "shifts", label: "Shifts", icon: "ri-time-line" },
   ];
-
-  if (canAccessOvertime) {
-    tabs.push({ id: "overtime", label: "Overtime", icon: "ri-timer-flash-line" });
-  }
 
   return (
     <div className="inline-flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl border border-gray-200/80 dark:border-slate-700 overflow-x-auto max-w-full">

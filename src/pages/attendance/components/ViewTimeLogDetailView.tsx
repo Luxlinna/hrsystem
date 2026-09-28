@@ -2,6 +2,7 @@ import { useState, useEffect, memo } from "react";
 import type { AttendanceRecord } from "../types";
 import { formatTime, initials } from "../constants";
 import { supabase } from "@/lib/supabase";
+import { formatBiometricId } from "@/lib/biometricUtils";
 
 interface ViewTimeLogDetailViewProps {
   record: AttendanceRecord;
@@ -51,7 +52,11 @@ export const ViewTimeLogDetailView = memo(function ViewTimeLogDetailView({
   }, [r.employee_id]);
 
   const fullName = emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Employee";
-  const empCode = empDetail?.employee_code || emp?.employee_code || "3603";
+  const empBioId = formatBiometricId(
+    (empDetail as any)?.biometric_user_id || (emp as any)?.biometric_user_id,
+    (empDetail as any)?.branches?.name || (emp as any)?.branches?.name
+  );
+  const empCode = empBioId || empDetail?.employee_code || emp?.employee_code || "3603";
   const designation = empDetail?.role || empDetail?.position || emp?.role || "Supply Chain Officer";
   const department = (empDetail?.department || emp?.department || "SUPPLY CHAIN").toUpperCase();
 

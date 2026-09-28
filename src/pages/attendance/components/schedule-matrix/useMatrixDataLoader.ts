@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { compareBiometricIds } from "@/lib/biometricUtils";
 
 export function useMatrixDataLoader(targetBranch: string | null, currentDate: Date) {
   const [loading, setLoading] = useState(true);
@@ -16,7 +17,7 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
     try {
       let empQuery = supabase
         .from("employees")
-        .select("id, first_name, last_name, employee_code, role, department, avatar_url, branch_id")
+        .select("id, first_name, last_name, employee_code, biometric_user_id, role, department, avatar_url, branch_id, branches(id, name)")
         .is("deleted_at", null)
         .order("first_name");
 
@@ -57,7 +58,10 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
         supabase.from("shift_assignments").select("id, shift_id, employee_id, status"),
       ]);
 
-      setRawEmployees(empRes.data || []);
+      const empList = ((empRes.data || []) as any[]).slice().sort((a, b) =>
+        compareBiometricIds(a.biometric_user_id, b.biometric_user_id)
+      );
+      setRawEmployees(empList);
       setRawShifts(shiftRes.data || []);
       setShiftAssignments(shiftAssignRes.data || []);
 

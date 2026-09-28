@@ -86,7 +86,14 @@ export const ScheduleMatrixNoSchedules = memo(function ScheduleMatrixNoSchedules
                     )}
                     <div>
                       <div className="font-semibold text-gray-900">{emp.name}</div>
-                      <div className="text-[10px] text-gray-400 font-mono">{emp.employeeCode}</div>
+                      {emp.displayId ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 shrink-0 mt-0.5">
+                          <i className="ri-fingerprint-line text-[10px]" />
+                          <span>{emp.displayId}</span>
+                        </span>
+                      ) : (
+                        <div className="text-[10px] text-gray-400 font-mono">{emp.employeeCode}</div>
+                      )}
                     </div>
                   </div>
                 </td>

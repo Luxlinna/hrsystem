@@ -30,15 +30,23 @@ export const RecordDetailsBody = memo(function RecordDetailsBody({
               <h4 className="font-extrabold text-gray-900 text-sm">
                 {selectedRecord.employees.first_name} {selectedRecord.employees.last_name}
               </h4>
-              {selectedRecord.employees.biometric_user_id && (
-                <span
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 shrink-0"
-                  title={`BU Biometric ID: ${selectedRecord.employees.biometric_user_id}`}
-                >
-                  <i className="ri-fingerprint-line text-[10px]" />
-                  {formatBiometricId(selectedRecord.employees.biometric_user_id, selectedRecord.employees.branches?.name)}
-                </span>
-              )}
+              {(() => {
+                const rawBio = selectedRecord.employees.biometric_user_id || selectedRecord.employees.employee_code;
+                const bName = Array.isArray(selectedRecord.employees.branches)
+                  ? selectedRecord.employees.branches[0]?.name
+                  : (selectedRecord.employees.branches?.name || selectedRecord.work_location?.name || "");
+                const bioId = formatBiometricId(rawBio, bName);
+                if (!bioId) return null;
+                return (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 shrink-0"
+                    title={`Biometric ID: ${bioId}`}
+                  >
+                    <i className="ri-fingerprint-line text-[10px]" />
+                    {bioId}
+                  </span>
+                );
+              })()}
             </div>
             <p className="text-xs text-gray-500 mt-0.5">{selectedRecord.employees.role}</p>
             <p className="text-[11px] text-gray-400">{selectedRecord.employees.department}</p>

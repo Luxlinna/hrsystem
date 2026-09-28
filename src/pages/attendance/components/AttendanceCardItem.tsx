@@ -59,24 +59,24 @@ export const AttendanceCardItem = memo(function AttendanceCardItem({
                 <span className="text-[11px] text-gray-400 dark:text-slate-400 font-medium truncate max-w-[120px]">
                   {emp?.role || "Team Member"}
                 </span>
-                {(emp?.biometric_user_id || emp?.employee_code) && (
-                  <>
-                    <span className="text-gray-300 dark:text-slate-600 text-[10px]">·</span>
-                    {emp?.biometric_user_id ? (
+                {(() => {
+                  const rawBio = emp?.biometric_user_id || emp?.employee_code;
+                  const bName = Array.isArray(emp?.branches) ? emp.branches[0]?.name : (emp?.branches?.name || "");
+                  const bioId = formatBiometricId(rawBio, bName);
+                  if (!bioId) return null;
+                  return (
+                    <>
+                      <span className="text-gray-300 dark:text-slate-600 text-[10px]">·</span>
                       <span
                         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
-                        title={`BU Biometric ID: ${formatBiometricId(emp.biometric_user_id, emp.branches?.name)}`}
+                        title={`Biometric ID: ${bioId}`}
                       >
                         <i className="ri-fingerprint-line text-[10px]" />
-                        {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                        {bioId}
                       </span>
-                    ) : (
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300 shrink-0">
-                        {emp?.employee_code}
-                      </span>
-                    )}
-                  </>
-                )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
