@@ -42,6 +42,92 @@ function toMin(timeStr) {
 // In-memory throttle for device heartbeat DB writes (SN -> timestamp)
 const deviceHeartbeatThrottle = new Map();
 
+// In-memory cache for device metadata (SN -> { data, time })
+const deviceCache = new Map();
+
+export async function getOrFetchDevice(deviceSerial) {
+  if (!deviceSerial) return null;
+  const cached = deviceCache.get(deviceSerial);
+  if (cached && Date.now() - cached.time < 300000) { // 5 min TTL
+    return cached.data;
+  }
+  const { data, error } = await supabase
+    .from("biometric_devices")
+    .select("id, branch_id, work_location_id, device_name")
+    .eq("device_serial", deviceSerial)
+    .maybeSingle();
+
+  if (error) {
+    console.error(`[ZKTeco ADMS] Error looking up device ${deviceSerial}:`, error.message);
+  }
+  if (data) {
+    deviceCache.set(deviceSerial, { data, time: Date.now() });
+  }
+  return data;
+}
+
+// In-memory cache for employee directory
+let employeeDirectoryCache = null;
+let employeeDirectoryTime = 0;
+
+export async function getOrFetchEmployees() {
+  if (employeeDirectoryCache && Date.now() - employeeDirectoryTime < 120000) { // 2 min TTL
+    return employeeDirectoryCache;
+  }
+  const selectCols = `
+    id, first_name, last_name, branch_id, default_work_location_id, employee_code, biometric_user_id,
+    branches(name, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end),
+    work_locations:default_work_location_id(name, work_start_time, break_start_time, break_end_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, is_four_punch_enabled, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end)
+  `;
+  const { data, error } = await supabase
+    .from("employees")
+    .select(selectCols)
+    .is("deleted_at", null);
+
+  if (error) {
+    console.error("[ZKTeco ADMS] Error fetching employees directory:", error.message);
+    return employeeDirectoryCache || [];
+  }
+  employeeDirectoryCache = data || [];
+  employeeDirectoryTime = Date.now();
+  return employeeDirectoryCache;
+}
+
+export function findEmployeeInMemory(userId, deviceBranchId, allEmployees) {
+  if (!userId || !allEmployees || allEmployees.length === 0) return null;
+  const cleanId = String(userId).trim();
+  const numMatch = cleanId.match(/\d+/);
+  const numVal = numMatch ? parseInt(numMatch[0], 10) : NaN;
+  const rawNumStr = !isNaN(numVal) ? String(numVal) : cleanId;
+  const padded3Str = !isNaN(numVal) ? String(numVal).padStart(3, "0") : cleanId;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+
+  const matchFn = (emp) => {
+    if (isUuid) {
+      return emp.id === cleanId || emp.biometric_user_id === cleanId;
+    }
+    const bio = String(emp.biometric_user_id || "").trim();
+    const code = String(emp.employee_code || "").trim();
+    return (
+      bio === rawNumStr ||
+      bio === padded3Str ||
+      code === rawNumStr ||
+      code === padded3Str ||
+      bio.endsWith(padded3Str) ||
+      bio.endsWith(` ${rawNumStr}`)
+    );
+  };
+
+  // 1. Prioritize employee in the same branch as the device
+  if (deviceBranchId) {
+    const branchMatch = allEmployees.find((e) => e.branch_id === deviceBranchId && matchFn(e));
+    if (branchMatch) return branchMatch;
+  }
+
+  // 2. Global directory match
+  return allEmployees.find(matchFn) || null;
+}
+
 /**
  * Sends a Telegram notification to the configured HRM_OPS_Notifications group via Supabase Edge Function
  */
@@ -260,49 +346,12 @@ export async function processZkPunchRecord(punch) {
   const punchMinutes = toMin(timeStr);
   const punchIso = `${dateStr}T${timeStr}+07:00`;
 
-  // 1a. Fetch device info first to guarantee branch context and isolation
-  const { data: device } = await supabase
-    .from("biometric_devices")
-    .select("id, branch_id, work_location_id, device_name")
-    .eq("device_serial", deviceSerial)
-    .maybeSingle();
+  // 1a. Fetch device info (cached in memory)
+  const device = await getOrFetchDevice(deviceSerial);
 
-  // 1b. Find employee by biometric_user_id or employee ID across the directory
-  // Prioritize matching the device's branch first, but if not found, look across the entire directory
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(userId));
-  const cleanId = String(userId).trim();
-  const numMatch = cleanId.match(/\d+/);
-  const numVal = numMatch ? parseInt(numMatch[0], 10) : NaN;
-  const rawNumStr = !isNaN(numVal) ? String(numVal) : cleanId;
-  const padded3Str = !isNaN(numVal) ? String(numVal).padStart(3, "0") : cleanId;
-
-  const selectCols = `
-    id, first_name, last_name, branch_id, default_work_location_id,
-    branches(name, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end),
-    work_locations:default_work_location_id(name, work_start_time, break_start_time, break_end_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, is_four_punch_enabled, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end)
-  `;
-
-  const applyIdFilter = (query) => {
-    if (isUuid) {
-      return query.or(`biometric_user_id.eq.${userId},id.eq.${userId}`);
-    }
-    return query.or(`biometric_user_id.eq.${rawNumStr},biometric_user_id.eq.${padded3Str},biometric_user_id.ilike.%${padded3Str},biometric_user_id.ilike.% ${rawNumStr}`);
-  };
-
-  let employee = null;
-  if (device?.branch_id) {
-    const { data: branchEmp } = await applyIdFilter(
-      supabase.from("employees").select(selectCols).is("deleted_at", null).eq("branch_id", device.branch_id)
-    ).maybeSingle();
-    if (branchEmp) employee = branchEmp;
-  }
-
-  if (!employee) {
-    const { data: dirEmp } = await applyIdFilter(
-      supabase.from("employees").select(selectCols).is("deleted_at", null)
-    ).maybeSingle();
-    if (dirEmp) employee = dirEmp;
-  }
+  // 1b. Find employee from in-memory cached directory (instant O(1) matching)
+  const allEmployees = await getOrFetchEmployees();
+  const employee = findEmployeeInMemory(userId, device?.branch_id, allEmployees);
 
   if (!employee) {
     console.warn(`[ZKTeco ADMS] User ID [${userId}] is not mapped to any employee in the directory.`);
@@ -546,8 +595,8 @@ export async function processZkPunchRecord(punch) {
     {
       employee_id: employee.id,
       date: dateStr,
-      work_location_id: employee.default_work_location_id || null,
-      clock_in_branch_id: employee.branch_id || null,
+      work_location_id: employee.default_work_location_id || device?.work_location_id || null,
+      clock_in_branch_id: employee.branch_id || device?.branch_id || null,
       deleted_at: null,
       deleted_by: null,
       ...updatePayload,
@@ -758,12 +807,18 @@ export async function handleZkAdmsRequest(req, res) {
           const punches = parseAttLogLines(body, sn);
           console.log(`[ZKTeco ADMS] Found ${punches.length} punch records to process.`);
 
-          for (const punch of punches) {
-            await processZkPunchRecord(punch);
-          }
-
+          // 1. Immediately acknowledge device so it never times out and never retransmits duplicates
           res.writeHead(200, { "Content-Type": "text/plain" });
           res.end(`OK: ${punches.length}\r\n`);
+
+          // 2. Process punches in background with high performance
+          (async () => {
+            for (const punch of punches) {
+              await processZkPunchRecord(punch);
+            }
+          })().catch((err) => {
+            console.error("[ZKTeco ADMS] Background punch processing error:", err);
+          });
         } else {
           // Other tables (OPERLOG, USER, etc.)
           res.writeHead(200, { "Content-Type": "text/plain" });
