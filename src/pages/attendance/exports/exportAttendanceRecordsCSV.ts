@@ -1,78 +1,108 @@
 import type { AttendanceRecord } from "../types";
-import { formatTime, calcHours } from "../constants";
+import type { ManagedShift } from "../components/shifts-manager/types";
+import { mapRecordToExportRow } from "./attendanceExportRowData";
+
+function escapeCSV(val: string | number | undefined | null): string {
+  if (val === undefined || val === null) return '""';
+  const str = String(val);
+  return `"${str.replace(/"/g, '""')}"`;
+}
 
 export function exportAttendanceRecordsCSV(
   records: AttendanceRecord[],
-  isFourPunchMode: boolean = false
+  isFourPunchMode: boolean = false,
+  shifts: ManagedShift[] = []
 ): boolean {
   const headers = isFourPunchMode
     ? [
+        "No.",
+        "Date",
+        "Day",
         "Employee Name",
+        "Biometric ID",
+        "Designation",
         "Department",
         "Location",
-        "Date",
+        "Schedule Shift",
+        "Scheduled Windows",
+        "Scheduled Hours",
         "Morning In",
         "Lunch Out",
         "Lunch In",
         "Evening Out",
-        "Total Hours",
+        "Clocked Hours",
         "Status",
-        "Late Minutes",
+        "Salary",
         "Notes",
       ]
     : [
+        "No.",
+        "Date",
+        "Day",
         "Employee Name",
+        "Biometric ID",
+        "Designation",
         "Department",
         "Location",
-        "Date",
-        "Check In",
-        "Check Out",
-        "Total Hours",
+        "Schedule Shift",
+        "Scheduled Windows",
+        "Scheduled Hours",
+        "Clock In",
+        "Clock Out",
+        "Clocked Hours",
         "Status",
-        "Late Minutes",
-        "Early Leave Minutes",
+        "Salary",
         "Notes",
       ];
 
-  const rows = records.map((r) => {
-    const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Employee";
-    const dept = r.employees?.department || "—";
-    const location = r.work_location?.name || r.employees?.branches?.name || "Main Office";
-    const totalHours = r.hours_worked ? `${r.hours_worked}h` : calcHours(r.clock_in, r.clock_out);
-
+  const rows = records.map((r, idx) => {
+    const row = mapRecordToExportRow(r, idx, shifts);
     if (isFourPunchMode) {
       return [
-        `"${empName.replace(/"/g, '""')}"`,
-        `"${dept.replace(/"/g, '""')}"`,
-        `"${location.replace(/"/g, '""')}"`,
-        `"${r.date}"`,
-        `"${formatTime(r.clock_in)}"`,
-        `"${formatTime(r.break_out)}"`,
-        `"${formatTime(r.break_in)}"`,
-        `"${formatTime(r.clock_out)}"`,
-        `"${totalHours}"`,
-        `"${(r.status || "present").toUpperCase()}"`,
-        r.late_minutes || 0,
-        `"${(r.notes || "").replace(/"/g, '""')}"`,
+        row.no,
+        escapeCSV(row.dateStr),
+        escapeCSV(row.dayOfWeek),
+        escapeCSV(row.employeeName),
+        escapeCSV(row.biometricId),
+        escapeCSV(row.designation),
+        escapeCSV(row.department),
+        escapeCSV(row.location),
+        escapeCSV(row.scheduleTitle),
+        escapeCSV(row.scheduleWindows),
+        escapeCSV(row.scheduledHours),
+        escapeCSV(row.clockIn),
+        escapeCSV(row.breakOut),
+        escapeCSV(row.breakIn),
+        escapeCSV(row.clockOut),
+        escapeCSV(row.workedHours),
+        escapeCSV(row.status),
+        escapeCSV(row.salary),
+        escapeCSV(row.notes),
       ].join(",");
     }
 
     return [
-      `"${empName.replace(/"/g, '""')}"`,
-      `"${dept.replace(/"/g, '""')}"`,
-      `"${location.replace(/"/g, '""')}"`,
-      `"${r.date}"`,
-      `"${formatTime(r.clock_in)}"`,
-      `"${formatTime(r.clock_out)}"`,
-      `"${totalHours}"`,
-      `"${(r.status || "present").toUpperCase()}"`,
-      r.late_minutes || 0,
-      r.early_leave_minutes || 0,
-      `"${(r.notes || "").replace(/"/g, '""')}"`,
+      row.no,
+      escapeCSV(row.dateStr),
+      escapeCSV(row.dayOfWeek),
+      escapeCSV(row.employeeName),
+      escapeCSV(row.biometricId),
+      escapeCSV(row.designation),
+      escapeCSV(row.department),
+      escapeCSV(row.location),
+      escapeCSV(row.scheduleTitle),
+      escapeCSV(row.scheduleWindows),
+      escapeCSV(row.scheduledHours),
+      escapeCSV(row.clockIn),
+      escapeCSV(row.clockOut),
+      escapeCSV(row.workedHours),
+      escapeCSV(row.status),
+      escapeCSV(row.salary),
+      escapeCSV(row.notes),
     ].join(",");
   });
 
-  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+  const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows].join("\n");
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);

@@ -9,11 +9,14 @@ import {
   exportAttendanceSummaryCSV,
 } from "../exportUtils";
 
+import type { ManagedShift } from "./shifts-manager/types";
+
 interface AttendanceExportMenuProps {
   activeTab: AttendanceTabKey;
   records: AttendanceRecord[];
   summaries: EmployeeSummaryItem[];
   isFourPunchMode?: boolean;
+  shifts?: ManagedShift[];
   disabled?: boolean;
 }
 
@@ -24,6 +27,7 @@ export const AttendanceExportMenu = memo(function AttendanceExportMenu({
   records,
   summaries,
   isFourPunchMode = false,
+  shifts = [],
   disabled = false,
 }: AttendanceExportMenuProps) {
   const [open, setOpen] = useState(false);
@@ -51,15 +55,15 @@ export const AttendanceExportMenu = memo(function AttendanceExportMenu({
           else if (fmt === "csv") exportAttendanceSummaryCSV(summaries);
         } else {
           // Default: records / matrix
-          if (fmt === "pdf") exportAttendanceRecordsPDF(records, "Time & Attendance Records Report", isFourPunchMode);
-          else if (fmt === "xlsx") await exportAttendanceRecordsXLSX(records, isFourPunchMode);
-          else if (fmt === "csv") exportAttendanceRecordsCSV(records, isFourPunchMode);
+          if (fmt === "pdf") exportAttendanceRecordsPDF(records, "Time & Attendance Records Report", isFourPunchMode, shifts);
+          else if (fmt === "xlsx") await exportAttendanceRecordsXLSX(records, isFourPunchMode, shifts);
+          else if (fmt === "csv") exportAttendanceRecordsCSV(records, isFourPunchMode, shifts);
         }
       } finally {
         setTimeout(() => setExporting(null), 700);
       }
     },
-    [activeTab, records, summaries, isFourPunchMode]
+    [activeTab, records, summaries, isFourPunchMode, shifts]
   );
 
   const getRecordCount = () => {

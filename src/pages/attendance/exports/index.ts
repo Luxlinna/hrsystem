@@ -5,3 +5,6 @@ export { exportAttendanceRecordsCSV } from "./exportAttendanceRecordsCSV";
 export { exportAttendanceSummaryPDF } from "./exportAttendanceSummaryPDF";
 export { exportAttendanceSummaryXLSX } from "./exportAttendanceSummaryXLSX";
 export { exportAttendanceSummaryCSV } from "./exportAttendanceSummaryCSV";
+
+export { mapRecordToExportRow, getExportStatus, formatDMY } from "./attendanceExportRowData";
+export type { AttendanceExportRow } from "./attendanceExportRowData";

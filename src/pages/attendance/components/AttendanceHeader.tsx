@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, memo } from "react";
 import { Link } from "react-router-dom";
 import type { AttendanceTabKey, AttendanceRecord, EmployeeSummaryItem } from "../types";
+import type { ManagedShift } from "./shifts-manager/types";
 import { AttendanceExportMenu } from "./AttendanceExportMenu";
 import { AttendanceMainTabs } from "./AttendanceMainTabs";
+import { exportAttendanceRecordsXLSX } from "../exportUtils";
 
 interface AttendanceHeaderProps {
   currentTime: Date;
@@ -17,6 +19,7 @@ interface AttendanceHeaderProps {
   records?: AttendanceRecord[];
   summaries?: EmployeeSummaryItem[];
   isFourPunchMode?: boolean;
+  shifts?: ManagedShift[];
 }
 
 export const AttendanceHeader = memo(function AttendanceHeader({
@@ -32,6 +35,7 @@ export const AttendanceHeader = memo(function AttendanceHeader({
   records = [],
   summaries = [],
   isFourPunchMode = false,
+  shifts = [],
 }: AttendanceHeaderProps) {
   const [logsMenuOpen, setLogsMenuOpen] = useState(false);
   const logsMenuRef = useRef<HTMLDivElement>(null);
@@ -129,7 +133,7 @@ export const AttendanceHeader = memo(function AttendanceHeader({
                   type="button"
                   onClick={() => {
                     setLogsMenuOpen(false);
-                    if (onExportCSV) onExportCSV();
+                    exportAttendanceRecordsXLSX(records, isFourPunchMode, shifts);
                   }}
                   className="w-full px-3.5 py-2 text-left text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2.5 cursor-pointer font-medium border-t border-gray-100 dark:border-slate-700 mt-1 pt-1.5"
                 >
@@ -167,6 +171,7 @@ export const AttendanceHeader = memo(function AttendanceHeader({
             records={records}
             summaries={summaries}
             isFourPunchMode={isFourPunchMode}
+            shifts={shifts}
           />
         </div>
       </div>

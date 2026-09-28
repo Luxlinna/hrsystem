@@ -114,6 +114,7 @@ export default function AttendancePage() {
         records={filters.filteredRecords.length > 0 ? filters.filteredRecords : data.records}
         summaries={metrics.employeeSummary || []}
         isFourPunchMode={isFourPunchMode}
+        shifts={shiftsManager.shifts}
       />
 
       <AttendanceTabsRouter

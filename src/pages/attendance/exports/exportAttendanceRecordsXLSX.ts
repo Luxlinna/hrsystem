@@ -1,6 +1,6 @@
 import type { AttendanceRecord } from "../types";
-import { formatTime, calcHours } from "../constants";
-import { formatBiometricId } from "@/lib/biometricUtils";
+import type { ManagedShift } from "../components/shifts-manager/types";
+import { mapRecordToExportRow } from "./attendanceExportRowData";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -8,80 +8,101 @@ const getXLSX = async () => {
 
 export async function exportAttendanceRecordsXLSX(
   records: AttendanceRecord[],
-  isFourPunchMode: boolean = false
+  isFourPunchMode: boolean = false,
+  shifts: ManagedShift[] = []
 ): Promise<boolean> {
   const data = records.length > 0
-    ? records.map((r) => {
-        const empName = `${r.employees?.first_name || ""} ${r.employees?.last_name || ""}`.trim() || "Employee";
-        const rawBio = r.employees?.biometric_user_id || r.employees?.employee_code;
-        const bName = Array.isArray(r.employees?.branches) ? r.employees.branches[0]?.name : (r.employees?.branches?.name || r.work_location?.name || "");
-        const bioId = formatBiometricId(rawBio, bName);
-        const dept = r.employees?.department || "—";
-        const location = r.work_location?.name || r.employees?.branches?.name || "Main Office";
-        const totalHours = r.hours_worked ? `${r.hours_worked}h` : calcHours(r.clock_in, r.clock_out);
-
+    ? records.map((r, idx) => {
+        const row = mapRecordToExportRow(r, idx, shifts);
         if (isFourPunchMode) {
           return {
-            "Log ID": r.id,
-            "Employee Name": empName,
-            "Biometric ID": bioId || "—",
-            Department: dept,
-            Location: location,
-            Date: r.date,
-            "Morning In": formatTime(r.clock_in),
-            "Lunch Out": formatTime(r.break_out),
-            "Lunch In": formatTime(r.break_in),
-            "Evening Out": formatTime(r.clock_out),
-            "Total Hours": totalHours,
-            Status: (r.status || "present").toUpperCase(),
-            "Late (Minutes)": r.late_minutes || 0,
-            Notes: r.notes || "",
+            "No.": row.no,
+            "Date": row.dateStr,
+            "Day": row.dayOfWeek,
+            "Employee Name": row.employeeName,
+            "Biometric ID": row.biometricId,
+            "Designation": row.designation,
+            "Department": row.department,
+            "Location": row.location,
+            "Schedules": row.scheduleTitle,
+            "Scheduled Hours": row.scheduledHours,
+            "Morning In": row.clockIn,
+            "Lunch Out": row.breakOut,
+            "Lunch In": row.breakIn,
+            "Evening Out": row.clockOut,
+            "Clocked Hours": row.workedHours,
+            "Status": row.status,
+            "Salary": row.salary,
+            "Notes": row.notes,
           };
         }
 
         return {
-          "Log ID": r.id,
-          "Employee Name": empName,
-          "Biometric ID": bioId || "—",
-          Department: dept,
-          Location: location,
-          Date: r.date,
-          "Check In": formatTime(r.clock_in),
-          "Check Out": formatTime(r.clock_out),
-          "Total Hours": totalHours,
-          Status: (r.status || "present").toUpperCase(),
-          "Late (Minutes)": r.late_minutes || 0,
-          "Early Leave (Minutes)": r.early_leave_minutes || 0,
-          Notes: r.notes || "",
+          "No.": row.no,
+          "Date": row.dateStr,
+          "Day": row.dayOfWeek,
+          "Employee Name": row.employeeName,
+          "Biometric ID": row.biometricId,
+          "Designation": row.designation,
+          "Department": row.department,
+          "Location": row.location,
+          "Schedules": row.scheduleTitle,
+          "Scheduled Hours": row.scheduledHours,
+          "Clock In": row.clockIn,
+          "Clock Out": row.clockOut,
+          "Clocked Hours": row.workedHours,
+          "Status": row.status,
+          "Salary": row.salary,
+          "Notes": row.notes,
         };
       })
-    : [{
-        "Log ID": "—",
-        "Employee Name": "No records found",
-        Department: "—",
-        Location: "—",
-        Date: "—",
-        ...(isFourPunchMode
-          ? {
-              "Morning In": "—",
-              "Lunch Out": "—",
-              "Lunch In": "—",
-              "Evening Out": "—",
-            }
-          : {
-              "Check In": "—",
-              "Check Out": "—",
-            }),
-        "Total Hours": "—",
-        Status: "—",
-        "Late (Minutes)": 0,
-        Notes: "—",
-      }];
+    : [
+        {
+          "No.": "—",
+          "Date": "—",
+          "Day": "—",
+          "Employee Name": "No records found",
+          "Biometric ID": "—",
+          "Designation": "—",
+          "Department": "—",
+          "Location": "—",
+          "Schedules": "—",
+          "Scheduled Hours": "—",
+          ...(isFourPunchMode
+            ? { "Morning In": "—", "Lunch Out": "—", "Lunch In": "—", "Evening Out": "—" }
+            : { "Clock In": "—", "Clock Out": "—" }),
+          "Clocked Hours": "—",
+          "Status": "—",
+          "Salary": "—",
+          "Notes": "—",
+        },
+      ];
 
   const XLSX = await getXLSX();
   const ws = XLSX.utils.json_to_sheet(data);
+
+  ws["!cols"] = [
+    { wch: 6 },
+    { wch: 13 },
+    { wch: 8 },
+    { wch: 22 },
+    { wch: 14 },
+    { wch: 18 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 28 },
+    { wch: 15 },
+    ...(isFourPunchMode
+      ? [{ wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }]
+      : [{ wch: 12 }, { wch: 12 }]),
+    { wch: 14 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 25 },
+  ];
+
   const wb = XLSX.utils.book_new();
-  const sheetName = isFourPunchMode ? "4-Punch Timesheet" : "Attendance Logs";
+  const sheetName = isFourPunchMode ? "4-Punch Attendance" : "Attendance Logs";
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   XLSX.writeFile(wb, `attendance_records_${new Date().toISOString().slice(0, 10)}.xlsx`);
   return true;
