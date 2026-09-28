@@ -87,8 +87,54 @@ async function resolveFile(urlPath) {
   return null;
 }
 
+// --- Bad Request Detection Middleware ---
+const ALLOWED_METHODS = new Set(["GET", "HEAD", "POST", "OPTIONS"]);
+const MAX_PAYLOAD_BYTES = 15 * 1024 * 1024; // 15MB limit for device batch logs
+const SUSPICIOUS_PATH_PATTERN = /(\/\.\.|\.\.\/|%2e%2e|\0|%00|\.(env|git|svn|htaccess|php|asp|aspx|jsp|sh|bak|config)($|[/?#]))/i;
+
+function detectBadRequest(req, res) {
+  // 1. Method check
+  if (!ALLOWED_METHODS.has(req.method)) {
+    res.writeHead(405, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("405 Method Not Allowed");
+    return true;
+  }
+
+  // 2. URL sanity & null bytes / path traversal / exploit probing
+  const rawUrl = req.url || "";
+  if (!rawUrl || SUSPICIOUS_PATH_PATTERN.test(rawUrl)) {
+    res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("400 Bad Request: Invalid or suspicious request path.");
+    return true;
+  }
+
+  // 3. Payload size check
+  const contentLengthHeader = req.headers["content-length"];
+  if (contentLengthHeader) {
+    const contentLength = Number(contentLengthHeader);
+    if (isNaN(contentLength) || contentLength < 0) {
+      res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("400 Bad Request: Invalid Content-Length header.");
+      return true;
+    }
+    if (contentLength > MAX_PAYLOAD_BYTES) {
+      res.writeHead(413, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("413 Payload Too Large: Request exceeds maximum size limit.");
+      return true;
+    }
+  }
+
+  return false;
+}
+
 const server = createServer(async (req, res) => {
   try {
+    // 1. Detect bad / suspicious requests early
+    if (detectBadRequest(req, res)) {
+      return;
+    }
+
+    // 2. Rate limiting check
     const clientIp = getRequestIp(req);
     if (isRateLimited(clientIp)) {
       res.writeHead(429, {
@@ -99,18 +145,37 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    // 3. Biometric device handler
     const isAdms = await handleZkAdmsRequest(req, res);
     if (isAdms) return;
 
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const requested = decodeURIComponent(url.pathname);
+    // 4. Safe URL parsing & decoding
+    const host = req.headers.host || "localhost";
+    let url;
+    try {
+      url = new URL(req.url, `http://${host}`);
+    } catch {
+      res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("400 Bad Request: Malformed URL.");
+      return;
+    }
+
+    let requested;
+    try {
+      requested = decodeURIComponent(url.pathname);
+    } catch {
+      res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("400 Bad Request: URI decoding failed.");
+      return;
+    }
+
     const filePath = (await resolveFile(requested)) || join(ROOT, "index.html");
     const body = await readFile(filePath);
     const type = MIME_TYPES[extname(filePath)] || "application/octet-stream";
     res.writeHead(200, { "Content-Type": type });
     res.end(body);
   } catch (err) {
-    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
     res.end("Internal Server Error: " + err.message);
   }
 });
