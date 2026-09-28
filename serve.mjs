@@ -1,6 +1,8 @@
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
+import dotenv from "dotenv";
+dotenv.config();
 import { handleZkAdmsRequest, checkBiometricDeviceHealth } from "./zkteco-adms-handler.mjs";
 
 const ROOT = join(import.meta.dirname, "out");

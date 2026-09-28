@@ -16,12 +16,18 @@ dotenv.config();
 const SUPABASE_URL =
   process.env.SUPABASE_URL ||
   process.env.VITE_PUBLIC_SUPABASE_URL ||
-  "https://blcvtbzwpwmqkphlcjji.supabase.co";
+  "https://jnrozihprpjvnofjlbtd.supabase.co";
 
 const SUPABASE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_SECRET_KEY ||
   process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_KEY) {
+  console.error("[ZKTeco ADMS] WARNING: No Supabase API key found in environment! Check .env file.");
+} else {
+  console.log(`[ZKTeco ADMS] Initialized with Supabase URL: ${SUPABASE_URL}`);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -71,13 +77,21 @@ export async function recordDeviceActivity(deviceSerial) {
   const shouldUpdateDb = (now - lastRecorded) > 60000;
 
   try {
-    const { data: dev } = await supabase
+    const { data: dev, error: devErr } = await supabase
       .from("biometric_devices")
       .select("id, device_name, alerted_offline, branch_id, branches(name)")
       .eq("device_serial", deviceSerial)
       .maybeSingle();
 
-    if (!dev) return;
+    if (devErr) {
+      console.error(`[ZKTeco ADMS] Supabase query error for device ${deviceSerial}:`, devErr.message);
+      return;
+    }
+
+    if (!dev) {
+      console.warn(`[ZKTeco ADMS] Device ${deviceSerial} not registered in biometric_devices table.`);
+      return;
+    }
 
     if (dev.alerted_offline) {
       // RECOVERY DETECTED: Device was flagged offline and is now back online!
@@ -626,13 +640,17 @@ export async function handleZkAdmsRequest(req, res) {
 
     try {
       // Check for pending device commands
-      const { data: pendingCmds } = await supabase
+      const { data: pendingCmds, error: cmdErr } = await supabase
         .from("biometric_device_commands")
         .select("id, command")
         .eq("device_serial", sn)
         .eq("status", "pending")
         .order("id", { ascending: true })
         .limit(10);
+
+      if (cmdErr) {
+        console.error(`[ZKTeco ADMS] Error checking pending commands for ${sn}:`, cmdErr.message);
+      }
 
       if (pendingCmds && pendingCmds.length > 0) {
         console.log(`[ZKTeco ADMS] Dispatching ${pendingCmds.length} commands to SN: ${sn}`);
