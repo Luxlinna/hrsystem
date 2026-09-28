@@ -4,6 +4,7 @@ import { uploadMediaToS3, type MediaItem } from "@/lib/s3-storage";
 import type { Task } from "../types";
 import type { PendingFile } from "../components/modals/check-in/MediaUploadDropzone";
 import { syncCheckInAttendance, syncCheckOutAttendance } from "./taskAttendanceSync";
+import { notifyMissionCheckIn } from "../services/missionNotificationService";
 
 interface UseTaskCheckInOutMutationProps {
   taskId: string;
@@ -80,7 +81,18 @@ export function useTaskCheckInOutMutation({
         const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
 
         if (isCheckIn) {
-          await syncCheckInAttendance(employeeId, timeStr, now, location, task?.work_address);
+          // Record to attendance log (attendance_records)
+          await syncCheckInAttendance(employeeId, timeStr, now, location, task?.work_address, task?.title);
+
+          // Alert notification: Telegram group + in-app notification to supervisors/account
+          notifyMissionCheckIn({
+            employeeId,
+            taskId,
+            taskTitle: task?.title || "Outside Mission",
+            timeStr,
+            location,
+            photoUrl: mediaItems[0]?.url || null,
+          }).catch((notifErr) => console.warn("Failed to notify mission check-in:", notifErr));
         } else {
           await syncCheckOutAttendance(employeeId, timeStr, now);
         }
