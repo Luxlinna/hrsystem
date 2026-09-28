@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 import type { AppRole, RoleFormState } from "../types";
-import { COLORS } from "../constants";
+import { COLORS, ROLE_CATEGORIES, CATEGORY_PRESETS, isDefaultCanonicalRole } from "../constants";
 import { RoleScopeSection } from "./RoleScopeSection";
 import { RoleModulesSection } from "./RoleModulesSection";
 
@@ -51,6 +51,36 @@ export const RoleFormModal = memo(function RoleFormModal({
     (s) => s.id.replace("site:", "") === (roleForm.work_location_id || "")
   );
 
+  const isDefaultRole = editingRole ? isDefaultCanonicalRole(editingRole) : false;
+  const currentCategory = ROLE_CATEGORIES.find((c) => c.key === roleForm.category) || ROLE_CATEGORIES[3]; // default line_manager
+
+  const handleCategorySelect = (categoryKey: string) => {
+    const preset = CATEGORY_PRESETS[categoryKey];
+    if (!preset) return;
+    setRoleForm((prev) => ({
+      ...prev,
+      category: categoryKey,
+      color: preset.color,
+      is_admin: preset.is_admin,
+      allowed_modules: [...preset.allowed_modules],
+      description: prev.description ? prev.description : preset.description,
+      ...preset.scopes,
+    }));
+  };
+
+  const handleApplyCategoryDefaults = () => {
+    const preset = CATEGORY_PRESETS[roleForm.category];
+    if (!preset) return;
+    setRoleForm((prev) => ({
+      ...prev,
+      color: preset.color,
+      is_admin: preset.is_admin,
+      allowed_modules: [...preset.allowed_modules],
+      description: preset.description,
+      ...preset.scopes,
+    }));
+  };
+
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-50" onClick={onClose} />
@@ -70,6 +100,78 @@ export const RoleFormModal = memo(function RoleFormModal({
             </button>
           </div>
           <div className="p-6 space-y-5">
+            {/* Category Archetype Selector */}
+            <div className="p-4 bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-gray-800 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
+                    <i className="ri-layout-grid-line text-[#253C7D] dark:text-sky-400" />
+                    Base Role Category (Default Archetype) *
+                  </span>
+                  <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+                    This role position will be classified under this category and inherit its baseline authority & operational scope.
+                  </p>
+                </div>
+                {isDefaultRole && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/50">
+                    Standard Canonical Role
+                  </span>
+                )}
+              </div>
+
+              {/* Category Pills/Buttons */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                {ROLE_CATEGORIES.map((cat) => {
+                  const isSelected = roleForm.category === cat.key;
+                  return (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      disabled={isDefaultRole}
+                      onClick={() => handleCategorySelect(cat.key)}
+                      className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer disabled:cursor-not-allowed ${
+                        isSelected
+                          ? "bg-white dark:bg-slate-900 border-[#253C7D] dark:border-sky-500 ring-2 ring-[#253C7D]/20 shadow-xs"
+                          : "bg-white/60 dark:bg-slate-900/60 border-gray-200/80 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <i className={`${cat.icon} text-sm`} style={{ color: cat.color }} />
+                        {isSelected && (
+                          <i className="ri-checkbox-circle-fill text-xs text-[#253C7D] dark:text-sky-400" />
+                        )}
+                      </div>
+                      <span className="text-xs font-bold text-gray-900 dark:text-slate-100 truncate">
+                        {cat.name}
+                      </span>
+                      <span className="text-[10px] text-gray-400 dark:text-slate-500 truncate mt-0.5">
+                        {cat.badge}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Category info strip */}
+              <div className="flex items-center justify-between pt-1 text-[11px] text-gray-500 dark:text-slate-400">
+                <span className="flex items-center gap-1.5 truncate">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: currentCategory.color }} />
+                  <span className="truncate">
+                    Template: <strong className="text-gray-800 dark:text-slate-200">{currentCategory.name}</strong> · {currentCategory.scopeSummary}
+                  </span>
+                </span>
+                {!isDefaultRole && (
+                  <button
+                    type="button"
+                    onClick={handleApplyCategoryDefaults}
+                    className="text-[10px] font-semibold text-[#253C7D] dark:text-sky-400 hover:underline shrink-0 ml-2 cursor-pointer"
+                  >
+                    Reset Baseline Defaults
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Scope Target (BU and Site) */}
             <div className="p-4 bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 rounded-xl space-y-3.5">
               <div className="flex items-center justify-between">
@@ -163,11 +265,11 @@ export const RoleFormModal = memo(function RoleFormModal({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1.5 block">Role Name *</label>
+                <label className="text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1.5 block">Role Position Title *</label>
                 <input
                   value={roleForm.name}
                   onChange={(e) => setRoleForm((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="e.g. Branch Supervisor, Site Lead"
+                  placeholder="e.g. Warehouse Supervisor, Site Lead, HR Executive..."
                   className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30"
                 />
               </div>

@@ -2,6 +2,7 @@ export type ExportPdfMode = "full_requisition" | "job_description";
 
 export interface RequisitionPdfOptions {
   mode?: ExportPdfMode;
+  formTitle?: string;
   buLogo?: string;
   businessUnit?: string;
   division?: string;

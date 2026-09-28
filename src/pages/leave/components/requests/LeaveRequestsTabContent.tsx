@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState, useCallback } from "react";
 import type { LeaveRequest } from "../../types";
 import { LeaveFilterBar } from "./LeaveFilterBar";
 import { LeaveTableView } from "./LeaveTableView";
@@ -38,6 +38,9 @@ interface LeaveRequestsTabContentProps {
   onOpenApprovalModal: (req: LeaveRequest, action: "approved" | "rejected") => void;
   onOpenCancelModal: (req: LeaveRequest) => void;
   onInspectRequest: (req: LeaveRequest) => void;
+  onDeleteRequest?: (req: LeaveRequest) => void;
+  onBulkDelete?: (ids: string[]) => void;
+  onBulkApprove?: (ids: string[]) => void;
 }
 
 export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
@@ -72,7 +75,44 @@ export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
   onOpenApprovalModal,
   onOpenCancelModal,
   onInspectRequest,
+  onDeleteRequest,
+  onBulkDelete,
+  onBulkApprove,
 }: LeaveRequestsTabContentProps) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        setSelectedIds(new Set(pagedRows.map((r) => r.id)));
+      } else {
+        setSelectedIds(new Set());
+      }
+    },
+    [pagedRows]
+  );
+
+  const handleTriggerBulkDelete = useCallback(() => {
+    if (!onBulkDelete || selectedIds.size === 0) return;
+    onBulkDelete(Array.from(selectedIds));
+    setSelectedIds(new Set());
+  }, [onBulkDelete, selectedIds]);
+
+  const handleTriggerBulkApprove = useCallback(() => {
+    if (!onBulkApprove || selectedIds.size === 0) return;
+    onBulkApprove(Array.from(selectedIds));
+    setSelectedIds(new Set());
+  }, [onBulkApprove, selectedIds]);
+
   return (
     <div className="space-y-4">
       {/* Filter Bar */}
@@ -90,6 +130,49 @@ export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
         setPageSize={setPageSize}
         setPage={setPage}
       />
+
+      {/* Floating Selection Action Bar (shows when items are checked) */}
+      {selectedIds.size > 0 && (
+        <div className="bg-[#253C7D] rounded-2xl px-6 py-3.5 flex items-center justify-between shadow-lg shadow-[#253C7D]/20 animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <i className="ri-checkbox-line text-white" />
+            </div>
+            <span className="text-white text-xs font-semibold">
+              {selectedIds.size} leave request{selectedIds.size === 1 ? "" : "s"} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {canApproveLeave && onBulkApprove && (
+              <button
+                type="button"
+                onClick={handleTriggerBulkApprove}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <i className="ri-checkbox-circle-line" />
+                Approve Selected
+              </button>
+            )}
+            {onBulkDelete && (
+              <button
+                type="button"
+                onClick={handleTriggerBulkDelete}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-500 text-white rounded-xl text-xs font-semibold hover:bg-rose-600 active:scale-[0.98] transition-all cursor-pointer shadow-xs"
+              >
+                <i className="ri-delete-bin-line" />
+                Delete Selected
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 text-white rounded-xl text-xs font-medium hover:bg-white/30 active:scale-[0.98] transition-all cursor-pointer"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Table / Cards Box */}
       <div className="bg-white rounded-3xl border border-gray-200/80 shadow-2xs overflow-hidden">
@@ -122,9 +205,13 @@ export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
               hasRoleApprovalAccess={hasRoleApprovalAccess}
               hasManagerEndorseAccess={hasManagerEndorseAccess}
               hasBuAdminEndorseAccess={hasBuAdminEndorseAccess}
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+              onSelectAll={handleSelectAll}
               onOpenApprovalModal={onOpenApprovalModal}
               onOpenCancelModal={onOpenCancelModal}
               onInspectRequest={onInspectRequest}
+              onDeleteRequest={onDeleteRequest}
             />
 
             <LeaveCardView
@@ -141,6 +228,7 @@ export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
               onOpenApprovalModal={onOpenApprovalModal}
               onOpenCancelModal={onOpenCancelModal}
               onInspectRequest={onInspectRequest}
+              onDeleteRequest={onDeleteRequest}
             />
 
             <LeavePagination

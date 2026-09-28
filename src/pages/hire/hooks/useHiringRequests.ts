@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { logActivity } from "@/lib/audit";
 import type { HiringRequest, NewHiringRequestFormState, Branch } from "../types";
 import { INITIAL_HIRING_REQUEST_FORM } from "../constants";
 import { useHiringRequestDecision } from "./useHiringRequestDecision";
@@ -140,15 +141,42 @@ export function useHiringRequests({
 
       if (!confirm("Are you sure you want to delete this hiring requisition?")) return;
       try {
-        const { error } = await supabase.from("hiring_requests").delete().eq("id", id);
-        if (error) throw error;
+        // 1. Soft delete by setting deleted_at & deleted_by (which update policy allows)
+        let { error } = await supabase
+          .from("hiring_requests")
+          .update({
+            deleted_at: new Date().toISOString(),
+            deleted_by: actorName || actorEmail || "Unknown",
+          })
+          .eq("id", id);
+
+        // 2. Also try direct delete if update fails
+        if (error) {
+          const delRes = await supabase.from("hiring_requests").delete().eq("id", id);
+          if (delRes.error) throw delRes.error;
+        }
+
+        // 3. Immediately remove from local state so UI updates instantly
+        setHiringRequests((prev) => prev.filter((r) => r.id !== id));
+
         toast("Deleted", "Hiring requisition deleted.", "info");
+
+        logActivity({
+          module: "hire",
+          action: "deleted",
+          entityType: "hiring_request",
+          entityId: id,
+          actorName: actorName || "User",
+          actorRole: actorRole || "Unknown",
+          description: `Deleted hiring requisition ${target?.requisition_id || id} (${target?.title || "Role"})`,
+        });
+
         await loadData();
       } catch (err: any) {
         toast("Error", err.message || "Failed to delete request", "error");
       }
     },
-    [hiringRequests, myEmployeeId, actorEmail, actorName, isSuperAdmin, isAdmin, loadData]
+    [hiringRequests, myEmployeeId, actorEmail, actorName, actorRole, isSuperAdmin, isAdmin, loadData, setHiringRequests]
   );
 
   return {

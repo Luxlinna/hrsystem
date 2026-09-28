@@ -122,13 +122,40 @@ export function useExitMutations({ loadData, actorName, actorRole }: UseExitMuta
 
   // ── Delete ──────────────────────────────────────────────────────────────
   const deleteExit = useCallback(async (id: string): Promise<void> => {
-    if (!confirm("Delete this exit record?")) return;
-    const { error } = await supabase.from("employee_exits").update({ status: "cancelled" }).eq("id", id);
+    // 1. Fetch employee_id before deleting so we can reactivate them if appropriate
+    const { data: exitRow } = await supabase
+      .from("employee_exits")
+      .select("employee_id")
+      .eq("id", id)
+      .maybeSingle();
+
+    // 2. Delete record (or fallback to status: cancelled)
+    let { error } = await supabase.from("employee_exits").delete().eq("id", id);
     if (error) {
-      toast("Error", error.message, "error");
+      const fallback = await supabase.from("employee_exits").update({ status: "cancelled" }).eq("id", id);
+      error = fallback.error;
+    }
+
+    if (error) {
+      toast("Error", error.message || "Failed to delete exit record.", "error");
       return;
     }
-    toast("Deleted", "Exit record removed.", "success");
+
+    // 3. Reactivate employee if they don't have other active exits
+    if (exitRow?.employee_id) {
+      const { data: otherExits } = await supabase
+        .from("employee_exits")
+        .select("id")
+        .eq("employee_id", exitRow.employee_id)
+        .neq("id", id)
+        .neq("status", "cancelled");
+
+      if (!otherExits || otherExits.length === 0) {
+        await supabase.from("employees").update({ status: "active" }).eq("id", exitRow.employee_id);
+      }
+    }
+
+    toast("Deleted", "Exit record removed successfully.", "success");
     logActivity({
       module: "exit",
       action: "deleted",
@@ -136,7 +163,7 @@ export function useExitMutations({ loadData, actorName, actorRole }: UseExitMuta
       entityId: id,
       actorName,
       actorRole,
-      description: `Cancelled exit record ${id}`,
+      description: `Deleted exit record ${id}`,
     });
     await loadData();
   }, [actorName, actorRole, loadData]);

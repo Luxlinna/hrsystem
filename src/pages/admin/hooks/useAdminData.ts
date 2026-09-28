@@ -6,6 +6,7 @@ import { listAuthAccounts } from "../api";
 import { sortBranchesList, buildEnrichedAssignments, buildEnrichedEmployees } from "./adminDataHelpers";
 import { phoneToSyntheticEmail, isPhoneSyntheticEmail, syntheticEmailToPhone, normalizePhone } from "@/lib/phoneUtils";
 import type { AppRole, DirectoryEmployee, PasswordResetRequest, UserAssignment } from "../types";
+import { getRoleCategoryKey } from "../constants";
 
 export function useAdminData() {
   const { user } = useAuth();
@@ -65,12 +66,19 @@ export function useAdminData() {
     });
     setBranches(combinedBranches);
 
+    let catMap: Record<number, string> = {};
+    try {
+      catMap = JSON.parse(localStorage.getItem("hrm_role_category_map") || "{}");
+    } catch (_e) { /* ignore */ }
+
     const rawRoles = (rolesRes.data || []) as any[];
     const enrichedRoles: AppRole[] = rawRoles.map((r) => {
       const bName = r.branch_id ? branchesList.find((b) => b.id === r.branch_id)?.name : null;
       const sName = r.work_location_id ? locationsMap.get(r.work_location_id)?.name : null;
+      const roleCategory = r.category || catMap[r.id] || getRoleCategoryKey(r);
       return {
         ...r,
+        category: roleCategory,
         branch_name: bName || null,
         site_name: sName || null,
       };

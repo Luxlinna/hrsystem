@@ -5,7 +5,7 @@ import { usePermissions, isBootstrapAdminEmail } from "@/hooks/usePermissions";
 import { useBranchScope } from "@/context/BranchContext";
 import { WORKABLE_STATUSES } from "../constants";
 import type { Task, Employee } from "../types";
-import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
+import { applyUserEmployeeFilter, isPhoneSyntheticEmail } from "@/lib/phoneUtils";
 
 export function useTasksData() {
   const { user } = useAuth();
@@ -17,43 +17,64 @@ export function useTasksData() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
   const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null);
 
   const fetchCurrentEmployee = useCallback(async () => {
-    if (!user?.email || isPartnerBranchBlocked || !targetBranch) {
+    if (!user?.email || isPartnerBranchBlocked) {
       setCurrentEmployeeId(null);
+      setCurrentEmployee(null);
       return;
     }
     const empQuery = applyUserEmployeeFilter(
       supabase
         .from("employees")
-        .select("id, branch_id"),
+        .select("id, first_name, last_name, department, avatar_url, email, role, reports_to, branch_id"),
       user.email
     );
-    const { data: rows } = await empQuery
-      .eq("branch_id", targetBranch)
-      .limit(1);
-    const data = rows && rows.length > 0 ? rows[0] : null;
-    if (data) setCurrentEmployeeId(data.id);
-  }, [user?.email, isPartnerBranchBlocked, targetBranch]);
+    const { data: rows } = await empQuery.is("deleted_at", null).limit(5);
+    const data = rows && rows.length > 0
+      ? ((isPhoneSyntheticEmail(user.email)
+          ? rows.find((r: any) => !r.email || isPhoneSyntheticEmail(r.email))
+          : rows.find((r: any) => r.email?.toLowerCase() === user.email.toLowerCase())) || rows[0])
+      : null;
+    if (data) {
+      setCurrentEmployeeId(data.id);
+      setCurrentEmployee(data as Employee);
+    } else {
+      setCurrentEmployeeId(null);
+      setCurrentEmployee(null);
+    }
+  }, [user?.email, isPartnerBranchBlocked]);
 
   const fetchEmployees = useCallback(async () => {
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if (isPartnerBranchBlocked) {
       setEmployees([]);
       return;
     }
-    const { data } = await supabase
+    let query = supabase
       .from("employees")
       .select("id, first_name, last_name, department, avatar_url, email, role, reports_to, branch_id")
-      .eq("branch_id", targetBranch)
       .in("status", WORKABLE_STATUSES)
       .is("deleted_at", null)
       .order("first_name");
-    if (data) setEmployees(data);
-  }, [isPartnerBranchBlocked, targetBranch]);
+
+    if (targetBranch) {
+      query = query.eq("branch_id", targetBranch);
+    }
+
+    const { data } = await query;
+    if (data) {
+      let list = [...data];
+      if (currentEmployee && !list.some((e) => e.id === currentEmployee.id)) {
+        list.push(currentEmployee);
+      }
+      setEmployees(list);
+    }
+  }, [isPartnerBranchBlocked, targetBranch, currentEmployee]);
 
   const fetchTasks = useCallback(async () => {
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if (isPartnerBranchBlocked) {
       setTasks([]);
       setLoading(false);
       return;
@@ -69,23 +90,34 @@ export function useTasksData() {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      const filtered = (data as unknown as Task[]).filter(
-        (t: any) => !t.employees || t.employees.branch_id === targetBranch
-      );
+      const allFetched = data as unknown as Task[];
+      // If a specific targetBranch is active, filter by that branch,
+      // but always retain tasks where the current user is assignee or assigner.
+      // If targetBranch is null (e.g. All Branches / Super Admin), keep all tasks.
+      const filtered = targetBranch
+        ? allFetched.filter(
+            (t: any) =>
+              (t.employees && t.employees.branch_id === targetBranch) ||
+              (currentEmployeeId && (t.assigned_to === currentEmployeeId || t.assigned_by === currentEmployeeId))
+          )
+        : allFetched;
       setTasks(filtered);
     }
     setLoading(false);
-  }, [isPartnerBranchBlocked, targetBranch]);
+  }, [isPartnerBranchBlocked, targetBranch, currentEmployeeId]);
 
   useEffect(() => {
     fetchCurrentEmployee();
+  }, [fetchCurrentEmployee]);
+
+  useEffect(() => {
     fetchEmployees();
     fetchTasks();
-  }, [fetchCurrentEmployee, fetchEmployees, fetchTasks]);
+  }, [fetchEmployees, fetchTasks]);
 
-  const currentEmployee = useMemo(() => {
-    return employees.find((e) => e.id === currentEmployeeId) || null;
-  }, [employees, currentEmployeeId]);
+  const resolvedCurrentEmployee = useMemo(() => {
+    return currentEmployee || employees.find((e) => e.id === currentEmployeeId) || null;
+  }, [currentEmployee, employees, currentEmployeeId]);
 
   const directSubordinates = useMemo(() => {
     if (!currentEmployeeId) return [];
@@ -95,7 +127,7 @@ export function useTasksData() {
   const isManager = useMemo(() => {
     if (isSuper || isBranchAdmin) return true;
     if (directSubordinates.length > 0) return true;
-    const roleName = (role?.name || currentEmployee?.role || "").toLowerCase();
+    const roleName = (role?.name || resolvedCurrentEmployee?.role || "").toLowerCase();
     return (
       roleName.includes("manager") ||
       roleName.includes("lead") ||
@@ -103,7 +135,7 @@ export function useTasksData() {
       roleName.includes("supervisor") ||
       Boolean(role?.task_view_own_branch)
     );
-  }, [isSuper, isBranchAdmin, directSubordinates.length, role, currentEmployee]);
+  }, [isSuper, isBranchAdmin, directSubordinates.length, role, resolvedCurrentEmployee]);
 
   // Managed employees: For Super Admin/Branch Admin = all in branch, For Manager = self + subordinates + department team, For regular employee = self
   const managedEmployees = useMemo(() => {
@@ -113,7 +145,7 @@ export function useTasksData() {
     }
 
     if (isManager) {
-      const myEmp = currentEmployee;
+      const myEmp = resolvedCurrentEmployee;
       return employees.filter(
         (e) =>
           e.id === currentEmployeeId ||
@@ -122,9 +154,9 @@ export function useTasksData() {
       );
     }
 
-    const myEmp = currentEmployee;
+    const myEmp = resolvedCurrentEmployee;
     return myEmp ? [myEmp] : employees;
-  }, [employees, currentEmployeeId, currentEmployee, isSuper, isBranchAdmin, isManager]);
+  }, [employees, currentEmployeeId, resolvedCurrentEmployee, isSuper, isBranchAdmin, isManager]);
 
   const managedEmployeeIds = useMemo(() => {
     return new Set(managedEmployees.map((e) => e.id));
@@ -167,7 +199,7 @@ export function useTasksData() {
     assignableEmployees: managedEmployees,
     loading,
     currentEmployeeId,
-    currentEmployee,
+    currentEmployee: resolvedCurrentEmployee,
     fetchTasks,
   };
 }

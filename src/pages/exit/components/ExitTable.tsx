@@ -166,7 +166,7 @@ export const ExitTable = memo(function ExitTable({
 
                   {/* Actions */}
                   <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => onEdit(ex)}
                         className="w-7 h-7 rounded-lg bg-[#253C7D]/8 hover:bg-[#253C7D]/15 text-[#253C7D] flex items-center justify-center cursor-pointer transition-colors"

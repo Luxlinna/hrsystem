@@ -6,10 +6,12 @@ interface LeaveRowActionsDropdownProps {
   canAct: boolean;
   actionLabel: string;
   canCancel: boolean;
+  canDelete?: boolean;
   onInspect: (req: LeaveRequest) => void;
   onApprove: (req: LeaveRequest) => void;
   onReject: (req: LeaveRequest) => void;
   onCancel: (req: LeaveRequest) => void;
+  onDelete?: (req: LeaveRequest) => void;
 }
 
 export const LeaveRowActionsDropdown = memo(function LeaveRowActionsDropdown({
@@ -17,10 +19,12 @@ export const LeaveRowActionsDropdown = memo(function LeaveRowActionsDropdown({
   canAct,
   actionLabel,
   canCancel,
+  canDelete = false,
   onInspect,
   onApprove,
   onReject,
   onCancel,
+  onDelete,
 }: LeaveRowActionsDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -102,6 +106,20 @@ export const LeaveRowActionsDropdown = memo(function LeaveRowActionsDropdown({
             >
               <i className="ri-indeterminate-circle-line text-amber-600 text-sm" />
               <span>Cancel Request</span>
+            </button>
+          )}
+
+          {canDelete && onDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onDelete(request);
+              }}
+              className="w-full px-3 py-1.5 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer font-medium border-t border-gray-100"
+            >
+              <i className="ri-delete-bin-line text-rose-500 text-sm" />
+              <span>Delete Request</span>
             </button>
           )}
         </div>

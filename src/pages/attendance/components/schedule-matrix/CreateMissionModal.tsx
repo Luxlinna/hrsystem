@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, memo } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
-import { uploadFileToS3 } from "@/lib/s3-storage";
+import { useAuth } from "@/context/AuthContext";
 import type { ContextMenuTarget } from "./ScheduleMatrixContextMenu";
 import { CellLeaveEmployeeCard, type FullEmployee } from "./CellLeaveEmployeeCard";
 import { CellLeaveAttachment } from "./CellLeaveAttachment";
 import { MissionInfoFields } from "./MissionInfoFields";
 import { MissionOtherEmployeesTable } from "./MissionOtherEmployeesTable";
+import { submitMissionTask } from "./missionTaskSubmit";
 
 interface CreateMissionModalProps {
   target: ContextMenuTarget | null;
@@ -23,6 +24,7 @@ export const CreateMissionModal = memo(function CreateMissionModal({
   onClose,
   onSaved,
 }: CreateMissionModalProps) {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState<FullEmployee[]>([]);
   const [selectedEmpId, setSelectedEmpId] = useState<string>(target?.empId || "");
   const [supervisorsMap, setSupervisorsMap] = useState<Record<string, string>>({});
@@ -86,39 +88,27 @@ export const CreateMissionModal = memo(function CreateMissionModal({
     }
     setSubmitting(true);
     try {
-      let uploadedUrl: string | null = null;
-      if (attachmentFile) {
-        try {
-          const s3Item = await uploadFileToS3(attachmentFile, "missions/attachments");
-          uploadedUrl = s3Item.url;
-        } catch (uploadErr) {
-          console.warn("Failed to upload mission attachment to AWS S3:", uploadErr);
-        }
-      }
+      await submitMissionTask({
+        userEmail: user?.email,
+        selectedEmpId,
+        primaryEmployee: selectedEmployee,
+        selectedOthers,
+        missionType,
+        missionFor,
+        subject,
+        detail,
+        remark,
+        fromDate,
+        toDate,
+        totalDays,
+        attachmentFile,
+      });
 
-      let fullReason = `[MISSION: ${missionType} - ${missionFor.toUpperCase()}]\nSubject: ${subject.trim()}\nDetail: ${detail.trim()}`;
-      if (selectedOthers.length > 0) {
-        fullReason += `\nOther Members: ${selectedOthers.map((o) => `${o.first_name} ${o.last_name} (${o.employee_code || o.biometric_user_id || "—"})`).join(", ")}`;
-      }
-      if (remark.trim()) fullReason += `\nRemark: ${remark.trim()}`;
-      if (uploadedUrl) fullReason += `\n[Attachment: ${uploadedUrl}]`;
-      else if (attachmentFile) fullReason += `\nAttachment: ${attachmentFile.name}`;
-
-      const { error } = await supabase.from("leave_requests").insert([{
-        employee_id: selectedEmpId,
-        leave_type: "mission",
-        start_date: fromDate,
-        end_date: toDate,
-        days: totalDays,
-        status: "pending",
-        reason: fullReason,
-      }]);
-      if (error) throw error;
-      toast("Success", `Mission created successfully for ${selectedEmployee?.first_name || target.empName}`, "success");
+      toast("Success", `Mission created successfully and added to Tasks for ${selectedEmployee?.first_name || target.empName}`, "success");
       onSaved?.();
       onClose();
     } catch (err: any) {
-      toast("Error", err.message || "Failed to submit mission", "error");
+      toast("Error", err.message || "Failed to create mission", "error");
     } finally {
       setSubmitting(false);
     }
@@ -163,7 +153,7 @@ export const CreateMissionModal = memo(function CreateMissionModal({
           {/* Footer Action */}
           <div className="pt-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
             <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 px-5 py-2 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-md text-xs font-semibold cursor-pointer shadow-xs disabled:opacity-50 transition-colors">
-              <i className="ri-save-line text-sm" />
+              <i className={submitting ? "ri-loader-4-line animate-spin text-sm" : "ri-save-line text-sm"} />
               <span>{submitting ? "Saving..." : "Save"}</span>
               <i className="ri-arrow-down-s-line text-xs ml-0.5" />
             </button>

@@ -11,7 +11,7 @@ const BranchContext = createContext<BranchContextType | undefined>(undefined);
 
 export function BranchProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { role, isAdmin: isSuperRole } = usePermissions();
+  const { role, isSuperAdmin: isSuperRole, isAdmin } = usePermissions();
   const { branches, loading, userBranchId, userBranchName, userSiteId, userSiteName, fetchBranches } = useBranchData(user?.email);
 
   const [storedBranchId, setStoredBranchId] = useState<string>(() => {
@@ -20,22 +20,27 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   });
 
   const isSuperAdmin = useMemo(() => {
-    return isSuperRole || role?.name === "Super Admin" || role?.allowed_modules.includes("*");
+    return Boolean(
+      isSuperRole ||
+      role?.is_admin ||
+      role?.name === "Super Admin" ||
+      role?.allowed_modules.includes("*")
+    );
   }, [isSuperRole, role]);
 
   const isBranchAdmin = useMemo(() => {
     if (isSuperAdmin) return false;
     const roleName = (role?.name || "").trim().toLowerCase();
     return (
+      isAdmin ||
       /(branch|bu)\s*.*admin/i.test(roleName) ||
       /(branch|bu)\s*ceo/i.test(roleName) ||
       (role?.allowed_modules.includes("admin") ?? false)
     );
-  }, [isSuperAdmin, role]);
+  }, [isSuperAdmin, role, isAdmin]);
 
   const isHrDivision = useMemo(() => {
     if (isSuperAdmin) return true;
-    if (isBranchAdmin) return false;
     const isHrBranch =
       /hr\s*division|human\s*resource/i.test(userBranchName || "") ||
       /hr\s*division|human\s*resource/i.test(userSiteName || "");
@@ -44,8 +49,8 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       role?.hiring_requests_hr_review ||
       role?.hiring_requests_chairman_approve
     );
-    return hasHrPermissions || isHrBranch;
-  }, [userBranchName, userSiteName, role, isSuperAdmin, isBranchAdmin]);
+    return Boolean(hasHrPermissions || isHrBranch);
+  }, [userBranchName, userSiteName, role, isSuperAdmin]);
 
   const selectedBranchId = useMemo(() => {
     if (isBranchAdmin && userBranchId) {
@@ -163,6 +168,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       targetBranch,
       isPartnerBranchBlocked,
       isSuperAdmin,
+      isAdmin,
       isBranchAdmin,
       isHrDivision,
       isBranchScoped,
@@ -184,6 +190,7 @@ export function BranchProvider({ children }: { children: ReactNode }) {
       targetBranch,
       isPartnerBranchBlocked,
       isSuperAdmin,
+      isAdmin,
       isBranchAdmin,
       isHrDivision,
       isBranchScoped,
@@ -197,7 +204,27 @@ export function BranchProvider({ children }: { children: ReactNode }) {
 export function useBranchScope() {
   const context = useContext(BranchContext);
   if (!context) {
-    throw new Error("useBranchScope must be used within a BranchProvider");
+    return {
+      branches: [],
+      visibleBranches: [],
+      loading: false,
+      userBranchId: null,
+      userBranchName: null,
+      userSiteId: null,
+      userSiteName: null,
+      selectedBranchId: "",
+      setSelectedBranchId: () => {},
+      effectiveBranchId: null,
+      effectiveBranchName: "",
+      selectedSiteId: null,
+      targetBranch: null,
+      isPartnerBranchBlocked: false,
+      isSuperAdmin: false,
+      isBranchAdmin: false,
+      isHrDivision: false,
+      isBranchScoped: false,
+      refreshBranches: async () => {},
+    };
   }
   return context;
 }

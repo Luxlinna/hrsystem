@@ -104,9 +104,14 @@ export function logActivity(entry: LogActivityInput) {
     ...(fld ? { field_changed: fld } : {}),
   };
 
+  const VALID_ACTIONS = new Set(["created", "updated", "approved", "rejected", "deleted", "processed", "cancelled"]);
+  const normalizedAction = VALID_ACTIONS.has(String(entry.action || "").toLowerCase())
+    ? String(entry.action).toLowerCase()
+    : "created";
+
   supabase.from("audit_logs").insert({
     module: entry.module,
-    action: entry.action,
+    action: normalizedAction,
     entity_type: entry.entityType,
     entity_id: resolvedEntityId,
     actor_name: entry.actorName,

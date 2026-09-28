@@ -32,6 +32,16 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
   const [fileName, setFileName] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [formTitle, setFormTitle] = useState(
+    propMode === "job_description" || defaultMode === "job_description"
+      ? "JOB DESCRIPTION FORM"
+      : "PERSONNEL REQUISITION FORM"
+  );
+
+  useEffect(() => {
+    setFormTitle(mode === "full_requisition" ? "PERSONNEL REQUISITION FORM" : "JOB DESCRIPTION FORM");
+  }, [mode, isOpen]);
+
   const [businessUnit, setBusinessUnit] = useState("");
   const [division, setDivision] = useState("");
   const [jobTitle, setJobTitle] = useState("");
@@ -142,6 +152,7 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
 
     const opts: RequisitionPdfOptions = {
       mode,
+      formTitle: formTitle.trim() || undefined,
       buLogo: finalLogo,
       businessUnit: isHr ? (request.company === "UNI" ? "Unique Noble Investment Co. Ltd." : businessUnit) : businessUnit,
       division,
@@ -255,9 +266,9 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
                     alt="Uploaded BU Logo Preview"
                     className="max-h-full max-w-[320px] object-contain object-left"
                   />
-                  <div className="text-right shrink-0">
-                    <span className="text-sm font-black tracking-wide text-[#253C7D] uppercase block">
-                      {mode === "full_requisition" ? "Personnel Requisition Form" : "Job Description Form"}
+                  <div className="text-right shrink-0 max-w-[320px]">
+                    <span className="text-sm font-black tracking-wide text-[#253C7D] uppercase block truncate" title={formTitle}>
+                      {formTitle || (mode === "full_requisition" ? "Personnel Requisition Form" : "Job Description Form")}
                     </span>
                     <span className="text-[10px] text-gray-400 font-medium">Header Title Preview</span>
                   </div>
@@ -292,6 +303,23 @@ export const ExportHiringRequestModal = memo(function ExportHiringRequestModal({
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center justify-between">
+                  <span>Document Header Title:</span>
+                  <span className="text-[11px] text-sky-600 font-normal">Editable title printed on PDF</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="e.g. PERSONNEL REQUISITION FORM"
+                    className="w-full px-3 py-2 pr-9 text-xs font-bold text-[#253C7D] border border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D]"
+                  />
+                  <i className="ri-edit-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Business Unit:</label>
                 <input

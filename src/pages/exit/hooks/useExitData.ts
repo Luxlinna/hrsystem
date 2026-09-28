@@ -57,6 +57,7 @@ export function useExitData() {
       .select(
         `*, ${empJoin}(first_name, last_name, role, department, avatar_url, branch_id, biometric_user_id, employee_code, contract_type, branches(id, name))`
       )
+      .or("status.neq.cancelled,status.is.null")
       .order("last_working_day", { ascending: false });
 
     // Scope to branch via joined employees

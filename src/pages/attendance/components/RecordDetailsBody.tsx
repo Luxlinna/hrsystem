@@ -25,11 +25,11 @@ export const RecordDetailsBody = memo(function RecordDetailsBody({
               <span>{initials(selectedRecord.employees.first_name, selectedRecord.employees.last_name)}</span>
             )}
           </div>
-          <div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h4 className="font-extrabold text-gray-900 text-sm">
-                {selectedRecord.employees.first_name} {selectedRecord.employees.last_name}
-              </h4>
+          <div className="min-w-0 flex flex-col justify-center">
+            <h4 className="font-extrabold text-gray-900 text-sm leading-snug">
+              {selectedRecord.employees.first_name} {selectedRecord.employees.last_name}
+            </h4>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
               {(() => {
                 const rawBio = selectedRecord.employees.biometric_user_id || selectedRecord.employees.employee_code;
                 const bName = Array.isArray(selectedRecord.employees.branches)
@@ -39,17 +39,17 @@ export const RecordDetailsBody = memo(function RecordDetailsBody({
                 if (!bioId) return null;
                 return (
                   <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 shrink-0"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200 shrink-0"
                     title={`Biometric ID: ${bioId}`}
                   >
-                    <i className="ri-fingerprint-line text-[10px]" />
-                    {bioId}
+                    <i className="ri-fingerprint-line text-[10.5px] text-[#253C7D]" />
+                    <span>{bioId}</span>
                   </span>
                 );
               })()}
+              <span className="text-xs text-gray-500 font-medium">{selectedRecord.employees.role}</span>
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">{selectedRecord.employees.role}</p>
-            <p className="text-[11px] text-gray-400">{selectedRecord.employees.department}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{selectedRecord.employees.department}</p>
           </div>
         </div>
       )}

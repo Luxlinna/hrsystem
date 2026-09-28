@@ -31,6 +31,28 @@ export const ScheduleMatrixContextMenu = memo(function ScheduleMatrixContextMenu
 }: ScheduleMatrixContextMenuProps) {
   const [activeSubmenu, setActiveSubmenu] = useState<"leave" | "mission" | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const leaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+    };
+  }, []);
+
+  const handleMouseEnter = (menu: "leave" | "mission") => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    setActiveSubmenu(menu);
+  };
+
+  const handleMouseLeave = () => {
+    if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+    leaveTimerRef.current = setTimeout(() => {
+      setActiveSubmenu(null);
+    }, 250);
+  };
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -45,8 +67,9 @@ export const ScheduleMatrixContextMenu = memo(function ScheduleMatrixContextMenu
   if (!position || !target) return null;
 
   // Ensure menu doesn't overflow screen
-  const menuX = Math.min(position.x, window.innerWidth - 320);
+  const menuX = Math.min(position.x, window.innerWidth - 240);
   const menuY = Math.min(position.y, window.innerHeight - 280);
+  const opensLeft = menuX + 224 + 215 > window.innerWidth;
 
   return (
     <div
@@ -69,25 +92,42 @@ export const ScheduleMatrixContextMenu = memo(function ScheduleMatrixContextMenu
 
       <div className="border-t border-gray-100 my-1" />
 
-      {/* 3. Leave with Submenu */}
+      {/* 2. Leave with Submenu */}
       <div
         className="relative"
-        onMouseEnter={() => setActiveSubmenu("leave")}
-        onMouseLeave={() => setActiveSubmenu(null)}
+        onMouseEnter={() => handleMouseEnter("leave")}
+        onMouseLeave={handleMouseLeave}
       >
         <button
           type="button"
-          className="flex items-center justify-between w-full px-3.5 py-2 hover:bg-blue-50 hover:text-blue-700 transition-colors text-left cursor-pointer"
+          onClick={() => setActiveSubmenu(activeSubmenu === "leave" ? null : "leave")}
+          className={`flex items-center justify-between w-full px-3.5 py-2 transition-colors text-left cursor-pointer ${
+            activeSubmenu === "leave"
+              ? "bg-blue-50 text-blue-700 font-semibold"
+              : "hover:bg-blue-50 hover:text-blue-700"
+          }`}
         >
           <div className="flex items-center gap-2.5">
             <i className="ri-calendar-event-line text-sm text-gray-500" />
             <span className="font-medium">Leave</span>
           </div>
-          <i className="ri-arrow-right-s-line text-gray-400 text-sm" />
+          <i
+            className={`text-sm ${
+              activeSubmenu === "leave"
+                ? "ri-arrow-down-s-line text-blue-600"
+                : "ri-arrow-right-s-line text-gray-400"
+            }`}
+          />
         </button>
 
         {activeSubmenu === "leave" && (
-          <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-52 text-xs animate-in fade-in-50 zoom-in-95 duration-75">
+          <div
+            onMouseEnter={() => handleMouseEnter("leave")}
+            onMouseLeave={handleMouseLeave}
+            className={`absolute ${
+              opensLeft ? "right-full mr-1 before:-right-3" : "left-full ml-1 before:-left-3"
+            } top-0 bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-52 text-xs animate-in fade-in-50 zoom-in-95 duration-75 z-50 before:absolute before:top-0 before:bottom-0 before:w-3 before:content-['']`}
+          >
             <button
               type="button"
               onClick={() => {
@@ -114,25 +154,42 @@ export const ScheduleMatrixContextMenu = memo(function ScheduleMatrixContextMenu
         )}
       </div>
 
-      {/* 4. Mission with Submenu */}
+      {/* 3. Mission with Submenu */}
       <div
         className="relative"
-        onMouseEnter={() => setActiveSubmenu("mission")}
-        onMouseLeave={() => setActiveSubmenu(null)}
+        onMouseEnter={() => handleMouseEnter("mission")}
+        onMouseLeave={handleMouseLeave}
       >
         <button
           type="button"
-          className="flex items-center justify-between w-full px-3.5 py-2 hover:bg-blue-50 hover:text-blue-700 transition-colors text-left cursor-pointer"
+          onClick={() => setActiveSubmenu(activeSubmenu === "mission" ? null : "mission")}
+          className={`flex items-center justify-between w-full px-3.5 py-2 transition-colors text-left cursor-pointer ${
+            activeSubmenu === "mission"
+              ? "bg-blue-50 text-blue-700 font-semibold"
+              : "hover:bg-blue-50 hover:text-blue-700"
+          }`}
         >
           <div className="flex items-center gap-2.5">
             <i className="ri-flight-takeoff-line text-sm text-gray-500" />
             <span className="font-medium">Mission</span>
           </div>
-          <i className="ri-arrow-right-s-line text-gray-400 text-sm" />
+          <i
+            className={`text-sm ${
+              activeSubmenu === "mission"
+                ? "ri-arrow-down-s-line text-blue-600"
+                : "ri-arrow-right-s-line text-gray-400"
+            }`}
+          />
         </button>
 
         {activeSubmenu === "mission" && (
-          <div className="absolute left-full top-0 ml-1 bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-52 text-xs animate-in fade-in-50 zoom-in-95 duration-75">
+          <div
+            onMouseEnter={() => handleMouseEnter("mission")}
+            onMouseLeave={handleMouseLeave}
+            className={`absolute ${
+              opensLeft ? "right-full mr-1 before:-right-3" : "left-full ml-1 before:-left-3"
+            } top-0 bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-52 text-xs animate-in fade-in-50 zoom-in-95 duration-75 z-50 before:absolute before:top-0 before:bottom-0 before:w-3 before:content-['']`}
+          >
             <button
               type="button"
               onClick={() => {

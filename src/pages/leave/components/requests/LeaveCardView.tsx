@@ -18,6 +18,7 @@ interface LeaveCardViewProps {
   onOpenApprovalModal: (req: LeaveRequest, action: "approved" | "rejected") => void;
   onOpenCancelModal: (req: LeaveRequest) => void;
   onInspectRequest: (req: LeaveRequest) => void;
+  onDeleteRequest?: (req: LeaveRequest) => void;
 }
 
 export const LeaveCardView = memo(function LeaveCardView({
@@ -34,6 +35,7 @@ export const LeaveCardView = memo(function LeaveCardView({
   onOpenApprovalModal,
   onOpenCancelModal,
   onInspectRequest,
+  onDeleteRequest,
 }: LeaveCardViewProps) {
   return (
     <div className="lg:hidden divide-y divide-gray-100">
@@ -42,6 +44,7 @@ export const LeaveCardView = memo(function LeaveCardView({
         const statusCfg = STATUS_CONFIG[r.status] || STATUS_CONFIG.pending;
         const isOwn = r.employee_id === myEmployeeId;
         const canCancel = isOwn && (r.status === "pending" || r.status === "approved");
+        const canDelete = isSuperAdmin || isBranchAdmin || _canApproveLeave || isOwn;
         const tier = getRequestTier(r);
         const hasEndorsed = (r.reason || "").includes("[Stage: Manager Endorsed") || (r.reason || "").includes("[Stage: BU Admin Endorsed");
         const { canAct, actionLabel } = canUserActOnRequest({
@@ -148,6 +151,16 @@ export const LeaveCardView = memo(function LeaveCardView({
                   className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg transition-colors cursor-pointer"
                 >
                   Cancel
+                </button>
+              )}
+
+              {canDelete && onDeleteRequest && (
+                <button
+                  onClick={() => onDeleteRequest(r)}
+                  className="p-1.5 text-gray-400 hover:text-rose-600 transition-colors cursor-pointer"
+                  title="Delete Request"
+                >
+                  <i className="ri-delete-bin-line text-base" />
                 </button>
               )}
 

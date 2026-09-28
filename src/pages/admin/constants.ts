@@ -188,13 +188,170 @@ export const VISIBILITY_OVERRIDES = [
 
 export const SCOPE_OVERRIDES = [...ACTION_OVERRIDES, ...VISIBILITY_OVERRIDES] as const;
 
+export const DEFAULT_ROLE_NAMES = [
+  "super admin",
+  "admin",
+  "chairwoman and chairman",
+  "line manager",
+  "employee",
+];
+
+export const isDefaultCanonicalRole = (role: { name?: string; is_admin?: boolean }) => {
+  if (role.is_admin || (role.name || "").trim().toLowerCase() === "super admin") return true;
+  return DEFAULT_ROLE_NAMES.includes((role.name || "").trim().toLowerCase());
+};
+
+export interface CategoryPreset {
+  key: string;
+  name: string;
+  badge: string;
+  color: string;
+  is_admin: boolean;
+  allowed_modules: string[];
+  description: string;
+  scopes: Partial<RoleFormState>;
+}
+
+export const CATEGORY_PRESETS: Record<string, CategoryPreset> = {
+  super_admin: {
+    key: "super_admin",
+    name: "Super Admin",
+    badge: "All Functions of System",
+    color: "#253C7D",
+    is_admin: true,
+    allowed_modules: ALL_MODULES.map((m) => m.key),
+    description: "Total authority across all system modules, configurations, salaries, and user accounts.",
+    scopes: {},
+  },
+  admin: {
+    key: "admin",
+    name: "Admin",
+    badge: "All Functions (Except Salary)",
+    color: "#7C3AED",
+    is_admin: false,
+    allowed_modules: ALL_MODULES.map((m) => m.key).filter((k) => k !== "payroll" && k !== "payroll-approval"),
+    description: "Full operational administration across modules, excluding salary & payroll.",
+    scopes: {
+      employees_manage: true,
+      meeting_rooms_approve: true,
+      leave_approve: true,
+      leave_view_all_employees: true,
+      attendance_view_all_employees: true,
+      performance_view_all_employees: true,
+      disciplinary_view_all_employees: true,
+      task_view_all_employees: true,
+      payroll_view_all_employees: false,
+    },
+  },
+  chairperson: {
+    key: "chairperson",
+    name: "Chairwoman and Chairman",
+    badge: "All Functions (Except Edit)",
+    color: "#D97706",
+    is_admin: false,
+    allowed_modules: ALL_MODULES.map((m) => m.key),
+    description: "Executive board-level oversight. View-only access across all system functions (except edit).",
+    scopes: {
+      leave_view_all_employees: true,
+      payroll_view_all_employees: true,
+      attendance_view_all_employees: true,
+      performance_view_all_employees: true,
+      disciplinary_view_all_employees: true,
+      task_view_all_employees: true,
+      hiring_requests_chairman_approve: true,
+      hiring_requests_branch_approve: true,
+      candidate_approval_chairwoman_sign: true,
+      employees_manage: false,
+    },
+  },
+  line_manager: {
+    key: "line_manager",
+    name: "Line Manager",
+    badge: "Supervisory Scope (Except Salary & Edit)",
+    color: "#0284C7",
+    is_admin: false,
+    allowed_modules: [
+      "dashboard",
+      "employees",
+      "attendance",
+      "leave",
+      "leave-calendar",
+      "tasks",
+      "performance",
+      "training",
+      "meeting-rooms",
+      "announcements",
+      "notifications",
+      "documents",
+      "self-service",
+      "org-chart",
+    ],
+    description: "Supervisory role position for direct supervisees & department team attendance.",
+    scopes: {
+      leave_manager_endorse: true,
+      employees_manage: false,
+      payroll_view_all_employees: false,
+    },
+  },
+  employee: {
+    key: "employee",
+    name: "Employee",
+    badge: "Self-Service Only",
+    color: "#059669",
+    is_admin: false,
+    allowed_modules: [
+      "dashboard",
+      "self-service",
+      "attendance",
+      "leave",
+      "leave-calendar",
+      "notifications",
+      "announcements",
+      "training",
+      "meeting-rooms",
+      "tasks",
+    ],
+    description: "Staff position with self-service access to personal profile, leaves, and attendance.",
+    scopes: {},
+  },
+};
+
+export function getRoleCategoryKey(role: { name?: string; is_admin?: boolean; category?: string | null; id?: number }): string {
+  if (role.category && ROLE_CATEGORIES.some((c) => c.key === role.category)) {
+    return role.category;
+  }
+  if (role.id) {
+    try {
+      const catMap = JSON.parse(localStorage.getItem("hrm_role_category_map") || "{}");
+      if (catMap[role.id] && ROLE_CATEGORIES.some((c) => c.key === catMap[role.id])) {
+        return catMap[role.id];
+      }
+    } catch (_e) { /* ignore */ }
+  }
+  if (role.is_admin || (role.name || "").trim().toLowerCase() === "super admin") {
+    return "super_admin";
+  }
+  const n = (role.name || "").toLowerCase();
+  if (/chair/i.test(n)) {
+    return "chairperson";
+  }
+  if (/line\s*manager|supervisor/i.test(n)) {
+    return "line_manager";
+  }
+  if (/employee|staff/i.test(n) && !/admin|manager/i.test(n)) {
+    return "employee";
+  }
+  return "admin";
+}
+
 export const BLANK_ROLE: RoleFormState = {
   name: "",
+  category: "line_manager",
   description: "",
-  color: "#253C7D",
+  color: "#0284C7",
   is_admin: false,
   branch_id: null,
   work_location_id: null,
   allowed_modules: [],
-  ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, false])) as unknown as Omit<RoleFormState, "name" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
+  ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, false])) as unknown as Omit<RoleFormState, "name" | "category" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
 };

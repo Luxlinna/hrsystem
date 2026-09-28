@@ -81,7 +81,7 @@ export function exportHiringRequestPdf(r: HiringRequest, opts?: RequisitionPdfOp
   const qualificationsHtml = formatSectionText(r.jd_qualifications);
 
   const reqCode = r.requisition_id || "REQ-DRAFT";
-  const formTitle = mode === "full_requisition" ? "Personnel Requisition Form" : "Job Description Form";
+  const formTitle = opts?.formTitle?.trim() || (mode === "full_requisition" ? "Personnel Requisition Form" : "Job Description Form");
   const statusBadge = getStatusBadgeConfig(r.status);
 
   const salaryStr =

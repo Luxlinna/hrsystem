@@ -32,7 +32,7 @@ export const SelectedActionsBar = memo(function SelectedActionsBar({
           <>
             <button
               onClick={onBulkInvite}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#253C7D] rounded-xl text-sm font-medium hover:bg-[#253C7D]/5 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#253C7D] rounded-xl text-sm font-semibold hover:bg-blue-50 hover:shadow-xs active:scale-[0.98] transition-all cursor-pointer"
             >
               <i className="ri-mail-send-line" />
               Invite All

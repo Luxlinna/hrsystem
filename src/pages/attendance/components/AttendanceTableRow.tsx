@@ -94,18 +94,18 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
 
       <td className="py-3 px-4 whitespace-nowrap">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
+          <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
             {emp?.avatar_url ? (
               <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
               <span>{initials(emp?.first_name, emp?.last_name)}</span>
             )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex flex-col justify-center">
             <button
               type="button"
               onClick={() => onSelectRecord(r)}
-              className="font-bold text-gray-900 dark:text-slate-100 hover:text-[#253C7D] dark:hover:text-sky-400 text-left cursor-pointer"
+              className="font-bold text-gray-900 dark:text-slate-100 hover:text-[#253C7D] dark:hover:text-sky-400 text-left text-xs leading-snug cursor-pointer truncate max-w-[200px] block hover:underline"
             >
               {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
             </button>
@@ -114,15 +114,17 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
               const bName = Array.isArray(emp?.branches) ? emp.branches[0]?.name : (emp?.branches?.name || r.work_location?.name || "");
               const bioId = formatBiometricId(rawBio, bName);
               return bioId ? (
-                <span
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-[#253C7D]/10 dark:bg-sky-950/60 text-[#253C7D] dark:text-sky-300 border border-[#253C7D]/20 dark:border-sky-800/40 shrink-0 mt-0.5"
-                  title={`Biometric ID: ${bioId}`}
-                >
-                  <i className="ri-fingerprint-line text-[10px]" />
-                  {bioId}
-                </span>
+                <div className="mt-0.5">
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80 shrink-0"
+                    title={`Biometric ID: ${bioId}`}
+                  >
+                    <i className="ri-fingerprint-line text-[10.5px] text-[#253C7D] dark:text-sky-400" />
+                    <span>{bioId}</span>
+                  </span>
+                </div>
               ) : (
-                <p className="text-[11px] font-mono text-gray-400 dark:text-slate-500">—</p>
+                <p className="text-[10px] font-mono text-gray-400 dark:text-slate-500 mt-0.5">—</p>
               );
             })()}
           </div>

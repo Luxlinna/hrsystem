@@ -11,10 +11,12 @@ interface LeaveTableRowProps {
   canAct: boolean;
   actionLabel: string;
   canCancel: boolean;
+  canDelete?: boolean;
   onInspect: (req: LeaveRequest) => void;
   onApprove: (req: LeaveRequest) => void;
   onReject: (req: LeaveRequest) => void;
   onCancel: (req: LeaveRequest) => void;
+  onDelete?: (req: LeaveRequest) => void;
 }
 
 export const LeaveTableRow = memo(function LeaveTableRow({
@@ -25,10 +27,12 @@ export const LeaveTableRow = memo(function LeaveTableRow({
   canAct,
   actionLabel,
   canCancel,
+  canDelete,
   onInspect,
   onApprove,
   onReject,
   onCancel,
+  onDelete,
 }: LeaveTableRowProps) {
   const typeInfo = getLeaveTypeDisplay(r.leave_type);
   const isHalfDay = r.days < 1 || (r.reason && r.reason.toLowerCase().includes("half day"));
@@ -146,10 +150,12 @@ export const LeaveTableRow = memo(function LeaveTableRow({
           canAct={canAct}
           actionLabel={actionLabel}
           canCancel={canCancel}
+          canDelete={canDelete}
           onInspect={onInspect}
           onApprove={(req) => onApprove(req)}
           onReject={(req) => onReject(req)}
           onCancel={(req) => onCancel(req)}
+          onDelete={onDelete}
         />
       </td>
     </tr>

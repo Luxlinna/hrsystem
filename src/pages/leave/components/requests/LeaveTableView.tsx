@@ -15,14 +15,18 @@ interface LeaveTableViewProps {
   hasRoleApprovalAccess?: boolean;
   hasManagerEndorseAccess?: boolean;
   hasBuAdminEndorseAccess?: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onSelectAll: (checked: boolean) => void;
   onOpenApprovalModal: (req: LeaveRequest, action: "approved" | "rejected") => void;
   onOpenCancelModal: (req: LeaveRequest) => void;
   onInspectRequest: (req: LeaveRequest) => void;
+  onDeleteRequest?: (req: LeaveRequest) => void;
 }
 
 export const LeaveTableView = memo(function LeaveTableView({
   requests,
-  canApproveLeave: _canApproveLeave,
+  canApproveLeave,
   myEmployeeId,
   myDepartment,
   actorRole,
@@ -31,31 +35,14 @@ export const LeaveTableView = memo(function LeaveTableView({
   hasRoleApprovalAccess,
   hasManagerEndorseAccess,
   hasBuAdminEndorseAccess,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
   onOpenApprovalModal,
   onOpenCancelModal,
   onInspectRequest,
+  onDeleteRequest,
 }: LeaveTableViewProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  const handleToggleSelect = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const handleSelectAll = useCallback(
-    (checked: boolean) => {
-      if (checked) {
-        setSelectedIds(new Set(requests.map((r) => r.id)));
-      } else {
-        setSelectedIds(new Set());
-      }
-    },
-    [requests]
-  );
 
   const allSelected = requests.length > 0 && selectedIds.size === requests.length;
 
@@ -64,12 +51,13 @@ export const LeaveTableView = memo(function LeaveTableView({
       <table className="w-full text-left text-xs border-collapse">
         <LeaveTableHeader
           allSelected={allSelected}
-          onSelectAll={handleSelectAll}
+          onSelectAll={onSelectAll}
         />
         <tbody className="divide-y divide-gray-100 bg-white">
           {requests.map((r, idx) => {
             const isOwn = r.employee_id === myEmployeeId;
             const canCancel = isOwn && (r.status === "pending" || r.status === "approved");
+            const canDelete = isSuperAdmin || isBranchAdmin || canApproveLeave || isOwn;
             const { canAct, actionLabel } = canUserActOnRequest({
               request: r,
               myEmployeeId,
@@ -88,14 +76,16 @@ export const LeaveTableView = memo(function LeaveTableView({
                 request={r}
                 index={idx}
                 isSelected={selectedIds.has(r.id)}
-                onToggleSelect={handleToggleSelect}
+                onToggleSelect={onToggleSelect}
                 canAct={canAct}
                 actionLabel={actionLabel}
                 canCancel={canCancel}
+                canDelete={canDelete}
                 onInspect={onInspectRequest}
                 onApprove={(req) => onOpenApprovalModal(req, "approved")}
                 onReject={(req) => onOpenApprovalModal(req, "rejected")}
                 onCancel={onOpenCancelModal}
+                onDelete={onDeleteRequest}
               />
             );
           })}

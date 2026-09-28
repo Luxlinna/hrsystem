@@ -1,6 +1,7 @@
 export interface AppRole {
   id: number;
   name: string;
+  category?: string | null;
   description: string;
   color: string;
   is_admin: boolean;
@@ -93,6 +94,7 @@ export type AdminTab = "roles" | "users" | "password-resets";
 
 export interface RoleFormState {
   name: string;
+  category: string;
   description: string;
   color: string;
   is_admin: boolean;

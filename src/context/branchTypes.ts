@@ -38,6 +38,7 @@ export interface BranchContextType {
   targetBranch: string | null;
   isPartnerBranchBlocked: boolean;
   isSuperAdmin: boolean;
+  isAdmin: boolean;
   isBranchAdmin: boolean;
   isHrDivision: boolean;
   isBranchScoped: boolean;

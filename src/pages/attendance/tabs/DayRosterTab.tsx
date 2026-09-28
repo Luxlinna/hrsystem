@@ -119,26 +119,26 @@ export const DayRosterTab = memo(function DayRosterTab({
                       />
                     </div>
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <Link
-                          to={`/employees/${emp.id}`}
-                          className="font-extrabold text-gray-900 hover:text-[#253C7D] transition-colors truncate text-sm"
-                        >
-                          {emp.first_name} {emp.last_name}
-                        </Link>
-                        {emp.biometric_user_id && (
+                    <div className="min-w-0 flex flex-col justify-center">
+                      <Link
+                        to={`/employees/${emp.id}`}
+                        className="font-extrabold text-gray-900 hover:text-[#253C7D] transition-colors truncate text-sm leading-tight block hover:underline"
+                      >
+                        {emp.first_name} {emp.last_name}
+                      </Link>
+                      {emp.biometric_user_id && (
+                        <div className="mt-1">
                           <span
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0"
                             title={`BU Biometric ID: ${emp.biometric_user_id}`}
                           >
-                            <i className="ri-fingerprint-line text-[10px]" />
-                            {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                            <i className="ri-fingerprint-line text-[10.5px] text-[#253C7D] dark:text-sky-400" />
+                            <span>{formatBiometricId(emp.biometric_user_id, emp.branches?.name)}</span>
                           </span>
-                        )}
-                      </div>
+                        </div>
+                      )}
                       <p className="text-[11px] text-gray-400 truncate mt-0.5">{emp.role}</p>
-                      <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.2 rounded-md inline-block mt-0.5">
+                      <span className="text-[10px] font-bold text-gray-500 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-md inline-block mt-0.5 w-fit">
                         {emp.department}
                       </span>
                     </div>

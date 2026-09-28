@@ -39,8 +39,10 @@ export interface Task {
   work_check_out_image_url: string | null;
   work_media_urls: MediaItem[] | null;
   work_check_out_media_urls: MediaItem[] | null;
-  employees?: { first_name: string; last_name: string; department: string; avatar_url?: string } | null;
+  employees?: { first_name: string; last_name: string; department: string; avatar_url?: string; branch_id?: string | null } | null;
 }
+
+export type QuickTabType = "all" | "team" | "my" | "urgent" | "outside";
 
 export interface TaskActivity {
   id: string;

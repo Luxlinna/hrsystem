@@ -116,20 +116,22 @@ export const OvertimeTab = memo(function OvertimeTab({
                               <span>{initials(emp?.first_name, emp?.last_name)}</span>
                             )}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="font-bold text-gray-900 dark:text-slate-100">{emp ? `${emp.first_name} ${emp.last_name}` : "Unknown"}</p>
-                              {emp?.biometric_user_id ? (
+                          <div className="min-w-0 flex flex-col justify-center">
+                            <p className="font-bold text-gray-900 dark:text-slate-100 text-sm leading-tight truncate">
+                              {emp ? `${emp.first_name} ${emp.last_name}` : "Unknown"}
+                            </p>
+                            {emp?.biometric_user_id ? (
+                              <div className="mt-1">
                                 <span
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] dark:bg-sky-950 dark:text-sky-300 border border-[#253C7D]/20 shrink-0"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0"
                                   title={`BU Biometric ID: ${emp.biometric_user_id}`}
                                 >
-                                  <i className="ri-fingerprint-line text-[10px]" />
-                                  {formatBiometricId(emp.biometric_user_id, emp.branches?.name)}
+                                  <i className="ri-fingerprint-line text-[10.5px] text-[#253C7D] dark:text-sky-400" />
+                                  <span>{formatBiometricId(emp.biometric_user_id, emp.branches?.name)}</span>
                                 </span>
-                              ) : null}
-                            </div>
-                            <p className="text-[10px] text-gray-400 mt-0.5">{emp?.role || emp?.department || "Staff"}</p>
+                              </div>
+                            ) : null}
+                            <p className="text-[10px] text-gray-400 mt-0.5 truncate">{emp?.role || emp?.department || "Staff"}</p>
                           </div>
                         </div>
                       </td>

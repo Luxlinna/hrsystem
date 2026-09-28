@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { invalidatePermissionsCache } from "@/hooks/usePermissions";
 import type { AppRole, RoleFormState } from "../types";
-import { BLANK_ROLE, SCOPE_OVERRIDES } from "../constants";
+import { BLANK_ROLE, SCOPE_OVERRIDES, CATEGORY_PRESETS, ROLE_CATEGORIES, getRoleCategoryKey } from "../constants";
 
 interface UseAdminRoleMutationsProps {
   roles: AppRole[];
@@ -28,8 +28,13 @@ export function useAdminRoleMutations({
   const [roleForm, setRoleForm] = useState<RoleFormState>(BLANK_ROLE);
   const [savingRole, setSavingRole] = useState(false);
 
-  const openNewRole = useCallback((defaultBranchId?: string | null, defaultWorkLocationId?: string | null) => {
+  const openNewRole = useCallback((defaultCategoryKey?: string | null, defaultBranchId?: string | null, defaultWorkLocationId?: string | null) => {
     setEditingRole(null);
+    const catKey = (defaultCategoryKey && ROLE_CATEGORIES.some((c) => c.key === defaultCategoryKey))
+      ? defaultCategoryKey
+      : "line_manager";
+    const preset = CATEGORY_PRESETS[catKey] || CATEGORY_PRESETS.line_manager;
+
     const initialBranch = !isSuperAdmin
       ? (userBranchId || targetBranch || null)
       : (defaultBranchId !== undefined
@@ -48,16 +53,24 @@ export function useAdminRoleMutations({
 
     setRoleForm({
       ...BLANK_ROLE,
+      category: catKey,
+      color: preset.color,
+      is_admin: preset.is_admin,
+      allowed_modules: [...preset.allowed_modules],
+      description: preset.description,
       branch_id: initialBranch,
       work_location_id: initialSite,
+      ...preset.scopes,
     });
     setShowRoleForm(true);
   }, [isSuperAdmin, userBranchId, targetBranch, selectedBranchId]);
 
   const openEditRole = useCallback((r: AppRole) => {
     setEditingRole(r);
+    const cat = r.category || getRoleCategoryKey(r);
     setRoleForm({
       name: r.name,
+      category: cat,
       description: r.description || "",
       color: r.color,
       is_admin: r.is_admin,
@@ -73,7 +86,7 @@ export function useAdminRoleMutations({
           } catch (_e) { /* localStorage may be unavailable in some environments */ }
           return [o.key, r[o.key] ?? localVal ?? false];
         })
-      ) as unknown as Omit<RoleFormState, "name" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
+      ) as unknown as Omit<RoleFormState, "name" | "category" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
     });
     setShowRoleForm(true);
   }, []);
@@ -81,15 +94,17 @@ export function useAdminRoleMutations({
   const cloneRoleToBU = useCallback((r: AppRole, targetBranchId?: string | null) => {
     setEditingRole(null);
     const effectiveTarget = targetBranchId || (!isSuperAdmin ? (userBranchId || targetBranch) : (selectedBranchId && selectedBranchId !== "all" ? selectedBranchId : null));
+    const cat = r.category || getRoleCategoryKey(r);
     setRoleForm({
       name: `${r.name} (${r.branch_name ? "Copy" : "Custom"})`,
+      category: cat,
       description: r.description ? `${r.description} (Customized for BU)` : "",
       color: r.color,
       is_admin: false,
       branch_id: effectiveTarget || null,
       work_location_id: null,
       allowed_modules: [...r.allowed_modules],
-      ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, r[o.key]])) as unknown as Omit<RoleFormState, "name" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
+      ...Object.fromEntries(SCOPE_OVERRIDES.map((o) => [o.key, r[o.key]])) as unknown as Omit<RoleFormState, "name" | "category" | "description" | "color" | "is_admin" | "branch_id" | "work_location_id" | "allowed_modules">,
     });
     setShowRoleForm(true);
   }, [isSuperAdmin, userBranchId, targetBranch, selectedBranchId]);
@@ -114,8 +129,10 @@ export function useAdminRoleMutations({
 
     setSavingRole(true);
     const effectiveBranch = isSuperAdmin ? (roleForm.branch_id || null) : (userBranchId || targetBranch || null);
+    const categoryKey = roleForm.category || "admin";
     const payload = {
       name: roleForm.name.trim(),
+      category: categoryKey,
       description: roleForm.description.trim(),
       color: roleForm.color,
       is_admin: isSuperAdmin ? roleForm.is_admin : false,
@@ -131,9 +148,10 @@ export function useAdminRoleMutations({
 
     if (editingRole) {
       ({ error } = await supabase.from("app_roles").update(payload).eq("id", editingRole.id));
-      // If error is about missing columns, retry with base payload
+      // If error is about missing columns (e.g. category or specific permissions), retry with base payload
       if (error && error.message?.includes("column")) {
         const fallbackPayload = { ...payload };
+        delete (fallbackPayload as any).category;
         delete (fallbackPayload as any).candidate_approval_ceo_sign;
         delete (fallbackPayload as any).candidate_approval_hr_sign;
         delete (fallbackPayload as any).candidate_approval_director_sign;
@@ -146,6 +164,7 @@ export function useAdminRoleMutations({
       let insertRes = await supabase.from("app_roles").insert(payload).select("id").maybeSingle();
       if (insertRes.error && insertRes.error.message?.includes("column")) {
         const fallbackPayload = { ...payload };
+        delete (fallbackPayload as any).category;
         delete (fallbackPayload as any).candidate_approval_ceo_sign;
         delete (fallbackPayload as any).candidate_approval_hr_sign;
         delete (fallbackPayload as any).candidate_approval_director_sign;
@@ -159,6 +178,12 @@ export function useAdminRoleMutations({
     }
 
     if (savedRoleId) {
+      try {
+        const catMap = JSON.parse(localStorage.getItem("hrm_role_category_map") || "{}");
+        catMap[savedRoleId] = categoryKey;
+        localStorage.setItem("hrm_role_category_map", JSON.stringify(catMap));
+      } catch (_e) { /* ignore */ }
+
       try {
         const allLocal = JSON.parse(localStorage.getItem("hrm_role_custom_scopes") || "{}");
         allLocal[savedRoleId] = {

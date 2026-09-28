@@ -266,6 +266,9 @@ export default function Leave() {
           onOpenApprovalModal={handleOpenApprovalModal}
           onOpenCancelModal={handleOpenCancelModal}
           onInspectRequest={l.setInspectRequest}
+          onDeleteRequest={l.handleDeleteRequest}
+          onBulkDelete={l.handleBulkDelete}
+          onBulkApprove={l.handleBulkApprove}
         />
       )}
 

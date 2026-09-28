@@ -131,4 +131,13 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     detail: (r) => `Offer Letter · ${r.job_title || ""} (${r.department || ""}) · Status: ${r.status || ""}`,
     applyBranchFilter: (q, b) => q.eq("branch_id", b),
   },
+  {
+    table: "hiring_requests",
+    name: "Hiring Requisitions",
+    icon: "ri-user-search-line",
+    select: "id, requisition_id, title, department, status, deleted_at, deleted_by, branch_id",
+    label: (r) => `${r.requisition_id || "REQ"} · ${r.title}`,
+    detail: (r) => `${r.department} · ${r.status}`,
+    applyBranchFilter: (q, b) => q.eq("branch_id", b),
+  },
 ];

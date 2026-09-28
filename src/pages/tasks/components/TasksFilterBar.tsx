@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { Employee, TaskViewMode } from "../types";
+import type { Employee, TaskViewMode, QuickTabType } from "../types";
 
 interface TasksFilterBarProps {
   viewMode: TaskViewMode;
@@ -10,8 +10,8 @@ interface TasksFilterBarProps {
   setAssigneeFilter: (a: string) => void;
   priorityFilter: string;
   setPriorityFilter: (p: string) => void;
-  quickTab: "all" | "team" | "my" | "urgent";
-  setQuickTab: (t: "all" | "team" | "my" | "urgent") => void;
+  quickTab: QuickTabType;
+  setQuickTab: (t: QuickTabType) => void;
   employees: Employee[];
   isManager?: boolean;
   hasSubordinates?: boolean;
@@ -146,6 +146,18 @@ export const TasksFilterBar = memo(function TasksFilterBar({
         >
           <i className="ri-user-line text-xs" />
           <span>Assigned to Me</span>
+        </button>
+
+        <button
+          onClick={() => setQuickTab("outside")}
+          className={`px-3 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+            quickTab === "outside"
+              ? "bg-[#253C7D] text-white shadow-2xs"
+              : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+          }`}
+        >
+          <i className="ri-map-pin-2-line text-xs" />
+          <span>Work Outside</span>
         </button>
 
         <button
