@@ -1,31 +1,25 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import type { Employee } from "../../types";
-import { fetchMovementsByEmployeeId, recordEmployeeMovement } from "@/pages/movements/services/movementService";
-import type { EmployeeMovement, MovementFormData } from "@/pages/movements/types";
-import { MovementModal } from "@/pages/movements/components/MovementModal";
-import { MovementDetailModal } from "@/pages/movements/components/MovementDetailModal";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/context/AuthContext";
+import { fetchMovementsByEmployeeId } from "@/pages/movements/services/movementService";
+import type { EmployeeMovement } from "@/pages/movements/types";
 import { EmployeeMovementCard } from "./movements/EmployeeMovementCard";
 import { EmployeeMovementAttachmentSection } from "./movements/EmployeeMovementAttachmentSection";
-import { buildFallbackMovements } from "./movements/movementDisplayUtils";
+import { buildInitialEmploymentRecord } from "./movements/movementDisplayUtils";
+import { EditMovementInfoModal } from "./movements/EditMovementInfoModal";
+import { ApplyMovementModal } from "./movements/ApplyMovementModal";
 
 interface MovementInfoCardProps {
   employee: Employee;
 }
 
 export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) => {
-  const { user } = useAuth();
   const [movements, setMovements] = useState<EmployeeMovement[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [privacyHidden, setPrivacyHidden] = useState<boolean>(true);
   const [visibleCount, setVisibleCount] = useState<number>(5);
-  const [showModal, setShowModal] = useState<boolean>(false);
-  const [selectedMovement, setSelectedMovement] = useState<EmployeeMovement | null>(null);
-
-  // Reference data for modal
-  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
-  const [workLocations, setWorkLocations] = useState<{ id: string; name: string; branch_id?: string }[]>([]);
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
+  const [editingMovement, setEditingMovement] = useState<EmployeeMovement | null>(null);
 
   const loadEmployeeMovements = useCallback(async () => {
     setLoading(true);
@@ -41,34 +35,26 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
 
   useEffect(() => {
     loadEmployeeMovements();
-    supabase.from("branches").select("id, name").is("deleted_at", null).then(({ data }) => {
-      if (data) setBranches(data);
-    });
-    supabase.from("work_locations").select("id, name, branch_id").then(({ data }) => {
-      if (data) setWorkLocations(data);
-    });
-
     const handleCreated = () => loadEmployeeMovements();
     window.addEventListener("employee-movement-created", handleCreated);
     return () => window.removeEventListener("employee-movement-created", handleCreated);
   }, [loadEmployeeMovements]);
 
-  const handleSaveMovement = async (form: MovementFormData, emp: any) => {
-    await recordEmployeeMovement({
-      form,
-      employee: emp,
-      currentUser: {
-        id: user?.id,
-        email: user?.email,
-        displayName: user?.user_metadata?.display_name || user?.email?.split("@")[0],
-      },
+  const handleMovementSaved = (updated: EmployeeMovement) => {
+    setMovements((prev) => {
+      const exists = prev.some((m) => m.id === updated.id);
+      if (exists) {
+        return prev.map((m) => (m.id === updated.id ? updated : m));
+      }
+      return [updated, ...prev];
     });
-    await loadEmployeeMovements();
+    loadEmployeeMovements();
   };
 
   const displayMovements = useMemo(() => {
     if (movements.length > 0) return movements;
-    return buildFallbackMovements(employee);
+    const initialRec = buildInitialEmploymentRecord(employee);
+    return initialRec ? [initialRec] : [];
   }, [movements, employee]);
 
   const totalCount = displayMovements.length;
@@ -86,7 +72,19 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
         <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => setShowModal(true)}
+            onClick={() => setShowApplyModal(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-[#253C7D] hover:bg-[#1d2f60] text-white transition-colors cursor-pointer shadow-2xs"
+          >
+            <i className="ri-add-line" />
+            <span>Apply Movement</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEditingMovement(displayMovements[0] || null);
+              setShowEditModal(true);
+            }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold border border-sky-500 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-colors cursor-pointer"
           >
             <i className="ri-edit-box-line" />
@@ -103,56 +101,75 @@ export const MovementInfoCard: React.FC<MovementInfoCardProps> = ({ employee }) 
         </div>
       </div>
 
-      {/* Movement Cards List */}
-      <div className="space-y-4">
-        {pagedList.map((m, idx) => (
-          <EmployeeMovementCard
-            key={m.id || idx}
-            movement={m}
-            employee={employee}
-            isCurrent={idx === 0}
-            privacyHidden={privacyHidden}
-            onClickDetails={setSelectedMovement}
-          />
-        ))}
-      </div>
+      {/* Loading & Movements List */}
+      {loading && movements.length === 0 ? (
+        <div className="py-8 text-center text-xs text-gray-400">Loading movements...</div>
+      ) : displayMovements.length === 0 ? (
+        <div className="text-center py-8 bg-gray-50/50 dark:bg-slate-800/40 rounded-lg border border-dashed border-gray-200 dark:border-slate-700">
+          <i className="ri-route-line text-2xl text-gray-400 mb-1.5 block" />
+          <p className="text-xs font-semibold text-gray-600 dark:text-slate-300">
+            No movements recorded for this employee
+          </p>
+          <p className="text-[11px] text-gray-400 mt-0.5">
+            Click "Apply Movement" to record a promotion, transfer, or salary adjustment.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {pagedList.map((m, idx) => (
+            <EmployeeMovementCard
+              key={m.id || idx}
+              movement={m}
+              employee={employee}
+              isCurrent={idx === 0}
+              privacyHidden={privacyHidden}
+              onClickDetails={(item) => {
+                setEditingMovement(item);
+                setShowEditModal(true);
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Load More Pagination */}
-      <div className="flex items-center justify-between pt-2 text-xs text-gray-500 dark:text-slate-400">
-        {visibleCount < totalCount ? (
-          <button
-            type="button"
-            onClick={() => setVisibleCount((prev) => Math.min(prev + 5, totalCount))}
-            className="text-sky-600 dark:text-sky-400 font-semibold hover:underline cursor-pointer"
-          >
-            Load More
-          </button>
-        ) : (
-          <span className="text-gray-400">All loaded</span>
-        )}
-        <span className="font-medium">
-          {currentShown} of {totalCount}
-        </span>
-      </div>
+      {totalCount > 0 && (
+        <div className="flex items-center justify-between pt-2 text-xs text-gray-500 dark:text-slate-400">
+          {visibleCount < totalCount ? (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((prev) => Math.min(prev + 5, totalCount))}
+              className="text-sky-600 dark:text-sky-400 font-semibold hover:underline cursor-pointer"
+            >
+              Load More
+            </button>
+          ) : (
+            <span className="text-gray-400">All loaded</span>
+          )}
+          <span className="font-medium">
+            {currentShown} of {totalCount}
+          </span>
+        </div>
+      )}
 
       {/* Attachment Info Section */}
-      <EmployeeMovementAttachmentSection employee={employee} />
+      <EmployeeMovementAttachmentSection employee={employee} movements={displayMovements} />
 
-      {/* Movement Modal for this employee */}
-      <MovementModal
-        open={showModal}
-        onClose={() => setShowModal(false)}
-        employees={[employee]}
-        branches={branches}
-        workLocations={workLocations}
-        onSave={handleSaveMovement}
-        preselectedEmployeeId={employee.id}
+      {/* Apply Movement Modal */}
+      <ApplyMovementModal
+        open={showApplyModal}
+        onClose={() => setShowApplyModal(false)}
+        employee={employee}
+        onSaved={handleMovementSaved}
       />
 
-      {/* Movement Detail Modal */}
-      <MovementDetailModal
-        movement={selectedMovement}
-        onClose={() => setSelectedMovement(null)}
+      {/* Edit Movement Info Modal */}
+      <EditMovementInfoModal
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        employee={employee}
+        movement={editingMovement}
+        onSaved={handleMovementSaved}
       />
     </div>
   );

@@ -1,9 +1,8 @@
 import React from "react";
 import type { MovementFormData } from "../types";
-import { MovementTypeSelector, MovementFileUpload } from "./movement-forms";
 import { useMovementFormState } from "./useMovementFormState";
 import { MovementModalEmployeeStep } from "./MovementModalEmployeeStep";
-import { MovementModalSpecifics } from "./MovementModalSpecifics";
+import { MovementFormFields } from "@/pages/employees/components/overview/movements/MovementFormFields";
 
 interface BranchOption {
   id: string;
@@ -32,7 +31,6 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   onClose,
   employees,
   branches,
-  workLocations = [],
   onSave,
   preselectedEmployeeId,
   defaultBranchId,
@@ -69,7 +67,7 @@ export const MovementModal: React.FC<MovementModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors cursor-pointer"
           >
             <i className="ri-close-line text-lg" />
           </button>
@@ -100,46 +98,17 @@ export const MovementModal: React.FC<MovementModalProps> = ({
             selectedEmployeeBranchName={state.selectedEmployeeBranchName}
           />
 
-          {/* 2. Choose 1 of 7 Movement Types */}
-          <MovementTypeSelector selectedType={state.movementType} onChange={state.setMovementType} />
-
-          {/* 3. Contextual Action Fields */}
-          <MovementModalSpecifics
-            state={state}
-            branches={branches}
-            workLocations={workLocations}
-          />
-
-          {/* 4. Supporting Document Upload */}
-          <MovementFileUpload documentFile={state.documentFile} onFileChange={state.setDocumentFile} />
-
-          {/* 5. Effective Date & Remarks */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
-                Effective Date <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="date"
-                required
-                value={state.effectiveDate}
-                onChange={(e) => state.setEffectiveDate(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D]"
+          {/* 2. Unified Information Structure Form */}
+          {state.selectedEmployee && (
+            <div className="pt-2 border-t border-gray-100 dark:border-slate-800">
+              <MovementFormFields
+                values={state.unifiedValues}
+                onChange={state.handleUnifiedChange}
+                file={state.documentFile}
+                onFileChange={state.setDocumentFile}
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
-                Remarks / Justification
-              </label>
-              <input
-                type="text"
-                value={state.remarks}
-                onChange={(e) => state.setRemarks(e.target.value)}
-                placeholder="Official reason or board memo reference..."
-                className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 focus:border-[#253C7D]"
-              />
-            </div>
-          </div>
+          )}
 
           {/* Modal Footer */}
           <div className="pt-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
@@ -147,14 +116,14 @@ export const MovementModal: React.FC<MovementModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={state.submitting}
-              className="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+              className="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={state.submitting || !state.selectedEmployee}
-              className="px-5 py-2 text-xs font-bold rounded-lg bg-[#253C7D] hover:bg-[#1e3064] text-white shadow-sm disabled:opacity-50 flex items-center gap-1.5 transition-all"
+              className="px-5 py-2 text-xs font-bold rounded-lg bg-[#253C7D] hover:bg-[#1e3064] text-white shadow-sm disabled:opacity-50 flex items-center gap-1.5 transition-all cursor-pointer"
             >
               {state.submitting ? (
                 <>

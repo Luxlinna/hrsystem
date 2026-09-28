@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import type { MovementType, MovementFormData } from "../types";
-import { SALARY_ADJUSTMENT_REASONS, CONTRACT_TYPES } from "../constants";
+import type { MovementFormData, MovementType } from "../types";
 import type { SearchableEmployee } from "@/components/EmployeeSearchSelect";
+import type { MovementFormValues } from "@/pages/employees/components/overview/movements/MovementFormFields";
 
 interface BranchOption {
   id: string;
@@ -18,6 +18,35 @@ interface UseMovementFormStateParams {
   defaultBranchId?: string;
 }
 
+function inferMovementType(title: string): MovementType {
+  const t = title.toLowerCase();
+  if (t.includes("promot")) return "promote";
+  if (t.includes("transfer") || t.includes("branch") || t.includes("site")) return "transfer";
+  if (t.includes("salary") || t.includes("wage") || t.includes("compensation")) return "salary_adjustment";
+  if (t.includes("pass") || t.includes("probation")) return "pass_probation";
+  if (t.includes("contract") || t.includes("renew") || t.includes("extend")) return "change_contract";
+  if (t.includes("demot")) return "demote";
+  return "transfer";
+}
+
+const DEFAULT_FORM: MovementFormValues = {
+  title: "Promotion",
+  effectiveDate: new Date().toISOString().split("T")[0],
+  site: "",
+  department: "",
+  designation: "",
+  contractType: "Standard Contract",
+  contractStartDate: "",
+  contractEndDate: "",
+  employeeType: "FULL-TIME",
+  supervisor: "",
+  salary: "",
+  salaryFreq: "Monthly",
+  salaryAfter: "",
+  salaryAfterFreq: "Monthly",
+  remarks: "",
+};
+
 export function useMovementFormState({
   open,
   employees,
@@ -29,43 +58,46 @@ export function useMovementFormState({
 }: UseMovementFormStateParams) {
   const [modalBranchId, setModalBranchId] = useState<string>(defaultBranchId || "all");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(preselectedEmployeeId || "");
-  const [movementType, setMovementType] = useState<MovementType>("promote");
-  const [effectiveDate, setEffectiveDate] = useState<string>(new Date().toISOString().split("T")[0]);
-  const [remarks, setRemarks] = useState<string>("");
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [unifiedValues, setUnifiedValues] = useState<MovementFormValues>(DEFAULT_FORM);
 
-  // Sync modal branch filter with active BU
   useEffect(() => {
     if (defaultBranchId) setModalBranchId(defaultBranchId);
   }, [defaultBranchId, open]);
-
-  // Type-specific field states
-  const [probationMonths, setProbationMonths] = useState<number>(3);
-  const [probationEndDate, setProbationEndDate] = useState<string>("");
-  const [rating, setRating] = useState<string>("Exceeds Expectations (4.8/5)");
-  const [confirmedRole, setConfirmedRole] = useState<string>("");
-  const [targetBranchId, setTargetBranchId] = useState<string>("");
-  const [targetWorkLocationId, setTargetWorkLocationId] = useState<string>("");
-  const [targetDepartment, setTargetDepartment] = useState<string>("");
-  const [newRole, setNewRole] = useState<string>("");
-  const [newGrade, setNewGrade] = useState<string>("L3 - Senior");
-  const [salaryIncrease, setSalaryIncrease] = useState<string>("");
-  const [demoteRole, setDemoteRole] = useState<string>("");
-  const [demoteReason, setDemoteReason] = useState<string>("");
-  const [currentSalary, setCurrentSalary] = useState<string>("800");
-  const [newSalary, setNewSalary] = useState<string>("1000");
-  const [currency] = useState<string>("USD");
-  const [adjustmentType, setAdjustmentType] = useState<string>(SALARY_ADJUSTMENT_REASONS[0]);
-  const [contractType, setContractType] = useState<string>(CONTRACT_TYPES[1]);
-  const [contractStartDate, setContractStartDate] = useState<string>(new Date().toISOString().split("T")[0]);
-  const [contractEndDate, setContractEndDate] = useState<string>("");
 
   const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId) || null;
   const selectedEmployeeBranchName =
     selectedEmployee?.branches?.name ||
     branches.find((b) => b.id === selectedEmployee?.branch_id)?.name || null;
+
+  useEffect(() => {
+    if (selectedEmployee) {
+      setUnifiedValues({
+        title: "Promotion",
+        effectiveDate: new Date().toISOString().split("T")[0],
+        site: selectedEmployee.site || selectedEmployee.code_bu || selectedEmployeeBranchName || "",
+        department: selectedEmployee.department || "",
+        designation: selectedEmployee.role || selectedEmployee.position || "",
+        contractType: selectedEmployee.contract_type || "Standard Contract",
+        contractStartDate: selectedEmployee.contract_effective_date || selectedEmployee.join_date || "",
+        contractEndDate: selectedEmployee.contract_end_date || selectedEmployee.fdc_end_date || "",
+        employeeType: selectedEmployee.employment_type || "FULL-TIME",
+        supervisor: selectedEmployee.line_manager || "",
+        salary: selectedEmployee.basic_salary != null ? String(selectedEmployee.basic_salary) : (selectedEmployee.contract_rate != null ? String(selectedEmployee.contract_rate) : ""),
+        salaryFreq: selectedEmployee.contract_rate_frequency || "Monthly",
+        salaryAfter: selectedEmployee.contract_rate_after != null ? String(selectedEmployee.contract_rate_after) : "",
+        salaryAfterFreq: selectedEmployee.contract_rate_after_frequency || "Monthly",
+        remarks: "",
+      });
+      setDocumentFile(null);
+    }
+  }, [selectedEmployee, selectedEmployeeBranchName]);
+
+  const handleUnifiedChange = (field: keyof MovementFormValues, val: string) => {
+    setUnifiedValues((prev) => ({ ...prev, [field]: val }));
+  };
 
   const filteredEmployeesByBranch = useMemo(() => {
     if (!modalBranchId || modalBranchId === "all") return employees;
@@ -96,29 +128,23 @@ export function useMovementFormState({
 
     const formData: MovementFormData = {
       employee_id: selectedEmployee.id,
-      movement_type: movementType,
-      effective_date: effectiveDate,
-      remarks,
+      movement_type: inferMovementType(unifiedValues.title),
+      title: unifiedValues.title,
+      effective_date: unifiedValues.effectiveDate,
+      remarks: unifiedValues.remarks,
       document_file: documentFile,
-      probation_months: probationMonths,
-      probation_end_date: probationEndDate,
-      rating,
-      confirmed_role: confirmedRole || selectedEmployee.role,
-      target_branch_id: targetBranchId,
-      target_work_location_id: targetWorkLocationId,
-      target_department: targetDepartment || selectedEmployee.department,
-      new_role: newRole,
-      new_grade: newGrade,
-      salary_increase: salaryIncrease ? parseFloat(salaryIncrease) : undefined,
-      demote_new_role: demoteRole,
-      demote_reason: demoteReason,
-      current_salary: currentSalary ? parseFloat(currentSalary) : undefined,
-      new_salary: newSalary ? parseFloat(newSalary) : undefined,
-      currency,
-      adjustment_type: adjustmentType,
-      contract_type: contractType,
-      contract_start_date: contractStartDate,
-      contract_end_date: contractEndDate,
+      site: unifiedValues.site,
+      department: unifiedValues.department,
+      designation: unifiedValues.designation,
+      contract_type: unifiedValues.contractType,
+      contract_start_date: unifiedValues.contractStartDate,
+      contract_end_date: unifiedValues.contractEndDate,
+      employee_type: unifiedValues.employeeType,
+      supervisor: unifiedValues.supervisor,
+      salary: unifiedValues.salary ? parseFloat(unifiedValues.salary) : undefined,
+      salary_freq: unifiedValues.salaryFreq,
+      salary_after: unifiedValues.salaryAfter ? parseFloat(unifiedValues.salaryAfter) : undefined,
+      salary_after_freq: unifiedValues.salaryAfterFreq,
     };
 
     try {
@@ -135,32 +161,10 @@ export function useMovementFormState({
   return {
     modalBranchId, setModalBranchId,
     selectedEmployeeId, setSelectedEmployeeId,
-    movementType, setMovementType,
-    effectiveDate, setEffectiveDate,
-    remarks, setRemarks,
     documentFile, setDocumentFile,
     submitting, errorMsg, setErrorMsg,
     selectedEmployee, selectedEmployeeBranchName,
     searchableEmployees, handleSubmit,
-    // Contextual fields
-    probationMonths, setProbationMonths,
-    probationEndDate, setProbationEndDate,
-    rating, setRating,
-    confirmedRole, setConfirmedRole,
-    targetBranchId, setTargetBranchId,
-    targetWorkLocationId, setTargetWorkLocationId,
-    targetDepartment, setTargetDepartment,
-    newRole, setNewRole,
-    newGrade, setNewGrade,
-    salaryIncrease, setSalaryIncrease,
-    demoteRole, setDemoteRole,
-    demoteReason, setDemoteReason,
-    currentSalary, setCurrentSalary,
-    newSalary, setNewSalary,
-    currency,
-    adjustmentType, setAdjustmentType,
-    contractType, setContractType,
-    contractStartDate, setContractStartDate,
-    contractEndDate, setContractEndDate,
+    unifiedValues, handleUnifiedChange,
   };
 }

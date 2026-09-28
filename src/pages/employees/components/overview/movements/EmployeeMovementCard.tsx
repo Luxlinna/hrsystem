@@ -122,7 +122,11 @@ export const EmployeeMovementCard = memo(function EmployeeMovementCard({
         <div>
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-bold text-gray-800 dark:text-slate-200 text-xs">
-              {privacyHidden ? "*****" : `$${Number(rawSalary).toFixed(2)}`}
+              {privacyHidden
+                ? "*****"
+                : rawSalary !== null && !Number.isNaN(Number(rawSalary))
+                ? `$${Number(rawSalary).toFixed(2)}`
+                : "—"}
             </span>
             <span className="px-1.5 py-0.2 text-[9.5px] font-bold text-white bg-[#2563EB] rounded">
               {salaryFreq}
@@ -134,7 +138,11 @@ export const EmployeeMovementCard = memo(function EmployeeMovementCard({
         <div>
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-bold text-gray-800 dark:text-slate-200 text-xs">
-              {privacyHidden ? "*****" : `$${Number(rawSalaryAfter).toFixed(2)}`}
+              {privacyHidden
+                ? "*****"
+                : rawSalaryAfter !== null && !Number.isNaN(Number(rawSalaryAfter))
+                ? `$${Number(rawSalaryAfter).toFixed(2)}`
+                : "—"}
             </span>
             <span className="px-1.5 py-0.2 text-[9.5px] font-bold text-white bg-[#2563EB] rounded">
               {salaryAfterFreq}

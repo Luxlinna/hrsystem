@@ -54,6 +54,18 @@ export interface MovementFormData {
   remarks: string;
   document_file?: File | null;
 
+  // Unified Information Structure fields
+  title?: string;
+  site?: string;
+  department?: string;
+  designation?: string;
+  supervisor?: string;
+  salary?: number;
+  salary_freq?: string;
+  salary_after?: number;
+  salary_after_freq?: string;
+  employee_type?: string;
+
   // Contextual type fields
   // 1. Probation
   probation_months?: number;

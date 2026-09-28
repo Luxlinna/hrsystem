@@ -1,5 +1,6 @@
-import { memo, useState, useRef, useCallback } from "react";
+import { memo, useState, useRef, useCallback, useEffect } from "react";
 import type { Employee } from "../../../types";
+import type { EmployeeMovement } from "@/pages/movements/types";
 import { uploadFileToS3 } from "@/lib/s3-storage";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
@@ -14,11 +15,13 @@ export interface MovementAttachmentItem {
 
 interface Props {
   employee: Employee;
+  movements?: EmployeeMovement[];
   initialAttachments?: MovementAttachmentItem[];
 }
 
 export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementAttachmentSection({
   employee,
+  movements = [],
   initialAttachments = [],
 }: Props) {
   const formatFileSize = (bytes: number) => {
@@ -28,23 +31,56 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
 
   const [attachments, setAttachments] = useState<MovementAttachmentItem[]>(() => {
     if (initialAttachments.length > 0) return initialAttachments;
-    const existing = (employee.documents || [])
-      .filter((d: any) => d && (d.doc_slot_key === "movement_attachment" || d.url?.includes("movements")))
-      .map((d: any, i: number) => ({
-        id: `db-att-${i}`,
-        name: d.name || "Movement Document",
-        url: d.url,
-        sizeText: d.size ? formatFileSize(d.size) : "—",
-        uploadedAt: d.uploaded_at,
-      }));
+    const items: MovementAttachmentItem[] = [];
 
-    if (existing.length > 0) return existing;
-    const namePrefix = `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || "Employee";
-    return [
-      { id: "att-1", name: `3461_${namePrefix}_pass probation_15102024.pdf`, url: "#", sizeText: "970 KB" },
-      { id: "att-2", name: `${namePrefix}_Transfer_08102025.pdf`, url: "#", sizeText: "263 KB" },
-    ];
+    movements.forEach((m) => {
+      if (m.document_url) {
+        items.push({
+          id: `mov-doc-${m.id}`,
+          name: m.document_name || `${m.title || "Movement"} Document.pdf`,
+          url: m.document_url,
+          sizeText: "Attachment",
+          uploadedAt: m.created_at,
+        });
+      }
+    });
+
+    (employee.documents || [])
+      .filter((d: any) => d && (d.doc_slot_key === "movement_attachment" || d.url?.includes("movements")))
+      .forEach((d: any, i: number) => {
+        if (!items.some((it) => it.url === d.url)) {
+          items.push({
+            id: `emp-doc-${i}`,
+            name: d.name || "Movement Document.pdf",
+            url: d.url,
+            sizeText: d.size ? formatFileSize(d.size) : "Uploaded",
+            uploadedAt: d.uploaded_at,
+          });
+        }
+      });
+
+    return items;
   });
+
+  useEffect(() => {
+    movements.forEach((m) => {
+      if (m.document_url) {
+        setAttachments((prev) => {
+          if (prev.some((p) => p.url === m.document_url)) return prev;
+          return [
+            ...prev,
+            {
+              id: `mov-doc-${m.id}`,
+              name: m.document_name || `${m.title || "Movement"} Document.pdf`,
+              url: m.document_url,
+              sizeText: "Attachment",
+              uploadedAt: m.created_at,
+            },
+          ];
+        });
+      }
+    });
+  }, [movements]);
 
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -69,7 +105,7 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
           documents: [
             ...currentDocs,
             {
-              name: `Movement Attachment (${file.name})`,
+              name: file.name,
               url: s3.url,
               size: s3.size,
               type: s3.type || file.type || "application/pdf",
@@ -98,7 +134,7 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
   };
 
   const handleDeleteAttachment = async (id: string) => {
-    const target = attachments.find((a) => a.id !== id);
+    const target = attachments.find((a) => a.id === id);
     setAttachments((prev) => prev.filter((a) => a.id !== id));
     if (target && target.url && !target.url.startsWith("#")) {
       const remaining = (employee.documents || []).filter((d: any) => d.url !== target.url);
@@ -153,43 +189,49 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
             )}
           </div>
 
-          <div className="space-y-3 pt-1">
-            {attachments.map((att) => (
-              <div key={att.id} className="flex items-center gap-3">
-                <div className="shrink-0 text-gray-700 dark:text-slate-300">
-                  <i className="ri-file-pdf-2-line text-xl text-rose-500" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-3 text-xs mb-1">
-                    <a
-                      href={att.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium text-gray-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 truncate"
-                      title={att.name}
-                    >
-                      {att.name}
-                    </a>
-                    <span className="text-[11px] text-gray-500 dark:text-slate-400 shrink-0 font-medium">
-                      {att.sizeText}
-                    </span>
+          {attachments.length === 0 ? (
+            <div className="py-2 text-gray-400 dark:text-slate-500 text-xs italic">
+              No movement attachment files uploaded yet.
+            </div>
+          ) : (
+            <div className="space-y-3 pt-1">
+              {attachments.map((att) => (
+                <div key={att.id} className="flex items-center gap-3">
+                  <div className="shrink-0 text-gray-700 dark:text-slate-300">
+                    <i className="ri-file-pdf-2-line text-xl text-rose-500" />
                   </div>
 
-                  <div className="w-full h-1 bg-emerald-500 rounded-full" />
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-3 text-xs mb-1">
+                      <a
+                        href={att.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-gray-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 truncate"
+                        title={att.name}
+                      >
+                        {att.name}
+                      </a>
+                      <span className="text-[11px] text-gray-500 dark:text-slate-400 shrink-0 font-medium">
+                        {att.sizeText}
+                      </span>
+                    </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleDeleteAttachment(att.id)}
-                  className="text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 text-xs px-1 cursor-pointer font-bold shrink-0"
-                  title="Remove attachment"
-                >
-                  X
-                </button>
-              </div>
-            ))}
-          </div>
+                    <div className="w-full h-1 bg-emerald-500 rounded-full" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteAttachment(att.id)}
+                    className="text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 text-xs px-1 cursor-pointer font-bold shrink-0"
+                    title="Remove attachment"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
