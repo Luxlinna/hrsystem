@@ -33,7 +33,7 @@ export const EmployeeOverviewTabs: React.FC<EmployeeOverviewTabsProps> = ({
 }) => {
   const allTabs: TabConfig[] = [
     { key: "info", label: "Employee Information", shortLabel: "Employee Info", icon: "ri-user-3-line" },
-    { key: "movement", label: "Movement Info", shortLabel: "Movement", icon: "ri-route-line", badge: counts.movement },
+    { key: "movement", label: "Employee Movements", shortLabel: "Movements", icon: "ri-route-line", badge: counts.movement },
     { key: "warning", label: "Warning Info", shortLabel: "Warnings", icon: "ri-alarm-warning-line", badge: counts.warning },
     { key: "nssf", label: "NSSF Info", shortLabel: "NSSF", icon: "ri-shield-cross-line" },
     { key: "complaints", label: "Complaints & Suggestions", shortLabel: "Complaints", icon: "ri-feedback-line", badge: counts.complaints },
