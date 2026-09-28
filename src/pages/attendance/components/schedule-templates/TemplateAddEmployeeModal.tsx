@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import type { Employee } from "../../types";
 import { useBranchScope } from "@/context/BranchContext";
 
@@ -24,7 +24,7 @@ export const TemplateAddEmployeeModal = memo(function TemplateAddEmployeeModal({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [branchFilter, setBranchFilter] = useState("all");
 
-  const getBUName = (emp: Employee) => {
+  const getBUName = useCallback((emp: Employee) => {
     if (emp.default_work_location_id) {
       const site = visibleBranches.find((b) => b.is_site && (b.id === `site:${emp.default_work_location_id}` || b.id === emp.default_work_location_id));
       if (site?.name) return `${site.name} (Site)`;
@@ -35,7 +35,7 @@ export const TemplateAddEmployeeModal = memo(function TemplateAddEmployeeModal({
       if (b?.name) return b.name;
     }
     return siteName && siteName !== "All" ? siteName : "";
-  };
+  }, [visibleBranches, siteName]);
 
   const filtered = useMemo(() => {
     const q = modalSearch.toLowerCase();
@@ -48,7 +48,7 @@ export const TemplateAddEmployeeModal = memo(function TemplateAddEmployeeModal({
       const matchBranch = branchFilter === "all" || buName.toLowerCase().includes(branchFilter.toLowerCase());
       return matchSearch && matchBranch;
     });
-  }, [employees, modalSearch, branchFilter, visibleBranches, siteName]);
+  }, [employees, modalSearch, branchFilter, getBUName]);
 
   if (!isOpen) return null;
 

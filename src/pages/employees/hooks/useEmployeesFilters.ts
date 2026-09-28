@@ -144,7 +144,7 @@ export function useEmployeesFilters({
         return matchesSearch && matchesDept && matchesStatus && matchesBranch && matchesLocation && matchesAccount;
       })
       .sort((a, b) => compareEmployees(a, b, sortField, sortDirection));
-  }, [employees, search, filterDept, filterStatus, filterBranch, filterWorkLocation, filterAccount, sortField, sortDirection, accountStatus]);
+  }, [scopedEmployees, search, filterDept, filterStatus, filterBranch, filterWorkLocation, filterAccount, sortField, sortDirection, accountStatus]);
 
   const empTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, empTotalPages);

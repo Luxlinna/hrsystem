@@ -18,7 +18,9 @@ export function useScheduleTemplates() {
   const persistTemplatesToDb = async (newTemplates: ScheduleTemplate[]) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newTemplates));
-    } catch {}
+    } catch {
+      // ignore localStorage errors
+    }
 
     try {
       await supabase.from("system_settings").upsert(
@@ -64,7 +66,9 @@ export function useScheduleTemplates() {
               persistTemplatesToDb(loaded);
             }
           }
-        } catch {}
+        } catch {
+          // ignore localStorage errors
+        }
       }
 
       if (loaded.length === 0) {
@@ -94,7 +98,9 @@ export function useScheduleTemplates() {
               });
             });
           }
-        } catch {}
+        } catch {
+          // ignore db fetch errors
+        }
       }
 
       setTemplates(loaded);
@@ -126,7 +132,9 @@ export function useScheduleTemplates() {
           template.assigned_employee_ids.map((empId) => ({ template_id: template.id, employee_id: empId }))
         );
       }
-    } catch {}
+    } catch {
+      // ignore assignment errors
+    }
   }, []);
 
   const handleDeleteTemplate = useCallback(async (id: string) => {
@@ -140,7 +148,9 @@ export function useScheduleTemplates() {
     try {
       await supabase.from("schedule_templates").update({ deleted_at: new Date().toISOString() }).eq("id", id);
       await supabase.from("schedule_template_assignments").delete().eq("template_id", id);
-    } catch {}
+    } catch {
+      // ignore delete errors
+    }
   }, []);
 
   const handleToggleStatus = useCallback(async (id: string) => {

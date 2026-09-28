@@ -174,7 +174,7 @@ export function useAttendanceData(
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, user?.email, fallbackEmployee, myEmployee]);
+  }, [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, isLineManager, user?.email, fallbackEmployee, myEmployee]);
 
   useEffect(() => {
     // Real-time live sync for attendance scans from biometric terminals & mobile

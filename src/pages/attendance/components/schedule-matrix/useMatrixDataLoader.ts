@@ -70,7 +70,9 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
         try {
           const parsed = typeof sysRes.data.value === "string" ? JSON.parse(sysRes.data.value) : sysRes.data.value;
           if (Array.isArray(parsed)) allTemplates.push(...parsed);
-        } catch {}
+        } catch {
+          // ignore parse errors
+        }
       }
 
       try {
@@ -83,7 +85,9 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
             });
           }
         }
-      } catch {}
+      } catch {
+        // ignore localStorage errors
+      }
 
       if (allTemplates.length === 0) {
         (tmplRes.data || []).forEach((t: any) => {

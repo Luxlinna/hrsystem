@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAttendance } from "./hooks/useAttendance";
 import { AttendanceHeader } from "./components/AttendanceHeader";
@@ -32,13 +32,18 @@ export default function AttendancePage() {
     handleSaveNewRecord, handleUpdateRecord,
   } = useAttendance();
 
+  const handleOpenTimeLog = useCallback((empId?: string) => {
+    setTimeLogInitialEmployeeId(empId || (canViewAll ? undefined : data.myEmployee?.id));
+    setShowTimeLogForm(true);
+  }, [canViewAll, data.myEmployee?.id]);
+
   useEffect(() => {
     if (urlTab && urlTab !== activeMainTab) setActiveMainTab(urlTab);
-  }, [urlTab]);
+  }, [urlTab, activeMainTab]);
 
   useEffect(() => {
     if (searchParams.get("action") === "new-log") handleOpenTimeLog();
-  }, [searchParams]);
+  }, [searchParams, handleOpenTimeLog]);
 
   const handleTabChange = (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts") => {
     setActiveMainTab(tab);
@@ -48,11 +53,6 @@ export default function AttendancePage() {
       else next.set("tab", tab);
       return next;
     });
-  };
-
-  const handleOpenTimeLog = (empId?: string) => {
-    setTimeLogInitialEmployeeId(empId || (canViewAll ? undefined : data.myEmployee?.id));
-    setShowTimeLogForm(true);
   };
 
   const handleViewAttendanceLog = useAttendanceLogNavigation({

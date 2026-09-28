@@ -133,7 +133,11 @@ export function useAttendanceScheduleMatrix() {
   const handleUpdateCell = useCallback((employeeId: string, dateString: string, newShiftCode: string) => {
     setManualCellOverrides((prev) => {
       const next = { ...prev, [`${employeeId}_${dateString}`]: newShiftCode };
-      try { localStorage.setItem("hrm_matrix_cell_overrides_v1", JSON.stringify(next)); } catch {}
+      try {
+        localStorage.setItem("hrm_matrix_cell_overrides_v1", JSON.stringify(next));
+      } catch {
+        // ignore localStorage errors
+      }
       return next;
     });
   }, []);
