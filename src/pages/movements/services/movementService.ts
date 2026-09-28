@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { uploadFile } from "@/lib/storage";
+import { uploadFileToS3 } from "@/lib/s3-storage";
 import type { EmployeeMovement, MovementFormData } from "../types";
 import { getStoredLocalMovements, saveLocalMovement } from "./movementStorage";
 import { buildMovementChanges, type MovementEmployeeInput } from "./movementPayloadBuilder";
@@ -109,12 +109,14 @@ export async function recordEmployeeMovement({
 
   if (form.document_file) {
     try {
-      const safeName = form.document_file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const storagePath = `movements/${Date.now()}_${safeName}`;
-      documentUrl = await uploadFile("documents", storagePath, form.document_file);
+      const s3Item = await uploadFileToS3(
+        form.document_file,
+        `employees/${employee.id}/movements`
+      );
+      documentUrl = s3Item.url;
       documentName = form.document_file.name;
     } catch (uploadErr) {
-      console.warn("Movement document upload notice:", uploadErr);
+      console.warn("Movement document AWS S3 upload notice:", uploadErr);
       documentName = form.document_file.name;
       documentUrl = URL.createObjectURL(form.document_file);
     }

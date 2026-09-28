@@ -1,6 +1,7 @@
 import { memo, useState, useRef, useCallback } from "react";
 import type { Employee } from "../../../types";
 import { uploadFileToS3 } from "@/lib/s3-storage";
+import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 
 export interface MovementAttachmentItem {
@@ -20,33 +21,34 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
   employee,
   initialAttachments = [],
 }: Props) {
+  const formatFileSize = (bytes: number) => {
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
+    return `${Math.round(bytes / 1024)} KB`;
+  };
+
   const [attachments, setAttachments] = useState<MovementAttachmentItem[]>(() => {
     if (initialAttachments.length > 0) return initialAttachments;
+    const existing = (employee.documents || [])
+      .filter((d: any) => d && (d.doc_slot_key === "movement_attachment" || d.url?.includes("movements")))
+      .map((d: any, i: number) => ({
+        id: `db-att-${i}`,
+        name: d.name || "Movement Document",
+        url: d.url,
+        sizeText: d.size ? formatFileSize(d.size) : "—",
+        uploadedAt: d.uploaded_at,
+      }));
+
+    if (existing.length > 0) return existing;
     const namePrefix = `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || "Employee";
     return [
-      {
-        id: "att-1",
-        name: `3461_${namePrefix}_pass probation_15102024.pdf`,
-        url: "#",
-        sizeText: "970 KB",
-      },
-      {
-        id: "att-2",
-        name: `${namePrefix}_Transfer_08102025.pdf`,
-        url: "#",
-        sizeText: "263 KB",
-      },
+      { id: "att-1", name: `3461_${namePrefix}_pass probation_15102024.pdf`, url: "#", sizeText: "970 KB" },
+      { id: "att-2", name: `${namePrefix}_Transfer_08102025.pdf`, url: "#", sizeText: "263 KB" },
     ];
   });
 
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
-    return `${Math.round(bytes / 1024)} KB`;
-  };
 
   const handleUploadFile = useCallback(
     async (file: File) => {
@@ -61,14 +63,31 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
           uploadedAt: new Date().toISOString(),
         };
         setAttachments((prev) => [...prev, item]);
-        toast("Attachment Uploaded", `${file.name} saved successfully.`, "success");
+
+        const currentDocs = Array.isArray(employee.documents) ? employee.documents : [];
+        await supabase.from("employees").update({
+          documents: [
+            ...currentDocs,
+            {
+              name: `Movement Attachment (${file.name})`,
+              url: s3.url,
+              size: s3.size,
+              type: s3.type || file.type || "application/pdf",
+              uploaded_at: new Date().toISOString(),
+              doc_slot_key: "movement_attachment",
+              verification_status: "verified",
+            },
+          ],
+        }).eq("id", employee.id);
+
+        toast("Saved to AWS S3", `${file.name} uploaded successfully.`, "success");
       } catch (err: any) {
-        toast("Upload Error", err.message || "Failed to upload attachment", "error");
+        toast("AWS S3 Upload Error", err.message || "Failed to upload to AWS", "error");
       } finally {
         setUploading(false);
       }
     },
-    [employee.id]
+    [employee.id, employee.documents]
   );
 
   const handleDrop = (e: React.DragEvent) => {
@@ -78,8 +97,13 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
     if (file) handleUploadFile(file);
   };
 
-  const handleDeleteAttachment = (id: string) => {
+  const handleDeleteAttachment = async (id: string) => {
+    const target = attachments.find((a) => a.id !== id);
     setAttachments((prev) => prev.filter((a) => a.id !== id));
+    if (target && target.url && !target.url.startsWith("#")) {
+      const remaining = (employee.documents || []).filter((d: any) => d.url !== target.url);
+      await supabase.from("employees").update({ documents: remaining }).eq("id", employee.id);
+    }
   };
 
   return (
@@ -94,12 +118,8 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
         </label>
 
         <div className="sm:col-span-10 space-y-4">
-          {/* Dropzone */}
           <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
@@ -128,12 +148,11 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
             </div>
             {uploading && (
               <p className="text-[11px] text-sky-600 dark:text-sky-400 mt-1 animate-pulse font-medium">
-                Uploading attachment...
+                Uploading to AWS S3...
               </p>
             )}
           </div>
 
-          {/* Uploaded File List */}
           <div className="space-y-3 pt-1">
             {attachments.map((att) => (
               <div key={att.id} className="flex items-center gap-3">
