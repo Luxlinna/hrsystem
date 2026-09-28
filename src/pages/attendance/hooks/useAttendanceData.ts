@@ -62,7 +62,7 @@ export function useAttendanceData(
         const meQuery = applyUserEmployeeFilter(
           supabase
             .from("employees")
-            .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id"),
+            .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site"),
           user.email
         );
         const { data: rows } = await meQuery.is("deleted_at", null).limit(5);
@@ -76,7 +76,7 @@ export function useAttendanceData(
         // Fetch all employees belonging to the selected branch
         const { data: team, error: empErr } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, department, division, line_manager, reports_to, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id")
+          .select("id, first_name, last_name, department, division, line_manager, reports_to, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site")
           .is("deleted_at", null)
           .eq("branch_id", targetBranch)
           .order("first_name");
@@ -111,7 +111,7 @@ export function useAttendanceData(
         if (ids.length > 0) {
           const { data: recData, error: recErr } = await supabase
             .from("attendance_records")
-            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code), work_location:work_locations(id, name)")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site), work_location:work_locations(id, name)")
             .is("deleted_at", null)
             .in("employee_id", ids)
             .order("date", { ascending: false })
@@ -146,7 +146,7 @@ export function useAttendanceData(
           setEmployees([empRecord]);
           const { data: recData } = await supabase
             .from("attendance_records")
-            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code), work_location:work_locations(id, name)")
+            .select("*, employees(id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, biometric_user_id, employee_code, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site), work_location:work_locations(id, name)")
             .eq("employee_id", empRecord.id)
             .is("deleted_at", null)
             .order("date", { ascending: false })

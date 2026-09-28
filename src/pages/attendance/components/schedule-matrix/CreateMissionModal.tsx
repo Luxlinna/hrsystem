@@ -1,6 +1,11 @@
-import { useState, memo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
+import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import type { ContextMenuTarget } from "./ScheduleMatrixContextMenu";
+import { CellLeaveEmployeeCard, type FullEmployee } from "./CellLeaveEmployeeCard";
+import { CellLeaveAttachment } from "./CellLeaveAttachment";
+import { MissionInfoFields } from "./MissionInfoFields";
+import { MissionOtherEmployeesTable } from "./MissionOtherEmployeesTable";
 
 interface CreateMissionModalProps {
   target: ContextMenuTarget | null;
@@ -9,32 +14,95 @@ interface CreateMissionModalProps {
   onSaved?: () => void;
 }
 
+const formatDateInput = (d: string) => (!d ? new Date().toISOString().split("T")[0] : d.includes("/") ? `${d.split("/")[2]}-${d.split("/")[1]?.padStart(2, "0")}-${d.split("/")[0]?.padStart(2, "0")}` : d);
+const formatDMY = (ymd: string) => (!ymd ? "—" : `${ymd.split("-")[2]?.padStart(2, "0")}/${ymd.split("-")[1]?.padStart(2, "0")}/${ymd.split("-")[0]}`);
+
 export const CreateMissionModal = memo(function CreateMissionModal({
   target,
-  formMode,
   onClose,
   onSaved,
 }: CreateMissionModalProps) {
-  const [destination, setDestination] = useState("");
-  const [startDate, setStartDate] = useState(target?.dateString || "");
-  const [endDate, setEndDate] = useState(target?.dateString || "");
-  const [purpose, setPurpose] = useState("");
-  const [transport, setTransport] = useState("Company Vehicle");
+  const [employees, setEmployees] = useState<FullEmployee[]>([]);
+  const [selectedEmpId, setSelectedEmpId] = useState<string>(target?.empId || "");
+  const [supervisorsMap, setSupervisorsMap] = useState<Record<string, string>>({});
+  const [missionType, setMissionType] = useState("Official Mission");
+  const [missionFor, setMissionFor] = useState<"daily" | "hourly" | "half_day">("daily");
+  const [subject, setSubject] = useState("");
+  const [fromDate, setFromDate] = useState(() => formatDateInput(target?.dateString || ""));
+  const [toDate, setToDate] = useState(() => formatDateInput(target?.dateString || ""));
+  const [totalDays, setTotalDays] = useState(1);
+  const [detail, setDetail] = useState("");
+  const [remark, setRemark] = useState("");
+  const [selectedOthers, setSelectedOthers] = useState<FullEmployee[]>([]);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (target) {
+      setSelectedEmpId(target.empId);
+      const f = formatDateInput(target.dateString);
+      setFromDate(f);
+      setToDate(f);
+    }
+  }, [target]);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      try {
+        const { data } = await supabase
+          .from("employees")
+          .select("id, first_name, last_name, employee_code, biometric_user_id, role, department, avatar_url, join_date, reports_to, branch_id, status, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site, branches(name), work_locations:default_work_location_id(name)")
+          .is("deleted_at", null)
+          .order("first_name");
+        if (data && active) {
+          setEmployees(data as any[]);
+          const sm: Record<string, string> = {};
+          data.forEach((e: any) => { sm[e.id] = `${e.first_name || ""} ${e.last_name || ""}`.trim(); });
+          setSupervisorsMap(sm);
+        }
+      } catch (err) {
+        console.warn("Error loading employees for mission modal:", err);
+      }
+    }
+    load();
+    return () => { active = false; };
+  }, []);
+
+  const selectedEmployee = useMemo(() => employees.find((e) => e.id === selectedEmpId) || null, [employees, selectedEmpId]);
+  const supervisorName = useMemo(() => (!selectedEmployee?.reports_to ? "Taing Mey" : supervisorsMap[selectedEmployee.reports_to] || "Taing Mey"), [selectedEmployee, supervisorsMap]);
+  const empCode = selectedEmployee?.employee_code || selectedEmployee?.biometric_user_id || (target?.employeeCode ? target.employeeCode.replace(/\D/g, "") : "1116") || "1116";
+  const siteName = selectedEmployee?.site || selectedEmployee?.work_locations?.name || selectedEmployee?.branches?.name || "HBHQ";
+  const joinDateDisplay = selectedEmployee?.join_date ? formatDMY(selectedEmployee.join_date) : "04/05/2020";
 
   if (!target) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!destination.trim() || !purpose.trim()) {
-      toast("Validation", "Please provide mission destination and purpose", "error");
+    if (!subject.trim() || !detail.trim() || !selectedEmpId) {
+      toast("Validation", "Please provide Mission Subject and Mission Detail", "error");
       return;
     }
-
     setSubmitting(true);
     try {
-      // Record mission request
-      toast("Success", `Mission request submitted for ${target.empName} to ${destination}`, "success");
+      let fullReason = `[MISSION: ${missionType} - ${missionFor.toUpperCase()}]\nSubject: ${subject.trim()}\nDetail: ${detail.trim()}`;
+      if (selectedOthers.length > 0) {
+        fullReason += `\nOther Members: ${selectedOthers.map((o) => `${o.first_name} ${o.last_name} (${o.employee_code || o.biometric_user_id || "—"})`).join(", ")}`;
+      }
+      if (remark.trim()) fullReason += `\nRemark: ${remark.trim()}`;
+      if (attachmentFile) fullReason += `\nAttachment: ${attachmentFile.name}`;
+
+      const { error } = await supabase.from("leave_requests").insert([{
+        employee_id: selectedEmpId,
+        leave_type: "mission",
+        start_date: fromDate,
+        end_date: toDate,
+        days: totalDays,
+        status: "pending",
+        reason: fullReason,
+      }]);
+      if (error) throw error;
+      toast("Success", `Mission created successfully for ${selectedEmployee?.first_name || target.empName}`, "success");
       onSaved?.();
       onClose();
     } catch (err: any) {
@@ -45,107 +113,50 @@ export const CreateMissionModal = memo(function CreateMissionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-5 shadow-2xl border border-gray-100 max-w-md w-full space-y-4 animate-in zoom-in-95 duration-100">
-        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-          <div>
-            <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <i className="ri-flight-takeoff-line text-emerald-600" />
-              <span>{formMode === "for_employee" ? "Create Mission Request For..." : "Create Mission Request"}</span>
-            </h4>
-            <p className="text-[11px] text-gray-500">
-              {target.empName} ({target.employeeCode})
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 text-base cursor-pointer"
-          >
-            <i className="ri-close-line" />
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-gray-100 dark:border-slate-800 max-w-4xl w-full my-auto overflow-hidden animate-in zoom-in-95 duration-100 flex flex-col max-h-[92vh]">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-slate-100">Create Mission</h2>
+          <button type="button" onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+            <i className="ri-close-line text-lg" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
-          <div>
-            <label className="block font-bold text-gray-700 mb-1">
-              Mission Destination / Location <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Siem Reap Branch, Client Site, Battambang..."
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold text-gray-700 mb-1">Start Date</label>
-              <input
-                type="date"
-                required
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
-              />
+        <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-6 text-xs flex-1">
+          {/* Section 1: EMPLOYEE INFO */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold text-[#0284c7] uppercase tracking-wider">EMPLOYEE INFO</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+              <label className="sm:col-span-3 text-right font-medium text-gray-700 dark:text-slate-300">Employee Name <span className="text-rose-500">*</span></label>
+              <div className="sm:col-span-9">
+                <select value={selectedEmpId} onChange={(e) => setSelectedEmpId(e.target.value)} required className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-md text-xs focus:outline-none focus:border-sky-500 cursor-pointer">
+                  {employees.map((e) => (
+                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name} ({e.employee_code || e.biometric_user_id || "No Code"})</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block font-bold text-gray-700 mb-1">End Date</label>
-              <input
-                type="date"
-                required
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
+            <CellLeaveEmployeeCard employee={selectedEmployee} fallbackName={target.empName} empCode={empCode} supervisorName={supervisorName} siteName={siteName} joinDateDisplay={joinDateDisplay} />
           </div>
 
-          <div>
-            <label className="block font-bold text-gray-700 mb-1">Transportation Mode</label>
-            <select
-              value={transport}
-              onChange={(e) => setTransport(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 cursor-pointer"
-            >
-              <option value="Company Vehicle">Company Vehicle</option>
-              <option value="Flight / Air Travel">Flight / Air Travel</option>
-              <option value="Bus / Public Transport">Bus / Public Transport</option>
-              <option value="Personal Vehicle">Personal Vehicle</option>
-            </select>
-          </div>
+          {/* Section 2: MISSION INFO */}
+          <MissionInfoFields missionType={missionType} setMissionType={setMissionType} missionFor={missionFor} setMissionFor={setMissionFor} subject={subject} setSubject={setSubject} fromDate={fromDate} setFromDate={setFromDate} toDate={toDate} setToDate={setToDate} totalDays={totalDays} setTotalDays={setTotalDays} detail={detail} setDetail={setDetail} remark={remark} setRemark={setRemark} />
 
-          <div>
-            <label className="block font-bold text-gray-700 mb-1">
-              Purpose / Mission Objectives <span className="text-rose-500">*</span>
-            </label>
-            <textarea
-              required
-              rows={3}
-              placeholder="Outline mission scope, deliverables, and client/site details..."
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 resize-none"
-            />
-          </div>
+          {/* Section 3: OTHER EMPLOYEE ON MISSION */}
+          <MissionOtherEmployeesTable allEmployees={employees} mainEmployeeId={selectedEmpId} selectedOthers={selectedOthers} onAddEmployee={(e) => setSelectedOthers((prev) => [...prev, e])} onRemoveEmployee={(id) => setSelectedOthers((prev) => prev.filter((o) => o.id !== id))} />
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3.5 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer"
-            >
-              Cancel
+          {/* Section 4: ATTACHMENT INFO */}
+          <CellLeaveAttachment attachmentFile={attachmentFile} setAttachmentFile={setAttachmentFile} />
+
+          {/* Footer Action */}
+          <div className="pt-4 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
+            <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 px-5 py-2 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-md text-xs font-semibold cursor-pointer shadow-xs disabled:opacity-50 transition-colors">
+              <i className="ri-save-line text-sm" />
+              <span>{submitting ? "Saving..." : "Save"}</span>
+              <i className="ri-arrow-down-s-line text-xs ml-0.5" />
             </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold rounded-lg cursor-pointer shadow-xs disabled:opacity-50"
-            >
-              {submitting ? "Submitting..." : "Submit Mission"}
+            <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-slate-400 cursor-pointer">
+              Cancel
             </button>
           </div>
         </form>

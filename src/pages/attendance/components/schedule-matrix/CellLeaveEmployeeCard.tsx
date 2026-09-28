@@ -13,6 +13,14 @@ export interface FullEmployee {
   reports_to?: string | null;
   branch_id?: string | null;
   status?: string | null;
+  basic_salary?: number | string | null;
+  contract_rate?: number | string | null;
+  contract_rate_currency?: string | null;
+  contract_rate_frequency?: string | null;
+  tax_method?: string | null;
+  contract_type?: string | null;
+  employment_type?: string | null;
+  site?: string | null;
   branches?: { name: string } | null;
   work_locations?: { name: string } | null;
 }
@@ -35,6 +43,15 @@ export const CellLeaveEmployeeCard = memo(function CellLeaveEmployeeCard({
   joinDateDisplay,
 }: CellLeaveEmployeeCardProps) {
   const [showRateSalary, setShowRateSalary] = useState(false);
+
+  const rawSalary = employee?.basic_salary ?? employee?.contract_rate ?? null;
+  const currency = employee?.contract_rate_currency || "USD";
+  const numSalary = rawSalary !== null && rawSalary !== undefined && rawSalary !== "" ? Number(rawSalary) : 650;
+  const formattedSalary = `${currency} ${Number.isNaN(numSalary) ? "650.00" : numSalary.toFixed(2)}`;
+  const frequency = employee?.contract_rate_frequency || "Monthly";
+  const taxMethod = employee?.tax_method || "Gross";
+  const empType = employee?.employment_type || "FULL-TIME";
+  const contractType = employee?.contract_type || "PERMANENT (UDC)";
 
   return (
     <div className="sm:ml-[25%] bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/80 rounded-xl p-5 shadow-2xs">
@@ -65,13 +82,13 @@ export const CellLeaveEmployeeCard = memo(function CellLeaveEmployeeCard({
             </div>
             <div className="mb-2">
               <p className="font-medium text-gray-800 dark:text-slate-200 leading-tight">
-                {employee?.role || "Assistant Supply Chain Manager"}
+                {employee?.role || "Accounting Manager"}
               </p>
               <p className="text-[10px] text-gray-400 dark:text-slate-500">Designation</p>
             </div>
             <div>
               <p className="font-bold text-gray-800 dark:text-slate-200 uppercase tracking-tight">
-                {employee?.department || "SUPPLY CHAIN"}
+                {employee?.department || "FINANCE AND ACCOUNTING"}
               </p>
               <p className="text-[10px] text-gray-400 dark:text-slate-500">Department</p>
             </div>
@@ -83,11 +100,11 @@ export const CellLeaveEmployeeCard = memo(function CellLeaveEmployeeCard({
               <p className="text-[10px] text-gray-400 dark:text-slate-500">Supervisor</p>
             </div>
             <div className="mb-2">
-              <p className="font-medium text-gray-800 dark:text-slate-200 uppercase">FULL-TIME</p>
+              <p className="font-medium text-gray-800 dark:text-slate-200 uppercase">{empType}</p>
               <p className="text-[10px] text-gray-400 dark:text-slate-500">Employee Type</p>
             </div>
             <div>
-              <p className="font-medium text-gray-800 dark:text-slate-200 uppercase">PERMANENT (UDC)</p>
+              <p className="font-medium text-gray-800 dark:text-slate-200 uppercase">{contractType}</p>
               <p className="text-[10px] text-gray-400 dark:text-slate-500">Contract Type</p>
             </div>
           </div>
@@ -100,13 +117,13 @@ export const CellLeaveEmployeeCard = memo(function CellLeaveEmployeeCard({
             <div className="mb-2">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-medium text-gray-800 dark:text-slate-200">
-                  {showRateSalary ? "USD 650.00" : "USD *****"}
+                  {showRateSalary ? formattedSalary : `${currency} *****`}
                 </span>
                 <span className="px-1.5 py-0.2 rounded text-[9px] font-bold text-white bg-[#3b82f6]">
-                  Monthly
+                  {frequency}
                 </span>
                 <span className="px-1.5 py-0.2 rounded text-[9px] font-bold text-white bg-[#2563eb]">
-                  Gross
+                  {taxMethod}
                 </span>
                 <button
                   type="button"

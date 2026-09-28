@@ -10,6 +10,14 @@ export interface Employee {
   default_work_location_id?: string | null;
   employee_code?: string | null;
   biometric_user_id?: string | null;
+  basic_salary?: number | string | null;
+  contract_rate?: number | string | null;
+  contract_rate_currency?: string | null;
+  contract_rate_frequency?: string | null;
+  tax_method?: string | null;
+  contract_type?: string | null;
+  employment_type?: string | null;
+  site?: string | null;
 }
 
 export interface BiometricDevice {

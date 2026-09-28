@@ -47,7 +47,7 @@ export const CreateCellLeaveModal = memo(function CreateCellLeaveModal({
       try {
         const { data } = await supabase
           .from("employees")
-          .select("id, first_name, last_name, employee_code, biometric_user_id, role, department, avatar_url, join_date, reports_to, branch_id, status, branches(name), work_locations:default_work_location_id(name)")
+          .select("id, first_name, last_name, employee_code, biometric_user_id, role, department, avatar_url, join_date, reports_to, branch_id, status, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site, branches(name), work_locations:default_work_location_id(name)")
           .is("deleted_at", null)
           .order("first_name");
 
@@ -68,7 +68,7 @@ export const CreateCellLeaveModal = memo(function CreateCellLeaveModal({
   const selectedEmployee = useMemo(() => employees.find((e) => e.id === selectedEmpId) || null, [employees, selectedEmpId]);
   const supervisorName = useMemo(() => (!selectedEmployee?.reports_to ? "Taing Mey" : supervisorsMap[selectedEmployee.reports_to] || "Taing Mey"), [selectedEmployee, supervisorsMap]);
   const empCode = selectedEmployee?.employee_code || selectedEmployee?.biometric_user_id || (target?.employeeCode ? target.employeeCode.replace(/\D/g, "") : "1038") || "1038";
-  const siteName = selectedEmployee?.work_locations?.name || selectedEmployee?.branches?.name || "HBHQ";
+  const siteName = selectedEmployee?.site || selectedEmployee?.work_locations?.name || selectedEmployee?.branches?.name || "OPS sulotion";
   const joinDateDisplay = selectedEmployee?.join_date ? formatDMY(selectedEmployee.join_date) : "06/04/2020";
 
   const totalDays = useMemo(() => {
