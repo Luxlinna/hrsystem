@@ -32,7 +32,7 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
 
       const attQuery = supabase
         .from("attendance_records")
-        .select("id, employee_id, date, clock_in, clock_out, status")
+        .select("id, employee_id, date, clock_in, clock_out, status, hours_worked")
         .gte("date", startDateStr)
         .lte("date", endDateStr);
 

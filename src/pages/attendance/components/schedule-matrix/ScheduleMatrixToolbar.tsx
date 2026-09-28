@@ -1,4 +1,5 @@
 import { useState, memo } from "react";
+import type { MatrixViewMode } from "./types";
 
 interface ScheduleMatrixToolbarProps {
   search: string;
@@ -9,6 +10,8 @@ interface ScheduleMatrixToolbarProps {
   filterDept: string;
   setFilterDept: (val: string) => void;
   departmentList: string[];
+  matrixViewMode?: MatrixViewMode;
+  setMatrixViewMode?: (mode: MatrixViewMode) => void;
   onViewModeChange?: (mode: string) => void;
 }
 
@@ -21,10 +24,11 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
   filterDept,
   setFilterDept,
   departmentList,
-  onViewModeChange,
+  matrixViewMode = "timesheet",
+  setMatrixViewMode,
 }: ScheduleMatrixToolbarProps) {
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
-  const [rosterMenuOpen, setRosterMenuOpen] = useState(false);
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
 
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -39,74 +43,80 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
         />
         <button
           type="button"
-          className="px-3 py-2 bg-[#2563EB] text-white rounded-r-lg hover:bg-blue-700 transition-colors cursor-pointer"
+          className="px-3.5 py-2 bg-[#2563EB] text-white rounded-r-lg hover:bg-blue-700 transition-colors cursor-pointer"
         >
           <i className="ri-search-line text-sm" />
         </button>
       </div>
 
+      {/* Timesheet Indicator Legend */}
+      {matrixViewMode === "timesheet" && (
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded-full text-[11px] text-gray-500 shadow-2xs font-mono select-none">
+          <span className="flex items-center gap-1 font-semibold text-gray-700">
+            <span className="w-3.5 h-3.5 bg-[#EC4899] text-white text-[8px] flex items-center justify-center rounded-[2px] font-bold">S</span>
+            Scheduled
+          </span>
+          <span className="text-gray-300">·</span>
+          <span className="flex items-center gap-1 font-semibold text-gray-700">
+            <span className="w-3.5 h-3.5 bg-white border border-[#EC4899]/50 text-[#EC4899] text-[8px] flex items-center justify-center rounded-[2px] font-bold">C</span>
+            Clocked
+          </span>
+          <span className="text-gray-300">·</span>
+          <span className="flex items-center gap-1 font-semibold text-gray-700">
+            <span className="w-3.5 h-3.5 bg-[#FF007A] text-white text-[8px] flex items-center justify-center rounded-[2px] font-bold">L</span>
+            Deficit
+          </span>
+          <span className="text-gray-300">·</span>
+          <span className="flex items-center gap-1 font-semibold text-gray-700">
+            <span className="w-3.5 h-3.5 bg-[#1E293B] text-white text-[8px] flex items-center justify-center rounded-[2px] font-bold">O</span>
+            OFF
+          </span>
+        </div>
+      )}
+
       {/* Right Controls */}
       <div className="flex flex-wrap items-center gap-2.5">
-        {/* Roster View Dropdown */}
+        {/* View Dropdown (Time Sheet / Roster) */}
         <div className="relative">
           <button
             type="button"
-            onClick={() => setRosterMenuOpen((v) => !v)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer shadow-2xs"
+            onClick={() => setViewMenuOpen((v) => !v)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2563EB] text-white rounded-full text-xs font-bold hover:bg-blue-700 cursor-pointer shadow-xs transition-colors"
           >
-            <span>Roster</span>
-            <i className={`ri-arrow-down-s-line text-gray-400 transition-transform ${rosterMenuOpen ? "rotate-180" : ""}`} />
+            <span>{matrixViewMode === "timesheet" ? "Time Sheet" : "Roster"}</span>
+            <i className={`ri-arrow-down-s-line text-white/90 transition-transform ${viewMenuOpen ? "rotate-180" : ""}`} />
           </button>
 
-          {rosterMenuOpen && (
+          {viewMenuOpen && (
             <>
-              <div className="fixed inset-0 z-20" onClick={() => setRosterMenuOpen(false)} />
-              <div className="absolute left-0 top-full mt-1.5 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1 text-xs">
+              <div className="fixed inset-0 z-20" onClick={() => setViewMenuOpen(false)} />
+              <div className="absolute left-0 top-full mt-1.5 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 text-xs select-none">
                 <button
                   type="button"
-                  onClick={() => setRosterMenuOpen(false)}
-                  className="w-full px-3 py-2 text-left font-bold text-blue-600 bg-blue-50 flex items-center justify-between"
+                  onClick={() => {
+                    setMatrixViewMode?.("roster");
+                    setViewMenuOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left flex items-center justify-between cursor-pointer ${
+                    matrixViewMode === "roster" ? "font-bold text-blue-600 bg-blue-50/70" : "text-gray-700 hover:bg-gray-50"
+                  }`}
                 >
-                  <span>Monthly Roster</span>
-                  <i className="ri-check-line font-bold" />
+                  <span>Roster</span>
+                  {matrixViewMode === "roster" && <i className="ri-check-line text-blue-600 font-bold" />}
                 </button>
-                {onViewModeChange && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRosterMenuOpen(false);
-                        onViewModeChange("week");
-                      }}
-                      className="w-full px-3 py-2 text-left font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <i className="ri-calendar-view text-gray-400" />
-                      <span>Week Planner</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRosterMenuOpen(false);
-                        onViewModeChange("day");
-                      }}
-                      className="w-full px-3 py-2 text-left font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <i className="ri-time-line text-gray-400" />
-                      <span>Day View</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRosterMenuOpen(false);
-                        onViewModeChange("list");
-                      }}
-                      className="w-full px-3 py-2 text-left font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <i className="ri-list-check text-gray-400" />
-                      <span>List View</span>
-                    </button>
-                  </>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMatrixViewMode?.("timesheet");
+                    setViewMenuOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left flex items-center justify-between cursor-pointer ${
+                    matrixViewMode === "timesheet" ? "font-bold text-blue-600 bg-blue-50/70" : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span>Time Sheet</span>
+                  {matrixViewMode === "timesheet" && <i className="ri-check-line text-blue-600 font-bold" />}
+                </button>
               </div>
             </>
           )}
@@ -143,7 +153,7 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
           <button
             type="button"
             onClick={() => setFilterMenuOpen((v) => !v)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-2xs ${
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white border rounded-full text-xs font-semibold transition-colors cursor-pointer shadow-2xs ${
               filterDept !== "all"
                 ? "border-blue-500 text-blue-600 bg-blue-50/50"
                 : "border-gray-300 text-gray-700 hover:bg-gray-50"

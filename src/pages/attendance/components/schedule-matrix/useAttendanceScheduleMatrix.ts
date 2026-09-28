@@ -9,7 +9,7 @@ import type { DayColumn, EmployeeRosterRow } from "./types";
 export function useAttendanceScheduleMatrix() {
   const { targetBranch } = useBranchScope();
 
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2026, 9, 1));
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2026, 8, 1));
   const [activeTab, setActiveTab] = useState<"schedules" | "no_schedules">("schedules");
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("all");

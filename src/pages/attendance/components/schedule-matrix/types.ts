@@ -18,6 +18,8 @@ export interface DayColumn {
   holidayCode?: string; // 'PB', 'CDKF'
 }
 
+export type MatrixViewMode = "roster" | "timesheet";
+
 export interface CellScheduleData {
   shiftCode: string;
   startTime?: string;
@@ -28,6 +30,10 @@ export interface CellScheduleData {
   status: "present" | "late" | "absent" | "no_clock_in" | "off" | "future" | "leave";
   clockIn?: string | null;
   clockOut?: string | null;
+  scheduledHours?: number | null;
+  clockedHours?: number | null;
+  lostHours?: number | null;
+  leaveCode?: string | null;
   tooltipText: string;
 }
 

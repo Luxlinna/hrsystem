@@ -6,6 +6,7 @@ import { ScheduleMatrixTable } from "./ScheduleMatrixTable";
 import { ScheduleMatrixNoSchedules } from "./ScheduleMatrixNoSchedules";
 import { ScheduleMatrixContextMenu, type ContextMenuTarget } from "./ScheduleMatrixContextMenu";
 import { ScheduleMatrixModalsContainer } from "./ScheduleMatrixModalsContainer";
+import type { MatrixViewMode } from "./types";
 
 interface AttendanceScheduleMatrixViewProps {
   onNavigateToTemplates?: () => void;
@@ -42,42 +43,16 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
     handleUpdateCell,
   } = useAttendanceScheduleMatrix();
 
-  const [hoveredCell, setHoveredCell] = useState<{
-    empId: string;
-    dateString: string;
-    text: string;
-    x: number;
-    y: number;
-  } | null>(null);
-
-  const [contextMenu, setContextMenu] = useState<{
-    position: { x: number; y: number };
-    target: ContextMenuTarget;
-  } | null>(null);
-
-  const [editingCell, setEditingCell] = useState<{
-    empId: string;
-    empName: string;
-    dateString: string;
-    dayNumber: number;
-    currentCode: string;
-  } | null>(null);
-
+  const [matrixViewMode, setMatrixViewMode] = useState<MatrixViewMode>("timesheet");
+  const [hoveredCell, setHoveredCell] = useState<{ empId: string; dateString: string; text: string; x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ position: { x: number; y: number }; target: ContextMenuTarget } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ empId: string; empName: string; dateString: string; dayNumber: number; currentCode: string } | null>(null);
   const [logModalTarget, setLogModalTarget] = useState<ContextMenuTarget | null>(null);
-  const [leaveModal, setLeaveModal] = useState<{
-    target: ContextMenuTarget;
-    mode: "self" | "for_employee";
-  } | null>(null);
-  const [missionModal, setMissionModal] = useState<{
-    target: ContextMenuTarget;
-    mode: "self" | "for_employee";
-  } | null>(null);
+  const [leaveModal, setLeaveModal] = useState<{ target: ContextMenuTarget; mode: "self" | "for_employee" } | null>(null);
+  const [missionModal, setMissionModal] = useState<{ target: ContextMenuTarget; mode: "self" | "for_employee" } | null>(null);
 
   const handleCellClick = (data: ContextMenuTarget & { x: number; y: number }) => {
-    setContextMenu({
-      position: { x: data.x, y: data.y },
-      target: data,
-    });
+    setContextMenu({ position: { x: data.x, y: data.y }, target: data });
   };
 
   const handleSelectShift = (code: string) => {
@@ -88,7 +63,6 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
 
   return (
     <div className="space-y-4">
-      {/* 1. Header & Tabs */}
       <ScheduleMatrixHeader
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -97,7 +71,6 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
         onNavigateToShifts={onNavigateToShifts}
       />
 
-      {/* 2. Controls Toolbar */}
       <ScheduleMatrixToolbar
         search={search}
         setSearch={setSearch}
@@ -107,16 +80,18 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
         filterDept={filterDept}
         setFilterDept={setFilterDept}
         departmentList={departmentList}
+        matrixViewMode={matrixViewMode}
+        setMatrixViewMode={setMatrixViewMode}
         onViewModeChange={onViewModeChange}
       />
 
-      {/* 3. Matrix Table or No Schedules View */}
       {activeTab === "schedules" ? (
         <ScheduleMatrixTable
           loading={loading}
           dayColumns={dayColumns}
           scheduledEmployees={scheduledEmployees}
           selectedIds={selectedIds}
+          matrixViewMode={matrixViewMode}
           toggleSelectAll={toggleSelectAll}
           toggleSelectOne={toggleSelectOne}
           onCellClick={handleCellClick}
@@ -129,16 +104,9 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
         />
       )}
 
-      {/* 4. Hover Tooltip Overlay */}
       {hoveredCell && (
         <div
-          style={{
-            position: "fixed",
-            left: `${hoveredCell.x}px`,
-            top: `${hoveredCell.y - 8}px`,
-            transform: "translate(-50%, -100%)",
-            pointerEvents: "none",
-          }}
+          style={{ position: "fixed", left: `${hoveredCell.x}px`, top: `${hoveredCell.y - 8}px`, transform: "translate(-50%, -100%)", pointerEvents: "none" }}
           className="z-50 bg-[#1E293B] text-white px-2.5 py-1 rounded-md text-[11px] font-semibold shadow-xl border border-slate-700 animate-in fade-in duration-75 whitespace-nowrap"
         >
           {hoveredCell.text}
@@ -146,7 +114,6 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
         </div>
       )}
 
-      {/* 5. Cell Context Menu */}
       <ScheduleMatrixContextMenu
         position={contextMenu?.position || null}
         target={contextMenu?.target || null}
@@ -174,7 +141,6 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
         }}
       />
 
-      {/* 6. Modals Container */}
       <ScheduleMatrixModalsContainer
         editingCell={editingCell}
         availableShifts={availableShifts}

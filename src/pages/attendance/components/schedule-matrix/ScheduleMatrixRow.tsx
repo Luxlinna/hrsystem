@@ -1,15 +1,28 @@
 import { memo } from "react";
 import { ScheduleMatrixCell } from "./ScheduleMatrixCell";
-import type { EmployeeRosterRow, DayColumn } from "./types";
+import { ScheduleMatrixTimeSheetCell } from "./ScheduleMatrixTimeSheetCell";
+import { ScheduleMatrixMonthlyTotalsCell } from "./ScheduleMatrixMonthlyTotalsCell";
+import type { EmployeeRosterRow, DayColumn, MatrixViewMode } from "./types";
 
 interface ScheduleMatrixRowProps {
   emp: EmployeeRosterRow;
   index: number;
   isSelected: boolean;
   dayColumns: DayColumn[];
+  matrixViewMode?: MatrixViewMode;
   onToggleSelect: (id: string) => void;
   onCellClick: (data: any) => void;
   onCellHover: (data: { empId: string; dateString: string; text: string; x: number; y: number } | null) => void;
+}
+
+function getRowBaseColor(emp: EmployeeRosterRow, index: number): string {
+  const d = (emp.department || "").toLowerCase();
+  if (d.includes("supply")) return "bg-[#DB2777]";
+  if (d.includes("finance") || d.includes("account")) return index % 2 === 0 ? "bg-[#C2410C]" : "bg-[#2563EB]";
+  if (d.includes("operation") || d.includes("beauty")) return "bg-[#16A34A]";
+  if (d.includes("merchandise")) return "bg-[#C2410C]";
+  const palette = ["bg-[#DB2777]", "bg-[#C2410C]", "bg-[#2563EB]", "bg-[#16A34A]"];
+  return palette[index % palette.length];
 }
 
 export const ScheduleMatrixRow = memo(function ScheduleMatrixRow({
@@ -17,11 +30,13 @@ export const ScheduleMatrixRow = memo(function ScheduleMatrixRow({
   index,
   isSelected,
   dayColumns,
+  matrixViewMode = "roster",
   onToggleSelect,
   onCellClick,
   onCellHover,
 }: ScheduleMatrixRowProps) {
   const rowBg = isSelected ? "bg-blue-50/40" : "bg-white hover:bg-slate-50/70";
+  const rowBaseColor = getRowBaseColor(emp, index);
 
   return (
     <tr className={`transition-colors ${rowBg}`}>
@@ -85,22 +100,64 @@ export const ScheduleMatrixRow = memo(function ScheduleMatrixRow({
         </p>
       </td>
 
+      {/* S C L Indicator for Time Sheet */}
+      {matrixViewMode === "timesheet" && (
+        <td className={`sticky left-[448px] z-10 ${rowBg} w-[26px] min-w-[26px] max-w-[26px] p-0.5 border-b border-r border-gray-200 text-center`}>
+          <div className="flex flex-col h-[56px] justify-between items-center py-0 font-mono select-none">
+            <span className="w-5 h-[18px] bg-[#EC4899] text-white font-extrabold text-[9px] flex items-center justify-center rounded-[2px] shadow-2xs">
+              S
+            </span>
+            <span className="w-5 h-[18px] bg-white border border-[#EC4899]/50 text-[#EC4899] font-extrabold text-[9px] flex items-center justify-center rounded-[2px] shadow-2xs">
+              C
+            </span>
+            <span className="w-5 h-[18px] bg-[#EC4899] text-white font-extrabold text-[9px] flex items-center justify-center rounded-[2px] shadow-2xs">
+              L
+            </span>
+          </div>
+        </td>
+      )}
+
       {/* 31 Day Cells */}
-      {dayColumns.map((col) => (
-        <ScheduleMatrixCell
-          key={col.dayNumber}
-          empId={emp.id}
-          empName={emp.name}
-          employeeCode={emp.employeeCode}
-          dateString={col.dateString}
-          dayNumber={col.dayNumber}
-          cellData={emp.dailySchedules[col.dateString]}
-          isHoliday={col.isHoliday}
-          isWeekend={col.isWeekend}
-          onClick={onCellClick}
-          onHover={onCellHover}
-        />
-      ))}
+      {dayColumns.map((col) => {
+        if (matrixViewMode === "timesheet") {
+          return (
+            <ScheduleMatrixTimeSheetCell
+              key={col.dayNumber}
+              empId={emp.id}
+              empName={emp.name}
+              employeeCode={emp.displayId || emp.employeeCode}
+              dateString={col.dateString}
+              dayNumber={col.dayNumber}
+              cellData={emp.dailySchedules[col.dateString]}
+              isHoliday={col.isHoliday}
+              isWeekend={col.isWeekend}
+              rowBaseColor={rowBaseColor}
+              onClick={onCellClick}
+              onHover={onCellHover}
+            />
+          );
+        }
+        return (
+          <ScheduleMatrixCell
+            key={col.dayNumber}
+            empId={emp.id}
+            empName={emp.name}
+            employeeCode={emp.displayId || emp.employeeCode}
+            dateString={col.dateString}
+            dayNumber={col.dayNumber}
+            cellData={emp.dailySchedules[col.dateString]}
+            isHoliday={col.isHoliday}
+            isWeekend={col.isWeekend}
+            onClick={onCellClick}
+            onHover={onCellHover}
+          />
+        );
+      })}
+
+      {/* Monthly Sum Totals */}
+      {matrixViewMode === "timesheet" && (
+        <ScheduleMatrixMonthlyTotalsCell emp={emp} dayColumns={dayColumns} />
+      )}
     </tr>
   );
 });

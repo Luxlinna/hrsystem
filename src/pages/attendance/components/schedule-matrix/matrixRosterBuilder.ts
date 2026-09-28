@@ -76,7 +76,10 @@ export function buildRosterRows({
       let status: CellScheduleData["status"] = "future";
       let tooltipText = `Shift: ${baseShift}`;
 
-      const isPastOrToday = new Date(col.dateString) <= new Date(2026, 9, 26);
+      const todayDateStr = "2026-09-28";
+      const isPast = col.dateString < todayDateStr;
+      const isToday = col.dateString === todayDateStr;
+      const isPastOrToday = isPast || isToday;
 
       if (baseShift === "OFF") {
         status = "off";
@@ -88,19 +91,54 @@ export function buildRosterRows({
           status = att.status === "late" ? "late" : "present";
           tooltipText = `Clock in: ${att.clock_in}${att.clock_out ? ` - ${att.clock_out}` : ""}`;
         } else {
-          status = "no_clock_in";
-          tooltipText = "No clock in";
+          status = isPast ? "absent" : "no_clock_in";
+          tooltipText = isPast ? "Absent (Missed Shift)" : "Not clocked in yet";
+        }
+      }
+
+      const isLeave = /^(AL|SST|VST|LEAVE|ML|SL)/i.test(baseShift);
+      const isOff = baseShift === "OFF";
+      let scheduledHours: number | null = null;
+      let clockedHours: number | null = null;
+      let lostHours: number | null = null;
+
+      if (!isOff && !isLeave) {
+        scheduledHours = dayOfWeek === 6 ? 4 : 8.5;
+        if (isPastOrToday) {
+          if (att?.hours_worked != null && Number(att.hours_worked) > 0) {
+            clockedHours = +Number(att.hours_worked).toFixed(2);
+          } else if (att?.clock_in && att?.clock_out) {
+            const [ih, im] = att.clock_in.split(":").map(Number);
+            const [oh, om] = att.clock_out.split(":").map(Number);
+            let span = (oh * 60 + om) - (ih * 60 + im);
+            if (span < 0) span += 24 * 60;
+            clockedHours = +(span / 60).toFixed(2);
+          } else if (att?.clock_in) {
+            clockedHours = 4.0;
+          } else {
+            clockedHours = 0;
+          }
+
+          if (isPast) {
+            lostHours = clockedHours < scheduledHours ? +(scheduledHours - clockedHours).toFixed(2) : 0;
+          } else if (isToday) {
+            lostHours = att?.clock_out && clockedHours < scheduledHours ? +(scheduledHours - clockedHours).toFixed(2) : 0;
+          }
         }
       }
 
       dailySchedules[col.dateString] = {
         shiftCode: displayCode,
-        isOff: baseShift === "OFF",
+        isOff,
         isHoliday: col.isHoliday,
         holidayPrefix: col.holidayCode,
         status,
         clockIn: att?.clock_in,
         clockOut: att?.clock_out,
+        scheduledHours: isOff ? 0 : isLeave ? null : scheduledHours,
+        clockedHours,
+        lostHours,
+        leaveCode: isLeave ? baseShift : null,
         tooltipText,
       };
     });
