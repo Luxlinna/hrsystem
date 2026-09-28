@@ -103,7 +103,7 @@ export function buildRosterRows({
       let lostHours: number | null = null;
 
       if (!isOff && !isLeave) {
-        scheduledHours = dayOfWeek === 6 ? 4 : 8.5;
+        scheduledHours = dayOfWeek === 6 ? 4 : 8;
         if (isPastOrToday) {
           if (att?.hours_worked != null && Number(att.hours_worked) > 0) {
             clockedHours = +Number(att.hours_worked).toFixed(2);

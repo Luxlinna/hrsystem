@@ -18,6 +18,7 @@ interface ScheduleMatrixCellProps {
     dateString: string;
     dayNumber: number;
     code: string;
+    currentCode?: string;
     status?: string;
     clockIn?: string | null;
     clockOut?: string | null;
@@ -51,6 +52,7 @@ export const ScheduleMatrixCell = memo(function ScheduleMatrixCell({
       dateString,
       dayNumber,
       code,
+      currentCode: code || "OFF",
       status: cellData?.status,
       clockIn: cellData?.clockIn,
       clockOut: cellData?.clockOut,

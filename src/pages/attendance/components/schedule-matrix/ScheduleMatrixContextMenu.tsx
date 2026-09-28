@@ -16,7 +16,6 @@ interface ScheduleMatrixContextMenuProps {
   position: { x: number; y: number } | null;
   target: ContextMenuTarget | null;
   onClose: () => void;
-  onChangeShift: () => void;
   onViewAttendanceLog: () => void;
   onCreateLeave: (mode: "self" | "for_employee") => void;
   onCreateMission: (mode: "self" | "for_employee") => void;
@@ -26,7 +25,6 @@ export const ScheduleMatrixContextMenu = memo(function ScheduleMatrixContextMenu
   position,
   target,
   onClose,
-  onChangeShift,
   onViewAttendanceLog,
   onCreateLeave,
   onCreateMission,
@@ -67,19 +65,6 @@ export const ScheduleMatrixContextMenu = memo(function ScheduleMatrixContextMenu
       >
         <i className="ri-eye-line text-sm text-gray-500" />
         <span className="font-medium">View Attendance Log</span>
-      </button>
-
-      {/* 2. Change Day Shift */}
-      <button
-        type="button"
-        onClick={() => {
-          onClose();
-          onChangeShift();
-        }}
-        className="flex items-center gap-2.5 w-full px-3.5 py-2 hover:bg-blue-50 hover:text-blue-700 transition-colors text-left cursor-pointer"
-      >
-        <i className="ri-edit-line text-sm text-gray-500" />
-        <span className="font-medium">Change Day Shift</span>
       </button>
 
       <div className="border-t border-gray-100 my-1" />

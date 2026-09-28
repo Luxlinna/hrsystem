@@ -15,14 +15,8 @@ interface ScheduleMatrixRowProps {
   onCellHover: (data: { empId: string; dateString: string; text: string; x: number; y: number } | null) => void;
 }
 
-function getRowBaseColor(emp: EmployeeRosterRow, index: number): string {
-  const d = (emp.department || "").toLowerCase();
-  if (d.includes("supply")) return "bg-[#DB2777]";
-  if (d.includes("finance") || d.includes("account")) return index % 2 === 0 ? "bg-[#C2410C]" : "bg-[#2563EB]";
-  if (d.includes("operation") || d.includes("beauty")) return "bg-[#16A34A]";
-  if (d.includes("merchandise")) return "bg-[#C2410C]";
-  const palette = ["bg-[#DB2777]", "bg-[#C2410C]", "bg-[#2563EB]", "bg-[#16A34A]"];
-  return palette[index % palette.length];
+function getRowBaseColor(_emp: EmployeeRosterRow, _index: number): string {
+  return "bg-[#253C7D]";
 }
 
 export const ScheduleMatrixRow = memo(function ScheduleMatrixRow({
@@ -104,13 +98,13 @@ export const ScheduleMatrixRow = memo(function ScheduleMatrixRow({
       {matrixViewMode === "timesheet" && (
         <td className={`sticky left-[448px] z-10 ${rowBg} w-[26px] min-w-[26px] max-w-[26px] p-0.5 border-b border-r border-gray-200 text-center`}>
           <div className="flex flex-col h-[56px] justify-between items-center py-0 font-mono select-none">
-            <span className="w-5 h-[18px] bg-[#EC4899] text-white font-extrabold text-[9px] flex items-center justify-center rounded-[2px] shadow-2xs">
+            <span className="w-5 h-[18px] bg-[#253C7D] text-white font-extrabold text-[9px] flex items-center justify-center rounded-[2px] shadow-2xs">
               S
             </span>
-            <span className="w-5 h-[18px] bg-white border border-[#EC4899]/50 text-[#EC4899] font-extrabold text-[9px] flex items-center justify-center rounded-[2px] shadow-2xs">
+            <span className="w-5 h-[18px] bg-white border border-[#253C7D]/50 text-[#253C7D] font-extrabold text-[9px] flex items-center justify-center rounded-[2px] shadow-2xs">
               C
             </span>
-            <span className="w-5 h-[18px] bg-[#EC4899] text-white font-extrabold text-[9px] flex items-center justify-center rounded-[2px] shadow-2xs">
+            <span className="w-5 h-[18px] bg-[#1E3064] text-white font-extrabold text-[9px] flex items-center justify-center rounded-[2px] shadow-2xs">
               L
             </span>
           </div>

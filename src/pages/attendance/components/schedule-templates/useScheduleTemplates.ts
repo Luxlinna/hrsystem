@@ -67,15 +67,15 @@ export function useScheduleTemplates() {
         } catch {}
       }
 
-      try {
-        const { data: dbRows } = await supabase
-          .from("schedule_templates")
-          .select("*, schedule_template_assignments(employee_id)")
-          .is("deleted_at", null);
+      if (loaded.length === 0) {
+        try {
+          const { data: dbRows } = await supabase
+            .from("schedule_templates")
+            .select("*, schedule_template_assignments(employee_id)")
+            .is("deleted_at", null);
 
-        if (dbRows && dbRows.length > 0) {
-          dbRows.forEach((row: any) => {
-            if (!loaded.some((t) => t.id === row.id)) {
+          if (dbRows && dbRows.length > 0) {
+            dbRows.forEach((row: any) => {
               const assignedIds = (row.schedule_template_assignments || []).map((a: any) => a.employee_id);
               loaded.push({
                 id: row.id,
@@ -92,10 +92,10 @@ export function useScheduleTemplates() {
                 status: (row.status === "Disabled" ? "Disabled" : "Active") as "Active" | "Disabled",
                 created_at: row.created_at,
               });
-            }
-          });
-        }
-      } catch {}
+            });
+          }
+        } catch {}
+      }
 
       setTemplates(loaded);
       templatesRef.current = loaded;
@@ -119,6 +119,14 @@ export function useScheduleTemplates() {
     setActiveFormTemplate(null);
     toast.success("Schedule template saved to database");
     await persistTemplatesToDb(updated);
+    try {
+      await supabase.from("schedule_template_assignments").delete().eq("template_id", template.id);
+      if (template.assigned_employee_ids?.length) {
+        await supabase.from("schedule_template_assignments").insert(
+          template.assigned_employee_ids.map((empId) => ({ template_id: template.id, employee_id: empId }))
+        );
+      }
+    } catch {}
   }, []);
 
   const handleDeleteTemplate = useCallback(async (id: string) => {
@@ -129,6 +137,10 @@ export function useScheduleTemplates() {
     templatesRef.current = updated;
     toast.success("Schedule template deleted");
     await persistTemplatesToDb(updated);
+    try {
+      await supabase.from("schedule_templates").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+      await supabase.from("schedule_template_assignments").delete().eq("template_id", id);
+    } catch {}
   }, []);
 
   const handleToggleStatus = useCallback(async (id: string) => {

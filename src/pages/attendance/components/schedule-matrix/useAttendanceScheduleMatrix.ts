@@ -14,7 +14,9 @@ export function useAttendanceScheduleMatrix() {
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [manualCellOverrides, setManualCellOverrides] = useState<Record<string, string>>({});
+  const [manualCellOverrides, setManualCellOverrides] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("hrm_matrix_cell_overrides_v1") || "{}"); } catch { return {}; }
+  });
 
   const {
     loading,
@@ -47,13 +49,8 @@ export function useAttendanceScheduleMatrix() {
     return map;
   }, [rawShifts, shiftAssignments]);
 
-  const prevMonth = useCallback(() => {
-    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  }, []);
-
-  const nextMonth = useCallback(() => {
-    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  }, []);
+  const prevMonth = useCallback(() => setCurrentDate((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1)), []);
+  const nextMonth = useCallback(() => setCurrentDate((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1)), []);
 
   const dayColumns: DayColumn[] = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -134,10 +131,11 @@ export function useAttendanceScheduleMatrix() {
   }, [rawEmployees]);
 
   const handleUpdateCell = useCallback((employeeId: string, dateString: string, newShiftCode: string) => {
-    setManualCellOverrides((prev) => ({
-      ...prev,
-      [`${employeeId}_${dateString}`]: newShiftCode,
-    }));
+    setManualCellOverrides((prev) => {
+      const next = { ...prev, [`${employeeId}_${dateString}`]: newShiftCode };
+      try { localStorage.setItem("hrm_matrix_cell_overrides_v1", JSON.stringify(next)); } catch {}
+      return next;
+    });
   }, []);
 
   const currentDisplayList = activeTab === "schedules" ? scheduledEmployees : unscheduledEmployees;

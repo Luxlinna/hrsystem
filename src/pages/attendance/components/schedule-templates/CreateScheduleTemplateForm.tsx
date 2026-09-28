@@ -46,14 +46,10 @@ export const CreateScheduleTemplateForm = memo(function CreateScheduleTemplateFo
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
 
   const handleCopyMonToWeekdays = () => {
-    if (!days.mon) return;
-    setDays((p) => ({ ...p, tue: p.mon, wed: p.mon, thu: p.mon, fri: p.mon }));
+    if (days.mon) setDays((p) => ({ ...p, tue: p.mon, wed: p.mon, thu: p.mon, fri: p.mon }));
   };
 
-  const assignedEmployees = useMemo(
-    () => employees.filter((e) => assignedIds.includes(e.id)),
-    [employees, assignedIds]
-  );
+  const assignedEmployees = useMemo(() => employees.filter((e) => assignedIds.includes(e.id)), [employees, assignedIds]);
 
   const allDepts = useMemo(() => {
     const set = new Set<string>();
@@ -67,6 +63,11 @@ export const CreateScheduleTemplateForm = memo(function CreateScheduleTemplateFo
     setSelectedInTable([]);
   };
 
+  const handleRemoveSingle = (empId: string) => {
+    setAssignedIds((prev) => prev.filter((id) => id !== empId));
+    setSelectedInTable((prev) => prev.filter((id) => id !== empId));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return alert("Please enter a title for this schedule template.");
@@ -75,10 +76,7 @@ export const CreateScheduleTemplateForm = memo(function CreateScheduleTemplateFo
       title: title.trim(),
       site_id: siteId || undefined,
       site_name: siteName,
-      days: {
-        mon: days.mon || "OFF", tue: days.tue || "OFF", wed: days.wed || "OFF",
-        thu: days.thu || "OFF", fri: days.fri || "OFF", sat: days.sat || "OFF", sun: days.sun || "OFF",
-      },
+      days: { mon: days.mon || "OFF", tue: days.tue || "OFF", wed: days.wed || "OFF", thu: days.thu || "OFF", fri: days.fri || "OFF", sat: days.sat || "OFF", sun: days.sun || "OFF" },
       total_employee: assignedIds.length,
       assigned_employee_ids: assignedIds,
       remark: remark.trim(),
@@ -132,6 +130,7 @@ export const CreateScheduleTemplateForm = memo(function CreateScheduleTemplateFo
           selectedInTable={selectedInTable}
           setSelectedInTable={setSelectedInTable}
           onRemoveSelected={handleRemoveSelected}
+          onRemoveSingle={handleRemoveSingle}
           onOpenAddModal={() => setIsAddModalOpen(true)}
           allDepts={allDepts}
           siteName={siteName}

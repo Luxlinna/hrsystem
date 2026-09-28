@@ -51,13 +51,28 @@ export const CellLeaveAttachment = memo(function CellLeaveAttachment({
             <div className="flex items-center justify-center gap-1.5 text-xs text-gray-600 dark:text-slate-400">
               <i className="ri-upload-cloud-2-line text-base text-gray-400" />
               {attachmentFile ? (
-                <span className="font-semibold text-[#0284c7]">{attachmentFile.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-[#0284c7] truncate max-w-xs">{attachmentFile.name}</span>
+                  <span className="text-[10px] text-gray-400">({(attachmentFile.size / 1024).toFixed(1)} KB)</span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setAttachmentFile(null); }}
+                    className="p-1 text-gray-400 hover:text-rose-500 transition-colors"
+                    title="Remove file"
+                  >
+                    <i className="ri-close-line text-sm" />
+                  </button>
+                </div>
               ) : (
                 <>
                   <span>Drop file here or</span>
                   <span className="text-[#0284c7] font-semibold hover:underline">Browse</span>
                 </>
               )}
+            </div>
+            <div className="mt-1 flex items-center justify-center gap-1 text-[10px] text-gray-400 font-medium">
+              <i className="ri-amazon-line text-[11px] text-[#FF9900]" />
+              <span>Attachments stored securely on AWS S3</span>
             </div>
           </div>
         </div>

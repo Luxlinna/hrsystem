@@ -7,6 +7,7 @@ interface Props {
   selectedInTable: string[];
   setSelectedInTable: React.Dispatch<React.SetStateAction<string[]>>;
   onRemoveSelected: () => void;
+  onRemoveSingle?: (empId: string) => void;
   onOpenAddModal: () => void;
   allDepts: string[];
   siteName: string;
@@ -17,6 +18,7 @@ export const TemplateEmployeeTable = memo(function TemplateEmployeeTable({
   selectedInTable,
   setSelectedInTable,
   onRemoveSelected,
+  onRemoveSingle,
   onOpenAddModal,
   allDepts,
   siteName,
@@ -119,12 +121,13 @@ export const TemplateEmployeeTable = memo(function TemplateEmployeeTable({
               <th className="py-2.5 px-3">Department</th>
               <th className="py-2.5 px-3">Designation</th>
               <th className="py-2.5 px-3">Site / BU</th>
+              <th className="py-2.5 px-3 w-16 text-center">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
             {filteredAssigned.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-10 text-center text-gray-400">
+                <td colSpan={8} className="py-10 text-center text-gray-400">
                   <i className="ri-user-add-line text-2xl mb-1 block" />
                   No employees assigned to this schedule template yet. Click &quot;Add Employees&quot; to assign staff.
                 </td>
@@ -158,6 +161,16 @@ export const TemplateEmployeeTable = memo(function TemplateEmployeeTable({
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50">
                       {getBUName(emp)}
                     </span>
+                  </td>
+                  <td className="py-3 px-3 text-center">
+                    <button
+                      type="button"
+                      title="Remove from this schedule template"
+                      onClick={() => onRemoveSingle?.(emp.id)}
+                      className="p-1.5 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <i className="ri-delete-bin-line text-sm" />
+                    </button>
                   </td>
                 </tr>
               ))

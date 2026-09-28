@@ -43,7 +43,7 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
         />
         <button
           type="button"
-          className="px-3.5 py-2 bg-[#2563EB] text-white rounded-r-lg hover:bg-blue-700 transition-colors cursor-pointer"
+          className="px-3.5 py-2 bg-[#253C7D] text-white rounded-r-lg hover:bg-[#1E3064] transition-colors cursor-pointer"
         >
           <i className="ri-search-line text-sm" />
         </button>
@@ -53,17 +53,17 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
       {matrixViewMode === "timesheet" && (
         <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded-full text-[11px] text-gray-500 shadow-2xs font-mono select-none">
           <span className="flex items-center gap-1 font-semibold text-gray-700">
-            <span className="w-3.5 h-3.5 bg-[#EC4899] text-white text-[8px] flex items-center justify-center rounded-[2px] font-bold">S</span>
+            <span className="w-3.5 h-3.5 bg-[#253C7D] text-white text-[8px] flex items-center justify-center rounded-[2px] font-bold">S</span>
             Scheduled
           </span>
           <span className="text-gray-300">·</span>
           <span className="flex items-center gap-1 font-semibold text-gray-700">
-            <span className="w-3.5 h-3.5 bg-white border border-[#EC4899]/50 text-[#EC4899] text-[8px] flex items-center justify-center rounded-[2px] font-bold">C</span>
+            <span className="w-3.5 h-3.5 bg-white border border-[#253C7D]/50 text-[#253C7D] text-[8px] flex items-center justify-center rounded-[2px] font-bold">C</span>
             Clocked
           </span>
           <span className="text-gray-300">·</span>
           <span className="flex items-center gap-1 font-semibold text-gray-700">
-            <span className="w-3.5 h-3.5 bg-[#FF007A] text-white text-[8px] flex items-center justify-center rounded-[2px] font-bold">L</span>
+            <span className="w-3.5 h-3.5 bg-[#1E3064] text-white text-[8px] flex items-center justify-center rounded-[2px] font-bold">L</span>
             Deficit
           </span>
           <span className="text-gray-300">·</span>
@@ -81,7 +81,7 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
           <button
             type="button"
             onClick={() => setViewMenuOpen((v) => !v)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2563EB] text-white rounded-full text-xs font-bold hover:bg-blue-700 cursor-pointer shadow-xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#253C7D] text-white rounded-full text-xs font-bold hover:bg-[#1E3064] cursor-pointer shadow-xs transition-colors"
           >
             <span>{matrixViewMode === "timesheet" ? "Time Sheet" : "Roster"}</span>
             <i className={`ri-arrow-down-s-line text-white/90 transition-transform ${viewMenuOpen ? "rotate-180" : ""}`} />
@@ -98,11 +98,11 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
                     setViewMenuOpen(false);
                   }}
                   className={`w-full px-3 py-2 text-left flex items-center justify-between cursor-pointer ${
-                    matrixViewMode === "roster" ? "font-bold text-blue-600 bg-blue-50/70" : "text-gray-700 hover:bg-gray-50"
+                    matrixViewMode === "roster" ? "font-bold text-[#253C7D] bg-indigo-50/70" : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
                   <span>Roster</span>
-                  {matrixViewMode === "roster" && <i className="ri-check-line text-blue-600 font-bold" />}
+                  {matrixViewMode === "roster" && <i className="ri-check-line text-[#253C7D] font-bold" />}
                 </button>
                 <button
                   type="button"
@@ -111,11 +111,11 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
                     setViewMenuOpen(false);
                   }}
                   className={`w-full px-3 py-2 text-left flex items-center justify-between cursor-pointer ${
-                    matrixViewMode === "timesheet" ? "font-bold text-blue-600 bg-blue-50/70" : "text-gray-700 hover:bg-gray-50"
+                    matrixViewMode === "timesheet" ? "font-bold text-[#253C7D] bg-indigo-50/70" : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
                   <span>Time Sheet</span>
-                  {matrixViewMode === "timesheet" && <i className="ri-check-line text-blue-600 font-bold" />}
+                  {matrixViewMode === "timesheet" && <i className="ri-check-line text-[#253C7D] font-bold" />}
                 </button>
               </div>
             </>

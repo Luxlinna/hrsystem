@@ -48,7 +48,7 @@ export const ScheduleMatrixTimeSheetCell = memo(function ScheduleMatrixTimeSheet
     ? leaveCode
     : cellData?.scheduledHours != null
     ? String(cellData.scheduledHours)
-    : "8.5";
+    : "8";
 
   const cHours = cellData?.clockedHours;
   const cText = cHours != null ? (cHours > 0 ? cHours.toFixed(cHours % 1 === 0 ? 0 : 2) : "0") : (isOff ? "0" : "—");
@@ -65,6 +65,7 @@ export const ScheduleMatrixTimeSheetCell = memo(function ScheduleMatrixTimeSheet
       dateString,
       dayNumber,
       code: cellData?.shiftCode || "OFF",
+      currentCode: cellData?.shiftCode || "OFF",
       status: cellData?.status,
       clockIn: cellData?.clockIn,
       clockOut: cellData?.clockOut,
@@ -97,20 +98,20 @@ export const ScheduleMatrixTimeSheetCell = memo(function ScheduleMatrixTimeSheet
         {/* Tier S: Scheduled */}
         <div className="h-[18px] flex items-center justify-center px-1 text-[10px] font-bold tracking-tight relative">
           {!isOff && !isLeave && (
-            <span className="absolute left-1 w-[2.5px] h-2.5 bg-red-400 rounded-full" />
+            <span className="absolute left-1 w-[2.5px] h-2.5 bg-sky-300 rounded-full" />
           )}
           <span className="truncate">{sText}</span>
         </div>
 
         {/* Tier C: Clocked / Actual */}
-        <div className="h-[18px] flex items-center justify-center px-1 text-[10px] font-semibold border-t border-b border-white/20">
+        <div className="h-[18px] flex items-center justify-center px-1 text-[10px] font-semibold border-t border-b border-white/20 bg-white/5">
           <span>{cText}</span>
         </div>
 
         {/* Tier L: Lost / Late Deficit */}
         <div
           className={`h-[18px] flex items-center justify-center px-1 text-[10px] font-bold ${
-            hasLost ? "bg-[#FF007A] text-white" : "text-white/90"
+            hasLost ? "bg-[#1E3064] text-white border-t border-white/10" : "text-white/80"
           }`}
         >
           <span>{lText}</span>

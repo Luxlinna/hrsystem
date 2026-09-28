@@ -85,11 +85,13 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
         }
       } catch {}
 
-      (tmplRes.data || []).forEach((t: any) => {
-        if (!allTemplates.some((existing) => existing.id === t.id)) {
-          allTemplates.push(t);
-        }
-      });
+      if (allTemplates.length === 0) {
+        (tmplRes.data || []).forEach((t: any) => {
+          if (!t.deleted_at && !allTemplates.some((existing) => existing.id === t.id)) {
+            allTemplates.push(t);
+          }
+        });
+      }
       setRawTemplates(allTemplates);
 
       const tmplMap: Record<string, any> = {};
@@ -104,7 +106,10 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
       });
 
       (assignRes.data || []).forEach((a: any) => {
-        assignMap[a.employee_id] = a.template_id;
+        const parentTmpl = tmplMap[a.template_id];
+        if (!assignMap[a.employee_id] && parentTmpl && !Array.isArray(parentTmpl.assigned_employee_ids)) {
+          assignMap[a.employee_id] = a.template_id;
+        }
       });
 
       setTemplatesById(tmplMap);

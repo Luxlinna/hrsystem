@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, memo } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { uploadFileToS3 } from "@/lib/s3-storage";
 import type { ContextMenuTarget } from "./ScheduleMatrixContextMenu";
 import { CellLeaveEmployeeCard, type FullEmployee } from "./CellLeaveEmployeeCard";
 import { CellLeaveFields } from "./CellLeaveFields";
@@ -36,8 +37,7 @@ export const CreateCellLeaveModal = memo(function CreateCellLeaveModal({
     if (target) {
       setSelectedEmpId(target.empId);
       const f = formatDateInput(target.dateString);
-      setFromDate(f);
-      setToDate(f);
+      setFromDate(f); setToDate(f);
     }
   }, [target]);
 
@@ -45,12 +45,9 @@ export const CreateCellLeaveModal = memo(function CreateCellLeaveModal({
     let active = true;
     async function load() {
       try {
-        const { data } = await supabase
-          .from("employees")
+        const { data } = await supabase.from("employees")
           .select("id, first_name, last_name, employee_code, biometric_user_id, role, department, avatar_url, join_date, reports_to, branch_id, status, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site, branches(name), work_locations:default_work_location_id(name)")
-          .is("deleted_at", null)
-          .order("first_name");
-
+          .is("deleted_at", null).order("first_name");
         if (data && active) {
           setEmployees(data as any[]);
           const sm: Record<string, string> = {};
@@ -87,9 +84,20 @@ export const CreateCellLeaveModal = memo(function CreateCellLeaveModal({
     }
     setSubmitting(true);
     try {
+      let uploadedUrl: string | null = null;
+      if (attachmentFile) {
+        try {
+          const s3Item = await uploadFileToS3(attachmentFile, "leave/attachments");
+          uploadedUrl = s3Item.url;
+        } catch (uploadErr) {
+          console.warn("Failed to upload leave attachment to AWS S3:", uploadErr);
+        }
+      }
+
       let fullReason = reason.trim();
       if (remark.trim()) fullReason += `\n[Remark: ${remark.trim()}]`;
-      if (attachmentFile) fullReason += `\n[Attachment: ${attachmentFile.name}]`;
+      if (uploadedUrl) fullReason += `\n[Attachment: ${uploadedUrl}]`;
+      else if (attachmentFile) fullReason += `\n[Attachment: ${attachmentFile.name}]`;
 
       const { error } = await supabase.from("leave_requests").insert([{
         employee_id: selectedEmpId,
@@ -103,8 +111,7 @@ export const CreateCellLeaveModal = memo(function CreateCellLeaveModal({
       if (error) throw error;
 
       toast("Success", `Leave request created successfully (${totalDays} ${totalDays === 1 ? "day" : "days"})`, "success");
-      onSaved?.();
-      onClose();
+      onSaved?.(); onClose();
     } catch (err: any) {
       toast("Error", err.message || "Failed to create leave request", "error");
     } finally {

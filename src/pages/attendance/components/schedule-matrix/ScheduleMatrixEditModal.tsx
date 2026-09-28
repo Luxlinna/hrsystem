@@ -75,9 +75,8 @@ export const ScheduleMatrixEditModal = memo(function ScheduleMatrixEditModal({
           </p>
 
           {filteredShifts.map((opt) => {
-            const isSelected =
-              editingCell.currentCode === opt.code ||
-              editingCell.currentCode.endsWith(`_${opt.code}`);
+            const cur = editingCell.currentCode || "";
+            const isSelected = cur === opt.code || (Boolean(cur) && cur.endsWith(`_${opt.code}`));
             const pillStyle = getShiftPillStyle(opt.code, false);
 
             return (

@@ -26,7 +26,6 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
     prevMonth,
     nextMonth,
     dayColumns,
-    availableShifts,
     scheduledEmployees,
     unscheduledEmployees,
     departmentList,
@@ -40,25 +39,18 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
     toggleSelectAll,
     toggleSelectOne,
     loading,
-    handleUpdateCell,
   } = useAttendanceScheduleMatrix();
 
   const [matrixViewMode, setMatrixViewMode] = useState<MatrixViewMode>("timesheet");
   const [hoveredCell, setHoveredCell] = useState<{ empId: string; dateString: string; text: string; x: number; y: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<{ position: { x: number; y: number }; target: ContextMenuTarget } | null>(null);
-  const [editingCell, setEditingCell] = useState<{ empId: string; empName: string; dateString: string; dayNumber: number; currentCode: string } | null>(null);
   const [logModalTarget, setLogModalTarget] = useState<ContextMenuTarget | null>(null);
   const [leaveModal, setLeaveModal] = useState<{ target: ContextMenuTarget; mode: "self" | "for_employee" } | null>(null);
   const [missionModal, setMissionModal] = useState<{ target: ContextMenuTarget; mode: "self" | "for_employee" } | null>(null);
 
-  const handleCellClick = (data: ContextMenuTarget & { x: number; y: number }) => {
-    setContextMenu({ position: { x: data.x, y: data.y }, target: data });
-  };
-
-  const handleSelectShift = (code: string) => {
-    if (!editingCell) return;
-    handleUpdateCell(editingCell.empId, editingCell.dateString, code);
-    setEditingCell(null);
+  const handleCellClick = (data: any) => {
+    const currentCode = data.currentCode || data.code || "OFF";
+    setContextMenu({ position: { x: data.x, y: data.y }, target: { ...data, currentCode } });
   };
 
   return (
@@ -118,15 +110,6 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
         position={contextMenu?.position || null}
         target={contextMenu?.target || null}
         onClose={() => setContextMenu(null)}
-        onChangeShift={() => {
-          if (contextMenu?.target) {
-            setEditingCell({
-              empId: contextMenu.target.empId, empName: contextMenu.target.empName,
-              dateString: contextMenu.target.dateString, dayNumber: contextMenu.target.dayNumber,
-              currentCode: contextMenu.target.currentCode,
-            });
-          }
-        }}
         onViewAttendanceLog={() => {
           if (contextMenu?.target) {
             if (onViewAttendanceLog) onViewAttendanceLog(contextMenu.target);
@@ -142,13 +125,9 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
       />
 
       <ScheduleMatrixModalsContainer
-        editingCell={editingCell}
-        availableShifts={availableShifts}
         logModalTarget={logModalTarget}
         leaveModal={leaveModal}
         missionModal={missionModal}
-        onCloseEdit={() => setEditingCell(null)}
-        onSelectShift={handleSelectShift}
         onCloseLog={() => setLogModalTarget(null)}
         onCloseLeave={() => setLeaveModal(null)}
         onCloseMission={() => setMissionModal(null)}

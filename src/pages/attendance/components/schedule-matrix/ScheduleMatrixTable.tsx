@@ -75,7 +75,7 @@ export const ScheduleMatrixTable = memo(function ScheduleMatrixTable({
                     key={col.dayNumber}
                     className={`w-[66px] min-w-[66px] max-w-[66px] px-1 py-1.5 text-center border-b border-r border-gray-200 transition-colors ${
                       isToday
-                        ? "bg-blue-50/90 text-blue-900 border-blue-200 font-bold"
+                        ? "bg-indigo-50/70 text-[#253C7D] border-[#253C7D]/30 font-bold"
                         : col.isHoliday
                         ? "bg-orange-50 text-orange-950 border-orange-200"
                         : col.isWeekend
@@ -86,7 +86,7 @@ export const ScheduleMatrixTable = memo(function ScheduleMatrixTable({
                   >
                     <div className="font-extrabold text-[12px] leading-tight">{col.dayNumber}</div>
                     <div className={`text-[10px] font-semibold uppercase tracking-wider leading-tight mt-0.5 ${
-                      isToday ? "text-blue-600 font-bold" : col.isHoliday ? "text-orange-700 font-bold" : col.isWeekend ? "text-slate-500" : "text-gray-400"
+                      isToday ? "text-[#253C7D] font-bold" : col.isHoliday ? "text-orange-700 font-bold" : col.isWeekend ? "text-slate-500" : "text-gray-400"
                     }`}>
                       {col.dayName}
                     </div>
@@ -141,7 +141,7 @@ export const ScheduleMatrixTable = memo(function ScheduleMatrixTable({
               const pNum = i + 1;
               const isActive = pNum === safePage;
               return (
-                <button key={pNum} type="button" onClick={() => setCurrentPage(pNum)} className={`w-7 h-7 flex items-center justify-center rounded text-xs font-semibold cursor-pointer ${isActive ? "bg-[#2563EB] text-white" : "border border-gray-200 text-gray-700 hover:bg-gray-50"}`}>{pNum}</button>
+                <button key={pNum} type="button" onClick={() => setCurrentPage(pNum)} className={`w-7 h-7 flex items-center justify-center rounded text-xs font-semibold cursor-pointer ${isActive ? "bg-[#253C7D] text-white" : "border border-gray-200 text-gray-700 hover:bg-gray-50"}`}>{pNum}</button>
               );
             })}
             <button type="button" disabled={safePage === totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} className="w-7 h-7 flex items-center justify-center border border-gray-200 rounded text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">›</button>

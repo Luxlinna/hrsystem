@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, memo } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import { uploadFileToS3 } from "@/lib/s3-storage";
 import type { ContextMenuTarget } from "./ScheduleMatrixContextMenu";
 import { CellLeaveEmployeeCard, type FullEmployee } from "./CellLeaveEmployeeCard";
 import { CellLeaveAttachment } from "./CellLeaveAttachment";
@@ -85,12 +86,23 @@ export const CreateMissionModal = memo(function CreateMissionModal({
     }
     setSubmitting(true);
     try {
+      let uploadedUrl: string | null = null;
+      if (attachmentFile) {
+        try {
+          const s3Item = await uploadFileToS3(attachmentFile, "missions/attachments");
+          uploadedUrl = s3Item.url;
+        } catch (uploadErr) {
+          console.warn("Failed to upload mission attachment to AWS S3:", uploadErr);
+        }
+      }
+
       let fullReason = `[MISSION: ${missionType} - ${missionFor.toUpperCase()}]\nSubject: ${subject.trim()}\nDetail: ${detail.trim()}`;
       if (selectedOthers.length > 0) {
         fullReason += `\nOther Members: ${selectedOthers.map((o) => `${o.first_name} ${o.last_name} (${o.employee_code || o.biometric_user_id || "—"})`).join(", ")}`;
       }
       if (remark.trim()) fullReason += `\nRemark: ${remark.trim()}`;
-      if (attachmentFile) fullReason += `\nAttachment: ${attachmentFile.name}`;
+      if (uploadedUrl) fullReason += `\n[Attachment: ${uploadedUrl}]`;
+      else if (attachmentFile) fullReason += `\nAttachment: ${attachmentFile.name}`;
 
       const { error } = await supabase.from("leave_requests").insert([{
         employee_id: selectedEmpId,
