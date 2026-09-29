@@ -72,6 +72,7 @@ export interface Employee {
   department: string;
   status: string;
   email?: string;
+  avatar_url?: string | null;
   default_work_location_id?: string | null;
   work_locations?: { id: string; name: string } | null;
   biometric_user_id?: string | null;

@@ -84,7 +84,7 @@ export function useBranches() {
     const requestId = ++detailRequestId.current;
     const { data } = await supabase
       .from("employees")
-      .select("id, first_name, last_name, role, department, status, email, biometric_user_id, default_work_location_id, work_locations:default_work_location_id(id, name)")
+      .select("id, first_name, last_name, role, department, status, email, biometric_user_id, avatar_url, default_work_location_id, work_locations:default_work_location_id(id, name)")
       .eq("branch_id", branchId)
       .is("deleted_at", null)
       .order("department");
