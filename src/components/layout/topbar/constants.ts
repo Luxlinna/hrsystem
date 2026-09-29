@@ -21,9 +21,9 @@ export interface DrawerGroup {
 }
 
 const CORE_ITEMS: DrawerItem[] = [
+  { path: "/self-service", label: "Self-Service", sublabel: "Employee view", icon: "ri-user-settings-line", module: "self-service" },
   { path: "/", label: "Dashboard", sublabel: "Main overview", icon: "ri-dashboard-line", module: "dashboard" },
   { path: "/employees", label: "Directory", sublabel: "Browse all staff", icon: "ri-user-search-line", module: "employees" },
-  { path: "/branches", label: "BU", sublabel: "Business Unique / Units", icon: "ri-building-line", module: "branches" },
   { path: "/analytics", label: "Analytics", sublabel: "Charts & insights", icon: "ri-bar-chart-2-line", module: "analytics" },
 ];
 
@@ -58,12 +58,12 @@ const OPERATIONS_ITEMS: DrawerItem[] = [
 const INSIGHTS_ITEMS: DrawerItem[] = [
   { path: "/reports", label: "Reports", sublabel: "CSV / PDF reports", icon: "ri-file-chart-line", module: "reports" },
   { path: "/audit-log", label: "Audit Log", sublabel: "Activity history", icon: "ri-shield-check-line", module: "audit-log" },
-  { path: "/self-service", label: "Self-Service", sublabel: "Employee view", icon: "ri-user-settings-line", module: "self-service" },
 ];
 
 const SYSTEM_ITEMS: DrawerItem[] = [
   { path: "/admin?tab=users", label: "Admin Portal", sublabel: "Accounts & permissions", icon: "ri-user-settings-line", module: "admin" },
   { path: "/notifications", label: "Notifications", sublabel: "Alerts & updates", icon: "ri-notification-3-line", module: "notifications" },
+  { path: "/branches", label: "BU", sublabel: "Business Unique / Units", icon: "ri-building-line", module: "branches" },
   { path: "/settings", label: "Settings", sublabel: "System configuration", icon: "ri-settings-3-line", module: "settings" },
 ];
 

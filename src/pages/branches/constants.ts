@@ -35,4 +35,44 @@ export const INITIAL_BRANCH_FORM: BranchFormState = {
   afternoon_check_in_end: "14:00",
   afternoon_check_out_start: "16:00",
   afternoon_check_out_end: "18:00",
+
+  // 1. Company Info
+  logo_url: "",
+  company_name: "",
+  registration_no: "",
+  vat_no: "",
+  industry: "",
+  domain: "",
+  currency: "USD",
+  rounding_digit: "2",
+
+  // 2. Physical Address Info
+  physical_address: "",
+  physical_city: "Phnom Penh",
+  physical_province: "",
+  physical_postal_code: "",
+  physical_country: "Cambodia",
+
+  // 3. Mailing Address Info
+  mailing_address: "",
+  mailing_city: "Phnom Penh",
+  mailing_province: "",
+  mailing_postal_code: "",
+  mailing_country: "Cambodia",
+
+  // 4. Contact Info
+  phone_number: "",
+  email: "",
+  website: "",
+
+  // 5. Timezone Info
+  time_zone: "SE Asia Standard Time",
+
+  // 6. Legal Info
+  legal_tax_number: "",
+  legal_name: "",
+  legal_business_activity: "",
+  legal_address: "",
+  legal_phone_number: "",
+  legal_email: "",
 };

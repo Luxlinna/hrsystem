@@ -7,21 +7,36 @@ export function useBranchesData() {
   const [loading, setLoading] = useState(true);
 
   const loadBranches = useCallback(async () => {
-    const [branchesRes, empRes] = await Promise.all([
+    const [branchesRes, empRes, profileSettingsRes] = await Promise.all([
       supabase
         .from("branches")
-        .select(
-          "id, name, location, manager_name, employee_count, status, created_at, latitude, longitude, geofence_radius_m, work_start_time, work_end_time, late_grace_minutes, early_leave_grace_minutes, morning_check_in_start, morning_check_in_end, morning_check_out_start, morning_check_out_end, afternoon_check_in_start, afternoon_check_in_end, afternoon_check_out_start, afternoon_check_out_end, deleted_at, deleted_by"
-        )
+        .select("*")
         .is("deleted_at", null),
       supabase
         .from("employees")
         .select("id, branch_id, status")
         .is("deleted_at", null),
+      supabase
+        .from("system_settings")
+        .select("key, value")
+        .ilike("key", "bu_profile_%"),
     ]);
 
     const branchesList: Branch[] = branchesRes.data || [];
     const employeesList = empRes.data || [];
+
+    // Parse backup profile settings from system_settings
+    const profileMap: Record<string, any> = {};
+    if (profileSettingsRes.data) {
+      for (const item of profileSettingsRes.data) {
+        try {
+          const branchId = item.key.replace("bu_profile_", "");
+          profileMap[branchId] = JSON.parse(item.value);
+        } catch (_e) {
+          // ignore corrupted JSON
+        }
+      }
+    }
 
     // Map actual employees count per branch from the employees table
     const countMap: Record<string, number> = {};
@@ -31,10 +46,53 @@ export function useBranchesData() {
       }
     }
 
-    const calculatedBranches = branchesList.map((branch) => ({
-      ...branch,
-      employee_count: countMap[branch.id] ?? 0,
-    }));
+    const calculatedBranches = branchesList.map((branch) => {
+      const profile = profileMap[branch.id] || {};
+      return {
+        ...branch,
+        // 1. Company Info
+        logo_url: branch.logo_url ?? profile.logo_url ?? null,
+        company_name: branch.company_name ?? profile.company_name ?? branch.name ?? null,
+        registration_no: branch.registration_no ?? profile.registration_no ?? null,
+        vat_no: branch.vat_no ?? profile.vat_no ?? null,
+        industry: branch.industry ?? profile.industry ?? null,
+        domain: branch.domain ?? profile.domain ?? null,
+        currency: branch.currency ?? profile.currency ?? "USD",
+        rounding_digit: branch.rounding_digit ?? profile.rounding_digit ?? 2,
+
+        // 2. Physical Address Info
+        physical_address: branch.physical_address ?? profile.physical_address ?? branch.location ?? null,
+        physical_city: branch.physical_city ?? profile.physical_city ?? "Phnom Penh",
+        physical_province: branch.physical_province ?? profile.physical_province ?? null,
+        physical_postal_code: branch.physical_postal_code ?? profile.physical_postal_code ?? null,
+        physical_country: branch.physical_country ?? profile.physical_country ?? "Cambodia",
+
+        // 3. Mailing Address Info
+        mailing_address: branch.mailing_address ?? profile.mailing_address ?? branch.physical_address ?? branch.location ?? null,
+        mailing_city: branch.mailing_city ?? profile.mailing_city ?? "Phnom Penh",
+        mailing_province: branch.mailing_province ?? profile.mailing_province ?? null,
+        mailing_postal_code: branch.mailing_postal_code ?? profile.mailing_postal_code ?? null,
+        mailing_country: branch.mailing_country ?? profile.mailing_country ?? "Cambodia",
+
+        // 4. Contact Info
+        phone_number: branch.phone_number ?? profile.phone_number ?? null,
+        email: branch.email ?? profile.email ?? null,
+        website: branch.website ?? profile.website ?? null,
+
+        // 5. Timezone Info
+        time_zone: branch.time_zone ?? profile.time_zone ?? "SE Asia Standard Time",
+
+        // 6. Legal Info
+        legal_tax_number: branch.legal_tax_number ?? profile.legal_tax_number ?? null,
+        legal_name: branch.legal_name ?? profile.legal_name ?? null,
+        legal_business_activity: branch.legal_business_activity ?? profile.legal_business_activity ?? null,
+        legal_address: branch.legal_address ?? profile.legal_address ?? null,
+        legal_phone_number: branch.legal_phone_number ?? profile.legal_phone_number ?? null,
+        legal_email: branch.legal_email ?? profile.legal_email ?? null,
+
+        employee_count: countMap[branch.id] ?? 0,
+      };
+    });
 
     // Sort by employee count descending, then by name
     calculatedBranches.sort(
@@ -51,6 +109,7 @@ export function useBranchesData() {
       .channel("branches-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "branches" }, () => loadBranches())
       .on("postgres_changes", { event: "*", schema: "public", table: "employees" }, () => loadBranches())
+      .on("postgres_changes", { event: "*", schema: "public", table: "system_settings" }, () => loadBranches())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);

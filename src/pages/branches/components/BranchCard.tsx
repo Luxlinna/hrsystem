@@ -26,14 +26,23 @@ export const BranchCard = memo(function BranchCard({
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#253C7D]/10 flex items-center justify-center">
-            <i className="ri-building-2-line text-[#253C7D] text-lg" />
+          <div className="w-11 h-11 rounded-xl bg-white border border-gray-100 p-1 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+            {branch.logo_url ? (
+              <img src={branch.logo_url} alt={branch.name} className="max-h-full max-w-full object-contain" />
+            ) : (
+              <div className="w-full h-full rounded-lg bg-[#253C7D]/10 flex items-center justify-center">
+                <i className="ri-building-2-line text-[#253C7D] text-lg" />
+              </div>
+            )}
           </div>
           <div>
             <p className="text-[14px] font-semibold text-gray-900 leading-tight">{branch.name}</p>
+            {branch.company_name && branch.company_name !== branch.name && (
+              <p className="text-[11px] font-medium text-gray-500 truncate max-w-[190px]">{branch.company_name}</p>
+            )}
             <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">
-              <i className="ri-map-pin-line" />
-              {branch.location}
+              <i className="ri-map-pin-line text-[10px]" />
+              <span className="truncate max-w-[190px]">{branch.location}</span>
             </p>
           </div>
         </div>
@@ -73,6 +82,16 @@ export const BranchCard = memo(function BranchCard({
           </span>
           <span className="text-[13px] font-bold text-[#253C7D]">{branch.employee_count}</span>
         </div>
+        {branch.industry && (
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] text-gray-500 flex items-center gap-1.5">
+              <i className="ri-briefcase-line" /> Industry
+            </span>
+            <span className="text-[12px] font-medium text-gray-700 truncate max-w-[170px]">
+              {branch.industry}
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <span className="text-[12px] text-gray-500 flex items-center gap-1.5">
             <i className="ri-calendar-line" /> Since

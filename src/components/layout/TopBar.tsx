@@ -95,11 +95,6 @@ export default function TopBar() {
                   Directory
                 </Link>
               )}
-              {can("branches") && (
-                <Link to="/branches" className={`text-[13px] font-medium ${textColor} transition-colors`}>
-                  BU
-                </Link>
-              )}
               {can("analytics") && (
                 <Link to="/analytics" className={`text-[13px] font-medium ${textColor} transition-colors`}>
                   Analytics

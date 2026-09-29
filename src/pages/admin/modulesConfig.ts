@@ -1,7 +1,7 @@
 export const ALL_MODULES = [
+  { key: "self-service", label: "Self-Service", icon: "ri-user-settings-line", group: "Core" },
   { key: "dashboard", label: "Dashboard", icon: "ri-dashboard-line", group: "Core" },
   { key: "employees", label: "Employees", icon: "ri-user-search-line", group: "Core" },
-  { key: "branches", label: "BU", icon: "ri-building-line", group: "Core" },
   { key: "analytics", label: "Analytics", icon: "ri-bar-chart-2-line", group: "Core" },
   { key: "onboarding", label: "Onboarding", icon: "ri-user-add-line", group: "Workforce" },
   { key: "onboarding-checklist", label: "Onboarding Checklist", icon: "ri-task-line", group: "Workforce" },
@@ -29,7 +29,7 @@ export const ALL_MODULES = [
   { key: "documents", label: "Documents", icon: "ri-folder-line", group: "Operations" },
   { key: "reports", label: "Reports", icon: "ri-file-chart-line", group: "Insights" },
   { key: "audit-log", label: "Audit Log", icon: "ri-shield-check-line", group: "Insights" },
-  { key: "self-service", label: "Self-Service", icon: "ri-user-settings-line", group: "Insights" },
+  { key: "branches", label: "BU", icon: "ri-building-line", group: "System" },
   { key: "notifications", label: "Notifications", icon: "ri-notification-3-line", group: "System" },
   { key: "unity-apps", label: "Unity Apps", icon: "ri-apps-line", group: "System" },
   { key: "settings", label: "Settings", icon: "ri-settings-3-line", group: "System" },

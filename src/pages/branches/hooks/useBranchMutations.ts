@@ -70,68 +70,135 @@ export function useBranchMutations({
       const afternoon_check_out_end = form.afternoon_check_out_end?.trim() ? form.afternoon_check_out_end.trim() + ":00" : "18:00:00";
       let entityId: string | null = editingBranchId;
 
+      const basePayload: Record<string, any> = {
+        name: form.name.trim(),
+        location: form.physical_address?.trim() || form.location.trim(),
+        manager_name: form.manager_name.trim(),
+        status: form.status,
+        latitude,
+        longitude,
+        geofence_radius_m,
+        work_start_time,
+        work_end_time,
+        late_grace_minutes,
+        early_leave_grace_minutes,
+        morning_check_in_start,
+        morning_check_in_end,
+        morning_check_out_start,
+        morning_check_out_end,
+        afternoon_check_in_start,
+        afternoon_check_in_end,
+        afternoon_check_out_start,
+        afternoon_check_out_end,
+      };
+
+      const companyProfilePayload = {
+        // 1. Company Info
+        logo_url: form.logo_url?.trim() || null,
+        company_name: form.company_name?.trim() || form.name.trim(),
+        registration_no: form.registration_no?.trim() || null,
+        vat_no: form.vat_no?.trim() || null,
+        industry: form.industry?.trim() || null,
+        domain: form.domain?.trim() || null,
+        currency: form.currency?.trim() || "USD",
+        rounding_digit: parseInt(form.rounding_digit, 10) || 2,
+
+        // 2. Physical Address Info
+        physical_address: form.physical_address?.trim() || form.location.trim() || null,
+        physical_city: form.physical_city?.trim() || "Phnom Penh",
+        physical_province: form.physical_province?.trim() || null,
+        physical_postal_code: form.physical_postal_code?.trim() || null,
+        physical_country: form.physical_country?.trim() || "Cambodia",
+
+        // 3. Mailing Address Info
+        mailing_address: form.mailing_address?.trim() || null,
+        mailing_city: form.mailing_city?.trim() || "Phnom Penh",
+        mailing_province: form.mailing_province?.trim() || null,
+        mailing_postal_code: form.mailing_postal_code?.trim() || null,
+        mailing_country: form.mailing_country?.trim() || "Cambodia",
+
+        // 4. Contact Info
+        phone_number: form.phone_number?.trim() || null,
+        email: form.email?.trim() || null,
+        website: form.website?.trim() || null,
+
+        // 5. Timezone Info
+        time_zone: form.time_zone?.trim() || "SE Asia Standard Time",
+
+        // 6. Legal Info
+        legal_tax_number: form.legal_tax_number?.trim() || null,
+        legal_name: form.legal_name?.trim() || null,
+        legal_business_activity: form.legal_business_activity?.trim() || null,
+        legal_address: form.legal_address?.trim() || null,
+        legal_phone_number: form.legal_phone_number?.trim() || null,
+        legal_email: form.legal_email?.trim() || null,
+      };
+
       if (editingBranchId) {
-        const { error } = await supabase
+        // Try updating full payload with company profile columns
+        let updateRes = await supabase
           .from("branches")
           .update({
-            name: form.name,
-            location: form.location,
-            manager_name: form.manager_name,
-            status: form.status,
-            latitude,
-            longitude,
-            geofence_radius_m,
-            work_start_time,
-            work_end_time,
-            late_grace_minutes,
-            early_leave_grace_minutes,
-            morning_check_in_start,
-            morning_check_in_end,
-            morning_check_out_start,
-            morning_check_out_end,
-            afternoon_check_in_start,
-            afternoon_check_in_end,
-            afternoon_check_out_start,
-            afternoon_check_out_end,
+            ...basePayload,
+            ...companyProfilePayload,
           })
           .eq("id", editingBranchId);
-        if (error) {
-          toast("Error", error.message || "Failed to update BU", "error");
+
+        // Fallback to base columns if new columns do not exist yet in schema
+        if (updateRes.error) {
+          updateRes = await supabase
+            .from("branches")
+            .update(basePayload)
+            .eq("id", editingBranchId);
+        }
+
+        if (updateRes.error) {
+          toast("Error", updateRes.error.message || "Failed to update BU", "error");
           setSubmitting(false);
           return;
         }
       } else {
-        const { data, error } = await supabase
+        // Try inserting full payload
+        let insertRes = await supabase
           .from("branches")
           .insert({
-            name: form.name,
-            location: form.location,
-            manager_name: form.manager_name,
-            status: form.status,
-            latitude,
-            longitude,
-            geofence_radius_m,
-            work_start_time,
-            work_end_time,
-            late_grace_minutes,
-            early_leave_grace_minutes,
-            morning_check_in_start,
-            morning_check_in_end,
-            morning_check_out_start,
-            morning_check_out_end,
-            afternoon_check_in_start,
-            afternoon_check_in_end,
-            afternoon_check_out_start,
-            afternoon_check_out_end,
+            ...basePayload,
+            ...companyProfilePayload,
           })
           .select("id")
           .single();
-        if (error) {
-          toast("Error", error.message || "Failed to create BU", "error");
+
+        // Fallback to base columns if columns not migrated yet
+        if (insertRes.error) {
+          insertRes = await supabase
+            .from("branches")
+            .insert(basePayload)
+            .select("id")
+            .single();
+        }
+
+        if (insertRes.error) {
+          toast("Error", insertRes.error.message || "Failed to create BU", "error");
           setSubmitting(false);
           return;
         }
-        entityId = data?.id || null;
+        entityId = insertRes.data?.id || null;
+      }
+
+      // Sync company profile in system_settings for rock-solid persistence
+      if (entityId) {
+        try {
+          await supabase.from("system_settings").upsert(
+            {
+              key: `bu_profile_${entityId}`,
+              value: JSON.stringify(companyProfilePayload),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "key" }
+          );
+        } catch (_err) {
+          // ignore background sync errors
+        }
       }
 
       await logActivity({
