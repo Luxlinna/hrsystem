@@ -1,16 +1,6 @@
 import { useState, useMemo } from "react";
-import { BranchCompanyProfileSection } from "./components/BranchCompanyProfileSection";
-import { BranchWorkSitesSection } from "./components/BranchWorkSitesSection";
-import { BranchDepartmentsSection } from "./components/BranchDepartmentsSection";
-import { BranchPositionsSection } from "./components/BranchPositionsSection";
-import { BranchEmployeeTypesSection } from "./components/BranchEmployeeTypesSection";
-import { BranchEmployeeLevelsSection } from "./components/BranchEmployeeLevelsSection";
-import { BranchContractTypesSection } from "./components/BranchContractTypesSection";
-import { BranchBiometricsSection } from "./components/BranchBiometricsSection";
-import { BranchStaffSection } from "./components/BranchStaffSection";
-import { BranchStatsRow } from "./components/BranchStatsRow";
-import { BranchFilters } from "./components/BranchFilters";
-import { BranchGrid } from "./components/BranchGrid";
+import { BranchTabsNav, BranchTabType } from "./components/BranchTabsNav";
+import { BranchTabContent } from "./components/BranchTabContent";
 import { BranchModal } from "./components/BranchModal";
 import { useBranches } from "./hooks/useBranches";
 
@@ -56,7 +46,7 @@ export default function Branches() {
   } = useBranches();
 
   // Active tab: defaults to "profile" (Company Profile)
-  const [activeTab, setActiveTab] = useState<"profile" | "sites" | "departments" | "positions" | "employee-types" | "employee-levels" | "contract-types" | "schedule" | "staff" | "all">("profile");
+  const [activeTab, setActiveTab] = useState<BranchTabType>("profile");
 
   // The active BU for this user: strictly scoped to their own BU or selected BU
   const currentBranch = useMemo(() => {
@@ -124,308 +114,48 @@ export default function Branches() {
             )}
           </div>
 
-          {/* 2. Flat Modern Enterprise Navigation Tabs */}
-          <div className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 -mb-2 overflow-x-auto text-[12.5px] sm:text-[13.5px] no-scrollbar">
-            {isSuperAdmin && (
-              <button
-                type="button"
-                onClick={() => setActiveTab("all")}
-                className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                  activeTab === "all"
-                    ? "border-[#0088cc] text-[#0088cc]"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <i className="ri-layout-grid-line text-sm sm:text-base" />
-                All Units ({branches.length})
-              </button>
-            )}
+          {/* 2. Sleek Enterprise Navigation Tabs with Dropdown Style */}
+          <BranchTabsNav
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            isSuperAdmin={isSuperAdmin}
+            totalBranches={branches.length}
+            employeeCount={currentBranch?.employee_count || 0}
+          />
 
-            <button
-              type="button"
-              onClick={() => setActiveTab("profile")}
-              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === "profile"
-                  ? "border-[#0088cc] text-[#0088cc]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <i className="ri-building-line text-sm sm:text-base" />
-              Company Profile
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("sites")}
-              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === "sites"
-                  ? "border-[#0088cc] text-[#0088cc]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <i className="ri-map-pin-2-line text-sm sm:text-base" />
-              Sites & Workstations
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("departments")}
-              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === "departments"
-                  ? "border-[#0088cc] text-[#0088cc]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <i className="ri-node-tree text-sm sm:text-base" />
-              Departments
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("positions")}
-              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === "positions"
-                  ? "border-[#0088cc] text-[#0088cc]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <i className="ri-briefcase-line text-sm sm:text-base" />
-              Positions
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("employee-types")}
-              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === "employee-types"
-                  ? "border-[#0088cc] text-[#0088cc]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <i className="ri-user-settings-line text-sm sm:text-base" />
-              Employee Types
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("employee-levels")}
-              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === "employee-levels"
-                  ? "border-[#0088cc] text-[#0088cc]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <i className="ri-stairs-line text-sm sm:text-base" />
-              Employee Levels
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("contract-types")}
-              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === "contract-types"
-                  ? "border-[#0088cc] text-[#0088cc]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <i className="ri-file-paper-2-line text-sm sm:text-base" />
-              Contract Types
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("schedule")}
-              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === "schedule"
-                  ? "border-[#0088cc] text-[#0088cc]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <i className="ri-time-line text-sm sm:text-base" />
-              Grace & Shift Policy
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("staff")}
-              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === "staff"
-                  ? "border-[#0088cc] text-[#0088cc]"
-                  : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <i className="ri-team-line text-sm sm:text-base" />
-              Staff Directory ({currentBranch?.employee_count || 0})
-            </button>
-          </div>
-
-          {/* TAB 0: ALL BUSINESS UNITS (Super Admin Overview) */}
-          {activeTab === "all" && isSuperAdmin && (
-            <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
-              <BranchStatsRow
-                totalBranches={branches.length}
-                activeBranches={activeBranches}
-                totalEmployees={totalEmployees}
-              />
-              <BranchFilters
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                filterStatus={filterStatus}
-                setFilterStatus={setFilterStatus}
-              />
-              <BranchGrid
-                branches={filteredBranches}
-                selectedBranchId={currentBranch?.id ?? null}
-                isAdmin={isAdmin || isSuperAdmin}
-                onSelectBranch={(b) => {
-                  setSelectedBranch(b);
-                  setSelectedBranchId(b.id);
-                  setActiveTab("profile");
-                }}
-                onDeleteBranch={handleDeleteBranch}
-              />
-            </div>
-          )}
-
-          {/* TAB 1: COMPANY PROFILE (Exact Reference Screenshot Layout) */}
-          {activeTab === "profile" && currentBranch && (
-            <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-              <BranchCompanyProfileSection
-                branch={currentBranch}
-                canManage={canManage}
-                onOpenEditModal={openEditModal}
-                allowedBranches={allowedBranches}
-                onSelectBranchId={(id) => {
-                  const b = branches.find((x) => x.id === id);
-                  if (b) {
-                    setSelectedBranch(b);
-                    setSelectedBranchId(b.id);
-                  }
-                }}
-                hideHeader={false}
-              />
-            </div>
-          )}
-
-          {/* TAB 2: SITES & WORKSTATIONS */}
-          {activeTab === "sites" && currentBranch && (
-            <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
-              <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-                <BranchWorkSitesSection
-                  branchId={currentBranch.id}
-                  branchName={currentBranch.company_name || currentBranch.name}
-                  canManage={canManage}
-                />
-              </div>
-              <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-                <BranchBiometricsSection branchId={currentBranch.id} branchName={currentBranch.name} canManage={canManage} />
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: DEPARTMENTS */}
-          {activeTab === "departments" && currentBranch && (
-            <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
-              <BranchDepartmentsSection
-                branchId={currentBranch.id}
-                canManage={canManage}
-              />
-            </div>
-          )}
-
-          {/* TAB 4: POSITIONS */}
-          {activeTab === "positions" && currentBranch && (
-            <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
-              <BranchPositionsSection
-                branchId={currentBranch.id}
-                canManage={canManage}
-              />
-            </div>
-          )}
-
-          {/* TAB 5: EMPLOYEE TYPES */}
-          {activeTab === "employee-types" && currentBranch && (
-            <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
-              <BranchEmployeeTypesSection
-                branchId={currentBranch.id}
-                canManage={canManage}
-              />
-            </div>
-          )}
-
-          {/* TAB 6: EMPLOYEE LEVELS */}
-          {activeTab === "employee-levels" && currentBranch && (
-            <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
-              <BranchEmployeeLevelsSection
-                branchId={currentBranch.id}
-                canManage={canManage}
-              />
-            </div>
-          )}
-
-          {/* TAB 7: CONTRACT TYPES */}
-          {activeTab === "contract-types" && currentBranch && (
-            <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
-              <BranchContractTypesSection
-                branchId={currentBranch.id}
-                canManage={canManage}
-              />
-            </div>
-          )}
-
-          {/* TAB 3: WORK SCHEDULE & GRACE POLICY */}
-          {activeTab === "schedule" && currentBranch && (
-            <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-4 sm:p-7 space-y-5 sm:space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 sm:pb-4 gap-2.5">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">Work Schedule & Attendance Policy</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Operating hours and grace windows applied for {currentBranch.name}</p>
-                </div>
-                {canManage && (
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(currentBranch, "schedule")}
-                    className="inline-flex items-center justify-center gap-1 px-3.5 py-1.5 text-xs font-semibold text-[#0088cc] border border-[#0088cc]/30 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer w-full sm:w-auto"
-                  >
-                    <i className="ri-edit-line" />
-                    Adjust Hours
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div className="p-3.5 sm:p-4 bg-slate-50/80 rounded-xl border border-slate-100">
-                  <span className="text-[10.5px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Check-In Time</span>
-                  <p className="text-lg sm:text-xl font-bold text-slate-900">
-                    {currentBranch.work_start_time ? currentBranch.work_start_time.slice(0, 5) : "08:00"}
-                  </p>
-                  <p className="text-xs text-emerald-600 font-semibold mt-1">
-                    +{currentBranch.late_grace_minutes ?? 15} mins late grace chance
-                  </p>
-                </div>
-                <div className="p-3.5 sm:p-4 bg-slate-50/80 rounded-xl border border-slate-100">
-                  <span className="text-[10.5px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Check-Out Time</span>
-                  <p className="text-lg sm:text-xl font-bold text-slate-900">
-                    {currentBranch.work_end_time ? currentBranch.work_end_time.slice(0, 5) : "17:00"}
-                  </p>
-                  <p className="text-xs text-indigo-600 font-semibold mt-1">
-                    {currentBranch.early_leave_grace_minutes ?? 15} mins early departure grace
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: STAFF DIRECTORY */}
-          {activeTab === "staff" && currentBranch && (
-            <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-              <BranchStaffSection
-                deptGroups={deptGroups}
-                empLoading={empLoading}
-                branchName={currentBranch.name}
-              />
-            </div>
-          )}
+          {/* 3. Tab Body Content */}
+          <BranchTabContent
+            activeTab={activeTab}
+            currentBranch={currentBranch}
+            canManage={canManage}
+            isAdmin={isAdmin}
+            isSuperAdmin={isSuperAdmin}
+            branches={branches}
+            filteredBranches={filteredBranches}
+            activeBranches={activeBranches}
+            totalEmployees={totalEmployees}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            deptGroups={deptGroups}
+            empLoading={empLoading}
+            allowedBranches={allowedBranches}
+            onSelectBranch={(b) => {
+              setSelectedBranch(b);
+              setSelectedBranchId(b.id);
+            }}
+            onSelectBranchId={(id) => {
+              const b = branches.find((x) => x.id === id);
+              if (b) {
+                setSelectedBranch(b);
+                setSelectedBranchId(b.id);
+              }
+            }}
+            onDeleteBranch={handleDeleteBranch}
+            onOpenEditModal={openEditModal}
+            setActiveTab={setActiveTab}
+          />
         </div>
       </div>
 

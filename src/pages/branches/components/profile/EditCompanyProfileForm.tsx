@@ -8,6 +8,7 @@ import { uploadFileToS3 } from "@/lib/s3-storage";
 import { optimizeLogoImage } from "@/pages/settings/components/brandingImageUtils";
 import { toast } from "@/components/Toast";
 import { supabase } from "@/lib/supabase";
+import { branchToFormState } from "../../utils/branchFormMapper";
 
 interface EditCompanyProfileFormProps {
   branch: Branch;
@@ -20,85 +21,27 @@ export function EditCompanyProfileForm({
   onSaveSuccess,
   onDiscard,
 }: EditCompanyProfileFormProps) {
-  const [form, setForm] = useState<BranchFormState>(() => ({
-    name: branch.name || "",
-    location: branch.location || "",
-    manager_name: branch.manager_name || "",
-    status: branch.status || "active",
-    latitude: branch.latitude ? String(branch.latitude) : "",
-    longitude: branch.longitude ? String(branch.longitude) : "",
-    geofence_radius_m: branch.geofence_radius_m ? String(branch.geofence_radius_m) : "200",
-    work_start_time: branch.work_start_time ? branch.work_start_time.slice(0, 5) : "08:00",
-    work_end_time: branch.work_end_time ? branch.work_end_time.slice(0, 5) : "17:00",
-    late_grace_minutes: branch.late_grace_minutes ? String(branch.late_grace_minutes) : "15",
-    early_leave_grace_minutes: branch.early_leave_grace_minutes ? String(branch.early_leave_grace_minutes) : "15",
-    morning_check_in_start: branch.morning_check_in_start ? branch.morning_check_in_start.slice(0, 5) : "06:00",
-    morning_check_in_end: branch.morning_check_in_end ? branch.morning_check_in_end.slice(0, 5) : "09:00",
-    morning_check_out_start: branch.morning_check_out_start ? branch.morning_check_out_start.slice(0, 5) : "10:00",
-    morning_check_out_end: branch.morning_check_out_end ? branch.morning_check_out_end.slice(0, 5) : "12:00",
-    afternoon_check_in_start: branch.afternoon_check_in_start ? branch.afternoon_check_in_start.slice(0, 5) : "12:00",
-    afternoon_check_in_end: branch.afternoon_check_in_end ? branch.afternoon_check_in_end.slice(0, 5) : "14:00",
-    afternoon_check_out_start: branch.afternoon_check_out_start ? branch.afternoon_check_out_start.slice(0, 5) : "16:00",
-    afternoon_check_out_end: branch.afternoon_check_out_end ? branch.afternoon_check_out_end.slice(0, 5) : "18:00",
-
-    // 1. Company Info
-    logo_url: branch.logo_url || "",
-    company_name: branch.company_name || branch.name || "",
-    registration_no: branch.registration_no || "",
-    vat_no: branch.vat_no || "",
-    industry: branch.industry || "Trading, Import & Export",
-    currency: branch.currency || "USD",
-    rounding_digit: branch.rounding_digit != null ? String(branch.rounding_digit) : "2",
-
-    // 2. Physical Address Info
-    physical_address: branch.physical_address || branch.location || "",
-    physical_city: branch.physical_city || "Phnom Penh",
-    physical_province: branch.physical_province || "",
-    physical_postal_code: branch.physical_postal_code || "",
-    physical_country: branch.physical_country || "Cambodia",
-
-    // 3. Mailing Address Info
-    mailing_address: branch.mailing_address || branch.physical_address || branch.location || "",
-    mailing_city: branch.mailing_city || "Phnom Penh",
-    mailing_province: branch.mailing_province || "",
-    mailing_postal_code: branch.mailing_postal_code || "",
-    mailing_country: branch.mailing_country || "Cambodia",
-
-    // 4. Contact Info
-    phone_number: branch.phone_number || "",
-    email: branch.email || "",
-    website: branch.website || "",
-
-    // 5. Legal Info
-    legal_tax_number: branch.legal_tax_number || "",
-    legal_name: branch.legal_name || "",
-    legal_business_activity: branch.legal_business_activity || "",
-    legal_address: branch.legal_address || "",
-    legal_phone_number: branch.legal_phone_number || "",
-    legal_email: branch.legal_email || "",
-  }));
-
+  const [form, setForm] = useState<BranchFormState>(() => branchToFormState(branch));
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const handleUploadLogo = async (file: File) => {
     if (!file.type.startsWith("image/")) {
-      toast("Invalid File", "Please select an image file.", "error");
+      toast("Invalid File", "Please select a valid image file.", "error");
       return;
     }
     setUploadingLogo(true);
     try {
-      const s3Item = await uploadFileToS3(file, "branches/logos");
-      setForm((prev) => ({ ...prev, logo_url: s3Item.url }));
-      toast("Logo Uploaded", "Logo saved securely to AWS S3.", "success");
-    } catch {
-      try {
-        const optimized = await optimizeLogoImage(file, 600);
+      const s3Item = await uploadFileToS3(file, "bu-logos");
+      if (s3Item?.url) {
+        setForm((prev) => ({ ...prev, logo_url: s3Item.url }));
+      } else {
+        const optimized = await optimizeLogoImage(file);
         setForm((prev) => ({ ...prev, logo_url: optimized }));
-        toast("Logo Uploaded", "Logo saved to company profile.", "success");
-      } catch (err) {
-        toast("Upload Failed", err instanceof Error ? err.message : "Failed to upload logo", "error");
       }
+      toast("Logo Uploaded", "Logo updated successfully.", "success");
+    } catch (err) {
+      toast("Upload Failed", err instanceof Error ? err.message : "Failed to upload logo", "error");
     } finally {
       setUploadingLogo(false);
     }
@@ -163,14 +106,12 @@ export function EditCompanyProfileForm({
 
   return (
     <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900">
-      {/* Header */}
       <div className="px-4 sm:px-8 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
         <h2 className="text-[15px] sm:text-[16px] font-normal text-slate-800 dark:text-slate-100 tracking-tight">
           Edit Company Profile
         </h2>
       </div>
 
-      {/* Main Form Body */}
       <div className="p-4 sm:p-8 space-y-6 sm:space-y-7">
         <CompanyInfoSection
           form={form}
@@ -178,14 +119,10 @@ export function EditCompanyProfileForm({
           uploadingLogo={uploadingLogo}
           onUploadLogo={handleUploadLogo}
         />
-
         <PhysicalAddressSection form={form} setForm={setForm} />
-
         <ContactAndTimezoneSection form={form} setForm={setForm} />
-
         <LegalInfoSection form={form} setForm={setForm} />
 
-        {/* Action Buttons */}
         <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2.5">
           <button
             type="submit"

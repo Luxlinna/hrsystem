@@ -62,16 +62,16 @@ export function ProfileViewRows({
           Company Info
         </h3>
         <div className="space-y-1 sm:space-y-0.5">
-          <div className="flex flex-col sm:flex-row sm:items-center py-2 text-[13.5px] gap-1 sm:gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center py-2.5 text-[13.5px] gap-1 sm:gap-2">
             <div className="w-full sm:w-56 lg:w-60 shrink-0 text-slate-500 font-normal text-[13px] sm:text-[13.5px]">
               Logo
             </div>
-            <div className="flex-1 min-h-[2.5rem] sm:min-h-[3rem] flex items-center">
+            <div className="flex-1 min-h-[4.5rem] sm:min-h-[6rem] flex items-center">
               {branch.logo_url ? (
                 <img
                   src={branch.logo_url}
                   alt={companyName || "Logo"}
-                  className="max-h-16 sm:max-h-20 max-w-full sm:max-w-[260px] object-contain"
+                  className="h-20 sm:h-24 md:h-28 max-w-full sm:max-w-[360px] object-contain rounded-md"
                 />
               ) : canManage ? (
                 <button

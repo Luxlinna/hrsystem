@@ -10,36 +10,20 @@ interface CompanyInfoSectionProps {
 }
 
 const INDUSTRY_OPTIONS = [
-  "Trading, Import & Export",
-  "Information Technology & Services",
-  "Retail & Supermarkets",
-  "Manufacturing & Production",
-  "Food & Beverage (F&B)",
-  "Hospitality & Tourism",
-  "Banking & Financial Services",
-  "Construction & Real Estate",
-  "Healthcare & Pharmaceuticals",
-  "Education & Training",
-  "Logistics & Transportation",
-  "Other",
+  "Trading, Import & Export", "Information Technology & Services", "Retail & Supermarkets",
+  "Manufacturing & Production", "Food & Beverage (F&B)", "Hospitality & Tourism",
+  "Banking & Financial Services", "Construction & Real Estate", "Healthcare & Pharmaceuticals",
+  "Education & Training", "Logistics & Transportation", "Other",
 ];
+const CURRENCIES = ["USD", "KHR", "THB", "EUR", "SGD", "VND"];
+const ROUNDINGS = ["0", "1", "2", "3", "4"];
 
-const CURRENCY_OPTIONS = ["USD", "KHR", "THB", "EUR", "SGD", "VND"];
-const ROUNDING_OPTIONS = ["0", "1", "2", "3", "4"];
-
-export function CompanyInfoSection({
-  form,
-  setForm,
-  uploadingLogo,
-  onUploadLogo,
-}: CompanyInfoSectionProps) {
+export function CompanyInfoSection({ form, setForm, uploadingLogo, onUploadLogo }: CompanyInfoSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="space-y-1">
-      <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider mb-3">
-        Company Info
-      </h3>
+      <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider mb-3">Company Info</h3>
 
       {/* 1. Logo Row */}
       <FormRow label="Logo" alignTop>
@@ -56,14 +40,10 @@ export function CompanyInfoSection({
             className="hidden"
           />
 
-          {/* Logo Display Card */}
-          <div className="w-48 h-24 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 flex items-center justify-center shadow-2xs overflow-hidden">
+          {/* Bigger Logo Display Card */}
+          <div className="w-64 h-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 flex items-center justify-center shadow-2xs overflow-hidden">
             {form.logo_url ? (
-              <img
-                src={form.logo_url}
-                alt="Company Logo"
-                className="max-h-full max-w-full object-contain"
-              />
+              <img src={form.logo_url} alt="Company Logo" className="max-h-full max-w-full object-contain" />
             ) : (
               <div className="text-center text-slate-400">
                 <i className="ri-image-line text-2xl block" />
@@ -87,11 +67,10 @@ export function CompanyInfoSection({
               ) : (
                 <>
                   <i className="ri-camera-fill text-xs" />
-                  <span>UploadLogo</span>
+                  <span>Upload Logo</span>
                 </>
               )}
             </button>
-
             {form.logo_url && !uploadingLogo && (
               <button
                 type="button"
@@ -113,11 +92,7 @@ export function CompanyInfoSection({
           value={form.company_name}
           onChange={(e) => {
             const val = e.target.value;
-            setForm((prev) => ({
-              ...prev,
-              company_name: val,
-              name: prev.name ? prev.name : val,
-            }));
+            setForm((prev) => ({ ...prev, company_name: val, name: prev.name ? prev.name : val }));
           }}
           placeholder="Company Name / BU Display Name"
           className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#2b8de3]"
@@ -136,7 +111,7 @@ export function CompanyInfoSection({
         />
       </FormRow>
 
-      {/* Operational Status */}
+      {/* Status */}
       <FormRow label="Status">
         <select
           value={form.status || "active"}
@@ -149,7 +124,7 @@ export function CompanyInfoSection({
         </select>
       </FormRow>
 
-      {/* 3. Registration No. */}
+      {/* Registration & VAT */}
       <FormRow label="Registration No.">
         <input
           type="text"
@@ -160,7 +135,6 @@ export function CompanyInfoSection({
         />
       </FormRow>
 
-      {/* 4. VAT No. */}
       <FormRow label="VAT No.">
         <input
           type="text"
@@ -171,34 +145,19 @@ export function CompanyInfoSection({
         />
       </FormRow>
 
-      {/* 5. Industry */}
+      {/* Industry */}
       <FormRow label="Industry">
         <div className="space-y-2">
           <select
-            value={
-              form.industry && !INDUSTRY_OPTIONS.slice(0, -1).includes(form.industry)
-                ? "Other"
-                : form.industry || INDUSTRY_OPTIONS[0]
-            }
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === "Other") {
-                setForm((prev) => ({ ...prev, industry: "Other" }));
-              } else {
-                setForm((prev) => ({ ...prev, industry: val }));
-              }
-            }}
+            value={form.industry && !INDUSTRY_OPTIONS.slice(0, -1).includes(form.industry) ? "Other" : form.industry || INDUSTRY_OPTIONS[0]}
+            onChange={(e) => setForm((prev) => ({ ...prev, industry: e.target.value }))}
             className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2b8de3] cursor-pointer"
           >
             {INDUSTRY_OPTIONS.map((ind) => (
-              <option key={ind} value={ind}>
-                {ind}
-              </option>
+              <option key={ind} value={ind}>{ind}</option>
             ))}
           </select>
-
-          {(form.industry === "Other" ||
-            (form.industry && !INDUSTRY_OPTIONS.slice(0, -1).includes(form.industry))) && (
+          {form.industry === "Other" && (
             <input
               type="text"
               value={form.industry === "Other" ? "" : form.industry}
@@ -210,33 +169,25 @@ export function CompanyInfoSection({
         </div>
       </FormRow>
 
-      {/* 7. Currency */}
+      {/* Currency */}
       <FormRow label="Currency" required>
         <select
           value={form.currency || "USD"}
           onChange={(e) => setForm((prev) => ({ ...prev, currency: e.target.value }))}
           className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2b8de3] cursor-pointer"
         >
-          {CURRENCY_OPTIONS.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
+          {CURRENCIES.map((c) => (<option key={c} value={c}>{c}</option>))}
         </select>
       </FormRow>
 
-      {/* 8. Rounding Digit */}
+      {/* Rounding */}
       <FormRow label="Rounding Digit" required>
         <select
           value={form.rounding_digit != null ? String(form.rounding_digit) : "2"}
           onChange={(e) => setForm((prev) => ({ ...prev, rounding_digit: e.target.value }))}
           className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2b8de3] cursor-pointer"
         >
-          {ROUNDING_OPTIONS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
+          {ROUNDINGS.map((d) => (<option key={d} value={d}>{d}</option>))}
         </select>
       </FormRow>
     </div>

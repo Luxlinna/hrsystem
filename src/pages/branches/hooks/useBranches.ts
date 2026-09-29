@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
@@ -8,6 +8,7 @@ import { INITIAL_BRANCH_FORM } from "../constants";
 import { useBranchesData } from "./useBranchesData";
 import { useBranchLocation } from "./useBranchLocation";
 import { useBranchMutations } from "./useBranchMutations";
+import { branchToFormState } from "../utils/branchFormMapper";
 
 export function useBranches() {
   const { user } = useAuth();
@@ -19,37 +20,29 @@ export function useBranches() {
   const canManage = isSuperAdmin || isAdmin || isBranchAdmin;
 
   const { branches, loading, loadBranches } = useBranchesData();
-
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
   // Scoped branches: users strictly see their own BU only
   const allowedBranches = useMemo(() => {
-    // If the user has an assigned BU, they strictly can only see their own BU
     if (userBranchId) {
-      const myBranch = branches.filter((b) => b.id === userBranchId);
-      if (myBranch.length > 0) return myBranch;
+      const my = branches.filter((b) => b.id === userBranchId);
+      if (my.length > 0) return my;
     }
-
-    // Only global Super Admin with no specific branch restriction gets all branches
     const isGlobalSuper = (roleName.toLowerCase() === "super admin" || isSuperAdmin) && !userBranchId;
-    if (isGlobalSuper && branches.length > 0) {
-      return branches;
-    }
+    if (isGlobalSuper && branches.length > 0) return branches;
 
-    // If workspace has an active BU selected
     if (effectiveBranchId && effectiveBranchId !== "all") {
       const active = branches.filter((b) => b.id === effectiveBranchId);
       if (active.length > 0) return active;
     }
-
     return branches.slice(0, 1);
   }, [branches, userBranchId, roleName, isSuperAdmin, effectiveBranchId]);
 
   // Currently active BU displayed on the Company Profile page
   const activeBu = useMemo(() => {
     if (userBranchId) {
-      const myBranch = branches.find((b) => b.id === userBranchId);
-      if (myBranch) return myBranch;
+      const my = branches.find((b) => b.id === userBranchId);
+      if (my) return my;
     }
     if (selectedBranch && allowedBranches.some((b) => b.id === selectedBranch.id)) {
       return selectedBranch;
@@ -68,10 +61,10 @@ export function useBranches() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [form, setForm] = useState<BranchFormState>(INITIAL_BRANCH_FORM);
+  const [modalInitialTab, setModalInitialTab] = useState<"profile" | "schedule">("profile");
   const detailRequestId = useRef(0);
 
   const location = useBranchLocation({ showAddModal, form, setForm });
-
   const mutations = useBranchMutations({
     canCreateBranch,
     isBranchAdmin,
@@ -86,14 +79,13 @@ export function useBranches() {
     setSelectedBranch,
   });
 
-  const openDetail = useCallback(async (branch: Branch) => {
-    setSelectedBranch(branch);
+  const loadBranchEmployees = useCallback(async (branchId: string) => {
     setEmpLoading(true);
     const requestId = ++detailRequestId.current;
     const { data } = await supabase
       .from("employees")
       .select("id, first_name, last_name, role, department, status, email, biometric_user_id, default_work_location_id, work_locations:default_work_location_id(id, name)")
-      .eq("branch_id", branch.id)
+      .eq("branch_id", branchId)
       .is("deleted_at", null)
       .order("department");
     if (requestId !== detailRequestId.current) return;
@@ -102,102 +94,23 @@ export function useBranches() {
       work_locations: Array.isArray(x.work_locations) ? x.work_locations[0] : x.work_locations || null,
     })) as Employee[];
     setBranchEmployees(emps);
-    setSelectedBranch((prev) => (prev ? { ...prev, employee_count: emps.length } : null));
     setEmpLoading(false);
   }, []);
 
-  const closeDetail = useCallback(() => {
-    setSelectedBranch(null);
-    setBranchEmployees([]);
-  }, []);
-
-  const [modalInitialTab, setModalInitialTab] = useState<"profile" | "schedule">("profile");
-
-  const openEditModal = useCallback((branch: Branch, initialTab: "profile" | "schedule" = "profile") => {
-    setEditingBranchId(branch.id);
-    setModalInitialTab(initialTab);
-    setForm({
-      name: branch.name,
-      location: branch.location,
-      manager_name: branch.manager_name,
-      status: branch.status,
-      latitude: branch.latitude != null ? String(branch.latitude) : "",
-      longitude: branch.longitude != null ? String(branch.longitude) : "",
-      geofence_radius_m: branch.geofence_radius_m != null ? String(branch.geofence_radius_m) : "100",
-      work_start_time: branch.work_start_time || "",
-      work_end_time: branch.work_end_time || "",
-      late_grace_minutes: branch.late_grace_minutes != null ? String(branch.late_grace_minutes) : "15",
-      early_leave_grace_minutes: branch.early_leave_grace_minutes != null ? String(branch.early_leave_grace_minutes) : "15",
-      morning_check_in_start: branch.morning_check_in_start ? branch.morning_check_in_start.slice(0, 5) : "06:00",
-      morning_check_in_end: branch.morning_check_in_end ? branch.morning_check_in_end.slice(0, 5) : "09:00",
-      morning_check_out_start: branch.morning_check_out_start ? branch.morning_check_out_start.slice(0, 5) : "10:00",
-      morning_check_out_end: branch.morning_check_out_end ? branch.morning_check_out_end.slice(0, 5) : "12:00",
-      afternoon_check_in_start: branch.afternoon_check_in_start ? branch.afternoon_check_in_start.slice(0, 5) : "12:00",
-      afternoon_check_in_end: branch.afternoon_check_in_end ? branch.afternoon_check_in_end.slice(0, 5) : "14:00",
-      afternoon_check_out_start: branch.afternoon_check_out_start ? branch.afternoon_check_out_start.slice(0, 5) : "16:00",
-      afternoon_check_out_end: branch.afternoon_check_out_end ? branch.afternoon_check_out_end.slice(0, 5) : "18:00",
-
-      // 1. Company Info
-      logo_url: branch.logo_url || "",
-      company_name: branch.company_name || branch.name || "",
-      registration_no: branch.registration_no || "",
-      vat_no: branch.vat_no || "",
-      industry: branch.industry || "",
-      currency: branch.currency || "USD",
-      rounding_digit: branch.rounding_digit != null ? String(branch.rounding_digit) : "2",
-
-      // 2. Physical Address Info
-      physical_address: branch.physical_address || branch.location || "",
-      physical_city: branch.physical_city || "Phnom Penh",
-      physical_province: branch.physical_province || "",
-      physical_postal_code: branch.physical_postal_code || "",
-      physical_country: branch.physical_country || "Cambodia",
-
-      // 3. Mailing Address Info
-      mailing_address: branch.mailing_address || branch.physical_address || branch.location || "",
-      mailing_city: branch.mailing_city || "Phnom Penh",
-      mailing_province: branch.mailing_province || "",
-      mailing_postal_code: branch.mailing_postal_code || "",
-      mailing_country: branch.mailing_country || "Cambodia",
-
-      // 4. Contact Info
-      phone_number: branch.phone_number || "",
-      email: branch.email || "",
-      website: branch.website || "",
-
-      // 5. Legal Info
-      legal_tax_number: branch.legal_tax_number || "",
-      legal_name: branch.legal_name || "",
-      legal_business_activity: branch.legal_business_activity || "",
-      legal_address: branch.legal_address || "",
-      legal_phone_number: branch.legal_phone_number || "",
-      legal_email: branch.legal_email || "",
-    });
-    location.setAddressLookup(branch.physical_address || branch.location || "");
-    setShowAddModal(true);
-  }, [location]);
-
-  const openAddModal = useCallback(() => {
-    setEditingBranchId(null);
-    setForm(INITIAL_BRANCH_FORM);
-    setModalInitialTab("profile");
-    location.setAddressLookup("");
-    setShowAddModal(true);
-  }, [location]);
-
-  const closeModal = useCallback(() => {
-    setShowAddModal(false);
-    setEditingBranchId(null);
-  }, []);
+  // Automatically fetch staff whenever the active BU changes
+  useEffect(() => {
+    if (activeBu?.id) {
+      loadBranchEmployees(activeBu.id);
+    } else {
+      setBranchEmployees([]);
+    }
+  }, [activeBu?.id, loadBranchEmployees]);
 
   const filteredBranches = useMemo(() => {
-    return branches.filter((branch) => {
-      const matchesSearch =
-        branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        branch.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        branch.manager_name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = filterStatus === "all" || branch.status === filterStatus;
-      return matchesSearch && matchesStatus;
+    return branches.filter((b) => {
+      const q = searchTerm.toLowerCase();
+      const match = b.name.toLowerCase().includes(q) || b.location.toLowerCase().includes(q) || b.manager_name.toLowerCase().includes(q);
+      return match && (filterStatus === "all" || b.status === filterStatus);
     });
   }, [branches, searchTerm, filterStatus]);
 
@@ -210,20 +123,6 @@ export function useBranches() {
     });
     return map;
   }, [branchEmployees]);
-
-  const totalEmployees = useMemo(
-    () => branches.reduce((sum, b) => sum + (b.employee_count || 0), 0),
-    [branches]
-  );
-  const activeBranches = useMemo(
-    () => branches.filter((b) => b.status === "active").length,
-    [branches]
-  );
-
-  const handleFormSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    return mutations.handleAddBranch(form);
-  }, [mutations, form]);
 
   return {
     branches,
@@ -259,14 +158,26 @@ export function useBranches() {
     filteredBranches,
     filtered: filteredBranches,
     deptGroups,
-    totalEmployees,
-    activeBranches,
-    openDetail,
-    closeDetail,
-    openEditModal,
-    openAddModal,
-    closeModal,
-    handleAddBranch: handleFormSubmit,
+    totalEmployees: branches.reduce((sum, b) => sum + (b.employee_count || 0), 0),
+    activeBranches: branches.filter((b) => b.status === "active").length,
+    openDetail: (b: Branch) => { setSelectedBranch(b); loadBranchEmployees(b.id); },
+    closeDetail: () => { setSelectedBranch(null); setBranchEmployees([]); },
+    openEditModal: (b: Branch, tab: "profile" | "schedule" = "profile") => {
+      setEditingBranchId(b.id);
+      setModalInitialTab(tab);
+      setForm(branchToFormState(b));
+      location.setAddressLookup(b.physical_address || b.location || "");
+      setShowAddModal(true);
+    },
+    openAddModal: () => {
+      setEditingBranchId(null);
+      setForm(INITIAL_BRANCH_FORM);
+      setModalInitialTab("profile");
+      location.setAddressLookup("");
+      setShowAddModal(true);
+    },
+    closeModal: () => { setShowAddModal(false); setEditingBranchId(null); },
+    handleAddBranch: (e: React.FormEvent) => { e.preventDefault(); return mutations.handleAddBranch(form); },
     useCurrentLocation: location.useCurrentLocation,
     handleGeocodeAddress: location.handleGeocodeAddress,
     toggleBranchStatus: mutations.toggleBranchStatus,
