@@ -171,9 +171,9 @@ export function useDepartments(branchId?: string) {
           setDepartments((prev) =>
             prev.map((d) => (d.id === selectedDepartment.id ? { ...d, ...payload } : d))
           );
-          toast("Saved", `Department "${form.name}" updated`, "success");
+          toast(`Department "${form.name}" updated`, "success");
         } else {
-          toast("Saved", `Department "${form.name}" updated successfully`, "success");
+          toast(`Department "${form.name}" updated`, "success");
         }
       } else {
         const { data, error } = await supabase
@@ -190,16 +190,16 @@ export function useDepartments(branchId?: string) {
             created_at: new Date().toISOString(),
           };
           setDepartments((prev) => [...prev, newDept]);
-          toast("Created", `Department "${form.name}" created`, "success");
+          toast(`Department "${form.name}" created`, "success");
         } else if (data) {
-          toast("Created", `Department "${form.name}" created successfully`, "success");
+          toast(`Department "${form.name}" created`, "success");
         }
       }
 
       closeForm();
       fetchDepartments();
     } catch (err) {
-      toast("Error", err instanceof Error ? err.message : "Failed to save department", "error");
+      toast(err instanceof Error ? err.message : "Failed to save department", "error");
     } finally {
       setSaving(false);
     }
@@ -217,7 +217,7 @@ export function useDepartments(branchId?: string) {
         prev.map((d) => (d.id === dept.id ? { ...d, status: nextStatus } : d))
       );
     }
-    toast("Status Updated", `Department "${dept.name}" is now ${nextStatus}`, "success");
+    toast(`Department "${dept.name}" is now ${nextStatus}`, "success");
     fetchDepartments();
   };
 
@@ -232,7 +232,7 @@ export function useDepartments(branchId?: string) {
     if (error) {
       setDepartments((prev) => prev.filter((d) => d.id !== dept.id));
     }
-    toast("Deleted", `Department "${dept.name}" has been deleted`, "success");
+    toast(`Department "${dept.name}" deleted`, "success");
     fetchDepartments();
   };
 

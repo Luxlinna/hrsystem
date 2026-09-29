@@ -251,8 +251,8 @@ export default function GeofenceCheckInAlert() {
           alertedModesRef.current.add("checkout_time");
           localStorage.setItem(dedupeKey("checkout_time"), "1");
 
-          const checkoutTitle = `🔔 Time to Check Out (${shiftEndLabel})`;
-          const checkoutMsg = `Shift ended at ${shiftEndLabel}. Please remember to check out.`;
+          const checkoutTitle = `Check-out Reminder (${shiftEndLabel})`;
+          const checkoutMsg = `Scheduled shift ended at ${shiftEndLabel}. Please remember to clock out.`;
 
           setAlertState({
             branchName: branch?.name,
@@ -404,49 +404,50 @@ export default function GeofenceCheckInAlert() {
   if (!alertState) return null;
 
   const isCheckin = alertState.mode === "checkin";
-  const isAuto = alertState.mode === "auto_checkout";
-  const isOutside = alertState.mode === "outside_warning";
-  const isReturned = alertState.mode === "returned_notice";
   const link = isCheckin ? "/self-service?tab=checkin&quickCheckIn=1" : "/self-service?tab=checkin&quickCheckOut=1";
 
-  const getBgColor = () => {
-    if (isAuto) return "bg-amber-600";
-    if (isOutside) return "bg-rose-600";
-    if (isReturned) return "bg-emerald-600";
-    return "bg-[#253C7D]";
-  };
-
   const getIcon = () => {
-    if (isAuto) return "ri-time-line text-xl";
-    if (isCheckin) return "ri-map-pin-user-line text-xl";
-    if (isOutside) return "ri-map-pin-distance-line text-xl";
-    if (isReturned) return "ri-checkbox-circle-line text-xl";
-    return "ri-logout-box-r-line text-xl";
+    if (alertState.mode === "auto_checkout") return "ri-time-line text-amber-500";
+    if (isCheckin) return "ri-map-pin-user-line text-[#2b8de3]";
+    if (alertState.mode === "outside_warning") return "ri-map-pin-distance-line text-rose-500";
+    if (alertState.mode === "returned_notice") return "ri-checkbox-circle-fill text-emerald-500";
+    return "ri-logout-box-r-line text-[#2b8de3]";
   };
 
   return (
-    <div className="fixed bottom-20 lg:bottom-5 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-md animate-in slide-in-from-bottom-4 duration-200">
-      <div className={`${getBgColor()} text-white rounded-2xl shadow-2xl px-4 py-3.5 flex items-center gap-3 border border-white/20 backdrop-blur-md`}>
-        <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-          <i className={getIcon()} />
+    <div className="fixed bottom-5 right-5 z-[70] w-[92%] sm:w-auto sm:max-w-md animate-in fade-in slide-in-from-bottom-3 duration-200">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-xl p-3.5 flex items-start gap-3 text-slate-800 dark:text-slate-100">
+        <i className={`${getIcon()} text-lg shrink-0 mt-0.5`} />
+
+        <div className="flex-1 min-w-0 pr-1">
+          <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 leading-tight">
+            {alertState.title}
+          </p>
+          <p className="text-[11.5px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">
+            {alertState.message}
+          </p>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold leading-snug">{alertState.title}</p>
-          <p className="text-[11px] text-white/80 leading-relaxed mt-0.5">{alertState.message}</p>
-        </div>
+
         {(isCheckin || alertState.mode === "checkout") && (
           <button
+            type="button"
             onClick={() => {
               setAlertState(null);
               navigate(link);
             }}
-            className="bg-white text-[#253C7D] text-[12px] font-bold px-3.5 py-1.5 rounded-xl shrink-0 shadow-xs hover:bg-white/95 transition-colors cursor-pointer"
+            className="px-3 py-1.5 bg-[#2b8de3] hover:bg-[#2272b8] text-white text-xs font-semibold rounded shadow-2xs transition-colors cursor-pointer shrink-0"
           >
             {isCheckin ? "Check In" : "Check Out"}
           </button>
         )}
-        <button onClick={() => setAlertState(null)} className="text-white/60 hover:text-white shrink-0 p-1 cursor-pointer">
-          <i className="ri-close-line text-lg" />
+
+        <button
+          type="button"
+          onClick={() => setAlertState(null)}
+          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0 p-0.5 cursor-pointer -mr-1"
+          title="Close"
+        >
+          <i className="ri-close-line text-sm" />
         </button>
       </div>
     </div>
