@@ -56,17 +56,17 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
   }, []);
 
   return (
-    <div className="space-y-4 pt-2">
+    <div className="space-y-3 pt-1 max-w-xl">
       {/* Date of Birth */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Date of Birth <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2 grid grid-cols-3 gap-2">
           <select
             value={dobDay}
             onChange={(e) => handleDobPartChange("day", e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
           >
             <option value="">Day</option>
             {days.map((d) => (
@@ -79,7 +79,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           <select
             value={dobMonth}
             onChange={(e) => handleDobPartChange("month", e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
           >
             <option value="">Month</option>
             {MONTHS.map((m) => (
@@ -92,7 +92,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           <select
             value={dobYear}
             onChange={(e) => handleDobPartChange("year", e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
           >
             <option value="">Year</option>
             {years.map((y) => (
@@ -106,14 +106,14 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
 
       {/* Gender */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Gender <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
           <select
             value={form.gender || "Male"}
             onChange={(e) => onChange("gender", e.target.value)}
-            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
           >
             <option value="Male">Male</option>
             <option value="Female">Female</option>
@@ -124,14 +124,14 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
 
       {/* Marital Status */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Marital Status <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
           <select
             value={form.marital_status || "Single"}
             onChange={(e) => onChange("marital_status", e.target.value)}
-            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
           >
             <option value="Single">Single</option>
             <option value="Married">Married</option>
@@ -143,14 +143,14 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
 
       {/* Nationality */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Nationality <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
           <select
             value={form.nationality || "Khmer"}
             onChange={(e) => onChange("nationality", e.target.value)}
-            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
           >
             <option value="Khmer">Khmer</option>
             <option value="Chinese">Chinese</option>
@@ -169,21 +169,21 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
         <div className="sm:text-right sm:pr-4" />
         <div className="sm:col-span-2 flex items-center gap-6">
-          <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer select-none">
+          <label className="inline-flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={form.is_resident !== false}
               onChange={(e) => onChange("is_resident", e.target.checked)}
-              className="w-4 h-4 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
+              className="w-3.5 h-3.5 rounded text-[#0088cc] focus:ring-[#0088cc] border-slate-300 cursor-pointer"
             />
             <span>Resident</span>
           </label>
-          <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer select-none">
+          <label className="inline-flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={Boolean(form.fringe_benefit)}
               onChange={(e) => onChange("fringe_benefit", e.target.checked)}
-              className="w-4 h-4 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
+              className="w-3.5 h-3.5 rounded text-[#0088cc] focus:ring-[#0088cc] border-slate-300 cursor-pointer"
             />
             <span>Fringe Benefit</span>
           </label>
@@ -192,4 +192,3 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
     </div>
   );
 });
-

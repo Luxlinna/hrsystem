@@ -68,21 +68,6 @@ export const PersonalTaxAndIdFields = memo(function PersonalTaxAndIdFields({
         </div>
       </div>
 
-      {/* National ID Number */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
-          National ID / Passport
-        </label>
-        <div className="sm:col-span-2">
-          <input
-            type="text"
-            value={form.national_id_number}
-            onChange={(e) => onChange("national_id_number", e.target.value)}
-            placeholder="National Identification Number"
-            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
-          />
-        </div>
-      </div>
 
       {/* NSSF Information */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">

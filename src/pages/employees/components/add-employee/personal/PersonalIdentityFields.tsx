@@ -20,17 +20,17 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 max-w-xl">
       {/* 1. Title */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Title <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
           <select
             value={form.title || "Mr"}
             onChange={(e) => onChange("title", e.target.value)}
-            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
           >
             <option value="Mr">Mr</option>
             <option value="Mrs">Mrs</option>
@@ -43,7 +43,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
 
       {/* 2. First Name */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           First Name <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
@@ -53,14 +53,14 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
             value={form.first_name}
             onChange={(e) => handleNameChange(e.target.value, form.last_name)}
             placeholder="First Name"
-            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
           />
         </div>
       </div>
 
       {/* 3. Last Name */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Last Name <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
@@ -70,14 +70,14 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
             value={form.last_name}
             onChange={(e) => handleNameChange(form.first_name, e.target.value)}
             placeholder="Last Name"
-            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
           />
         </div>
       </div>
 
       {/* 4. Display Name as */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Display Name as <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
@@ -92,7 +92,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
                 onChange("display_name", `${form.first_name} ${form.last_name}`.trim());
               }
             }}
-            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
           >
             <option value="first_last">
               {form.first_name || form.last_name ? `${form.first_name} ${form.last_name}`.trim() : "First Name Last Name"}
@@ -104,33 +104,9 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
         </div>
       </div>
 
-      {/* 5. Foreign Name */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
-          Foreign Name
-        </label>
-        <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <input
-            type="text"
-            value={form.foreign_name}
-            onChange={(e) => onChange("foreign_name", e.target.value)}
-            placeholder="Foreign Name"
-            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
-          />
-          <select
-            value={form.foreign_name_format || "last_first"}
-            onChange={(e) => onChange("foreign_name_format", e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:border-[#253C7D] cursor-pointer"
-          >
-            <option value="last_first">Last Name First Name</option>
-            <option value="first_last">First Name Last Name</option>
-          </select>
-        </div>
-      </div>
-
       {/* Khmer Name */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Khmer Name (KH Name)
         </label>
         <div className="sm:col-span-2">
@@ -139,14 +115,14 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
             value={form.kh_name}
             onChange={(e) => onChange("kh_name", e.target.value)}
             placeholder="ឈ្មោះជាភាសាខ្មែរ (e.g. សុខ តារា)"
-            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
           />
         </div>
       </div>
 
       {/* Employee Code */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        <label className="text-xs font-bold text-slate-700 sm:text-right sm:pr-4">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Employee Code <span className="text-rose-500">*</span>
         </label>
         <div className="sm:col-span-2">
@@ -158,7 +134,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
               onChange("biometric_user_id", e.target.value);
             }}
             placeholder="Auto Employee Code"
-            className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-[#253C7D]"
+            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-slate-800 focus:outline-none focus:border-[#0088cc]"
           />
         </div>
       </div>

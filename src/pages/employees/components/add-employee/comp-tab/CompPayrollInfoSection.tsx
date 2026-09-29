@@ -12,96 +12,49 @@ export const CompPayrollInfoSection = memo(function CompPayrollInfoSection({
   onChange,
 }: CompPayrollInfoSectionProps) {
   return (
-    <div className="p-5 bg-white border border-slate-200/90 rounded-2xl shadow-2xs space-y-4">
-      <div className="flex items-center gap-2">
-        <span className="w-6 h-6 rounded-lg bg-[#253C7D] text-white flex items-center justify-center text-xs shadow-2xs">
-          <i className="ri-file-list-3-line text-xs" />
-        </span>
-        <h3 className="text-xs font-black text-[#253C7D] uppercase tracking-wider">
-          Payroll Info
-        </h3>
-      </div>
+    <div className="space-y-4 pt-1">
+      <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">
+        PAYROLL INFO
+      </h3>
 
-      <div className="space-y-3">
-        {/* Payroll Structure */}
-        <div>
-          <label className="block text-xs font-extrabold text-slate-700 mb-1">
-            Payroll Structure
-          </label>
+      <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] items-start gap-y-3 gap-x-6">
+        <label className="text-xs font-semibold text-slate-700 sm:text-right pt-2">
+          Payroll Structure
+        </label>
+        <div className="space-y-3 max-w-xl">
           <select
-            value={form.payroll_structure || "Standard Monthly"}
+            value={form.payroll_structure || ""}
             onChange={(e) => onChange("payroll_structure", e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] transition-all shadow-2xs cursor-pointer"
+            className="w-full px-3.5 py-2 rounded-md bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] focus:ring-1 focus:ring-[#0088cc] transition-all cursor-pointer"
           >
-            <option value="">Select Payroll Structure</option>
+            <option value="">Select</option>
             {PAYROLL_STRUCTURES.map((ps) => (
               <option key={ps} value={ps}>
                 {ps}
               </option>
             ))}
           </select>
-        </div>
 
-        {/* Checkboxes */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-1">
-          <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={Boolean(form.apply_day_in_month)}
-              onChange={(e) => onChange("apply_day_in_month", e.target.checked)}
-              className="w-4 h-4 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
-            />
-            <span>Apply Day In Month</span>
-          </label>
-
-          <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={Boolean(form.apply_working_hours_per_day)}
-              onChange={(e) => onChange("apply_working_hours_per_day", e.target.checked)}
-              className="w-4 h-4 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
-            />
-            <span>Apply Working Hours Per Day</span>
-          </label>
-        </div>
-
-        {/* Integrated Basic Salary & Disbursement Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-          <div>
-            <label className="block text-xs font-extrabold text-slate-700 mb-1">
-              Base Monthly Salary ($)
-            </label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">$</span>
+          <div className="space-y-2.5 pt-1">
+            <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer select-none">
               <input
-                type="number"
-                step="0.01"
-                value={form.basic_salary}
-                onChange={(e) => onChange("basic_salary", e.target.value)}
-                placeholder="0.00"
-                className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] transition-all shadow-2xs"
+                type="checkbox"
+                checked={Boolean(form.apply_day_in_month)}
+                onChange={(e) => onChange("apply_day_in_month", e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-[#0088cc] focus:ring-[#0088cc] cursor-pointer"
               />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-extrabold text-slate-700 mb-1">
-              Disbursement Bank &amp; Account Number
+              <span>Apply Day In Month</span>
             </label>
-            <input
-              type="text"
-              value={form.bank_account_number}
-              onChange={(e) => {
-                onChange("bank_account_number", e.target.value);
-                const val = e.target.value;
-                if (val.toLowerCase().includes("aba")) onChange("bank_name", "ABA Bank");
-                else if (val.toLowerCase().includes("acleda")) onChange("bank_name", "ACLEDA Bank");
-                else if (val.toLowerCase().includes("canadia")) onChange("bank_name", "Canadia Bank");
-                else if (val.toLowerCase().includes("wing")) onChange("bank_name", "Wing Bank");
-              }}
-              placeholder="e.g. 001 234 567 (ABA Bank)"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] transition-all shadow-2xs"
-            />
+
+            <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={Boolean(form.apply_working_hours_per_day)}
+                onChange={(e) => onChange("apply_working_hours_per_day", e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-[#0088cc] focus:ring-[#0088cc] cursor-pointer"
+              />
+              <span>Apply Working Hours Per Day</span>
+            </label>
           </div>
         </div>
       </div>

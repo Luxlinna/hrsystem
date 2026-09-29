@@ -92,20 +92,6 @@ export const ProfileIdentityFields = memo(function ProfileIdentityFields({
         )}
       </div>
 
-      <div>
-        <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-          Foreign / Latin Name
-        </label>
-        {editing ? (
-          <input
-            value={form.foreign_name || ""}
-            onChange={(e) => setForm({ ...form, foreign_name: e.target.value })}
-            className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold focus:outline-none focus:border-[#253C7D]"
-          />
-        ) : (
-          <p className="text-xs text-gray-900 font-bold">{employee.foreign_name || "—"}</p>
-        )}
-      </div>
     </>
   );
 });

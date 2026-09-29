@@ -11,24 +11,18 @@ export const CompTaxInfoSection = memo(function CompTaxInfoSection({
   onChange,
 }: CompTaxInfoSectionProps) {
   return (
-    <div className="p-5 bg-white border border-slate-200/90 rounded-2xl shadow-2xs space-y-4">
-      <div className="flex items-center gap-2">
-        <span className="w-6 h-6 rounded-lg bg-[#253C7D] text-white flex items-center justify-center text-xs shadow-2xs">
-          <i className="ri-percent-line text-xs" />
-        </span>
-        <h3 className="text-xs font-black text-[#253C7D] uppercase tracking-wider">
-          Tax Info
-        </h3>
-      </div>
+    <div className="space-y-4 pt-4 border-t border-slate-100">
+      <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">
+        TAX INFO
+      </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Tax Salary (USD [ input ] Monthly) */}
-        <div>
-          <label className="block text-xs font-extrabold text-slate-700 mb-1">
-            Tax Salary
-          </label>
-          <div className="flex rounded-xl overflow-hidden border border-slate-300 bg-white shadow-2xs focus-within:border-[#253C7D] focus-within:ring-1 focus-within:ring-[#253C7D]">
-            <span className="px-3.5 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold border-r border-slate-200 select-none">
+      <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] items-center gap-y-3 gap-x-6">
+        <label className="text-xs font-semibold text-slate-700 sm:text-right">
+          Tax Salary
+        </label>
+        <div className="max-w-xl">
+          <div className="flex rounded-md overflow-hidden border border-slate-300 bg-white shadow-2xs focus-within:border-[#0088cc] focus-within:ring-1 focus-within:ring-[#0088cc]">
+            <span className="px-3.5 py-2 bg-slate-100 text-slate-600 text-xs font-medium border-r border-slate-200 select-none">
               {form.tax_salary_currency || "USD"}
             </span>
             <input
@@ -37,30 +31,12 @@ export const CompTaxInfoSection = memo(function CompTaxInfoSection({
               value={form.tax_salary ?? ""}
               onChange={(e) => onChange("tax_salary", e.target.value)}
               placeholder="Tax Salary"
-              className="flex-1 px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 focus:outline-none"
+              className="flex-1 px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none bg-white"
             />
-            <span className="px-3.5 py-2.5 bg-slate-50 text-slate-600 text-xs font-bold border-l border-slate-200 select-none">
+            <span className="px-3.5 py-2 bg-slate-100 text-slate-600 text-xs font-medium border-l border-slate-200 select-none">
               {form.tax_salary_frequency || "Monthly"}
             </span>
           </div>
-        </div>
-
-        {/* Tax Method */}
-        <div>
-          <label className="block text-xs font-extrabold text-slate-700 mb-1">
-            Tax Method
-          </label>
-          <select
-            value={form.tax_method || "Resident"}
-            onChange={(e) => onChange("tax_method", e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer transition-all shadow-2xs"
-          >
-            <option value="Resident">Resident (Progressive 0% - 20%)</option>
-            <option value="Non-resident">Non-resident (Flat 20%)</option>
-            <option value="Standard">Standard Cambodian Payroll Tax</option>
-            <option value="Gross">Gross Up</option>
-            <option value="Net">Net Guaranteed</option>
-          </select>
         </div>
       </div>
     </div>

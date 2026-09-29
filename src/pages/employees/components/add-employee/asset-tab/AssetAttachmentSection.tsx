@@ -1,17 +1,17 @@
 import { memo, useRef, useState, useCallback } from "react";
-import type { EmployeePayrollAttachment } from "../../../types";
+import type { EmployeeAssetAttachment } from "../../types";
 import { uploadMultipleFilesToS3 } from "@/lib/s3-storage";
 import { toast } from "@/components/Toast";
 
-interface CompAttachmentsSectionProps {
-  attachments: EmployeePayrollAttachment[];
-  onChange: (attachments: EmployeePayrollAttachment[]) => void;
+interface AssetAttachmentSectionProps {
+  attachments: EmployeeAssetAttachment[];
+  onChange: (attachments: EmployeeAssetAttachment[]) => void;
 }
 
-export const CompAttachmentsSection = memo(function CompAttachmentsSection({
+export const AssetAttachmentSection = memo(function AssetAttachmentSection({
   attachments,
   onChange,
-}: CompAttachmentsSectionProps) {
+}: AssetAttachmentSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -22,8 +22,8 @@ export const CompAttachmentsSection = memo(function CompAttachmentsSection({
       const fileArray = Array.from(fileList);
       setUploading(true);
       try {
-        const uploaded = await uploadMultipleFilesToS3(fileArray, "employees/payroll-attachments");
-        const newItems: EmployeePayrollAttachment[] = uploaded.map((item) => ({
+        const uploaded = await uploadMultipleFilesToS3(fileArray, "employees/asset-attachments");
+        const newItems: EmployeeAssetAttachment[] = uploaded.map((item) => ({
           name: item.name,
           url: item.url,
           size: item.size,
@@ -31,9 +31,9 @@ export const CompAttachmentsSection = memo(function CompAttachmentsSection({
           uploaded_at: new Date().toISOString(),
         }));
         onChange([...attachments, ...newItems]);
-        toast("File Uploaded", `Added ${fileArray.length} attachment(s).`, "success");
+        toast("File Uploaded", `Added ${fileArray.length} asset attachment(s).`, "success");
       } catch (err) {
-        console.error("Payroll upload error:", err);
+        console.error("Asset upload error:", err);
         toast("Upload Failed", err instanceof Error ? err.message : "Could not upload file", "error");
       } finally {
         setUploading(false);

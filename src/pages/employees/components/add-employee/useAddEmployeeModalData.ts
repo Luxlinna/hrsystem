@@ -1,17 +1,39 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import type { ModalManagerEmployee } from "./types";
 import type { EmployeeFormState } from "../../types";
-import { getBranchCode, deriveBuHandle } from "../../constants";
+import { getBranchCode, deriveBuHandle, DEPARTMENTS } from "../../constants";
+
+const SEED_POSITIONS = [
+  "ACM Grocery II",
+  "ACM-SF & Butchery",
+  "AP - Non Trade",
+  "Account Payable Executive",
+  "Account Payable Officer",
+  "Account Payable Supervisor",
+  "Account Receivable Executive",
+  "Account Receivable Officer",
+  "Accounting Assistant",
+  "Accounting Intern",
+  "Accounting Manager",
+  "Accounting Supervisor",
+  "Acting Assistant Store Manager",
+  "Manager",
+  "Supervisor",
+  "Officer",
+  "Staff",
+  "Assistant",
+  "Intern",
+];
 
 export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState) {
-  const [dbBranches, setDbBranches] = useState<
-    Array<{ id: string; name: string; location: string | null }>
-  >([]);
-  const [dbWorkLocations, setDbWorkLocations] = useState<
-    Array<{ id: string; name: string; description: string | null; branch_id: string | null }>
-  >([]);
+  const [dbBranches, setDbBranches] = useState<Array<{ id: string; name: string; location: string | null }>>([]);
+  const [dbWorkLocations, setDbWorkLocations] = useState<Array<{ id: string; name: string; description: string | null; branch_id: string | null }>>([]);
   const [dbEmployees, setDbEmployees] = useState<ModalManagerEmployee[]>([]);
+  const [dbDepartments, setDbDepartments] = useState<Array<{ id: string; name: string; branch_id: string | null }>>([]);
+  const [dbPositions, setDbPositions] = useState<Array<{ id: string; name: string; branch_id: string | null }>>([]);
+  const [dbEmployeeTypes, setDbEmployeeTypes] = useState<Array<{ id: string; name: string; branch_id: string | null }>>([]);
+  const [dbContractTypes, setDbContractTypes] = useState<Array<{ id: string; name: string; term?: string; branch_id: string | null }>>([]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -21,86 +43,30 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
       supabase.from("work_locations").select("id, name, description, branch_id").is("deleted_at", null).order("name"),
       supabase.from("employees").select("id, first_name, last_name, email, phone, department, role, position, branch_id, bu_full_name, code_bu, branches(id, name)").is("deleted_at", null).order("first_name"),
       supabase.from("user_role_assignments").select("id, user_id, email, display_name, role_id, deleted_at, app_roles(id, name, is_admin, branch_id)").is("deleted_at", null),
-    ]).then(([bRes, wRes, eRes, uRes]) => {
+      supabase.from("departments").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
+      supabase.from("positions").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
+      supabase.from("employee_types").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
+      supabase.from("contract_types").select("id, name, term, branch_id").is("deleted_at", null).order("sort_order"),
+    ]).then(([bRes, wRes, eRes, uRes, dRes, pRes, tRes, cRes]) => {
       if (bRes.data) setDbBranches(bRes.data);
       if (wRes.data) setDbWorkLocations(wRes.data);
+      if (dRes.data) setDbDepartments(dRes.data);
+      if (pRes.data) setDbPositions(pRes.data);
+      if (tRes.data) setDbEmployeeTypes(tRes.data);
+      if (cRes.data) setDbContractTypes(cRes.data);
 
       const rawEmployees = (eRes.data || []) as any[];
       const assignments = (uRes.data || []) as any[];
 
       const enriched: ModalManagerEmployee[] = rawEmployees
         .map((emp) => {
-          let matchedAssignment: any = null;
           const empEmail = emp.email?.toLowerCase().trim();
-          if (empEmail) {
-            matchedAssignment = assignments.find(
-              (a) => a.email && a.email.toLowerCase().trim() === empEmail
-            );
-          }
-          if (!matchedAssignment && emp.phone) {
-            const empPhoneDigits = emp.phone.replace(/\D/g, "");
-            if (empPhoneDigits.length >= 6) {
-              matchedAssignment = assignments.find((a) => {
-                if (!a.email) return false;
-                const aDigits = a.email.split("@")[0].replace(/\D/g, "");
-                return (
-                  aDigits === empPhoneDigits ||
-                  (empPhoneDigits.startsWith("0") && aDigits === "855" + empPhoneDigits.slice(1)) ||
-                  (empPhoneDigits.startsWith("855") && aDigits === "0" + empPhoneDigits.slice(3))
-                );
-              });
-            }
-          }
-          if (!matchedAssignment) {
-            const fullName = `${emp.first_name || ""} ${emp.last_name || ""}`.trim().toLowerCase();
-            matchedAssignment = assignments.find(
-              (a) => a.display_name && a.display_name.trim().toLowerCase() === fullName
-            );
-          }
-
+          const matchedAssignment = assignments.find((a) => a.email && a.email.toLowerCase().trim() === empEmail);
           const assignedRoleName = matchedAssignment?.app_roles?.name || null;
           const realRole = assignedRoleName || emp.position || emp.role || "Staff";
           const lowerRole = realRole.toLowerCase();
-          const isSuperAdmin = lowerRole.includes("super admin") || lowerRole === "super admin";
-
-          const isExcluded =
-            isSuperAdmin ||
-            lowerRole === "new hire" ||
-            lowerRole.includes("worker") ||
-            lowerRole.includes("operator") ||
-            lowerRole.includes("helper") ||
-            emp.first_name?.toLowerCase() === "chem" ||
-            emp.first_name?.toLowerCase() === "hrm" ||
-            (emp.first_name?.toLowerCase() === "sophat" && (emp.last_name || "").toLowerCase() === "it");
-
-          const isManager =
-            !isExcluded &&
-            !isSuperAdmin &&
-            (Boolean(matchedAssignment?.app_roles?.is_admin) ||
-              lowerRole.includes("manager") ||
-              lowerRole.includes("lead") ||
-              lowerRole.includes("director") ||
-              lowerRole.includes("head") ||
-              lowerRole.includes("supervisor") ||
-              lowerRole.includes("ceo") ||
-              lowerRole.includes("admin") ||
-              lowerRole.includes("officer") ||
-              lowerRole.includes("chair") ||
-              lowerRole.includes("chief"));
-
-          const isAdmin =
-            !isSuperAdmin &&
-            (Boolean(matchedAssignment?.app_roles?.is_admin) ||
-              lowerRole.includes("admin") ||
-              lowerRole.includes("ceo") ||
-              lowerRole.includes("chair"));
-
-          return {
-            ...emp,
-            realRole,
-            isManager,
-            isAdmin,
-          };
+          const isManager = Boolean(matchedAssignment?.app_roles?.is_admin) || lowerRole.includes("manager") || lowerRole.includes("head") || lowerRole.includes("lead") || lowerRole.includes("director") || lowerRole.includes("supervisor");
+          return { ...emp, realRole, isManager, isAdmin: Boolean(matchedAssignment?.app_roles?.is_admin) };
         })
         .filter((emp) => emp.isManager || emp.isAdmin);
 
@@ -109,12 +75,7 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
   }, [isOpen]);
 
   const cleanBranches = useMemo(() => {
-    return dbBranches.filter(
-      (b) =>
-        !b.name.toLowerCase().startsWith("site:") &&
-        !b.id.startsWith("site:") &&
-        !b.name.toLowerCase().includes("(site)")
-    );
+    return dbBranches.filter((b) => !b.name.toLowerCase().startsWith("site:") && !b.id.startsWith("site:") && !b.name.toLowerCase().includes("(site)"));
   }, [dbBranches]);
 
   const currentBranch = useMemo(() => {
@@ -136,58 +97,37 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
 
   const currentSiteSelectValue = useMemo(() => {
     if (!form.site) return "";
-    const lowerSite = form.site.toLowerCase().trim();
-    if (
-      lowerSite === "headquarters" ||
-      lowerSite === "main office" ||
-      lowerSite.startsWith("main office")
-    ) {
-      return "";
-    }
-    const matched = workSites.find(
-      (w) => w.name.toLowerCase().trim() === lowerSite || w.id === form.site
-    );
+    const lower = form.site.toLowerCase().trim();
+    if (lower === "headquarters" || lower.startsWith("main office")) return "";
+    const matched = workSites.find((w) => w.name.toLowerCase().trim() === lower || w.id === form.site);
     return matched ? matched.id : "";
   }, [workSites, form.site]);
 
-  // Filter employees strictly belonging to the BU chosen in Step 2
-  const buEmployees = useMemo(() => {
-    const selectedBranchId = currentBranch?.id || form.branch_id;
-    const targetCodeBu = (form.code_bu || "").trim().toLowerCase();
-    const targetBuName = (form.bu_full_name || currentBranch?.name || "").trim().toLowerCase();
+  const departments = useMemo(() => {
+    const list = currentBranch ? dbDepartments.filter((d) => !d.branch_id || d.branch_id === currentBranch.id) : dbDepartments;
+    return list.length > 0 ? Array.from(new Set(list.map((d) => d.name))) : DEPARTMENTS;
+  }, [dbDepartments, currentBranch]);
 
-    // If no BU is selected, do not leak employees from other branches
-    if (!selectedBranchId && !targetCodeBu && !targetBuName) {
-      return [];
-    }
+  const positions = useMemo(() => {
+    const list = currentBranch ? dbPositions.filter((p) => !p.branch_id || p.branch_id === currentBranch.id) : dbPositions;
+    return list.length > 0 ? Array.from(new Set(list.map((p) => p.name))) : SEED_POSITIONS;
+  }, [dbPositions, currentBranch]);
 
-    return dbEmployees.filter((e) => {
-      if (selectedBranchId && e.branch_id === selectedBranchId) return true;
-      if (selectedBranchId && e.branches?.id === selectedBranchId) return true;
-      if (targetBuName) {
-        if (e.bu_full_name && e.bu_full_name.trim().toLowerCase() === targetBuName) return true;
-        if (e.branches?.name && e.branches.name.trim().toLowerCase() === targetBuName) return true;
-      }
-      if (targetCodeBu && e.code_bu && e.code_bu.trim().toLowerCase() === targetCodeBu) return true;
-      return false;
-    });
-  }, [dbEmployees, currentBranch, form.branch_id, form.code_bu, form.bu_full_name]);
+  const employeeTypes = useMemo(() => {
+    const list = currentBranch ? dbEmployeeTypes.filter((t) => !t.branch_id || t.branch_id === currentBranch.id) : dbEmployeeTypes;
+    return list.length > 0 ? Array.from(new Set(list.map((t) => t.name))) : ["Full-Time", "Part-Time", "Probationary", "Internship", "Casual"];
+  }, [dbEmployeeTypes, currentBranch]);
+
+  const contractTypes = useMemo(() => {
+    const list = currentBranch ? dbContractTypes.filter((c) => !c.branch_id || c.branch_id === currentBranch.id) : dbContractTypes;
+    return list.length > 0 ? Array.from(new Set(list.map((c) => c.name))) : ["1-YEAR FDC", "2-YEAR FDC", "3-YEAR FDC", "PERMANENT (UDC)", "PROBATION", "Internship"];
+  }, [dbContractTypes, currentBranch]);
 
   const buManagers = useMemo(() => {
-    const managers = buEmployees.filter((e) => {
-      const lower = (e.realRole || "").toLowerCase();
-      const isExec = lower.includes("ceo") || lower.includes("chair") || lower.includes("director");
-      return !isExec;
-    });
-    return managers;
-  }, [buEmployees]);
-
-  const buCeos = useMemo(() => {
-    return buEmployees.filter((e) => {
-      const lower = (e.realRole || "").toLowerCase();
-      return lower.includes("ceo") || lower.includes("chair") || lower.includes("director") || e.isAdmin;
-    });
-  }, [buEmployees]);
+    const selectedBranchId = currentBranch?.id || form.branch_id;
+    if (!selectedBranchId) return dbEmployees;
+    return dbEmployees.filter((e) => e.branch_id === selectedBranchId || e.branches?.id === selectedBranchId);
+  }, [dbEmployees, currentBranch, form.branch_id]);
 
   return {
     cleanBranches,
@@ -195,9 +135,13 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
     currentBranchName,
     workSites,
     currentSiteSelectValue,
+    departments,
+    positions,
+    employeeTypes,
+    contractTypes,
+    buManagers,
+    buCeos: buManagers,
     getBranchCode,
     deriveBuHandle,
-    buManagers,
-    buCeos,
   };
 }

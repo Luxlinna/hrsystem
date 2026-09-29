@@ -1,4 +1,4 @@
-export type AddEmployeeStepId = "personal" | "org" | "terms" | "compensation" | "asset" | "contact";
+export type AddEmployeeStepId = "personal" | "org" | "terms" | "compensation" | "asset";
 
 export interface AddEmployeeStepConfig {
   id: AddEmployeeStepId;
@@ -29,10 +29,9 @@ export interface ModalManagerEmployee {
 }
 
 export const ADD_EMPLOYEE_STEPS: AddEmployeeStepConfig[] = [
-  { id: "personal", step: 1, label: "1. Personal Details", shortLabel: "Personal", fullLabel: "Personal & Legal Identity", icon: "ri-user-3-line", fieldCount: 6 },
-  { id: "org", step: 2, label: "2. Org & Site Workplace", shortLabel: "Org & Site", fullLabel: "Organizational Placement & Physical Work Station", icon: "ri-building-2-line", fieldCount: 8 },
-  { id: "terms", step: 3, label: "3. Terms & Schedule", shortLabel: "Schedule", fullLabel: "Terms & Employment Schedule", icon: "ri-calendar-check-line", fieldCount: 8 },
-  { id: "compensation", step: 4, label: "4. Compensation & Tax", shortLabel: "Payroll", fullLabel: "Compensation, Tax & Payroll Setup", icon: "ri-money-dollar-circle-line", fieldCount: 5 },
-  { id: "asset", step: 5, label: "5. Asset Booking", shortLabel: "Assets", fullLabel: "Asset Assignment & Booking Info", icon: "ri-computer-line", fieldCount: 4 },
-  { id: "contact", step: 6, label: "6. Contact & Emergency", shortLabel: "Contacts", fullLabel: "Contact & Emergency Information", icon: "ri-contacts-book-2-line", fieldCount: 6 },
+  { id: "personal", step: 1, label: "Personal Info", shortLabel: "Personal Info", fullLabel: "Personal Info", icon: "ri-user-3-line", fieldCount: 6 },
+  { id: "org", step: 2, label: "Joining Info", shortLabel: "Joining Info", fullLabel: "Joining Info", icon: "ri-briefcase-line", fieldCount: 8 },
+  { id: "terms", step: 3, label: "NSSF Info", shortLabel: "NSSF Info", fullLabel: "NSSF Info", icon: "ri-shield-check-line", fieldCount: 4 },
+  { id: "compensation", step: 4, label: "Payroll Info", shortLabel: "Payroll Info", fullLabel: "Payroll Info", icon: "ri-money-dollar-circle-line", fieldCount: 5 },
+  { id: "asset", step: 5, label: "Asset", shortLabel: "Asset", fullLabel: "Asset", icon: "ri-computer-line", fieldCount: 4 },
 ];

@@ -65,3 +65,53 @@
     background: rgba(148, 163, 184, 0.6);
   }
 }
+
+@keyframes powerpointFullScreenCover {
+  0% {
+    transform: translateX(100%);
+    box-shadow: -25px 0 50px -10px rgba(0, 0, 0, 0.35);
+  }
+  100% {
+    transform: translateX(0%);
+    box-shadow: none;
+  }
+}
+
+@keyframes powerpointCoverNext {
+  0% {
+    transform: translateX(100%);
+    opacity: 0.3;
+    box-shadow: -20px 0 30px -5px rgba(0, 0, 0, 0.15);
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+    box-shadow: none;
+  }
+}
+
+@keyframes powerpointCoverPrev {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0.3;
+    box-shadow: 20px 0 30px -5px rgba(0, 0, 0, 0.15);
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+    box-shadow: none;
+  }
+}
+
+.animate-fullscreen-cover {
+  animation: powerpointFullScreenCover 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-cover-next {
+  animation: powerpointCoverNext 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-cover-prev {
+  animation: powerpointCoverPrev 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+

@@ -47,7 +47,7 @@ export const PersonalEmploymentRow = memo(function PersonalEmploymentRow({
           type="text"
           value={emp.designation}
           onChange={(e) => onUpdate(idx, { ...emp, designation: e.target.value })}
-          placeholder="Designation / Role"
+          placeholder="Position / Role"
           className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs font-medium focus:outline-none focus:border-[#253C7D]"
         />
       </td>

@@ -91,34 +91,38 @@ export const ProfileContactAddressSection = memo(function ProfileContactAddressS
           )}
         </div>
 
+        {/* Current Address */}
+        <div className="md:col-span-3">
+          <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+            Current Living Address
+          </label>
+          {editing ? (
+            <input
+              placeholder="Current Street / Village / Sangkat / City address"
+              value={form.current_address || ""}
+              onChange={(e) => setForm({ ...form, current_address: e.target.value })}
+              className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#253C7D]"
+            />
+          ) : (
+            <p className="text-xs text-slate-800 font-medium leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <i className="ri-map-pin-line text-[#253C7D] mr-1.5" />
+              {employee.current_address || employee.permanent_address || "—"}
+            </p>
+          )}
+        </div>
+
         {/* Permanent Address */}
-        <div className="md:col-span-2">
+        <div className="md:col-span-3">
           <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
             Permanent Registered Address
           </label>
           {editing ? (
-            <div className="space-y-2">
-              <input
-                placeholder="Street / Village / Sangkat address"
-                value={form.permanent_address || ""}
-                onChange={(e) => setForm({ ...form, permanent_address: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#253C7D]"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  placeholder="City / Khan"
-                  value={form.permanent_city || ""}
-                  onChange={(e) => setForm({ ...form, permanent_city: e.target.value })}
-                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-xs focus:outline-none focus:border-[#253C7D]"
-                />
-                <input
-                  placeholder="Province"
-                  value={form.permanent_province || ""}
-                  onChange={(e) => setForm({ ...form, permanent_province: e.target.value })}
-                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-xs focus:outline-none focus:border-[#253C7D]"
-                />
-              </div>
-            </div>
+            <input
+              placeholder="Street / Village / Sangkat / City address"
+              value={form.permanent_address || ""}
+              onChange={(e) => setForm({ ...form, permanent_address: e.target.value })}
+              className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-none focus:border-[#253C7D]"
+            />
           ) : (
             <p className="text-xs text-slate-800 font-medium leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-200">
               <i className="ri-home-4-line text-[#253C7D] mr-1.5" />

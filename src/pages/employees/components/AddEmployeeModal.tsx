@@ -1,15 +1,16 @@
-import { memo, useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { memo, useState, useCallback, useEffect } from "react";
 import type { Branch, Employee, EmployeeFormState } from "../types";
 import { useBranchScope } from "@/context/BranchContext";
+import { useSidebar } from "@/components/layout/SidebarContext";
 import { ADD_EMPLOYEE_STEPS, type AddEmployeeStepId } from "./add-employee/types";
 import { useAddEmployeeModalData } from "./add-employee/useAddEmployeeModalData";
-import { AddEmployeePersonalTab } from "./add-employee/AddEmployeePersonalTab";
-import { AddEmployeeOrgTab } from "./add-employee/AddEmployeeOrgTab";
-import { AddEmployeeTermsTab } from "./add-employee/AddEmployeeTermsTab";
-import { AddEmployeeCompTab } from "./add-employee/AddEmployeeCompTab";
-import { AddEmployeeAssetTab } from "./add-employee/AddEmployeeAssetTab";
-import { AddEmployeeContactTab } from "./add-employee/AddEmployeeContactTab";
-import { AddEmployeeExportMenu } from "./add-employee/AddEmployeeExportMenu";
+import { useAddEmployeeAutoSave } from "./add-employee/useAddEmployeeAutoSave";
+import { useAddEmployeeBranchSync } from "./add-employee/useAddEmployeeBranchSync";
+import { PersonalPhotoCard } from "./add-employee/personal/PersonalPhotoCard";
+import { AddEmployeeHeader } from "./add-employee/AddEmployeeHeader";
+import { AddEmployeeNavTabs } from "./add-employee/AddEmployeeNavTabs";
+import { AddEmployeeTabRouter } from "./add-employee/AddEmployeeTabRouter";
+import { AddEmployeeFormFooter } from "./add-employee/AddEmployeeFormFooter";
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
@@ -32,23 +33,19 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
   onClose,
   onSubmit,
 }: AddEmployeeModalProps) {
-  const { visibleBranches, targetBranch, userBranchId } = useBranchScope();
+  const { targetBranch, userBranchId } = useBranchScope();
+  const { collapsed } = useSidebar();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [activeTab, setActiveTab] = useState<AddEmployeeStepId>("personal");
+  const [slideDirection, setSlideDirection] = useState<"next" | "prev">("next");
 
-  // Auto-Save Draft System
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
-    try {
-      const stored = localStorage.getItem("hr_add_employee_autosave");
-      return stored !== null ? stored === "true" : true;
-    } catch {
-      return true;
-    }
-  });
-  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const isDirtyRef = useRef<boolean>(false);
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const statusTimerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const { markDirty } = useAddEmployeeAutoSave(isOpen, form, setForm);
 
   const {
     cleanBranches,
@@ -56,432 +53,79 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
     currentBranchName,
     workSites,
     currentSiteSelectValue,
+    departments,
+    positions,
+    employeeTypes,
+    contractTypes,
     getBranchCode,
     deriveBuHandle,
     buManagers,
     buCeos,
   } = useAddEmployeeModalData(isOpen, form);
 
-  // Auto-load draft from localStorage when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      try {
-        const savedDraft = localStorage.getItem("hr_add_employee_draft");
-        if (savedDraft) {
-          const parsed = JSON.parse(savedDraft);
-          // Only populate if current form has not been filled yet
-          setForm((prev) => {
-            if (!prev.full_name && !prev.first_name && (parsed.full_name || parsed.first_name || parsed.email || parsed.phone)) {
-              setLastSavedAt(new Date());
-              return { ...prev, ...parsed };
-            }
-            return prev;
-          });
-        }
-      } catch (err) {
-        console.error("Failed to restore draft:", err);
-      }
-    }
-  }, [isOpen, setForm]);
-
-  // Debounced Auto-Save Draft
-  useEffect(() => {
-    if (!isOpen || !autoSaveEnabled) return;
-    if (!isDirtyRef.current) return;
-
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    autoSaveTimerRef.current = setTimeout(() => {
-      try {
-        setAutoSaveStatus("saving");
-        localStorage.setItem("hr_add_employee_draft", JSON.stringify(form));
-        setLastSavedAt(new Date());
-        isDirtyRef.current = false;
-        setAutoSaveStatus("saved");
-
-        if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-        statusTimerRef.current = setTimeout(() => setAutoSaveStatus("idle"), 3000);
-      } catch (err) {
-        console.error("Auto-save draft error:", err);
-        setAutoSaveStatus("error");
-      }
-    }, 1000);
-
-    return () => {
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    };
-  }, [form, autoSaveEnabled, isOpen]);
-
-  const handleToggleAutoSave = useCallback(() => {
-    setAutoSaveEnabled((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("hr_add_employee_autosave", String(next));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  }, []);
-
-  const handleClearDraft = useCallback(() => {
-    try {
-      localStorage.removeItem("hr_add_employee_draft");
-      setLastSavedAt(null);
-      setAutoSaveStatus("idle");
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  // Handle branch selection and auto-derive BU code, full name, and handle
-  const handleSelectBranch = useCallback(
-    (branchId: string) => {
-      isDirtyRef.current = true;
-      const branch = cleanBranches.find((b) => b.id === branchId);
-      if (branch) {
-        const code = getBranchCode(branch.name);
-        const handle = deriveBuHandle(branch.name, code);
-        setForm((prev) => ({
-          ...prev,
-          branch_id: branch.id,
-          code_bu: code,
-          bu_full_name: branch.name,
-          handle_bu: handle,
-          site: branch.name ? `Main Office (${branch.name})` : "Main Office",
-          working_location: branch.location || "Phnom Penh",
-          default_work_location_id: "",
-        }));
-      } else {
-        setForm((prev) => ({
-          ...prev,
-          branch_id: "",
-          code_bu: "",
-          bu_full_name: "",
-          handle_bu: "",
-          site: "",
-          default_work_location_id: "",
-        }));
-      }
-    },
-    [cleanBranches, getBranchCode, deriveBuHandle, setForm]
-  );
-
-  // Auto-fill default branch if scoped
-  useEffect(() => {
-    if (isOpen && !isSuperAdmin) {
-      const defaultBranch = targetBranch || userBranchId || "";
-      if (defaultBranch && form.branch_id !== defaultBranch) {
-        handleSelectBranch(defaultBranch);
-      }
-    }
-  }, [isOpen, isSuperAdmin, targetBranch, userBranchId, form.branch_id, handleSelectBranch]);
-
-  // Auto-sync BU details (bu_full_name, handle_bu, code_bu) whenever a branch is selected/loaded
-  useEffect(() => {
-    if (!isOpen || !cleanBranches.length) return;
-    const branchId = form.branch_id || targetBranch || userBranchId;
-    if (!branchId) return;
-
-    const branch = cleanBranches.find((b) => b.id === branchId);
-    if (branch) {
-      const code = getBranchCode(branch.name);
-      const handle = deriveBuHandle(branch.name, code);
-
-      setForm((prev) => {
-        const needsBuNameSync = !prev.bu_full_name;
-        const needsHandleSync = !prev.handle_bu;
-        const needsCodeSync = !prev.code_bu;
-        const needsBranchSync = prev.branch_id !== branch.id;
-
-        if (!needsBuNameSync && !needsHandleSync && !needsCodeSync && !needsBranchSync) {
-          return prev;
-        }
-
-        return {
-          ...prev,
-          branch_id: branch.id,
-          code_bu: prev.code_bu || code,
-          bu_full_name: prev.bu_full_name || branch.name,
-          handle_bu: prev.handle_bu || handle,
-          site: prev.site || (branch.name ? `Main Office (${branch.name})` : "Main Office"),
-          working_location: prev.working_location || branch.location || "Phnom Penh",
-        };
-      });
-    }
-  }, [isOpen, cleanBranches, form.branch_id, targetBranch, userBranchId, getBranchCode, deriveBuHandle, setForm]);
-
-  // Handle site selection and auto-derive location
-  const handleSelectSite = useCallback(
-    (siteIdOrVal: string) => {
-      isDirtyRef.current = true;
-      if (!siteIdOrVal) {
-        setForm((prev) => ({
-          ...prev,
-          default_work_location_id: "",
-          site: currentBranch?.name ? `Main Office (${currentBranch.name})` : "Main Office",
-          working_location: currentBranch?.location || "Phnom Penh",
-        }));
-        return;
-      }
-
-      const targetSite = workSites.find((w) => w.id === siteIdOrVal);
-      if (targetSite) {
-        let loc = targetSite.description || targetSite.name;
-        const lower = targetSite.name.toLowerCase();
-        if (lower.includes("kampong thom") || lower.includes("kampongthom")) loc = "Kampong Thom";
-        else if (lower.includes("battambang") || lower.includes("btb")) loc = "Battambang";
-        else if (lower.includes("siem reap")) loc = "Siem Reap";
-        else if (lower.includes("poipet")) loc = "Poipet";
-
-        setForm((prev) => ({
-          ...prev,
-          default_work_location_id: targetSite.id,
-          site: targetSite.name,
-          working_location: loc,
-        }));
-      }
-    },
-    [workSites, currentBranch, setForm]
-  );
+  const { handleSelectBranch, handleSelectSite } = useAddEmployeeBranchSync({
+    isOpen,
+    isSuperAdmin,
+    targetBranch,
+    userBranchId,
+    form,
+    setForm,
+    cleanBranches,
+    workSites,
+    currentBranch,
+    getBranchCode,
+    deriveBuHandle,
+    onFieldTouch: markDirty,
+  });
 
   const handleFieldChange = useCallback(
     (field: keyof EmployeeFormState, value: any) => {
-      isDirtyRef.current = true;
+      markDirty();
       setForm((prev) => ({ ...prev, [field]: value }));
     },
-    [setForm]
+    [markDirty, setForm]
   );
 
-  const currentStepIndex = ADD_EMPLOYEE_STEPS.findIndex((s) => s.id === activeTab);
-
-  // Calculate filled count across standard 33 fields
-  const filledCount = useMemo(() => {
-    const fieldsToCheck: (keyof EmployeeFormState)[] = [
-      "employee_code",
-      "full_name",
-      "kh_name",
-      "gender",
-      "code_bu",
-      "bu_full_name",
-      "handle_bu",
-      "division",
-      "department",
-      "position",
-      "working_hour",
-      "total_working_days",
-      "employment_type",
-      "start_date",
-      "working_location",
-      "national_id_number",
-      "date_of_birth",
-      "current_address",
-      "basic_salary",
-      "tax_method",
-      "allowance",
-      "line_manager",
-      "contract_type",
-      "fdc_end_date",
-      "site",
-      "bank_account_number",
-      "nssf_number",
-      "email",
-      "phone",
-      "emergency_contact_name",
-      "emergency_phone_number",
-      "hiring_status",
-      "marital_status",
-    ];
-
-    let count = 0;
-    for (const f of fieldsToCheck) {
-      const val = form[f];
-      if (val !== undefined && val !== null && String(val).trim() !== "") {
-        count++;
-      }
-    }
-    return count;
-  }, [form]);
-
-  const goToNextStep = () => {
-    if (currentStepIndex < ADD_EMPLOYEE_STEPS.length - 1) {
-      setActiveTab(ADD_EMPLOYEE_STEPS[currentStepIndex + 1].id);
-    }
-  };
-
-  const goToPrevStep = () => {
-    if (currentStepIndex > 0) {
-      setActiveTab(ADD_EMPLOYEE_STEPS[currentStepIndex - 1].id);
-    }
+  const handleStepClick = (stepId: AddEmployeeStepId) => {
+    const currentIdx = ADD_EMPLOYEE_STEPS.findIndex((s) => s.id === activeTab);
+    const targetIdx = ADD_EMPLOYEE_STEPS.findIndex((s) => s.id === stepId);
+    setSlideDirection(targetIdx >= currentIdx ? "next" : "prev");
+    setActiveTab(stepId);
   };
 
   if (!isOpen) return null;
 
+  const leftOffset = isMobile ? 0 : (collapsed ? 64 : 260);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-[96vw] max-w-7xl max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
-        {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 via-white to-indigo-50/20">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-[#253C7D] text-white flex items-center justify-center shadow-md shadow-[#253C7D]/20 shrink-0">
-                <i className="ri-user-add-line text-xl" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-lg font-black text-slate-900 tracking-tight">
-                    Add Employee &mdash; Hiring Information
-                  </h2>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20">
-                    33 Standard Fields
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Full hiring dossier &bull; S3 document upload &bull; One-click PDF/Word export
-                </p>
-              </div>
-            </div>
+    <div
+      className="fixed top-0 bottom-0 right-0 z-40 flex flex-col bg-white overflow-hidden animate-fullscreen-cover transition-[left] duration-300 ease-in-out border-l border-slate-200"
+      style={{ left: leftOffset }}
+    >
+      {/* Top Header */}
+      <AddEmployeeHeader onClose={onClose} />
 
-            <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-end">
-              {/* Auto-Save Toggle & Status Controller */}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 select-none">
-                <div className="flex items-center gap-1.5 text-xs font-semibold">
-                  {autoSaveStatus === "saving" ? (
-                    <>
-                      <div className="w-2.5 h-2.5 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sky-700 text-[11px] font-bold">Saving...</span>
-                    </>
-                  ) : autoSaveStatus === "saved" ? (
-                    <>
-                      <i className="ri-checkbox-circle-fill text-emerald-600 text-xs" />
-                      <span className="text-emerald-700 text-[11px] font-bold">Auto-Saved</span>
-                    </>
-                  ) : autoSaveStatus === "error" ? (
-                    <>
-                      <i className="ri-error-warning-fill text-rose-500 text-xs" />
-                      <span className="text-rose-600 text-[11px] font-bold">Save Error</span>
-                    </>
-                  ) : autoSaveEnabled ? (
-                    <>
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                      </span>
-                      <span className="text-emerald-700 text-[11px] font-bold">Auto-Save ON</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-slate-400" />
-                      <span className="text-slate-500 text-[11px] font-medium">Auto-Save OFF</span>
-                    </>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleToggleAutoSave}
-                  className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                    autoSaveEnabled ? "bg-emerald-600" : "bg-slate-300"
-                  }`}
-                  role="switch"
-                  aria-checked={autoSaveEnabled}
-                  title={autoSaveEnabled ? "Auto-Save is active. Click to toggle OFF." : "Auto-Save is off. Click to toggle ON."}
-                >
-                  <span
-                    className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                      autoSaveEnabled ? "translate-x-3" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Progress counter badge */}
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
-                <i className="ri-checkbox-circle-fill text-emerald-600 text-sm" />
-                <span>{filledCount} / 33 Filled</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-                title="Close"
-              >
-                <i className="ri-close-line text-2xl" />
-              </button>
-            </div>
+      {/* Main 2-Column Content Body */}
+      <form onSubmit={onSubmit} className="flex-1 overflow-y-auto bg-white p-6 sm:p-8">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start max-w-7xl mx-auto w-full">
+          {/* Left Column: Persistent Avatar & Image Actions */}
+          <div className="w-full lg:w-72 shrink-0 flex flex-col items-center lg:sticky lg:top-4">
+            <PersonalPhotoCard form={form} onChange={handleFieldChange} />
           </div>
 
-          {/* 6 Step Wizard Progress Bar */}
-          <div className="mt-3.5 pt-3 border-t border-slate-100">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-              {ADD_EMPLOYEE_STEPS.map((step, idx) => {
-                const isActive = step.id === activeTab;
-                const isPast = idx < currentStepIndex;
+          {/* Right Column: Tab Bar + Active Section + Form Actions */}
+          <div className="flex-1 min-w-0 w-full space-y-6">
+            <AddEmployeeNavTabs activeTab={activeTab} onSelectTab={handleStepClick} />
 
-                return (
-                  <button
-                    key={step.id}
-                    type="button"
-                    onClick={() => setActiveTab(step.id)}
-                    className={`group relative flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all duration-150 cursor-pointer active:scale-[0.97] border ${
-                      isActive
-                        ? "bg-[#253C7D] border-[#253C7D] text-white shadow-md shadow-[#253C7D]/25 ring-2 ring-[#253C7D]/20"
-                        : isPast
-                        ? "bg-emerald-50/70 border-emerald-200/80 text-emerald-800 hover:bg-emerald-100/60 hover:border-emerald-300 shadow-2xs"
-                        : "bg-slate-50/80 border-slate-200/80 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-300 shadow-2xs"
-                    }`}
-                  >
-                    <div
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 transition-transform group-hover:scale-105 shadow-2xs ${
-                        isActive
-                          ? "bg-white/20 text-white font-black"
-                          : isPast
-                          ? "bg-emerald-500 text-white font-black"
-                          : "bg-white border border-slate-200 text-slate-500 font-bold"
-                      }`}
-                    >
-                      {isPast ? (
-                        <i className="ri-check-line text-sm" />
-                      ) : (
-                        <i className={`${step.icon} text-xs`} />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={`text-xs font-bold leading-tight truncate ${
-                          isActive ? "text-white" : isPast ? "text-emerald-900" : "text-slate-800"
-                        }`}
-                      >
-                        {step.shortLabel}
-                      </p>
-                      <p
-                        className={`text-[10px] font-semibold mt-0.5 leading-none ${
-                          isActive
-                            ? "text-blue-200"
-                            : isPast
-                            ? "text-emerald-600"
-                            : "text-slate-400"
-                        }`}
-                      >
-                        Step {step.step}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Modal Body: Active Tab */}
-        <form onSubmit={onSubmit} className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
-            {activeTab === "personal" && (
-              <AddEmployeePersonalTab form={form} onChange={handleFieldChange} />
-            )}
-
-            {activeTab === "org" && (
-              <AddEmployeeOrgTab
+            {/* Tab Content with Smooth Slide Wipe */}
+            <div
+              key={activeTab}
+              className={`w-full ${
+                slideDirection === "next" ? "animate-cover-next" : "animate-cover-prev"
+              }`}
+            >
+              <AddEmployeeTabRouter
+                activeTab={activeTab}
                 form={form}
                 onChange={handleFieldChange}
                 cleanBranches={cleanBranches}
@@ -491,112 +135,19 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
                 currentSiteSelectValue={currentSiteSelectValue}
                 onSelectBranch={handleSelectBranch}
                 onSelectSite={handleSelectSite}
-              />
-            )}
-
-            {activeTab === "terms" && (
-              <AddEmployeeTermsTab
-                form={form}
-                onChange={handleFieldChange}
                 buManagers={buManagers}
                 buCeos={buCeos}
+                departments={departments}
+                positions={positions}
+                employeeTypes={employeeTypes}
+                contractTypes={contractTypes}
               />
-            )}
-
-            {activeTab === "compensation" && (
-              <AddEmployeeCompTab form={form} onChange={handleFieldChange} />
-            )}
-
-            {activeTab === "asset" && (
-              <AddEmployeeAssetTab
-                form={form}
-                onChange={handleFieldChange}
-                cleanBranches={cleanBranches}
-                currentBranch={currentBranch}
-              />
-            )}
-
-            {activeTab === "contact" && (
-              <AddEmployeeContactTab form={form} onChange={handleFieldChange} />
-            )}
-          </div>
-
-          {/* Footer Controls */}
-          <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              {currentStepIndex > 0 ? (
-                <button
-                  type="button"
-                  onClick={goToPrevStep}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                >
-                  <i className="ri-arrow-left-s-line text-sm" />
-                  <span>Previous</span>
-                </button>
-              ) : (
-                <div />
-              )}
-
-              {/* Function Export (PDF / Word) directly from modal */}
-              <AddEmployeeExportMenu form={form} />
-
-              {lastSavedAt && (
-                <div className="hidden md:flex items-center gap-1.5 text-[11px] text-slate-500 font-medium px-2 py-1 rounded-lg bg-slate-100 border border-slate-200/80">
-                  <i className="ri-check-double-line text-emerald-600" />
-                  <span>Draft saved at {lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
-                  <button
-                    type="button"
-                    onClick={handleClearDraft}
-                    className="ml-1 text-slate-400 hover:text-rose-600 underline text-[10px] cursor-pointer"
-                    title="Clear saved draft and start fresh"
-                  >
-                    Clear draft
-                  </button>
-                </div>
-              )}
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-bold transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-
-              {currentStepIndex < ADD_EMPLOYEE_STEPS.length - 1 && (
-                <button
-                  type="button"
-                  onClick={goToNextStep}
-                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <span>Next Step</span>
-                  <i className="ri-arrow-right-s-line text-sm" />
-                </button>
-              )}
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-6 py-2.5 rounded-xl bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm shadow-[#253C7D]/25 disabled:opacity-50"
-              >
-                {submitting ? (
-                  <>
-                    <i className="ri-loader-4-line animate-spin text-sm" />
-                    <span>Saving Employee...</span>
-                  </>
-                ) : (
-                  <>
-                    <i className="ri-check-line text-sm" />
-                    <span>Add Employee</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <AddEmployeeFormFooter submitting={submitting} onClose={onClose} />
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 });
