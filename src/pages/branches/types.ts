@@ -257,3 +257,38 @@ export interface DepartmentFormState {
   sort_order: string;
   status: "active" | "disabled";
 }
+
+export interface Position {
+  id: string;
+  branch_id?: string | null;
+  name: string;
+  tax_position?: string | null;
+  status: "active" | "disabled" | string;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+}
+
+export interface PositionFormState {
+  name: string;
+  tax_position: string;
+  status: "active" | "disabled";
+}
+
+export interface EmployeeType {
+  id: string;
+  branch_id?: string | null;
+  name: string;
+  status: "active" | "disabled" | string;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+}
+
+export interface EmployeeTypeFormState {
+  name: string;
+  status: "active" | "disabled";
+}
+

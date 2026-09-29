@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { BranchCompanyProfileSection } from "./components/BranchCompanyProfileSection";
 import { BranchWorkSitesSection } from "./components/BranchWorkSitesSection";
 import { BranchDepartmentsSection } from "./components/BranchDepartmentsSection";
+import { BranchPositionsSection } from "./components/BranchPositionsSection";
+import { BranchEmployeeTypesSection } from "./components/BranchEmployeeTypesSection";
 import { BranchBiometricsSection } from "./components/BranchBiometricsSection";
 import { BranchStaffSection } from "./components/BranchStaffSection";
 import { BranchStatsRow } from "./components/BranchStatsRow";
@@ -52,7 +54,7 @@ export default function Branches() {
   } = useBranches();
 
   // Active tab: defaults to "profile" (Company Profile)
-  const [activeTab, setActiveTab] = useState<"profile" | "sites" | "departments" | "schedule" | "staff" | "all">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "sites" | "departments" | "positions" | "employee-types" | "schedule" | "staff" | "all">("profile");
 
   // The active BU for this user: strictly scoped to their own BU or selected BU
   const currentBranch = useMemo(() => {
@@ -178,6 +180,32 @@ export default function Branches() {
 
             <button
               type="button"
+              onClick={() => setActiveTab("positions")}
+              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                activeTab === "positions"
+                  ? "border-[#0088cc] text-[#0088cc]"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <i className="ri-briefcase-line text-sm sm:text-base" />
+              Positions
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("employee-types")}
+              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                activeTab === "employee-types"
+                  ? "border-[#0088cc] text-[#0088cc]"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <i className="ri-user-settings-line text-sm sm:text-base" />
+              Employee Types
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTab("schedule")}
               className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                 activeTab === "schedule"
@@ -271,6 +299,26 @@ export default function Branches() {
           {activeTab === "departments" && currentBranch && (
             <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
               <BranchDepartmentsSection
+                branchId={currentBranch.id}
+                canManage={canManage}
+              />
+            </div>
+          )}
+
+          {/* TAB 4: POSITIONS */}
+          {activeTab === "positions" && currentBranch && (
+            <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
+              <BranchPositionsSection
+                branchId={currentBranch.id}
+                canManage={canManage}
+              />
+            </div>
+          )}
+
+          {/* TAB 5: EMPLOYEE TYPES */}
+          {activeTab === "employee-types" && currentBranch && (
+            <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
+              <BranchEmployeeTypesSection
                 branchId={currentBranch.id}
                 canManage={canManage}
               />
