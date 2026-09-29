@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect } from "react";
+import { stripEmojis } from "@/pages/notifications/notificationUtils";
 
 interface Toast {
   id: string;
@@ -16,19 +17,19 @@ function emit() {
 }
 
 export function toast(titleOrMessage: string, messageOrType?: string, type: Toast["type"] = "info") {
-  let finalTitle = titleOrMessage;
-  let finalMessage = messageOrType || "";
+  let finalTitle = stripEmojis(titleOrMessage);
+  let finalMessage = stripEmojis(messageOrType || "");
   let finalType = type;
 
   // If only one argument is provided: toast("Item saved successfully")
   if (messageOrType === undefined) {
     finalTitle = "Notification";
-    finalMessage = titleOrMessage;
+    finalMessage = stripEmojis(titleOrMessage);
     finalType = "info";
   } else if (messageOrType === "info" || messageOrType === "success" || messageOrType === "warning" || messageOrType === "error") {
     // If called as toast("Success message", "success")
     finalTitle = messageOrType.charAt(0).toUpperCase() + messageOrType.slice(1);
-    finalMessage = titleOrMessage;
+    finalMessage = stripEmojis(titleOrMessage);
     finalType = messageOrType as Toast["type"];
   }
 

@@ -66,7 +66,8 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
   else if (!hasClockOut && r.date < todayYMD) statusBadge = { label: "Error : No clock out", bg: "bg-rose-500", text: "text-white" };
   else if (!hasClockOut && r.date === todayYMD) statusBadge = { label: "Working Now", bg: "bg-emerald-600", text: "text-white" };
   else if (r.status === "late" || (r.late_minutes && r.late_minutes > 0)) statusBadge = { label: `Late ${r.late_minutes}m`, bg: "bg-amber-500", text: "text-white" };
-  else statusBadge = { label: "On Time", bg: "bg-emerald-600", text: "text-white" };
+  else if (r.early_leave_minutes && r.early_leave_minutes > 0) statusBadge = { label: `Early ${r.early_leave_minutes}m`, bg: "bg-orange-500", text: "text-white" };
+  else statusBadge = null;
 
   const locationName = r.work_location?.name || emp?.branches?.name || "Main Office";
 

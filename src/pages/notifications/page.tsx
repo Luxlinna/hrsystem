@@ -1,5 +1,4 @@
 import { NotificationsHeader } from "./components/NotificationsHeader";
-import { NotificationsKpiRow } from "./components/NotificationsKpiRow";
 import { NotificationsFilterBar } from "./components/NotificationsFilterBar";
 import { NotificationsBulkActionBar } from "./components/NotificationsBulkActionBar";
 import { NotificationsGroupList } from "./components/NotificationsGroupList";
@@ -86,20 +85,6 @@ export default function Notifications() {
         onMarkAllRead={markAllRead}
       />
 
-      {/* KPI Stats Bar */}
-      <NotificationsKpiRow
-        totalCount={visibleNotifs.length}
-        unreadCount={unreadCount}
-        todayCount={todayCount}
-        urgentCount={urgentCount}
-        filter={filter}
-        todayOnly={todayOnly}
-        filtersActive={filtersActive}
-        onResetFilters={resetFilters}
-        onFilterChange={setFilter}
-        onToggleTodayOnly={() => setTodayOnly(!todayOnly)}
-      />
-
       {/* Filters & Search Bar */}
       <NotificationsFilterBar
         search={search}
@@ -109,6 +94,7 @@ export default function Notifications() {
         sourceFilter={sourceFilter}
         setSourceFilter={setSourceFilter}
         sources={sources}
+        unreadCount={unreadCount}
       />
 
       {/* Bulk Selection & Action Toolbar (like Recycle Bin) */}

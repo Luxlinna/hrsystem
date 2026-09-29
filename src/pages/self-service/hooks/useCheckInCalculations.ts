@@ -46,7 +46,7 @@ export function useCheckInCalculations({
     }
     const rawEarly = Math.max(0, endMinutes - zonedParts(currentTime, scheduleSettings.timezone).minutesOfDay);
     const grace = scheduleSettings.earlyLeaveGraceMinutes ?? 15;
-    return rawEarly > grace ? rawEarly - grace : 0;
+    return rawEarly > grace ? rawEarly : 0;
   })();
   const isEarlyCheckoutNow = earlyCheckoutMinutesNow > 0;
 

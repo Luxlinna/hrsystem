@@ -70,7 +70,7 @@ export function useClockInOutActions({
     const rawLateMinutes = Math.max(0, nowZ.minutesOfDay - (startH * 60 + startM));
     const effectiveLateGrace = branch?.late_grace_minutes ?? scheduleSettings.lateGraceMinutes ?? 15;
     const isLate = rawLateMinutes > effectiveLateGrace;
-    const lateMinutes = isLate ? rawLateMinutes - effectiveLateGrace : 0;
+    const lateMinutes = isLate ? rawLateMinutes : 0;
     const status = isLate ? "late" : "ontime";
 
     const { error } = await supabase.from("attendance_records").upsert(
@@ -92,9 +92,9 @@ export function useClockInOutActions({
       showToast("error", "Failed to check in. Please try again.");
     } else {
       const lateMessage = isLate
-        ? ` — Late by ${lateMinutes}m (${rawLateMinutes}m after start, ${effectiveLateGrace}m grace)`
+        ? ` — Late by ${lateMinutes}m (${rawLateMinutes}m after start)`
         : rawLateMinutes > 0
-        ? ` — On time (${rawLateMinutes}m within grace chance)`
+        ? ` — On time (${rawLateMinutes}m within grace period)`
         : " — On time!";
       showToast(
         "success",
@@ -147,7 +147,7 @@ export function useClockInOutActions({
 
     const effectiveEarlyGrace = branch?.early_leave_grace_minutes ?? scheduleSettings.earlyLeaveGraceMinutes ?? 15;
     const isEarlyLeave = rawEarlyMinutes > effectiveEarlyGrace;
-    const earlyLeaveMinutes = isEarlyLeave ? rawEarlyMinutes - effectiveEarlyGrace : 0;
+    const earlyLeaveMinutes = isEarlyLeave ? rawEarlyMinutes : 0;
     const requiresReason = isEarlyLeave;
     if (requiresReason && !earlyCheckoutReason.trim()) {
       showToast("error", "Please enter a reason before checking out early.");

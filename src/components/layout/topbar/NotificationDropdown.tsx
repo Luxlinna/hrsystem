@@ -2,6 +2,7 @@ import { memo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useClickOutside } from "./useClickOutside";
 import type { NotificationRow } from "./types";
+import { stripEmojis } from "@/pages/notifications/notificationUtils";
 
 interface NotificationDropdownProps {
   open: boolean;
@@ -80,8 +81,8 @@ const NotificationDropdown = memo(function NotificationDropdown({
                   <div className="flex items-start gap-2">
                     <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${TYPE_DOT[n.type] ?? "bg-gray-300"}`} />
                     <div className="min-w-0">
-                      <p className="text-[12px] font-semibold text-gray-900">{n.title}</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
+                      <p className="text-[12px] font-semibold text-gray-900">{stripEmojis(n.title)}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{stripEmojis(n.message)}</p>
                       <p className="text-[10px] text-gray-400 mt-1">
                         {new Date(n.created_at).toLocaleDateString()}
                       </p>

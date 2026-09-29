@@ -15,49 +15,48 @@ export const NotificationsHeader = memo(function NotificationsHeader({
   onMarkAllRead,
 }: NotificationsHeaderProps) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
       <div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-          <span>Workspace</span>
-          <i className="ri-arrow-right-s-line text-xs" />
-          <span className="text-[#253C7D] font-bold">Notifications</span>
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+          <span>Portal</span>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-600">Notifications</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
-          <span>Notifications</span>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Notifications
+          </h1>
           {realtimeEnabled && (
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Live
             </span>
           )}
-        </h1>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1">
-          Stay on top of activity across recruitment, leave, payroll, and every module you have access to.
-        </p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2.5 flex-wrap">
+      <div className="flex items-center gap-2 self-start sm:self-auto">
         <Link
           to="/settings"
           title="Notification preferences"
-          className="p-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-500 rounded-xl shadow-2xs transition-all cursor-pointer"
+          className="p-2 bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-lg sm:rounded-xl shadow-2xs transition-all cursor-pointer"
         >
           <i className="ri-settings-4-line text-sm w-4 h-4 flex items-center justify-center" />
         </Link>
         <button
           onClick={onRefresh}
           title="Refresh"
-          className="p-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-500 rounded-xl shadow-2xs transition-all cursor-pointer"
+          className="p-2 bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-lg sm:rounded-xl shadow-2xs transition-all cursor-pointer"
         >
           <i className="ri-refresh-line text-sm w-4 h-4 flex items-center justify-center" />
         </button>
         <button
           onClick={onMarkAllRead}
           disabled={unreadCount === 0}
-          className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none whitespace-nowrap"
+          className="inline-flex items-center gap-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white px-3 py-2 rounded-lg sm:rounded-xl text-xs font-semibold transition-all shadow-2xs cursor-pointer active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none whitespace-nowrap"
         >
-          <i className="ri-mail-open-line text-base" />
-          Mark All Read
+          <i className="ri-mail-open-line text-xs" />
+          <span>Mark All Read</span>
         </button>
       </div>
     </div>

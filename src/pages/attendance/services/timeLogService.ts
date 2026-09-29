@@ -46,7 +46,7 @@ export async function saveTimeLogRecord(params: SaveTimeLogParams) {
     const punchMin = inH * 60 + inM;
     const graceThresholdMin = startMin + grace;
     const isLate = punchMin > graceThresholdMin;
-    const autoLateMinutes = isLate ? punchMin - graceThresholdMin : 0;
+    const autoLateMinutes = isLate ? punchMin - startMin : 0;
     const autoStatus = isLate ? "late" : "ontime";
 
     const finalStatus = params.customStatus || autoStatus;

@@ -16,44 +16,54 @@ export const LeaveStatsCards: React.FC<LeaveStatsCardsProps> = ({
   onNewRequest,
 }) => {
   const cards = [
-    { label: "Days Remaining", value: remainingDays, highlight: true },
-    { label: "Total Requests", value: totalRequests },
-    { label: "Days Approved", value: totalApproved },
-    { label: "Pending", value: totalPending },
+    { label: "Leave Balance", value: `${remainingDays}d`, sub: "Available days", icon: "ri-calendar-check-line" },
+    { label: "Total Requests", value: totalRequests, sub: "Submitted", icon: "ri-file-list-3-line" },
+    { label: "Approved", value: `${totalApproved}d`, sub: "Approved time off", icon: "ri-checkbox-circle-line" },
+    { label: "Pending Review", value: totalPending, sub: "Under review", icon: "ri-time-line", isWarning: totalPending > 0 },
   ];
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 min-w-0">
+    <div className="space-y-3">
+      {/* Action Header */}
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Leave Balance & Overview</h2>
+          <p className="text-[11px] text-slate-500">Track entitlements and personal time-off requests</p>
+        </div>
+        <button
+          type="button"
+          onClick={onNewRequest}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-lg sm:rounded-xl text-xs font-semibold transition-all shadow-2xs cursor-pointer active:scale-98 shrink-0"
+        >
+          <i className="ri-add-line text-xs" />
+          <span>New Request</span>
+        </button>
+      </div>
+
+      {/* Compact Metric Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {cards.map((s) => (
           <div
             key={s.label}
-            className={`rounded-xl p-4 text-center border transition-all ${
-              s.highlight
-                ? "bg-[#253C7D]/5 border-[#253C7D]/20 shadow-2xs"
-                : "bg-white border-gray-100"
-            }`}
+            className="bg-white border border-slate-200/80 rounded-lg sm:rounded-xl p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between"
           >
-            <p
-              className={`text-2xl font-bold ${
-                s.highlight ? "text-[#253C7D]" : "text-gray-900"
-              }`}
-            >
-              {s.value}
-            </p>
-            <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                {s.label}
+              </span>
+              <i className={`${s.icon} text-xs ${s.isWarning ? "text-amber-500" : "text-slate-400"} shrink-0`} />
+            </div>
+            <div className="mt-1.5">
+              <p className={`text-lg sm:text-xl font-bold tracking-tight leading-tight ${s.isWarning ? "text-amber-700" : "text-slate-900"}`}>
+                {s.value}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-medium truncate">
+                {s.sub}
+              </p>
+            </div>
           </div>
         ))}
       </div>
-
-      <button
-        type="button"
-        onClick={onNewRequest}
-        className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 bg-[#253C7D] hover:bg-[#1F336A] text-white rounded-xl text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
-      >
-        <i className="ri-add-line text-base" />
-        New Request
-      </button>
     </div>
   );
 };

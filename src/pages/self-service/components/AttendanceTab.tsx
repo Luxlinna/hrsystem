@@ -160,122 +160,158 @@ export default function AttendanceTab({ employeeId, employee }: Props) {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-4">
       {/* Month filter & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
-        <div className="flex items-center gap-2">
-          <i className="ri-calendar-line text-blue-600 text-base" />
-          <span className="text-sm font-bold text-slate-900">Attendance Log</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+        <div className="flex items-center gap-1.5">
+          <i className="ri-calendar-check-line text-slate-500 text-sm" />
+          <span className="text-sm font-bold text-slate-900 tracking-tight">Attendance Log</span>
         </div>
         <div className="flex items-center gap-2 self-stretch sm:self-auto">
-          <select
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="flex-1 sm:flex-none px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer shadow-2xs font-medium"
-          >
-            {monthOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <div className="relative flex-1 sm:flex-initial">
+            <select
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="w-full appearance-none pl-3 pr-7 py-1.5 border border-slate-200/90 rounded-lg text-xs bg-white text-slate-700 font-medium focus:outline-none focus:border-[#253C7D] cursor-pointer shadow-2xs transition-colors"
+            >
+              {monthOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <i className="ri-arrow-down-s-line absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
+          </div>
           <button
             type="button"
             onClick={() => setShowTimeLogForm(true)}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer active:scale-98 shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-lg text-xs font-semibold transition-all shadow-2xs cursor-pointer active:scale-98 shrink-0"
           >
-            <i className="ri-add-line text-sm" />
+            <i className="ri-add-line text-xs" />
             <span>Time Log</span>
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+      {/* Neutral Enterprise KPI Metric Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[
-          { label: "On Time", value: stats.ontime, icon: "ri-checkbox-circle-line", color: "text-emerald-700", bg: "bg-emerald-50/70 border-emerald-200/70" },
-          { label: "Late", value: stats.late, icon: "ri-time-line", color: "text-amber-700", bg: "bg-amber-50/70 border-amber-200/70" },
-          { label: "Absent", value: stats.absent, icon: "ri-close-circle-line", color: "text-rose-700", bg: "bg-rose-50/70 border-rose-200/70" },
-          { label: "Total Hours", value: totalHoursFormatted, icon: "ri-timer-line", color: "text-blue-700", bg: "bg-blue-50/70 border-blue-200/70" },
+          { label: "On Time", value: `${stats.ontime}d`, sub: "Punctual check-ins", icon: "ri-checkbox-circle-line", isSuccess: true },
+          { label: "Late Arrivals", value: `${stats.late}d`, sub: "Late check-ins", icon: "ri-time-line", isWarning: stats.late > 0 },
+          { label: "Absences", value: `${stats.absent}d`, sub: "Days missed", icon: "ri-close-circle-line", isDanger: stats.absent > 0 },
+          { label: "Total Hours", value: totalHoursFormatted, sub: "Logged work time", icon: "ri-timer-line" },
         ].map((s) => (
-          <div key={s.label} className={`${s.bg} border rounded-xl p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3 shadow-2xs`}>
-            <div className={`w-8 h-8 flex items-center justify-center rounded-lg bg-white/80 shadow-2xs shrink-0 ${s.color}`}>
-              <i className={`${s.icon} text-base`} />
+          <div
+            key={s.label}
+            className="bg-white border border-slate-200/80 rounded-lg sm:rounded-xl p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                {s.label}
+              </span>
+              <i
+                className={`${s.icon} text-xs ${
+                  s.isDanger ? "text-rose-500" : s.isWarning ? "text-amber-500" : "text-slate-400"
+                } shrink-0`}
+              />
             </div>
-            <div className="min-w-0">
-              <p className={`text-base sm:text-lg font-bold leading-tight ${s.color} truncate`}>{s.value}</p>
-              <p className="text-[10.5px] font-medium text-slate-600 truncate">{s.label}</p>
+            <div className="mt-1.5">
+              <p
+                className={`text-lg sm:text-xl font-bold tracking-tight leading-tight ${
+                  s.isDanger ? "text-rose-700" : s.isWarning ? "text-amber-700" : "text-slate-900"
+                }`}
+              >
+                {s.value}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-medium truncate">
+                {s.sub}
+              </p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Records List */}
+      {/* Records List Container */}
       {records.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 bg-slate-50/60 rounded-xl text-slate-400 border border-dashed border-slate-200">
-          <i className="ri-fingerprint-line text-3xl mb-2 text-slate-300" />
-          <p className="text-xs font-medium text-slate-500">No attendance records found for this period</p>
+        <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl text-slate-400 border border-slate-200/80 p-6 text-center shadow-2xs">
+          <i className="ri-fingerprint-line text-2xl mb-1.5 text-slate-300" />
+          <p className="text-xs font-semibold text-slate-600">No attendance records found</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">No clock-in/out records for {filterMonth}.</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {records.map((r) => {
-            const isOutsideWork = r.notes?.toLowerCase().includes("outside work");
-            const meta = isOutsideWork
-              ? { label: "Outside Working", bg: "bg-teal-50/80 border-teal-200", text: "text-teal-700", icon: "ri-map-pin-user-line" }
-              : STATUS_META[r.status] || { label: r.status, bg: "bg-slate-50 border-slate-200", text: "text-slate-600", icon: "ri-circle-line" };
-            const d = new Date(r.date + "T00:00:00");
-            const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
-            const dayNum = d.getDate();
-            const monthName = MONTHS_SHORT[d.getMonth()];
+        <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-2xs">
+          <div className="bg-slate-50/80 px-3.5 py-2 border-b border-slate-100 flex items-center justify-between">
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+              Daily Attendance Records
+            </span>
+            <span className="text-[10px] font-semibold text-slate-400 bg-slate-200/60 px-1.5 py-0.2 rounded-full">
+              {records.length}
+            </span>
+          </div>
 
-            return (
-              <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 bg-white border border-slate-200/80 rounded-xl p-3 sm:px-4 sm:py-3.5 hover:border-slate-300 transition-colors shadow-2xs">
-                {/* Date & Punch details */}
-                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                  {/* Date badge */}
-                  <div className="shrink-0 text-center w-10 sm:w-11 py-1 bg-slate-50 rounded-lg border border-slate-200/70">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{dayName}</p>
-                    <p className="text-base sm:text-lg font-bold text-slate-900 leading-tight">{dayNum}</p>
-                    <p className="text-[9px] font-medium text-slate-400">{monthName}</p>
-                  </div>
+          <div className="divide-y divide-slate-100">
+            {records.map((r) => {
+              const isOutsideWork = r.notes?.toLowerCase().includes("outside work");
+              const isOntime = (r.status === "ontime" || r.status === "present") && !isOutsideWork && (r.late_minutes || 0) === 0;
+              const meta = isOutsideWork
+                ? { label: "Outside Working", bg: "bg-slate-50 border-slate-200", text: "text-slate-700", icon: "ri-map-pin-user-line" }
+                : STATUS_META[r.status] || { label: r.status, bg: "bg-slate-50 border-slate-200", text: "text-slate-600", icon: "ri-circle-line" };
+              const d = new Date(r.date + "T00:00:00");
+              const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
+              const dayNum = d.getDate();
+              const monthName = MONTHS_SHORT[d.getMonth()];
 
-                  {/* Punch times */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">In</span>
-                        <span className="font-semibold text-slate-900">{formatTime(r.clock_in)}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Out</span>
-                        <span className="font-medium text-slate-700">{formatTime(r.clock_out)}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-slate-600 font-medium">
-                        <i className="ri-timer-line text-slate-400 text-xs" />
-                        <span>{calcHours(r.clock_in, r.clock_out)}</span>
-                      </div>
+              return (
+                <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 p-3 sm:px-3.5 hover:bg-slate-50/60 transition-colors">
+                  {/* Date & Punch details */}
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    {/* Date badge */}
+                    <div className="shrink-0 text-center w-9 sm:w-10 py-1 bg-slate-50 rounded-lg border border-slate-200/70">
+                      <p className="text-[8.5px] font-bold text-slate-400 uppercase tracking-tight leading-none">{dayName}</p>
+                      <p className="text-base font-bold text-slate-900 leading-tight mt-0.5">{dayNum}</p>
+                      <p className="text-[8.5px] font-medium text-slate-400 leading-none">{monthName}</p>
                     </div>
 
-                    {r.late_minutes > 0 && (
-                      <p className="text-[11px] text-amber-600 font-medium mt-1 flex items-center gap-1">
-                        <i className="ri-alarm-warning-line text-xs" />
-                        {r.late_minutes}m late arrival
-                      </p>
-                    )}
-                    {r.notes && (
-                      <p className="text-[11px] text-slate-500 mt-0.5 truncate">{r.notes}</p>
-                    )}
-                  </div>
-                </div>
+                    {/* Punch times */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2.5 sm:gap-3.5 flex-wrap text-xs">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9.5px] font-bold text-slate-400 uppercase">In</span>
+                          <span className="font-semibold text-slate-900">{formatTime(r.clock_in)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9.5px] font-bold text-slate-400 uppercase">Out</span>
+                          <span className="font-medium text-slate-700">{formatTime(r.clock_out)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-500 font-medium">
+                          <i className="ri-timer-line text-slate-400 text-xs" />
+                          <span>{calcHours(r.clock_in, r.clock_out)}</span>
+                        </div>
+                      </div>
 
-                {/* Status pill */}
-                <div className="self-end sm:self-auto shrink-0">
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${meta.bg} ${meta.text}`}>
-                    <i className={`${meta.icon} text-[11px]`} />
-                    <span className="capitalize">{meta.label}</span>
-                  </span>
+                      {r.late_minutes > 0 && (
+                        <p className="text-[10.5px] text-amber-600 font-medium mt-0.5 flex items-center gap-1">
+                          <i className="ri-alarm-warning-line text-xs" />
+                          {r.late_minutes}m late arrival
+                        </p>
+                      )}
+                      {r.notes && (
+                        <p className="text-[10.5px] text-slate-400 mt-0.5 line-clamp-1 italic">{r.notes}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Status pill: only shown for exceptions (Late, Outside Work, Absent, etc.) */}
+                  {!isOntime && (
+                    <div className="self-end sm:self-auto shrink-0">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${meta.bg} ${meta.text}`}>
+                        <i className={`${meta.icon} text-[10px]`} />
+                        <span className="capitalize">{meta.label}</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

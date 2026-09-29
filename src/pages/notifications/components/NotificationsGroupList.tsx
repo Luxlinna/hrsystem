@@ -24,17 +24,24 @@ export const NotificationsGroupList = memo(function NotificationsGroupList({
   if (groups.length === 0) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {groups.map((group) => (
-        <div key={group.label}>
-          <div className="flex items-center gap-2 mb-2.5 px-1">
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+        <div
+          key={group.label}
+          className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden"
+        >
+          {/* Section Group Header */}
+          <div className="bg-slate-50/80 px-3.5 py-2 border-b border-slate-100 flex items-center justify-between">
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
               {group.label}
             </p>
-            <span className="text-[10px] font-semibold text-gray-300">{group.items.length}</span>
+            <span className="text-[10px] font-semibold text-slate-400 bg-slate-200/60 px-1.5 py-0.2 rounded-full">
+              {group.items.length}
+            </span>
           </div>
 
-          <div className="space-y-2">
+          {/* List of Notification Rows */}
+          <div className="divide-y divide-slate-100">
             {group.items.map((n) => (
               <NotificationCard
                 key={n.id}

@@ -50,17 +50,20 @@ export function AttendanceHistoryCard({
           <div className="sm:hidden max-h-[380px] overflow-y-auto p-2 space-y-1.5">
             {records.map((r) => {
               const isOutside = r.notes?.toLowerCase().includes("outside work");
+              const isOntime = (r.status === "ontime" || r.status === "present") && !isOutside && (r.late_minutes || 0) === 0 && (r.early_leave_minutes || 0) === 0;
               return (
                 <div key={r.id} className="bg-white border border-slate-200/70 rounded-lg p-2.5 shadow-2xs">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-bold text-slate-900">
                       {new Date(r.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                     </span>
-                    <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[9.5px] font-semibold capitalize ${
-                      isOutside ? "bg-teal-50 text-teal-700 border border-teal-200" : getStatusColor(r.status)
-                    }`}>
-                      {isOutside ? "Outside Work" : r.status}
-                    </span>
+                    {!isOntime && (
+                      <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[9.5px] font-semibold capitalize ${
+                        isOutside ? "bg-teal-50 text-teal-700 border border-teal-200" : getStatusColor(r.status)
+                      }`}>
+                        {isOutside ? "Outside Work" : r.status}
+                      </span>
+                    )}
                   </div>
                   <div className="grid grid-cols-3 gap-1.5 text-[11.5px] text-center bg-slate-50/50 rounded p-1.5 border border-slate-100">
                     <div>
@@ -71,7 +74,7 @@ export function AttendanceHistoryCard({
                       <p className="text-slate-400 text-[9px] uppercase font-bold">Out</p>
                       <p className="text-slate-800 font-semibold tabular-nums mt-0.5">
                         {r.clock_out?.slice(0, 5) || "—"}
-                        {r.clock_out && r.early_leave_minutes > scheduleSettings.earlyLeaveGraceMinutes && (
+                        {r.clock_out && r.early_leave_minutes > 0 && (
                           <span className="block text-amber-600 text-[9px] font-medium">{r.early_leave_minutes}m early</span>
                         )}
                       </p>
@@ -100,6 +103,7 @@ export function AttendanceHistoryCard({
                 const isLate = r.status === "late" || (r.late_minutes || 0) > 0;
                 const isEarly = !!r.clock_out && (r.early_leave_minutes || 0) > 0;
                 const isOutside = r.notes?.toLowerCase().includes("outside work");
+                const isOntime = (r.status === "ontime" || r.status === "present") && !isOutside && !isLate && !isEarly;
                 const dt = new Date(r.date);
                 return (
                   <div
@@ -131,11 +135,15 @@ export function AttendanceHistoryCard({
                     </span>
                     <span className="text-gray-800 font-bold tabular-nums">{r.hours_worked ? `${r.hours_worked}h` : "—"}</span>
                     <span className="flex justify-end">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
-                        isOutside ? "bg-teal-50 text-teal-700 border border-teal-200" : getStatusColor(r.status)
-                      }`}>
-                        {isOutside ? "Outside Working" : r.status}
-                      </span>
+                      {!isOntime ? (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                          isOutside ? "bg-teal-50 text-teal-700 border border-teal-200" : getStatusColor(r.status)
+                        }`}>
+                          {isOutside ? "Outside Working" : r.status}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300 font-mono text-xs">—</span>
+                      )}
                     </span>
                   </div>
                 );

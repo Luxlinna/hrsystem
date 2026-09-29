@@ -255,11 +255,11 @@ export function useCreateTimeLog({
     const startMin = (isNaN(stH) ? 9 : stH) * 60 + (isNaN(stM) ? 0 : stM);
     const graceThresholdMin = startMin + graceMinutes;
     const isLate = punchMin > graceThresholdMin;
-    const calcLateMin = isLate ? punchMin - graceThresholdMin : 0;
+    const calcLateMin = isLate ? punchMin - startMin : 0;
     const calcStatus: "ontime" | "late" = isLate ? "late" : "ontime";
     const effectiveStatus = statusMode === "auto" ? calcStatus : statusMode;
     const effectiveLateMinutes = effectiveStatus === "late"
-      ? (calcLateMin > 0 ? calcLateMin : Math.max(1, punchMin - graceThresholdMin > 0 ? punchMin - graceThresholdMin : 1))
+      ? (calcLateMin > 0 ? calcLateMin : Math.max(1, punchMin - startMin > 0 ? punchMin - startMin : 1))
       : 0;
     return { isLate, calcLateMin, calcStatus, effectiveStatus, effectiveLateMinutes };
   }, [hour, minute, period, workStartTime, graceMinutes, statusMode]);
