@@ -30,7 +30,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
           <select
             value={form.title || "Mr"}
             onChange={(e) => onChange("title", e.target.value)}
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           >
             <option value="Mr">Mr</option>
             <option value="Mrs">Mrs</option>
@@ -53,7 +53,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
             value={form.first_name}
             onChange={(e) => handleNameChange(e.target.value, form.last_name)}
             placeholder="First Name"
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
           />
         </div>
       </div>
@@ -70,7 +70,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
             value={form.last_name}
             onChange={(e) => handleNameChange(form.first_name, e.target.value)}
             placeholder="Last Name"
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
           />
         </div>
       </div>
@@ -92,7 +92,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
                 onChange("display_name", `${form.first_name} ${form.last_name}`.trim());
               }
             }}
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           >
             <option value="first_last">
               {form.first_name || form.last_name ? `${form.first_name} ${form.last_name}`.trim() : "First Name Last Name"}
@@ -115,7 +115,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
             value={form.kh_name}
             onChange={(e) => onChange("kh_name", e.target.value)}
             placeholder="ឈ្មោះជាភាសាខ្មែរ (e.g. សុខ តារា)"
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
           />
         </div>
       </div>
@@ -134,7 +134,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
               onChange("biometric_user_id", e.target.value);
             }}
             placeholder="Auto Employee Code"
-            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-slate-800 focus:outline-none focus:border-[#0088cc]"
+            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
           />
         </div>
       </div>

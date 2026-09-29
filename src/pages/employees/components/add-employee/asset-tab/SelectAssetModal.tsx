@@ -67,7 +67,7 @@ export const SelectAssetModal = memo(function SelectAssetModal({
       <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
             SELECT ASSET
           </h3>
           <button
@@ -81,7 +81,7 @@ export const SelectAssetModal = memo(function SelectAssetModal({
 
         {/* Search & Filter */}
         <div className="p-3 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50/50">
-          <div className="flex rounded-md overflow-hidden border border-slate-300 bg-white max-w-sm w-full">
+          <div className="flex rounded-md overflow-hidden border border-slate-300 bg-white max-w-sm w-full focus-within:border-[#253C7D] focus-within:ring-1 focus-within:ring-[#253C7D]">
             <input
               type="text"
               value={search}
@@ -91,7 +91,7 @@ export const SelectAssetModal = memo(function SelectAssetModal({
             />
             <button
               type="button"
-              className="px-3 bg-[#0088cc] text-white text-xs flex items-center justify-center"
+              className="px-3 bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs flex items-center justify-center transition-colors cursor-pointer"
             >
               <i className="ri-search-line" />
             </button>
@@ -101,7 +101,7 @@ export const SelectAssetModal = memo(function SelectAssetModal({
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-md border border-slate-300 text-xs text-slate-700 bg-white focus:outline-none focus:border-[#0088cc]"
+              className="px-3 py-1.5 rounded-md border border-slate-300 text-xs text-slate-700 bg-white focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
             >
               {categories.map((c) => (
                 <option key={c} value={c}>
@@ -122,7 +122,7 @@ export const SelectAssetModal = memo(function SelectAssetModal({
                     type="checkbox"
                     checked={filtered.length > 0 && selectedIds.length === filtered.length}
                     onChange={toggleSelectAll}
-                    className="w-3.5 h-3.5 rounded border-slate-300 text-[#0088cc] focus:ring-[#0088cc] cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                   />
                 </th>
                 <th className="py-2 px-3 w-12 text-center">No.</th>
@@ -149,8 +149,8 @@ export const SelectAssetModal = memo(function SelectAssetModal({
                     <tr
                       key={item.id}
                       onClick={() => toggleItem(item.id)}
-                      className={`hover:bg-blue-50/30 transition-colors cursor-pointer ${
-                        isChecked ? "bg-blue-50/50" : ""
+                      className={`hover:bg-[#253C7D]/5 transition-colors cursor-pointer ${
+                        isChecked ? "bg-[#253C7D]/10" : ""
                       }`}
                     >
                       <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
@@ -158,7 +158,7 @@ export const SelectAssetModal = memo(function SelectAssetModal({
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => toggleItem(item.id)}
-                          className="w-3.5 h-3.5 rounded border-slate-300 text-[#0088cc] focus:ring-[#0088cc] cursor-pointer"
+                          className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                         />
                       </td>
                       <td className="py-2 px-3 text-center text-slate-500 font-medium">
@@ -191,7 +191,7 @@ export const SelectAssetModal = memo(function SelectAssetModal({
             type="button"
             onClick={handleConfirm}
             disabled={selectedIds.length === 0}
-            className="px-4 py-1.5 rounded-md bg-[#0088cc] hover:bg-[#0077b3] disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded-md bg-[#253C7D] hover:bg-[#1E3064] disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <i className="ri-save-line" />
             <span>Select</span>

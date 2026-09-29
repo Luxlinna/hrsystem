@@ -1,83 +1,102 @@
-import { memo } from "react";
-import type { ITAsset, ITTicket, ITTabType } from "../types";
-import { ITExportMenu } from "./ITExportMenu";
+import { memo, useState, useRef, useEffect } from "react";
+import type { ITTabType } from "../types";
 
 interface ITHeaderProps {
   canManage: boolean;
-  branchName?: string;
-  activeAssetsCount: number;
-  openTicketsCount: number;
   onOpenAssetModal: () => void;
-  onOpenTicketModal: () => void;
+  onOpenSettings?: () => void;
   tab?: ITTabType;
-  assets?: ITAsset[];
-  tickets?: ITTicket[];
 }
 
 export const ITHeader = memo(function ITHeader({
   canManage,
-  branchName,
-  activeAssetsCount,
   onOpenAssetModal,
-  onOpenTicketModal,
+  onOpenSettings,
   tab = "assets",
-  assets = [],
-  tickets = [],
 }: ITHeaderProps) {
+  const [showAssetMenu, setShowAssetMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowAssetMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div className="flex items-center justify-between gap-4 mb-4 select-none">
+      {/* Title matching Screenshot 1 */}
       <div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-          <span>Infrastructure &amp; Operations</span>
-          <i className="ri-arrow-right-s-line text-xs" />
-          <span className="text-[#253C7D] font-bold">IT Helpdesk &amp; Assets</span>
-          {branchName && (
-            <>
-              <i className="ri-arrow-right-s-line text-xs" />
-              <span className="px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200/80 text-teal-800 font-bold text-[10px] flex items-center gap-1">
-                <i className="ri-building-line text-[10px]" /> {branchName}
-              </span>
-            </>
-          )}
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
-          IT Management &amp; Assets
-          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D]">
-            {activeAssetsCount} Deployed Assets
-          </span>
+        <h1 className="text-xl font-medium text-slate-700 tracking-tight">
+          {tab === "assets"
+            ? "Asset Inventory"
+            : tab === "categories"
+            ? "Asset Categories"
+            : tab === "tickets"
+            ? "Helpdesk Tickets"
+            : tab === "stationery"
+            ? "Stationery & Supplies"
+            : tab === "settings"
+            ? "Setting"
+            : "Enterprise Security"}
         </h1>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1">
-          Track company hardware assets, resolve employee IT support tickets, and review endpoint security safeguards.
-        </p>
       </div>
 
-      {/* Top Action Buttons */}
-      <div className="flex items-center gap-2.5 flex-wrap">
-        {/* 3-Format Export Dropdown */}
-        <ITExportMenu
-          tab={tab}
-          assets={assets}
-          tickets={tickets}
-        />
-
-        <button
-          onClick={onOpenTicketModal}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200/80 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-all cursor-pointer"
-        >
-          <i className="ri-customer-service-2-line text-amber-600 text-sm" />
-          Log IT Ticket
-        </button>
-
+      {/* Right Action Button matching Screenshot 1 */}
+      <div className="flex items-center gap-2">
         {canManage && (
-          <button
-            onClick={onOpenAssetModal}
-            className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E3064] text-white px-4 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
-          >
-            <i className="ri-add-circle-line text-base font-bold" />
-            Register Asset
-          </button>
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setShowAssetMenu((prev) => !prev)}
+              className="inline-flex items-center gap-2 bg-[#2585c8] hover:bg-[#1f73b0] text-white px-3.5 py-1.5 rounded-sm text-xs font-medium transition-all shadow-2xs cursor-pointer active:scale-98"
+            >
+              <span>Asset Inventory</span>
+              <i className="ri-arrow-down-s-line text-xs ml-0.5" />
+            </button>
+
+            {showAssetMenu && (
+              <div className="absolute right-0 mt-2 w-52 bg-white rounded-md shadow-xl border border-slate-200/90 py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 text-xs">
+                {/* Popover Triangle Arrow Pointer */}
+                <div className="absolute -top-1.5 right-6 w-3 h-3 bg-white border-t border-l border-slate-200/90 rotate-45 z-40" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenAssetModal();
+                    setShowAssetMenu(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 font-medium relative z-50 cursor-pointer"
+                >
+                  <i className="ri-add-circle-line text-slate-500 text-base" />
+                  <span className="text-slate-700 text-xs">Create Asset Inventory</span>
+                </button>
+
+                {onOpenSettings && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onOpenSettings();
+                      setShowAssetMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 font-medium relative z-50 cursor-pointer"
+                  >
+                    <i className="ri-settings-3-line text-slate-500 text-base" />
+                    <span className="text-slate-700 text-xs">Setting</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
   );
 });
+
+
+

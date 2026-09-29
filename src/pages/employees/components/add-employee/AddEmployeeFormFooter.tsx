@@ -14,7 +14,7 @@ export const AddEmployeeFormFooter = memo(function AddEmployeeFormFooter({
       <button
         type="submit"
         disabled={submitting}
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded bg-[#0088cc] hover:bg-[#0077b3] text-white text-xs font-medium shadow-2xs transition-colors cursor-pointer"
+        className="inline-flex items-center gap-1.5 px-4 py-2 rounded bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-medium shadow-2xs transition-colors cursor-pointer"
       >
         <i className="ri-save-line text-sm" />
         <span>{submitting ? "Saving..." : "Save"}</span>

@@ -39,7 +39,7 @@ export const AssetBookingTable = memo(function AssetBookingTable({
     <div className="space-y-3">
       {/* Top Header & Actions */}
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">
+        <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
           ASSET BOOKING INFO
         </h3>
         <div className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export const AssetBookingTable = memo(function AssetBookingTable({
           <button
             type="button"
             onClick={onAddAsset}
-            className="px-3 py-1.5 rounded-md border border-[#0088cc] hover:bg-blue-50 text-[#0088cc] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-md border border-[#253C7D] hover:bg-[#253C7D]/10 text-[#253C7D] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <i className="ri-add-circle-line" />
             <span>Add Asset</span>
@@ -73,7 +73,7 @@ export const AssetBookingTable = memo(function AssetBookingTable({
                   type="checkbox"
                   checked={bookings.length > 0 && selectedIds.length === bookings.length}
                   onChange={toggleSelectAll}
-                  className="w-3.5 h-3.5 rounded border-slate-300 text-[#0088cc] focus:ring-[#0088cc] cursor-pointer"
+                  className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                 />
               </th>
               <th className="py-2.5 px-3 w-12 text-center">No.</th>
@@ -105,7 +105,7 @@ export const AssetBookingTable = memo(function AssetBookingTable({
                       type="checkbox"
                       checked={selectedIds.includes(item.id)}
                       onChange={() => toggleItem(item.id)}
-                      className="w-3.5 h-3.5 rounded border-slate-300 text-[#0088cc] focus:ring-[#0088cc] cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                     />
                   </td>
                   <td className="py-2.5 px-3 text-center text-slate-500 font-medium">

@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { ITHeader } from "./components/ITHeader";
 import { ITTabsBar } from "./components/ITTabsBar";
-import { ITStatsRow } from "./components/ITStatsRow";
 import { AssetsFilterBar } from "./components/assets/AssetsFilterBar";
 import { AssetsTabContent } from "./components/assets/AssetsTabContent";
+import { AssetInventorySettings } from "./components/settings/AssetInventorySettings";
 import { TicketsFilterBar } from "./components/tickets/TicketsFilterBar";
 import { TicketsTabContent } from "./components/tickets/TicketsTabContent";
 import { TicketDetailDrawer } from "./components/tickets/TicketDetailDrawer";
@@ -12,12 +13,72 @@ import { AssetCategoriesTabContent } from "./components/categories/AssetCategori
 import { ITModalsContainer } from "./components/modals/ITModalsContainer";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useITManagement } from "./hooks/useITManagement";
+import { exportAssetsToCSV, exportAssetsToExcel, exportToJSON } from "./exportUtils";
+import { toast } from "@/components/Toast";
 
 export default function ITManagement() {
   const it = useITManagement();
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
+  const [assetConditionFilter, setAssetConditionFilter] = useState("all");
+  const [dateRangeLabel, setDateRangeLabel] = useState("01/01/2026 - 31/12/2026");
 
   const activeBranch = it.branches.find((b) => b.id === (it.targetBranch || it.userBranchId));
   const activeBranchName = activeBranch?.name;
+
+  // Selection handlers
+  const handleToggleSelectAsset = (id: string) => {
+    setSelectedAssetIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAllAssets = () => {
+    if (selectedAssetIds.length === it.filteredAssets.length) {
+      setSelectedAssetIds([]);
+    } else {
+      setSelectedAssetIds(it.filteredAssets.map((a) => a.id));
+    }
+  };
+
+  const handleSelectAllAssets = () => {
+    setSelectedAssetIds(it.filteredAssets.map((a) => a.id));
+  };
+
+  const handleClearAssetSelection = () => {
+    setSelectedAssetIds([]);
+  };
+
+  const handleBulkDeleteAssets = async () => {
+    if (selectedAssetIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedAssetIds.length} selected asset(s)?`)) return;
+
+    for (const id of selectedAssetIds) {
+      const asset = it.assets.find((a) => a.id === id);
+      if (asset) {
+        await it.handleDeleteAsset(asset);
+      }
+    }
+    setSelectedAssetIds([]);
+    toast("Bulk Delete Completed", `Successfully removed selected assets.`, "success");
+  };
+
+  const handleExportAssets = (format: "csv" | "excel" | "json") => {
+    const dataToExport =
+      selectedAssetIds.length > 0
+        ? it.assets.filter((a) => selectedAssetIds.includes(a.id))
+        : it.filteredAssets;
+
+    if (format === "csv") {
+      exportAssetsToCSV(dataToExport);
+      toast("Export Started", "Downloading assets CSV file...", "info");
+    } else if (format === "excel") {
+      exportAssetsToExcel(dataToExport);
+      toast("Export Started", "Downloading assets Excel spreadsheet...", "info");
+    } else {
+      exportToJSON(dataToExport, "asset_inventory");
+      toast("Export Started", "Downloading assets JSON file...", "info");
+    }
+  };
 
   if (it.loading) {
     return (
@@ -47,38 +108,36 @@ export default function ITManagement() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
-      <ITHeader
-        canManage={it.canManage}
-        branchName={activeBranchName}
-        activeAssetsCount={it.activeAssets}
-        openTicketsCount={it.openTickets}
-        onOpenAssetModal={() => {
-          it.setEditingAsset(null);
-          it.setAssetModal(true);
-        }}
-        onOpenTicketModal={() => it.setTicketModal(true)}
-        tab={it.tab}
-        assets={it.filteredAssets}
-        tickets={it.filteredTickets}
-      />
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-4">
+      {it.tab !== "settings" && (
+        <ITHeader
+          canManage={it.canManage}
+          onOpenAssetModal={() => {
+            it.setEditingAsset(null);
+            it.setAssetModal(true);
+          }}
+          onOpenSettings={() => it.setTab("settings")}
+          tab={it.tab}
+        />
+      )}
 
-      <ITStatsRow
-        activeAssets={it.activeAssets}
-        inInventory={it.inInventory}
-        openTickets={it.openTickets}
-        criticalTickets={it.criticalTickets}
-        onSelectTab={it.setTab}
-      />
+      {it.tab !== "assets" && it.tab !== "settings" && (
+        <ITTabsBar
+          activeTab={it.tab}
+          setActiveTab={it.setTab}
+          assetsCount={it.assets.length}
+          openTicketsCount={it.openTickets}
+          stationeryItemsCount={it.stationery.items.length}
+          pendingRequestsCount={it.stationery.pendingRequestsCount}
+        />
+      )}
 
-      <ITTabsBar
-        activeTab={it.tab}
-        setActiveTab={it.setTab}
-        assetsCount={it.assets.length}
-        openTicketsCount={it.openTickets}
-        stationeryItemsCount={it.stationery.items.length}
-        pendingRequestsCount={it.stationery.pendingRequestsCount}
-      />
+      {it.tab === "settings" && (
+        <AssetInventorySettings
+          onBack={() => it.setTab("assets")}
+          canManage={it.canManage}
+        />
+      )}
 
       {it.tab === "assets" && (
         <>
@@ -89,14 +148,29 @@ export default function ITManagement() {
             setAssetTypeFilter={it.setAssetTypeFilter}
             assetStatusFilter={it.assetStatusFilter}
             setAssetStatusFilter={it.setAssetStatusFilter}
+            assetConditionFilter={assetConditionFilter}
+            setAssetConditionFilter={setAssetConditionFilter}
             assetBranchFilter={it.assetBranchFilter}
             setAssetBranchFilter={it.setAssetBranchFilter}
+            dateRangeLabel={dateRangeLabel}
+            setDateRangeLabel={setDateRangeLabel}
             assetViewMode={it.assetViewMode}
             setAssetViewMode={it.setAssetViewMode}
             branches={it.branches}
+            selectedAssetIds={selectedAssetIds}
+            onSelectAll={handleSelectAllAssets}
+            onClearSelection={handleClearAssetSelection}
+            onBulkDelete={handleBulkDeleteAssets}
+            onExport={handleExportAssets}
+            onImport={() => {
+              it.setEditingAsset(null);
+              it.setAssetModal(true);
+            }}
           />
           <AssetsTabContent
-            assets={it.filteredAssets}
+            assets={it.filteredAssets.filter((a) =>
+              assetConditionFilter === "all" ? true : a.condition === assetConditionFilter
+            )}
             assetTypeStats={it.assetTypeStats}
             totalAssetsCount={it.assets.length}
             viewMode={it.assetViewMode}
@@ -107,9 +181,14 @@ export default function ITManagement() {
             }}
             onEditAsset={it.openEditAsset}
             onDeleteAsset={it.handleDeleteAsset}
+            selectedAssetIds={selectedAssetIds}
+            onToggleSelect={handleToggleSelectAsset}
+            onToggleSelectAll={handleToggleSelectAllAssets}
           />
         </>
       )}
+
+
 
       {it.tab === "categories" && (
         <AssetCategoriesTabContent

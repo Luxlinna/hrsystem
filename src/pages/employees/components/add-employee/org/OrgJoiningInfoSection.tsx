@@ -32,7 +32,7 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">Joining Info</h3>
+      <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">Joining Info</h3>
       <div className="space-y-3 max-w-xl">
         {/* 1. Joining Date */}
         <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
@@ -45,7 +45,7 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
               required
               value={form.join_date || form.start_date || ""}
               onChange={(e) => { onChange("join_date", e.target.value); onChange("start_date", e.target.value); }}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
             />
           </div>
         </div>
@@ -59,7 +59,7 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             <select
               value={form.default_work_location_id || ""}
               onChange={(e) => onSelectSite(e.target.value)}
-              className="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+              className="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
             >
               <option value="">Select Site ({currentBranchName || "Main Office"})</option>
               {workSites.map((site) => (
@@ -69,7 +69,7 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             <button
               type="button"
               onClick={() => onSelectSite("")}
-              className="p-1.5 text-slate-500 hover:text-[#0088cc] hover:bg-slate-100 rounded border border-slate-300 cursor-pointer"
+              className="p-1.5 text-slate-500 hover:text-[#253C7D] hover:bg-slate-100 rounded border border-slate-300 cursor-pointer"
               title="Reset Site"
             >
               <i className="ri-refresh-line text-xs" />
@@ -86,7 +86,7 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             <select
               value={form.department || ""}
               onChange={(e) => onChange("department", e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
             >
               <option value="">Select Department</option>
               {departments.map((dept) => (
@@ -108,7 +108,7 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
                 onChange("position", e.target.value);
                 onChange("role", e.target.value);
               }}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
             >
               <option value="">Select Position</option>
               {allPositions.map((pos) => (
@@ -127,7 +127,7 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             <select
               value={form.employment_type || "Full-Time"}
               onChange={(e) => onChange("employment_type", e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
             >
               {employeeTypes.map((type) => (
                 <option key={type} value={type}>{type}</option>
@@ -146,7 +146,7 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
                 onChange("reports_to", e.target.value);
                 onChange("line_manager", e.target.value);
               }}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer pr-8"
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer pr-8"
             >
               <option value="">Search / Select Supervisor (Line Manager)...</option>
               {buManagers.map((m) => (
@@ -176,7 +176,7 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
           <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
             Salary <span className="text-rose-500">*</span>
           </label>
-          <div className="sm:col-span-2 flex rounded border border-slate-300 bg-white overflow-hidden">
+          <div className="sm:col-span-2 flex rounded border border-slate-300 bg-white overflow-hidden focus-within:border-[#253C7D] focus-within:ring-1 focus-within:ring-[#253C7D]">
             <select
               value={form.tax_salary_currency || "USD"}
               onChange={(e) => onChange("tax_salary_currency", e.target.value)}
@@ -218,7 +218,7 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
             <select
               value={form.payroll_structure || "Gross"}
               onChange={(e) => onChange("payroll_structure", e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
             >
               <option value="Gross">Gross</option>
               <option value="Net">Net</option>

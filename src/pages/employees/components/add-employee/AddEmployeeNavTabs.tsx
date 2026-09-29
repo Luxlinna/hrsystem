@@ -21,7 +21,7 @@ export const AddEmployeeNavTabs = memo(function AddEmployeeNavTabs({
             onClick={() => onSelectTab(step.id)}
             className={`pb-2.5 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer relative ${
               isActive
-                ? "text-[#0088cc] font-bold border-b-2 border-[#0088cc]"
+                ? "text-[#253C7D] font-bold border-b-2 border-[#253C7D]"
                 : "text-slate-500 hover:text-slate-800"
             }`}
           >

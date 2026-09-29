@@ -60,7 +60,7 @@ export const AssetAttachmentSection = memo(function AssetAttachmentSection({
 
   return (
     <div className="space-y-4 pt-4 border-t border-slate-100">
-      <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">
+      <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
         ATTACHMENT INFO
       </h3>
 
@@ -78,7 +78,7 @@ export const AssetAttachmentSection = memo(function AssetAttachmentSection({
             onDragLeave={() => setIsDragOver(false)}
             onDrop={handleDrop}
             className={`border border-dashed rounded-md p-3.5 text-center transition-all bg-white ${
-              isDragOver ? "border-[#0088cc] bg-blue-50/20" : "border-slate-300 hover:border-slate-400"
+              isDragOver ? "border-[#253C7D] bg-[#253C7D]/5" : "border-slate-300 hover:border-slate-400"
             }`}
           >
             <input
@@ -91,13 +91,13 @@ export const AssetAttachmentSection = memo(function AssetAttachmentSection({
             />
 
             <div className="flex items-center justify-center gap-1.5 text-xs text-slate-600">
-              <i className={uploading ? "ri-loader-4-line animate-spin text-[#0088cc]" : "ri-upload-cloud-line text-slate-400 text-base"} />
+              <i className={uploading ? "ri-loader-4-line animate-spin text-[#253C7D]" : "ri-upload-cloud-line text-slate-400 text-base"} />
               <span>Drop file here or</span>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="font-medium text-[#0088cc] hover:underline cursor-pointer ml-0.5"
+                className="font-medium text-[#253C7D] hover:underline cursor-pointer ml-0.5"
               >
                 Browse
               </button>
@@ -112,7 +112,7 @@ export const AssetAttachmentSection = memo(function AssetAttachmentSection({
                   className="flex items-center justify-between px-3 py-1.5 rounded-md bg-slate-50 border border-slate-200 text-xs"
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <i className="ri-file-text-line text-[#0088cc]" />
+                    <i className="ri-file-text-line text-[#253C7D]" />
                     <span className="truncate font-medium text-slate-700">{att.name}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

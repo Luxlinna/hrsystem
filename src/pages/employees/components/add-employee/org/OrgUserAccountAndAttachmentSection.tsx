@@ -32,7 +32,7 @@ export const OrgUserAccountAndAttachmentSection = memo(
       <div className="space-y-6 pt-6 border-t border-slate-100">
         {/* 1. User Account */}
         <div className="space-y-3">
-          <h3 className="text-[12px] font-bold text-[#0088cc] uppercase tracking-wider">
+          <h3 className="text-[12px] font-bold text-[#253C7D] uppercase tracking-wider">
             User Account
           </h3>
 
@@ -47,7 +47,7 @@ export const OrgUserAccountAndAttachmentSection = memo(
                   name="account_status_option"
                   checked={form.send_invite !== true}
                   onChange={() => onChange("send_invite", false)}
-                  className="w-4 h-4 text-[#0088cc] focus:ring-[#0088cc] border-slate-300 cursor-pointer"
+                  className="w-4 h-4 text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
                 />
                 <span>None</span>
               </label>
@@ -58,7 +58,7 @@ export const OrgUserAccountAndAttachmentSection = memo(
                   name="account_status_option"
                   checked={form.send_invite === true}
                   onChange={() => onChange("send_invite", true)}
-                  className="w-4 h-4 text-[#0088cc] focus:ring-[#0088cc] border-slate-300 cursor-pointer"
+                  className="w-4 h-4 text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
                 />
                 <span>Existing User Account</span>
               </label>
@@ -68,7 +68,7 @@ export const OrgUserAccountAndAttachmentSection = memo(
 
         {/* 2. Attachment Info */}
         <div className="space-y-3 pt-4 border-t border-slate-100">
-          <h3 className="text-[12px] font-bold text-[#0088cc] uppercase tracking-wider">
+          <h3 className="text-[12px] font-bold text-[#253C7D] uppercase tracking-wider">
             Attachment Info
           </h3>
 
@@ -83,7 +83,7 @@ export const OrgUserAccountAndAttachmentSection = memo(
               >
                 <i className="ri-upload-cloud-line text-base text-slate-400" />
                 <span className="text-xs text-slate-500 font-normal">
-                  Drop file here or <span className="text-[#0088cc] font-medium">Browse</span>
+                  Drop file here or <span className="text-[#253C7D] font-medium">Browse</span>
                 </span>
                 <input
                   ref={fileInputRef}

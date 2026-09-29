@@ -21,7 +21,7 @@ export const OrgContractInfoSection = memo(function OrgContractInfoSection({
 }: OrgContractInfoSectionProps) {
   return (
     <div className="pt-6 border-t border-slate-100 w-full space-y-4">
-      <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">
+      <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
         Contract Info
       </h3>
 
@@ -35,7 +35,7 @@ export const OrgContractInfoSection = memo(function OrgContractInfoSection({
             <select
               value={form.contract_type || ""}
               onChange={(e) => onChange("contract_type", e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
             >
               <option value="">Select Contract Type</option>
               {contractTypes.map((type) => (
@@ -58,7 +58,7 @@ export const OrgContractInfoSection = memo(function OrgContractInfoSection({
               required
               value={form.contract_effective_date || form.start_date || ""}
               onChange={(e) => onChange("contract_effective_date", e.target.value)}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
             />
           </div>
         </div>
@@ -76,7 +76,7 @@ export const OrgContractInfoSection = memo(function OrgContractInfoSection({
                 onChange("contract_end_date", e.target.value);
                 onChange("fdc_end_date", e.target.value);
               }}
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
             />
           </div>
         </div>
@@ -86,7 +86,7 @@ export const OrgContractInfoSection = memo(function OrgContractInfoSection({
           <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
             Salary <span className="text-rose-500">*</span>
           </label>
-          <div className="sm:col-span-2 flex rounded border border-slate-300 bg-white overflow-hidden">
+          <div className="sm:col-span-2 flex rounded border border-slate-300 bg-white overflow-hidden focus-within:border-[#253C7D] focus-within:ring-1 focus-within:ring-[#253C7D]">
             <span className="px-2.5 py-1.5 bg-slate-50 text-slate-700 text-xs border-r border-slate-300 select-none">
               {form.contract_rate_currency || "USD"}
             </span>
@@ -108,7 +108,7 @@ export const OrgContractInfoSection = memo(function OrgContractInfoSection({
           <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
             Salary After Contract <span className="text-rose-500">*</span>
           </label>
-          <div className="sm:col-span-2 flex rounded border border-slate-300 bg-white overflow-hidden">
+          <div className="sm:col-span-2 flex rounded border border-slate-300 bg-white overflow-hidden focus-within:border-[#253C7D] focus-within:ring-1 focus-within:ring-[#253C7D]">
             <span className="px-2.5 py-1.5 bg-slate-50 text-slate-700 text-xs border-r border-slate-300 select-none">
               {form.contract_rate_after_currency || "USD"}
             </span>
@@ -136,7 +136,7 @@ export const OrgContractInfoSection = memo(function OrgContractInfoSection({
               value={form.contract_remark || ""}
               onChange={(e) => onChange("contract_remark", e.target.value)}
               placeholder="Remark"
-              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0088cc]"
+              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
             />
           </div>
         </div>

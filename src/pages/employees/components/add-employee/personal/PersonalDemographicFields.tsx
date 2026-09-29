@@ -66,7 +66,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           <select
             value={dobDay}
             onChange={(e) => handleDobPartChange("day", e.target.value)}
-            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           >
             <option value="">Day</option>
             {days.map((d) => (
@@ -79,7 +79,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           <select
             value={dobMonth}
             onChange={(e) => handleDobPartChange("month", e.target.value)}
-            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           >
             <option value="">Month</option>
             {MONTHS.map((m) => (
@@ -92,7 +92,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           <select
             value={dobYear}
             onChange={(e) => handleDobPartChange("year", e.target.value)}
-            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           >
             <option value="">Year</option>
             {years.map((y) => (
@@ -113,7 +113,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           <select
             value={form.gender || "Male"}
             onChange={(e) => onChange("gender", e.target.value)}
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           >
             <option value="Male">Male</option>
             <option value="Female">Female</option>
@@ -131,7 +131,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           <select
             value={form.marital_status || "Single"}
             onChange={(e) => onChange("marital_status", e.target.value)}
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           >
             <option value="Single">Single</option>
             <option value="Married">Married</option>
@@ -150,7 +150,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
           <select
             value={form.nationality || "Khmer"}
             onChange={(e) => onChange("nationality", e.target.value)}
-            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           >
             <option value="Khmer">Khmer</option>
             <option value="Chinese">Chinese</option>
@@ -174,7 +174,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
               type="checkbox"
               checked={form.is_resident !== false}
               onChange={(e) => onChange("is_resident", e.target.checked)}
-              className="w-3.5 h-3.5 rounded text-[#0088cc] focus:ring-[#0088cc] border-slate-300 cursor-pointer"
+              className="w-3.5 h-3.5 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
             />
             <span>Resident</span>
           </label>
@@ -183,7 +183,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
               type="checkbox"
               checked={Boolean(form.fringe_benefit)}
               onChange={(e) => onChange("fringe_benefit", e.target.checked)}
-              className="w-3.5 h-3.5 rounded text-[#0088cc] focus:ring-[#0088cc] border-slate-300 cursor-pointer"
+              className="w-3.5 h-3.5 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
             />
             <span>Fringe Benefit</span>
           </label>

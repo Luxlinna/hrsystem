@@ -1,121 +1,284 @@
-import { memo } from "react";
-import { Link } from "react-router-dom";
+import { memo, useState } from "react";
 import type { ITAsset } from "../../types";
-import { ASSET_TYPE_CONFIG, ASSET_STATUS_CONFIG } from "../../constants";
-import { initials } from "../../itUtils";
+import { ASSET_STATUS_CONFIG } from "../../constants";
 
 interface AssetsTableViewProps {
   assets: ITAsset[];
   canManage: boolean;
   onEdit: (asset: ITAsset) => void;
   onDelete: (asset: ITAsset) => void;
+  selectedAssetIds?: string[];
+  onToggleSelect?: (id: string) => void;
+  onToggleSelectAll?: () => void;
 }
+
+type SortField = "category" | "name" | "purchase_date" | "description" | "condition" | "status";
 
 export const AssetsTableView = memo(function AssetsTableView({
   assets,
-  canManage,
+  canManage: _canManage,
   onEdit,
   onDelete,
+  selectedAssetIds = [],
+  onToggleSelect,
+  onToggleSelectAll,
 }: AssetsTableViewProps) {
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortAsc, setSortAsc] = useState(true);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortField(field);
+      setSortAsc(true);
+    }
+  };
+
+  const sortedAssets = [...assets].sort((a, b) => {
+    if (!sortField) return 0;
+    let valA = "";
+    let valB = "";
+
+    switch (sortField) {
+      case "category":
+        valA = a.category || a.type || "";
+        valB = b.category || b.type || "";
+        break;
+      case "name":
+        valA = a.name || "";
+        valB = b.name || "";
+        break;
+      case "purchase_date":
+        valA = a.purchase_date || "";
+        valB = b.purchase_date || "";
+        break;
+      case "description":
+        valA = a.description || "";
+        valB = b.description || "";
+        break;
+      case "condition":
+        valA = a.condition || "";
+        valB = b.condition || "";
+        break;
+      case "status":
+        valA = a.status || "";
+        valB = b.status || "";
+        break;
+    }
+
+    const cmp = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: "base" });
+    return sortAsc ? cmp : -cmp;
+  });
+
+  const allSelected = assets.length > 0 && selectedAssetIds.length === assets.length;
+  const isSomeSelected = selectedAssetIds.length > 0 && selectedAssetIds.length < assets.length;
+
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto bg-white border border-slate-200/80 rounded-sm shadow-2xs">
       <table className="w-full text-left text-xs border-collapse">
         <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/70 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-            <th className="px-5 py-3.5">Asset Tag & Device</th>
-            <th className="px-5 py-3.5">Type</th>
-            <th className="px-5 py-3.5">Assigned Holder</th>
-            <th className="px-5 py-3.5">Location</th>
-            <th className="px-5 py-3.5">Serial Number</th>
-            <th className="px-5 py-3.5">Status</th>
-            {canManage && <th className="px-5 py-3.5 text-right">Actions</th>}
+          <tr className="border-b border-slate-200/90 bg-white text-[11px] font-semibold text-slate-700 select-none">
+            {/* Checkbox Column */}
+            <th className="w-10 px-4 py-3 text-center border-r border-transparent">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = isSomeSelected;
+                }}
+                onChange={onToggleSelectAll}
+                className="w-3.5 h-3.5 rounded-sm border-slate-300 text-[#2585c8] focus:ring-[#2585c8] cursor-pointer"
+              />
+            </th>
+
+            {/* No. Column */}
+            <th className="px-3 py-3 w-12 text-slate-700 font-semibold">
+              No.
+            </th>
+
+            {/* Category Column */}
+            <th
+              onClick={() => handleSort("category")}
+              className="px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors font-semibold"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-700 font-semibold">Category</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-[11px]" />
+              </div>
+            </th>
+
+            {/* Name Column */}
+            <th
+              onClick={() => handleSort("name")}
+              className="px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors font-semibold"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-700 font-semibold">Name</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-[11px]" />
+              </div>
+            </th>
+
+            {/* Purchase Date Column */}
+            <th
+              onClick={() => handleSort("purchase_date")}
+              className="px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors font-semibold"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-700 font-semibold">Purchase Date</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-[11px]" />
+              </div>
+            </th>
+
+            {/* Description Column */}
+            <th
+              onClick={() => handleSort("description")}
+              className="px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors font-semibold"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-700 font-semibold">Description</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-[11px]" />
+              </div>
+            </th>
+
+            {/* Condition Column */}
+            <th
+              onClick={() => handleSort("condition")}
+              className="px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors font-semibold"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-700 font-semibold">Condition</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-[11px]" />
+              </div>
+            </th>
+
+            {/* Status Column */}
+            <th
+              onClick={() => handleSort("status")}
+              className="px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors font-semibold"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-700 font-semibold">Status</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-[11px]" />
+              </div>
+            </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
-          {assets.map((a) => {
-            const typeCfg = ASSET_TYPE_CONFIG[a.type] || ASSET_TYPE_CONFIG.Other;
-            const statusCfg = ASSET_STATUS_CONFIG[a.status] || ASSET_STATUS_CONFIG.active;
 
-            return (
-              <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
-                <td className="px-5 py-3.5 whitespace-nowrap">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0 ${typeCfg.bg} ${typeCfg.color}`}>
-                      <i className={typeCfg.icon} />
-                    </div>
-                    <div>
-                      <p className="font-extrabold text-gray-900 text-xs sm:text-[13px]">{a.name}</p>
-                      <p className="text-[10px] font-mono text-gray-400 font-bold uppercase tracking-wider">
-                        {a.asset_tag}
-                      </p>
-                    </div>
-                  </div>
-                </td>
+        <tbody>
+          {sortedAssets.length === 0 ? (
+            /* Empty State matching Screenshot 1 */
+            <tr>
+              <td
+                colSpan={8}
+                className="py-3 px-4 text-center bg-[#f4f6f9] border-t border-slate-200 text-xs font-bold text-slate-700"
+              >
+                No records found
+              </td>
+            </tr>
+          ) : (
+            sortedAssets.map((asset, index) => {
+              const isSelected = selectedAssetIds.includes(asset.id);
+              const statusCfg =
+                ASSET_STATUS_CONFIG[asset.status] || ASSET_STATUS_CONFIG.active;
 
-                <td className="px-5 py-3.5 whitespace-nowrap">
-                  <span className="font-bold text-gray-700 bg-slate-100 px-2.5 py-1 rounded-lg text-[11px]">
-                    {a.type}
-                  </span>
-                </td>
+              return (
+                <tr
+                  key={asset.id}
+                  className={`border-b border-slate-100 transition-colors group ${
+                    isSelected
+                      ? "bg-sky-50/50 hover:bg-sky-50/80"
+                      : "hover:bg-slate-50/70"
+                  }`}
+                >
+                  {/* Checkbox */}
+                  <td className="w-10 px-4 py-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleSelect?.(asset.id)}
+                      className="w-3.5 h-3.5 rounded-sm border-slate-300 text-[#2585c8] focus:ring-[#2585c8] cursor-pointer"
+                    />
+                  </td>
 
-                <td className="px-5 py-3.5 whitespace-nowrap">
-                  {a.employees ? (
-                    <Link
-                      to={`/employees/${a.employees.id}`}
-                      className="flex items-center gap-2 font-bold text-gray-900 hover:text-[#253C7D] transition-colors"
-                    >
-                      <div className="w-6 h-6 rounded-full bg-[#253C7D]/10 text-[#253C7D] text-[10px] font-bold flex items-center justify-center shrink-0">
-                        {initials(a.employees.first_name, a.employees.last_name)}
+                  {/* No. */}
+                  <td className="px-3 py-3 text-slate-600 font-medium text-xs">
+                    {index + 1}
+                  </td>
+
+                  {/* Category */}
+                  <td className="px-4 py-3 text-slate-800 font-medium max-w-[220px] truncate" title={asset.category || asset.type}>
+                    {asset.category || asset.type || "General Equipment"}
+                  </td>
+
+                  {/* Name */}
+                  <td className="px-4 py-3 text-slate-900 font-semibold max-w-[200px] truncate">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 truncate">
+                        {asset.photo_url && (
+                          <img
+                            src={asset.photo_url}
+                            alt={asset.name}
+                            className="w-6 h-6 rounded-xs object-cover border border-slate-200 shrink-0"
+                          />
+                        )}
+                        <span className="truncate" title={asset.name}>{asset.name}</span>
                       </div>
-                      <span>{a.employees.first_name} {a.employees.last_name}</span>
-                    </Link>
-                  ) : (
-                    <span className="text-gray-400 font-semibold italic text-[11px]">Unassigned (Pool)</span>
-                  )}
-                </td>
-
-                <td className="px-5 py-3.5 whitespace-nowrap font-medium text-gray-600">
-                  {a.branches?.name || "General Headquarters"}
-                </td>
-
-                <td className="px-5 py-3.5 whitespace-nowrap font-mono text-gray-500 text-[11px]">
-                  {a.serial_number || "—"}
-                </td>
-
-                <td className="px-5 py-3.5 whitespace-nowrap">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-                    {statusCfg.label}
-                  </span>
-                </td>
-
-                {canManage && (
-                  <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => onEdit(a)}
-                        className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                        title="Edit"
-                      >
-                        <i className="ri-edit-line text-sm" />
-                      </button>
-                      <button
-                        onClick={() => onDelete(a)}
-                        className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        title="Delete"
-                      >
-                        <i className="ri-delete-bin-line text-sm" />
-                      </button>
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(asset)}
+                          className="p-1 text-slate-400 hover:text-[#2585c8] hover:bg-slate-100 rounded transition-colors"
+                          title="Edit"
+                        >
+                          <i className="ri-edit-line text-xs" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDelete(asset)}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                          title="Delete"
+                        >
+                          <i className="ri-delete-bin-line text-xs" />
+                        </button>
+                      </div>
                     </div>
                   </td>
-                )}
-              </tr>
-            );
-          })}
+
+                  {/* Purchase Date */}
+                  <td className="px-4 py-3 text-slate-600 whitespace-nowrap text-xs">
+                    {asset.purchase_date || "—"}
+                  </td>
+
+                  {/* Description */}
+                  <td className="px-4 py-3 text-slate-600 max-w-[260px] truncate text-xs" title={asset.description || ""}>
+                    {asset.description || "—"}
+                  </td>
+
+                  {/* Condition */}
+                  <td className="px-4 py-3 whitespace-nowrap text-xs">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                      {asset.condition || "Good"}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-4 py-3 whitespace-nowrap text-xs">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                      {statusCfg.label}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
     </div>
   );
 });
+
+

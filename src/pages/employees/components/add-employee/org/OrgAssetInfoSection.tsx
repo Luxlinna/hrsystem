@@ -42,13 +42,13 @@ export const OrgAssetInfoSection = memo(function OrgAssetInfoSection({
   return (
     <div className="pt-6 border-t border-slate-100 w-full space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-[12px] font-bold text-[#0088cc] uppercase tracking-wider">
+        <h3 className="text-[12px] font-bold text-[#253C7D] uppercase tracking-wider">
           Asset Info
         </h3>
         <button
           type="button"
           onClick={handleAddRow}
-          className="w-6 h-6 rounded-full border border-sky-400 text-sky-600 hover:bg-sky-50 flex items-center justify-center text-sm transition-colors cursor-pointer"
+          className="w-6 h-6 rounded-full border border-[#253C7D] text-[#253C7D] hover:bg-blue-50 flex items-center justify-center text-sm transition-colors cursor-pointer"
           title="Add Asset"
         >
           <i className="ri-add-line" />
@@ -85,7 +85,7 @@ export const OrgAssetInfoSection = memo(function OrgAssetInfoSection({
                         type="date"
                         value={item.from_date || ""}
                         onChange={(e) => handleUpdateRow(idx, "from_date", e.target.value)}
-                        className="w-full px-2 py-1 rounded border border-slate-200 text-xs focus:outline-none focus:border-[#0088cc]"
+                        className="w-full px-2 py-1 rounded border border-slate-200 text-xs focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
                       />
                     </td>
                     <td className="py-2 px-3">
@@ -94,7 +94,7 @@ export const OrgAssetInfoSection = memo(function OrgAssetInfoSection({
                         placeholder="e.g. MacBook Pro M2"
                         value={item.name || ""}
                         onChange={(e) => handleUpdateRow(idx, "name", e.target.value)}
-                        className="w-full px-2 py-1 rounded border border-slate-200 text-xs focus:outline-none focus:border-[#0088cc]"
+                        className="w-full px-2 py-1 rounded border border-slate-200 text-xs focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
                       />
                     </td>
                     <td className="py-2 px-3">
@@ -112,7 +112,7 @@ export const OrgAssetInfoSection = memo(function OrgAssetInfoSection({
                         placeholder="Remark"
                         value={item.remark || ""}
                         onChange={(e) => handleUpdateRow(idx, "remark", e.target.value)}
-                        className="w-full px-2 py-1 rounded border border-slate-200 text-xs focus:outline-none focus:border-[#0088cc]"
+                        className="w-full px-2 py-1 rounded border border-slate-200 text-xs focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
                       />
                     </td>
                     <td className="py-2 px-3 text-slate-400 text-[11px] italic">

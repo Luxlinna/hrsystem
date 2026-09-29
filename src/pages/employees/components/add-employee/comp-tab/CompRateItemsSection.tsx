@@ -12,7 +12,7 @@ export const CompRateItemsSection = memo(function CompRateItemsSection({
 }: CompRateItemsSectionProps) {
   return (
     <div className="space-y-4 pt-4 border-t border-slate-100">
-      <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">
+      <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
         RATE ITEM INFO
       </h3>
 
@@ -42,7 +42,7 @@ export const CompRateItemsSection = memo(function CompRateItemsSection({
                     value={item.amount}
                     onChange={(e) => onRateItemChange(idx, "amount", e.target.value)}
                     placeholder="0"
-                    className="w-full max-w-[110px] px-3 py-1.5 rounded-md border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] focus:ring-1 focus:ring-[#0088cc] bg-white transition-all"
+                    className="w-full max-w-[110px] px-3 py-1.5 rounded-md border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white transition-all"
                   />
                 </td>
                 <td className="py-2 px-4">
@@ -51,7 +51,7 @@ export const CompRateItemsSection = memo(function CompRateItemsSection({
                     value={item.remark}
                     onChange={(e) => onRateItemChange(idx, "remark", e.target.value)}
                     placeholder=""
-                    className="w-full px-3 py-1.5 rounded-md border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] focus:ring-1 focus:ring-[#0088cc] bg-white transition-all"
+                    className="w-full px-3 py-1.5 rounded-md border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white transition-all"
                   />
                 </td>
               </tr>

@@ -75,7 +75,7 @@ export const AssignAssetModal = memo(function AssignAssetModal({
       <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
             ASSIGN INFO
           </h3>
           <button
@@ -104,7 +104,7 @@ export const AssignAssetModal = memo(function AssignAssetModal({
                       value={mode}
                       checked={formState.assignFor === mode}
                       onChange={() => setFormState((p) => ({ ...p, assignFor: mode }))}
-                      className="w-3.5 h-3.5 text-[#0088cc] focus:ring-[#0088cc]"
+                      className="w-3.5 h-3.5 text-[#253C7D] focus:ring-[#253C7D]"
                     />
                     <span>{mode}</span>
                   </label>
@@ -122,7 +122,7 @@ export const AssignAssetModal = memo(function AssignAssetModal({
                   type="date"
                   value={formState.fromDate}
                   onChange={(e) => setFormState((p) => ({ ...p, fromDate: e.target.value }))}
-                  className="px-3 py-1.5 rounded-md border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] bg-white w-full max-w-xs"
+                  className="px-3 py-1.5 rounded-md border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white w-full max-w-xs"
                 />
               </div>
             </div>
@@ -139,7 +139,7 @@ export const AssignAssetModal = memo(function AssignAssetModal({
                     name="toDateChoice"
                     checked={formState.toDateNever}
                     onChange={() => setFormState((p) => ({ ...p, toDateNever: true }))}
-                    className="w-3.5 h-3.5 text-[#0088cc] focus:ring-[#0088cc]"
+                    className="w-3.5 h-3.5 text-[#253C7D] focus:ring-[#253C7D]"
                   />
                   <span>Never</span>
                 </label>
@@ -149,14 +149,14 @@ export const AssignAssetModal = memo(function AssignAssetModal({
                     name="toDateChoice"
                     checked={!formState.toDateNever}
                     onChange={() => setFormState((p) => ({ ...p, toDateNever: false }))}
-                    className="w-3.5 h-3.5 text-[#0088cc] focus:ring-[#0088cc]"
+                    className="w-3.5 h-3.5 text-[#253C7D] focus:ring-[#253C7D]"
                   />
                   <input
                     type="date"
                     disabled={formState.toDateNever}
                     value={formState.toDate}
                     onChange={(e) => setFormState((p) => ({ ...p, toDate: e.target.value }))}
-                    className="px-3 py-1.5 rounded-md border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] bg-white disabled:bg-slate-100 disabled:text-slate-400 max-w-xs"
+                    className="px-3 py-1.5 rounded-md border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white disabled:bg-slate-100 disabled:text-slate-400 max-w-xs"
                   />
                 </div>
               </div>
@@ -172,7 +172,7 @@ export const AssignAssetModal = memo(function AssignAssetModal({
                 value={formState.remark}
                 onChange={(e) => setFormState((p) => ({ ...p, remark: e.target.value }))}
                 placeholder="Remark"
-                className="w-full px-3 py-2 rounded-md border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0088cc] bg-white resize-none"
+                className="w-full px-3 py-2 rounded-md border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white resize-none"
               />
             </div>
           </div>
@@ -191,7 +191,7 @@ export const AssignAssetModal = memo(function AssignAssetModal({
             <button
               type="button"
               onClick={onOpenSelectModal}
-              className="px-3 py-1.5 rounded-md border border-[#0088cc] hover:bg-blue-50 text-[#0088cc] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-md border border-[#253C7D] hover:bg-[#253C7D]/10 text-[#253C7D] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <i className="ri-add-circle-line" />
               <span>Add Asset</span>
@@ -208,7 +208,7 @@ export const AssignAssetModal = memo(function AssignAssetModal({
                       type="checkbox"
                       checked={selectedAssets.length > 0 && checkedTableIds.length === selectedAssets.length}
                       onChange={toggleSelectAll}
-                      className="w-3.5 h-3.5 rounded border-slate-300 text-[#0088cc] focus:ring-[#0088cc] cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                     />
                   </th>
                   <th className="py-2.5 px-3 w-12 text-center">No.</th>
@@ -232,7 +232,7 @@ export const AssignAssetModal = memo(function AssignAssetModal({
                           type="checkbox"
                           checked={checkedTableIds.includes(asset.id)}
                           onChange={() => toggleItem(asset.id)}
-                          className="w-3.5 h-3.5 rounded border-slate-300 text-[#0088cc] focus:ring-[#0088cc] cursor-pointer"
+                          className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                         />
                       </td>
                       <td className="py-2 px-3 text-center text-slate-500 font-medium">
@@ -261,7 +261,7 @@ export const AssignAssetModal = memo(function AssignAssetModal({
             type="button"
             onClick={handleComplete}
             disabled={selectedAssets.length === 0}
-            className="px-4 py-1.5 rounded-md bg-[#0088cc] hover:bg-[#0077b3] disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded-md bg-[#253C7D] hover:bg-[#1E3064] disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <i className="ri-save-line" />
             <span>Done</span>

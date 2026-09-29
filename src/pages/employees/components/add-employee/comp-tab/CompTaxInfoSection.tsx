@@ -12,7 +12,7 @@ export const CompTaxInfoSection = memo(function CompTaxInfoSection({
 }: CompTaxInfoSectionProps) {
   return (
     <div className="space-y-4 pt-4 border-t border-slate-100">
-      <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">
+      <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
         TAX INFO
       </h3>
 
@@ -21,7 +21,7 @@ export const CompTaxInfoSection = memo(function CompTaxInfoSection({
           Tax Salary
         </label>
         <div className="max-w-xl">
-          <div className="flex rounded-md overflow-hidden border border-slate-300 bg-white shadow-2xs focus-within:border-[#0088cc] focus-within:ring-1 focus-within:ring-[#0088cc]">
+          <div className="flex rounded-md overflow-hidden border border-slate-300 bg-white shadow-2xs focus-within:border-[#253C7D] focus-within:ring-1 focus-within:ring-[#253C7D]">
             <span className="px-3.5 py-2 bg-slate-100 text-slate-600 text-xs font-medium border-r border-slate-200 select-none">
               {form.tax_salary_currency || "USD"}
             </span>

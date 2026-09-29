@@ -80,7 +80,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
             type="checkbox"
             checked={isRegistered}
             onChange={(e) => handleToggleRegister(e.target.checked)}
-            className="w-4 h-4 rounded text-[#0088cc] focus:ring-[#0088cc] border-slate-300 cursor-pointer"
+            className="w-4 h-4 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
           />
           <span>Register Nssf</span>
         </label>
@@ -89,7 +89,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
       {/* Expanded NSSF Form Fields if Checked */}
       {isRegistered && (
         <div className="space-y-4 pt-2 border-t border-slate-100 animate-in fade-in duration-150">
-          <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">NSSF Details</h3>
+          <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">NSSF Details</h3>
           <div className="space-y-3 max-w-xl">
             <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
               <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
@@ -102,7 +102,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
                   value={nssf.identity_code || ""}
                   onChange={(e) => updateNssf("identity_code", e.target.value)}
                   placeholder="Identity Code of Worker"
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
+                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
                 />
               </div>
             </div>
@@ -114,7 +114,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
                   type="date"
                   value={nssf.joining_date || ""}
                   onChange={(e) => updateNssf("joining_date", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
+                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
                 />
               </div>
             </div>
@@ -125,7 +125,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
                 <select
                   value={nssf.monthly_wage_type || "Formula"}
                   onChange={(e) => updateNssf("monthly_wage_type", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
                 >
                   <option value="Formula">Formula</option>
                   <option value="Gross Salary">Gross Salary</option>
@@ -141,7 +141,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
                 <select
                   value={nssf.monthly_wage || "Taxable Salary"}
                   onChange={(e) => updateNssf("monthly_wage", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] cursor-pointer"
+                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
                 >
                   <option value="Taxable Salary">Taxable Salary</option>
                   <option value="Basic Salary">Basic Salary</option>
@@ -159,7 +159,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
                   value={nssf.remark || ""}
                   onChange={(e) => updateNssf("remark", e.target.value)}
                   placeholder="Remark"
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#0088cc]"
+                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
                 />
               </div>
             </div>
@@ -169,17 +169,17 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
 
       {/* ATTACHMENT INFO Section */}
       <div className="pt-6 border-t border-slate-100 space-y-4">
-        <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">Attachment Info</h3>
+        <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">Attachment Info</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2 max-w-xl">
           <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">Attachment</label>
           <div className="sm:col-span-2">
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border border-dashed border-slate-300 rounded px-4 py-3 flex items-center justify-center gap-2 text-xs text-slate-500 hover:border-[#0088cc] hover:text-[#0088cc] bg-white cursor-pointer transition-colors"
+              className="w-full border border-dashed border-slate-300 rounded px-4 py-3 flex items-center justify-center gap-2 text-xs text-slate-500 hover:border-[#253C7D] hover:text-[#253C7D] bg-white cursor-pointer transition-colors"
             >
               <i className="ri-upload-cloud-line text-sm" />
               <span>{uploading ? "Uploading..." : "Drop file here or "}</span>
-              <span className="text-[#0088cc] font-semibold underline">Browse</span>
+              <span className="text-[#253C7D] font-semibold underline">Browse</span>
             </div>
             <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
           </div>

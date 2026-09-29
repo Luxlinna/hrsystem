@@ -59,7 +59,7 @@ export const PersonalPhotoCard = memo(function PersonalPhotoCard({
           if (file) processAndUploadFile(file);
         }}
         className={`w-44 h-44 rounded-full bg-[#f1f3f5] border flex items-center justify-center overflow-hidden relative group mb-4 transition-all ${
-          isDragOver ? "border-[#0088cc] ring-2 ring-blue-100" : "border-slate-200"
+          isDragOver ? "border-[#253C7D] ring-2 ring-blue-100" : "border-slate-200"
         }`}
       >
         {uploadingAvatar && (

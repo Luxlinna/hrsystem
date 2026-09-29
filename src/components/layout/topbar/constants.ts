@@ -48,7 +48,7 @@ const OPERATIONS_ITEMS: DrawerItem[] = [
   { path: "/payroll-module", label: "Payroll", sublabel: "Monthly payroll", icon: "ri-money-dollar-circle-line", module: "payroll" },
   { path: "/payroll-approval", label: "Pay Approval", sublabel: "Review & approve runs", icon: "ri-file-check-line", module: "payroll-approval" },
   { path: "/finance", label: "Finance", sublabel: "Expense tracking", icon: "ri-bank-line", module: "finance" },
-  { path: "/it-management", label: "IT", sublabel: "Assets & tickets", icon: "ri-computer-line", module: "it-management" },
+  { path: "/it-management", label: "Assets", sublabel: "Assets & equipment", icon: "ri-computer-line", module: "it-management" },
   { path: "/benefits", label: "Benefits", sublabel: "Plans & enrollment", icon: "ri-heart-pulse-line", module: "benefits" },
   { path: "/tools", label: "Tools", sublabel: "Productivity tools", icon: "ri-tools-line", module: "tools" },
   { path: "/announcements", label: "Announcements", sublabel: "Company news", icon: "ri-megaphone-line", module: "announcements" },

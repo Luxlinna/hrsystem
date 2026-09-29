@@ -13,7 +13,7 @@ export const CompPayrollInfoSection = memo(function CompPayrollInfoSection({
 }: CompPayrollInfoSectionProps) {
   return (
     <div className="space-y-4 pt-1">
-      <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider">
+      <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
         PAYROLL INFO
       </h3>
 
@@ -25,7 +25,7 @@ export const CompPayrollInfoSection = memo(function CompPayrollInfoSection({
           <select
             value={form.payroll_structure || ""}
             onChange={(e) => onChange("payroll_structure", e.target.value)}
-            className="w-full px-3.5 py-2 rounded-md bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#0088cc] focus:ring-1 focus:ring-[#0088cc] transition-all cursor-pointer"
+            className="w-full px-3.5 py-2 rounded-md bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] transition-all cursor-pointer"
           >
             <option value="">Select</option>
             {PAYROLL_STRUCTURES.map((ps) => (
@@ -41,7 +41,7 @@ export const CompPayrollInfoSection = memo(function CompPayrollInfoSection({
                 type="checkbox"
                 checked={Boolean(form.apply_day_in_month)}
                 onChange={(e) => onChange("apply_day_in_month", e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-[#0088cc] focus:ring-[#0088cc] cursor-pointer"
+                className="w-4 h-4 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
               <span>Apply Day In Month</span>
             </label>
@@ -51,7 +51,7 @@ export const CompPayrollInfoSection = memo(function CompPayrollInfoSection({
                 type="checkbox"
                 checked={Boolean(form.apply_working_hours_per_day)}
                 onChange={(e) => onChange("apply_working_hours_per_day", e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-[#0088cc] focus:ring-[#0088cc] cursor-pointer"
+                className="w-4 h-4 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
               <span>Apply Working Hours Per Day</span>
             </label>

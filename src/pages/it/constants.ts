@@ -135,6 +135,19 @@ export interface AssetCategoryCardConfig {
   subType: "Electronic Hardware" | "Office Supply" | "Furniture" | string;
   trackingBadges: string[];
   keywords: string[];
+  tag?: string;
+  manageQuantity?: boolean;
+  allowRequest?: boolean;
+  trackSerialNumber?: boolean;
+  trackWarranty?: boolean;
+  trackTagging?: boolean;
+  status?: "Active" | "Inactive" | string;
+  serialNumber?: string;
+  sellerName?: string;
+  invoiceRef?: string;
+  serialNumbersList?: string[];
+  imageUrl?: string | null;
+  attachments?: Array<{ name: string; url: string; size?: number; type?: string }>;
 }
 
 export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
@@ -144,6 +157,11 @@ export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
     subType: "Electronic Hardware",
     trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
     keywords: ["phone", "mobile", "sim", "cell", "contact", "telecom"],
+    tag: "PHONE-SIM",
+    trackSerialNumber: true,
+    trackWarranty: true,
+    trackTagging: true,
+    status: "Active",
   },
   {
     id: "desktop_bundle",
@@ -151,6 +169,11 @@ export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
     subType: "Electronic Hardware",
     trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
     keywords: ["desktop", "workstation", "pc", "tower", "system unit"],
+    tag: "DESK-SET",
+    trackSerialNumber: true,
+    trackWarranty: true,
+    trackTagging: true,
+    status: "Active",
   },
   {
     id: "laptop_bundle",
@@ -158,6 +181,11 @@ export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
     subType: "Electronic Hardware",
     trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
     keywords: ["laptop", "notebook", "thinkpad", "macbook", "latitude"],
+    tag: "LAP-SET",
+    trackSerialNumber: true,
+    trackWarranty: true,
+    trackTagging: true,
+    status: "Active",
   },
   {
     id: "office_equipment",
@@ -165,6 +193,11 @@ export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
     subType: "Office Supply",
     trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
     keywords: ["badge", "card", "tag", "equipment", "stamp", "office supply"],
+    tag: "OFF-CARD",
+    trackSerialNumber: true,
+    trackWarranty: true,
+    trackTagging: true,
+    status: "Active",
   },
   {
     id: "peripherals",
@@ -172,6 +205,11 @@ export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
     subType: "Electronic Hardware",
     trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
     keywords: ["peripheral", "mouse", "keyboard", "headset", "webcam", "accessory"],
+    tag: "PERIPH",
+    trackSerialNumber: true,
+    trackWarranty: true,
+    trackTagging: true,
+    status: "Active",
   },
   {
     id: "displays",
@@ -179,6 +217,11 @@ export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
     subType: "Electronic Hardware",
     trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
     keywords: ["display", "monitor", "screen"],
+    tag: "DISP-MON",
+    trackSerialNumber: true,
+    trackWarranty: true,
+    trackTagging: true,
+    status: "Active",
   },
   {
     id: "furniture",
@@ -186,6 +229,11 @@ export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
     subType: "Office Supply",
     trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
     keywords: ["furniture", "chair", "desk", "table", "cabinet"],
+    tag: "FURN-OFF",
+    trackSerialNumber: true,
+    trackWarranty: true,
+    trackTagging: true,
+    status: "Active",
   },
   {
     id: "server_network",
@@ -193,6 +241,11 @@ export const STANDARD_ASSET_CATEGORIES: AssetCategoryCardConfig[] = [
     subType: "Electronic Hardware",
     trackingBadges: ["Track Serial Number", "Track Warranty", "Track Tagging"],
     keywords: ["server", "network", "router", "switch", "access point"],
+    tag: "NET-SRV",
+    trackSerialNumber: true,
+    trackWarranty: true,
+    trackTagging: true,
+    status: "Active",
   },
 ];
 
