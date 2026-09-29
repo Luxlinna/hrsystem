@@ -160,18 +160,18 @@ export default function AttendanceTab({ employeeId, employee }: Props) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       {/* Month filter & Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
         <div className="flex items-center gap-2">
-          <i className="ri-calendar-line text-[#253C7D]" />
-          <span className="text-sm font-semibold text-gray-800">My Attendance History</span>
+          <i className="ri-calendar-line text-blue-600 text-base" />
+          <span className="text-sm font-bold text-slate-900">Attendance Log</span>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 self-stretch sm:self-auto">
           <select
             value={filterMonth}
             onChange={(e) => setFilterMonth(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
+            className="flex-1 sm:flex-none px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer shadow-2xs font-medium"
           >
             {monthOptions.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -180,96 +180,98 @@ export default function AttendanceTab({ employeeId, employee }: Props) {
           <button
             type="button"
             onClick={() => setShowTimeLogForm(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer active:scale-98 shrink-0"
           >
             <i className="ri-add-line text-sm" />
-            Create Time Log
+            <span>Time Log</span>
           </button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
         {[
-          { label: "On Time", value: stats.ontime, icon: "ri-checkbox-circle-line", color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "Late", value: stats.late, icon: "ri-time-line", color: "text-amber-600", bg: "bg-amber-50" },
-          { label: "Absent", value: stats.absent, icon: "ri-close-circle-line", color: "text-red-500", bg: "bg-red-50" },
-          { label: "Total Hours", value: totalHoursFormatted, icon: "ri-timer-line", color: "text-[#253C7D]", bg: "bg-[#253C7D]/10" },
+          { label: "On Time", value: stats.ontime, icon: "ri-checkbox-circle-line", color: "text-emerald-700", bg: "bg-emerald-50/70 border-emerald-200/70" },
+          { label: "Late", value: stats.late, icon: "ri-time-line", color: "text-amber-700", bg: "bg-amber-50/70 border-amber-200/70" },
+          { label: "Absent", value: stats.absent, icon: "ri-close-circle-line", color: "text-rose-700", bg: "bg-rose-50/70 border-rose-200/70" },
+          { label: "Total Hours", value: totalHoursFormatted, icon: "ri-timer-line", color: "text-blue-700", bg: "bg-blue-50/70 border-blue-200/70" },
         ].map((s) => (
-          <div key={s.label} className={`${s.bg} rounded-xl p-4 flex items-center gap-3`}>
-            <div className={`w-8 h-8 flex items-center justify-center shrink-0`}>
-              <i className={`${s.icon} text-xl ${s.color}`} />
+          <div key={s.label} className={`${s.bg} border rounded-xl p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3 shadow-2xs`}>
+            <div className={`w-8 h-8 flex items-center justify-center rounded-lg bg-white/80 shadow-2xs shrink-0 ${s.color}`}>
+              <i className={`${s.icon} text-base`} />
             </div>
-            <div>
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-[11px] text-gray-600">{s.label}</p>
+            <div className="min-w-0">
+              <p className={`text-base sm:text-lg font-bold leading-tight ${s.color} truncate`}>{s.value}</p>
+              <p className="text-[10.5px] font-medium text-slate-600 truncate">{s.label}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Records */}
+      {/* Records List */}
       {records.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-40 bg-gray-50 rounded-xl text-gray-400">
-          <i className="ri-fingerprint-line text-3xl mb-2" />
-          <p className="text-sm">No attendance records for this period</p>
+        <div className="flex flex-col items-center justify-center py-12 bg-slate-50/60 rounded-xl text-slate-400 border border-dashed border-slate-200">
+          <i className="ri-fingerprint-line text-3xl mb-2 text-slate-300" />
+          <p className="text-xs font-medium text-slate-500">No attendance records found for this period</p>
         </div>
       ) : (
         <div className="space-y-2">
           {records.map((r) => {
             const isOutsideWork = r.notes?.toLowerCase().includes("outside work");
             const meta = isOutsideWork
-              ? { label: "Outside Working", bg: "bg-teal-50", text: "text-teal-700", icon: "ri-map-pin-user-line" }
-              : STATUS_META[r.status] || { label: r.status, bg: "bg-gray-100", text: "text-gray-600", icon: "ri-circle-line" };
+              ? { label: "Outside Working", bg: "bg-teal-50/80 border-teal-200", text: "text-teal-700", icon: "ri-map-pin-user-line" }
+              : STATUS_META[r.status] || { label: r.status, bg: "bg-slate-50 border-slate-200", text: "text-slate-600", icon: "ri-circle-line" };
             const d = new Date(r.date + "T00:00:00");
             const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
             const dayNum = d.getDate();
             const monthName = MONTHS_SHORT[d.getMonth()];
 
             return (
-              <div key={r.id} className="flex items-center gap-4 bg-white border border-gray-100 rounded-xl px-4 py-3.5">
-                {/* Date badge */}
-                <div className="shrink-0 text-center w-10">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase">{dayName}</p>
-                  <p className="text-[18px] font-bold text-gray-900 leading-tight">{dayNum}</p>
-                  <p className="text-[10px] text-gray-400">{monthName}</p>
-                </div>
-
-                <div className="w-px h-10 bg-gray-100 shrink-0" />
-
-                {/* Clock times */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-1.5">
-                      <i className="ri-login-circle-line text-emerald-500 text-sm" />
-                      <span className="text-sm font-semibold text-gray-800">{formatTime(r.clock_in)}</span>
-                      <span className="text-[11px] text-gray-400">in</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <i className="ri-logout-circle-r-line text-gray-400 text-sm" />
-                      <span className="text-sm font-medium text-gray-700">{formatTime(r.clock_out)}</span>
-                      <span className="text-[11px] text-gray-400">out</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-[#253C7D]">
-                      <i className="ri-timer-line text-xs" />
-                      <span className="text-xs font-semibold">{calcHours(r.clock_in, r.clock_out)}</span>
-                    </div>
+              <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 bg-white border border-slate-200/80 rounded-xl p-3 sm:px-4 sm:py-3.5 hover:border-slate-300 transition-colors shadow-2xs">
+                {/* Date & Punch details */}
+                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                  {/* Date badge */}
+                  <div className="shrink-0 text-center w-10 sm:w-11 py-1 bg-slate-50 rounded-lg border border-slate-200/70">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{dayName}</p>
+                    <p className="text-base sm:text-lg font-bold text-slate-900 leading-tight">{dayNum}</p>
+                    <p className="text-[9px] font-medium text-slate-400">{monthName}</p>
                   </div>
-                  {r.late_minutes > 0 && (
-                    <p className="text-[11px] text-amber-500 mt-0.5 flex items-center gap-1">
-                      <i className="ri-alarm-warning-line" />
-                      {r.late_minutes}m late
-                    </p>
-                  )}
-                  {r.notes && (
-                    <p className="text-[11px] text-gray-400 mt-0.5 truncate">{r.notes}</p>
-                  )}
+
+                  {/* Punch times */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">In</span>
+                        <span className="font-semibold text-slate-900">{formatTime(r.clock_in)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Out</span>
+                        <span className="font-medium text-slate-700">{formatTime(r.clock_out)}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-slate-600 font-medium">
+                        <i className="ri-timer-line text-slate-400 text-xs" />
+                        <span>{calcHours(r.clock_in, r.clock_out)}</span>
+                      </div>
+                    </div>
+
+                    {r.late_minutes > 0 && (
+                      <p className="text-[11px] text-amber-600 font-medium mt-1 flex items-center gap-1">
+                        <i className="ri-alarm-warning-line text-xs" />
+                        {r.late_minutes}m late arrival
+                      </p>
+                    )}
+                    {r.notes && (
+                      <p className="text-[11px] text-slate-500 mt-0.5 truncate">{r.notes}</p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Status */}
-                <div className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${meta.bg} ${meta.text}`}>
-                  <i className={meta.icon} />
-                  <span>{meta.label}</span>
+                {/* Status pill */}
+                <div className="self-end sm:self-auto shrink-0">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${meta.bg} ${meta.text}`}>
+                    <i className={`${meta.icon} text-[11px]`} />
+                    <span className="capitalize">{meta.label}</span>
+                  </span>
                 </div>
               </div>
             );

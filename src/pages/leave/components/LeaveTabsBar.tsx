@@ -14,8 +14,6 @@ export const LeaveTabsBar = memo(function LeaveTabsBar({
   setActiveTab,
   pendingCount,
   onLeaveTodayCount,
-  onOpenHolidaysModal,
-  holidayCount,
 }: LeaveTabsBarProps) {
   const tabs = [
     { key: "requests" as const, label: "Leave Requests", icon: "ri-file-list-3-line", count: pendingCount },
@@ -24,52 +22,54 @@ export const LeaveTabsBar = memo(function LeaveTabsBar({
   ];
 
   return (
-    <div className="flex items-center justify-between gap-2 border-b border-gray-200/80 overflow-x-auto no-scrollbar pb-px">
-      <div className="flex items-center gap-2">
-      {tabs.map((t) => {
-        const isActive = activeTab === t.key;
-        return (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              isActive
-                ? "border-[#253C7D] text-[#253C7D]"
-                : "border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300"
-            }`}
+    <div>
+      {/* Mobile View: Compact Dropdown Switcher */}
+      <div className="sm:hidden">
+        <div className="relative">
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as "requests" | "balances" | "calendar")}
+            className="w-full appearance-none bg-white border border-slate-200/90 rounded-xl px-3.5 py-2 pr-9 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#253C7D] shadow-2xs cursor-pointer"
           >
-            <i className={`${t.icon} text-base`} />
-            <span>{t.label}</span>
-            {t.count !== null && t.count > 0 && (
-              <span
-                className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                  isActive ? "bg-[#253C7D]/10 text-[#253C7D]" : "bg-amber-100 text-amber-800"
-                }`}
-              >
-                {t.count}
-              </span>
-            )}
-          </button>
-        );
-      })}
+            {tabs.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.label} {t.count !== null && t.count > 0 ? `(${t.count})` : ""}
+              </option>
+            ))}
+          </select>
+          <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm pointer-events-none" />
+        </div>
       </div>
 
-      {onOpenHolidaysModal && (
-        <button
-          type="button"
-          onClick={onOpenHolidaysModal}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs transition-colors cursor-pointer shadow-2xs shrink-0 whitespace-nowrap mb-1"
-          title="Cambodia Labor Law Public Holidays Calendar"
-        >
-          <i className="ri-calendar-event-line text-sm text-purple-600" />
-          <span>Public Holidays</span>
-          {holidayCount !== undefined && holidayCount > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-purple-200 text-purple-800 font-black">
-              {holidayCount}
-            </span>
-          )}
-        </button>
-      )}
+      {/* Desktop / Tablet View: Tab Strip */}
+      <div className="hidden sm:flex items-center gap-1 sm:gap-2 border-b border-slate-200/80 overflow-x-auto no-scrollbar">
+        {tabs.map((t) => {
+          const isActive = activeTab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-[13px] font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap -mb-px ${
+                isActive
+                  ? "border-[#253C7D] text-[#253C7D]"
+                  : "border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300"
+              }`}
+            >
+              <i className={`${t.icon} text-sm ${isActive ? "text-[#253C7D]" : "text-slate-400"}`} />
+              <span>{t.label}</span>
+              {t.count !== null && t.count > 0 && (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                    isActive ? "bg-[#253C7D]/10 text-[#253C7D]" : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {t.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 });

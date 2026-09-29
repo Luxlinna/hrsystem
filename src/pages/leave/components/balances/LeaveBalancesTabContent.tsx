@@ -45,34 +45,46 @@ export const LeaveBalancesTabContent = memo(function LeaveBalancesTabContent({
   });
 
   return (
-    <div className="space-y-6">
-      {/* Search & Filter Bar */}
+    <div className="space-y-4">
+      {/* Search & Filter Bar - Compact Single Line */}
       {(canViewAll || canViewOwnBranch) && (
-        <div className="bg-white rounded-2xl border border-gray-200/80 p-3.5 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative flex-1 w-full">
-            <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+        <div className="bg-white rounded-xl border border-slate-200/80 p-2 sm:p-2.5 shadow-2xs flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
             <input
               type="text"
               value={balanceSearch}
               onChange={(e) => setBalanceSearch(e.target.value)}
-              placeholder="Search employee balances by name, role, department..."
-              className="w-full pl-8 pr-7 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium"
+              placeholder="Search balances..."
+              className="w-full pl-7 pr-6 py-1.5 bg-slate-50/80 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#253C7D] transition-colors"
             />
+            {balanceSearch && (
+              <button
+                type="button"
+                onClick={() => setBalanceSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <i className="ri-close-line text-xs" />
+              </button>
+            )}
           </div>
 
           {depts.length > 0 && (
-            <select
-              value={balanceDept}
-              onChange={(e) => setBalanceDept(e.target.value)}
-              className="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 font-medium focus:outline-none focus:border-[#253C7D] cursor-pointer w-full sm:w-auto"
-            >
-              <option value="all">All Departments</option>
-              {depts.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+            <div className="relative shrink-0 max-w-[125px] sm:max-w-[170px]">
+              <select
+                value={balanceDept}
+                onChange={(e) => setBalanceDept(e.target.value)}
+                className="w-full appearance-none pl-2.5 pr-6 py-1.5 bg-slate-50/80 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:bg-white focus:outline-none focus:border-[#253C7D] cursor-pointer truncate transition-colors"
+              >
+                <option value="all">All Depts</option>
+                {depts.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+              <i className="ri-arrow-down-s-line absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
+            </div>
           )}
         </div>
       )}

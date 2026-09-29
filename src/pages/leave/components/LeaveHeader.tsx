@@ -47,14 +47,19 @@ export const LeaveHeader = memo(function LeaveHeader({
   }, []);
 
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-700 tracking-tight">
-          Leaves
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+          <span>Portal</span>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-600">Leave Management</span>
+        </div>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          Leaves & Time Off
         </h1>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 self-start sm:self-auto">
         <div className="hidden">
           <LeaveExportMenu filteredRequests={filteredRequests} onToast={onToast} />
         </div>
@@ -63,56 +68,58 @@ export const LeaveHeader = memo(function LeaveHeader({
           <button
             type="button"
             onClick={onOpenHolidaysModal}
-            className="inline-flex items-center gap-1.5 bg-white hover:bg-purple-50/70 border border-purple-200 text-purple-700 px-3 py-2 rounded-xl text-xs font-semibold transition-all shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold transition-all shadow-2xs hover:border-slate-300 cursor-pointer"
             title="Cambodia Public Holidays & Labor Law Calendar"
           >
-            <i className="ri-calendar-event-line text-sm text-purple-600" />
+            <i className="ri-calendar-event-line text-sm text-slate-500" />
             <span>Holidays</span>
             {holidayCount !== undefined && holidayCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
                 {holidayCount}
               </span>
             )}
           </button>
         )}
 
-        {/* Leaves Dropdown Menu matching Image with Approver Flow option */}
+        {/* Enterprise Actions Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
             onClick={() => setIsDropdownOpen((prev) => !prev)}
-            className="inline-flex items-center gap-2 bg-[#0284c7] hover:bg-[#0369a1] text-white px-4 py-2 rounded-lg text-xs sm:text-[13px] font-semibold transition-all shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1d3066] text-white px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-2xs cursor-pointer"
           >
-            <span>Leaves</span>
-            <i className={`ri-arrow-down-s-line text-sm transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+            <i className="ri-add-line text-sm" />
+            <span>Request Leave</span>
+            <i className={`ri-arrow-down-s-line text-xs transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-1.5 w-60 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-gray-700 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsDropdownOpen(false);
-                  if (onCreateNewLeave) onCreateNewLeave();
-                  else onRequestLeave();
-                }}
-                className="w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium"
-              >
-                <i className="ri-add-circle-line text-slate-500 text-sm" />
-                <span>Create New Leave</span>
-              </button>
-
+            <div className="absolute right-0 mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-slate-200/90 py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-slate-700 text-xs">
               <button
                 type="button"
                 onClick={() => {
                   setIsDropdownOpen(false);
                   onRequestLeave();
                 }}
-                className="w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium"
+                className="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium text-slate-800"
               >
-                <i className="ri-mail-line text-slate-500 text-sm" />
-                <span>Create Leave Request</span>
+                <i className="ri-file-add-line text-slate-500 text-sm" />
+                <span>Submit Leave Request</span>
               </button>
+
+              {onCreateNewLeave && canManageSettings && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    onCreateNewLeave();
+                  }}
+                  className="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium text-slate-800"
+                >
+                  <i className="ri-add-circle-line text-slate-500 text-sm" />
+                  <span>Create New Leave Type</span>
+                </button>
+              )}
 
               {canManage && onRequestLeaveFor && (
                 <button
@@ -121,10 +128,10 @@ export const LeaveHeader = memo(function LeaveHeader({
                     setIsDropdownOpen(false);
                     onRequestLeaveFor();
                   }}
-                  className="w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium"
+                  className="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium text-slate-800"
                 >
                   <i className="ri-user-shared-line text-slate-500 text-sm" />
-                  <span>Create Leave Request for</span>
+                  <span>Create Request for Member</span>
                 </button>
               )}
 
@@ -135,10 +142,10 @@ export const LeaveHeader = memo(function LeaveHeader({
                     setIsDropdownOpen(false);
                     onOpenLeaveSettings();
                   }}
-                  className="w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium border-t border-gray-100"
+                  className="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium text-slate-800 border-t border-slate-100"
                 >
                   <i className="ri-settings-3-line text-slate-500 text-sm" />
-                  <span>Leave Setting</span>
+                  <span>Leave Settings</span>
                 </button>
               )}
 
@@ -152,7 +159,7 @@ export const LeaveHeader = memo(function LeaveHeader({
                     onToast({ type: "info", message: "Navigating to Leave Deductions" });
                   }
                 }}
-                className="w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium border-t border-gray-100"
+                className="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium text-slate-800 border-t border-slate-100"
               >
                 <i className="ri-file-list-3-line text-slate-500 text-sm" />
                 <span>Leave Deductions</span>
@@ -168,10 +175,10 @@ export const LeaveHeader = memo(function LeaveHeader({
                     onToast({ type: "info", message: "Opening Approver Flow Setting" });
                   }
                 }}
-                className="w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium border-t border-gray-100 text-[#0284c7]"
+                className="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-semibold text-[#253C7D] border-t border-slate-100"
               >
-                <i className="ri-node-tree text-sky-600 text-sm" />
-                <span className="font-semibold">Approver Flow Setting</span>
+                <i className="ri-node-tree text-[#253C7D] text-sm" />
+                <span>Approver Flow Settings</span>
               </button>
             </div>
           )}

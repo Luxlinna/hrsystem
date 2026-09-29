@@ -75,11 +75,11 @@ export const OrgNode = memo(function OrgNode({
             <img
               src={node.avatar_url}
               alt=""
-              className="w-13 h-13 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-sm mb-2 group-hover:scale-105 transition-transform"
+              className="w-14 h-14 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-sm mb-2 group-hover:scale-105 transition-transform aspect-square"
             />
           ) : (
             <div
-              className={`w-13 h-13 rounded-2xl ${deptColor} flex items-center justify-center text-white font-black text-sm shadow-sm mb-2 group-hover:scale-105 transition-transform`}
+              className={`w-14 h-14 rounded-2xl ${deptColor} flex items-center justify-center text-white font-black text-sm shadow-sm mb-2 group-hover:scale-105 transition-transform aspect-square`}
             >
               {node.first_name?.[0]}
               {node.last_name?.[0]}

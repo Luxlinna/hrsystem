@@ -180,15 +180,21 @@ export const SelfServiceExportMenu = memo(function SelfServiceExportMenu({
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         disabled={disabled || !employee}
-        className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200/80 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 cursor-pointer active:scale-98 whitespace-nowrap"
+        className="inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/80 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all shadow-2xs disabled:opacity-50 cursor-pointer active:scale-98 whitespace-nowrap"
       >
         {exporting ? (
-          <span className="w-3.5 h-3.5 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+          <span className="w-3.5 h-3.5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
         ) : (
-          <i className="ri-download-2-line text-sm text-[#253C7D]" />
+          <i className="ri-download-2-line text-sm text-slate-600" />
         )}
-        <span>{exporting ? "Exporting..." : `Export ${scopeLabel}`}</span>
-        <i className={`ri-arrow-down-s-line text-xs transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+        <span>
+          {exporting ? "Exporting..." : (
+            <>
+              Export <span className="hidden sm:inline">{scopeLabel}</span>
+            </>
+          )}
+        </span>
+        <i className={`ri-arrow-down-s-line text-xs text-slate-400 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (

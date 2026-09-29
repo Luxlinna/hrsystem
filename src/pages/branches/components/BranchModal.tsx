@@ -91,18 +91,18 @@ export const BranchModal = memo(function BranchModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
       <form
         onSubmit={onSubmit}
-        className="bg-white rounded-2xl w-full max-w-2xl my-8 sm:my-0 max-h-[calc(100vh-4rem)] flex flex-col shadow-2xl border border-gray-100"
+        className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-2xl my-0 sm:my-0 max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100vh-4rem)] flex flex-col shadow-2xl border border-gray-100"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-5 border-b border-gray-100 shrink-0">
           <div>
-            <h2 className="text-[17px] font-bold text-gray-900">
+            <h2 className="text-[15px] sm:text-[17px] font-bold text-gray-900">
               {editingBranchId ? "Edit Business Unit & Company Profile" : "Add New Business Unit (BU)"}
             </h2>
-            <p className="text-[12px] text-gray-500 mt-0.5">
+            <p className="text-[11px] sm:text-[12px] text-gray-500 mt-0.5">
               {editingBranchId ? "Update official company info, addresses, and operational settings" : "Create a new Business Unit location and company profile"}
             </p>
           </div>
@@ -116,11 +116,11 @@ export const BranchModal = memo(function BranchModal({
         </div>
 
         {/* Modal Navigation Tabs */}
-        <div className="flex border-b border-gray-100 bg-slate-50/70 px-6 shrink-0 gap-1 overflow-x-auto">
+        <div className="flex border-b border-gray-100 bg-slate-50/70 px-3 sm:px-6 shrink-0 gap-1 overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab("profile")}
-            className={`py-3 px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`py-2.5 sm:py-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === "profile"
                 ? "border-[#0088cc] text-[#0088cc]"
                 : "border-transparent text-gray-500 hover:text-gray-800"
@@ -132,7 +132,7 @@ export const BranchModal = memo(function BranchModal({
           <button
             type="button"
             onClick={() => setActiveTab("operations")}
-            className={`py-3 px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`py-2.5 sm:py-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === "operations"
                 ? "border-[#0088cc] text-[#0088cc]"
                 : "border-transparent text-gray-500 hover:text-gray-800"
@@ -144,7 +144,7 @@ export const BranchModal = memo(function BranchModal({
           <button
             type="button"
             onClick={() => setActiveTab("location")}
-            className={`py-3 px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`py-2.5 sm:py-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === "location"
                 ? "border-[#0088cc] text-[#0088cc]"
                 : "border-transparent text-gray-500 hover:text-gray-800"
@@ -156,7 +156,7 @@ export const BranchModal = memo(function BranchModal({
           <button
             type="button"
             onClick={() => setActiveTab("schedule")}
-            className={`py-3 px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+            className={`py-2.5 sm:py-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === "schedule"
                 ? "border-[#0088cc] text-[#0088cc]"
                 : "border-transparent text-gray-500 hover:text-gray-800"
@@ -168,7 +168,7 @@ export const BranchModal = memo(function BranchModal({
         </div>
 
         {/* Modal Tab Body */}
-        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+        <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 overflow-y-auto flex-1">
           {/* TAB 1: COMPANY PROFILE */}
           {activeTab === "profile" && (
             <div className="space-y-6">
@@ -755,7 +755,7 @@ export const BranchModal = memo(function BranchModal({
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-gray-100 shrink-0 bg-white">
+        <div className="flex gap-2 sm:gap-3 p-4 sm:p-6 border-t border-gray-100 shrink-0 bg-white">
           <button
             type="button"
             onClick={onClose}

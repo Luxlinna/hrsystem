@@ -31,55 +31,54 @@ export function AttendanceHistoryCard({
   getStatusColor,
 }: AttendanceHistoryCardProps) {
   return (
-    <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
-        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Attendance History</p>
-        <p className="text-[11px] text-gray-400">
-          {totalHours.toFixed(1)}h across {records.length} day{records.length === 1 ? "" : "s"}
+    <div className="bg-white border border-slate-200/80 rounded-xl shadow-2xs overflow-hidden">
+      <div className="flex items-center justify-between px-3.5 py-2 border-b border-slate-100 bg-slate-50/60">
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Attendance History</p>
+        <p className="text-[10px] text-slate-400 font-mono">
+          {totalHours.toFixed(1)}h · {records.length} days
         </p>
       </div>
 
       {records.length === 0 ? (
-        <div className="text-center py-10 text-gray-400">
-          <i className="ri-fingerprint-line text-3xl mb-2 block text-gray-300" />
-          <p className="text-[13px] font-semibold text-gray-600">No attendance records yet</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Your check-ins for the last 30 days will appear here.</p>
+        <div className="text-center py-8 text-slate-400">
+          <i className="ri-fingerprint-line text-2xl mb-1.5 block text-slate-300" />
+          <p className="text-xs font-medium text-slate-600">No attendance records yet</p>
         </div>
       ) : (
         <>
-          {/* Mobile: stacked cards */}
-          <div className="sm:hidden max-h-[420px] overflow-y-auto p-2 space-y-2">
+          {/* Mobile: compact stacked cards */}
+          <div className="sm:hidden max-h-[380px] overflow-y-auto p-2 space-y-1.5">
             {records.map((r) => {
               const isOutside = r.notes?.toLowerCase().includes("outside work");
               return (
-                <div key={r.id} className="bg-white border border-gray-100 rounded-xl p-3.5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[13px] font-semibold text-gray-800">
+                <div key={r.id} className="bg-white border border-slate-200/70 rounded-lg p-2.5 shadow-2xs">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold text-slate-900">
                       {new Date(r.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                     </span>
-                    <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
+                    <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[9.5px] font-semibold capitalize ${
                       isOutside ? "bg-teal-50 text-teal-700 border border-teal-200" : getStatusColor(r.status)
                     }`}>
-                      {isOutside ? "Outside Working" : r.status}
+                      {isOutside ? "Outside Work" : r.status}
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-[12px]">
+                  <div className="grid grid-cols-3 gap-1.5 text-[11.5px] text-center bg-slate-50/50 rounded p-1.5 border border-slate-100">
                     <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wide">Check In</p>
-                      <p className="text-gray-700 font-medium">{r.clock_in?.slice(0, 5) || "—"}</p>
+                      <p className="text-slate-400 text-[9px] uppercase font-bold">In</p>
+                      <p className="text-slate-800 font-semibold tabular-nums mt-0.5">{r.clock_in?.slice(0, 5) || "—"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wide">Check Out</p>
-                      <p className="text-gray-700 font-medium">
+                      <p className="text-slate-400 text-[9px] uppercase font-bold">Out</p>
+                      <p className="text-slate-800 font-semibold tabular-nums mt-0.5">
                         {r.clock_out?.slice(0, 5) || "—"}
                         {r.clock_out && r.early_leave_minutes > scheduleSettings.earlyLeaveGraceMinutes && (
-                          <span className="block text-orange-500 text-[10px] font-semibold">{r.early_leave_minutes}m early</span>
+                          <span className="block text-amber-600 text-[9px] font-medium">{r.early_leave_minutes}m early</span>
                         )}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wide">Hours</p>
-                      <p className="text-gray-700 font-medium">{r.hours_worked ? `${r.hours_worked}h` : "—"}</p>
+                      <p className="text-slate-400 text-[9px] uppercase font-bold">Hours</p>
+                      <p className="text-slate-800 font-semibold tabular-nums mt-0.5">{r.hours_worked ? `${r.hours_worked}h` : "—"}</p>
                     </div>
                   </div>
                 </div>

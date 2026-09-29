@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import type { Employee } from "../types";
 
 interface Props {
   activeTab: string;
@@ -11,91 +10,123 @@ interface Props {
   activeOutsideWork: { title: string; work_checked_in_at: string } | null;
 }
 
-export function OverviewGrid({ activeTab, onTabChange, todayAttendance, pendingLeaveCount, latestPayslip, unreadCount, activeOutsideWork }: Props) {
+export function OverviewGrid({
+  activeTab,
+  onTabChange,
+  todayAttendance,
+  pendingLeaveCount,
+  latestPayslip,
+  unreadCount,
+  activeOutsideWork,
+}: Props) {
+  const isClockedIn = Boolean(activeOutsideWork || todayAttendance?.clock_in);
+  const isDayDone = Boolean(todayAttendance?.clock_in && todayAttendance?.clock_out);
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 mb-5">
+      {/* 1. Today Attendance */}
       <button
+        type="button"
         onClick={() => onTabChange("checkin")}
-        className={`text-left bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-          activeTab === "checkin" ? "border-emerald-600 ring-2 ring-emerald-600/10" : "border-gray-200/80"
+        className={`text-left bg-white border rounded-xl p-3 sm:p-3.5 transition-all cursor-pointer shadow-2xs hover:border-slate-300 relative group ${
+          activeTab === "checkin"
+            ? "border-blue-600 ring-1 ring-blue-600/20 bg-blue-50/20"
+            : "border-slate-200/80"
         }`}
       >
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Today</span>
-          <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <i className="ri-fingerprint-line text-sm" />
-          </div>
+          <span className="text-[10px] sm:text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
+            Today
+          </span>
+          <i className="ri-fingerprint-line text-slate-400 group-hover:text-slate-700 text-base transition-colors" />
         </div>
-        <p className="text-base font-black text-gray-900 mt-2 truncate">
+        <p className="text-[13px] sm:text-[14px] font-bold text-slate-900 mt-2 truncate flex items-center gap-1.5">
+          {isClockedIn && !isDayDone && (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          )}
           {activeOutsideWork
-            ? "Working Outside"
-            : todayAttendance?.clock_in && todayAttendance?.clock_out
+            ? "Field Work"
+            : isDayDone
             ? "Day Complete"
             : todayAttendance?.clock_in
-            ? `Checked In · ${todayAttendance.clock_in.slice(0, 5)}`
-            : "Not Checked In"}
+            ? `In: ${todayAttendance.clock_in.slice(0, 5)}`
+            : "Not Clocked In"}
         </p>
-        <p className="text-[11px] text-gray-400 mt-0.5">
+        <p className="text-[11px] text-slate-500 mt-0.5 truncate">
           {activeOutsideWork
             ? activeOutsideWork.title
-            : todayAttendance?.clock_in ? "Tap to view attendance" : "Tap to check in now"}
+            : todayAttendance?.clock_in
+            ? "View punch details"
+            : "Tap to record entry"}
         </p>
-        <div className={`absolute bottom-0 left-0 right-0 h-1 ${activeOutsideWork ? "bg-teal-500" : "bg-emerald-500"}`} />
       </button>
 
+      {/* 2. Leave Balance / Pending */}
       <button
+        type="button"
         onClick={() => onTabChange("leave")}
-        className={`text-left bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-          activeTab === "leave" ? "border-amber-600 ring-2 ring-amber-600/10" : "border-gray-200/80"
+        className={`text-left bg-white border rounded-xl p-3 sm:p-3.5 transition-all cursor-pointer shadow-2xs hover:border-slate-300 relative group ${
+          activeTab === "leave"
+            ? "border-blue-600 ring-1 ring-blue-600/20 bg-blue-50/20"
+            : "border-slate-200/80"
         }`}
       >
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Leave</span>
-          <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-            <i className="ri-calendar-event-line text-sm" />
-          </div>
+          <span className="text-[10px] sm:text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
+            Time Off
+          </span>
+          <i className="ri-calendar-line text-slate-400 group-hover:text-slate-700 text-base transition-colors" />
         </div>
-        <p className="text-base font-black text-gray-900 mt-2">{pendingLeaveCount}</p>
-        <p className="text-[11px] text-gray-400 mt-0.5">
-          {pendingLeaveCount > 0 ? "Pending approval" : "Request time off"}
+        <p className="text-[13px] sm:text-[14px] font-bold text-slate-900 mt-2 truncate">
+          {pendingLeaveCount > 0 ? `${pendingLeaveCount} Pending Approval` : "Available"}
         </p>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-amber-500" />
+        <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+          {pendingLeaveCount > 0 ? "Under review" : "Request leave balance"}
+        </p>
       </button>
 
+      {/* 3. Latest Payslip */}
       <button
+        type="button"
         onClick={() => onTabChange("payslips")}
-        className={`text-left bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group ${
-          activeTab === "payslips" ? "border-[#253C7D] ring-2 ring-[#253C7D]/10" : "border-gray-200/80"
+        className={`text-left bg-white border rounded-xl p-3 sm:p-3.5 transition-all cursor-pointer shadow-2xs hover:border-slate-300 relative group ${
+          activeTab === "payslips"
+            ? "border-blue-600 ring-1 ring-blue-600/20 bg-blue-50/20"
+            : "border-slate-200/80"
         }`}
       >
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-[#253C7D] uppercase tracking-wider">Payslip</span>
-          <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center">
-            <i className="ri-money-dollar-circle-line text-sm" />
-          </div>
+          <span className="text-[10px] sm:text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
+            Payslip
+          </span>
+          <i className="ri-file-list-3-line text-slate-400 group-hover:text-slate-700 text-base transition-colors" />
         </div>
-        <p className="text-base font-black text-gray-900 mt-2 truncate">
+        <p className="text-[13px] sm:text-[14px] font-bold text-slate-900 mt-2 truncate">
           {latestPayslip ? `$${Number(latestPayslip.net_pay).toLocaleString()}` : "—"}
         </p>
-        <p className="text-[11px] text-gray-400 mt-0.5">
-          {latestPayslip ? `For ${latestPayslip.month}` : "No payslip yet"}
+        <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+          {latestPayslip ? `Issued for ${latestPayslip.month}` : "View pay records"}
         </p>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#253C7D]" />
       </button>
 
+      {/* 4. Notifications / Alerts */}
       <Link
         to="/notifications"
-        className="text-left bg-white border border-gray-200/80 rounded-2xl p-4 transition-all cursor-pointer shadow-2xs hover:shadow-xs relative overflow-hidden group block"
+        className="text-left bg-white border border-slate-200/80 rounded-xl p-3 sm:p-3.5 transition-all cursor-pointer shadow-2xs hover:border-slate-300 relative group block"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Alerts</span>
-          <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-            <i className="ri-notification-3-line text-sm" />
-          </div>
+          <span className="text-[10px] sm:text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
+            Alerts
+          </span>
+          <i className="ri-notification-3-line text-slate-400 group-hover:text-slate-700 text-base transition-colors" />
         </div>
-        <p className="text-base font-black text-gray-900 mt-2">{unreadCount}</p>
-        <p className="text-[11px] text-gray-400 mt-0.5">Unread notifications</p>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-rose-500" />
+        <p className="text-[13px] sm:text-[14px] font-bold text-slate-900 mt-2 truncate flex items-center gap-1.5">
+          {unreadCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />}
+          {unreadCount > 0 ? `${unreadCount} Unread Updates` : "Up to Date"}
+        </p>
+        <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+          {unreadCount > 0 ? "Review notices" : "No pending notices"}
+        </p>
       </Link>
     </div>
   );

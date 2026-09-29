@@ -1,4 +1,4 @@
-﻿import { memo, useState } from "react";
+import { memo, useState } from "react";
 import type { DateRange } from "../types";
 
 function todayStr() {
@@ -47,11 +47,11 @@ export const DashboardDateRangePicker = memo(function DashboardDateRangePicker({
   };
 
   return (
-    <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xs p-3.5 sm:p-4 mb-5 flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1.5 mr-1">
-          <i className="ri-calendar-line text-[#253C7D] text-sm" />
-          <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">Analyse Period</span>
+    <div className="bg-white border border-slate-200/80 rounded-xl shadow-2xs p-3 sm:p-3.5 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-1.5 mr-1.5 shrink-0 text-slate-500">
+          <i className="ri-calendar-line text-sm" />
+          <span className="text-[10.5px] font-bold uppercase tracking-wider">Period</span>
         </div>
 
         {PRESETS.map((preset) => {
@@ -59,11 +59,12 @@ export const DashboardDateRangePicker = memo(function DashboardDateRangePicker({
           return (
             <button
               key={preset.label}
+              type="button"
               onClick={() => handlePreset(preset)}
-              className={`text-[11px] font-bold px-3 py-1 rounded-full border transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                 active
-                  ? "bg-[#253C7D] border-[#253C7D] text-white shadow-sm"
-                  : "bg-gray-50 border-gray-200 text-gray-600 hover:border-[#253C7D]/50 hover:text-[#253C7D]"
+                  ? "bg-slate-900 text-white shadow-2xs"
+                  : "bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
               }`}
             >
               {preset.label}
@@ -72,60 +73,43 @@ export const DashboardDateRangePicker = memo(function DashboardDateRangePicker({
         })}
 
         <button
-          onClick={() => setShowCustom(true)}
-          className={`text-[11px] font-bold px-3 py-1 rounded-full border transition-all cursor-pointer ${
-            dateRange.label === "Custom"
-              ? "bg-[#253C7D] border-[#253C7D] text-white shadow-sm"
-              : "bg-gray-50 border-gray-200 text-gray-600 hover:border-[#253C7D]/50 hover:text-[#253C7D]"
+          type="button"
+          onClick={() => setShowCustom((v) => !v)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+            dateRange.label === "Custom" || showCustom
+              ? "bg-slate-900 text-white shadow-2xs"
+              : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/60"
           }`}
         >
-          <i className="ri-calendar-2-line mr-1" />
-          Custom
+          <i className="ri-calendar-2-line text-xs" />
+          <span>Custom</span>
         </button>
-
-        <div className="ml-auto flex items-center gap-1.5 text-[11px] text-gray-400 font-semibold">
-          <i className="ri-bar-chart-line text-[#253C7D]" />
-          <span className="text-[#253C7D] font-bold">{dateRange.from}</span>
-          <span>to</span>
-          <span className="text-[#253C7D] font-bold">{dateRange.to}</span>
-        </div>
       </div>
 
       {showCustom && (
-        <div className="flex flex-wrap items-end gap-3 pt-2 border-t border-gray-100">
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">From</label>
-            <input
-              type="date"
-              value={customFrom}
-              max={todayStr()}
-              onChange={(e) => setCustomFrom(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-gray-800 outline-none focus:border-[#253C7D] cursor-pointer"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">To</label>
-            <input
-              type="date"
-              value={customTo}
-              max={todayStr()}
-              onChange={(e) => setCustomTo(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-gray-800 outline-none focus:border-[#253C7D] cursor-pointer"
-            />
-          </div>
+        <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-wrap">
+          <input
+            type="date"
+            value={customFrom}
+            max={todayStr()}
+            onChange={(e) => setCustomFrom(e.target.value)}
+            className="px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+          />
+          <span className="text-slate-400 text-xs">to</span>
+          <input
+            type="date"
+            value={customTo}
+            max={todayStr()}
+            onChange={(e) => setCustomTo(e.target.value)}
+            className="px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+          />
           <button
+            type="button"
             onClick={handleCustomApply}
             disabled={!customFrom || !customTo}
-            className="px-4 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white text-[11px] font-extrabold rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-3 py-1 text-xs bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
           >
-            <i className="ri-search-line" />
             Apply
-          </button>
-          <button
-            onClick={() => setShowCustom(false)}
-            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[11px] font-bold rounded-xl transition-all cursor-pointer"
-          >
-            Cancel
           </button>
         </div>
       )}

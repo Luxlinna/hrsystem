@@ -24,17 +24,21 @@ function ProfileRow({
   href?: string;
 }) {
   return (
-    <div className="flex items-baseline py-1.5 text-[13.5px] leading-relaxed">
-      <div className="w-52 sm:w-60 shrink-0 text-slate-500 font-normal">
+    <div className="flex flex-col sm:flex-row sm:items-baseline py-1.5 text-[13.5px] leading-relaxed gap-0.5 sm:gap-2">
+      <div className="w-full sm:w-56 lg:w-60 shrink-0 text-slate-500 font-normal text-[13px] sm:text-[13.5px]">
         {label}
       </div>
-      <div className={`flex-1 min-h-[1.4rem] text-slate-800 ${isBold ? "font-semibold text-slate-900 text-[14px]" : ""}`}>
+      <div
+        className={`flex-1 min-h-[1.25rem] text-slate-800 break-words ${
+          isBold ? "font-semibold text-slate-900 text-[14px]" : ""
+        }`}
+      >
         {isLink && href && value ? (
           <a
             href={href.startsWith("http") ? href : `https://${href}`}
             target="_blank"
             rel="noreferrer"
-            className="text-[#0088cc] hover:underline"
+            className="text-[#0088cc] hover:underline break-all"
           >
             {value}
           </a>
@@ -69,11 +73,11 @@ export const BranchCompanyProfileSection = memo(function BranchCompanyProfileSec
 
   return (
     <div className="bg-white">
-      {/* Top Header matching reference screenshot */}
+      {/* Top Header */}
       {!hideHeader && (
-        <div className="flex items-center justify-between px-6 sm:px-8 py-3.5 border-b border-slate-200 bg-white">
-          <div className="flex items-center gap-3">
-            <h2 className="text-[16px] font-normal text-slate-800 tracking-tight">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-8 py-3.5 border-b border-slate-200 bg-white gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-[15px] sm:text-[16px] font-normal text-slate-800 tracking-tight">
               Company Profile
             </h2>
 
@@ -82,7 +86,7 @@ export const BranchCompanyProfileSection = memo(function BranchCompanyProfileSec
               <select
                 value={branch.id}
                 onChange={(e) => onSelectBranchId(e.target.value)}
-                className="text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-700 cursor-pointer focus:outline-none focus:border-[#0088cc]"
+                className="text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-700 cursor-pointer focus:outline-none focus:border-[#0088cc] max-w-[180px] truncate"
               >
                 {allowedBranches.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -97,7 +101,7 @@ export const BranchCompanyProfileSection = memo(function BranchCompanyProfileSec
             <button
               type="button"
               onClick={() => onOpenEditModal(branch)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#0088cc] hover:bg-[#0077b3] text-white text-[12.5px] font-medium rounded shadow-2xs transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-[#0088cc] hover:bg-[#0077b3] text-white text-[12.5px] font-medium rounded shadow-2xs transition-colors cursor-pointer w-full sm:w-auto"
             >
               <i className="ri-edit-box-line text-sm" />
               Edit Company Profile
@@ -106,25 +110,25 @@ export const BranchCompanyProfileSection = memo(function BranchCompanyProfileSec
         </div>
       )}
 
-      <div className="p-6 sm:p-8 space-y-7">
+      <div className="p-4 sm:p-8 space-y-6 sm:space-y-7">
         {/* 1. COMPANY INFO */}
         <div>
           <h3 className="text-[11.5px] font-bold text-[#0088cc] uppercase tracking-wider mb-2.5">
             Company Info
           </h3>
 
-          <div className="space-y-0.5">
+          <div className="space-y-1 sm:space-y-0.5">
             {/* Logo */}
-            <div className="flex items-center py-2 text-[13.5px]">
-              <div className="w-52 sm:w-60 shrink-0 text-slate-500 font-normal">
+            <div className="flex flex-col sm:flex-row sm:items-center py-2 text-[13.5px] gap-1 sm:gap-2">
+              <div className="w-full sm:w-56 lg:w-60 shrink-0 text-slate-500 font-normal text-[13px] sm:text-[13.5px]">
                 Logo
               </div>
-              <div className="flex-1 min-h-[3rem] flex items-center">
+              <div className="flex-1 min-h-[2.5rem] sm:min-h-[3rem] flex items-center">
                 {branch.logo_url ? (
                   <img
                     src={branch.logo_url}
                     alt={companyName || "Logo"}
-                    className="max-h-20 max-w-[260px] object-contain"
+                    className="max-h-16 sm:max-h-20 max-w-full sm:max-w-[260px] object-contain"
                   />
                 ) : canManage ? (
                   <button
@@ -157,7 +161,7 @@ export const BranchCompanyProfileSection = memo(function BranchCompanyProfileSec
             Physical Address Info
           </h3>
 
-          <div className="space-y-0.5">
+          <div className="space-y-1 sm:space-y-0.5">
             <ProfileRow label="Address" value={physicalAddr} />
             <ProfileRow label="City" value={physicalCity} />
             <ProfileRow label="Province" value={physicalProvince} />
@@ -172,7 +176,7 @@ export const BranchCompanyProfileSection = memo(function BranchCompanyProfileSec
             Mailing Address Info
           </h3>
 
-          <div className="space-y-0.5">
+          <div className="space-y-1 sm:space-y-0.5">
             <ProfileRow label="Address" value={mailingAddr} />
             <ProfileRow label="City" value={mailingCity} />
             <ProfileRow label="Province" value={mailingProvince} />
@@ -187,7 +191,7 @@ export const BranchCompanyProfileSection = memo(function BranchCompanyProfileSec
             Contact Info
           </h3>
 
-          <div className="space-y-0.5">
+          <div className="space-y-1 sm:space-y-0.5">
             <ProfileRow label="Phone Number" value={branch.phone_number} />
             <ProfileRow label="Email" value={branch.email} />
             <ProfileRow
@@ -205,7 +209,7 @@ export const BranchCompanyProfileSection = memo(function BranchCompanyProfileSec
             Timezone Info
           </h3>
 
-          <div className="space-y-0.5">
+          <div className="space-y-1 sm:space-y-0.5">
             <ProfileRow label="Time Zone" value={branch.time_zone || "SE Asia Standard Time"} />
           </div>
         </div>
@@ -216,7 +220,7 @@ export const BranchCompanyProfileSection = memo(function BranchCompanyProfileSec
             Legal Info
           </h3>
 
-          <div className="space-y-0.5">
+          <div className="space-y-1 sm:space-y-0.5">
             <ProfileRow label="Tax Number" value={branch.legal_tax_number} />
             <ProfileRow label="Legal Name" value={branch.legal_name} />
             <ProfileRow label="Business Activity" value={branch.legal_business_activity} />

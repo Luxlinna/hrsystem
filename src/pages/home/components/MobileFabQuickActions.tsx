@@ -20,30 +20,38 @@ export const MobileFabQuickActions = memo(function MobileFabQuickActions({
 
   return (
     <div
-      className="lg:hidden fixed bottom-20 right-4 z-50 flex flex-col items-end gap-2"
+      className="lg:hidden fixed bottom-20 right-4 z-40 flex flex-col items-end gap-2"
       ref={fabRef as React.RefObject<HTMLDivElement>}
     >
+      {/* Backdrop overlay when open */}
+      {fabOpen && (
+        <div
+          onClick={() => setFabOpen(false)}
+          className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-30"
+        />
+      )}
+
       {/* Action list */}
       {fabOpen && (
-        <div className="flex flex-col items-end gap-2 mb-1">
+        <div className="flex flex-col items-end gap-2 mb-1 z-40 animate-in fade-in slide-in-from-bottom-2 duration-150">
           {allowedActions.map((action) => (
             <button
               key={action.label}
+              type="button"
               onClick={() => {
                 setFabOpen(false);
                 navigate(action.path);
               }}
-              className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 cursor-pointer"
-              style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}
+              className="flex items-center gap-3 bg-white border border-slate-200/90 rounded-xl px-3.5 py-2.5 shadow-lg active:scale-98 transition-all cursor-pointer group"
             >
-              <div className="flex flex-col items-start">
-                <span className="text-[13px] font-semibold text-gray-900 whitespace-nowrap">
+              <div className="flex flex-col items-start text-left">
+                <span className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors whitespace-nowrap">
                   {action.label}
                 </span>
-                <span className="text-[11px] text-gray-400">{action.note}</span>
+                <span className="text-[10px] text-slate-400">{action.note}</span>
               </div>
-              <div className={`w-9 h-9 rounded-xl ${action.color} flex items-center justify-center shrink-0`}>
-                <i className={`${action.icon} text-white text-base w-5 h-5 flex items-center justify-center`} />
+              <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                <i className={`${action.icon} text-sm`} />
               </div>
             </button>
           ))}
@@ -52,14 +60,14 @@ export const MobileFabQuickActions = memo(function MobileFabQuickActions({
 
       {/* FAB trigger button */}
       <button
+        type="button"
         onClick={() => setFabOpen((v) => !v)}
-        className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all duration-200 active:scale-95 cursor-pointer ${
-          fabOpen ? "bg-gray-800 rotate-45" : "bg-[#253C7D]"
+        className={`w-11 h-11 rounded-xl flex items-center justify-center text-white transition-all duration-200 active:scale-95 cursor-pointer shadow-md z-40 ${
+          fabOpen ? "bg-slate-900 rotate-45" : "bg-slate-900 hover:bg-slate-800"
         }`}
-        style={{ boxShadow: "0 6px 24px rgba(13,115,119,0.4)" }}
         aria-label="Quick actions"
       >
-        <i className={`${fabOpen ? "ri-close-line" : "ri-add-line"} text-2xl w-6 h-6 flex items-center justify-center`} />
+        <i className={`${fabOpen ? "ri-close-line" : "ri-add-line"} text-xl`} />
       </button>
     </div>
   );
