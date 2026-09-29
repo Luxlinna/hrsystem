@@ -1,48 +1,39 @@
 import { memo } from "react";
 import type { AttendanceRecord } from "../types";
-import { initials } from "../constants";
+import { formatDMY } from "../exports";
 import type { Holiday } from "@/services/holidays/holidaysService";
 import type { ManagedShift } from "./shifts-manager/types";
+import { resolveRecordSchedule } from "../utils/scheduleDisplayUtils";
 import { AttendanceRowPunchCell } from "./AttendanceRowPunchCell";
 import { AttendanceRowActions } from "./AttendanceRowActions";
-import { resolveRecordSchedule } from "../utils/scheduleDisplayUtils";
-import { formatBiometricId } from "@/lib/biometricUtils";
+import { AttendanceRowEmployeeCell } from "./AttendanceRowEmployeeCell";
 
 interface AttendanceTableRowProps {
   record: AttendanceRecord;
   index: number;
   isSelected?: boolean;
   onToggleSelect?: (id: number) => void;
-  todayYMD: string;
   canManage: boolean;
-  isFourPunchMode?: boolean;
+  isFourPunchMode: boolean;
   holidayMap?: Map<string, Holiday>;
   shifts?: ManagedShift[];
+  todayYMD: string;
   onSelectRecord: (record: AttendanceRecord) => void;
   onEditRecord: (record: AttendanceRecord) => void;
   onDeleteRecord: (id: number) => void;
   onLogTimeForEmployee?: (employeeId: string) => void;
 }
 
-function formatDMY(dateStr: string): { dmy: string; day: string } {
-  const d = new Date(dateStr + "T00:00:00");
-  if (isNaN(d.getTime())) return { dmy: dateStr, day: "" };
-  return {
-    dmy: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`,
-    day: d.toLocaleDateString("en-US", { weekday: "short" }),
-  };
-}
-
 export const AttendanceTableRow = memo(function AttendanceTableRow({
   record: r,
   index,
-  isSelected = false,
+  isSelected,
   onToggleSelect,
-  todayYMD,
   canManage,
-  isFourPunchMode = false,
+  isFourPunchMode,
   holidayMap,
   shifts = [],
+  todayYMD,
   onSelectRecord,
   onEditRecord,
   onDeleteRecord,
@@ -50,24 +41,19 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
 }: AttendanceTableRowProps) {
   const emp = r.employees;
   const { dmy, day } = formatDMY(r.date);
-
   const { shiftTitle, windows, totalShiftHours } = resolveRecordSchedule(r, emp, shifts);
   const hasClockIn = Boolean(r.clock_in);
   const hasClockOut = Boolean(r.clock_out);
-
-  // 4-punch is strictly reserved for BUs / sites with connected biometric machines
   const isRowFourPunch = Boolean(isFourPunchMode && (r.work_location?.is_four_punch_enabled ?? true));
   const isHoliday = holidayMap?.has(r.date);
 
   let statusBadge: { label: string; bg: string; text: string } | null = null;
   if (isHoliday) statusBadge = { label: "Holiday", bg: "bg-blue-600", text: "text-white" };
-  else if (!hasClockIn && !hasClockOut) statusBadge = { label: "Error : No clock in", bg: "bg-rose-500", text: "text-white" };
   else if (!hasClockIn) statusBadge = { label: "Error : No clock in", bg: "bg-rose-500", text: "text-white" };
   else if (!hasClockOut && r.date < todayYMD) statusBadge = { label: "Error : No clock out", bg: "bg-rose-500", text: "text-white" };
   else if (!hasClockOut && r.date === todayYMD) statusBadge = { label: "Working Now", bg: "bg-emerald-600", text: "text-white" };
   else if (r.status === "late" || (r.late_minutes && r.late_minutes > 0)) statusBadge = { label: `Late ${r.late_minutes}m`, bg: "bg-amber-500", text: "text-white" };
   else if (r.early_leave_minutes && r.early_leave_minutes > 0) statusBadge = { label: `Early ${r.early_leave_minutes}m`, bg: "bg-orange-500", text: "text-white" };
-  else statusBadge = null;
 
   const locationName = r.work_location?.name || emp?.branches?.name || "Main Office";
 
@@ -93,44 +79,11 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
         </span>
       </td>
 
-      <td className="py-3 px-4 whitespace-nowrap">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
-            {emp?.avatar_url ? (
-              <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span>{initials(emp?.first_name, emp?.last_name)}</span>
-            )}
-          </div>
-          <div className="min-w-0 flex flex-col justify-center">
-            <button
-              type="button"
-              onClick={() => onSelectRecord(r)}
-              className="font-bold text-gray-900 dark:text-slate-100 hover:text-[#253C7D] dark:hover:text-sky-400 text-left text-xs leading-snug cursor-pointer truncate max-w-[200px] block hover:underline"
-            >
-              {emp ? `${emp.first_name} ${emp.last_name}` : "—"}
-            </button>
-            {(() => {
-              const rawBio = emp?.biometric_user_id || emp?.employee_code;
-              const bName = Array.isArray(emp?.branches) ? emp.branches[0]?.name : (emp?.branches?.name || r.work_location?.name || "");
-              const bioId = formatBiometricId(rawBio, bName);
-              return bioId ? (
-                <div className="mt-0.5">
-                  <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80 shrink-0"
-                    title={`Biometric ID: ${bioId}`}
-                  >
-                    <i className="ri-fingerprint-line text-[10.5px] text-[#253C7D] dark:text-sky-400" />
-                    <span>{bioId}</span>
-                  </span>
-                </div>
-              ) : (
-                <p className="text-[10px] font-mono text-gray-400 dark:text-slate-500 mt-0.5">—</p>
-              );
-            })()}
-          </div>
-        </div>
-      </td>
+      <AttendanceRowEmployeeCell
+        record={r}
+        employee={emp}
+        onSelectRecord={onSelectRecord}
+      />
 
       <td className="py-3 px-4 whitespace-nowrap">
         <span className="text-gray-700 dark:text-slate-300 font-medium">

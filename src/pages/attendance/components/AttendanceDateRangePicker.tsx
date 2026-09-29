@@ -1,5 +1,11 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { DatePreset } from "../types";
+import {
+  computeDateRangeBounds,
+  formatYMDToDMY,
+  shiftDateBounds,
+} from "../hooks/attendanceDateRangeUtils";
+import { AttendanceDateRangeModal } from "./AttendanceDateRangeModal";
 
 interface AttendanceDateRangePickerProps {
   filterDatePreset: DatePreset;
@@ -10,6 +16,7 @@ interface AttendanceDateRangePickerProps {
   setFromDate: (date: string) => void;
   toDate: string;
   setToDate: (date: string) => void;
+  todayYMD?: string;
 }
 
 export const AttendanceDateRangePicker = memo(function AttendanceDateRangePicker({
@@ -21,55 +28,91 @@ export const AttendanceDateRangePicker = memo(function AttendanceDateRangePicker
   setFromDate,
   toDate,
   setToDate,
+  todayYMD = new Date().toISOString().split("T")[0],
 }: AttendanceDateRangePickerProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Compute active bounds for display and shifting
+  const currentBounds = computeDateRangeBounds(
+    filterDatePreset,
+    todayYMD,
+    singleDate,
+    fromDate,
+    toDate
+  );
+
+  const displayDateStr = `${formatYMDToDMY(currentBounds.start)} - ${formatYMDToDMY(
+    currentBounds.end
+  )}`;
+
+  const handleShift = (direction: "prev" | "next") => {
+    const nextBounds = shiftDateBounds(currentBounds, direction);
+    setFilterDatePreset("custom_range");
+    setFromDate(nextBounds.start);
+    setToDate(nextBounds.end);
+    setSingleDate(nextBounds.start);
+  };
+
+  const handleApply = (preset: DatePreset, from: string, to: string) => {
+    setFilterDatePreset(preset);
+    if (preset === "custom_range") {
+      setFromDate(from);
+      setToDate(to);
+      setSingleDate(from);
+    } else if (preset === "today") {
+      setSingleDate(todayYMD);
+      setFromDate(todayYMD);
+      setToDate(todayYMD);
+    }
+  };
+
   return (
-    <>
-      <select
-        value={filterDatePreset}
-        onChange={(e) => setFilterDatePreset(e.target.value as DatePreset)}
-        className="px-2.5 py-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-700 dark:text-slate-200 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-500 cursor-pointer font-bold"
-      >
-        <option value="all">📅 All Historical Dates</option>
-        <option value="today">Today</option>
-        <option value="yesterday">Yesterday</option>
-        <option value="this_week">This Week</option>
-        <option value="last_week">Last Week</option>
-        <option value="this_month">This Month</option>
-        <option value="last_month">Last Month</option>
-        <option value="this_year">This Year</option>
-        <option value="last_year">Last Year</option>
-        <option value="single_date">Specific Date...</option>
-        <option value="custom_range">Custom Date Range...</option>
-      </select>
+    <div className="relative inline-flex items-center">
+      {/* Segmented Pill Navigator */}
+      <div className="flex items-center h-8 bg-white dark:bg-slate-900 border border-sky-400 dark:border-sky-500 rounded-full shadow-2xs overflow-hidden">
+        {/* Left Arrow: Previous */}
+        <button
+          type="button"
+          onClick={() => handleShift("prev")}
+          title="Previous period"
+          className="h-full px-2.5 flex items-center justify-center text-sky-500 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/50 border-r border-sky-400 dark:border-sky-500 transition-colors cursor-pointer"
+        >
+          <i className="ri-arrow-left-s-line text-sm" />
+        </button>
 
-      {filterDatePreset === "single_date" && (
-        <input
-          type="date"
-          value={singleDate}
-          onChange={(e) => setSingleDate(e.target.value)}
-          className="px-2.5 py-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-700 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-500 cursor-pointer font-medium"
-        />
-      )}
+        {/* Center: Calendar + Date Range Display (Opens Modal) */}
+        <button
+          type="button"
+          onClick={() => setIsModalOpen((prev) => !prev)}
+          className="h-full px-3.5 flex items-center gap-2 text-sky-500 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/50 transition-colors cursor-pointer text-xs font-semibold select-none"
+        >
+          <i className="ri-calendar-line text-sm text-sky-500 dark:text-sky-400" />
+          <span className="tabular-nums tracking-tight font-medium text-sky-600 dark:text-sky-300">
+            {displayDateStr}
+          </span>
+        </button>
 
-      {filterDatePreset === "custom_range" && (
-        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-slate-800 p-1 rounded-xl border border-gray-200 dark:border-slate-700">
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            placeholder="From"
-            className="px-2 py-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-xs text-gray-700 dark:text-slate-200 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-500"
-          />
-          <span className="text-[10px] text-gray-400 dark:text-slate-400 font-bold">to</span>
-          <input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            placeholder="To"
-            className="px-2 py-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-xs text-gray-700 dark:text-slate-200 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-500"
-          />
-        </div>
-      )}
-    </>
+        {/* Right Arrow: Next */}
+        <button
+          type="button"
+          onClick={() => handleShift("next")}
+          title="Next period"
+          className="h-full px-2.5 flex items-center justify-center text-sky-500 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/50 border-l border-sky-400 dark:border-sky-500 transition-colors cursor-pointer"
+        >
+          <i className="ri-arrow-right-s-line text-sm" />
+        </button>
+      </div>
+
+      {/* Popover Date Range Modal */}
+      <AttendanceDateRangeModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        preset={filterDatePreset}
+        fromDate={fromDate || currentBounds.start}
+        toDate={toDate || currentBounds.end}
+        todayYMD={todayYMD}
+        onApply={handleApply}
+      />
+    </div>
   );
 });

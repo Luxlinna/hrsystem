@@ -33,7 +33,7 @@ export function AttendanceTableHeader({
         </th>
         <th className="py-3 px-4 text-left font-bold text-gray-700 dark:text-slate-200 whitespace-nowrap">
           <span className="inline-flex items-center gap-1">
-            Designation
+            Position
             <i className="ri-arrow-up-down-line text-[10px] text-gray-400" />
           </span>
         </th>

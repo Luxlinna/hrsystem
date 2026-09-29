@@ -1,9 +1,9 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { toYMD } from "@/lib/date";
-import { toast } from "@/components/Toast";
 import type { AttendanceRecord, AttendanceTabKey, DatePreset, Employee, ViewMode } from "../types";
-import { calcHours } from "../constants";
-import { formatBiometricId } from "@/lib/biometricUtils";
+import { computeDateRangeBounds } from "./attendanceDateRangeUtils";
+import { matchAttendanceRecord } from "./attendanceFilterMatcher";
+import { exportAttendanceToCSV } from "./attendanceExportCSV";
 
 export function useAttendanceFilters(records: AttendanceRecord[], employees: Employee[], todayYMD: string) {
   const [activeTab, setActiveTab] = useState<AttendanceTabKey>("records");
@@ -12,7 +12,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
       const saved = localStorage.getItem("hrm_attendance_view_mode");
       if (saved === "table" || saved === "cards") return saved;
     }
-    return "cards"; // Default to Block / Cards grid UI
+    return "cards";
   });
 
   const setViewMode = useCallback((mode: ViewMode) => {
@@ -22,10 +22,11 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
     }
   }, []);
 
-  const viewMode = viewModeState;
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterEmployeeId, setFilterEmployeeId] = useState("all");
+  const [filterRole, setFilterRole] = useState("all");
+  const [filterEmploymentType, setFilterEmploymentType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterWorkLocation, setFilterWorkLocation] = useState("all");
   const [pageSize, setPageSize] = useState(10);
@@ -39,51 +40,14 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   const now = new Date();
   const [matrixMonth, setMatrixMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
 
-  const departments = useMemo(() => {
-    const set = new Set<string>();
-    employees.forEach((e) => { if (e.department) set.add(e.department); });
-    return Array.from(set).sort();
-  }, [employees]);
+  const departments = useMemo(() => Array.from(new Set(employees.map((e) => e.department).filter(Boolean))).sort(), [employees]);
+  const roles = useMemo(() => Array.from(new Set(employees.map((e) => e.role).filter(Boolean))).sort(), [employees]);
+  const employmentTypes = useMemo(() => Array.from(new Set(employees.map((e) => e.employment_type || e.contract_type).filter(Boolean) as string[])).sort(), [employees]);
 
-  const dateRangeBounds = useMemo(() => {
-    const cur = new Date();
-    if (filterDatePreset === "today") return { start: todayYMD, end: todayYMD };
-    if (filterDatePreset === "yesterday") {
-      const y = new Date(); y.setDate(y.getDate() - 1);
-      const yStr = toYMD(y);
-      return { start: yStr, end: yStr };
-    }
-    if (filterDatePreset === "this_week") {
-      const start = new Date(cur); start.setDate(cur.getDate() - cur.getDay());
-      return { start: toYMD(start), end: todayYMD };
-    }
-    if (filterDatePreset === "last_week") {
-      const start = new Date(cur); start.setDate(cur.getDate() - cur.getDay() - 7);
-      const end = new Date(start); end.setDate(start.getDate() + 6);
-      return { start: toYMD(start), end: toYMD(end) };
-    }
-    if (filterDatePreset === "this_month") {
-      const start = new Date(cur.getFullYear(), cur.getMonth(), 1);
-      return { start: toYMD(start), end: todayYMD };
-    }
-    if (filterDatePreset === "last_month") {
-      const start = new Date(cur.getFullYear(), cur.getMonth() - 1, 1);
-      const end = new Date(cur.getFullYear(), cur.getMonth(), 0);
-      return { start: toYMD(start), end: toYMD(end) };
-    }
-    if (filterDatePreset === "this_year") {
-      const start = new Date(cur.getFullYear(), 0, 1);
-      return { start: toYMD(start), end: todayYMD };
-    }
-    if (filterDatePreset === "last_year") {
-      const start = new Date(cur.getFullYear() - 1, 0, 1);
-      const end = new Date(cur.getFullYear() - 1, 11, 31);
-      return { start: toYMD(start), end: toYMD(end) };
-    }
-    if (filterDatePreset === "single_date" && singleDate) return { start: singleDate, end: singleDate };
-    if (filterDatePreset === "custom_range") return { start: fromDate || "1970-01-01", end: toDate || "2099-12-31" };
-    return null;
-  }, [filterDatePreset, singleDate, fromDate, toDate, todayYMD]);
+  const dateRangeBounds = useMemo(
+    () => computeDateRangeBounds(filterDatePreset, todayYMD, singleDate, fromDate, toDate),
+    [filterDatePreset, singleDate, fromDate, toDate, todayYMD]
+  );
 
   const activeScopeRecords = useMemo(() => {
     if (dateRangeBounds) {
@@ -93,48 +57,19 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   }, [records, dateRangeBounds]);
 
   const filteredRecords = useMemo(() => {
-    return records.filter((r) => {
-      if (filterStatus !== "all" && r.status !== filterStatus) return false;
-      if (filterDepartment !== "all" && r.employees?.department !== filterDepartment) return false;
-      if (filterEmployeeId !== "all" && r.employee_id !== filterEmployeeId) return false;
-      if (filterWorkLocation !== "all") {
-        if (filterWorkLocation === "main") {
-          if (r.work_location_id && r.work_location_id !== "main" && !(r.work_location as any)?.is_default) return false;
-        } else {
-          if (r.work_location_id !== filterWorkLocation) return false;
-        }
-      }
-      if (dateRangeBounds && (r.date < dateRangeBounds.start || r.date > dateRangeBounds.end)) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const emp = r.employees;
-        const empName = `${emp?.first_name || ""} ${emp?.last_name || ""}`.toLowerCase();
-        const empRole = (emp?.role || "").toLowerCase();
-        const dept = (emp?.department || "").toLowerCase();
-        const notes = (r.notes || "").toLowerCase();
-        const dateStr = r.date.toLowerCase();
-        const site = (r.work_location?.name || "").toLowerCase();
-        const bioId = (emp?.biometric_user_id || "").toLowerCase();
-        const fullBuId = formatBiometricId(emp?.biometric_user_id, emp?.branches?.name).toLowerCase();
-        const code = (emp?.employee_code || "").toLowerCase();
-
-        if (
-          !empName.includes(q) &&
-          !empRole.includes(q) &&
-          !dept.includes(q) &&
-          !notes.includes(q) &&
-          !dateStr.includes(q) &&
-          !site.includes(q) &&
-          !bioId.includes(q) &&
-          !fullBuId.includes(q) &&
-          !code.includes(q)
-        ) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [records, filterStatus, filterDepartment, filterEmployeeId, filterWorkLocation, dateRangeBounds, searchQuery]);
+    return records.filter((r) =>
+      matchAttendanceRecord(r, {
+        filterStatus,
+        filterDepartment,
+        filterRole,
+        filterEmploymentType,
+        filterEmployeeId,
+        filterWorkLocation,
+        dateBounds: dateRangeBounds,
+        searchQuery,
+      })
+    );
+  }, [records, filterStatus, filterDepartment, filterRole, filterEmploymentType, filterEmployeeId, filterWorkLocation, dateRangeBounds, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -145,7 +80,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, filterDepartment, filterEmployeeId, filterStatus, filterWorkLocation, filterDatePreset, fromDate, toDate, singleDate, pageSize]);
+  }, [searchQuery, filterDepartment, filterRole, filterEmploymentType, filterEmployeeId, filterStatus, filterWorkLocation, filterDatePreset, fromDate, toDate, singleDate, pageSize]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -158,42 +93,19 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   }, [rosterDate]);
 
   const handleExportCSV = useCallback(() => {
-    if (filteredRecords.length === 0) {
-      toast("Export", "No records to export with current filters", "warning");
-      return;
-    }
-    const headers = ["Employee", "Department", "Role", "Work Site", "Date", "Check In", "Check Out", "Hours", "Status", "Late (Min)", "Notes"];
-    const rows = filteredRecords.map((r) => [
-      `"${r.employees ? `${r.employees.first_name} ${r.employees.last_name}` : "Unknown"}"`,
-      `"${r.employees?.department || ""}"`,
-      `"${r.employees?.role || ""}"`,
-      `"${r.work_location?.name || ""}"`,
-      r.date,
-      r.clock_in || "",
-      r.clock_out || "",
-      calcHours(r.clock_in, r.clock_out),
-      r.status,
-      r.late_minutes || 0,
-      `"${(r.notes || "").replace(/"/g, '""')}"`,
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const link = document.createElement("a");
-    link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", `attendance_export_${dateRangeBounds?.start || "all"}_to_${dateRangeBounds?.end || "all"}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast("Export Complete", `Exported ${filteredRecords.length} records to CSV`, "success");
+    exportAttendanceToCSV(filteredRecords, dateRangeBounds);
   }, [filteredRecords, dateRangeBounds]);
 
   const isFiltered = Boolean(
-    searchQuery || filterDepartment !== "all" || filterEmployeeId !== "all" ||
-    filterStatus !== "all" || filterWorkLocation !== "all" || filterDatePreset !== "all"
+    searchQuery || filterDepartment !== "all" || filterRole !== "all" || filterEmploymentType !== "all" ||
+    filterEmployeeId !== "all" || filterStatus !== "all" || filterWorkLocation !== "all" || filterDatePreset !== "all"
   );
 
   const handleResetFilters = useCallback(() => {
     setSearchQuery("");
     setFilterDepartment("all");
+    setFilterRole("all");
+    setFilterEmploymentType("all");
     setFilterEmployeeId("all");
     setFilterStatus("all");
     setFilterWorkLocation("all");
@@ -204,8 +116,10 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   }, [todayYMD]);
 
   return {
-    activeTab, setActiveTab, viewMode, setViewMode, searchQuery, setSearchQuery,
-    filterDepartment, setFilterDepartment, filterEmployeeId, setFilterEmployeeId,
+    activeTab, setActiveTab, viewMode: viewModeState, setViewMode, searchQuery, setSearchQuery,
+    filterDepartment, setFilterDepartment, filterRole, setFilterRole, roles,
+    filterEmploymentType, setFilterEmploymentType, employmentTypes,
+    filterEmployeeId, setFilterEmployeeId,
     filterStatus, setFilterStatus, filterWorkLocation, setFilterWorkLocation,
     pageSize, setPageSize, page, setPage, filterDatePreset, setFilterDatePreset,
     fromDate, setFromDate, toDate, setToDate, singleDate, setSingleDate,

@@ -75,7 +75,7 @@ export const TimeLogEmployeeInfoSection = memo(function TimeLogEmployeeInfoSecti
               </div>
               <div className="mb-3">
                 <p className="font-bold text-gray-800 dark:text-slate-200 leading-tight">{designation}</p>
-                <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">Designation</p>
+                <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">Position</p>
               </div>
               <div>
                 <p className="font-bold text-gray-800 dark:text-slate-200 uppercase tracking-tight">{department}</p>

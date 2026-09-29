@@ -14,6 +14,8 @@ interface AttendanceControlBarProps {
   fromDate: string; setFromDate: (date: string) => void;
   toDate: string; setToDate: (date: string) => void;
   departments: string[]; filterDepartment: string; setFilterDepartment: (dept: string) => void;
+  roles?: string[]; filterRole?: string; setFilterRole?: (role: string) => void;
+  employmentTypes?: string[]; filterEmploymentType?: string; setFilterEmploymentType?: (type: string) => void;
   employees?: Employee[]; filterEmployeeId?: string; setFilterEmployeeId?: (empId: string) => void;
   filterStatus: string; setFilterStatus: (status: string) => void;
   workLocations: WorkLocation[]; filterWorkLocation: string; setFilterWorkLocation: (id: string) => void;
@@ -36,11 +38,18 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   departments,
   filterDepartment,
   setFilterDepartment,
+  roles = [],
+  filterRole = "all",
+  setFilterRole,
+  employmentTypes = [],
+  filterEmploymentType = "all",
+  setFilterEmploymentType,
   employees = [],
   filterEmployeeId = "all",
   setFilterEmployeeId,
   filterStatus,
   setFilterStatus,
+  workLocations,
   filterWorkLocation,
   setFilterWorkLocation,
   viewMode,
@@ -48,17 +57,16 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   todayYMD,
 }: AttendanceControlBarProps) {
   const isFiltered =
-    searchQuery ||
-    filterDepartment !== "all" ||
-    (filterEmployeeId && filterEmployeeId !== "all") ||
-    filterStatus !== "all" ||
-    filterWorkLocation !== "all" ||
-    filterDatePreset !== "all";
+    searchQuery || filterDepartment !== "all" || filterRole !== "all" ||
+    filterEmploymentType !== "all" || (filterEmployeeId && filterEmployeeId !== "all") ||
+    filterStatus !== "all" || filterWorkLocation !== "all" || filterDatePreset !== "all";
 
   const handleResetFilters = () => {
     setSearchQuery("");
     setFilterDepartment("all");
-    if (setFilterEmployeeId) setFilterEmployeeId("all");
+    setFilterRole?.("all");
+    setFilterEmploymentType?.("all");
+    setFilterEmployeeId?.("all");
     setFilterStatus("all");
     setFilterWorkLocation("all");
     setFilterDatePreset("all");
@@ -76,7 +84,7 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-3.5 shadow-2xs mb-6 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
-      {/* Left: Attendance Records Count Badge */}
+      {/* Records Count Badge */}
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 px-3 py-1.5 bg-[#253C7D]/10 dark:bg-sky-950/50 text-[#253C7D] dark:text-sky-300 rounded-xl font-bold text-xs border border-transparent dark:border-sky-800/40">
           <i className="ri-calendar-check-line text-sm" />
@@ -87,9 +95,8 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
         </div>
       </div>
 
-      {/* Right Filters Bar: Search, Date, Selects, Reset, View Mode */}
+      {/* Filters Bar: Search, Date, Cascading Selects, Reset, View Mode */}
       <div className="flex items-center gap-2.5 flex-wrap">
-        {/* Search Input */}
         <div className="relative w-full sm:w-44">
           <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400 text-xs" />
           <input
@@ -97,7 +104,7 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search name, notes..."
-            className="w-full pl-8 pr-7 py-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-500 focus:ring-1 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 transition-all font-medium"
+            className="w-full pl-8 pr-7 py-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-500 font-medium"
           />
           {searchQuery && (
             <button
@@ -110,7 +117,6 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
           )}
         </div>
 
-        {/* Date Range Picker Dropdown */}
         <AttendanceDateRangePicker
           filterDatePreset={filterDatePreset}
           setFilterDatePreset={setFilterDatePreset}
@@ -120,9 +126,9 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
           setFromDate={setFromDate}
           toDate={toDate}
           setToDate={setToDate}
+          todayYMD={todayYMD}
         />
 
-        {/* Employee, Department, Status Dropdowns */}
         <AttendanceFilterSelects
           employees={employees}
           availableEmployees={availableEmployees}
@@ -131,16 +137,24 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
           departments={departments}
           filterDepartment={filterDepartment}
           setFilterDepartment={setFilterDepartment}
+          roles={roles}
+          filterRole={filterRole}
+          setFilterRole={setFilterRole}
+          employmentTypes={employmentTypes}
+          filterEmploymentType={filterEmploymentType}
+          setFilterEmploymentType={setFilterEmploymentType}
+          workLocations={workLocations}
+          filterWorkLocation={filterWorkLocation}
+          setFilterWorkLocation={setFilterWorkLocation}
           filterStatus={filterStatus}
           setFilterStatus={setFilterStatus}
         />
 
-        {/* Reset Filter Button */}
         {isFiltered && (
           <button
             type="button"
             onClick={handleResetFilters}
-            className="px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-300 hover:text-gray-700 dark:hover:text-slate-100 text-xs font-bold transition-colors cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
             title="Reset Filters"
           >
             <i className="ri-refresh-line mr-1" />
@@ -148,7 +162,6 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
           </button>
         )}
 
-        {/* View Mode Switcher (Table / Cards) */}
         <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-0.5 rounded-xl border border-gray-200 dark:border-slate-700">
           <button
             type="button"
