@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FormRow } from "./FormRow";
+import { CountryPhoneInput } from "./CountryPhoneInput";
 import type { BranchFormState } from "../../types";
 import { parseLegalAddress, formatLegalAddress } from "../../utils/legalAddressUtils";
 
@@ -134,19 +135,11 @@ export function LegalInfoSection({
 
       {/* Phone Number */}
       <FormRow label="Phone Number">
-        <div className="flex items-center rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden text-xs">
-          <div className="px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border-r border-slate-300 dark:border-slate-700 flex items-center gap-1 shrink-0">
-            <span className="text-base leading-none">🇰🇭</span>
-            <i className="ri-arrow-down-s-fill text-[10px] text-slate-400" />
-          </div>
-          <input
-            type="text"
-            value={form.legal_phone_number}
-            onChange={(e) => setForm((prev) => ({ ...prev, legal_phone_number: e.target.value }))}
-            placeholder="+85585555079"
-            className="w-full px-3 py-1.5 bg-transparent text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none"
-          />
-        </div>
+        <CountryPhoneInput
+          value={form.legal_phone_number}
+          onChange={(val) => setForm((prev) => ({ ...prev, legal_phone_number: val }))}
+          placeholder="+855987654321"
+        />
       </FormRow>
 
       {/* Email */}

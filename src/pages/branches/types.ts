@@ -30,7 +30,6 @@ export interface Branch {
   registration_no?: string | null;
   vat_no?: string | null;
   industry?: string | null;
-  domain?: string | null;
   currency?: string | null;
   rounding_digit?: number | null;
 
@@ -53,10 +52,7 @@ export interface Branch {
   email?: string | null;
   website?: string | null;
 
-  // 5. Timezone Info
-  time_zone?: string | null;
-
-  // 6. Legal Info
+  // 5. Legal Info
   legal_tax_number?: string | null;
   legal_name?: string | null;
   legal_business_activity?: string | null;
@@ -105,7 +101,6 @@ export interface BranchFormState {
   registration_no: string;
   vat_no: string;
   industry: string;
-  domain: string;
   currency: string;
   rounding_digit: string;
 
@@ -128,10 +123,7 @@ export interface BranchFormState {
   email: string;
   website: string;
 
-  // 5. Timezone Info
-  time_zone: string;
-
-  // 6. Legal Info
+  // 5. Legal Info
   legal_tax_number: string;
   legal_name: string;
   legal_business_activity: string;
@@ -164,6 +156,18 @@ export interface WorkSite {
   afternoon_check_out_start?: string | null;
   afternoon_check_out_end?: string | null;
   is_four_punch_enabled: boolean;
+
+  // Site Profile Fields
+  site_type?: string | null;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  postal_code?: string | null;
+  country?: string | null;
+  phone_number?: string | null;
+  email?: string | null;
+  website?: string | null;
+  status?: "active" | "disabled" | string;
 }
 
 export interface WorkSiteFormState {
@@ -187,6 +191,19 @@ export interface WorkSiteFormState {
   afternoon_check_out_start: string;
   afternoon_check_out_end: string;
   is_four_punch_enabled: boolean;
+
+  // Site Profile Fields
+  site_type: string;
+  company_name?: string;
+  address: string;
+  city: string;
+  province: string;
+  postal_code: string;
+  country: string;
+  phone_number: string;
+  email: string;
+  website: string;
+  status: "active" | "disabled";
 }
 
 export interface BiometricDevice {
@@ -214,4 +231,29 @@ export interface BiometricDeviceFormState {
   device_port: string;
   device_model: string;
   work_location_id: string;
+}
+
+export interface Department {
+  id: string;
+  branch_id?: string | null;
+  name: string;
+  parent_department_id?: string | null;
+  parent_department_name?: string | null;
+  head_of_department_id?: string | null;
+  head_of_department_name?: string | null;
+  sort_order: number;
+  status: "active" | "disabled" | string;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+}
+
+export interface DepartmentFormState {
+  name: string;
+  parent_department_id: string;
+  parent_department_name: string;
+  head_of_department_id: string;
+  head_of_department_name: string;
+  sort_order: string;
+  status: "active" | "disabled";
 }

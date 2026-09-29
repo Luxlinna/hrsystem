@@ -35,16 +35,6 @@ export function CompanyInfoSection({
 }: CompanyInfoSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDomainChange = (val: string) => {
-    // Strip http:// or https:// or domain endings if user types full URL
-    const clean = val
-      .replace(/^https?:\/\//i, "")
-      .replace(/\.corarlhr\.com$/i, "")
-      .replace(/[^a-zA-Z0-9-_]/g, "")
-      .toLowerCase();
-    setForm((prev) => ({ ...prev, domain: clean }));
-  };
-
   return (
     <div className="space-y-1">
       <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider mb-3">
@@ -115,15 +105,48 @@ export function CompanyInfoSection({
         </div>
       </FormRow>
 
-      {/* 2. Company Name */}
+      {/* 2. Company / BU Name */}
       <FormRow label="Company Name" required>
         <input
           type="text"
+          required
           value={form.company_name}
-          onChange={(e) => setForm((prev) => ({ ...prev, company_name: e.target.value }))}
-          placeholder="Company Name"
+          onChange={(e) => {
+            const val = e.target.value;
+            setForm((prev) => ({
+              ...prev,
+              company_name: val,
+              name: prev.name ? prev.name : val,
+            }));
+          }}
+          placeholder="Company Name / BU Display Name"
           className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#2b8de3]"
         />
+      </FormRow>
+
+      {/* BU Manager */}
+      <FormRow label="BU Manager" required>
+        <input
+          type="text"
+          required
+          value={form.manager_name}
+          onChange={(e) => setForm((prev) => ({ ...prev, manager_name: e.target.value }))}
+          placeholder="Manager Name"
+          className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#2b8de3]"
+        />
+      </FormRow>
+
+      {/* Operational Status */}
+      <FormRow label="Status">
+        <select
+          value={form.status || "active"}
+          onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
+          className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2b8de3] cursor-pointer"
+        >
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="pending">Pending</option>
+        </select>
       </FormRow>
 
       {/* 3. Registration No. */}
@@ -150,35 +173,40 @@ export function CompanyInfoSection({
 
       {/* 5. Industry */}
       <FormRow label="Industry">
-        <select
-          value={form.industry || INDUSTRY_OPTIONS[0]}
-          onChange={(e) => setForm((prev) => ({ ...prev, industry: e.target.value }))}
-          className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2b8de3] cursor-pointer"
-        >
-          {INDUSTRY_OPTIONS.map((ind) => (
-            <option key={ind} value={ind}>
-              {ind}
-            </option>
-          ))}
-        </select>
-      </FormRow>
+        <div className="space-y-2">
+          <select
+            value={
+              form.industry && !INDUSTRY_OPTIONS.slice(0, -1).includes(form.industry)
+                ? "Other"
+                : form.industry || INDUSTRY_OPTIONS[0]
+            }
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "Other") {
+                setForm((prev) => ({ ...prev, industry: "Other" }));
+              } else {
+                setForm((prev) => ({ ...prev, industry: val }));
+              }
+            }}
+            className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2b8de3] cursor-pointer"
+          >
+            {INDUSTRY_OPTIONS.map((ind) => (
+              <option key={ind} value={ind}>
+                {ind}
+              </option>
+            ))}
+          </select>
 
-      {/* 6. Corarl Domain */}
-      <FormRow label="Corarl Domain" required>
-        <div className="flex items-center rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 overflow-hidden text-xs">
-          <span className="px-3 py-1.5 text-slate-500 bg-slate-100 dark:bg-slate-900 border-r border-slate-300 dark:border-slate-700 select-none">
-            https://
-          </span>
-          <input
-            type="text"
-            value={form.domain}
-            onChange={(e) => handleDomainChange(e.target.value)}
-            placeholder="circlekcambodia"
-            className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none"
-          />
-          <span className="px-3 py-1.5 text-slate-500 bg-slate-100 dark:bg-slate-900 border-l border-slate-300 dark:border-slate-700 select-none">
-            .corarlhr.com
-          </span>
+          {(form.industry === "Other" ||
+            (form.industry && !INDUSTRY_OPTIONS.slice(0, -1).includes(form.industry))) && (
+            <input
+              type="text"
+              value={form.industry === "Other" ? "" : form.industry}
+              onChange={(e) => setForm((prev) => ({ ...prev, industry: e.target.value }))}
+              placeholder="Specify industry"
+              className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#2b8de3]"
+            />
+          )}
         </div>
       </FormRow>
 

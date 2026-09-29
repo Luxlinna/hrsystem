@@ -7,8 +7,8 @@ export type { WorkSite };
 export function useWorkSites(branchId: string) {
   const [sites, setSites] = useState<WorkSite[]>([]);
   const [sitesLoading, setSitesLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingSite, setEditingSite] = useState<WorkSite | null>(null);
+  const [currentView, setCurrentView] = useState<"table" | "create" | "edit" | "view">("table");
+  const [selectedSite, setSelectedSite] = useState<WorkSite | null>(null);
   const [savingSite, setSavingSite] = useState(false);
 
   const fetchSites = useCallback(async () => {
@@ -24,7 +24,9 @@ export function useWorkSites(branchId: string) {
         morning_check_out_start, morning_check_out_end,
         afternoon_check_in_start, afternoon_check_in_end,
         afternoon_check_out_start, afternoon_check_out_end,
-        is_four_punch_enabled
+        is_four_punch_enabled,
+        site_type, address, city, province, postal_code, country,
+        phone_number, email, website, status
       `)
       .eq("branch_id", branchId)
       .is("deleted_at", null)
@@ -41,19 +43,24 @@ export function useWorkSites(branchId: string) {
     fetchSites();
   }, [fetchSites]);
 
-  const openAddModal = useCallback(() => {
-    setEditingSite(null);
-    setModalOpen(true);
+  const openCreate = useCallback(() => {
+    setSelectedSite(null);
+    setCurrentView("create");
   }, []);
 
-  const openEditModal = useCallback((site: WorkSite) => {
-    setEditingSite(site);
-    setModalOpen(true);
+  const openEdit = useCallback((site: WorkSite) => {
+    setSelectedSite(site);
+    setCurrentView("edit");
   }, []);
 
-  const closeModal = useCallback(() => {
-    setModalOpen(false);
-    setEditingSite(null);
+  const openView = useCallback((site: WorkSite) => {
+    setSelectedSite(site);
+    setCurrentView("view");
+  }, []);
+
+  const closeForm = useCallback(() => {
+    setCurrentView("table");
+    setSelectedSite(null);
   }, []);
 
   const handleSubmitSite = async (formData: WorkSiteFormState) => {
@@ -71,9 +78,19 @@ export function useWorkSites(branchId: string) {
     const payload = {
       branch_id: branchId,
       name: formData.name.trim(),
-      description: formData.description.trim() || null,
-      latitude: formData.latitude.trim() ? parseFloat(formData.latitude) : null,
-      longitude: formData.longitude.trim() ? parseFloat(formData.longitude) : null,
+      description: formData.address?.trim() || formData.description?.trim() || null,
+      site_type: formData.site_type || "Store",
+      address: formData.address?.trim() || null,
+      city: formData.city?.trim() || "Phnom Penh",
+      province: formData.province?.trim() || null,
+      postal_code: formData.postal_code?.trim() || null,
+      country: formData.country?.trim() || "Cambodia",
+      phone_number: formData.phone_number?.trim() || null,
+      email: formData.email?.trim() || null,
+      website: formData.website?.trim() || null,
+      status: formData.status || "active",
+      latitude: formData.latitude?.trim() ? parseFloat(formData.latitude) : null,
+      longitude: formData.longitude?.trim() ? parseFloat(formData.longitude) : null,
       geofence_radius_m: parseInt(formData.geofence_radius_m || "100", 10) || 100,
       work_start_time: formatTimeSeconds(formData.work_start_time, "07:30:00"),
       work_end_time: formatTimeSeconds(formData.work_end_time, "17:00:00"),
@@ -89,18 +106,18 @@ export function useWorkSites(branchId: string) {
       afternoon_check_in_end: formatTimeSeconds(formData.afternoon_check_in_end, "14:00:00"),
       afternoon_check_out_start: formatTimeSeconds(formData.afternoon_check_out_start, "16:00:00"),
       afternoon_check_out_end: formatTimeSeconds(formData.afternoon_check_out_end, "18:00:00"),
-      is_four_punch_enabled: formData.is_four_punch_enabled,
+      is_four_punch_enabled: formData.is_four_punch_enabled ?? false,
     };
 
-    if (editingSite) {
+    if (selectedSite && (currentView === "edit" || currentView === "create")) {
       const { error } = await supabase
         .from("work_locations")
         .update(payload)
-        .eq("id", editingSite.id);
+        .eq("id", selectedSite.id);
 
       setSavingSite(false);
       if (error) {
-        toast("Error", error.message || "Could not update work site", "error");
+        toast("Error", error.message || "Could not update site", "error");
         return;
       }
       toast("Saved", `"${formData.name}" updated successfully`, "success");
@@ -112,13 +129,28 @@ export function useWorkSites(branchId: string) {
 
       setSavingSite(false);
       if (error) {
-        toast("Error", error.message || "Could not add work site", "error");
+        toast("Error", error.message || "Could not create site", "error");
         return;
       }
-      toast("Created", `"${formData.name}" added${isFirst ? " as default site" : ""}`, "success");
+      toast("Created", `"${formData.name}" created successfully`, "success");
     }
 
-    closeModal();
+    closeForm();
+    fetchSites();
+  };
+
+  const handleToggleStatus = async (site: WorkSite) => {
+    const nextStatus = site.status === "disabled" ? "active" : "disabled";
+    const { error } = await supabase
+      .from("work_locations")
+      .update({ status: nextStatus })
+      .eq("id", site.id);
+
+    if (error) {
+      toast("Error", error.message || "Failed to update status", "error");
+      return;
+    }
+    toast("Status Updated", `"${site.name}" is now ${nextStatus}`, "success");
     fetchSites();
   };
 
@@ -126,27 +158,37 @@ export function useWorkSites(branchId: string) {
     if (site.is_default) return;
     await supabase.from("work_locations").update({ is_default: false }).eq("branch_id", branchId);
     await supabase.from("work_locations").update({ is_default: true }).eq("id", site.id);
-    toast("Updated", `"${site.name}" is now the default work site`, "success");
+    toast("Updated", `"${site.name}" is now the default site`, "success");
     fetchSites();
   };
 
   const handleDeleteSite = async (site: WorkSite) => {
-    if (!confirm(`Remove "${site.name}" from this branch?`)) return;
-    await supabase.from("work_locations").update({ deleted_at: new Date().toISOString() }).eq("id", site.id);
-    toast("Removed", `"${site.name}" removed`, "success");
+    if (!confirm(`Delete site "${site.name}" from this branch?`)) return;
+    const { error } = await supabase
+      .from("work_locations")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", site.id);
+
+    if (error) {
+      toast("Error", error.message || "Could not delete site", "error");
+      return;
+    }
+    toast("Deleted", `"${site.name}" has been deleted`, "success");
     fetchSites();
   };
 
   return {
     sites,
     sitesLoading,
-    modalOpen,
-    editingSite,
+    currentView,
+    selectedSite,
     savingSite,
-    openAddModal,
-    openEditModal,
-    closeModal,
+    openCreate,
+    openEdit,
+    openView,
+    closeForm,
     handleSubmitSite,
+    handleToggleStatus,
     handleSetDefault,
     handleDeleteSite,
   };

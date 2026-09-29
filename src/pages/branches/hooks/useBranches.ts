@@ -111,8 +111,11 @@ export function useBranches() {
     setBranchEmployees([]);
   }, []);
 
-  const openEditModal = useCallback((branch: Branch) => {
+  const [modalInitialTab, setModalInitialTab] = useState<"profile" | "schedule">("profile");
+
+  const openEditModal = useCallback((branch: Branch, initialTab: "profile" | "schedule" = "profile") => {
     setEditingBranchId(branch.id);
+    setModalInitialTab(initialTab);
     setForm({
       name: branch.name,
       location: branch.location,
@@ -140,7 +143,6 @@ export function useBranches() {
       registration_no: branch.registration_no || "",
       vat_no: branch.vat_no || "",
       industry: branch.industry || "",
-      domain: branch.domain || "",
       currency: branch.currency || "USD",
       rounding_digit: branch.rounding_digit != null ? String(branch.rounding_digit) : "2",
 
@@ -163,10 +165,7 @@ export function useBranches() {
       email: branch.email || "",
       website: branch.website || "",
 
-      // 5. Timezone Info
-      time_zone: branch.time_zone || "SE Asia Standard Time",
-
-      // 6. Legal Info
+      // 5. Legal Info
       legal_tax_number: branch.legal_tax_number || "",
       legal_name: branch.legal_name || "",
       legal_business_activity: branch.legal_business_activity || "",
@@ -181,6 +180,7 @@ export function useBranches() {
   const openAddModal = useCallback(() => {
     setEditingBranchId(null);
     setForm(INITIAL_BRANCH_FORM);
+    setModalInitialTab("profile");
     location.setAddressLookup("");
     setShowAddModal(true);
   }, [location]);
@@ -237,6 +237,7 @@ export function useBranches() {
     empLoading,
     showAddModal,
     setShowAddModal,
+    modalInitialTab,
     editingBranchId,
     searchTerm,
     setSearchTerm,

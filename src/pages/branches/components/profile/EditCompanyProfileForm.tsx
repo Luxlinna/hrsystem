@@ -47,7 +47,6 @@ export function EditCompanyProfileForm({
     registration_no: branch.registration_no || "",
     vat_no: branch.vat_no || "",
     industry: branch.industry || "Trading, Import & Export",
-    domain: branch.domain || "",
     currency: branch.currency || "USD",
     rounding_digit: branch.rounding_digit != null ? String(branch.rounding_digit) : "2",
 
@@ -70,10 +69,7 @@ export function EditCompanyProfileForm({
     email: branch.email || "",
     website: branch.website || "",
 
-    // 5. Timezone Info
-    time_zone: branch.time_zone || "(UTC+07:00) Bangkok, Hanoi, Jakarta",
-
-    // 6. Legal Info
+    // 5. Legal Info
     legal_tax_number: branch.legal_tax_number || "",
     legal_name: branch.legal_name || "",
     legal_business_activity: branch.legal_business_activity || "",
@@ -115,10 +111,12 @@ export function EditCompanyProfileForm({
       const payload = {
         name: form.company_name || form.name || branch.name,
         company_name: form.company_name,
+        manager_name: form.manager_name || branch.manager_name || "Manager",
+        status: form.status || branch.status || "active",
+        location: form.physical_city || form.physical_address || form.location || branch.location || "Phnom Penh",
         registration_no: form.registration_no || null,
         vat_no: form.vat_no || null,
         industry: form.industry || null,
-        domain: form.domain || null,
         currency: form.currency || "USD",
         rounding_digit: form.rounding_digit ? parseInt(form.rounding_digit, 10) : 2,
         logo_url: form.logo_url || null,
@@ -135,13 +133,15 @@ export function EditCompanyProfileForm({
         phone_number: form.phone_number || null,
         email: form.email || null,
         website: form.website || null,
-        time_zone: form.time_zone || null,
         legal_tax_number: form.legal_tax_number || null,
         legal_name: form.legal_name || null,
         legal_business_activity: form.legal_business_activity || null,
         legal_address: form.legal_address || null,
         legal_phone_number: form.legal_phone_number || null,
         legal_email: form.legal_email || null,
+        latitude: form.latitude ? parseFloat(form.latitude) : null,
+        longitude: form.longitude ? parseFloat(form.longitude) : null,
+        geofence_radius_m: form.geofence_radius_m ? parseInt(form.geofence_radius_m, 10) : 100,
       };
 
       const { data, error } = await supabase

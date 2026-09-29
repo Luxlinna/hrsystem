@@ -53,7 +53,6 @@ export function ProfileViewRows({
 }) {
   const companyName = branch.company_name || branch.name || "";
   const physicalAddr = branch.physical_address || branch.location || "";
-  const domainUrl = branch.domain ? `https://${branch.domain}.corarlhr.com` : "";
 
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-7">
@@ -90,15 +89,26 @@ export function ProfileViewRows({
           </div>
 
           <ProfileRow label="Company Name" value={companyName} isBold />
+          <ProfileRow label="BU Manager" value={branch.manager_name} />
+          <ProfileRow
+            label="Status"
+            value={
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold capitalize ${
+                  branch.status === "active"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : branch.status === "inactive"
+                    ? "bg-slate-100 text-slate-600 border border-slate-200"
+                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                }`}
+              >
+                {branch.status || "active"}
+              </span>
+            }
+          />
           <ProfileRow label="Registration No." value={branch.registration_no} />
           <ProfileRow label="VAT No." value={branch.vat_no} />
           <ProfileRow label="Industry" value={branch.industry} />
-          <ProfileRow
-            label="Corarl Domain"
-            value={domainUrl}
-            isLink={Boolean(domainUrl)}
-            href={domainUrl}
-          />
           <ProfileRow label="Currency" value={branch.currency || "USD"} />
           <ProfileRow label="Rounding Digit" value={branch.rounding_digit ?? 2} />
         </div>
@@ -115,6 +125,12 @@ export function ProfileViewRows({
           <ProfileRow label="Province" value={branch.physical_province} />
           <ProfileRow label="Postal Code" value={branch.physical_postal_code} />
           <ProfileRow label="Country" value={branch.physical_country} />
+          {branch.latitude != null && branch.longitude != null && (
+            <ProfileRow
+              label="GPS & Geofence"
+              value={`${branch.latitude}, ${branch.longitude} (${branch.geofence_radius_m || 100}m radius)`}
+            />
+          )}
         </div>
       </div>
 
@@ -135,17 +151,7 @@ export function ProfileViewRows({
         </div>
       </div>
 
-      {/* 4. TIMEZONE INFO */}
-      <div>
-        <h3 className="text-[11.5px] font-bold text-[#0088cc] uppercase tracking-wider mb-2.5">
-          Timezone Info
-        </h3>
-        <div className="space-y-1 sm:space-y-0.5">
-          <ProfileRow label="Time Zone" value={branch.time_zone || "(UTC+07:00) Bangkok, Hanoi, Jakarta"} />
-        </div>
-      </div>
-
-      {/* 5. LEGAL INFO */}
+      {/* 4. LEGAL INFO */}
       <div>
         <h3 className="text-[11.5px] font-bold text-[#0088cc] uppercase tracking-wider mb-2.5">
           Legal Info

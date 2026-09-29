@@ -99,7 +99,6 @@ export function useBranchMutations({
         registration_no: form.registration_no?.trim() || null,
         vat_no: form.vat_no?.trim() || null,
         industry: form.industry?.trim() || null,
-        domain: form.domain?.trim() || null,
         currency: form.currency?.trim() || "USD",
         rounding_digit: parseInt(form.rounding_digit, 10) || 2,
 
@@ -122,10 +121,7 @@ export function useBranchMutations({
         email: form.email?.trim() || null,
         website: form.website?.trim() || null,
 
-        // 5. Timezone Info
-        time_zone: form.time_zone?.trim() || "SE Asia Standard Time",
-
-        // 6. Legal Info
+        // 5. Legal Info
         legal_tax_number: form.legal_tax_number?.trim() || null,
         legal_name: form.legal_name?.trim() || null,
         legal_business_activity: form.legal_business_activity?.trim() || null,

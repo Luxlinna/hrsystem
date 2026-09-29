@@ -42,7 +42,6 @@ export const INITIAL_BRANCH_FORM: BranchFormState = {
   registration_no: "",
   vat_no: "",
   industry: "",
-  domain: "",
   currency: "USD",
   rounding_digit: "2",
 
@@ -65,10 +64,7 @@ export const INITIAL_BRANCH_FORM: BranchFormState = {
   email: "",
   website: "",
 
-  // 5. Timezone Info
-  time_zone: "SE Asia Standard Time",
-
-  // 6. Legal Info
+  // 5. Legal Info
   legal_tax_number: "",
   legal_name: "",
   legal_business_activity: "",

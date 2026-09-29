@@ -1,7 +1,5 @@
 import React, { memo, useState } from "react";
 import type { BranchFormState } from "../types";
-import { BranchLocationPicker } from "./BranchLocationPicker";
-import { BranchOperationsTab } from "./modal/BranchOperationsTab";
 import { BranchScheduleTab } from "./modal/BranchScheduleTab";
 import { CompanyInfoSection } from "./profile/CompanyInfoSection";
 import { PhysicalAddressSection } from "./profile/PhysicalAddressSection";
@@ -13,6 +11,7 @@ import { toast } from "@/components/Toast";
 
 interface BranchModalProps {
   isOpen: boolean;
+  initialTab?: "profile" | "schedule";
   editingBranchId: string | null;
   form: BranchFormState;
   setForm: React.Dispatch<React.SetStateAction<BranchFormState>>;
@@ -30,6 +29,7 @@ interface BranchModalProps {
 
 export const BranchModal = memo(function BranchModal({
   isOpen,
+  initialTab = "profile",
   editingBranchId,
   form,
   setForm,
@@ -44,8 +44,14 @@ export const BranchModal = memo(function BranchModal({
   onUseCurrentLocation,
   onGeocodeAddress,
 }: BranchModalProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "operations" | "location" | "schedule">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "schedule">(initialTab);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab || "profile");
+    }
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
@@ -104,8 +110,6 @@ export const BranchModal = memo(function BranchModal({
           {(
             [
               { id: "profile", label: "Company Profile", icon: "ri-building-line" },
-              { id: "operations", label: "BU Operations", icon: "ri-briefcase-line" },
-              { id: "location", label: "Location & Geofence", icon: "ri-map-pin-line" },
               { id: "schedule", label: "Work Schedule", icon: "ri-time-line" },
             ] as const
           ).map((t) => (
@@ -139,24 +143,6 @@ export const BranchModal = memo(function BranchModal({
               <ContactAndTimezoneSection form={form} setForm={setForm} />
               <LegalInfoSection form={form} setForm={setForm} />
             </div>
-          )}
-
-          {activeTab === "operations" && (
-            <BranchOperationsTab form={form} setForm={setForm} />
-          )}
-
-          {activeTab === "location" && (
-            <BranchLocationPicker
-              form={form}
-              setForm={setForm}
-              addressLookup={addressLookup}
-              setAddressLookup={setAddressLookup}
-              addressInputRef={addressInputRef}
-              locating={locating}
-              geocoding={geocoding}
-              onUseCurrentLocation={onUseCurrentLocation}
-              onGeocodeAddress={onGeocodeAddress}
-            />
           )}
 
           {activeTab === "schedule" && (

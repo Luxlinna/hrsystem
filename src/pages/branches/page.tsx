@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { BranchCompanyProfileSection } from "./components/BranchCompanyProfileSection";
 import { BranchWorkSitesSection } from "./components/BranchWorkSitesSection";
+import { BranchDepartmentsSection } from "./components/BranchDepartmentsSection";
 import { BranchBiometricsSection } from "./components/BranchBiometricsSection";
 import { BranchStaffSection } from "./components/BranchStaffSection";
 import { BranchStatsRow } from "./components/BranchStatsRow";
@@ -23,6 +24,7 @@ export default function Branches() {
     setSelectedBranchId,
     empLoading,
     showAddModal,
+    modalInitialTab,
     editingBranchId,
     searchTerm,
     setSearchTerm,
@@ -50,7 +52,7 @@ export default function Branches() {
   } = useBranches();
 
   // Active tab: defaults to "profile" (Company Profile)
-  const [activeTab, setActiveTab] = useState<"profile" | "sites" | "schedule" | "staff" | "all">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "sites" | "departments" | "schedule" | "staff" | "all">("profile");
 
   // The active BU for this user: strictly scoped to their own BU or selected BU
   const currentBranch = useMemo(() => {
@@ -163,6 +165,19 @@ export default function Branches() {
 
             <button
               type="button"
+              onClick={() => setActiveTab("departments")}
+              className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                activeTab === "departments"
+                  ? "border-[#0088cc] text-[#0088cc]"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <i className="ri-node-tree text-sm sm:text-base" />
+              Departments
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTab("schedule")}
               className={`pb-2.5 sm:pb-3 font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                 activeTab === "schedule"
@@ -240,11 +255,25 @@ export default function Branches() {
           {activeTab === "sites" && currentBranch && (
             <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
               <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-                <BranchWorkSitesSection branchId={currentBranch.id} canManage={canManage} />
+                <BranchWorkSitesSection
+                  branchId={currentBranch.id}
+                  branchName={currentBranch.company_name || currentBranch.name}
+                  canManage={canManage}
+                />
               </div>
               <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
                 <BranchBiometricsSection branchId={currentBranch.id} branchName={currentBranch.name} canManage={canManage} />
               </div>
+            </div>
+          )}
+
+          {/* TAB 3: DEPARTMENTS */}
+          {activeTab === "departments" && currentBranch && (
+            <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
+              <BranchDepartmentsSection
+                branchId={currentBranch.id}
+                canManage={canManage}
+              />
             </div>
           )}
 
@@ -259,7 +288,7 @@ export default function Branches() {
                 {canManage && (
                   <button
                     type="button"
-                    onClick={() => openEditModal(currentBranch)}
+                    onClick={() => openEditModal(currentBranch, "schedule")}
                     className="inline-flex items-center justify-center gap-1 px-3.5 py-1.5 text-xs font-semibold text-[#0088cc] border border-[#0088cc]/30 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer w-full sm:w-auto"
                   >
                     <i className="ri-edit-line" />
@@ -307,6 +336,7 @@ export default function Branches() {
       {/* Add / Edit Branch & Company Profile Modal */}
       <BranchModal
         isOpen={showAddModal}
+        initialTab={modalInitialTab}
         editingBranchId={editingBranchId}
         form={form}
         setForm={setForm}

@@ -56,7 +56,6 @@ export function useBranchesData() {
         registration_no: branch.registration_no ?? profile.registration_no ?? null,
         vat_no: branch.vat_no ?? profile.vat_no ?? null,
         industry: branch.industry ?? profile.industry ?? null,
-        domain: branch.domain ?? profile.domain ?? null,
         currency: branch.currency ?? profile.currency ?? "USD",
         rounding_digit: branch.rounding_digit ?? profile.rounding_digit ?? 2,
 
@@ -79,10 +78,7 @@ export function useBranchesData() {
         email: branch.email ?? profile.email ?? null,
         website: branch.website ?? profile.website ?? null,
 
-        // 5. Timezone Info
-        time_zone: branch.time_zone ?? profile.time_zone ?? "SE Asia Standard Time",
-
-        // 6. Legal Info
+        // 5. Legal Info
         legal_tax_number: branch.legal_tax_number ?? profile.legal_tax_number ?? null,
         legal_name: branch.legal_name ?? profile.legal_name ?? null,
         legal_business_activity: branch.legal_business_activity ?? profile.legal_business_activity ?? null,
