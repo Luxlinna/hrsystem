@@ -10,9 +10,9 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   const [viewModeState, setViewModeState] = useState<ViewMode>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("hrm_attendance_view_mode");
-      if (saved === "table" || saved === "cards") return saved;
+      if (saved === "table" || saved === "cards") return "table";
     }
-    return "cards";
+    return "table";
   });
 
   const setViewMode = useCallback((mode: ViewMode) => {

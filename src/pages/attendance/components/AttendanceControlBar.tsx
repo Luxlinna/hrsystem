@@ -21,7 +21,7 @@ interface AttendanceControlBarProps {
   workLocations: WorkLocation[];
   branches?: { id: string; name: string }[];
   filterWorkLocation: string; setFilterWorkLocation: (id: string) => void;
-  viewMode: ViewMode; setViewMode: (mode: ViewMode) => void;
+  viewMode?: ViewMode; setViewMode?: (mode: ViewMode) => void;
   todayYMD: string;
 }
 
@@ -32,7 +32,7 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
   employmentTypes = [], filterEmploymentType = "all", setFilterEmploymentType,
   employeeLevels = [], filterEmployeeLevel = "", setFilterEmployeeLevel,
   filterStatus, setFilterStatus, workLocations, branches = [], filterWorkLocation, setFilterWorkLocation,
-  viewMode, setViewMode, todayYMD,
+  todayYMD,
 }: AttendanceControlBarProps) {
   const isFiltered = Boolean(
     searchQuery || (filterDepartment && filterDepartment !== "all") || (filterRole && filterRole !== "all") ||
@@ -59,7 +59,7 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
           </span>
         </div>
 
-        {/* Right: Search, Date Range, Filters, and View Switcher */}
+        {/* Right: Search, Date Range, Filters */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1 h-8 w-56 md:w-64 focus-within:border-[#253C7D] shadow-2xs">
             <i className="ri-search-line text-slate-400 text-xs mr-2" />
@@ -121,33 +121,6 @@ export const AttendanceControlBar = memo(function AttendanceControlBar({
               <span>Reset</span>
             </button>
           )}
-
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 h-8">
-            <button
-              type="button"
-              onClick={() => setViewMode("table")}
-              className={`px-2 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                viewMode === "table"
-                  ? "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-2xs"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-              title="Table View"
-            >
-              <i className="ri-table-line text-xs" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("cards")}
-              className={`px-2 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                viewMode === "cards"
-                  ? "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-2xs"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-              title="Cards View"
-            >
-              <i className="ri-grid-fill text-xs" />
-            </button>
-          </div>
         </div>
       </div>
     </div>

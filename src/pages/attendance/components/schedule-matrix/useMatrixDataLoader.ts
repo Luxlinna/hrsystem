@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { compareBiometricIds } from "@/lib/biometricUtils";
+import { getJobStatusBadge } from "@/pages/employees/constants";
 
 export function useMatrixDataLoader(targetBranch: string | null, currentDate: Date, isSuperAdmin: boolean = false) {
   const [loading, setLoading] = useState(true);
@@ -15,16 +16,11 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
   const loadMatrixData = useCallback(async () => {
     setLoading(true);
     try {
-      let empQuery = supabase
+      const empQuery = supabase
         .from("employees")
-        .select("id, first_name, last_name, employee_code, biometric_user_id, role, department, avatar_url, branch_id, branches(id, name)")
+        .select("id, first_name, last_name, employee_code, biometric_user_id, role, department, avatar_url, branch_id, status, employment_type, contract_type, default_work_location_id, branches(name)")
         .is("deleted_at", null)
         .order("first_name");
-
-      // SuperAdmin sees all employees across all BUs; others are scoped to their branch
-      if (targetBranch && !isSuperAdmin) {
-        empQuery = empQuery.eq("branch_id", targetBranch);
-      }
 
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
@@ -59,9 +55,16 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
         supabase.from("shift_assignments").select("id, shift_id, employee_id, status"),
       ]);
 
-      const empList = ((empRes.data || []) as any[]).slice().sort((a, b) =>
-        compareBiometricIds(a.biometric_user_id, b.biometric_user_id)
-      );
+      const isExitStaff = (emp: any) => {
+        const { jobStatus } = getJobStatusBadge(emp.status);
+        return jobStatus === "Exited";
+      };
+
+      const empList = ((empRes.data || []) as any[])
+        .filter((emp) => !isExitStaff(emp))
+        .slice()
+        .sort((a, b) => compareBiometricIds(a.biometric_user_id, b.biometric_user_id));
+
       setRawEmployees(empList);
       setRawShifts(shiftRes.data || []);
       setShiftAssignments(shiftAssignRes.data || []);
@@ -130,7 +133,7 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
     } finally {
       setLoading(false);
     }
-  }, [targetBranch, currentDate]);
+  }, [targetBranch, currentDate, isSuperAdmin]);
 
   useEffect(() => {
     loadMatrixData();

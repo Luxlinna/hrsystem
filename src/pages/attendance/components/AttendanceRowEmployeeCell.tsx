@@ -24,9 +24,9 @@ export const AttendanceRowEmployeeCell = memo(function AttendanceRowEmployeeCell
   const bioId = formatBiometricId(rawBio, bName);
 
   return (
-    <td className="py-3 px-4 whitespace-nowrap">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
+    <td className="py-2.5 px-3 whitespace-nowrap">
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
           {emp?.avatar_url ? (
             <img src={emp.avatar_url} alt="" className="w-full h-full object-cover" />
           ) : (

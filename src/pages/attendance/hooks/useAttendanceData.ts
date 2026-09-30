@@ -101,7 +101,7 @@ export function useAttendanceData(
         // Regular leaders only see their own branch.
         let empQuery = supabase
           .from("employees")
-          .select("id, first_name, last_name, department, division, line_manager, reports_to, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site")
+          .select("id, first_name, last_name, department, division, line_manager, reports_to, role, avatar_url, branch_id, status, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site")
           .is("deleted_at", null)
           .order("first_name");
 
@@ -109,10 +109,49 @@ export function useAttendanceData(
           empQuery = empQuery.eq("branch_id", targetBranch);
         }
 
-        const { data: team, error: empErr } = await empQuery;
+        const exitQuery = supabase
+          .from("employee_exits")
+          .select("id, employee_id, status");
+
+        const [{ data: team, error: empErr }, { data: exitRows }] = await Promise.all([
+          empQuery,
+          exitQuery,
+        ]);
         if (empErr) console.warn("Error fetching attendance employees:", empErr);
 
-        let empList = (team as unknown as Employee[]) || [];
+        const exitedEmpIds = new Set(
+          (exitRows || [])
+            .filter((ex: any) => (ex.status || "").toLowerCase().trim() !== "cancelled")
+            .map((ex: any) => ex.employee_id)
+            .filter(Boolean)
+        );
+
+        const isExitStaff = (emp: any) => {
+          const st = (emp.status || "").toLowerCase().trim();
+          if (
+            st === "inactive" ||
+            st === "exited" ||
+            st === "terminated" ||
+            st === "resigned" ||
+            st === "suspended" ||
+            st === "deactivate" ||
+            st === "deactivated" ||
+            st.includes("exit") ||
+            st.includes("black") ||
+            st.includes("terminat") ||
+            st.includes("resign") ||
+            st.includes("suspend") ||
+            st.includes("inact")
+          ) {
+            return true;
+          }
+          if (exitedEmpIds.has(emp.id)) {
+            return true;
+          }
+          return false;
+        };
+
+        let empList = ((team as unknown as Employee[]) || []).filter((e) => !isExitStaff(e));
         if (isLineManager && empRecord) {
           const myId = empRecord.id;
           const myName = `${empRecord.first_name || ""} ${empRecord.last_name || ""}`.trim().toLowerCase();

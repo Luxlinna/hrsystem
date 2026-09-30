@@ -288,7 +288,7 @@ export async function processZkPunchRecord(punch) {
       updatePayload = {
         clock_out: timeStr,
         hours_worked: totalHours,
-        early_leave_minutes: existingEarlyLeave + afternoonEarlyLeave,
+        early_leave_minutes: punchMinutes >= endMin ? 0 : afternoonEarlyLeave,
       };
       console.log(`✅ [PUNCH 4: FINAL OUT] ${employeeName} at ${timeStr} (Morning: ${morningHours}h, Afternoon: ${afternoonHours}h, Total: ${totalHours}h)`);
     } else {

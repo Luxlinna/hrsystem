@@ -134,5 +134,27 @@ export function calcNetHours(
   return `${Math.floor(span / 60)}h ${span % 60}m`;
 }
 
+export function parseTimeToMinutes(tStr?: string | null): number | null {
+  if (!tStr) return null;
+  const clean = tStr.trim();
+  const is12Hour = /pm|am/i.test(clean);
+  if (is12Hour) {
+    const parts = clean.match(/(\d+):(\d+)(?::(\d+))?\s*(am|pm)/i);
+    if (parts) {
+      let h = parseInt(parts[1], 10);
+      const m = parseInt(parts[2], 10);
+      const isPM = parts[4].toLowerCase() === "pm";
+      if (isPM && h < 12) h += 12;
+      if (!isPM && h === 12) h = 0;
+      return h * 60 + m;
+    }
+  }
+  const [h, m] = clean.split(":").map(Number);
+  if (!isNaN(h) && !isNaN(m)) {
+    return h * 60 + m;
+  }
+  return null;
+}
+
 export const initials = (first?: string, last?: string) =>
   `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase();

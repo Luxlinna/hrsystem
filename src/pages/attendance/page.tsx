@@ -11,10 +11,11 @@ import { useAttendanceLogNavigation } from "./hooks/useAttendanceLogNavigation";
 
 export default function AttendancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlTab = searchParams.get("tab") as "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | null;
-  const [activeMainTab, setActiveMainTab] = useState<"attendance" | "attendance-schedule" | "schedule-templates" | "shifts">(
-    urlTab || "attendance"
-  );
+  const rawTab = searchParams.get("tab");
+  const activeMainTab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" =
+    rawTab === "attendance-schedule" || rawTab === "schedule-templates" || rawTab === "shifts"
+      ? rawTab
+      : "attendance";
 
   const [showTimeLogForm, setShowTimeLogForm] = useState(false);
   const [timeLogInitialEmployeeId, setTimeLogInitialEmployeeId] = useState<string | undefined>(undefined);
@@ -38,22 +39,20 @@ export default function AttendancePage() {
   }, [canViewAll, data.myEmployee?.id]);
 
   useEffect(() => {
-    if (urlTab && urlTab !== activeMainTab) setActiveMainTab(urlTab);
-  }, [urlTab, activeMainTab]);
-
-  useEffect(() => {
     if (searchParams.get("action") === "new-log") handleOpenTimeLog();
   }, [searchParams, handleOpenTimeLog]);
 
-  const handleTabChange = (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts") => {
-    setActiveMainTab(tab);
+  const handleTabChange = useCallback((tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts") => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (tab === "attendance") next.delete("tab");
-      else next.set("tab", tab);
+      if (tab === "attendance") {
+        next.delete("tab");
+      } else {
+        next.set("tab", tab);
+      }
       return next;
     });
-  };
+  }, [setSearchParams]);
 
   const handleViewAttendanceLog = useAttendanceLogNavigation({
     handleTabChange,

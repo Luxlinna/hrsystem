@@ -4,6 +4,7 @@ import { formatDMY } from "../exports";
 import type { Holiday } from "@/services/holidays/holidaysService";
 import type { ManagedShift } from "./shifts-manager/types";
 import { resolveRecordSchedule } from "../utils/scheduleDisplayUtils";
+import { parseTimeToMinutes } from "../constants";
 import { AttendanceRowPunchCell } from "./AttendanceRowPunchCell";
 import { AttendanceRowActions } from "./AttendanceRowActions";
 import { AttendanceRowEmployeeCell } from "./AttendanceRowEmployeeCell";
@@ -47,34 +48,56 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
   const isRowFourPunch = Boolean(isFourPunchMode && (r.work_location?.is_four_punch_enabled ?? true));
   const isHoliday = holidayMap?.has(r.date);
 
+  const lastWindow = windows && windows.length > 0 ? windows[windows.length - 1] : null;
+  const scheduledEndMin = lastWindow ? parseTimeToMinutes(lastWindow.time_out) : null;
+  const clockOutMin = parseTimeToMinutes(r.clock_out);
+  const isClockOutAfterScheduledEnd =
+    clockOutMin != null && scheduledEndMin != null && clockOutMin >= scheduledEndMin;
+
+  const isLate = r.status === "late" || (r.late_minutes != null && r.late_minutes > 0);
+  const isEarlyLeave = !isClockOutAfterScheduledEnd && (
+    (r.early_leave_minutes != null && r.early_leave_minutes > 0) ||
+    (clockOutMin != null && scheduledEndMin != null && scheduledEndMin - clockOutMin > 5)
+  );
+
   let statusBadge: { label: string; bg: string; text: string } | null = null;
-  if (isHoliday) statusBadge = { label: "Holiday", bg: "bg-blue-600", text: "text-white" };
-  else if (!hasClockIn) statusBadge = { label: "Error : No clock in", bg: "bg-rose-500", text: "text-white" };
-  else if (!hasClockOut && r.date < todayYMD) statusBadge = { label: "Error : No clock out", bg: "bg-rose-500", text: "text-white" };
-  else if (!hasClockOut && r.date === todayYMD) statusBadge = { label: "Working Now", bg: "bg-emerald-600", text: "text-white" };
-  else if (r.status === "late" || (r.late_minutes && r.late_minutes > 0)) statusBadge = { label: `Late ${r.late_minutes}m`, bg: "bg-amber-500", text: "text-white" };
-  else if (r.early_leave_minutes && r.early_leave_minutes > 0) statusBadge = { label: `Early ${r.early_leave_minutes}m`, bg: "bg-orange-500", text: "text-white" };
+  if (isHoliday) {
+    statusBadge = { label: "Holiday", bg: "bg-blue-600", text: "text-white" };
+  } else if (!hasClockIn) {
+    statusBadge = { label: "Error : No clock in", bg: "bg-rose-500", text: "text-white" };
+  } else if (!hasClockOut && r.date < todayYMD) {
+    statusBadge = { label: "Error : No clock out", bg: "bg-rose-500", text: "text-white" };
+  } else if (!hasClockOut && r.date === todayYMD) {
+    statusBadge = { label: "Working Now", bg: "bg-emerald-600", text: "text-white" };
+  } else if (isLate) {
+    statusBadge = { label: `Late ${r.late_minutes ? `${r.late_minutes}m` : ""}`, bg: "bg-amber-500", text: "text-white" };
+  } else if (isEarlyLeave) {
+    const earlyMins = (clockOutMin != null && scheduledEndMin != null && scheduledEndMin > clockOutMin)
+      ? scheduledEndMin - clockOutMin
+      : (r.early_leave_minutes || 0);
+    statusBadge = { label: `Early ${earlyMins}m`, bg: "bg-orange-500", text: "text-white" };
+  }
 
   const locationName = r.work_location?.name || emp?.branches?.name || "Main Office";
 
   return (
     <tr className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors border-b border-gray-100 dark:border-slate-800/80 text-xs">
-      <td className="py-3 px-3.5 text-center">
+      <td className="py-2.5 px-3 text-center">
         <input
           type="checkbox"
           checked={isSelected}
           onChange={() => onToggleSelect && onToggleSelect(r.id)}
-          className="w-4 h-4 rounded border-gray-300 dark:border-slate-700 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
+          className="w-3.5 h-3.5 rounded border-gray-300 dark:border-slate-700 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
         />
       </td>
 
-      <td className="py-3 px-3 text-left font-bold text-gray-400 dark:text-slate-500">
+      <td className="py-2.5 px-2.5 text-left font-bold text-gray-400 dark:text-slate-500">
         {index + 1}
       </td>
 
-      <td className="py-3 px-4 whitespace-nowrap">
-        <p className="font-semibold text-gray-800 dark:text-slate-200">{dmy}</p>
-        <span className="inline-block mt-0.5 px-2 py-0.5 text-[10px] font-bold text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-md">
+      <td className="py-2.5 px-3 whitespace-nowrap">
+        <p className="font-bold text-gray-800 dark:text-slate-200 text-xs">{dmy}</p>
+        <span className="inline-block px-1.5 py-0.2 text-[10.5px] font-semibold text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded">
           {day}
         </span>
       </td>
@@ -85,37 +108,41 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
         onSelectRecord={onSelectRecord}
       />
 
-      <td className="py-3 px-4 whitespace-nowrap">
-        <span className="text-gray-700 dark:text-slate-300 font-medium">
+      <td className="py-2.5 px-3 whitespace-nowrap">
+        <span className="text-gray-700 dark:text-slate-300 font-medium text-xs">
           {emp?.role || "Staff Member"}
         </span>
       </td>
 
-      <td className="py-3 px-4 whitespace-nowrap">
-        <p className="font-bold text-gray-800 dark:text-slate-200 uppercase tracking-tight text-[11px]">
+      <td className="py-2.5 px-3 whitespace-nowrap">
+        <p className="font-bold text-gray-800 dark:text-slate-200 uppercase tracking-tight text-xs">
           {emp?.department || "OPERATIONS"}
         </p>
         <span
-          className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 max-w-[150px] truncate"
+          className="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10.5px] font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 max-w-[150px] truncate"
           title={locationName}
         >
-          <i className="ri-building-line text-[10px] text-gray-400 dark:text-slate-500 shrink-0" />
+          <i className="ri-building-line text-[10.5px] text-gray-400 dark:text-slate-500 shrink-0" />
           <span className="truncate">{locationName}</span>
         </span>
       </td>
 
-      <td className="py-3 px-4 whitespace-nowrap">
-        <p className="text-[11px] font-semibold text-gray-700 dark:text-slate-300 mb-1">{shiftTitle}</p>
+      <td className="py-2.5 px-3 whitespace-nowrap">
+        <p className="text-xs font-semibold text-gray-800 dark:text-slate-200 mb-0.5 flex items-center gap-1">
+          <i className="ri-calendar-schedule-line text-[#253C7D] dark:text-sky-400 text-xs" />
+          <span>{shiftTitle}</span>
+        </p>
         <div className="flex items-center gap-1.5 flex-wrap">
           {windows.map((w, i) => (
             <span
               key={w.id || i}
-              className="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-mono"
             >
+              <i className="ri-time-line text-[#253C7D] dark:text-sky-400 text-[11px]" />
               {w.time_in} - {w.time_out}
             </span>
           ))}
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-pink-200/90 dark:bg-pink-900/60 text-pink-900 dark:text-pink-200">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-[#253C7D]/10 dark:bg-sky-950/60 text-[#253C7D] dark:text-sky-300 border border-[#253C7D]/20 dark:border-sky-800/60">
             {Number(totalShiftHours).toFixed(2)} Hours
           </span>
         </div>
@@ -129,9 +156,9 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
         onEditRecord={onEditRecord}
       />
 
-      <td className="py-3 px-4 whitespace-nowrap">
+      <td className="py-2.5 px-3 whitespace-nowrap">
         {statusBadge && (
-          <span className={`px-2.5 py-1 rounded text-[11px] font-bold inline-block shadow-2xs ${statusBadge.bg} ${statusBadge.text}`}>
+          <span className={`px-2 py-0.5 rounded text-[11px] font-bold inline-block shadow-2xs ${statusBadge.bg} ${statusBadge.text}`}>
             {statusBadge.label}
           </span>
         )}
