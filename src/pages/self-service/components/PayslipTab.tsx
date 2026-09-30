@@ -17,9 +17,9 @@ interface Props {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  paid: "bg-emerald-50 text-emerald-700",
-  processed: "bg-sky-50 text-sky-700",
-  pending: "bg-amber-50 text-amber-700",
+  paid: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300",
+  processed: "bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300",
+  pending: "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300",
 };
 
 export default function PayslipTab({ employeeId, employeeName }: Props) {
@@ -64,10 +64,10 @@ export default function PayslipTab({ employeeId, employeeName }: Props) {
     if (win) { win.document.write(html); win.document.close(); win.onload = () => { win.print(); win.close(); }; }
   };
 
-  if (loading) return <div className="flex items-center justify-center h-40"><div className="w-7 h-7 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-40"><div className="w-7 h-7 border-2 border-[#253C7D] dark:border-blue-400 border-t-transparent dark:border-t-transparent rounded-full animate-spin" /></div>;
 
   if (payslips.length === 0) return (
-    <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+    <div className="flex flex-col items-center justify-center h-40 text-gray-400 dark:text-slate-500">
       <i className="ri-file-list-3-line text-3xl mb-2" />
       <p className="text-sm">No payslips found</p>
     </div>
@@ -81,30 +81,34 @@ export default function PayslipTab({ employeeId, employeeName }: Props) {
           <button
             key={p.id}
             onClick={() => setSelected(p)}
-            className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${selected?.id === p.id ? "border-[#253C7D] bg-[#253C7D]/5" : "border-gray-100 hover:border-gray-200 bg-white"}`}
+            className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
+              selected?.id === p.id
+                ? "border-[#253C7D] dark:border-blue-500 bg-[#253C7D]/5 dark:bg-blue-500/10"
+                : "border-gray-100 dark:border-slate-800 hover:border-gray-200 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
+            }`}
           >
             <div>
-              <p className="text-sm font-semibold text-gray-900">{p.month}</p>
-              <p className="text-xs text-gray-500 mt-0.5">${Number(p.net_pay).toLocaleString()} net</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{p.month}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">${Number(p.net_pay).toLocaleString()} net</p>
             </div>
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLOR[p.status] || "bg-gray-100 text-gray-600"}`}>{p.status}</span>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLOR[p.status] || "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300"}`}>{p.status}</span>
           </button>
         ))}
       </div>
 
       {/* Payslip Detail */}
       {selected && (
-        <div className="flex-1 bg-white border border-gray-100 rounded-xl p-6">
+        <div className="flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-6">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Payslip — {selected.month}</h3>
-              <p className="text-sm text-gray-500 mt-0.5">{employeeName}</p>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">Payslip — {selected.month}</h3>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{employeeName}</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_COLOR[selected.status] || "bg-gray-100 text-gray-600"}`}>{selected.status}</span>
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_COLOR[selected.status] || "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300"}`}>{selected.status}</span>
               <button
                 onClick={() => downloadPayslip(selected)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#253C7D] text-white rounded-xl text-[12px] font-semibold hover:bg-[#1F336A] shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#253C7D] dark:bg-blue-600 text-white rounded-xl text-[12px] font-semibold hover:bg-[#1F336A] dark:hover:bg-blue-500 shadow-sm transition-all cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-download-line" />
                 Download
@@ -114,28 +118,28 @@ export default function PayslipTab({ employeeId, employeeName }: Props) {
 
           <div className="space-y-0 max-w-xl">
             {[
-              { label: "Base Salary", value: `$${Number(selected.base_salary).toLocaleString()}`, color: "text-gray-900" },
-              { label: "Performance Bonus", value: `+$${Number(selected.bonus).toLocaleString()}`, color: "text-emerald-600" },
-              { label: "Gross Pay", value: `$${(Number(selected.base_salary) + Number(selected.bonus)).toLocaleString()}`, color: "text-gray-900", bold: true },
+              { label: "Base Salary", value: `$${Number(selected.base_salary).toLocaleString()}`, color: "text-gray-900 dark:text-slate-100" },
+              { label: "Performance Bonus", value: `+$${Number(selected.bonus).toLocaleString()}`, color: "text-emerald-600 dark:text-emerald-400" },
+              { label: "Gross Pay", value: `$${(Number(selected.base_salary) + Number(selected.bonus)).toLocaleString()}`, color: "text-gray-900 dark:text-slate-100", bold: true },
             ].map((row) => (
-              <div key={row.label} className={`flex justify-between py-3 border-b border-gray-100 ${row.bold ? "font-semibold" : ""}`}>
-                <span className="text-sm text-gray-600">{row.label}</span>
+              <div key={row.label} className={`flex justify-between py-3 border-b border-gray-100 dark:border-slate-800 ${row.bold ? "font-semibold" : ""}`}>
+                <span className="text-sm text-gray-600 dark:text-slate-400">{row.label}</span>
                 <span className={`text-sm ${row.color}`}>{row.value}</span>
               </div>
             ))}
-            <div className="flex justify-between py-3 border-b border-gray-100">
-              <span className="text-sm text-gray-600">Deductions (Tax &amp; Benefits)</span>
-              <span className="text-sm text-red-500">-${Number(selected.deductions).toLocaleString()}</span>
+            <div className="flex justify-between py-3 border-b border-gray-100 dark:border-slate-800">
+              <span className="text-sm text-gray-600 dark:text-slate-400">Deductions (Tax &amp; Benefits)</span>
+              <span className="text-sm text-red-500 dark:text-rose-400">-${Number(selected.deductions).toLocaleString()}</span>
             </div>
             <div className="flex justify-between py-4 mt-1">
-              <span className="text-base font-bold text-gray-900">Net Pay</span>
-              <span className="text-xl font-bold text-[#253C7D]">${Number(selected.net_pay).toLocaleString()}</span>
+              <span className="text-base font-bold text-gray-900 dark:text-slate-100">Net Pay</span>
+              <span className="text-xl font-bold text-[#253C7D] dark:text-blue-400">${Number(selected.net_pay).toLocaleString()}</span>
             </div>
           </div>
 
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg flex items-center gap-2 max-w-xl">
-            <i className="ri-information-line text-gray-400 text-sm" />
-            <p className="text-xs text-gray-500">Payslip generated by HRM_OPS HRMS. For payroll queries contact your HR administrator.</p>
+          <div className="mt-4 p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg flex items-center gap-2 max-w-xl">
+            <i className="ri-information-line text-gray-400 dark:text-slate-500 text-sm" />
+            <p className="text-xs text-gray-500 dark:text-slate-400">Payslip generated by HRM_OPS HRMS. For payroll queries contact your HR administrator.</p>
           </div>
         </div>
       )}

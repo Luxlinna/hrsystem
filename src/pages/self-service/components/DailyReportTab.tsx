@@ -220,8 +220,8 @@ export default function DailyReportTab({ employeeId }: Props) {
 
       {/* Day View */}
       {view === "day" && (
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[110px_1.2fr_1fr] gap-3 px-4 py-2 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+        <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+          <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[110px_1.2fr_1fr] gap-3 px-4 py-2 bg-gray-50 dark:bg-slate-800/80 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">
             <span>Time</span>
             <span>Activity</span>
             <span className="hidden sm:block">Notes</span>
@@ -229,7 +229,7 @@ export default function DailyReportTab({ employeeId }: Props) {
           {dayLogs.length ? (
             dayLogs.map((l) => <DailyReportEntryRow key={l.id} log={l} onEdit={openEdit} />)
           ) : (
-            <p className="text-center py-10 text-gray-400 text-[13px]">No entries for this day yet.</p>
+            <p className="text-center py-10 text-gray-400 dark:text-slate-500 text-[13px]">No entries for this day yet.</p>
           )}
         </div>
       )}
@@ -240,17 +240,17 @@ export default function DailyReportTab({ employeeId }: Props) {
           {weekDays.map((ymd) => {
             const dayEntries = logs.filter((l) => l.log_date === ymd);
             return (
-              <div key={ymd} className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2 bg-gray-50">
-                  <span className="text-[12px] font-semibold text-gray-700">{fmtDateLabel(ymd)}</span>
-                  <button onClick={() => openAdd(ymd)} className="text-[#253C7D] text-[11px] font-semibold hover:underline cursor-pointer">
+              <div key={ymd} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+                <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-slate-800/80 border-b border-gray-50 dark:border-slate-800">
+                  <span className="text-[12px] font-semibold text-gray-700 dark:text-slate-200">{fmtDateLabel(ymd)}</span>
+                  <button onClick={() => openAdd(ymd)} className="text-[#253C7D] dark:text-blue-400 text-[11px] font-semibold hover:underline cursor-pointer">
                     + Add
                   </button>
                 </div>
                 {dayEntries.length ? (
                   dayEntries.map((l) => <DailyReportEntryRow key={l.id} log={l} onEdit={openEdit} />)
                 ) : (
-                  <p className="text-center py-4 text-gray-300 text-[12px]">No entries</p>
+                  <p className="text-center py-4 text-gray-400 dark:text-slate-500 text-[12px]">No entries</p>
                 )}
               </div>
             );
@@ -262,15 +262,15 @@ export default function DailyReportTab({ employeeId }: Props) {
       {view === "month" && (
         <div className="space-y-3">
           {monthDays.length === 0 && (
-            <p className="text-center py-10 text-gray-400 text-[13px] bg-white border border-gray-100 rounded-xl">
+            <p className="text-center py-10 text-gray-400 dark:text-slate-500 text-[13px] bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl shadow-2xs">
               No entries this month yet.
             </p>
           )}
           {monthDays.map((ymd) => {
             const dayEntries = logs.filter((l) => l.log_date === ymd);
             return (
-              <div key={ymd} className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-                <div className="px-4 py-2 bg-gray-50 text-[12px] font-semibold text-gray-700">{fmtDateLabel(ymd)}</div>
+              <div key={ymd} className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+                <div className="px-4 py-2 bg-gray-50 dark:bg-slate-800/80 border-b border-gray-50 dark:border-slate-800 text-[12px] font-semibold text-gray-700 dark:text-slate-200">{fmtDateLabel(ymd)}</div>
                 {dayEntries.map((l) => (
                   <DailyReportEntryRow key={l.id} log={l} onEdit={openEdit} />
                 ))}
@@ -282,28 +282,28 @@ export default function DailyReportTab({ employeeId }: Props) {
 
       {/* Year View */}
       {view === "year" && (
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full text-[13px] min-w-[340px]">
             <thead>
-              <tr className="border-b border-gray-100 text-left text-[11px] text-gray-500 uppercase tracking-wide">
+              <tr className="border-b border-gray-100 dark:border-slate-800 text-left text-[11px] text-gray-500 dark:text-slate-400 uppercase tracking-wide bg-gray-50/80 dark:bg-slate-800/80">
                 <th className="px-4 py-3">Month</th>
                 <th className="px-4 py-3">Entries</th>
                 <th className="px-4 py-3">Hours Logged</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
               {monthSummary.map((m) => (
-                <tr key={m.label} className="border-b border-gray-50 last:border-0">
-                  <td className="px-4 py-2.5 font-medium text-gray-800">{m.label}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{m.entries}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{m.hours}h</td>
+                <tr key={m.label} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                  <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-slate-200">{m.label}</td>
+                  <td className="px-4 py-2.5 text-gray-600 dark:text-slate-400">{m.entries}</td>
+                  <td className="px-4 py-2.5 text-gray-600 dark:text-slate-400">{m.hours}h</td>
                 </tr>
               ))}
-              <tr className="bg-gray-50 font-semibold">
-                <td className="px-4 py-2.5 text-gray-900">Total</td>
-                <td className="px-4 py-2.5 text-gray-900">{monthSummary.reduce((s, m) => s + m.entries, 0)}</td>
-                <td className="px-4 py-2.5 text-gray-900">{Math.round(monthSummary.reduce((s, m) => s + m.hours, 0) * 10) / 10}h</td>
+              <tr className="bg-gray-50 dark:bg-slate-800 font-semibold">
+                <td className="px-4 py-2.5 text-gray-900 dark:text-slate-100">Total</td>
+                <td className="px-4 py-2.5 text-gray-900 dark:text-slate-100">{monthSummary.reduce((s, m) => s + m.entries, 0)}</td>
+                <td className="px-4 py-2.5 text-gray-900 dark:text-slate-100">{Math.round(monthSummary.reduce((s, m) => s + m.hours, 0) * 10) / 10}h</td>
               </tr>
             </tbody>
           </table>

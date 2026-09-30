@@ -25,27 +25,27 @@ export const AttendanceStatsSummary = memo(function AttendanceStatsSummary({
       {cards.map((s) => (
         <div
           key={s.label}
-          className="bg-white border border-slate-200/80 rounded-lg sm:rounded-xl p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between"
+          className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-lg sm:rounded-xl p-2.5 sm:p-3 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between"
         >
           <div className="flex items-center justify-between gap-1.5">
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
               {s.label}
             </span>
             <i
               className={`${s.icon} text-xs ${
-                s.isDanger ? "text-rose-500" : s.isWarning ? "text-amber-500" : "text-slate-400"
+                s.isDanger ? "text-rose-500 dark:text-rose-400" : s.isWarning ? "text-amber-500 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"
               } shrink-0`}
             />
           </div>
           <div className="mt-1.5">
             <p
               className={`text-lg sm:text-xl font-bold tracking-tight leading-tight ${
-                s.isDanger ? "text-rose-700" : s.isWarning ? "text-amber-700" : "text-slate-900"
+                s.isDanger ? "text-rose-700 dark:text-rose-400" : s.isWarning ? "text-amber-700 dark:text-amber-400" : "text-slate-900 dark:text-slate-100"
               }`}
             >
               {s.value}
             </p>
-            <p className="text-[10px] text-slate-400 mt-0.5 font-medium truncate">
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 font-medium truncate">
               {s.sub}
             </p>
           </div>

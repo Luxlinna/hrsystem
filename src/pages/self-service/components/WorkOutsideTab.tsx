@@ -90,13 +90,13 @@ export default function WorkOutsideTab({ employeeId }: Props) {
       {/* Header + Month filter */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <i className="ri-map-pin-user-line text-[#253C7D]" />
-          <span className="text-sm font-semibold text-gray-800">Outside Work History</span>
+          <i className="ri-map-pin-user-line text-[#253C7D] dark:text-blue-400" />
+          <span className="text-sm font-semibold text-gray-800 dark:text-slate-100">Outside Work History</span>
         </div>
         <select
           value={filterMonth}
           onChange={(e) => setFilterMonth(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 cursor-pointer"
+          className="px-3 py-2 border border-gray-200 dark:border-slate-800 rounded-lg text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#253C7D]/30 dark:focus:ring-blue-500/30 cursor-pointer"
         >
           {monthOptions.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
@@ -113,9 +113,9 @@ export default function WorkOutsideTab({ employeeId }: Props) {
 
       {/* Records */}
       {records.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-40 bg-gray-50 rounded-xl text-gray-400">
-          <i className="ri-map-pin-user-line text-3xl mb-2" />
-          <p className="text-sm">No outside work records for this period</p>
+        <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-slate-800/40 rounded-xl text-gray-400 dark:text-slate-500 border border-slate-100 dark:border-slate-800">
+          <i className="ri-map-pin-user-line text-3xl mb-2 text-slate-300 dark:text-slate-600" />
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">No outside work records for this period</p>
         </div>
       ) : (
         <div className="space-y-3">

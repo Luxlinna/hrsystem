@@ -154,7 +154,7 @@ export const SelfServiceExportMenu = memo(function SelfServiceExportMenu({
       ext: ".pdf",
       desc: "Print-ready document with employee headers & metrics",
       icon: "ri-file-pdf-line",
-      color: "text-rose-600 bg-rose-50 group-hover:bg-rose-100",
+      color: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 group-hover:bg-rose-100 dark:group-hover:bg-rose-900/50",
     },
     {
       fmt: "xlsx" as Format,
@@ -162,7 +162,7 @@ export const SelfServiceExportMenu = memo(function SelfServiceExportMenu({
       ext: ".xlsx",
       desc: "Structured spreadsheet workbook for personal records",
       icon: "ri-file-excel-2-line",
-      color: "text-emerald-600 bg-emerald-50 group-hover:bg-emerald-100",
+      color: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50",
     },
     {
       fmt: "csv" as Format,
@@ -170,7 +170,7 @@ export const SelfServiceExportMenu = memo(function SelfServiceExportMenu({
       ext: ".csv",
       desc: "Raw comma-separated table export",
       icon: "ri-file-text-line",
-      color: "text-blue-600 bg-blue-50 group-hover:bg-blue-100",
+      color: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50",
     },
   ];
 
@@ -180,12 +180,12 @@ export const SelfServiceExportMenu = memo(function SelfServiceExportMenu({
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         disabled={disabled || !employee}
-        className="inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/80 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all shadow-2xs disabled:opacity-50 cursor-pointer active:scale-98 whitespace-nowrap"
+        className="inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-semibold transition-all shadow-2xs disabled:opacity-50 cursor-pointer active:scale-98 whitespace-nowrap"
       >
         {exporting ? (
-          <span className="w-3.5 h-3.5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+          <span className="w-3.5 h-3.5 border-2 border-slate-900 dark:border-slate-100 border-t-transparent dark:border-t-transparent rounded-full animate-spin" />
         ) : (
-          <i className="ri-download-2-line text-sm text-slate-600" />
+          <i className="ri-download-2-line text-sm text-slate-600 dark:text-slate-300" />
         )}
         <span>
           {exporting ? "Exporting..." : (
@@ -194,16 +194,16 @@ export const SelfServiceExportMenu = memo(function SelfServiceExportMenu({
             </>
           )}
         </span>
-        <i className={`ri-arrow-down-s-line text-xs text-slate-400 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+        <i className={`ri-arrow-down-s-line text-xs text-slate-400 dark:text-slate-500 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
-          <div className="px-3 py-1.5 border-b border-gray-100 mb-1 flex items-center justify-between">
-            <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
+        <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+          <div className="px-3 py-1.5 border-b border-gray-100 dark:border-slate-800 mb-1 flex items-center justify-between">
+            <span className="text-[10px] font-extrabold text-gray-400 dark:text-slate-400 uppercase tracking-wider">
               {scopeLabel}
             </span>
-            <span className="text-[10px] font-bold text-gray-400">
+            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400">
               Personal Record
             </span>
           </div>
@@ -214,7 +214,7 @@ export const SelfServiceExportMenu = memo(function SelfServiceExportMenu({
                 key={opt.fmt}
                 type="button"
                 onClick={() => handleExport(opt.fmt)}
-                className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group"
+                className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors text-left cursor-pointer group"
               >
                 <div
                   className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 transition-colors ${opt.color}`}
@@ -223,14 +223,14 @@ export const SelfServiceExportMenu = memo(function SelfServiceExportMenu({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-800 group-hover:text-[#253C7D] transition-colors truncate">
+                    <span className="text-xs font-bold text-gray-800 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-blue-400 transition-colors truncate">
                       {opt.label}
                     </span>
-                    <span className="text-[10px] font-mono text-gray-400 ml-1">
+                    <span className="text-[10px] font-mono text-gray-400 dark:text-slate-500 ml-1">
                       {opt.ext}
                     </span>
                   </div>
-                  <p className="text-[10px] text-gray-400 font-medium truncate mt-0.5">
+                  <p className="text-[10px] text-gray-400 dark:text-slate-400 font-medium truncate mt-0.5">
                     {opt.desc}
                   </p>
                 </div>

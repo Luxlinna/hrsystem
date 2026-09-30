@@ -46,30 +46,30 @@ export function TabsNav({ activeTab, onTabChange }: Props) {
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 bg-white border rounded-xl shadow-2xs transition-all cursor-pointer select-none ${
+          className={`w-full flex items-center justify-between px-3.5 py-2.5 bg-white dark:bg-slate-900 border rounded-xl shadow-2xs transition-all cursor-pointer select-none ${
             isOpen
-              ? "border-[#253C7D] ring-2 ring-[#253C7D]/15 shadow-sm"
-              : "border-slate-200/90 hover:border-slate-300"
+              ? "border-[#253C7D] dark:border-blue-500 ring-2 ring-[#253C7D]/15 dark:ring-blue-500/20 shadow-sm"
+              : "border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
           }`}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 text-[#253C7D] flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-[#253C7D]/10 dark:bg-blue-500/15 text-[#253C7D] dark:text-blue-400 flex items-center justify-center shrink-0">
               <i className={`${currentTab.icon} text-sm`} />
             </div>
-            <span className="text-xs font-bold text-slate-900 truncate">
+            <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
               {currentTab.label}
             </span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[10.5px] font-medium text-slate-400">
+            <span className="text-[10.5px] font-medium text-slate-400 dark:text-slate-500">
               {SELF_SERVICE_TABS.findIndex((t) => t.id === activeTab) + 1} / {SELF_SERVICE_TABS.length}
             </span>
             <i
-              className={`ri-arrow-down-s-line text-slate-400 text-base transition-transform duration-200 ${
-                isOpen ? "rotate-180 text-[#253C7D]" : ""
+              className={`ri-arrow-down-s-line text-slate-400 dark:text-slate-500 text-base transition-transform duration-200 ${
+                isOpen ? "rotate-180 text-[#253C7D] dark:text-blue-400" : ""
               }`}
             />
           </div>
@@ -79,7 +79,7 @@ export function TabsNav({ activeTab, onTabChange }: Props) {
         {isOpen && (
           <div
             role="listbox"
-            className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200/90 rounded-xl shadow-xl z-40 p-1 divide-y divide-slate-100 overflow-hidden animate-in fade-in zoom-in-98 duration-150"
+            className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-xl z-40 p-1 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden animate-in fade-in zoom-in-98 duration-150"
           >
             <div className="space-y-0.5">
               {SELF_SERVICE_TABS.map((tab) => {
@@ -93,21 +93,21 @@ export function TabsNav({ activeTab, onTabChange }: Props) {
                     onClick={() => handleSelect(tab.id)}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer text-left ${
                       isActive
-                        ? "bg-[#253C7D]/10 text-[#253C7D] font-bold"
-                        : "text-slate-700 hover:bg-slate-50 font-medium"
+                        ? "bg-[#253C7D]/10 dark:bg-blue-500/15 text-[#253C7D] dark:text-blue-400 font-bold"
+                        : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium"
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <i
                         className={`${tab.icon} text-sm ${
-                          isActive ? "text-[#253C7D]" : "text-slate-400"
+                          isActive ? "text-[#253C7D] dark:text-blue-400" : "text-slate-400 dark:text-slate-500"
                         }`}
                       />
                       <span className="truncate">{tab.label}</span>
                     </div>
 
                     {isActive && (
-                      <i className="ri-check-line text-sm text-[#253C7D] font-bold shrink-0 ml-2" />
+                      <i className="ri-check-line text-sm text-[#253C7D] dark:text-blue-400 font-bold shrink-0 ml-2" />
                     )}
                   </button>
                 );
@@ -118,7 +118,7 @@ export function TabsNav({ activeTab, onTabChange }: Props) {
       </div>
 
       {/* Desktop: Clean Horizontal Tabs */}
-      <div className="hidden sm:flex items-center gap-1.5 border-b border-slate-200/80 overflow-x-auto text-[13px] no-scrollbar">
+      <div className="hidden sm:flex items-center gap-1.5 border-b border-slate-200/80 dark:border-slate-800 overflow-x-auto text-[13px] no-scrollbar">
         {SELF_SERVICE_TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -128,8 +128,8 @@ export function TabsNav({ activeTab, onTabChange }: Props) {
               onClick={() => onTabChange(tab.id)}
               className={`pb-2.5 px-3 font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 outline-none focus:outline-none focus:ring-0 select-none ${
                 isActive
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-slate-500 hover:text-slate-900"
+                  ? "border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
             >
               <i className={`${tab.icon} text-sm`} />

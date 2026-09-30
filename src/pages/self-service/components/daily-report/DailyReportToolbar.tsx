@@ -29,13 +29,15 @@ export function DailyReportToolbar({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 shadow-2xs">
           {(["day", "week", "month", "year"] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`px-3 py-1.5 rounded-md text-[12px] font-semibold capitalize cursor-pointer ${
-                view === v ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-700"
+              className={`px-3 py-1.5 rounded-md text-[12px] font-semibold capitalize cursor-pointer transition-colors ${
+                view === v
+                  ? "bg-gray-900 dark:bg-blue-600 text-white"
+                  : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
               }`}
             >
               {v}
@@ -45,11 +47,11 @@ export function DailyReportToolbar({
         <div className="flex items-center gap-2">
           <button
             onClick={() => shift(-1)}
-            className="w-8 h-8 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer"
+            className="w-8 h-8 shrink-0 flex items-center justify-center border border-gray-200 dark:border-slate-800 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
           >
             <i className="ri-arrow-left-s-line" />
           </button>
-          <p className="text-[13px] font-semibold text-gray-800 min-w-[140px] sm:min-w-[160px] text-center">
+          <p className="text-[13px] font-semibold text-gray-800 dark:text-slate-200 min-w-[140px] sm:min-w-[160px] text-center">
             {view === "day" &&
               anchor.toLocaleDateString("en-US", {
                 weekday: "long",
@@ -63,21 +65,21 @@ export function DailyReportToolbar({
           </p>
           <button
             onClick={() => shift(1)}
-            className="w-8 h-8 shrink-0 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer"
+            className="w-8 h-8 shrink-0 flex items-center justify-center border border-gray-200 dark:border-slate-800 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
           >
             <i className="ri-arrow-right-s-line" />
           </button>
         </div>
         <button
           onClick={() => setAnchor(new Date())}
-          className="text-[#253C7D] text-[12px] font-medium hover:underline cursor-pointer shrink-0"
+          className="text-[#253C7D] dark:text-blue-400 text-[12px] font-medium hover:underline cursor-pointer shrink-0"
         >
           Today
         </button>
       </div>
       <button
         onClick={() => openAdd()}
-        className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 bg-[#253C7D] text-white px-4 py-2.5 sm:py-2 rounded-lg text-[12px] font-semibold hover:bg-[#1F336A] cursor-pointer"
+        className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 bg-[#253C7D] dark:bg-blue-600 text-white px-4 py-2.5 sm:py-2 rounded-lg text-[12px] font-semibold hover:bg-[#1F336A] dark:hover:bg-blue-500 shadow-2xs cursor-pointer"
       >
         <i className="ri-add-line" /> Add Entry
       </button>

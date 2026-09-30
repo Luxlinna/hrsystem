@@ -31,19 +31,19 @@ export function DailyReportEntryRow({ log, onEdit }: DailyReportEntryRowProps) {
     <div
       key={log.id}
       onClick={() => onEdit(log)}
-      className="grid grid-cols-[110px_1fr] sm:grid-cols-[110px_1.2fr_1fr] gap-3 px-4 py-3 border-t border-gray-100 items-start hover:bg-gray-50/70 cursor-pointer group"
+      className="grid grid-cols-[110px_1fr] sm:grid-cols-[110px_1.2fr_1fr] gap-3 px-4 py-3 border-t border-gray-100 dark:border-slate-800 items-start hover:bg-gray-50/70 dark:hover:bg-slate-800/60 cursor-pointer group transition-colors"
     >
       <div>
-        <p className="text-[12px] font-semibold text-gray-800">
+        <p className="text-[12px] font-semibold text-gray-800 dark:text-slate-200">
           {fmtTime(log.start_time)} – {fmtTime(log.end_time)}
         </p>
-        {dur > 0 && <p className="text-[11px] text-gray-400">{Math.round(dur * 10) / 10}h</p>}
+        {dur > 0 && <p className="text-[11px] text-gray-400 dark:text-slate-500">{Math.round(dur * 10) / 10}h</p>}
       </div>
       <div>
-        <p className="text-[13px] text-gray-900 font-medium">{log.activity}</p>
-        <p className="text-[12px] text-gray-500 sm:hidden mt-1">{log.notes || "—"}</p>
+        <p className="text-[13px] text-gray-900 dark:text-slate-100 font-medium">{log.activity}</p>
+        <p className="text-[12px] text-gray-500 dark:text-slate-400 sm:hidden mt-1">{log.notes || "—"}</p>
       </div>
-      <p className="text-[12px] text-gray-500 hidden sm:block truncate">{log.notes || "—"}</p>
+      <p className="text-[12px] text-gray-500 dark:text-slate-400 hidden sm:block truncate">{log.notes || "—"}</p>
     </div>
   );
 }

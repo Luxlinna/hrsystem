@@ -31,18 +31,18 @@ export function AttendanceHistoryCard({
   getStatusColor,
 }: AttendanceHistoryCardProps) {
   return (
-    <div className="bg-white border border-slate-200/80 rounded-xl shadow-2xs overflow-hidden">
-      <div className="flex items-center justify-between px-3.5 py-2 border-b border-slate-100 bg-slate-50/60">
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Attendance History</p>
-        <p className="text-[10px] text-slate-400 font-mono">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden">
+      <div className="flex items-center justify-between px-3.5 py-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/60">
+        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Attendance History</p>
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
           {totalHours.toFixed(1)}h · {records.length} days
         </p>
       </div>
 
       {records.length === 0 ? (
-        <div className="text-center py-8 text-slate-400">
-          <i className="ri-fingerprint-line text-2xl mb-1.5 block text-slate-300" />
-          <p className="text-xs font-medium text-slate-600">No attendance records yet</p>
+        <div className="text-center py-8 text-slate-400 dark:text-slate-500">
+          <i className="ri-fingerprint-line text-2xl mb-1.5 block text-slate-300 dark:text-slate-600" />
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-300">No attendance records yet</p>
         </div>
       ) : (
         <>
@@ -52,36 +52,36 @@ export function AttendanceHistoryCard({
               const isOutside = r.notes?.toLowerCase().includes("outside work");
               const isOntime = (r.status === "ontime" || r.status === "present") && !isOutside && (r.late_minutes || 0) === 0 && (r.early_leave_minutes || 0) === 0;
               return (
-                <div key={r.id} className="bg-white border border-slate-200/70 rounded-lg p-2.5 shadow-2xs">
+                <div key={r.id} className="bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 rounded-lg p-2.5 shadow-2xs">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-slate-900">
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
                       {new Date(r.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                     </span>
                     {!isOntime && (
                       <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[9.5px] font-semibold capitalize ${
-                        isOutside ? "bg-teal-50 text-teal-700 border border-teal-200" : getStatusColor(r.status)
+                        isOutside ? "bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60" : getStatusColor(r.status)
                       }`}>
                         {isOutside ? "Outside Work" : r.status}
                       </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5 text-[11.5px] text-center bg-slate-50/50 rounded p-1.5 border border-slate-100">
+                  <div className="grid grid-cols-3 gap-1.5 text-[11.5px] text-center bg-slate-50/50 dark:bg-slate-900/50 rounded p-1.5 border border-slate-100 dark:border-slate-800">
                     <div>
-                      <p className="text-slate-400 text-[9px] uppercase font-bold">In</p>
-                      <p className="text-slate-800 font-semibold tabular-nums mt-0.5">{r.clock_in?.slice(0, 5) || "—"}</p>
+                      <p className="text-slate-400 dark:text-slate-500 text-[9px] uppercase font-bold">In</p>
+                      <p className="text-slate-800 dark:text-slate-200 font-semibold tabular-nums mt-0.5">{r.clock_in?.slice(0, 5) || "—"}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 text-[9px] uppercase font-bold">Out</p>
-                      <p className="text-slate-800 font-semibold tabular-nums mt-0.5">
+                      <p className="text-slate-400 dark:text-slate-500 text-[9px] uppercase font-bold">Out</p>
+                      <p className="text-slate-800 dark:text-slate-200 font-semibold tabular-nums mt-0.5">
                         {r.clock_out?.slice(0, 5) || "—"}
                         {r.clock_out && r.early_leave_minutes > 0 && (
-                          <span className="block text-amber-600 text-[9px] font-medium">{r.early_leave_minutes}m early</span>
+                          <span className="block text-amber-600 dark:text-amber-400 text-[9px] font-medium">{r.early_leave_minutes}m early</span>
                         )}
                       </p>
                     </div>
                     <div>
-                      <p className="text-slate-400 text-[9px] uppercase font-bold">Hours</p>
-                      <p className="text-slate-800 font-semibold tabular-nums mt-0.5">{r.hours_worked ? `${r.hours_worked}h` : "—"}</p>
+                      <p className="text-slate-400 dark:text-slate-500 text-[9px] uppercase font-bold">Hours</p>
+                      <p className="text-slate-800 dark:text-slate-200 font-semibold tabular-nums mt-0.5">{r.hours_worked ? `${r.hours_worked}h` : "—"}</p>
                     </div>
                   </div>
                 </div>
@@ -92,7 +92,7 @@ export function AttendanceHistoryCard({
           {/* Desktop/tablet: table */}
           <div className="hidden sm:block overflow-x-auto max-h-[440px] overflow-y-auto">
             <div className="min-w-[560px]">
-              <div className="grid grid-cols-[1.4fr_1fr_1.3fr_1fr_0.9fr] bg-gray-50/90 backdrop-blur px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider sticky top-0 z-10 border-b border-gray-100">
+              <div className="grid grid-cols-[1.4fr_1fr_1.3fr_1fr_0.9fr] bg-gray-50/90 dark:bg-slate-800/90 backdrop-blur px-4 py-2.5 text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider sticky top-0 z-10 border-b border-gray-100 dark:border-slate-800">
                 <span>Date</span>
                 <span>Check In</span>
                 <span>Check Out</span>
@@ -108,41 +108,41 @@ export function AttendanceHistoryCard({
                 return (
                   <div
                     key={r.id}
-                    className={`grid grid-cols-[1.4fr_1fr_1.3fr_1fr_0.9fr] items-center px-4 py-2.5 border-b border-gray-50 last:border-0 text-[12px] hover:bg-slate-50/80 transition-colors ${
-                      r.date === today ? "bg-[#253C7D]/[0.03]" : ""
+                    className={`grid grid-cols-[1.4fr_1fr_1.3fr_1fr_0.9fr] items-center px-4 py-2.5 border-b border-gray-50 dark:border-slate-800 last:border-0 text-[12px] hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
+                      r.date === today ? "bg-[#253C7D]/[0.03] dark:bg-blue-500/10" : ""
                     }`}
                   >
-                    <span className="text-gray-800 font-semibold">
+                    <span className="text-gray-800 dark:text-slate-200 font-semibold">
                       {dt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      <span className="text-gray-400 font-medium ml-1.5">
+                      <span className="text-gray-400 dark:text-slate-500 font-medium ml-1.5">
                         {dt.toLocaleDateString("en-US", { weekday: "short" })}
                       </span>
                       {r.date === today && (
-                        <span className="ml-1.5 text-[9px] font-bold text-[#253C7D] bg-[#253C7D]/10 px-1.5 py-0.5 rounded">TODAY</span>
+                        <span className="ml-1.5 text-[9px] font-bold text-[#253C7D] dark:text-blue-400 bg-[#253C7D]/10 dark:bg-blue-500/20 px-1.5 py-0.5 rounded">TODAY</span>
                       )}
                     </span>
-                    <span className="text-gray-600 tabular-nums">
+                    <span className="text-gray-600 dark:text-slate-400 tabular-nums">
                       {r.clock_in?.slice(0, 5) || "—"}
                       {isLate && (
-                        <span className="text-amber-600 text-[10px] font-semibold ml-1">+{r.late_minutes}m</span>
+                        <span className="text-amber-600 dark:text-amber-400 text-[10px] font-semibold ml-1">+{r.late_minutes}m</span>
                       )}
                     </span>
-                    <span className="text-gray-600 tabular-nums">
-                      {r.clock_out?.slice(0, 5) || (r.clock_in ? <span className="text-emerald-600 font-semibold">Active</span> : "—")}
+                    <span className="text-gray-600 dark:text-slate-400 tabular-nums">
+                      {r.clock_out?.slice(0, 5) || (r.clock_in ? <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Active</span> : "—")}
                       {isEarly && (
-                        <span className="text-orange-500 text-[10px] font-semibold ml-1">−{r.early_leave_minutes}m</span>
+                        <span className="text-orange-500 dark:text-orange-400 text-[10px] font-semibold ml-1">−{r.early_leave_minutes}m</span>
                       )}
                     </span>
-                    <span className="text-gray-800 font-bold tabular-nums">{r.hours_worked ? `${r.hours_worked}h` : "—"}</span>
+                    <span className="text-gray-800 dark:text-slate-200 font-bold tabular-nums">{r.hours_worked ? `${r.hours_worked}h` : "—"}</span>
                     <span className="flex justify-end">
                       {!isOntime ? (
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
-                          isOutside ? "bg-teal-50 text-teal-700 border border-teal-200" : getStatusColor(r.status)
+                          isOutside ? "bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60" : getStatusColor(r.status)
                         }`}>
                           {isOutside ? "Outside Working" : r.status}
                         </span>
                       ) : (
-                        <span className="text-slate-300 font-mono text-xs">—</span>
+                        <span className="text-slate-300 dark:text-slate-600 font-mono text-xs">—</span>
                       )}
                     </span>
                   </div>

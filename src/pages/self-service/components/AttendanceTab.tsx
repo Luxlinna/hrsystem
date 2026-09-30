@@ -121,26 +121,26 @@ export default function AttendanceTab({ employeeId, employee }: Props) {
       {/* Month filter & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
         <div className="flex items-center gap-1.5">
-          <i className="ri-calendar-check-line text-slate-500 text-sm" />
-          <span className="text-sm font-bold text-slate-900 tracking-tight">Attendance Log</span>
+          <i className="ri-calendar-check-line text-slate-500 dark:text-slate-400 text-sm" />
+          <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">Attendance Log</span>
         </div>
         <div className="flex items-center gap-2 self-stretch sm:self-auto">
           <div className="relative flex-1 sm:flex-initial">
             <select
               value={filterMonth}
               onChange={(e) => setFilterMonth(e.target.value)}
-              className="w-full appearance-none pl-3 pr-7 py-1.5 border border-slate-200/90 rounded-lg text-xs bg-white text-slate-700 font-medium focus:outline-none focus:border-[#253C7D] cursor-pointer shadow-2xs"
+              className="w-full appearance-none pl-3 pr-7 py-1.5 border border-slate-200/90 dark:border-slate-800 rounded-lg text-xs bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:border-[#253C7D] dark:focus:border-blue-500 cursor-pointer shadow-2xs"
             >
               {monthOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
-            <i className="ri-arrow-down-s-line absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
+            <i className="ri-arrow-down-s-line absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-xs pointer-events-none" />
           </div>
           <button
             type="button"
             onClick={() => setShowTimeLogForm(true)}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3064] text-white rounded-lg text-xs font-semibold shadow-2xs cursor-pointer active:scale-98 shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#253C7D] dark:bg-blue-600 hover:bg-[#1E3064] dark:hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-2xs cursor-pointer active:scale-98 shrink-0"
           >
             <i className="ri-add-line text-xs" />
             <span>Time Log</span>
@@ -158,23 +158,23 @@ export default function AttendanceTab({ employeeId, employee }: Props) {
 
       {/* Records List */}
       {records.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl text-slate-400 border border-slate-200/80 p-6 text-center shadow-2xs">
-          <i className="ri-fingerprint-line text-2xl mb-1.5 text-slate-300" />
-          <p className="text-xs font-semibold text-slate-600">No attendance records found</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">No clock-in/out records for {filterMonth}.</p>
+        <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-slate-900 rounded-xl text-slate-400 dark:text-slate-500 border border-slate-200/80 dark:border-slate-800 p-6 text-center shadow-2xs">
+          <i className="ri-fingerprint-line text-2xl mb-1.5 text-slate-300 dark:text-slate-600" />
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">No attendance records found</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">No clock-in/out records for {filterMonth}.</p>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-2xs">
-          <div className="bg-slate-50/80 px-3.5 py-2 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+          <div className="bg-slate-50/80 dark:bg-slate-800/80 px-3.5 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Daily Attendance Records
             </span>
-            <span className="text-[10px] font-semibold text-slate-400 bg-slate-200/60 px-1.5 py-0.2 rounded-full">
+            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-700/60 px-1.5 py-0.2 rounded-full">
               {records.length}
             </span>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {records.map((r) => (
               <AttendanceRecordRow key={r.id} record={r} />
             ))}
