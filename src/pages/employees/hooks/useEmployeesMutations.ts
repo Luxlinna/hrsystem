@@ -241,6 +241,20 @@ export function useEmployeesMutations({
           resolvedLocation = resolvedBranch.substring(5);
           resolvedBranch = targetBranch || null;
         }
+        if (resolvedBranch && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedBranch)) {
+          resolvedBranch = null;
+        }
+        if (resolvedLocation && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedLocation)) {
+          resolvedLocation = null;
+        }
+
+        let resolvedReportsTo: string | null = null;
+        if (form.reports_to) {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(form.reports_to.trim());
+          if (isUuid) {
+            resolvedReportsTo = form.reports_to.trim();
+          }
+        }
 
         let cleanEmail = form.email?.trim() ? form.email.trim().toLowerCase() : null;
         let cleanPhone = form.phone?.trim() || null;
@@ -392,7 +406,7 @@ export function useEmployeesMutations({
           start_date: form.start_date || form.join_date || new Date().toISOString().split("T")[0],
           join_date: form.join_date || form.start_date || new Date().toISOString().split("T")[0],
           line_manager: form.line_manager?.trim() || null,
-          reports_to: form.reports_to || null,
+          reports_to: resolvedReportsTo,
           contract_type: form.contract_type || "FDC",
           fdc_end_date: form.fdc_end_date || null,
           contract_effective_date: form.contract_effective_date || null,

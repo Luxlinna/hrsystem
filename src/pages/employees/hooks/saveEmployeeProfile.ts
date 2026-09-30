@@ -150,11 +150,11 @@ export async function executeSaveEmployeeProfile({
       phone: cleanPhone,
       role: form.role,
       department: form.department,
-      branch_id: form.branch_id || null,
-      default_work_location_id: form.default_work_location_id || null,
+      branch_id: form.branch_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(form.branch_id)) ? form.branch_id : null,
+      default_work_location_id: form.default_work_location_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(form.default_work_location_id)) ? form.default_work_location_id : null,
       status: form.status,
       join_date: form.join_date,
-      reports_to: form.reports_to,
+      reports_to: form.reports_to && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(form.reports_to)) ? form.reports_to : null,
       biometric_user_id: form.biometric_user_id?.trim() ? formatPaddedPin(form.biometric_user_id.trim()) : null,
     })
     .eq("id", id);

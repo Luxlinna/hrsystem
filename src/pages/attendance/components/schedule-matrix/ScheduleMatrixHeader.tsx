@@ -1,5 +1,4 @@
 import { useState, memo } from "react";
-import { useBranchScope } from "@/context/BranchContext";
 
 interface ScheduleMatrixHeaderProps {
   activeTab: "schedules" | "no_schedules";
@@ -17,9 +16,6 @@ export const ScheduleMatrixHeader = memo(function ScheduleMatrixHeader({
   onNavigateToShifts,
 }: ScheduleMatrixHeaderProps) {
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
-  const { selectedBranchId, visibleBranches } = useBranchScope();
-  const currentBranchOrSite = visibleBranches.find((b) => b.id === selectedBranchId);
-  const isFourPunch = Boolean(currentBranchOrSite?.is_four_punch_enabled);
 
   return (
     <div className="space-y-4">
@@ -29,12 +25,6 @@ export const ScheduleMatrixHeader = memo(function ScheduleMatrixHeader({
           <h1 className="text-2xl font-bold text-gray-800 dark:text-slate-100 tracking-tight">
             Attendance Schedule
           </h1>
-          {isFourPunch && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 shadow-2xs">
-              <i className="ri-fingerprint-line text-xs" />
-              4-Punch Policy ({currentBranchOrSite?.name})
-            </span>
-          )}
         </div>
 
         <div className="relative">

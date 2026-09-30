@@ -63,7 +63,7 @@ export const DashboardDateRangePicker = memo(function DashboardDateRangePicker({
               onClick={() => handlePreset(preset)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                 active
-                  ? "bg-slate-900 text-white shadow-2xs"
+                  ? "bg-[#253C7D] text-white shadow-xs hover:bg-[#1E3064]"
                   : "bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
               }`}
             >
@@ -77,7 +77,7 @@ export const DashboardDateRangePicker = memo(function DashboardDateRangePicker({
           onClick={() => setShowCustom((v) => !v)}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
             dateRange.label === "Custom" || showCustom
-              ? "bg-slate-900 text-white shadow-2xs"
+              ? "bg-[#253C7D] text-white shadow-xs hover:bg-[#1E3064]"
               : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/60"
           }`}
         >
@@ -93,7 +93,7 @@ export const DashboardDateRangePicker = memo(function DashboardDateRangePicker({
             value={customFrom}
             max={todayStr()}
             onChange={(e) => setCustomFrom(e.target.value)}
-            className="px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+            className="px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           />
           <span className="text-slate-400 text-xs">to</span>
           <input
@@ -101,13 +101,13 @@ export const DashboardDateRangePicker = memo(function DashboardDateRangePicker({
             value={customTo}
             max={todayStr()}
             onChange={(e) => setCustomTo(e.target.value)}
-            className="px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
+            className="px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
           />
           <button
             type="button"
             onClick={handleCustomApply}
             disabled={!customFrom || !customTo}
-            className="px-3 py-1 text-xs bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+            className="px-3 py-1 text-xs bg-[#253C7D] hover:bg-[#1E3064] text-white font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
           >
             Apply
           </button>

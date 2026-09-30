@@ -172,16 +172,18 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
           <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">Supervisor Name</label>
           <div className="sm:col-span-2 relative flex items-center">
             <select
-              value={form.reports_to || form.line_manager || ""}
+              value={form.reports_to || ""}
               onChange={(e) => {
-                onChange("reports_to", e.target.value);
-                onChange("line_manager", e.target.value);
+                const selectedId = e.target.value;
+                const matched = buManagers.find((m) => m.id === selectedId);
+                onChange("reports_to", selectedId || "");
+                onChange("line_manager", matched ? `${matched.first_name} ${matched.last_name}`.trim() : "");
               }}
               className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer pr-8"
             >
               <option value="">Search / Select Supervisor (Line Manager)...</option>
               {buManagers.map((m) => (
-                <option key={m.id} value={`${m.first_name} ${m.last_name}`}>
+                <option key={m.id} value={m.id}>
                   {m.first_name} {m.last_name} ({m.role || "Manager"})
                 </option>
               ))}
