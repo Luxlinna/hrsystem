@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       console.error("Failed to link user_id in user_role_assignments:", linkError);
     }
 
-    const defaultAppUrl = (Deno.env.get("APP_URL") || "https://hrsystem.opssolution.tech").replace(/\/$/, "");
+    const defaultAppUrl = (Deno.env.get("APP_URL") || Deno.env.get("VITE_APP_URL") || "https://hrsystem.opssolution.tech").replace(/\/$/, "");
     const defaultRedirectUrl = `${defaultAppUrl}/reset-password`;
     const resolvedRedirectTo = (!redirect_to || redirect_to.includes("localhost") || redirect_to.includes("127.0.0.1") || redirect_to.includes("supabase.co"))
       ? defaultRedirectUrl

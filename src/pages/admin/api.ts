@@ -105,14 +105,14 @@ export async function manageUserRole(
 }
 
 function getAppResetPasswordRedirectUrl(): string {
-  const prodUrl = (import.meta.env.VITE_APP_URL || "").replace(/\/$/, "");
+  const prodUrl = (import.meta.env.VITE_APP_URL || "https://hrsystem.opssolution.tech").replace(/\/$/, "");
   if (typeof window !== "undefined" && window.location?.origin) {
     const isLocal =
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1";
     // When running on localhost, prefer public VITE_APP_URL so external invitees
     // receive a clickable public internet link instead of an unclickable localhost link.
-    if (isLocal && prodUrl && !prodUrl.includes("localhost")) {
+    if (isLocal && prodUrl && !prodUrl.includes("localhost") && !prodUrl.includes("127.0.0.1")) {
       return `${prodUrl}/reset-password`;
     }
     return `${window.location.origin}/reset-password`;
@@ -187,7 +187,7 @@ export async function handlePasswordResetEdgeAction(requestId: string, action: "
     body: JSON.stringify({
       request_id: requestId,
       action,
-      redirect_to: `${import.meta.env.VITE_APP_URL.replace(/\/$/, "")}/reset-password`,
+      redirect_to: getAppResetPasswordRedirectUrl(),
     }),
   });
   const result = await readFunctionJson(res);

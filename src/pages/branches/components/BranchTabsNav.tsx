@@ -42,15 +42,8 @@ export function BranchTabsNav({
     },
     {
       id: "sites" as BranchTabType,
-      label: "Sites & Workstations",
+      label: "Sites",
       icon: "ri-map-pin-2-line",
-      group: "core" as const,
-    },
-    {
-      id: "staff" as BranchTabType,
-      label: "Staff Directory",
-      icon: "ri-team-line",
-      count: employeeCount,
       group: "core" as const,
     },
     {
@@ -123,29 +116,7 @@ export function BranchTabsNav({
           }`}
         >
           <i className="ri-map-pin-2-line text-sm sm:text-base" />
-          <span>Sites & Workstations</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("staff")}
-          className={`pb-2.5 sm:pb-3 px-3 font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-            activeTab === "staff"
-              ? "border-[#0088cc] text-[#0088cc]"
-              : "border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300"
-          }`}
-        >
-          <i className="ri-team-line text-sm sm:text-base" />
-          <span>Staff Directory</span>
-          {employeeCount > 0 && (
-            <span
-              className={`text-[10.5px] px-1.5 py-0.5 rounded-full font-bold ${
-                activeTab === "staff" ? "bg-[#0088cc]/15 text-[#0088cc]" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {employeeCount}
-            </span>
-          )}
+          <span>Sites</span>
         </button>
 
         <button

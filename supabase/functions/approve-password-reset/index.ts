@@ -96,15 +96,25 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
-    const appUrl = String(redirect_to || Deno.env.get("APP_URL") || Deno.env.get("VITE_APP_URL") || "").replace(/\/reset-password\/?$/, "").replace(/\/$/, "");
+    const defaultAppUrl = (Deno.env.get("APP_URL") || Deno.env.get("VITE_APP_URL") || "https://hrsystem.opssolution.tech").replace(/\/$/, "");
+    const defaultRedirectUrl = `${defaultAppUrl}/reset-password`;
+    const resolvedRedirectTo = (!redirect_to || redirect_to.includes("localhost") || redirect_to.includes("127.0.0.1") || redirect_to.includes("supabase.co"))
+      ? defaultRedirectUrl
+      : redirect_to;
+
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
       type: "recovery",
       email: resetRequest.email,
-      options: { redirectTo: `${appUrl}/reset-password` },
+      options: { redirectTo: resolvedRedirectTo },
     });
     if (linkError || !linkData?.properties?.action_link) {
       return json({ error: linkError?.message || "Could not generate reset link" }, 500);
     }
+
+    const cleanBase = resolvedRedirectTo.split("?")[0].replace(/\/$/, "");
+    const safeDirectResetLink = linkData?.properties?.hashed_token
+      ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
+      : linkData.properties.action_link;
 
     const resetHtml = `<!DOCTYPE html>
 <html>
@@ -120,7 +130,7 @@ Deno.serve(async (req) => {
     <p style="font-size: 16px; margin-top: 0;">Hello,</p>
     <p style="font-size: 15px; color: #475569;">An administrator has approved your request to reset your HR System password. Click the button below to set a new password:</p>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${linkData.properties.action_link}" style="display:inline-block;background:#253C7D;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;">Set New Password</a>
+      <a href="${safeDirectResetLink}" style="display:inline-block;background:#253C7D;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;">Set New Password</a>
     </div>
     <p style="font-size: 13px; color: #94a3b8; text-align: center;">This link will expire in 1 hour for security purposes.</p>
     <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">

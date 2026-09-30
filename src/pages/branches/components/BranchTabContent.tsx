@@ -13,7 +13,6 @@ import { BranchEmployeeLevelsSection } from "./BranchEmployeeLevelsSection";
 import { BranchContractTypesSection } from "./BranchContractTypesSection";
 import { BranchJobStatusesSection } from "./BranchJobStatusesSection";
 import { BranchSchedulePolicySection } from "./BranchSchedulePolicySection";
-import { BranchStaffSection } from "./BranchStaffSection";
 
 interface BranchTabContentProps {
   activeTab: BranchTabType;
@@ -164,16 +163,6 @@ export function BranchTabContent({
           canManage={canManage}
           onOpenEditModal={onOpenEditModal}
         />
-      )}
-
-      {activeTab === "staff" && (
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-          <BranchStaffSection
-            deptGroups={deptGroups}
-            empLoading={empLoading}
-            branchName={currentBranch.name}
-          />
-        </div>
       )}
     </>
   );

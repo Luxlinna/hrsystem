@@ -266,8 +266,12 @@ Deno.serve(async (req) => {
 
     let inviteLink: string | null = null;
     if (isInviteMode || redirect_to) {
-      const defaultAppUrl = Deno.env.get("APP_URL") || "https://hrsystem.opssolution.tech";
-      const targetRedirect = redirect_to || `${defaultAppUrl.replace(/\/$/, "")}/reset-password`;
+      const defaultAppUrl = (Deno.env.get("APP_URL") || Deno.env.get("VITE_APP_URL") || "https://hrsystem.opssolution.tech").replace(/\/$/, "");
+      const defaultRedirectUrl = `${defaultAppUrl}/reset-password`;
+      const targetRedirect = (!redirect_to || redirect_to.includes("localhost") || redirect_to.includes("127.0.0.1") || redirect_to.includes("supabase.co"))
+        ? defaultRedirectUrl
+        : redirect_to;
+
       const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
         type: "recovery",
         email: syntheticEmail,
