@@ -59,7 +59,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
             type="checkbox"
             checked={allSelected}
             onChange={handleToggleAll}
-            className="w-3.5 h-3.5 rounded border-slate-300 text-[#3498db] focus:ring-[#3498db] cursor-pointer"
+            className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
           />
           <span className="font-medium text-slate-800">All</span>
         </label>
@@ -76,7 +76,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
                 type="checkbox"
                 checked={isChecked}
                 onChange={() => handleToggleItem(item.id)}
-                className="w-3.5 h-3.5 rounded border-slate-300 text-[#3498db] focus:ring-[#3498db] cursor-pointer"
+                className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
               <span className="truncate text-slate-700" title={item.label}>
                 {item.label}
@@ -90,7 +90,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
           <button
             type="button"
             onClick={() => setDisplayLimit((prev) => prev + 30)}
-            className="w-full text-left px-1.5 py-1 text-[11px] text-[#3498db] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+            className="w-full text-left px-1.5 py-1 text-[11px] text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer font-medium"
           >
             <i className="ri-refresh-line text-xs" />
             <span>Load More {visibleItems.length}/ {items.length}</span>
@@ -103,7 +103,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
         <button
           type="button"
           onClick={() => onApply(allSelected ? [] : Array.from(pending))}
-          className="flex-1 px-3 py-1.5 bg-[#3498db] hover:bg-[#2980b9] text-white text-xs font-semibold rounded flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+          className="flex-1 px-3 py-1.5 bg-[#253C7D] hover:bg-[#1E3066] text-white text-xs font-semibold rounded flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
         >
           <i className="ri-filter-3-fill text-xs" />
           <span>Apply</span>

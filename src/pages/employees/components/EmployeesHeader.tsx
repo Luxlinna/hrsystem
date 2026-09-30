@@ -29,7 +29,7 @@ export const EmployeesHeader = memo(function EmployeesHeader({
         <button
           type="button"
           onClick={() => setShowDropdown(!showDropdown)}
-          className="px-4 py-1.5 rounded-sm bg-[#3498db] hover:bg-[#2980b9] text-white text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
+          className="px-4 py-1.5 rounded-sm bg-[#253C7D] hover:bg-[#1E3066] text-white text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
         >
           <span>Employees</span>
           <i className="ri-arrow-down-s-line text-xs" />
@@ -49,7 +49,7 @@ export const EmployeesHeader = memo(function EmployeesHeader({
                 }}
                 className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
               >
-                <i className="ri-user-add-line text-sm text-[#3498db]" />
+                <i className="ri-user-add-line text-sm text-[#253C7D]" />
                 <span>Add Employee</span>
               </button>
             )}

@@ -99,7 +99,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
     <div className="bg-white rounded-none border-b border-slate-200/80 pb-3 pt-1">
       <div className="flex flex-wrap items-center justify-between gap-2.5">
         {/* Left: Search Box with attached blue search button */}
-        <div className="flex rounded-sm overflow-hidden border border-slate-300 bg-white w-64 md:w-80 shadow-2xs focus-within:border-[#3498db] h-8">
+        <div className="flex rounded-sm overflow-hidden border border-slate-300 bg-white w-64 md:w-80 shadow-2xs focus-within:border-[#253C7D] h-8">
           <input
             type="text"
             value={search}
@@ -109,7 +109,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
           />
           <button
             type="button"
-            className="px-3 bg-[#3498db] hover:bg-[#2980b9] text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="px-3 bg-[#253C7D] hover:bg-[#1E3066] text-white flex items-center justify-center transition-colors cursor-pointer"
           >
             <i className="ri-search-line text-xs" />
           </button>
@@ -132,7 +132,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
             className="w-7 h-7 rounded border border-slate-300 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50 flex items-center justify-center text-sm cursor-pointer"
             title="Import Data"
           >
-            <i className="ri-download-2-line text-xs text-sky-600" />
+            <i className="ri-download-2-line text-xs text-[#253C7D]" />
           </button>
 
           {/* Export Button */}
@@ -165,8 +165,8 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
               onClick={() => setShowSalary(!showSalary)}
               className={`px-3 py-1 rounded-full border text-xs font-medium transition-all cursor-pointer ${
                 showSalary
-                  ? "border-[#3498db] bg-[#3498db] text-white"
-                  : "border-sky-400 text-sky-600 bg-white hover:bg-sky-50"
+                  ? "border-[#253C7D] bg-[#253C7D] text-white"
+                  : "border-[#253C7D]/40 text-[#253C7D] bg-white hover:bg-[#253C7D]/5"
               }`}
             >
               <span>{showSalary ? "Hide Salary" : "Show Salary"}</span>
@@ -178,7 +178,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="appearance-none px-3 py-1 pr-6 rounded-full border border-sky-400 text-xs text-sky-600 bg-white hover:bg-sky-50/30 focus:outline-none cursor-pointer"
+              className="appearance-none px-3 py-1 pr-6 rounded-full border border-[#253C7D]/40 text-xs text-[#253C7D] bg-white hover:bg-[#253C7D]/5 focus:outline-none cursor-pointer"
             >
               <option value="">Status</option>
               <option value="active">Active</option>
@@ -187,7 +187,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
               <option value="suspended">Suspended</option>
               <option value="inactive">Inactive</option>
             </select>
-            <i className="ri-arrow-down-s-line text-sky-400 text-xs absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <i className="ri-arrow-down-s-line text-[#253C7D]/50 text-xs absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Hierarchical Filter Flyout Dropdown matching Screenshot */}

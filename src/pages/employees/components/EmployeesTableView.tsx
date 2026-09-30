@@ -38,34 +38,34 @@ export const EmployeesTableView = memo(function EmployeesTableView({
   onDelete,
 }: EmployeesTableViewProps) {
   return (
-    <div className="w-full overflow-x-auto bg-white">
+    <div className="w-full overflow-x-auto bg-white dark:bg-slate-900">
       <table className="w-full text-left text-xs border-collapse">
         {/* ERP Table Header matching Screenshot 2 */}
-        <thead className="bg-white border-b border-slate-200/90 text-slate-700 font-semibold">
+        <thead className="bg-white dark:bg-slate-800/60 border-b border-slate-200/90 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 font-semibold">
           <tr>
             <th className="py-2.5 px-3 w-10 text-center">
               <input
                 type="checkbox"
                 checked={selectAll}
                 onChange={onSelectAll}
-                className="w-3.5 h-3.5 rounded border-slate-300 text-[#3498db] focus:ring-[#3498db] cursor-pointer"
+                className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
             </th>
-            <th className="py-2.5 px-2 w-12 text-center text-slate-500 font-medium">
+            <th className="py-2.5 px-2 w-12 text-center text-slate-500 dark:text-slate-400 font-medium">
               No.
             </th>
             <th
               onClick={() => onSort("first_name")}
-              className="py-2.5 px-3 min-w-[160px] cursor-pointer hover:text-[#3498db] select-none"
+              className="py-2.5 px-3 min-w-[160px] cursor-pointer hover:text-[#253C7D] select-none"
             >
               <div className="flex items-center gap-1">
                 <span>Employee</span>
-                <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+                <i className="ri-arrow-up-down-line text-slate-400 dark:text-slate-500 text-xs" />
               </div>
             </th>
             <th
               onClick={() => onSort("role")}
-              className="py-2.5 px-3 min-w-[140px] cursor-pointer hover:text-[#3498db] select-none"
+              className="py-2.5 px-3 min-w-[140px] cursor-pointer hover:text-[#253C7D] select-none"
             >
               <div className="flex items-center gap-1">
                 <span>Position</span>
@@ -74,7 +74,7 @@ export const EmployeesTableView = memo(function EmployeesTableView({
             </th>
             <th
               onClick={() => onSort("department")}
-              className="py-2.5 px-3 min-w-[130px] cursor-pointer hover:text-[#3498db] select-none"
+              className="py-2.5 px-3 min-w-[130px] cursor-pointer hover:text-[#253C7D] select-none"
             >
               <div className="flex items-center gap-1">
                 <span>Department</span>
@@ -83,7 +83,7 @@ export const EmployeesTableView = memo(function EmployeesTableView({
             </th>
             <th
               onClick={() => onSort("join_date")}
-              className="py-2.5 px-3 min-w-[110px] cursor-pointer hover:text-[#3498db] select-none"
+              className="py-2.5 px-3 min-w-[110px] cursor-pointer hover:text-[#253C7D] select-none"
             >
               <div className="flex items-center gap-1">
                 <span>Joining Date</span>
@@ -104,7 +104,7 @@ export const EmployeesTableView = memo(function EmployeesTableView({
             </th>
             <th
               onClick={() => onSort("status")}
-              className="py-2.5 px-3 min-w-[100px] cursor-pointer hover:text-[#3498db] select-none"
+              className="py-2.5 px-3 min-w-[100px] cursor-pointer hover:text-[#253C7D] select-none"
             >
               <div className="flex items-center gap-1">
                 <span>Status</span>
@@ -118,7 +118,7 @@ export const EmployeesTableView = memo(function EmployeesTableView({
         </thead>
 
         {/* Table Body */}
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 bg-white dark:bg-slate-900">
           {employees.map((e, idx) => (
             <EmployeesTableRow
               key={e.id}

@@ -139,8 +139,8 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
         onClick={() => setIsOpen(!isOpen)}
         className={`px-3 py-1 rounded-full border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
           isOpen || hasActiveFilter
-            ? "border-[#3498db] bg-[#3498db] text-white shadow-xs"
-            : "border-sky-400 text-sky-600 bg-white hover:bg-sky-50"
+            ? "border-[#253C7D] bg-[#253C7D] text-white shadow-xs"
+            : "border-[#253C7D]/40 text-[#253C7D] bg-white hover:bg-[#253C7D]/5"
         }`}
       >
         <span>Filter</span>
@@ -177,7 +177,7 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
                 >
                   <div className="flex items-center gap-1.5">
                     <span>{cat.label}</span>
-                    {cat.active && <span className="w-1.5 h-1.5 rounded-full bg-[#3498db]" />}
+                    {cat.active && <span className="w-1.5 h-1.5 rounded-full bg-[#253C7D]" />}
                   </div>
                   <i className={`ri-arrow-left-s-fill text-xs transition-colors ${isActive ? "text-slate-500" : "text-slate-300"}`} />
                 </button>

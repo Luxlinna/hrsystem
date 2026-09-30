@@ -83,8 +83,8 @@ export const EmployeesContractTypeFilter = memo(function EmployeesContractTypeFi
         onClick={handleOpen}
         className={`px-3 py-1 rounded-full border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
           isOpen || isActive
-            ? "border-[#3498db] bg-[#3498db] text-white shadow-xs"
-            : "border-sky-400 text-sky-600 bg-white hover:bg-sky-50"
+            ? "border-[#253C7D] bg-[#253C7D] text-white shadow-xs"
+            : "border-[#253C7D]/40 text-[#253C7D] bg-white hover:bg-[#253C7D]/5"
         }`}
       >
         <span>{label}</span>
@@ -105,7 +105,7 @@ export const EmployeesContractTypeFilter = memo(function EmployeesContractTypeFi
                 type="checkbox"
                 checked={isAllSelected}
                 onChange={handleToggleAll}
-                className="w-3.5 h-3.5 rounded border-slate-300 text-[#3498db] focus:ring-[#3498db] cursor-pointer"
+                className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
               <span className="text-xs text-slate-700 font-medium">All</span>
             </label>
@@ -122,7 +122,7 @@ export const EmployeesContractTypeFilter = memo(function EmployeesContractTypeFi
                     type="checkbox"
                     checked={checked}
                     onChange={() => handleToggleItem(cType)}
-                    className="w-3.5 h-3.5 rounded border-slate-300 text-[#3498db] focus:ring-[#3498db] cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                   />
                   <span className="text-xs text-slate-700">{cType}</span>
                 </label>
@@ -135,7 +135,7 @@ export const EmployeesContractTypeFilter = memo(function EmployeesContractTypeFi
             <button
               type="button"
               onClick={handleApply}
-              className="px-3.5 py-1 rounded bg-[#3498db] hover:bg-[#2980b9] text-white text-xs font-medium flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              className="px-3.5 py-1 rounded bg-[#253C7D] hover:bg-[#1E3066] text-white text-xs font-medium flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
             >
               <i className="ri-filter-fill text-xs" />
               <span>Apply</span>

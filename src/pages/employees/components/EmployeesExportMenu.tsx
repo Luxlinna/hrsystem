@@ -48,89 +48,73 @@ export const EmployeesExportMenu = memo(function EmployeesExportMenu({
     [employees, accountStatus]
   );
 
-  const exportOptions = [
-    {
-      fmt: "pdf" as Format,
-      label: "PDF Directory Report",
-      ext: ".pdf",
-      desc: "Print-ready summary with headcount KPIs & status badges",
-      icon: "ri-file-pdf-line",
-      color: "text-rose-600 bg-rose-50 group-hover:bg-rose-100",
-    },
-    {
-      fmt: "xlsx" as Format,
-      label: "Excel Master Register",
-      ext: ".xlsx",
-      desc: "Multi-column structured employee workbook",
-      icon: "ri-file-excel-2-line",
-      color: "text-emerald-600 bg-emerald-50 group-hover:bg-emerald-100",
-    },
-    {
-      fmt: "csv" as Format,
-      label: "CSV Dataset",
-      ext: ".csv",
-      desc: "Raw comma-separated workforce data records",
-      icon: "ri-file-text-line",
-      color: "text-blue-600 bg-blue-50 group-hover:bg-blue-100",
-    },
-  ];
-
   return (
     <div className="relative inline-block" ref={menuRef}>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         disabled={disabled || employees.length === 0}
-        className="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all cursor-pointer shadow-2xs active:scale-98 disabled:opacity-50"
+        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+          open
+            ? "border-[#253C7D] dark:border-blue-400 text-[#253C7D] dark:text-blue-300 bg-[#253C7D]/5 dark:bg-slate-800"
+            : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700"
+        }`}
       >
         {exporting ? (
-          <span className="w-3.5 h-3.5 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+          <span className="w-3 h-3 border-2 border-[#253C7D] dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
         ) : (
-          <i className="ri-download-line text-lg text-[#253C7D]" />
+          <i className="ri-download-line text-xs text-[#253C7D] dark:text-blue-400" />
         )}
         <span>{exporting ? "Exporting..." : "Export"}</span>
-        <i className={`ri-arrow-down-s-line text-xs transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+        <i
+          className={`ri-arrow-down-s-line text-xs text-slate-400 transition-transform duration-150 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
       </button>
 
       {open && employees.length > 0 && (
-        <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
-          <div className="px-3 py-1.5 border-b border-gray-100 mb-1 flex items-center justify-between">
-            <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
-              Workforce Directory
-            </span>
-            <span className="text-[10px] font-bold text-gray-400">
-              {employees.length} Staff
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg py-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs"
+        >
+          <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            <span>Export As</span>
+            <span className="font-normal font-mono text-[10px] text-slate-400 dark:text-slate-500">
+              {employees.length} staff
             </span>
           </div>
 
-          <div className="space-y-0.5">
-            {exportOptions.map((opt) => (
-              <button
-                key={opt.fmt}
-                type="button"
-                onClick={() => handleExport(opt.fmt)}
-                className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer group"
-              >
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 transition-colors ${opt.color}`}
-                >
-                  <i className={opt.icon} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-800 group-hover:text-[#253C7D] transition-colors truncate">
-                      {opt.label}
-                    </span>
-                    <span className="text-[10px] font-mono text-gray-400 ml-1">
-                      {opt.ext}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-gray-400 font-medium truncate mt-0.5">
-                    {opt.desc}
-                  </p>
-                </div>
-              </button>
-            ))}
+          <div className="py-0.5">
+            <button
+              type="button"
+              onClick={() => handleExport("pdf")}
+              className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+            >
+              <i className="ri-file-pdf-2-line text-rose-500 text-sm" />
+              <span className="flex-1">PDF Document</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">.pdf</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleExport("xlsx")}
+              className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+            >
+              <i className="ri-file-excel-2-line text-emerald-600 text-sm" />
+              <span className="flex-1">Excel Spreadsheet</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">.xlsx</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleExport("csv")}
+              className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+            >
+              <i className="ri-file-text-line text-[#253C7D] dark:text-blue-400 text-sm" />
+              <span className="flex-1">CSV File</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">.csv</span>
+            </button>
           </div>
         </div>
       )}

@@ -106,8 +106,8 @@ export const EmployeesAllDateFilter = memo(function EmployeesAllDateFilter({
         onClick={handleOpen}
         className={`px-3 py-1 rounded-full border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
           isOpen || selectedOption !== "all"
-            ? "border-[#3498db] bg-[#3498db] text-white shadow-xs"
-            : "border-sky-400 text-sky-600 bg-white hover:bg-sky-50"
+            ? "border-[#253C7D] bg-[#253C7D] text-white shadow-xs"
+            : "border-[#253C7D]/40 text-[#253C7D] bg-white hover:bg-[#253C7D]/5"
         }`}
       >
         <i className="ri-calendar-line text-xs" />
@@ -130,7 +130,7 @@ export const EmployeesAllDateFilter = memo(function EmployeesAllDateFilter({
                 onClick={() => setTempSelected(opt.id)}
                 className={`w-full text-left px-3 py-1.5 rounded text-xs transition-colors cursor-pointer block ${
                   isSelected
-                    ? "bg-[#3498db] text-white font-medium"
+                    ? "bg-[#253C7D] text-white font-medium"
                     : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                 }`}
               >
@@ -148,7 +148,7 @@ export const EmployeesAllDateFilter = memo(function EmployeesAllDateFilter({
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full text-xs border border-slate-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-[#3498db]"
+                  className="w-full text-xs border border-slate-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
               <div>
@@ -157,7 +157,7 @@ export const EmployeesAllDateFilter = memo(function EmployeesAllDateFilter({
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full text-xs border border-slate-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-[#3498db]"
+                  className="w-full text-xs border border-slate-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-[#253C7D]"
                 />
               </div>
             </div>
@@ -168,7 +168,7 @@ export const EmployeesAllDateFilter = memo(function EmployeesAllDateFilter({
             <button
               type="button"
               onClick={handleApply}
-              className="px-3 py-1 rounded bg-[#3498db] hover:bg-[#2980b9] text-white text-xs font-medium transition-colors cursor-pointer"
+              className="px-3 py-1 rounded bg-[#253C7D] hover:bg-[#1E3066] text-white text-xs font-medium transition-colors cursor-pointer"
             >
               Apply
             </button>
