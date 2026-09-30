@@ -56,6 +56,9 @@ export function useSelfServiceData() {
         }
       }
       if (emp) {
+        if (!emp.avatar_url && (user.user_metadata?.avatar_url || (user.user_metadata as any)?.picture)) {
+          emp.avatar_url = user.user_metadata?.avatar_url || (user.user_metadata as any)?.picture;
+        }
         setSelectedEmployee(emp);
         if (emp.reports_to) {
           const { data: mgr } = await supabase

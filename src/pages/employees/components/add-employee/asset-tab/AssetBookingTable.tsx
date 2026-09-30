@@ -85,18 +85,11 @@ export const AssetBookingTable = memo(function AssetBookingTable({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {bookings.length === 0 ? (
-              <>
-                <tr>
-                  <td colSpan={6} className="py-5 text-center text-slate-500 font-bold">
-                    No records found
-                  </td>
-                </tr>
-                <tr>
-                  <td colSpan={6} className="py-5 text-center text-slate-500 font-bold bg-slate-50/30">
-                    No records found
-                  </td>
-                </tr>
-              </>
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-slate-500 font-bold">
+                  No records found
+                </td>
+              </tr>
             ) : (
               bookings.map((item, idx) => (
                 <tr key={item.id || idx} className="hover:bg-slate-50/50">

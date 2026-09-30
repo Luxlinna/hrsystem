@@ -15,22 +15,35 @@ export const NssfEditModal: React.FC<NssfEditModalProps> = ({
   onClose,
   onSaved,
 }) => {
-  const existingNssf: EmployeeNssfInfo =
-    employee.nssf_info ||
-    (employee as any).hiring_info?.nssf_info || {
-      register_nssf: Boolean(employee.register_nssf || employee.nssf_number),
-      identity_code: employee.nssf_number || "",
-      joining_date: employee.join_date || new Date().toISOString().slice(0, 10),
-      first_name_kh: employee.kh_name ? employee.kh_name.split(" ")[1] || "" : "",
-      last_name_kh: employee.kh_name ? employee.kh_name.split(" ")[0] || "" : "",
-      first_name_latin: employee.first_name || "",
-      last_name_latin: employee.last_name || "",
-      monthly_wage_type: "Formula",
-      monthly_wage: "Taxable Salary",
-      seniority_pension_fund: "",
-      remark: "",
-      status: "Active",
-    };
+  const khParts = (employee.kh_name || (employee as any).khmer_name || "").trim().split(/\s+/).filter(Boolean);
+  const defaultKhLast = khParts.length > 1 ? khParts[0] : (khParts[0] || "");
+  const defaultKhFirst = khParts.length > 1 ? khParts.slice(1).join(" ") : (khParts[0] || "");
+
+  const defaultIdentityCode =
+    employee.nssf_number ||
+    employee.employee_code ||
+    (employee as any).national_id_number ||
+    employee.national_id ||
+    (employee as any).id_card_number ||
+    employee.biometric_user_id ||
+    "";
+
+  const rawNssf = employee.nssf_info || (employee as any).hiring_info?.nssf_info;
+
+  const existingNssf: EmployeeNssfInfo = {
+    register_nssf: Boolean(employee.register_nssf || rawNssf?.register_nssf || employee.nssf_number),
+    identity_code: rawNssf?.identity_code || defaultIdentityCode,
+    joining_date: rawNssf?.joining_date || employee.join_date || employee.start_date || new Date().toISOString().slice(0, 10),
+    first_name_latin: rawNssf?.first_name_latin || employee.first_name || "",
+    last_name_latin: rawNssf?.last_name_latin || employee.last_name || "",
+    first_name_kh: rawNssf?.first_name_kh || defaultKhFirst,
+    last_name_kh: rawNssf?.last_name_kh || defaultKhLast,
+    monthly_wage_type: rawNssf?.monthly_wage_type || "Formula",
+    monthly_wage: rawNssf?.monthly_wage || "Taxable Salary",
+    seniority_pension_fund: rawNssf?.seniority_pension_fund || "",
+    remark: rawNssf?.remark || "",
+    status: rawNssf?.status || "Active",
+  };
 
   const [nssf, setNssf] = useState<EmployeeNssfInfo>(existingNssf);
   const [saving, setSaving] = useState(false);

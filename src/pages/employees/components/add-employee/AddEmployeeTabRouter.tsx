@@ -3,7 +3,6 @@ import type { EmployeeFormState } from "../../types";
 import type { AddEmployeeStepId, ModalManagerEmployee } from "./types";
 import { AddEmployeePersonalTab } from "./AddEmployeePersonalTab";
 import { AddEmployeeOrgTab } from "./AddEmployeeOrgTab";
-import { AddEmployeeNssfTab } from "./AddEmployeeNssfTab";
 import { AddEmployeeCompTab } from "./AddEmployeeCompTab";
 import { AddEmployeeAssetTab } from "./AddEmployeeAssetTab";
 
@@ -65,8 +64,6 @@ export const AddEmployeeTabRouter = memo(function AddEmployeeTabRouter({
           contractTypes={contractTypes}
         />
       );
-    case "terms":
-      return <AddEmployeeNssfTab form={form} onChange={onChange} />;
     case "compensation":
       return <AddEmployeeCompTab form={form} onChange={onChange} />;
     case "asset":

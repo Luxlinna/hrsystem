@@ -9,7 +9,7 @@ export const PersonalHeaderBanner = memo(function PersonalHeaderBanner() {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-xs font-black text-slate-900 tracking-wide uppercase">
-            Personal Info
+            Employee Info
           </h3>
           <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200/60">
             Step 1 of 5

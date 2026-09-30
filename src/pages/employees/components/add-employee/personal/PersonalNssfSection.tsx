@@ -8,19 +8,39 @@ export const PersonalNssfSection = memo(function PersonalNssfSection({
   onChange,
 }: PersonalSectionProps) {
   const isEnrolled = Boolean(form.register_nssf);
-  const nssf: EmployeeNssfInfo = form.nssf_info || {
+
+  const khParts = (form.kh_name || (form as any).khmer_name || "").trim().split(/\s+/).filter(Boolean);
+  const defaultKhLast = khParts.length > 1 ? khParts[0] : (khParts[0] || "");
+  const defaultKhFirst = khParts.length > 1 ? khParts.slice(1).join(" ") : (khParts[0] || "");
+
+  const defaultIdentityCode =
+    form.nssf_number ||
+    form.employee_code ||
+    form.national_id_number ||
+    form.national_id ||
+    form.id_card_number ||
+    form.biometric_user_id ||
+    "";
+
+  const defaultJoiningDate =
+    form.join_date ||
+    form.start_date ||
+    form.hire_date ||
+    new Date().toISOString().slice(0, 10);
+
+  const nssf: EmployeeNssfInfo = {
     register_nssf: isEnrolled,
-    identity_code: form.nssf_number || "",
-    joining_date: new Date().toISOString().slice(0, 10),
-    first_name_kh: "",
-    last_name_kh: "",
-    first_name_latin: form.first_name || "",
-    last_name_latin: form.last_name || "",
-    monthly_wage_type: "Formula",
-    monthly_wage: "Taxable Salary",
-    seniority_pension_fund: "",
-    remark: "",
-    status: "Active",
+    identity_code: form.nssf_info?.identity_code || defaultIdentityCode,
+    joining_date: form.nssf_info?.joining_date || defaultJoiningDate,
+    first_name_latin: form.nssf_info?.first_name_latin || form.first_name || "",
+    last_name_latin: form.nssf_info?.last_name_latin || form.last_name || "",
+    first_name_kh: form.nssf_info?.first_name_kh || defaultKhFirst,
+    last_name_kh: form.nssf_info?.last_name_kh || defaultKhLast,
+    monthly_wage_type: form.nssf_info?.monthly_wage_type || "Formula",
+    monthly_wage: form.nssf_info?.monthly_wage || "Taxable Salary",
+    seniority_pension_fund: form.nssf_info?.seniority_pension_fund || "",
+    remark: form.nssf_info?.remark || "",
+    status: form.nssf_info?.status || "Active",
   };
 
   const updateNssf = (field: keyof EmployeeNssfInfo, value: any) => {
@@ -36,11 +56,17 @@ export const PersonalNssfSection = memo(function PersonalNssfSection({
     const updated: EmployeeNssfInfo = {
       ...nssf,
       register_nssf: checked,
+      identity_code: nssf.identity_code || defaultIdentityCode,
+      joining_date: nssf.joining_date || defaultJoiningDate,
       first_name_latin: nssf.first_name_latin || form.first_name || "",
       last_name_latin: nssf.last_name_latin || form.last_name || "",
-      identity_code: nssf.identity_code || form.nssf_number || "",
+      first_name_kh: nssf.first_name_kh || defaultKhFirst,
+      last_name_kh: nssf.last_name_kh || defaultKhLast,
     };
     onChange("nssf_info" as any, updated);
+    if (!form.nssf_number && updated.identity_code) {
+      onChange("nssf_number", updated.identity_code);
+    }
   };
 
   return (

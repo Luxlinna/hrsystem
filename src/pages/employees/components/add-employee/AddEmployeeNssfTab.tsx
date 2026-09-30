@@ -15,22 +15,54 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
+  const khParts = useMemo(
+    () => (form.kh_name || (form as any).khmer_name || "").trim().split(/\s+/).filter(Boolean),
+    [form.kh_name]
+  );
+  const defaultKhLast = khParts.length > 1 ? khParts[0] : (khParts[0] || "");
+  const defaultKhFirst = khParts.length > 1 ? khParts.slice(1).join(" ") : (khParts[0] || "");
+
+  const defaultIdentityCode =
+    form.nssf_number ||
+    form.employee_code ||
+    form.national_id_number ||
+    form.national_id ||
+    form.id_card_number ||
+    form.biometric_user_id ||
+    "";
+
+  const defaultJoiningDate =
+    form.join_date ||
+    form.start_date ||
+    form.hire_date ||
+    new Date().toISOString().slice(0, 10);
+
   const nssf: EmployeeNssfInfo = useMemo(() => {
-    return form.nssf_info || {
-      register_nssf: Boolean(form.register_nssf || form.nssf_number),
-      identity_code: form.nssf_number || "",
-      joining_date: form.join_date || form.start_date || "",
-      first_name_kh: form.kh_name ? form.kh_name.split(" ")[1] || "" : "",
-      last_name_kh: form.kh_name ? form.kh_name.split(" ")[0] || "" : "",
-      first_name_latin: form.first_name || "",
-      last_name_latin: form.last_name || "",
-      monthly_wage_type: "Formula",
-      monthly_wage: "Taxable Salary",
-      seniority_pension_fund: "",
-      remark: "",
-      status: "Active",
+    return {
+      register_nssf: Boolean(form.register_nssf || form.nssf_info?.register_nssf || form.nssf_number),
+      identity_code: form.nssf_info?.identity_code || defaultIdentityCode,
+      joining_date: form.nssf_info?.joining_date || defaultJoiningDate,
+      first_name_latin: form.nssf_info?.first_name_latin || form.first_name || "",
+      last_name_latin: form.nssf_info?.last_name_latin || form.last_name || "",
+      first_name_kh: form.nssf_info?.first_name_kh || defaultKhFirst,
+      last_name_kh: form.nssf_info?.last_name_kh || defaultKhLast,
+      monthly_wage_type: form.nssf_info?.monthly_wage_type || "Formula",
+      monthly_wage: form.nssf_info?.monthly_wage || "Taxable Salary",
+      seniority_pension_fund: form.nssf_info?.seniority_pension_fund || "",
+      remark: form.nssf_info?.remark || "",
+      status: form.nssf_info?.status || "Active",
     };
-  }, [form.nssf_info, form.register_nssf, form.nssf_number, form.join_date, form.start_date, form.kh_name, form.first_name, form.last_name]);
+  }, [
+    form.nssf_info,
+    form.register_nssf,
+    form.nssf_number,
+    form.first_name,
+    form.last_name,
+    defaultIdentityCode,
+    defaultJoiningDate,
+    defaultKhFirst,
+    defaultKhLast,
+  ]);
 
   const isRegistered = Boolean(form.register_nssf || nssf.register_nssf);
 

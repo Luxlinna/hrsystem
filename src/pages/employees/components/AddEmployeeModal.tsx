@@ -47,7 +47,16 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const { markDirty } = useAddEmployeeAutoSave(isOpen, form, setForm);
+  const {
+    autoSaveEnabled,
+    setAutoSaveEnabled,
+    autoSaveStatus,
+    lastSavedAt,
+    availableDraft,
+    restoreDraft,
+    clearDraft,
+    markDirty,
+  } = useAddEmployeeAutoSave(isOpen, isEdit, form, setForm);
 
   const {
     cleanBranches,
@@ -88,6 +97,31 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
     [markDirty, setForm]
   );
 
+  const handleClearDraft = useCallback(() => {
+    clearDraft();
+    setForm((prev) => ({
+      ...prev,
+      full_name: "",
+      first_name: "",
+      last_name: "",
+      khmer_name: "",
+      email: "",
+      phone: "",
+      work_email: "",
+      personal_email: "",
+      home_phone: "",
+      current_address: "",
+      permanent_address: "",
+      emergency_contact_name: "",
+      emergency_contact_relationship: "",
+      emergency_contact_phone: "",
+      national_id: "",
+      passport_number: "",
+      id_card_number: "",
+      photo_url: null,
+    }));
+  }, [clearDraft, setForm]);
+
   const handleStepClick = (stepId: AddEmployeeStepId) => {
     const currentIdx = ADD_EMPLOYEE_STEPS.findIndex((s) => s.id === activeTab);
     const targetIdx = ADD_EMPLOYEE_STEPS.findIndex((s) => s.id === stepId);
@@ -105,7 +139,15 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
       style={{ left: leftOffset }}
     >
       {/* Top Header */}
-      <AddEmployeeHeader isEdit={isEdit} onClose={onClose} />
+      <AddEmployeeHeader
+        isEdit={isEdit}
+        onClose={onClose}
+        autoSaveEnabled={autoSaveEnabled}
+        onToggleAutoSave={setAutoSaveEnabled}
+        autoSaveStatus={autoSaveStatus}
+        lastSavedAt={lastSavedAt}
+        onClearDraft={handleClearDraft}
+      />
 
       {/* Main 2-Column Content Body */}
       <form onSubmit={onSubmit} className="flex-1 overflow-y-auto bg-white p-6 sm:p-8">
@@ -117,6 +159,38 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
 
           {/* Right Column: Tab Bar + Active Section + Form Actions */}
           <div className="flex-1 min-w-0 w-full space-y-6">
+            {/* Draft Restore Notification Banner */}
+            {!isEdit && availableDraft && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
+                <div className="flex items-center gap-2 text-amber-900">
+                  <i className="ri-draft-line text-base text-amber-600 shrink-0" />
+                  <span>
+                    Found an unsaved draft
+                    {availableDraft.full_name || availableDraft.first_name
+                      ? ` for "${availableDraft.full_name || availableDraft.first_name}"`
+                      : ""}
+                    . Would you like to restore it?
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={restoreDraft}
+                    className="px-3 py-1 bg-[#253C7D] hover:bg-[#1E3064] text-white font-medium rounded-lg shadow-2xs transition-colors cursor-pointer"
+                  >
+                    Restore Draft
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearDraft}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
+            )}
+
             <AddEmployeeNavTabs activeTab={activeTab} onSelectTab={handleStepClick} />
 
             {/* Tab Content with Smooth Slide Wipe */}
@@ -146,7 +220,13 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
               />
             </div>
 
-            <AddEmployeeFormFooter submitting={submitting} onClose={onClose} />
+            <AddEmployeeFormFooter
+              submitting={submitting}
+              onClose={onClose}
+              lastSavedAt={lastSavedAt}
+              onClearDraft={handleClearDraft}
+              isEdit={isEdit}
+            />
           </div>
         </div>
       </form>

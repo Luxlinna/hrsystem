@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Employee } from "../types";
 import { STATUS_STYLES } from "../constants";
 
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export function ProfileBanner({ employee, managerName }: Props) {
+  const [imgError, setImgError] = useState(false);
   const yearsAtCompany = employee.join_date
     ? Math.floor((new Date().getTime() - new Date(employee.join_date).getTime()) / (365.25 * 86400000))
     : 0;
@@ -19,6 +21,7 @@ export function ProfileBanner({ employee, managerName }: Props) {
     };
 
   const fullName = `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
+  const avatarSrc = employee.avatar_url || (employee as any).photo_url;
 
   return (
     <div className="bg-white border border-slate-200/80 rounded-xl p-4 sm:p-5 mb-5 shadow-2xs">
@@ -26,15 +29,16 @@ export function ProfileBanner({ employee, managerName }: Props) {
         {/* Left: Avatar & Identity Details */}
         <div className="flex items-start sm:items-center gap-3.5 sm:gap-4.5 min-w-0">
           <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-slate-200/80 shadow-2xs">
-              {employee.avatar_url ? (
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-slate-200/80 shadow-2xs bg-slate-900">
+              {avatarSrc && !imgError ? (
                 <img
-                  src={employee.avatar_url}
+                  src={avatarSrc}
                   alt={fullName}
+                  onError={() => setImgError(true)}
                   className="w-full h-full object-cover aspect-square block"
                 />
               ) : (
-                <div className="w-full h-full bg-slate-900 text-white font-bold text-base sm:text-lg flex items-center justify-center">
+                <div className="w-full h-full bg-slate-900 text-white font-bold text-base sm:text-lg flex items-center justify-center select-none">
                   {employee.first_name?.[0]}
                   {employee.last_name?.[0]}
                 </div>

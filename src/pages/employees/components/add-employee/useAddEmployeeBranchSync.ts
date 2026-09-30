@@ -73,7 +73,7 @@ export function useAddEmployeeBranchSync({
 
   useEffect(() => {
     if (!isOpen || !cleanBranches.length) return;
-    const branchId = form.branch_id || targetBranch || userBranchId;
+    const branchId = form.branch_id || (!isSuperAdmin ? (targetBranch || userBranchId) : "");
     if (!branchId) return;
 
     const branch = cleanBranches.find((b) => b.id === branchId);
@@ -102,7 +102,7 @@ export function useAddEmployeeBranchSync({
         };
       });
     }
-  }, [isOpen, cleanBranches, form.branch_id, targetBranch, userBranchId, getBranchCode, deriveBuHandle, setForm]);
+  }, [isOpen, isSuperAdmin, cleanBranches, form.branch_id, targetBranch, userBranchId, getBranchCode, deriveBuHandle, setForm]);
 
   const handleSelectSite = useCallback(
     (siteIdOrVal: string) => {

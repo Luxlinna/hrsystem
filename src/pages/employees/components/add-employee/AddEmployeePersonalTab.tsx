@@ -32,7 +32,7 @@ export const AddEmployeePersonalTab = memo(function AddEmployeePersonalTab({
       {/* 1. Identity, Demographics & Tax */}
       <div className="space-y-4">
         <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
-          PERSONAL INFO
+          EMPLOYEE INFO
         </h3>
         <div className="space-y-3 max-w-xl">
           <PersonalIdentityFields form={form} onChange={onChange} />
@@ -71,7 +71,7 @@ export const AddEmployeePersonalTab = memo(function AddEmployeePersonalTab({
       {/* 11. Achievements */}
       <PersonalAchievementSection form={form} onChange={onChange} />
 
-      {/* 12. NSSF Registration */}
+      {/* 12. NSSF Registration & Details */}
       <PersonalNssfSection form={form} onChange={onChange} />
 
       {/* 13. Attachments */}

@@ -44,29 +44,27 @@ export default function EmployeesPage() {
 
   const handleOpenAddModal = useCallback(() => {
     setEditingEmployeeId(null);
-    const isSite = selectedBranchId && selectedBranchId.startsWith("site:");
-    const branchId = isSite
-      ? (visibleBranches.find((b) => b.id === selectedBranchId)?.branch_id || "")
-      : (selectedBranchId || targetBranch || userBranchId || "");
-    const siteId = isSite ? selectedBranchId.substring(5) : "";
-
-    const branch = branches.find((b) => b.id === branchId);
+    const effectiveBranchId = !isSuperAdmin ? (userBranchId || targetBranch || "") : "";
+    const branch = branches.find((b) => b.id === effectiveBranchId);
     const branchName = branch?.name || "";
     const code = branchName ? getBranchCode(branchName) : "";
     const handle = branchName ? deriveBuHandle(branchName, code) : "";
 
     setForm({
       ...INITIAL_EMPLOYEE_FORM,
-      branch_id: branchId,
+      branch_id: effectiveBranchId,
       code_bu: code,
       bu_full_name: branchName,
       handle_bu: handle,
-      site: branchName ? `Main Office (${branchName})` : "Main Office",
-      working_location: branch?.location || "Phnom Penh",
-      default_work_location_id: siteId,
+      site: effectiveBranchId && branchName ? `Main Office (${branchName})` : "",
+      working_location: branch?.location || "",
+      default_work_location_id: "",
+      department: "",
+      role: "",
+      position: "",
     });
     setShowAddModal(true);
-  }, [selectedBranchId, targetBranch, userBranchId, visibleBranches, branches, setForm, setShowAddModal, setEditingEmployeeId]);
+  }, [isSuperAdmin, userBranchId, targetBranch, branches, setForm, setShowAddModal, setEditingEmployeeId]);
 
   const handleInviteEmployee = useCallback(
     (e: any) => inviteUser(e.email, e.first_name, e.last_name, e.role),
