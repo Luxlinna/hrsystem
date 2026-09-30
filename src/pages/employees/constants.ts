@@ -36,6 +36,54 @@ export const DEPARTMENTS = [
   "Other",
 ];
 
+export const BU_DEFAULT_EMPLOYEE_TYPES = [
+  "FULL-TIME",
+  "HOD",
+  "INTERNSHIP",
+  "PART-TIME",
+];
+
+export const BU_DEFAULT_EMPLOYEE_LEVELS = [
+  "Intern",
+  "Junior",
+  "Mid-level",
+  "Senior",
+  "Lead",
+  "Manager",
+  "Director",
+  "Executive",
+];
+
+export const BU_DEFAULT_POSITIONS = [
+  "ACM Grocery II",
+  "ACM-SF & Butchery",
+  "AP - Non Trade",
+  "Account Payable Executive",
+  "Account Payable Officer",
+  "Account Payable Supervisor",
+  "Account Receivable Executive",
+  "Account Receivable Officer",
+  "Accounting Assistant",
+  "Accounting Intern",
+  "Accounting Manager",
+  "Accounting Supervisor",
+  "Acting Assistant Store Manager",
+];
+
+export const BU_DEFAULT_DEPARTMENTS = [
+  "HUMAN RESOURCES",
+  "ADMINISTRATION",
+  "BUSINESS DEVELOPMENT",
+  "FINANCE AND ACCOUNTING",
+  "INFORMATION TECHNOLOGY (IT)",
+  "INTERNAL AUDIT AND LOSS PREVENTION",
+  "MANAGEMENT",
+  "MARKETING",
+  "MERCHANDISE",
+  "OPERATIONS",
+  "OPERATIONS KITCHEN",
+];
+
 export const BU_DEFAULT_CONTRACT_TYPES = [
   "Under probation",
   "1-YEAR FDC",

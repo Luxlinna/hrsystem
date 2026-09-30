@@ -270,7 +270,12 @@ export function useEmployeesFilters({
           const typesList = filterEmployeeType.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
           matchesEmployeeType =
             typesList.length === 0 ||
-            typesList.some((t) => e.employment_type && e.employment_type.toLowerCase() === t);
+            typesList.some((t) => {
+              if (t === "all") return true;
+              const empType = (e.employment_type || "").toLowerCase().replace(/[-_]/g, " ").trim();
+              const tClean = t.toLowerCase().replace(/[-_]/g, " ").trim();
+              return empType === tClean || empType.includes(tClean) || tClean.includes(empType);
+            });
         }
 
         let matchesEmployeeLevel = true;
@@ -278,7 +283,12 @@ export function useEmployeesFilters({
           const levelsList = filterEmployeeLevel.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
           matchesEmployeeLevel =
             levelsList.length === 0 ||
-            levelsList.some((l) => (e as any).employee_level && (e as any).employee_level.toLowerCase() === l);
+            levelsList.some((l) => {
+              if (l === "all") return true;
+              const empLevel = ((e as any).employee_level || "").toLowerCase().replace(/[-_]/g, " ").trim();
+              const lClean = l.toLowerCase().replace(/[-_]/g, " ").trim();
+              return empLevel === lClean || empLevel.includes(lClean) || lClean.includes(empLevel);
+            });
         }
 
         const matchesDate = matchEmployeeDate(e.join_date || e.start_date, filterDateOption);

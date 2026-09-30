@@ -44,6 +44,7 @@ export interface Employee {
   working_hour?: string | null;
   total_working_days?: string | null;
   employment_type?: string | null;
+  employee_level?: string | null;
   start_date?: string | null;
   line_manager?: string | null;
   contract_type?: string | null;

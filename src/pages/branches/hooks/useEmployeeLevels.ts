@@ -3,12 +3,34 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import type { EmployeeLevel, EmployeeLevelFormState } from "../types";
 
+const SEED_EMPLOYEE_LEVELS: Partial<EmployeeLevel>[] = [
+  { name: "Intern",    sort_order: 1, status: "active" },
+  { name: "Junior",   sort_order: 2, status: "active" },
+  { name: "Mid-level", sort_order: 3, status: "active" },
+  { name: "Senior",   sort_order: 4, status: "active" },
+  { name: "Lead",     sort_order: 5, status: "active" },
+  { name: "Manager",  sort_order: 6, status: "active" },
+  { name: "Director", sort_order: 7, status: "active" },
+  { name: "Executive", sort_order: 8, status: "active" },
+];
+
+function makeSeedLevels(branchId?: string): EmployeeLevel[] {
+  return SEED_EMPLOYEE_LEVELS.map((l, index) => ({
+    id: `emploevel-fallback-${index + 1}`,
+    branch_id: branchId || null,
+    name: l.name || "",
+    remark: null,
+    status: l.status || "active",
+    sort_order: l.sort_order ?? index + 1,
+    created_at: new Date().toISOString(),
+  }));
+}
+
 export function useEmployeeLevels(branchId?: string) {
   const [employeeLevels, setEmployeeLevels] = useState<EmployeeLevel[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Modal / Form state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
   const [selectedEmployeeLevel, setSelectedEmployeeLevel] = useState<EmployeeLevel | null>(null);
@@ -31,12 +53,16 @@ export function useEmployeeLevels(branchId?: string) {
 
       if (error) {
         console.warn("Employee levels query error or table not yet created:", error.message);
-        setEmployeeLevels([]);
-      } else if (data) {
+        setEmployeeLevels(makeSeedLevels(branchId));
+      } else if (data && data.length > 0) {
         setEmployeeLevels(data as EmployeeLevel[]);
+      } else {
+        // Table exists but empty — show seed defaults so BU page is never blank
+        setEmployeeLevels(makeSeedLevels(branchId));
       }
     } catch (err) {
       console.error("Error fetching employee levels:", err);
+      setEmployeeLevels(makeSeedLevels(branchId));
     } finally {
       setLoading(false);
     }
@@ -46,28 +72,10 @@ export function useEmployeeLevels(branchId?: string) {
     fetchEmployeeLevels();
   }, [fetchEmployeeLevels]);
 
-  const openCreate = () => {
-    setSelectedEmployeeLevel(null);
-    setModalMode("create");
-    setIsModalOpen(true);
-  };
-
-  const openEdit = (item: EmployeeLevel) => {
-    setSelectedEmployeeLevel(item);
-    setModalMode("edit");
-    setIsModalOpen(true);
-  };
-
-  const openView = (item: EmployeeLevel) => {
-    setSelectedEmployeeLevel(item);
-    setModalMode("view");
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setSelectedEmployeeLevel(null);
-    setIsModalOpen(false);
-  };
+  const openCreate = () => { setSelectedEmployeeLevel(null); setModalMode("create"); setIsModalOpen(true); };
+  const openEdit = (item: EmployeeLevel) => { setSelectedEmployeeLevel(item); setModalMode("edit"); setIsModalOpen(true); };
+  const openView = (item: EmployeeLevel) => { setSelectedEmployeeLevel(item); setModalMode("view"); setIsModalOpen(true); };
+  const closeModal = () => { setSelectedEmployeeLevel(null); setIsModalOpen(false); };
 
   const handleSaveEmployeeLevel = async (form: EmployeeLevelFormState) => {
     setSaving(true);
@@ -92,7 +100,7 @@ export function useEmployeeLevels(branchId?: string) {
         }
         toast(`Employee Level "${form.name}" updated`, "success");
       } else {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("employee_levels")
           .insert([payload])
           .select()

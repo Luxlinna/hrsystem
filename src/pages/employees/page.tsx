@@ -26,7 +26,7 @@ export default function EmployeesPage() {
     pageSize, setPageSize, page, setPage, showAddModal, setShowAddModal, form, setForm,
     submitting, accountStatus, invitingId, deletingId, showFilters, setShowFilters,
     showColumnMenu, setShowColumnMenu, visibleColumns, setVisibleColumns, viewMode,
-    setViewMode, depts, branchCount, managers, stats, filtered, empTotalPages,
+    setViewMode, depts, positions, employeeTypes, employeeLevels, branchCount, managers, stats, filtered, empTotalPages,
     empPageStart, empPageEnd, pagedEmployees, tableGridStyle, handleSort, handleSelectAll,
     handleSelectOne, bulkInvite, bulkDelete, handleAddEmployee,
     inviteUser, phoneAccountEmployee, setPhoneAccountEmployee, setUpPhoneUser,
@@ -126,6 +126,9 @@ export default function EmployeesPage() {
         contractTypes={contractTypes}
         jobStatuses={jobStatuses}
         depts={depts}
+        positions={positions}
+        employeeTypes={employeeTypes}
+        employeeLevels={employeeLevels}
         branches={branches}
         workSites={workSites}
         visibleColumns={visibleColumns}

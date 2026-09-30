@@ -3,7 +3,14 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { phoneToSyntheticEmail, isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 import { compareBiometricIds } from "@/lib/biometricUtils";
-import { BU_DEFAULT_CONTRACT_TYPES } from "../constants";
+import {
+  BU_DEFAULT_CONTRACT_TYPES,
+  BU_DEFAULT_JOB_STATUSES,
+  BU_DEFAULT_DEPARTMENTS,
+  BU_DEFAULT_POSITIONS,
+  BU_DEFAULT_EMPLOYEE_TYPES,
+  BU_DEFAULT_EMPLOYEE_LEVELS,
+} from "../constants";
 import type { Employee, Branch, AppRole, AccountStatus, BiometricDeviceRef } from "../types";
 
 interface UseEmployeesDataProps {
@@ -25,7 +32,11 @@ export function useEmployeesData({
   const [workSites, setWorkSites] = useState<{ id: string; name: string; branch_id: string; is_default?: boolean }[]>([]);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [contractTypes, setContractTypes] = useState<string[]>(BU_DEFAULT_CONTRACT_TYPES);
-  const [jobStatuses, setJobStatuses] = useState<string[]>(["Not Employed Yet", "Employed", "Exited", "Black List"]);
+  const [jobStatuses, setJobStatuses] = useState<string[]>(BU_DEFAULT_JOB_STATUSES);
+  const [departments, setDepartments] = useState<string[]>(BU_DEFAULT_DEPARTMENTS);
+  const [positions, setPositions] = useState<string[]>(BU_DEFAULT_POSITIONS);
+  const [employeeTypes, setEmployeeTypes] = useState<string[]>(BU_DEFAULT_EMPLOYEE_TYPES);
+  const [employeeLevels, setEmployeeLevels] = useState<string[]>(BU_DEFAULT_EMPLOYEE_LEVELS);
   const [managerEmails, setManagerEmails] = useState<Set<string>>(new Set());
   const [accountStatus, setAccountStatus] = useState<Record<string, AccountStatus>>({});
   const [biometricDevices, setBiometricDevices] = useState<BiometricDeviceRef[]>([]);
@@ -76,37 +87,37 @@ export function useEmployeesData({
     }
 
     supabase.from("branches").select("id, name").is("deleted_at", null).order("name").then(({ data }) => {
-      setBranches((data as Branch[]) || []);
+      if (data) setBranches(data as Branch[]);
     });
 
     supabase.from("work_locations").select("id, name, branch_id, is_default").is("deleted_at", null).order("is_default", { ascending: false }).order("name").then(({ data }) => {
-      setWorkSites(data || []);
+      if (data) setWorkSites(data);
     });
+
+    const loadStr = (tbl: string, setter: (vals: string[]) => void) => {
+      supabase.from(tbl).select("name").is("deleted_at", null).order("sort_order").order("name").then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          setter(Array.from(new Set(data.map((d: any) => d.name).filter(Boolean))));
+        }
+      });
+    };
+
+    loadStr("departments", setDepartments);
+    loadStr("positions", setPositions);
+    loadStr("employee_types", setEmployeeTypes);
+    loadStr("employee_levels", setEmployeeLevels);
+    loadStr("contract_types", setContractTypes);
+    loadStr("job_statuses", setJobStatuses);
 
     supabase.from("app_roles").select("id, name, color").order("name").then(({ data }) => {
-      setRoles(data || []);
-    });
-
-    supabase.from("contract_types").select("name").is("deleted_at", null).order("sort_order", { ascending: true }).then(({ data }) => {
-      if (data && data.length > 0) {
-        const names = Array.from(new Set(data.map((d: any) => d.name).filter(Boolean)));
-        setContractTypes(names);
-      }
-    });
-
-    supabase.from("job_statuses").select("name").is("deleted_at", null).order("sort_order", { ascending: true }).then(({ data }) => {
-      if (data && data.length > 0) {
-        const names = Array.from(new Set(data.map((d: any) => d.name).filter(Boolean)));
-        setJobStatuses(names);
-      }
+      if (data) setRoles(data);
     });
 
     supabase.from("user_role_assignments").select("email, app_roles(name)").is("deleted_at", null).then(({ data }) => {
       if (!data) return;
       const emails = new Set<string>();
       data.forEach((row: any) => {
-        const roleName = row.app_roles?.name || "";
-        if (/manager/i.test(roleName) && row.email) emails.add(row.email.toLowerCase());
+        if (/manager/i.test(row.app_roles?.name || "") && row.email) emails.add(row.email.toLowerCase());
       });
       setManagerEmails(emails);
     });
@@ -138,10 +149,7 @@ export function useEmployeesData({
             const key = row.email.toLowerCase();
             const status: AccountStatus = { invited: true, hasAccount: Boolean(row.user_id) };
             statusMap[key] = status;
-            if (isPhoneSyntheticEmail(key)) {
-              const rawPhone = syntheticEmailToPhone(key);
-              statusMap[rawPhone] = status;
-            }
+            if (isPhoneSyntheticEmail(key)) statusMap[syntheticEmailToPhone(key)] = status;
           }
         });
         setAccountStatus(statusMap);
@@ -149,17 +157,8 @@ export function useEmployeesData({
   }, [employees]);
 
   return {
-    employees,
-    setEmployees,
-    branches,
-    workSites,
-    roles,
-    contractTypes,
-    jobStatuses,
-    managerEmails,
-    accountStatus,
-    biometricDevices,
-    loading,
-    loadEmployees,
+    employees, setEmployees, branches, workSites, departments, positions,
+    employeeTypes, employeeLevels, roles, contractTypes, jobStatuses,
+    managerEmails, accountStatus, biometricDevices, loading, loadEmployees,
   };
 }

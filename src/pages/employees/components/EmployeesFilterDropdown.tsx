@@ -1,5 +1,6 @@
 import { memo, useState, useRef, useEffect, useMemo } from "react";
 import type { Branch } from "../types";
+import { BU_DEFAULT_EMPLOYEE_TYPES, BU_DEFAULT_EMPLOYEE_LEVELS } from "../constants";
 import { EmployeesFilterFlyoutPanel, type FilterOptionItem } from "./filter/EmployeesFilterFlyoutPanel";
 
 interface EmployeesFilterDropdownProps {
@@ -23,9 +24,6 @@ interface EmployeesFilterDropdownProps {
 
 type ActiveCategory = "site" | "department" | "position" | "employee_type" | "employee_level";
 
-const DEFAULT_EMPLOYEE_TYPES = ["Full-time", "Part-time", "Internship", "Contractor"];
-const DEFAULT_EMPLOYEE_LEVELS = ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"];
-
 export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
   filterBranch,
   setFilterBranch,
@@ -41,8 +39,8 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
   workSites = [],
   depts,
   positions = [],
-  employeeTypes = DEFAULT_EMPLOYEE_TYPES,
-  employeeLevels = DEFAULT_EMPLOYEE_LEVELS,
+  employeeTypes = BU_DEFAULT_EMPLOYEE_TYPES,
+  employeeLevels = BU_DEFAULT_EMPLOYEE_LEVELS,
 }: EmployeesFilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>("site");
@@ -54,17 +52,11 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
         setIsOpen(false);
       }
     }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  const hasActiveFilter = Boolean(
-    filterBranch || filterDept || filterRole || filterEmployeeType || filterEmployeeLevel
-  );
+  const hasActiveFilter = Boolean(filterBranch || filterDept || filterRole || filterEmployeeType || filterEmployeeLevel);
 
   const categories = useMemo(
     () => [
@@ -81,29 +73,20 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
     const list: FilterOptionItem[] = [];
     branches.forEach((b) => {
       list.push({ id: b.id, label: b.name });
-      const subs = workSites.filter((s) => s.branch_id === b.id);
-      subs.forEach((s) => {
+      workSites.filter((s) => s.branch_id === b.id).forEach((s) => {
         list.push({ id: `site:${s.id}`, label: `${b.name} - ${s.name}` });
       });
     });
     return list;
   }, [branches, workSites]);
 
-  const deptOptions = useMemo<FilterOptionItem[]>(() => {
-    return depts.filter(Boolean).map((d) => ({ id: d as string, label: d as string }));
-  }, [depts]);
-
-  const positionOptions = useMemo<FilterOptionItem[]>(() => {
-    return positions.map((p) => ({ id: p, label: p }));
-  }, [positions]);
-
-  const typeOptions = useMemo<FilterOptionItem[]>(() => {
-    return employeeTypes.map((t) => ({ id: t, label: t }));
-  }, [employeeTypes]);
-
-  const levelOptions = useMemo<FilterOptionItem[]>(() => {
-    return employeeLevels.map((l) => ({ id: l, label: l }));
-  }, [employeeLevels]);
+  const deptOptions = useMemo<FilterOptionItem[]>(
+    () => depts.filter(Boolean).map((d) => ({ id: d as string, label: d as string })),
+    [depts]
+  );
+  const positionOptions = useMemo<FilterOptionItem[]>(() => positions.map((p) => ({ id: p, label: p })), [positions]);
+  const typeOptions = useMemo<FilterOptionItem[]>(() => employeeTypes.map((t) => ({ id: t, label: t })), [employeeTypes]);
+  const levelOptions = useMemo<FilterOptionItem[]>(() => employeeLevels.map((l) => ({ id: l, label: l })), [employeeLevels]);
 
   const currentCategoryData = useMemo(() => {
     switch (activeCategory) {
@@ -144,27 +127,13 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
         };
     }
   }, [
-    activeCategory,
-    siteOptions,
-    deptOptions,
-    positionOptions,
-    typeOptions,
-    levelOptions,
-    filterBranch,
-    filterDept,
-    filterRole,
-    filterEmployeeType,
-    filterEmployeeLevel,
-    setFilterBranch,
-    setFilterDept,
-    setFilterRole,
-    setFilterEmployeeType,
-    setFilterEmployeeLevel,
+    activeCategory, siteOptions, deptOptions, positionOptions, typeOptions, levelOptions,
+    filterBranch, filterDept, filterRole, filterEmployeeType, filterEmployeeLevel,
+    setFilterBranch, setFilterDept, setFilterRole, setFilterEmployeeType, setFilterEmployeeLevel,
   ]);
 
   return (
     <div className="relative" ref={containerRef}>
-      {/* Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -178,13 +147,11 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
         <i className="ri-arrow-down-s-line text-xs opacity-90" />
       </button>
 
-      {/* Popover container matching screenshot */}
       {isOpen && (
         <div
           onClick={(e) => e.stopPropagation()}
           className="absolute right-0 top-8 flex bg-white border border-slate-200 rounded shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-100"
         >
-          {/* Left Submenu Panel with Checkboxes, Apply & Reset */}
           <EmployeesFilterFlyoutPanel
             items={currentCategoryData.items}
             selectedValues={currentCategoryData.selected}
@@ -195,7 +162,6 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
             onReset={currentCategoryData.onReset}
           />
 
-          {/* Right Category Column matching screenshot */}
           <div className="w-36 py-1 bg-white">
             {categories.map((cat) => {
               const isActive = activeCategory === cat.id;
@@ -206,21 +172,14 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
                   onMouseEnter={() => setActiveCategory(cat.id)}
                   onClick={() => setActiveCategory(cat.id)}
                   className={`w-full px-3 py-2 text-left flex items-center justify-between text-xs transition-colors cursor-pointer ${
-                    isActive
-                      ? "bg-slate-100 text-slate-900 font-semibold"
-                      : "text-slate-700 hover:bg-slate-50"
+                    isActive ? "bg-slate-100 text-slate-900 font-semibold" : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   <div className="flex items-center gap-1.5">
                     <span>{cat.label}</span>
                     {cat.active && <span className="w-1.5 h-1.5 rounded-full bg-[#3498db]" />}
                   </div>
-                  {/* Left pointing arrow matching screenshot */}
-                  <i
-                    className={`ri-arrow-left-s-fill text-xs transition-colors ${
-                      isActive ? "text-slate-500" : "text-slate-300"
-                    }`}
-                  />
+                  <i className={`ri-arrow-left-s-fill text-xs transition-colors ${isActive ? "text-slate-500" : "text-slate-300"}`} />
                 </button>
               );
             })}
