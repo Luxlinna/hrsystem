@@ -4,37 +4,42 @@ import type { EmployeeMovement } from "@/pages/movements/types";
 import { uploadFileToS3 } from "@/lib/s3-storage";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
+import type { MovementAttachmentItem } from "./movementAttachmentTypes";
+import { AttachmentItemRow } from "./AttachmentItemRow";
 
-export interface MovementAttachmentItem {
-  id: string;
-  name: string;
-  url: string;
-  sizeText: string;
-  uploadedAt?: string;
-}
+export type { MovementAttachmentItem };
 
 interface Props {
   employee: Employee;
   movements?: EmployeeMovement[];
   initialAttachments?: MovementAttachmentItem[];
+  categoryKey?: string;
 }
 
 export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementAttachmentSection({
   employee,
   movements = [],
   initialAttachments = [],
+  categoryKey = "general",
 }: Props) {
-  const formatFileSize = (bytes: number) => {
+  const employeeId = employee.id;
+  const employeeDocs = employee.documents;
+  const employeeAssetAttachments = (employee as any).asset_attachments;
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return "Attachment";
     if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
     return `${Math.round(bytes / 1024)} KB`;
   };
 
-  const [attachments, setAttachments] = useState<MovementAttachmentItem[]>(() => {
-    if (initialAttachments.length > 0) return initialAttachments;
+  const collectAllAttachments = useCallback((): MovementAttachmentItem[] => {
     const items: MovementAttachmentItem[] = [];
+    const seenUrls = new Set<string>();
 
+    // 1. Movement records with documents
     movements.forEach((m) => {
-      if (m.document_url) {
+      if (m.document_url && !seenUrls.has(m.document_url)) {
+        seenUrls.add(m.document_url);
         items.push({
           id: `mov-doc-${m.id}`,
           name: m.document_name || `${m.title || "Movement"} Document.pdf`,
@@ -45,42 +50,51 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
       }
     });
 
-    (employee.documents || [])
-      .filter((d: any) => d && (d.doc_slot_key === "movement_attachment" || d.url?.includes("movements")))
-      .forEach((d: any, i: number) => {
-        if (!items.some((it) => it.url === d.url)) {
-          items.push({
-            id: `emp-doc-${i}`,
-            name: d.name || "Movement Document.pdf",
-            url: d.url,
-            sizeText: d.size ? formatFileSize(d.size) : "Uploaded",
-            uploadedAt: d.uploaded_at,
-          });
-        }
-      });
-
-    return items;
-  });
-
-  useEffect(() => {
-    movements.forEach((m) => {
-      if (m.document_url) {
-        setAttachments((prev) => {
-          if (prev.some((p) => p.url === m.document_url)) return prev;
-          return [
-            ...prev,
-            {
-              id: `mov-doc-${m.id}`,
-              name: m.document_name || `${m.title || "Movement"} Document.pdf`,
-              url: m.document_url,
-              sizeText: "Attachment",
-              uploadedAt: m.created_at,
-            },
-          ];
+    // 2. Employee documents array
+    (employeeDocs || []).forEach((d: any, i: number) => {
+      const url = d?.url || d?.file_url;
+      if (url && !seenUrls.has(url)) {
+        seenUrls.add(url);
+        items.push({
+          id: `emp-doc-${i}-${d.id || Date.now()}`,
+          name: d.name || "Document.pdf",
+          url: url,
+          sizeText: d.size ? formatFileSize(d.size) : "Attachment",
+          uploadedAt: d.uploaded_at,
         });
       }
     });
-  }, [movements]);
+
+    // 3. Asset attachments array
+    if (Array.isArray(employeeAssetAttachments)) {
+      employeeAssetAttachments.forEach((att: any, i: number) => {
+        const url = att?.url || att?.file_url;
+        if (url && !seenUrls.has(url)) {
+          seenUrls.add(url);
+          items.push({
+            id: `asset-att-${i}-${att.id || Date.now()}`,
+            name: att.name || "Asset Document.pdf",
+            url: url,
+            sizeText: att.size ? formatFileSize(att.size) : "Attachment",
+            uploadedAt: att.uploaded_at,
+          });
+        }
+      });
+    }
+
+    return items;
+  }, [movements, employeeDocs, employeeAssetAttachments]);
+
+  const [attachments, setAttachments] = useState<MovementAttachmentItem[]>(() => {
+    if (initialAttachments.length > 0) return initialAttachments;
+    return collectAllAttachments();
+  });
+
+  // Sync state whenever employee documents, asset attachments or movements change
+  useEffect(() => {
+    const fresh = collectAllAttachments();
+    setAttachments(fresh);
+  }, [collectAllAttachments]);
 
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -90,7 +104,8 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
     async (file: File) => {
       setUploading(true);
       try {
-        const s3 = await uploadFileToS3(file, `employees/${employee.id}/movements`);
+        const folder = `employees/${employeeId}/documents`;
+        const s3 = await uploadFileToS3(file, folder);
         const item: MovementAttachmentItem = {
           id: `att-${Date.now()}`,
           name: file.name,
@@ -98,23 +113,44 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
           sizeText: formatFileSize(file.size),
           uploadedAt: new Date().toISOString(),
         };
-        setAttachments((prev) => [...prev, item]);
 
-        const currentDocs = Array.isArray(employee.documents) ? employee.documents : [];
-        await supabase.from("employees").update({
-          documents: [
-            ...currentDocs,
+        setAttachments((prev) => {
+          if (prev.some((p) => p.url === s3.url)) return prev;
+          return [...prev, item];
+        });
+
+        const currentDocs = Array.isArray(employeeDocs) ? employeeDocs : [];
+        const newDocEntry = {
+          name: file.name,
+          url: s3.url,
+          size: s3.size,
+          type: s3.type || file.type || "application/pdf",
+          uploaded_at: new Date().toISOString(),
+          doc_slot_key: `${categoryKey}_attachment`,
+          category: categoryKey,
+          verification_status: "verified",
+        };
+
+        const updatePayload: Record<string, any> = {
+          documents: [...currentDocs, newDocEntry],
+        };
+
+        if (categoryKey === "asset") {
+          const currentAssetAtts = Array.isArray(employeeAssetAttachments)
+            ? employeeAssetAttachments
+            : [];
+          updatePayload.asset_attachments = [
+            ...currentAssetAtts,
             {
               name: file.name,
               url: s3.url,
               size: s3.size,
               type: s3.type || file.type || "application/pdf",
-              uploaded_at: new Date().toISOString(),
-              doc_slot_key: "movement_attachment",
-              verification_status: "verified",
             },
-          ],
-        }).eq("id", employee.id);
+          ];
+        }
+
+        await supabase.from("employees").update(updatePayload).eq("id", employeeId);
 
         toast("Saved to AWS S3", `${file.name} uploaded successfully.`, "success");
       } catch (err: any) {
@@ -123,46 +159,54 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
         setUploading(false);
       }
     },
-    [employee.id, employee.documents]
+    [employeeId, employeeDocs, employeeAssetAttachments, categoryKey]
   );
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleUploadFile(file);
-  };
 
   const handleDeleteAttachment = async (id: string) => {
     const target = attachments.find((a) => a.id === id);
     setAttachments((prev) => prev.filter((a) => a.id !== id));
     if (target && target.url && !target.url.startsWith("#")) {
-      const remaining = (employee.documents || []).filter((d: any) => d.url !== target.url);
-      await supabase.from("employees").update({ documents: remaining }).eq("id", employee.id);
+      const remainingDocs = (employeeDocs || []).filter((d: any) => d.url !== target.url && d.file_url !== target.url);
+      const updatePayload: Record<string, any> = { documents: remainingDocs };
+
+      if (Array.isArray(employeeAssetAttachments)) {
+        updatePayload.asset_attachments = employeeAssetAttachments.filter(
+          (a: any) => a.url !== target.url && a.file_url !== target.url
+        );
+      }
+
+      await supabase.from("employees").update(updatePayload).eq("id", employeeId);
     }
   };
 
   return (
     <div className="mt-8 pt-5 border-t border-gray-200 dark:border-slate-800">
-      <h4 className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider mb-4">
+      <h4 className="text-[13px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider mb-4">
         ATTACHMENT INFO
       </h4>
 
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start text-[13px]">
         <label className="sm:col-span-2 text-gray-700 dark:text-slate-300 font-medium pt-2">
           Attachment
         </label>
 
         <div className="sm:col-span-10 space-y-4">
           <div
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
             onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`border border-dashed rounded-md p-4 text-center cursor-pointer transition-all ${
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              const f = e.dataTransfer.files?.[0];
+              if (f) handleUploadFile(f);
+            }}
+            className={`border border-dashed rounded py-2 px-4 text-center transition-colors flex items-center justify-center gap-1.5 ${
               isDragging
                 ? "border-sky-500 bg-sky-50/50 dark:bg-sky-950/20"
-                : "border-gray-300 dark:border-slate-700 hover:border-gray-400 bg-gray-50/40 dark:bg-slate-800/40"
+                : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-400"
             }`}
           >
             <input
@@ -175,60 +219,29 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
                 e.target.value = "";
               }}
             />
-            <div className="flex items-center justify-center gap-1.5 text-gray-500 dark:text-slate-400">
-              <i className="ri-cloud-upload-line text-sm" />
-              <span>Drop file here or</span>
-              <span className="text-sky-600 dark:text-sky-400 font-semibold hover:underline">
-                Browse
-              </span>
-            </div>
-            {uploading && (
-              <p className="text-[11px] text-sky-600 dark:text-sky-400 mt-1 animate-pulse font-medium">
-                Uploading to AWS S3...
-              </p>
-            )}
+
+            <i className="ri-upload-cloud-2-line text-sm text-slate-500" />
+            <span className="text-slate-600 dark:text-slate-300 text-[13px]">
+              Drop file here or{" "}
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 cursor-pointer disabled:opacity-50"
+              >
+                {uploading ? "Uploading..." : "Browse"}
+              </button>
+            </span>
           </div>
 
-          {attachments.length === 0 ? (
-            <div className="py-2 text-gray-400 dark:text-slate-500 text-xs italic">
-              No movement attachment files uploaded yet.
-            </div>
-          ) : (
-            <div className="space-y-3 pt-1">
-              {attachments.map((att) => (
-                <div key={att.id} className="flex items-center gap-3">
-                  <div className="shrink-0 text-gray-700 dark:text-slate-300">
-                    <i className="ri-file-pdf-2-line text-xl text-rose-500" />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-3 text-xs mb-1">
-                      <a
-                        href={att.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-medium text-gray-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 truncate"
-                        title={att.name}
-                      >
-                        {att.name}
-                      </a>
-                      <span className="text-[11px] text-gray-500 dark:text-slate-400 shrink-0 font-medium">
-                        {att.sizeText}
-                      </span>
-                    </div>
-
-                    <div className="w-full h-1 bg-emerald-500 rounded-full" />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteAttachment(att.id)}
-                    className="text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 text-xs px-1 cursor-pointer font-bold shrink-0"
-                    title="Remove attachment"
-                  >
-                    X
-                  </button>
-                </div>
+          {attachments.length > 0 && (
+            <div className="space-y-2 pt-2">
+              {attachments.map((item) => (
+                <AttachmentItemRow
+                  key={item.id}
+                  item={item}
+                  onDelete={() => handleDeleteAttachment(item.id)}
+                />
               ))}
             </div>
           )}

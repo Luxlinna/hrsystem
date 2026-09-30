@@ -30,7 +30,7 @@ export default function EmployeesPage() {
     empPageStart, empPageEnd, pagedEmployees, tableGridStyle, handleSort, handleSelectAll,
     handleSelectOne, bulkInvite, bulkDelete, handleAddEmployee,
     inviteUser, phoneAccountEmployee, setPhoneAccountEmployee, setUpPhoneUser,
-    deleteEmployee, roles,
+    deleteEmployee, disableEmployee, deactivateEmployee, roles,
   } = useEmployees();
 
   const navigate = useNavigate();
@@ -171,6 +171,8 @@ export default function EmployeesPage() {
             onInvite={handleInviteEmployee}
             onSetUpPhoneAccount={setPhoneAccountEmployee}
             onDelete={deleteEmployee}
+            onDisable={disableEmployee}
+            onDeactivate={deactivateEmployee}
           />
         ) : (
           <EmployeesGridView

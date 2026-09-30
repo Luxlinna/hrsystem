@@ -13,6 +13,8 @@ interface EmployeesTableRowProps {
   onInvite?: (e: Employee) => void;
   onSetUpPhoneAccount?: (e: Employee) => void;
   onDelete: (e: Employee) => void;
+  onDisable?: (e: Employee) => void;
+  onDeactivate?: (e: Employee) => void;
 }
 
 const formatDate = (d?: string | null) => {
@@ -35,7 +37,10 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
   canManage,
   showSalary = false,
   onSelectOne,
+  onSetUpPhoneAccount,
   onDelete,
+  onDisable,
+  onDeactivate,
 }: EmployeesTableRowProps) {
   const [showActionMenu, setShowActionMenu] = useState(false);
 
@@ -50,6 +55,9 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
   const contractPeriod = e.contract_effective_date
     ? `${formatDate(e.contract_effective_date)} - ${e.contract_end_date ? formatDate(e.contract_end_date) : "Never"}`
     : `${formatDate(e.join_date)} - Never`;
+
+  const isSuspended = e.status === "suspended";
+  const isDeactivated = e.status === "inactive" || e.status === "exited";
 
   return (
     <tr
@@ -146,39 +154,107 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
             ev.stopPropagation();
             setShowActionMenu(!showActionMenu);
           }}
-          className="px-2 py-1 rounded border border-[#253C7D]/40 dark:border-slate-600 text-[#253C7D] dark:text-slate-300 hover:bg-[#253C7D]/5 dark:hover:bg-slate-700/60 flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-xs"
+          className="px-2 py-1 rounded bg-[#0284c7] hover:bg-[#0369a1] text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-xs shadow-2xs"
+          title="Employee Actions"
         >
-          <i className="ri-settings-3-line text-xs" />
-          <i className="ri-arrow-down-s-line text-[10px]" />
+          <i className="ri-settings-3-fill text-xs text-white" />
+          <i className="ri-arrow-down-s-line text-[11px] text-white" />
         </button>
 
         {showActionMenu && (
-          <div
-            onClick={(ev) => ev.stopPropagation()}
-            className="absolute right-3 top-8 w-36 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 duration-100 text-left text-xs"
-          >
-            <Link
-              to={`/employees/${e.id}`}
-              onClick={() => setShowActionMenu(false)}
-              className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-1.5 cursor-pointer"
+          <>
+            <div
+              className="fixed inset-0 z-20"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                setShowActionMenu(false);
+              }}
+            />
+            <div
+              onClick={(ev) => ev.stopPropagation()}
+              className="absolute right-3 top-8 w-52 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 duration-100 text-left text-xs"
             >
-              <i className="ri-user-line text-slate-400 dark:text-slate-500" />
-              <span>View Profile</span>
-            </Link>
-            {canManage && (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowActionMenu(false);
-                  onDelete(e);
-                }}
-                className="w-full text-left px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-1.5 cursor-pointer border-t border-slate-100 dark:border-slate-700"
+              {/* 1. View this employee */}
+              <Link
+                to={`/employees/${e.id}`}
+                onClick={() => setShowActionMenu(false)}
+                className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-2.5 transition-colors cursor-pointer"
               >
-                <i className="ri-delete-bin-line" />
-                <span>Delete</span>
-              </button>
-            )}
-          </div>
+                <i className="ri-eye-line text-slate-500 dark:text-slate-400 text-sm" />
+                <span>View this employee</span>
+              </Link>
+
+              {/* 2. Edit this employee */}
+              <Link
+                to={`/employees/${e.id}?tab=personal`}
+                onClick={() => setShowActionMenu(false)}
+                className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <i className="ri-edit-box-line text-slate-500 dark:text-slate-400 text-sm" />
+                <span>Edit this employee</span>
+              </Link>
+
+              {/* 3. Delete this employee */}
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowActionMenu(false);
+                    onDelete(e);
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-delete-bin-line text-slate-500 dark:text-slate-400 text-sm" />
+                  <span>Delete this employee</span>
+                </button>
+              )}
+
+              {/* 4. Disable this employee */}
+              {canManage && onDisable && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowActionMenu(false);
+                    onDisable(e);
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-prohibited-line text-slate-500 dark:text-slate-400 text-sm" />
+                  <span>{isSuspended ? "Enable this employee" : "Disable this employee"}</span>
+                </button>
+              )}
+
+              {/* 5. Update User Account */}
+              {canManage && onSetUpPhoneAccount && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowActionMenu(false);
+                    onSetUpPhoneAccount(e);
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-user-settings-line text-slate-500 dark:text-slate-400 text-sm" />
+                  <span>Update User Account</span>
+                </button>
+              )}
+
+              {/* 6. Deactivate this employee */}
+              {canManage && onDeactivate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowActionMenu(false);
+                    onDeactivate(e);
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <i className="ri-user-unfollow-line text-slate-500 dark:text-slate-400 text-sm" />
+                  <span>{isDeactivated ? "Activate this employee" : "Deactivate this employee"}</span>
+                </button>
+              )}
+            </div>
+          </>
         )}
       </td>
     </tr>

@@ -52,7 +52,7 @@ export const PersonalNssfFields = memo(function PersonalNssfFields({
             </div>
           </div>
 
-          {/* First Name & Last Name */}
+          {/* First Name & Last Name (Latin) */}
           <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-2">
             <label className="md:col-span-4 text-xs font-medium text-slate-700 md:text-right md:pr-4">
               First Name <span className="text-rose-500">*</span>
@@ -61,8 +61,8 @@ export const PersonalNssfFields = memo(function PersonalNssfFields({
               <input
                 type="text"
                 required
-                value={nssf.first_name_kh || ""}
-                onChange={(e) => updateNssf("first_name_kh", e.target.value)}
+                value={nssf.first_name_latin || ""}
+                onChange={(e) => updateNssf("first_name_latin", e.target.value)}
                 placeholder="First Name"
                 className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-[#253C7D]"
               />
@@ -77,25 +77,25 @@ export const PersonalNssfFields = memo(function PersonalNssfFields({
               <input
                 type="text"
                 required
-                value={nssf.last_name_kh || ""}
-                onChange={(e) => updateNssf("last_name_kh", e.target.value)}
+                value={nssf.last_name_latin || ""}
+                onChange={(e) => updateNssf("last_name_latin", e.target.value)}
                 placeholder="Last Name"
                 className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-[#253C7D]"
               />
             </div>
           </div>
 
-          {/* First Name in Latin & Last Name in Latin */}
+          {/* First Name in Khmer & Last Name in Khmer */}
           <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-2">
             <label className="md:col-span-4 text-xs font-medium text-slate-700 md:text-right md:pr-4">
-              First Name in Latin
+              First Name in Khmer
             </label>
             <div className="md:col-span-8">
               <input
                 type="text"
-                value={nssf.first_name_latin || ""}
-                onChange={(e) => updateNssf("first_name_latin", e.target.value)}
-                placeholder="First Name in Latin"
+                value={nssf.first_name_kh || ""}
+                onChange={(e) => updateNssf("first_name_kh", e.target.value)}
+                placeholder="First Name in Khmer"
                 className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-[#253C7D]"
               />
             </div>
@@ -103,14 +103,14 @@ export const PersonalNssfFields = memo(function PersonalNssfFields({
 
           <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-2">
             <label className="md:col-span-4 text-xs font-medium text-slate-700 md:text-right md:pr-4">
-              Last Name in Latin
+              Last Name in Khmer
             </label>
             <div className="md:col-span-8">
               <input
                 type="text"
-                value={nssf.last_name_latin || ""}
-                onChange={(e) => updateNssf("last_name_latin", e.target.value)}
-                placeholder="Last Name in Latin"
+                value={nssf.last_name_kh || ""}
+                onChange={(e) => updateNssf("last_name_kh", e.target.value)}
+                placeholder="Last Name in Khmer"
                 className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:border-[#253C7D]"
               />
             </div>

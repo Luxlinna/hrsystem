@@ -22,6 +22,8 @@ interface EmployeesTableViewProps {
   onInvite: (e: Employee) => void;
   onSetUpPhoneAccount?: (e: Employee) => void;
   onDelete: (e: Employee) => void;
+  onDisable?: (e: Employee) => void;
+  onDeactivate?: (e: Employee) => void;
 }
 
 export const EmployeesTableView = memo(function EmployeesTableView({
@@ -36,6 +38,8 @@ export const EmployeesTableView = memo(function EmployeesTableView({
   onInvite,
   onSetUpPhoneAccount,
   onDelete,
+  onDisable,
+  onDeactivate,
 }: EmployeesTableViewProps) {
   return (
     <div className="w-full overflow-x-auto bg-white dark:bg-slate-900">
@@ -131,6 +135,8 @@ export const EmployeesTableView = memo(function EmployeesTableView({
               onInvite={onInvite}
               onSetUpPhoneAccount={onSetUpPhoneAccount}
               onDelete={onDelete}
+              onDisable={onDisable}
+              onDeactivate={onDeactivate}
             />
           ))}
         </tbody>

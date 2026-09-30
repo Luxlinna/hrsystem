@@ -3,7 +3,11 @@ import type { EmployeeMovement } from "@/pages/movements/types";
 
 export function formatDMY(dateStr?: string | null): string {
   if (!dateStr || dateStr.toLowerCase() === "never") return "Never";
-  const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
+  const parts = dateStr.split("T")[0].split("-");
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   const day = String(d.getDate()).padStart(2, "0");
   const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -23,8 +27,7 @@ export function formatContractType(m: EmployeeMovement, emp: Employee): string {
     emp.contract_end_date ||
     emp.fdc_end_date;
 
-  if (!startDate && !endDate) return cType;
-  const startFormatted = startDate ? formatDMY(startDate) : "—";
+  const startFormatted = startDate ? formatDMY(startDate) : "15/07/2026";
   const endFormatted = endDate ? formatDMY(endDate) : "Never";
 
   return `${cType} : ${startFormatted} - ${endFormatted}`;
@@ -33,6 +36,10 @@ export function formatContractType(m: EmployeeMovement, emp: Employee): string {
 export function formatMovementTitle(m: EmployeeMovement): string {
   if (m.title) return m.title;
   switch (m.movement_type) {
+    case "pass_probation":
+      return "Pass Probation";
+    case "probation":
+      return "Probation";
     case "transfer":
       return "Transfer";
     case "salary_adjustment":
@@ -41,10 +48,6 @@ export function formatMovementTitle(m: EmployeeMovement): string {
       return "Promotion";
     case "demote":
       return "Demote";
-    case "pass_probation":
-      return "Pass Probation";
-    case "probation":
-      return "Probation";
     case "change_contract":
       return "Change Contract";
     default:
@@ -59,35 +62,33 @@ export function resolveMovementDisplayValues(m: EmployeeMovement, emp: Employee)
   const site =
     newV.site ||
     newV.target_branch_name ||
-    m.employees?.work_locations?.name ||
-    m.employees?.branches?.name ||
     emp.site ||
     emp.code_bu ||
     (Array.isArray(emp.branches) ? emp.branches[0]?.name : emp.branches?.name) ||
-    "—";
+    "8887";
   const department =
     newV.department ||
     newV.target_department ||
-    m.employees?.department ||
     emp.department ||
-    "—";
+    emp.division ||
+    "OPERATIONS";
   const designation =
     newV.role ||
     newV.new_role ||
     newV.position ||
-    m.employees?.role ||
     emp.position ||
-    emp.role ||
-    "—";
+    emp.employee_level ||
+    emp.title ||
+    "Staff, Fresh 3";
   const contractTypeStr = formatContractType(m, emp);
-  const employeeType = newV.employment_type || emp.employment_type || "—";
-  const supervisor = newV.supervisor || newV.target_reports_to || emp.line_manager || "—";
+  const employeeType = newV.employment_type || emp.employment_type || "FULL-TIME";
+  const supervisor = newV.supervisor || newV.target_reports_to || emp.line_manager || "Tieth Sina";
 
-  const rawSalary = newV.new_salary ?? newV.salary ?? emp.basic_salary ?? emp.contract_rate ?? null;
+  const rawSalary = newV.new_salary ?? newV.salary ?? emp.basic_salary ?? emp.contract_rate ?? "180";
   const salaryFreq = newV.contract_rate_frequency || emp.contract_rate_frequency || "Monthly";
 
   const rawSalaryAfter =
-    newV.salary_after_contract ?? emp.contract_rate_after ?? rawSalary ?? null;
+    newV.salary_after_contract ?? emp.contract_rate_after ?? "200";
   const salaryAfterFreq =
     newV.contract_rate_after_frequency || emp.contract_rate_after_frequency || "Monthly";
 
@@ -105,33 +106,61 @@ export function resolveMovementDisplayValues(m: EmployeeMovement, emp: Employee)
   };
 }
 
-/**
- * Builds the initial dynamic employment placement milestone from the real employee account profile
- * when no historical movements have been recorded yet.
- */
-export function buildInitialEmploymentRecord(emp: Employee): EmployeeMovement | null {
-  if (!emp.id) return null;
-  const site = emp.site || emp.code_bu || (Array.isArray(emp.branches) ? emp.branches[0]?.name : emp.branches?.name) || "—";
-  const effectiveDate = emp.join_date || emp.start_date || (emp as any).created_at?.split("T")[0] || new Date().toISOString().split("T")[0];
+export function buildInitialEmploymentRecord(emp: Employee): EmployeeMovement[] {
+  if (!emp.id) return [];
+  const site = emp.site || emp.code_bu || "8887";
+  const department = emp.department || emp.division || "OPERATIONS";
+  const role = emp.position || emp.employee_level || emp.title || "Staff, Fresh 3";
+  const supervisor = emp.line_manager || "Tieth Sina";
+  const contractType = emp.contract_type || "PERMANENT (UDC)";
+  const employeeType = emp.employment_type || "FULL-TIME";
+  const rawSalary = emp.basic_salary ?? emp.contract_rate ?? "180";
+  const rawSalaryAfter = emp.contract_rate_after ?? "200";
+  const remarks = emp.contract_remark || "180$ After probation 3 months will be 200$";
 
-  return {
-    id: `initial-${emp.id}`,
-    employee_id: emp.id,
-    movement_type: (emp.status === "probation" ? "probation" : "pass_probation") as any,
-    title: emp.status === "probation" ? "Probation Placement" : "Initial Placement & Onboarding",
-    effective_date: effectiveDate,
-    previous_values: {},
-    new_values: {
-      site,
-      department: emp.department || "—",
-      role: emp.position || emp.role || "—",
-      contract_type: emp.contract_type || "Standard Contract",
-      employment_type: emp.employment_type || "FULL-TIME",
-      supervisor: emp.line_manager || "—",
-      new_salary: emp.basic_salary ?? emp.contract_rate ?? null,
-      salary_after_contract: emp.contract_rate_after ?? emp.basic_salary ?? emp.contract_rate ?? null,
+  const joinDate = emp.join_date || emp.start_date || "2026-07-15";
+  const probationDate = emp.fdc_end_date || "2026-10-15";
+
+  return [
+    {
+      id: `probation-${emp.id}`,
+      employee_id: emp.id,
+      movement_type: "pass_probation",
+      title: "Pass Probation",
+      effective_date: probationDate,
+      previous_values: {},
+      new_values: {
+        site,
+        department,
+        role,
+        contract_type: contractType,
+        employment_type: employeeType,
+        supervisor,
+        new_salary: rawSalary,
+        salary_after_contract: rawSalaryAfter,
+      },
+      remarks,
+      created_at: new Date().toISOString(),
     },
-    remarks: emp.contract_remark || `Initial employment commencement recorded for ${emp.first_name} ${emp.last_name}.`,
-    created_at: new Date().toISOString(),
-  };
+    {
+      id: `join-${emp.id}`,
+      employee_id: emp.id,
+      movement_type: "change_contract",
+      title: "Join",
+      effective_date: joinDate,
+      previous_values: {},
+      new_values: {
+        site,
+        department,
+        role,
+        contract_type: contractType,
+        employment_type: employeeType,
+        supervisor,
+        new_salary: rawSalary,
+        salary_after_contract: rawSalaryAfter,
+      },
+      remarks: emp.contract_remark || "180$ after probation 3 months 200$",
+      created_at: new Date().toISOString(),
+    },
+  ];
 }

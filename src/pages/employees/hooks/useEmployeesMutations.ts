@@ -458,6 +458,82 @@ export function useEmployeesMutations({
     [actorName, roleName, loadEmployees]
   );
 
+  const disableEmployee = useCallback(
+    async (emp: Employee) => {
+      const isCurrentlyDisabled = emp.status === "suspended" || emp.status === "inactive";
+      const newStatus = isCurrentlyDisabled ? "active" : "suspended";
+      const actionLabel = isCurrentlyDisabled ? "enable" : "disable";
+
+      if (!confirm(`Are you sure you want to ${actionLabel} ${emp.first_name || ""} ${emp.last_name || ""}?`)) return;
+
+      try {
+        const { error } = await supabase
+          .from("employees")
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq("id", emp.id);
+
+        if (error) throw error;
+
+        toast(
+          "Status Updated",
+          `${emp.first_name || ""} ${emp.last_name || ""} is now ${newStatus}.`,
+          "success"
+        );
+        await logActivity({
+          module: "employees",
+          action: "updated",
+          entityType: "employee",
+          entityId: emp.id,
+          actorName,
+          actorRole: roleName,
+          description: `${isCurrentlyDisabled ? "Enabled" : "Disabled"} employee ${emp.first_name || ""} ${emp.last_name || ""}`,
+        });
+        loadEmployees();
+      } catch (err: any) {
+        toast("Error", err.message || `Failed to ${actionLabel} employee.`, "error");
+      }
+    },
+    [actorName, roleName, loadEmployees]
+  );
+
+  const deactivateEmployee = useCallback(
+    async (emp: Employee) => {
+      const isCurrentlyDeactivated = emp.status === "inactive" || emp.status === "exited";
+      const newStatus = isCurrentlyDeactivated ? "active" : "inactive";
+      const actionLabel = isCurrentlyDeactivated ? "activate" : "deactivate";
+
+      if (!confirm(`Are you sure you want to ${actionLabel} ${emp.first_name || ""} ${emp.last_name || ""}?`)) return;
+
+      try {
+        const { error } = await supabase
+          .from("employees")
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq("id", emp.id);
+
+        if (error) throw error;
+
+        toast(
+          "Status Updated",
+          `${emp.first_name || ""} ${emp.last_name || ""} has been ${newStatus === "active" ? "activated" : "deactivated"}.`,
+          "success"
+        );
+        await logActivity({
+          module: "employees",
+          action: "updated",
+          entityType: "employee",
+          entityId: emp.id,
+          actorName,
+          actorRole: roleName,
+          description: `${isCurrentlyDeactivated ? "Activated" : "Deactivated"} employee ${emp.first_name || ""} ${emp.last_name || ""}`,
+        });
+        loadEmployees();
+      } catch (err: any) {
+        toast("Error", err.message || `Failed to ${actionLabel} employee.`, "error");
+      }
+    },
+    [actorName, roleName, loadEmployees]
+  );
+
   return {
     showAddModal,
     setShowAddModal,
@@ -472,5 +548,8 @@ export function useEmployeesMutations({
     inviteUser,
     setUpPhoneUser,
     deleteEmployee,
+    disableEmployee,
+    deactivateEmployee,
   };
 }
+

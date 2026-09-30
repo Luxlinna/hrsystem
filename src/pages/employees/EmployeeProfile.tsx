@@ -1,57 +1,57 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ProfileHeader } from "./components/profile/ProfileHeader";
-import { BasicInfoCard } from "./components/profile/BasicInfoCard";
-import { EmployeeDocumentsCard } from "./components/profile/EmployeeDocumentsCard";
-import { LeaveHistoryCard } from "./components/profile/LeaveHistoryCard";
-import { PayrollHistoryCard } from "./components/profile/PayrollHistoryCard";
-import { ProfileSidebar } from "./components/profile/ProfileSidebar";
-import { EmployeeOverviewTabs, OverviewTabKey } from "./components/overview/EmployeeOverviewTabs";
-import { EmployeeQuickSearchHeader } from "./components/overview/EmployeeQuickSearchHeader";
+import { EmployeeDetailHeader } from "./components/profile/EmployeeDetailHeader";
+import { EmployeeDetailSidebar } from "./components/profile/EmployeeDetailSidebar";
+import { EmployeeOverviewTabs, type OverviewTabKey } from "./components/overview/EmployeeOverviewTabs";
+import { EmployeeProfileTab } from "./components/profile/EmployeeProfileTab";
+import { JoiningInfoTab } from "./components/profile/JoiningInfoTab";
 import { MovementInfoCard } from "./components/overview/MovementInfoCard";
-import { WarningInfoCard } from "./components/overview/WarningInfoCard";
-import { NssfInfoCard } from "./components/overview/NssfInfoCard";
 import { ComplaintSuggestionCard } from "./components/overview/ComplaintSuggestionCard";
-import { TrainingInfoCard } from "./components/overview/TrainingInfoCard";
+import { WarningInfoCard } from "./components/overview/WarningInfoCard";
+import { PayrollHistoryCard } from "./components/profile/PayrollHistoryCard";
 import { AssetInfoCard } from "./components/overview/AssetInfoCard";
 import { QuickEditManagerModal } from "./components/profile/QuickEditManagerModal";
 import { useEmployeeProfile } from "./hooks/useEmployeeProfile";
 import { filterBuManagers } from "./hooks/employeeProfileLoader";
 
+const TAB_ORDER: OverviewTabKey[] = [
+  "personal",
+  "joining",
+  "movement",
+  "complaints",
+  "warning",
+  "payroll",
+  "assets",
+];
+
 export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
-  const [activeTab, setActiveTab] = useState<OverviewTabKey>("info");
-  const [counts, setCounts] = useState<Partial<Record<OverviewTabKey, number>>>({});
+  const [activeTab, setActiveTab] = useState<OverviewTabKey>("personal");
+  const [slideDirection, setSlideDirection] = useState<"next" | "prev">("next");
   const [showManagerModal, setShowManagerModal] = useState(false);
+
+  const handleSelectTab = (newTab: OverviewTabKey) => {
+    if (newTab === activeTab) return;
+    const prevIdx = TAB_ORDER.indexOf(activeTab);
+    const nextIdx = TAB_ORDER.indexOf(newTab);
+    setSlideDirection(nextIdx >= prevIdx ? "next" : "prev");
+    setActiveTab(newTab);
+  };
 
   const {
     canEdit,
     canViewSalary,
     employee,
     loading,
-    editing,
-    setEditing,
-    saving,
     uploadingAvatar,
     manager,
-    reports,
-    interviews,
-    leaveRequests,
     payrollRecords,
     form,
-    setForm,
-    allEmployees,
     userManagementUsers,
-    managersList,
-    branches,
-    workSites,
-    hasBiometricDevice,
     loadEmployee,
-    saveChanges,
     uploadAvatar,
   } = useEmployeeProfile(id);
 
-  // Dynamically filter User Management users belonging to this employee's effective BU only
   const dynamicBuManagers = useMemo(() => {
     const effectiveBranchId = form.branch_id || employee?.branch_id;
     const effectiveBuName = form.bu_full_name || employee?.bu_full_name || employee?.branches?.name;
@@ -65,24 +65,6 @@ export default function EmployeeProfile() {
       effectiveCodeBu
     );
   }, [form.branch_id, form.bu_full_name, form.code_bu, employee, userManagementUsers]);
-
-  const handleToggleEditing = useCallback(() => {
-    if (!editing) {
-      setActiveTab("info");
-    } else if (employee) {
-      setForm(employee);
-    }
-    setEditing((prev) => !prev);
-  }, [editing, employee, setForm, setEditing]);
-
-  const updateCount = useCallback((key: OverviewTabKey, count: number) => {
-    setCounts((prev) => (prev[key] === count ? prev : { ...prev, [key]: count }));
-  }, []);
-
-  const handleWarningCount = useCallback((c: number) => updateCount("warning", c), [updateCount]);
-  const handleComplaintsCount = useCallback((c: number) => updateCount("complaints", c), [updateCount]);
-  const handleTrainingCount = useCallback((c: number) => updateCount("training", c), [updateCount]);
-  const handleAssetsCount = useCallback((c: number) => updateCount("assets", c), [updateCount]);
 
   if (loading) {
     return (
@@ -105,80 +87,42 @@ export default function EmployeeProfile() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-[#FAFAF8] font-sans">
-      {/* Search by Staff ID or Name Header */}
-      <EmployeeQuickSearchHeader currentEmployee={employee} allEmployees={allEmployees} />
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-[#F7F9FA] dark:bg-slate-950 font-sans">
+      <EmployeeDetailHeader />
 
-      {/* Profile Header & Summary */}
-      <ProfileHeader
-        employee={employee}
-        canEdit={canEdit}
-        editing={editing}
-        hasBiometric={hasBiometricDevice}
-        uploadingAvatar={uploadingAvatar}
-        onToggleEditing={handleToggleEditing}
-        onUploadAvatar={uploadAvatar}
-      />
+      <div className="flex flex-col lg:flex-row items-start gap-6">
+        <EmployeeDetailSidebar
+          employee={employee}
+          canEdit={canEdit}
+          uploadingAvatar={uploadingAvatar}
+          onUploadAvatar={uploadAvatar}
+        />
 
-      {/* 8-Column Navigation Tabs */}
-      <EmployeeOverviewTabs
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        counts={{
-          ...counts,
-          payroll: canViewSalary ? payrollRecords?.length : undefined,
-        }}
-        canViewSalary={canViewSalary}
-      />
-
-      {/* Tab Content Display */}
-      {activeTab === "info" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <BasicInfoCard
-              employee={employee}
-              form={form}
-              setForm={setForm}
-              editing={editing}
-              saving={saving}
-              manager={manager}
-              allEmployees={dynamicBuManagers}
-              branches={branches}
-              workSites={workSites}
-              onSave={saveChanges}
-            />
-            <EmployeeDocumentsCard employee={employee} />
-            <LeaveHistoryCard leaveRequests={leaveRequests} />
-          </div>
-          <ProfileSidebar
-            manager={manager}
-            reports={reports}
-            interviews={interviews}
-            canEdit={canEdit}
-            onEditManager={() => setShowManagerModal(true)}
+        <div className="flex-1 min-w-0 w-full overflow-hidden">
+          <EmployeeOverviewTabs
+            activeTab={activeTab}
+            onSelectTab={handleSelectTab}
+            canViewSalary={canViewSalary}
           />
-        </div>
-      )}
 
-      {activeTab === "movement" && <MovementInfoCard employee={employee} />}
-      {activeTab === "warning" && (
-        <WarningInfoCard employee={employee} onCountLoaded={handleWarningCount} />
-      )}
-      {activeTab === "nssf" && <NssfInfoCard employee={employee} />}
-      {activeTab === "complaints" && (
-        <ComplaintSuggestionCard employee={employee} onCountLoaded={handleComplaintsCount} />
-      )}
-      {activeTab === "training" && (
-        <TrainingInfoCard employee={employee} onCountLoaded={handleTrainingCount} />
-      )}
-      {activeTab === "assets" && (
-        <AssetInfoCard employee={employee} onCountLoaded={handleAssetsCount} />
-      )}
-      {activeTab === "payroll" && canViewSalary && (
-        <div className="max-w-5xl">
-          <PayrollHistoryCard employee={employee} payrollRecords={payrollRecords} />
+          <div
+            key={activeTab}
+            className={`w-full ${
+              slideDirection === "next" ? "animate-cover-next" : "animate-cover-prev"
+            }`}
+          >
+            {activeTab === "personal" && <EmployeeProfileTab employee={employee} />}
+            {activeTab === "joining" && <JoiningInfoTab employee={employee} manager={manager} />}
+            {activeTab === "movement" && <MovementInfoCard employee={employee} />}
+            {activeTab === "complaints" && <ComplaintSuggestionCard employee={employee} />}
+            {activeTab === "warning" && <WarningInfoCard employee={employee} />}
+            {activeTab === "payroll" && canViewSalary && (
+              <PayrollHistoryCard employee={employee} payrollRecords={payrollRecords} />
+            )}
+            {activeTab === "assets" && <AssetInfoCard employee={employee} />}
+          </div>
         </div>
-      )}
+      </div>
 
       {employee && (
         <QuickEditManagerModal

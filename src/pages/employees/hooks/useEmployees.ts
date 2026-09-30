@@ -162,6 +162,8 @@ export function useEmployees() {
     setPhoneAccountEmployee: mutations.setPhoneAccountEmployee,
     setUpPhoneUser: mutations.setUpPhoneUser,
     deleteEmployee: mutations.deleteEmployee,
+    disableEmployee: mutations.disableEmployee,
+    deactivateEmployee: mutations.deactivateEmployee,
     roles: data.roles,
   };
 }
