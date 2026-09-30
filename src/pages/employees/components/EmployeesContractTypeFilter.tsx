@@ -1,0 +1,159 @@
+import { memo, useState, useRef, useEffect } from "react";
+import { BU_DEFAULT_CONTRACT_TYPES } from "../constants";
+
+interface EmployeesContractTypeFilterProps {
+  selectedContracts?: string[];
+  contractTypes?: string[];
+  onApplyContractFilter?: (selected: string[]) => void;
+}
+
+export const EmployeesContractTypeFilter = memo(function EmployeesContractTypeFilter({
+  selectedContracts = [],
+  contractTypes = BU_DEFAULT_CONTRACT_TYPES,
+  onApplyContractFilter,
+}: EmployeesContractTypeFilterProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [tempSelected, setTempSelected] = useState<string[]>(selectedContracts);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const handleOpen = () => {
+    setTempSelected(selectedContracts);
+    setIsOpen(!isOpen);
+  };
+
+  const isAllSelected = tempSelected.length === 0 || tempSelected.length === contractTypes.length;
+
+  const handleToggleAll = () => {
+    if (isAllSelected) {
+      setTempSelected([]);
+    } else {
+      setTempSelected([]); // Empty means all in filter logic
+    }
+  };
+
+  const handleToggleItem = (type: string) => {
+    if (isAllSelected && tempSelected.length === 0) {
+      // Transitioning from "All" to specific single select
+      setTempSelected([type]);
+      return;
+    }
+
+    if (tempSelected.includes(type)) {
+      const next = tempSelected.filter((t) => t !== type);
+      setTempSelected(next);
+    } else {
+      setTempSelected([...tempSelected, type]);
+    }
+  };
+
+  const handleApply = () => {
+    if (onApplyContractFilter) {
+      onApplyContractFilter(tempSelected);
+    }
+    setIsOpen(false);
+  };
+
+  const isActive = selectedContracts.length > 0;
+  const label = isActive
+    ? selectedContracts.length === 1
+      ? selectedContracts[0]
+      : `${selectedContracts.length} Contracts`
+    : "Contract Type";
+
+  return (
+    <div className="relative" ref={popoverRef}>
+      {/* Trigger Button matching Screenshot */}
+      <button
+        type="button"
+        onClick={handleOpen}
+        className={`px-3 py-1 rounded-full border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+          isOpen || isActive
+            ? "border-[#3498db] bg-[#3498db] text-white shadow-xs"
+            : "border-sky-400 text-sky-600 bg-white hover:bg-sky-50"
+        }`}
+      >
+        <span>{label}</span>
+        <i className="ri-arrow-down-s-line text-xs opacity-90" />
+      </button>
+
+      {/* Popover matching Screenshot */}
+      {isOpen && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute left-0 top-8 w-56 rounded-lg bg-white border border-slate-200/90 shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-2 text-xs"
+        >
+          {/* Scrollable Checkbox List */}
+          <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+            {/* All Checkbox */}
+            <label className="flex items-center gap-2.5 px-2 py-1 rounded hover:bg-slate-50 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                onChange={handleToggleAll}
+                className="w-3.5 h-3.5 rounded border-slate-300 text-[#3498db] focus:ring-[#3498db] cursor-pointer"
+              />
+              <span className="text-xs text-slate-700 font-medium">All</span>
+            </label>
+
+            {/* BU Contract Types */}
+            {contractTypes.map((cType) => {
+              const checked = !isAllSelected && tempSelected.includes(cType);
+              return (
+                <label
+                  key={cType}
+                  className="flex items-center gap-2.5 px-2 py-1 rounded hover:bg-slate-50 cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => handleToggleItem(cType)}
+                    className="w-3.5 h-3.5 rounded border-slate-300 text-[#3498db] focus:ring-[#3498db] cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-700">{cType}</span>
+                </label>
+              );
+            })}
+          </div>
+
+          {/* Bottom Apply Action */}
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handleApply}
+              className="px-3.5 py-1 rounded bg-[#3498db] hover:bg-[#2980b9] text-white text-xs font-medium flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+            >
+              <i className="ri-filter-fill text-xs" />
+              <span>Apply</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setTempSelected([]);
+                if (onApplyContractFilter) onApplyContractFilter([]);
+                setIsOpen(false);
+              }}
+              className="text-[11px] text-slate-500 hover:text-slate-800 cursor-pointer"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});

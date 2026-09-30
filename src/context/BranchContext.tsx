@@ -116,16 +116,9 @@ export function BranchProvider({ children }: { children: ReactNode }) {
 
   const visibleBranches = useMemo(() => {
     if (isSuperAdmin || isHrDivision) {
-      const pureBranches = branches.filter((b) => !b.is_site);
-      const sites = branches.filter((b) => b.is_site);
-      const result: BranchInfo[] = [];
-      pureBranches.forEach((branch) => {
-        result.push(branch);
-        result.push(...sites.filter((s) => s.branch_id === branch.id));
-      });
-      return result;
+      return branches.filter((b) => !b.is_site);
     }
-    return branches.filter((b) => b.id === userBranchId || b.branch_id === userBranchId);
+    return branches.filter((b) => (b.id === userBranchId || b.branch_id === userBranchId) && !b.is_site);
   }, [isSuperAdmin, isHrDivision, branches, userBranchId]);
 
   const isPartnerBranchBlocked = useMemo(() => {

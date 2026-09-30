@@ -31,9 +31,14 @@ export const AddEmployeePersonalTab = memo(function AddEmployeePersonalTab({
     <div className="space-y-6 w-full">
       {/* 1. Identity, Demographics & Tax */}
       <div className="space-y-4">
-        <PersonalIdentityFields form={form} onChange={onChange} />
-        <PersonalDemographicFields form={form} onChange={onChange} />
-        <PersonalTaxAndIdFields form={form} onChange={onChange} />
+        <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
+          PERSONAL INFO
+        </h3>
+        <div className="space-y-3 max-w-xl">
+          <PersonalIdentityFields form={form} onChange={onChange} />
+          <PersonalDemographicFields form={form} onChange={onChange} />
+          <PersonalTaxAndIdFields form={form} onChange={onChange} />
+        </div>
       </div>
 
       {/* 2. Bank Accounts */}

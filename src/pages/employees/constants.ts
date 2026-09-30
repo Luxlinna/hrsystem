@@ -36,6 +36,24 @@ export const DEPARTMENTS = [
   "Other",
 ];
 
+export const BU_DEFAULT_CONTRACT_TYPES = [
+  "Under probation",
+  "1-YEAR FDC",
+  "2-YEAR 3-MONTH FDC",
+  "2-YEAR FDC",
+  "3-MONTH FDC",
+  "3-YEAR FDC",
+  "5 YEARS FDC",
+  "PERMANENT (UDC)",
+];
+
+export const BU_DEFAULT_JOB_STATUSES = [
+  "Not Employed Yet",
+  "Employed",
+  "Exited",
+  "Black List",
+];
+
 export function getBranchCode(branchName: string): string {
   const lower = (branchName || "").toLowerCase().trim();
   if (lower.includes("express") || lower.includes("exp")) return "EXP";

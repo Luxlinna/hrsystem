@@ -20,7 +20,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
   };
 
   return (
-    <div className="space-y-3 max-w-xl">
+    <div className="space-y-3">
       {/* 1. Title */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
         <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
@@ -104,7 +104,31 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
         </div>
       </div>
 
-      {/* Khmer Name */}
+      {/* 5. Foreign Name */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
+        <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
+          Foreign Name
+        </label>
+        <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input
+            type="text"
+            value={form.foreign_name || ""}
+            onChange={(e) => onChange("foreign_name", e.target.value)}
+            placeholder="Foreign Name"
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D]"
+          />
+          <select
+            value={form.foreign_name_format || "last_first"}
+            onChange={(e) => onChange("foreign_name_format", e.target.value)}
+            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer"
+          >
+            <option value="last_first">Last Name First Name</option>
+            <option value="first_last">First Name Last Name</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 6. Khmer Name */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
         <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Khmer Name (KH Name)
@@ -120,7 +144,7 @@ export const PersonalIdentityFields = memo(function PersonalIdentityFields({
         </div>
       </div>
 
-      {/* Employee Code */}
+      {/* 7. Employee Code */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
         <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Employee Code <span className="text-rose-500">*</span>

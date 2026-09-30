@@ -6,6 +6,7 @@ export type BranchTabType =
   | "employee-types"
   | "employee-levels"
   | "contract-types"
+  | "job-statuses"
   | "schedule"
   | "staff"
   | "all";
@@ -54,6 +55,13 @@ export const STRUCTURE_TABS: TabItem[] = [
     label: "Contract Types",
     icon: "ri-file-paper-2-line",
     description: "Permanent, probation, contractor",
+    group: "structure",
+  },
+  {
+    id: "job-statuses",
+    label: "Job Statuses",
+    icon: "ri-user-follow-line",
+    description: "Employed, Not Employed, Exited, Blacklist",
     group: "structure",
   },
 ];

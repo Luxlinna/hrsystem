@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { phoneToSyntheticEmail, isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 import { compareBiometricIds } from "@/lib/biometricUtils";
+import { BU_DEFAULT_CONTRACT_TYPES } from "../constants";
 import type { Employee, Branch, AppRole, AccountStatus, BiometricDeviceRef } from "../types";
 
 interface UseEmployeesDataProps {
@@ -10,6 +11,9 @@ interface UseEmployeesDataProps {
   targetBranch: string | null;
   selectedSiteId: string | null;
 }
+
+const EMPLOYEE_SELECT_FIELDS =
+  "id, first_name, last_name, kh_name, full_name, employee_code, nssf_number, email, phone, role, position, department, branch_id, status, join_date, start_date, reports_to, avatar_url, default_work_location_id, biometric_user_id, contract_type, contract_effective_date, contract_end_date, basic_salary, contract_rate, employment_type, code_bu, tax_salary_frequency, payroll_structure, branches(name), work_locations:default_work_location_id(id, name)";
 
 export function useEmployeesData({
   isPartnerBranchBlocked,
@@ -20,28 +24,25 @@ export function useEmployeesData({
   const [branches, setBranches] = useState<Branch[]>([]);
   const [workSites, setWorkSites] = useState<{ id: string; name: string; branch_id: string; is_default?: boolean }[]>([]);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [contractTypes, setContractTypes] = useState<string[]>(BU_DEFAULT_CONTRACT_TYPES);
+  const [jobStatuses, setJobStatuses] = useState<string[]>(["Not Employed Yet", "Employed", "Exited", "Black List"]);
   const [managerEmails, setManagerEmails] = useState<Set<string>>(new Set());
   const [accountStatus, setAccountStatus] = useState<Record<string, AccountStatus>>({});
   const [biometricDevices, setBiometricDevices] = useState<BiometricDeviceRef[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadEmployees = useCallback(() => {
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if (isPartnerBranchBlocked) {
       setEmployees([]);
       setLoading(false);
       return;
     }
 
-    let query = supabase
+    const query = supabase
       .from("employees")
-      .select("id, first_name, last_name, kh_name, employee_code, nssf_number, email, phone, role, department, branch_id, status, join_date, reports_to, avatar_url, default_work_location_id, biometric_user_id, branches(name), work_locations:default_work_location_id(id, name)")
+      .select(EMPLOYEE_SELECT_FIELDS)
       .is("deleted_at", null)
-      .eq("branch_id", targetBranch)
       .order("first_name");
-
-    if (selectedSiteId) {
-      query = query.eq("default_work_location_id", selectedSiteId);
-    }
 
     query.then(({ data, error }) => {
       setLoading(false);
@@ -55,7 +56,7 @@ export function useEmployeesData({
         work_locations: Array.isArray(x.work_locations) ? x.work_locations[0] : x.work_locations || null,
       })) as Employee[];
 
-      // Strictly sort by BU Biometric ID from 001 until the last user
+      // Sort by BU Biometric ID from 001 until the last user
       formatted.sort((a, b) => {
         const idComp = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
         if (idComp !== 0) return idComp;
@@ -64,67 +65,60 @@ export function useEmployeesData({
 
       setEmployees(formatted);
     });
-  }, [isPartnerBranchBlocked, targetBranch, selectedSiteId]);
+  }, [isPartnerBranchBlocked]);
 
   useEffect(() => {
     loadEmployees();
-    if (isPartnerBranchBlocked || !targetBranch) {
+    if (isPartnerBranchBlocked) {
       setBranches([]);
       setWorkSites([]);
       return;
     }
 
-    supabase
-      .from("branches")
-      .select("id, name")
-      .is("deleted_at", null)
-      .order("name")
-      .then(({ data }) => {
-        setBranches((data as Branch[]) || []);
-      });
+    supabase.from("branches").select("id, name").is("deleted_at", null).order("name").then(({ data }) => {
+      setBranches((data as Branch[]) || []);
+    });
 
-    supabase
-      .from("work_locations")
-      .select("id, name, branch_id, is_default")
-      .is("deleted_at", null)
-      .order("is_default", { ascending: false })
-      .order("name")
-      .then(({ data }) => {
-        setWorkSites(data || []);
-      });
+    supabase.from("work_locations").select("id, name, branch_id, is_default").is("deleted_at", null).order("is_default", { ascending: false }).order("name").then(({ data }) => {
+      setWorkSites(data || []);
+    });
 
     supabase.from("app_roles").select("id, name, color").order("name").then(({ data }) => {
       setRoles(data || []);
     });
 
-    supabase
-      .from("user_role_assignments")
-      .select("email, app_roles(name)")
-      .is("deleted_at", null)
-      .then(({ data }) => {
-        if (!data) return;
-        const emails = new Set<string>();
-        data.forEach((row: any) => {
-          const roleName = row.app_roles?.name || "";
-          if (/manager/i.test(roleName) && row.email) emails.add(row.email.toLowerCase());
-        });
-        setManagerEmails(emails);
-      });
+    supabase.from("contract_types").select("name").is("deleted_at", null).order("sort_order", { ascending: true }).then(({ data }) => {
+      if (data && data.length > 0) {
+        const names = Array.from(new Set(data.map((d: any) => d.name).filter(Boolean)));
+        setContractTypes(names);
+      }
+    });
 
-    supabase
-      .from("biometric_devices")
-      .select("id, branch_id, work_location_id")
-      .then(({ data }) => {
-        setBiometricDevices((data as BiometricDeviceRef[]) || []);
+    supabase.from("job_statuses").select("name").is("deleted_at", null).order("sort_order", { ascending: true }).then(({ data }) => {
+      if (data && data.length > 0) {
+        const names = Array.from(new Set(data.map((d: any) => d.name).filter(Boolean)));
+        setJobStatuses(names);
+      }
+    });
+
+    supabase.from("user_role_assignments").select("email, app_roles(name)").is("deleted_at", null).then(({ data }) => {
+      if (!data) return;
+      const emails = new Set<string>();
+      data.forEach((row: any) => {
+        const roleName = row.app_roles?.name || "";
+        if (/manager/i.test(roleName) && row.email) emails.add(row.email.toLowerCase());
       });
-  }, [loadEmployees, isPartnerBranchBlocked, targetBranch]);
+      setManagerEmails(emails);
+    });
+
+    supabase.from("biometric_devices").select("id, branch_id, work_location_id").then(({ data }) => {
+      setBiometricDevices((data as BiometricDeviceRef[]) || []);
+    });
+  }, [loadEmployees, isPartnerBranchBlocked]);
 
   useEffect(() => {
     const identifiers = employees
-      .flatMap((e) => [
-        e.email?.trim().toLowerCase(),
-        e.phone ? phoneToSyntheticEmail(e.phone) : null,
-      ])
+      .flatMap((e) => [e.email?.trim().toLowerCase(), e.phone ? phoneToSyntheticEmail(e.phone) : null])
       .filter(Boolean) as string[];
 
     if (identifiers.length === 0) {
@@ -142,10 +136,7 @@ export function useEmployeesData({
         (data || []).forEach((row: any) => {
           if (row.email) {
             const key = row.email.toLowerCase();
-            const status: AccountStatus = {
-              invited: true,
-              hasAccount: Boolean(row.user_id),
-            };
+            const status: AccountStatus = { invited: true, hasAccount: Boolean(row.user_id) };
             statusMap[key] = status;
             if (isPhoneSyntheticEmail(key)) {
               const rawPhone = syntheticEmailToPhone(key);
@@ -163,6 +154,8 @@ export function useEmployeesData({
     branches,
     workSites,
     roles,
+    contractTypes,
+    jobStatuses,
     managerEmails,
     accountStatus,
     biometricDevices,

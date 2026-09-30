@@ -96,3 +96,24 @@ export interface ContractTypeFormState {
   alert_days_before: string;
   status: "active" | "disabled";
 }
+
+export interface JobStatus {
+  id: string;
+  branch_id?: string | null;
+  name: string;
+  code?: string;
+  color?: string;
+  status: "active" | "disabled" | string;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+}
+
+export interface JobStatusFormState {
+  name: string;
+  code: string;
+  color: string;
+  status: "active" | "disabled";
+}
+

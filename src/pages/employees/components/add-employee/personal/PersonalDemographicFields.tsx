@@ -56,8 +56,8 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
   }, []);
 
   return (
-    <div className="space-y-3 pt-1 max-w-xl">
-      {/* Date of Birth */}
+    <div className="space-y-3 pt-1">
+      {/* 1. Date of Birth */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
         <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Date of Birth <span className="text-rose-500">*</span>
@@ -104,7 +104,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
         </div>
       </div>
 
-      {/* Gender */}
+      {/* 2. Gender */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
         <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Gender <span className="text-rose-500">*</span>
@@ -122,7 +122,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
         </div>
       </div>
 
-      {/* Marital Status */}
+      {/* 3. Marital Status */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
         <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Marital Status <span className="text-rose-500">*</span>
@@ -141,7 +141,7 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
         </div>
       </div>
 
-      {/* Nationality */}
+      {/* 4. Nationality */}
       <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
         <label className="text-xs font-normal text-slate-700 sm:text-right sm:pr-4">
           Nationality <span className="text-rose-500">*</span>
@@ -165,28 +165,30 @@ export const PersonalDemographicFields = memo(function PersonalDemographicFields
         </div>
       </div>
 
-      {/* Resident & Fringe Benefit Checkboxes */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
+      {/* 5. Resident & Fringe Benefit Checkboxes */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 items-start gap-2">
         <div className="sm:text-right sm:pr-4" />
-        <div className="sm:col-span-2 flex items-center gap-6">
-          <label className="inline-flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer select-none">
+        <div className="sm:col-span-2 space-y-2 pt-1">
+          <label className="inline-flex items-center gap-2 text-xs text-slate-700 font-medium cursor-pointer select-none">
             <input
               type="checkbox"
               checked={form.is_resident !== false}
               onChange={(e) => onChange("is_resident", e.target.checked)}
-              className="w-3.5 h-3.5 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
+              className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
             />
             <span>Resident</span>
           </label>
-          <label className="inline-flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={Boolean(form.fringe_benefit)}
-              onChange={(e) => onChange("fringe_benefit", e.target.checked)}
-              className="w-3.5 h-3.5 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
-            />
-            <span>Fringe Benefit</span>
-          </label>
+          <div>
+            <label className="inline-flex items-center gap-2 text-xs text-slate-700 font-medium cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={Boolean(form.fringe_benefit)}
+                onChange={(e) => onChange("fringe_benefit", e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
+              />
+              <span>Fringe Benefit</span>
+            </label>
+          </div>
         </div>
       </div>
     </div>

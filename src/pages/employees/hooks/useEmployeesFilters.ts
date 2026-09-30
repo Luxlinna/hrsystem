@@ -16,6 +16,129 @@ interface UseEmployeesFiltersProps {
   currentEmployee?: any | null;
 }
 
+function matchEmployeeDate(joinDateStr?: string | null, dateOption?: string): boolean {
+  if (!dateOption || dateOption === "all") return true;
+  if (!joinDateStr) return false;
+
+  const joinDate = new Date(joinDateStr);
+  if (isNaN(joinDate.getTime())) return false;
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  if (dateOption === "today") {
+    return joinDate >= todayStart && joinDate <= todayEnd;
+  }
+
+  if (dateOption === "this_week") {
+    const dayOfWeek = todayStart.getDay();
+    const startOfWeek = new Date(todayStart);
+    startOfWeek.setDate(todayStart.getDate() - dayOfWeek);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    return joinDate >= startOfWeek && joinDate <= endOfWeek;
+  }
+
+  if (dateOption === "last_week") {
+    const dayOfWeek = todayStart.getDay();
+    const startOfThisWeek = new Date(todayStart);
+    startOfThisWeek.setDate(todayStart.getDate() - dayOfWeek);
+    const startOfLastWeek = new Date(startOfThisWeek);
+    startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
+    const endOfLastWeek = new Date(startOfLastWeek);
+    endOfLastWeek.setDate(startOfLastWeek.getDate() + 6);
+    endOfLastWeek.setHours(23, 59, 59, 999);
+    return joinDate >= startOfLastWeek && joinDate <= endOfLastWeek;
+  }
+
+  if (dateOption === "this_month") {
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return joinDate >= startOfMonth && joinDate <= endOfMonth;
+  }
+
+  if (dateOption === "last_month") {
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    return joinDate >= startOfLastMonth && joinDate <= endOfLastMonth;
+  }
+
+  if (dateOption === "this_year") {
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+    return joinDate >= startOfYear && joinDate <= endOfYear;
+  }
+
+  if (dateOption === "last_year") {
+    const startOfLastYear = new Date(now.getFullYear() - 1, 0, 1);
+    const endOfLastYear = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+    return joinDate >= startOfLastYear && joinDate <= endOfLastYear;
+  }
+
+  if (dateOption.startsWith("custom:")) {
+    const parts = dateOption.split(":");
+    const startStr = parts[1];
+    const endStr = parts[2];
+    if (startStr) {
+      const s = new Date(startStr);
+      s.setHours(0, 0, 0, 0);
+      if (joinDate < s) return false;
+    }
+    if (endStr) {
+      const e = new Date(endStr);
+      e.setHours(23, 59, 59, 999);
+      if (joinDate > e) return false;
+    }
+    return true;
+  }
+
+  return true;
+}
+
+function matchEmployeeContract(contractType?: string | null, selected?: string | string[]): boolean {
+  if (!selected) return true;
+  if (Array.isArray(selected)) {
+    if (selected.length === 0) return true;
+    if (!contractType) return false;
+    const c = contractType.toLowerCase();
+    return selected.some((s) => {
+      const sLower = s.toLowerCase();
+      if (sLower === "all") return true;
+      if (sLower.includes("probation")) return c.includes("probation");
+      if (sLower.includes("udc") || sLower.includes("permanent")) return c.includes("udc") || c.includes("permanent");
+      if (sLower.includes("fdc")) return c.includes("fdc") || c.includes(sLower);
+      return c.includes(sLower) || sLower.includes(c);
+    });
+  }
+
+  if (selected === "All" || selected === "") return true;
+  if (!contractType) return false;
+  const c = contractType.toLowerCase();
+  const s = selected.toLowerCase();
+  if (s === "udc") return c.includes("udc") || c.includes("permanent");
+  if (s === "fdc") return c.includes("fdc") || c.includes("fixed") || c.includes("year");
+  if (s === "probation") return c.includes("probation");
+  return c.includes(s);
+}
+
+function matchEmployeeJobStatus(status?: string | null, selected?: string[]): boolean {
+  if (!selected || selected.length === 0) return true;
+  if (!status) return false;
+  const st = status.toLowerCase();
+
+  return selected.some((s) => {
+    const sLower = s.toLowerCase();
+    if (sLower === "all") return true;
+    if (sLower.includes("not employed")) return st === "onboarding" || st.includes("not");
+    if (sLower.includes("employed")) return st === "active" || st === "onboarding" || st === "employed";
+    if (sLower.includes("exited")) return st === "inactive" || st === "suspended" || st === "exited" || st === "terminated";
+    if (sLower.includes("black")) return st === "blacklisted" || st === "blacklist" || st === "black_list";
+    return st.includes(sLower) || sLower.includes(st);
+  });
+}
+
 export function useEmployeesFilters({
   employees,
   managerEmails,
@@ -30,9 +153,15 @@ export function useEmployeesFilters({
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterJobStatus, setFilterJobStatus] = useState<string[]>([]);
+  const [filterRole, setFilterRole] = useState<string>("");
+  const [filterEmployeeType, setFilterEmployeeType] = useState<string>("");
+  const [filterEmployeeLevel, setFilterEmployeeLevel] = useState<string>("");
   const [filterBranch, setFilterBranch] = useState("");
   const [filterWorkLocation, setFilterWorkLocation] = useState<string>("all");
   const [filterAccount, setFilterAccount] = useState("");
+  const [filterDateOption, setFilterDateOption] = useState<string>("all");
+  const [filterContractType, setFilterContractType] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [pageSize, setPageSize] = useState(10);
@@ -42,7 +171,6 @@ export function useEmployeesFilters({
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>(INITIAL_VISIBLE_COLUMNS);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
-  // Role Category scope filter: Line Manager sees supervised staff & division/dept; Employee sees only themselves
   const scopedEmployees = useMemo(() => {
     if (isLineManager && currentEmployee) {
       const myId = currentEmployee.id;
@@ -114,23 +242,72 @@ export function useEmployeesFilters({
     return scopedEmployees
       .filter((e) => {
         const matchesSearch = matchEmployeeSearch(e, search);
-        const matchesDept = !filterDept || e.department === filterDept;
+        let matchesDept = true;
+        if (filterDept) {
+          const deptsList = filterDept.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+          matchesDept = deptsList.length === 0 || deptsList.includes((e.department || "").toLowerCase());
+        }
+
         const matchesStatus = !filterStatus || e.status === filterStatus;
+        const matchesJobStatus = matchEmployeeJobStatus(e.status, filterJobStatus);
+
+        let matchesRole = true;
+        if (filterRole) {
+          const rolesList = filterRole.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+          matchesRole =
+            rolesList.length === 0 ||
+            rolesList.some(
+              (r) =>
+                (e.role && e.role.toLowerCase() === r) ||
+                (e.position && e.position.toLowerCase() === r) ||
+                (e.role && e.role.toLowerCase().includes(r)) ||
+                (e.position && e.position.toLowerCase().includes(r))
+            );
+        }
+
+        let matchesEmployeeType = true;
+        if (filterEmployeeType) {
+          const typesList = filterEmployeeType.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+          matchesEmployeeType =
+            typesList.length === 0 ||
+            typesList.some((t) => e.employment_type && e.employment_type.toLowerCase() === t);
+        }
+
+        let matchesEmployeeLevel = true;
+        if (filterEmployeeLevel) {
+          const levelsList = filterEmployeeLevel.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+          matchesEmployeeLevel =
+            levelsList.length === 0 ||
+            levelsList.some((l) => (e as any).employee_level && (e as any).employee_level.toLowerCase() === l);
+        }
+
+        const matchesDate = matchEmployeeDate(e.join_date || e.start_date, filterDateOption);
+        const matchesContract = matchEmployeeContract(e.contract_type, filterContractType);
+
         let matchesBranch = true;
         if (filterBranch) {
-          if (filterBranch.startsWith("site:")) {
-            const siteId = filterBranch.substring(5);
-            matchesBranch = e.default_work_location_id === siteId;
-          } else if (filterBranch.startsWith("main:")) {
-            const branchId = filterBranch.substring(5);
-            matchesBranch = e.branch_id === branchId && !e.default_work_location_id;
-          } else if (filterBranch.startsWith("branch:")) {
-            const branchId = filterBranch.substring(7);
-            matchesBranch = e.branch_id === branchId;
-          } else {
-            matchesBranch = e.branch_id === filterBranch;
-          }
+          const branchList = filterBranch.split(",").map((s) => s.trim()).filter(Boolean);
+          matchesBranch =
+            branchList.length === 0 ||
+            branchList.some((s) => {
+              if (s.startsWith("site:")) {
+                return e.default_work_location_id === s.substring(5);
+              } else if (s.startsWith("main:")) {
+                return e.branch_id === s.substring(5) && !e.default_work_location_id;
+              } else if (s.startsWith("branch:")) {
+                return e.branch_id === s.substring(7);
+              } else {
+                const sLower = s.toLowerCase();
+                return (
+                  e.branch_id === s ||
+                  (e.code_bu && e.code_bu.toLowerCase() === sLower) ||
+                  (e.branches?.name && e.branches.name.toLowerCase() === sLower) ||
+                  (e.work_locations?.name && e.work_locations.name.toLowerCase() === sLower)
+                );
+              }
+            });
         }
+
         let matchesAccount = true;
         if (filterAccount) {
           const status = accountStatus[e.email];
@@ -138,13 +315,45 @@ export function useEmployeesFilters({
           else if (filterAccount === "invited") matchesAccount = !!status?.invited && !status?.hasAccount;
           else if (filterAccount === "no_account") matchesAccount = !status?.hasAccount && !status?.invited;
         }
+
         const matchesLocation =
           filterWorkLocation === "all" ||
           (filterWorkLocation === "main" ? !e.default_work_location_id : e.default_work_location_id === filterWorkLocation);
-        return matchesSearch && matchesDept && matchesStatus && matchesBranch && matchesLocation && matchesAccount;
+
+        return (
+          matchesSearch &&
+          matchesDept &&
+          matchesStatus &&
+          matchesJobStatus &&
+          matchesRole &&
+          matchesEmployeeType &&
+          matchesEmployeeLevel &&
+          matchesDate &&
+          matchesContract &&
+          matchesBranch &&
+          matchesLocation &&
+          matchesAccount
+        );
       })
       .sort((a, b) => compareEmployees(a, b, sortField, sortDirection));
-  }, [scopedEmployees, search, filterDept, filterStatus, filterBranch, filterWorkLocation, filterAccount, sortField, sortDirection, accountStatus]);
+  }, [
+    scopedEmployees,
+    search,
+    filterDept,
+    filterStatus,
+    filterJobStatus,
+    filterRole,
+    filterEmployeeType,
+    filterEmployeeLevel,
+    filterDateOption,
+    filterContractType,
+    filterBranch,
+    filterWorkLocation,
+    filterAccount,
+    sortField,
+    sortDirection,
+    accountStatus,
+  ]);
 
   const empTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, empTotalPages);
@@ -192,12 +401,18 @@ export function useEmployeesFilters({
 
   useEffect(() => {
     setPage(1);
-  }, [search, filterDept, filterStatus, filterBranch, filterWorkLocation, filterAccount]);
+  }, [search, filterDept, filterStatus, filterJobStatus, filterRole, filterEmployeeType, filterEmployeeLevel, filterDateOption, filterContractType, filterBranch, filterWorkLocation, filterAccount]);
 
   return {
     search, setSearch,
     filterDept, setFilterDept,
     filterStatus, setFilterStatus,
+    filterJobStatus, setFilterJobStatus,
+    filterRole, setFilterRole,
+    filterEmployeeType, setFilterEmployeeType,
+    filterEmployeeLevel, setFilterEmployeeLevel,
+    filterDateOption, setFilterDateOption,
+    filterContractType, setFilterContractType,
     filterBranch, setFilterBranch,
     filterWorkLocation, setFilterWorkLocation,
     employeeLocations,

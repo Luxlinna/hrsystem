@@ -1,209 +1,189 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Employee, AccountStatus, VisibleColumns, BiometricDeviceRef } from "../types";
-import { isEmployeeBiometricEligible } from "../types";
-import { getStatusMeta } from "../constants";
-import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
-import { formatBiometricId } from "@/lib/biometricUtils";
+import type { Employee } from "../types";
 
 interface EmployeesTableRowProps {
   employee: Employee;
-  accountStatus?: AccountStatus;
-  biometricDevices?: BiometricDeviceRef[];
+  index: number;
   isSelected: boolean;
-  visibleColumns: VisibleColumns;
   canManage: boolean;
-  invitingId: string | null;
-  deletingId: string | null;
-  tableGridStyle: React.CSSProperties;
+  showSalary?: boolean;
   onSelectOne: (id: string) => void;
-  onInvite: (e: Employee) => void;
+  onInvite?: (e: Employee) => void;
   onSetUpPhoneAccount?: (e: Employee) => void;
   onDelete: (e: Employee) => void;
 }
 
+const formatDate = (d?: string | null) => {
+  if (!d) return "-";
+  try {
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return d;
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${day}/${month}/${date.getFullYear()}`;
+  } catch {
+    return d;
+  }
+};
+
 export const EmployeesTableRow = memo(function EmployeesTableRow({
   employee: e,
-  accountStatus: acc,
-  biometricDevices = [],
+  index,
   isSelected,
-  visibleColumns,
   canManage,
-  invitingId,
-  deletingId,
-  tableGridStyle,
+  showSalary = false,
   onSelectOne,
-  onInvite,
-  onSetUpPhoneAccount,
   onDelete,
 }: EmployeesTableRowProps) {
-  const isInvited = acc?.invited;
-  const hasAccount = acc?.hasAccount;
-  const isBiometricEligible = isEmployeeBiometricEligible(e, biometricDevices);
-  const hasRealEmail = Boolean(e.email && !isPhoneSyntheticEmail(e.email));
-  const effectivePhone = e.phone || (e.email && isPhoneSyntheticEmail(e.email) ? syntheticEmailToPhone(e.email) : null);
-  const hasContact = hasRealEmail || Boolean(effectivePhone);
+  const [showActionMenu, setShowActionMenu] = useState(false);
+
+  const isStatusActive = e.status === "active" || e.status === "onboarding";
+  const fullName = e.full_name || `${e.first_name || ""} ${e.last_name || ""}`.trim() || "Unnamed";
+  const employeeCode = e.employee_code || e.biometric_user_id || "—";
+  const designation = e.position || e.role || "Staff";
+  const empType = (e.employment_type || "FULL-TIME").toUpperCase();
+  const department = (e.department || "OPERATIONS").toUpperCase();
+  const buCode = e.code_bu || "8887";
+  const contractType = (e.contract_type || "PERMANENT (UDC)").toUpperCase();
+  const contractPeriod = e.contract_effective_date
+    ? `${formatDate(e.contract_effective_date)} - ${e.contract_end_date ? formatDate(e.contract_end_date) : "Never"}`
+    : `${formatDate(e.join_date)} - Never`;
 
   return (
-    <Link
-      to={`/employees/${e.id}`}
-      className={`grid grid-cols-1 md:[grid-template-columns:var(--emp-cols)] gap-x-3 px-6 py-4 border-b border-gray-50 items-center hover:bg-[#253C7D]/5 transition-colors cursor-pointer ${
-        isSelected ? "bg-[#253C7D]/5 ring-1 ring-inset ring-[#253C7D]/40" : ""
+    <tr
+      className={`hover:bg-sky-50/30 transition-colors border-b border-slate-100 text-xs text-slate-800 ${
+        isSelected ? "bg-sky-50/60" : ""
       }`}
-      style={tableGridStyle}
     >
-      <div className="flex items-center gap-4 min-w-0">
-        <label
-          className="shrink-0 p-2 -m-2 flex items-center cursor-pointer"
-          onClick={(ev) => ev.stopPropagation()}
-        >
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={() => onSelectOne(e.id)}
-            className="w-4 h-4 rounded border-gray-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
-          />
-        </label>
-        <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-[#253C7D] to-[#3B5998] flex items-center justify-center text-white text-sm font-bold shadow-md overflow-hidden">
-          {e.avatar_url ? (
-            <img src={e.avatar_url} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <span>
-              {e.first_name?.[0]}
-              {e.last_name?.[0]}
-            </span>
-          )}
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="text-sm font-bold text-gray-900 truncate">
-              {e.first_name} {e.last_name}
-            </p>
-            {e.biometric_user_id && (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#253C7D]/10 text-[#253C7D] border border-[#253C7D]/20 shrink-0"
-                title={`ZKTeco Machine Fingerprint/Face ID: ${e.biometric_user_id}`}
-              >
-                <i className="ri-fingerprint-line text-[10px]" />
-                {formatBiometricId(e.biometric_user_id, e.branches?.name)}
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-gray-500 truncate mt-0.5">
-            {hasRealEmail ? (
-              e.email
-            ) : effectivePhone ? (
-              <span className="text-gray-700 font-medium inline-flex items-center gap-1">
-                <i className="ri-phone-line text-gray-400 text-[11px]" />
-                {effectivePhone}
-              </span>
-            ) : isBiometricEligible ? (
-              <span className="text-gray-400 italic">No contact (Biometric only)</span>
-            ) : (
-              <span className="text-gray-400 italic">No contact info</span>
-            )}
-          </p>
-        </div>
-      </div>
+      <td className="py-2.5 px-3 text-center">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onSelectOne(e.id)}
+          className="w-3.5 h-3.5 rounded border-slate-300 text-[#3498db] focus:ring-[#3498db] cursor-pointer"
+        />
+      </td>
 
-      {visibleColumns.role && <div className="text-sm text-gray-600 truncate">{e.role || "—"}</div>}
-      {visibleColumns.department && <div className="text-sm text-gray-600 truncate">{e.department || "—"}</div>}
-      {visibleColumns.branch && (
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
-            {e.branches?.name || e.branch_id || "—"}
-          </p>
-          <div className="mt-1 flex items-center">
-            {e.work_locations?.name ? (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800/60 px-2 py-0.5 rounded-lg whitespace-nowrap shadow-2xs">
-                <i className="ri-map-pin-2-fill text-[10px] text-emerald-500 dark:text-emerald-400 shrink-0" />
-                <span>{e.work_locations.name}</span>
-                <span className="text-[9px] uppercase tracking-wider font-extrabold px-1 py-0.2 rounded bg-emerald-100/70 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
-                  Site
-                </span>
-              </span>
+      <td className="py-2.5 px-2 text-center text-slate-400 font-medium">{index + 1}</td>
+
+      <td className="py-2.5 px-3">
+        <Link to={`/employees/${e.id}`} className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
+            {e.avatar_url ? (
+              <img src={e.avatar_url} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span className="inline-flex items-center gap-1 text-[11px] font-normal text-gray-400 dark:text-slate-500">
-                <i className="ri-building-line text-[10px]" />
-                Main Office
-              </span>
+              <div className="w-full h-full flex items-center justify-center font-bold text-[10px] bg-sky-100 text-sky-800">
+                {e.first_name?.[0]}
+                {e.last_name?.[0]}
+              </div>
             )}
           </div>
-        </div>
-      )}
-      {visibleColumns.status && (
-        <div>
-          <span
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-              getStatusMeta(e.status).bg
-            } ${getStatusMeta(e.status).text}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${getStatusMeta(e.status).dot}`} />
-            {getStatusMeta(e.status).label}
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-800 group-hover:text-[#3498db] transition-colors truncate">
+              {fullName}
+            </p>
+            <span className="text-[10px] text-slate-400 font-mono block">{employeeCode}</span>
+          </div>
+        </Link>
+      </td>
+
+      <td className="py-2.5 px-3">
+        <p className="font-medium text-slate-700 truncate">{designation}</p>
+        <span className="inline-block mt-0.5 text-[9px] font-semibold px-1.5 py-0.2 rounded border border-slate-300 text-slate-500 bg-white">
+          {empType}
+        </span>
+      </td>
+
+      <td className="py-2.5 px-3">
+        <p className="font-medium text-slate-700 truncate">{department}</p>
+        <span className="text-[10px] text-slate-400 block truncate" title={`${e.branches?.name || buCode} - ${e.work_locations?.name || "Main Office"}`}>
+          {e.branches?.name || buCode} • {e.work_locations?.name || "Main Office"}
+        </span>
+      </td>
+
+      <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">
+        {formatDate(e.join_date || e.start_date)}
+      </td>
+
+      <td className="py-2.5 px-3">
+        <p className="font-medium text-slate-700 truncate">{contractType}</p>
+        <span className="text-[10px] text-slate-400 whitespace-nowrap block">{contractPeriod}</span>
+      </td>
+
+      <td className="py-2.5 px-3">
+        <p className="font-mono text-slate-700">
+          {showSalary ? `${e.basic_salary || e.contract_rate || 0} USD` : "*****"}
+        </p>
+        <div className="flex items-center gap-1 mt-0.5">
+          <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-[#3498db] text-white">
+            {e.tax_salary_frequency || "Monthly"}
+          </span>
+          <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-[#3498db] text-white">
+            {e.payroll_structure || "Gross"}
           </span>
         </div>
-      )}
-      {visibleColumns.account && (
-        <div>
-          {hasAccount ? (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-              <i className="ri-checkbox-circle-fill text-emerald-500" /> Active
+      </td>
+
+      <td className="py-2.5 px-3">
+        <div className="space-y-1">
+          <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded text-white whitespace-nowrap ${
+            isStatusActive ? "bg-emerald-500" : "bg-[#4b5563]"
+          }`}>
+            {isStatusActive ? "Employed" : "Exited"}
+          </span>
+          <div>
+            <span className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded text-white whitespace-nowrap ${
+              isStatusActive ? "bg-emerald-500" : "bg-[#1e293b]"
+            }`}>
+              {isStatusActive ? "Active" : "Deactivate"}
             </span>
-          ) : isInvited ? (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
-              <i className="ri-time-line text-amber-500" /> Invited
-            </span>
-          ) : !hasContact && isBiometricEligible ? (
-            <span
-              className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200/70 px-2 py-0.5 rounded-md"
-              title="Biometric fingerprint machine only; cannot log into web portal"
-            >
-              <i className="ri-fingerprint-line text-slate-500" /> Biometric Only
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">
-              <i className="ri-close-circle-line text-gray-400" /> No Account
-            </span>
-          )}
+          </div>
         </div>
-      )}
-      {visibleColumns.joinDate && (
-        <div className="text-sm text-gray-600">
-          {e.join_date ? new Date(e.join_date).toLocaleDateString() : "—"}
-        </div>
-      )}
-      {visibleColumns.actions && canManage && (
-        <div className="flex items-center justify-end gap-2" onClick={(ev) => ev.stopPropagation()}>
-          {!hasAccount && hasRealEmail && (
-            <button
-              type="button"
-              onClick={(ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                onInvite(e);
-              }}
-              disabled={invitingId === e.email}
-              className="p-2 text-gray-400 hover:text-[#253C7D] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-              title={isInvited ? "Resend Invite" : "Send Account Invite"}
-            >
-              <i className={`ri-${invitingId === e.email ? "loader-4-line animate-spin" : isInvited ? "mail-send-line" : "user-add-line"} text-lg`} />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={(ev) => {
-              ev.preventDefault();
-              ev.stopPropagation();
-              onDelete(e);
-            }}
-            disabled={deletingId === e.id}
-            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-            title="Delete Employee"
+      </td>
+
+      <td className="py-2.5 px-3 text-center relative">
+        <button
+          type="button"
+          onClick={(ev) => {
+            ev.stopPropagation();
+            setShowActionMenu(!showActionMenu);
+          }}
+          className="px-2 py-1 rounded border border-sky-400 text-sky-600 hover:bg-sky-50 flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-xs"
+        >
+          <i className="ri-settings-3-line text-xs" />
+          <i className="ri-arrow-down-s-line text-[10px]" />
+        </button>
+
+        {showActionMenu && (
+          <div
+            onClick={(ev) => ev.stopPropagation()}
+            className="absolute right-3 top-8 w-36 rounded-md bg-white border border-slate-200 shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 duration-100 text-left text-xs"
           >
-            <i className={`ri-${deletingId === e.id ? "loader-4-line animate-spin" : "delete-bin-line"} text-lg`} />
-          </button>
-        </div>
-      )}
-    </Link>
+            <Link
+              to={`/employees/${e.id}`}
+              onClick={() => setShowActionMenu(false)}
+              className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+            >
+              <i className="ri-user-line text-slate-400" />
+              <span>View Profile</span>
+            </Link>
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowActionMenu(false);
+                  onDelete(e);
+                }}
+                className="w-full text-left px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-1.5 cursor-pointer border-t border-slate-100"
+              >
+                <i className="ri-delete-bin-line" />
+                <span>Delete</span>
+              </button>
+            )}
+          </div>
+        )}
+      </td>
+    </tr>
   );
 });

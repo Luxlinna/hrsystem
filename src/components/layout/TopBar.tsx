@@ -1,27 +1,16 @@
 import { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/context/ThemeContext";
-import { useBranchScope } from "@/context/BranchContext";
 import { useTopBar } from "./topbar/useTopBar";
 import MobileDrawer from "./topbar/MobileDrawer";
 import GlobalSearch from "./topbar/GlobalSearch";
 import NotificationDropdown from "./topbar/NotificationDropdown";
 import ProfileDropdown from "./topbar/ProfileDropdown";
-import { BranchSwitcherDropdown } from "./topbar/BranchSwitcherDropdown";
 
 export default function TopBar() {
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  const {
-    visibleBranches,
-    selectedBranchId,
-    setSelectedBranchId,
-    userBranchName,
-    userSiteName,
-    isSuperAdmin,
-    isHrDivision,
-  } = useBranchScope();
 
   const {
     user,
@@ -117,30 +106,8 @@ export default function TopBar() {
             />
           </div>
 
-          {/* Right — branch switcher/indicator, theme toggle, notifications, profile */}
+          {/* Right — theme toggle, notifications, profile */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Global Branch/Site Switcher */}
-            {(isSuperAdmin || isHrDivision || (isBranchAdmin && visibleBranches.length > 1)) ? (
-              <BranchSwitcherDropdown
-                visibleBranches={visibleBranches}
-                selectedBranchId={selectedBranchId}
-                onSelectBranch={setSelectedBranchId}
-              />
-            ) : (
-              /* Branch Admin / Employee Branch & Site Badge */
-              (userSiteName || userBranchName) && (
-                <div
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-[11px] font-bold shadow-2xs"
-                  title={`Work Site: ${userSiteName || userBranchName}${userSiteName && userBranchName ? ` (${userBranchName})` : ""}`}
-                >
-                  <i className="ri-map-pin-2-fill text-xs text-emerald-600 dark:text-emerald-400" />
-                  <span className="max-w-[150px] truncate">{userSiteName || userBranchName}</span>
-                  {userSiteName && userBranchName && (
-                    <span className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 font-normal">({userBranchName})</span>
-                  )}
-                </div>
-              )
-            )}
 
             {/* Theme toggle */}
             <button

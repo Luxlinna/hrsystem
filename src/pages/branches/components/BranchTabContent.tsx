@@ -11,6 +11,7 @@ import { BranchPositionsSection } from "./BranchPositionsSection";
 import { BranchEmployeeTypesSection } from "./BranchEmployeeTypesSection";
 import { BranchEmployeeLevelsSection } from "./BranchEmployeeLevelsSection";
 import { BranchContractTypesSection } from "./BranchContractTypesSection";
+import { BranchJobStatusesSection } from "./BranchJobStatusesSection";
 import { BranchSchedulePolicySection } from "./BranchSchedulePolicySection";
 import { BranchStaffSection } from "./BranchStaffSection";
 
@@ -148,6 +149,12 @@ export function BranchTabContent({
       {activeTab === "contract-types" && (
         <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
           <BranchContractTypesSection branchId={currentBranch.id} canManage={canManage} />
+        </div>
+      )}
+
+      {activeTab === "job-statuses" && (
+        <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
+          <BranchJobStatusesSection branchId={currentBranch.id} canManage={canManage} />
         </div>
       )}
 

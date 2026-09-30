@@ -29,11 +29,11 @@ export const AssetModalFormFields: React.FC<AssetModalFormFieldsProps> = ({
   return (
     <div className="space-y-3.5">
       {/* 1. Asset Category */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-        <label className="sm:col-span-4 text-xs font-medium text-gray-700 sm:text-right pr-1">
+      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-4">
+        <label className="text-xs font-medium text-gray-700 sm:text-right pr-1">
           Asset Category <span className="text-red-500">*</span>
         </label>
-        <div className="sm:col-span-8">
+        <div>
           <select
             required
             value={assetForm.category || assetForm.type || ""}
@@ -58,11 +58,11 @@ export const AssetModalFormFields: React.FC<AssetModalFormFieldsProps> = ({
       </div>
 
       {/* 2. Name */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-        <label className="sm:col-span-4 text-xs font-medium text-gray-700 sm:text-right pr-1">
+      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-4">
+        <label className="text-xs font-medium text-gray-700 sm:text-right pr-1">
           Name <span className="text-red-500">*</span>
         </label>
-        <div className="sm:col-span-8">
+        <div>
           <input
             type="text"
             required
@@ -75,11 +75,11 @@ export const AssetModalFormFields: React.FC<AssetModalFormFieldsProps> = ({
       </div>
 
       {/* 3. Purchase Date */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-        <label className="sm:col-span-4 text-xs font-medium text-gray-700 sm:text-right pr-1">
+      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-4">
+        <label className="text-xs font-medium text-gray-700 sm:text-right pr-1">
           Purchase Date <span className="text-red-500">*</span>
         </label>
-        <div className="sm:col-span-8 relative">
+        <div className="relative">
           <input
             type="date"
             required
@@ -92,11 +92,11 @@ export const AssetModalFormFields: React.FC<AssetModalFormFieldsProps> = ({
       </div>
 
       {/* 4. Description */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
-        <label className="sm:col-span-4 text-xs font-medium text-gray-700 sm:text-right pr-1 pt-1.5">
+      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-start gap-4">
+        <label className="text-xs font-medium text-gray-700 sm:text-right pr-1 pt-1.5">
           Description
         </label>
-        <div className="sm:col-span-8">
+        <div>
           <textarea
             rows={3}
             value={assetForm.description || ""}
@@ -108,11 +108,11 @@ export const AssetModalFormFields: React.FC<AssetModalFormFieldsProps> = ({
       </div>
 
       {/* 5. Condition */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-        <label className="sm:col-span-4 text-xs font-medium text-gray-700 sm:text-right pr-1">
+      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-4">
+        <label className="text-xs font-medium text-gray-700 sm:text-right pr-1">
           Condition <span className="text-red-500">*</span>
         </label>
-        <div className="sm:col-span-8">
+        <div>
           <select
             required
             value={assetForm.condition || ""}
@@ -130,11 +130,11 @@ export const AssetModalFormFields: React.FC<AssetModalFormFieldsProps> = ({
       </div>
 
       {/* 6. Price */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-        <label className="sm:col-span-4 text-xs font-medium text-gray-700 sm:text-right pr-1">
+      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-4">
+        <label className="text-xs font-medium text-gray-700 sm:text-right pr-1">
           Price
         </label>
-        <div className="sm:col-span-8 flex rounded border border-gray-300 bg-white overflow-hidden focus-within:border-[#3498db] transition-colors">
+        <div className="flex rounded border border-gray-300 bg-white overflow-hidden focus-within:border-[#3498db] transition-colors">
           <span className="px-3 py-1.5 bg-gray-50 text-gray-600 font-medium text-xs uppercase border-r border-gray-300 select-none flex items-center">
             USD
           </span>
@@ -152,11 +152,11 @@ export const AssetModalFormFields: React.FC<AssetModalFormFieldsProps> = ({
 
       {/* 7. Business Unit (BU) Selector */}
       {branches.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-          <label className="sm:col-span-4 text-xs font-medium text-gray-700 sm:text-right pr-1">
+        <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-4">
+          <label className="text-xs font-medium text-gray-700 sm:text-right pr-1">
             Business Unit <span className="text-red-500">*</span>
           </label>
-          <div className="sm:col-span-8">
+          <div>
             <select
               required
               value={selectedBranchId}
@@ -182,11 +182,11 @@ export const AssetModalFormFields: React.FC<AssetModalFormFieldsProps> = ({
       )}
 
       {/* 8. Site / Location inside the selected BU with Refresh Button */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-        <label className="sm:col-span-4 text-xs font-medium text-gray-700 sm:text-right pr-1">
+      <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-4">
+        <label className="text-xs font-medium text-gray-700 sm:text-right pr-1">
           Site <span className="text-red-500">*</span>
         </label>
-        <div className="sm:col-span-8">
+        <div>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <select

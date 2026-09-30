@@ -1,12 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { EmployeesHeader } from "./components/EmployeesHeader";
-import { EmployeesStatsRow } from "./components/EmployeesStatsRow";
 import { EmployeesFilterBar } from "./components/EmployeesFilterBar";
 import { SelectedActionsBar } from "./components/SelectedActionsBar";
 import { EmployeesTableView } from "./components/EmployeesTableView";
 import { EmployeesGridView } from "./components/EmployeesGridView";
-import { EmployeeWorkSitePills } from "./components/EmployeeWorkSitePills";
 import { Pagination } from "./components/Pagination";
 import { AddEmployeeModal } from "./components/AddEmployeeModal";
 import { SetUpPhoneAccountModal } from "./components/SetUpPhoneAccountModal";
@@ -18,22 +16,26 @@ import { INITIAL_EMPLOYEE_FORM, getBranchCode, deriveBuHandle } from "./constant
 export default function EmployeesPage() {
   const {
     canManage, isSuperAdmin, isPartnerBranchBlocked, userBranchId, userBranchName,
-    targetBranch, branches, workSites, biometricDevices, selectedBranchId, visibleBranches, search, setSearch,
-    filterDept, setFilterDept, filterStatus, setFilterStatus, filterBranch, setFilterBranch,
-    filterWorkLocation, setFilterWorkLocation, employeeLocations,
-    filterAccount, setFilterAccount, sortField, sortDirection, selectedIds, selectAll,
+    targetBranch, branches, workSites, contractTypes, jobStatuses, biometricDevices, selectedBranchId, visibleBranches, search, setSearch,
+    filterDept, setFilterDept, filterStatus, setFilterStatus, filterJobStatus, setFilterJobStatus,
+    filterRole, setFilterRole, filterEmployeeType, setFilterEmployeeType, filterEmployeeLevel, setFilterEmployeeLevel,
+    filterBranch, setFilterBranch,
+    filterWorkLocation, setFilterWorkLocation, employeeLocations = [],
+    filterAccount, setFilterAccount, filterDateOption, setFilterDateOption,
+    filterContractType, setFilterContractType, sortField, sortDirection, selectedIds, selectAll,
     pageSize, setPageSize, page, setPage, showAddModal, setShowAddModal, form, setForm,
     submitting, accountStatus, invitingId, deletingId, showFilters, setShowFilters,
     showColumnMenu, setShowColumnMenu, visibleColumns, setVisibleColumns, viewMode,
     setViewMode, depts, branchCount, managers, stats, filtered, empTotalPages,
     empPageStart, empPageEnd, pagedEmployees, tableGridStyle, handleSort, handleSelectAll,
-    handleSelectOne, bulkInvite, bulkDelete, handleExportCSV, handleAddEmployee,
+    handleSelectOne, bulkInvite, bulkDelete, handleAddEmployee,
     inviteUser, phoneAccountEmployee, setPhoneAccountEmployee, setUpPhoneUser,
     deleteEmployee, roles,
   } = useEmployees();
 
   const navigate = useNavigate();
   const { canManageEmployeeSettings } = useEmployeePermission();
+  const [showSalary, setShowSalary] = useState(false);
 
   const handleOpenAddModal = useCallback(() => {
     const isSite = selectedBranchId && selectedBranchId.startsWith("site:");
@@ -85,7 +87,7 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 sm:p-6 lg:p-8 font-sans">
+    <div className="min-h-screen bg-white p-4 sm:p-6 font-sans">
       <EmployeesHeader
         branchCount={branchCount}
         canManage={canManage}
@@ -93,17 +95,6 @@ export default function EmployeesPage() {
         canManageSettings={canManageEmployeeSettings}
         onOpenSettings={() => navigate("/employees/settings")}
       />
-
-      <EmployeesStatsRow stats={stats} branchCount={branchCount} />
-
-      {employeeLocations.length > 0 && (
-        <EmployeeWorkSitePills
-          locations={employeeLocations}
-          totalCount={stats.total}
-          filterLocation={filterWorkLocation}
-          setFilterLocation={setFilterWorkLocation}
-        />
-      )}
 
       <EmployeesFilterBar
         search={search}
@@ -116,10 +107,24 @@ export default function EmployeesPage() {
         setFilterDept={setFilterDept}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
+        filterJobStatus={filterJobStatus}
+        setFilterJobStatus={setFilterJobStatus}
+        filterRole={filterRole}
+        setFilterRole={setFilterRole}
+        filterEmployeeType={filterEmployeeType}
+        setFilterEmployeeType={setFilterEmployeeType}
+        filterEmployeeLevel={filterEmployeeLevel}
+        setFilterEmployeeLevel={setFilterEmployeeLevel}
         filterBranch={filterBranch}
         setFilterBranch={setFilterBranch}
         filterAccount={filterAccount}
         setFilterAccount={setFilterAccount}
+        filterDateOption={filterDateOption}
+        setFilterDateOption={setFilterDateOption}
+        filterContractType={filterContractType}
+        setFilterContractType={setFilterContractType}
+        contractTypes={contractTypes}
+        jobStatuses={jobStatuses}
         depts={depts}
         branches={branches}
         workSites={workSites}
@@ -129,6 +134,8 @@ export default function EmployeesPage() {
         setViewMode={setViewMode}
         employees={filtered}
         accountStatus={accountStatus}
+        showSalary={showSalary}
+        setShowSalary={setShowSalary}
       />
 
       <SelectedActionsBar
@@ -139,7 +146,7 @@ export default function EmployeesPage() {
         onClearSelection={handleSelectAll}
       />
 
-      <div className="bg-white rounded-2xl border border-gray-200/80 shadow-2xs overflow-hidden">
+      <div className="bg-white border-t border-slate-100 overflow-hidden">
         {viewMode === "table" ? (
           <EmployeesTableView
             employees={pagedEmployees}
@@ -154,6 +161,7 @@ export default function EmployeesPage() {
             invitingId={invitingId}
             deletingId={deletingId}
             tableGridStyle={tableGridStyle}
+            showSalary={showSalary}
             onSelectAll={handleSelectAll}
             onSelectOne={handleSelectOne}
             onSort={handleSort}
@@ -179,12 +187,12 @@ export default function EmployeesPage() {
         )}
 
         {filtered.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <i className="ri-team-line text-3xl text-gray-400" />
+          <div className="text-center py-16 text-slate-400">
+            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+              <i className="ri-team-line text-2xl text-slate-400" />
             </div>
-            <p className="text-sm font-medium text-gray-500">No employees found</p>
-            <p className="text-xs text-gray-400 mt-1">Try adjusting your search or filters</p>
+            <p className="text-xs font-medium text-slate-500">No employees found</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Try adjusting your search or filters</p>
           </div>
         )}
       </div>

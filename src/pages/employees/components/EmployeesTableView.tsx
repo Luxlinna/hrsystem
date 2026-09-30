@@ -14,7 +14,8 @@ interface EmployeesTableViewProps {
   canManage: boolean;
   invitingId: string | null;
   deletingId: string | null;
-  tableGridStyle: React.CSSProperties;
+  tableGridStyle?: React.CSSProperties;
+  showSalary?: boolean;
   onSelectAll: () => void;
   onSelectOne: (id: string) => void;
   onSort: (field: SortField) => void;
@@ -25,17 +26,10 @@ interface EmployeesTableViewProps {
 
 export const EmployeesTableView = memo(function EmployeesTableView({
   employees,
-  accountStatus,
-  biometricDevices = [],
   selectedIds,
   selectAll,
-  visibleColumns,
-  sortField,
-  sortDirection,
   canManage,
-  invitingId,
-  deletingId,
-  tableGridStyle,
+  showSalary = false,
   onSelectAll,
   onSelectOne,
   onSort,
@@ -44,118 +38,103 @@ export const EmployeesTableView = memo(function EmployeesTableView({
   onDelete,
 }: EmployeesTableViewProps) {
   return (
-    <>
-      {/* Table Header */}
-      <div
-        className="hidden md:grid md:[grid-template-columns:var(--emp-cols)] gap-x-3 bg-gray-50/80 px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100"
-        style={tableGridStyle}
-      >
-        <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            checked={selectAll}
-            onChange={onSelectAll}
-            className="w-4 h-4 rounded border-gray-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
-          />
-          <button
-            type="button"
-            onClick={() => onSort("biometric_user_id")}
-            className="flex items-center gap-1.5 hover:text-gray-700 cursor-pointer transition-colors text-left"
-            title="Sort by BU ID (001 until last user)"
-          >
-            <span>ID / Employee</span>
-            {sortField === "biometric_user_id" ? (
-              <i className={`ri-arrow-${sortDirection === "asc" ? "up" : "down"}-s-line text-sm`} />
-            ) : !sortField ? (
-              <span className="text-[10px] text-[#253C7D] font-mono font-bold bg-[#253C7D]/10 px-1.5 py-0.2 rounded border border-[#253C7D]/20">
-                001→
-              </span>
-            ) : null}
-          </button>
-        </div>
-        {visibleColumns.role && (
-          <button
-            onClick={() => onSort("role")}
-            className="flex items-center gap-2 hover:text-gray-700 cursor-pointer transition-colors"
-          >
-            Role
-            {sortField === "role" && <i className={`ri-arrow-${sortDirection === "asc" ? "up" : "down"}-s-line`} />}
-          </button>
-        )}
-        {visibleColumns.department && (
-          <button
-            onClick={() => onSort("department")}
-            className="flex items-center gap-2 hover:text-gray-700 cursor-pointer transition-colors"
-          >
-            Department
-            {sortField === "department" && (
-              <i className={`ri-arrow-${sortDirection === "asc" ? "up" : "down"}-s-line`} />
-            )}
-          </button>
-        )}
-        {visibleColumns.branch && (
-          <button
-            onClick={() => onSort("branch")}
-            className="flex items-center gap-2 hover:text-gray-700 cursor-pointer transition-colors"
-          >
-            Branch
-            {sortField === "branch" && (
-              <i className={`ri-arrow-${sortDirection === "asc" ? "up" : "down"}-s-line`} />
-            )}
-          </button>
-        )}
-        {visibleColumns.status && (
-          <button
-            onClick={() => onSort("status")}
-            className="flex items-center gap-2 hover:text-gray-700 cursor-pointer transition-colors"
-          >
-            Status
-            {sortField === "status" && (
-              <i className={`ri-arrow-${sortDirection === "asc" ? "up" : "down"}-s-line`} />
-            )}
-          </button>
-        )}
-        {visibleColumns.account && <span>Account</span>}
-        {visibleColumns.joinDate && (
-          <button
-            onClick={() => onSort("join_date")}
-            className="flex items-center gap-2 hover:text-gray-700 cursor-pointer transition-colors"
-          >
-            Join Date
-            {sortField === "join_date" && (
-              <i className={`ri-arrow-${sortDirection === "asc" ? "up" : "down"}-s-line`} />
-            )}
-          </button>
-        )}
-        {visibleColumns.actions && canManage && <span className="text-right">Actions</span>}
-      </div>
+    <div className="w-full overflow-x-auto bg-white">
+      <table className="w-full text-left text-xs border-collapse">
+        {/* ERP Table Header matching Screenshot 2 */}
+        <thead className="bg-white border-b border-slate-200/90 text-slate-700 font-semibold">
+          <tr>
+            <th className="py-2.5 px-3 w-10 text-center">
+              <input
+                type="checkbox"
+                checked={selectAll}
+                onChange={onSelectAll}
+                className="w-3.5 h-3.5 rounded border-slate-300 text-[#3498db] focus:ring-[#3498db] cursor-pointer"
+              />
+            </th>
+            <th className="py-2.5 px-2 w-12 text-center text-slate-500 font-medium">
+              No.
+            </th>
+            <th
+              onClick={() => onSort("first_name")}
+              className="py-2.5 px-3 min-w-[160px] cursor-pointer hover:text-[#3498db] select-none"
+            >
+              <div className="flex items-center gap-1">
+                <span>Employee</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+              </div>
+            </th>
+            <th
+              onClick={() => onSort("role")}
+              className="py-2.5 px-3 min-w-[140px] cursor-pointer hover:text-[#3498db] select-none"
+            >
+              <div className="flex items-center gap-1">
+                <span>Position</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+              </div>
+            </th>
+            <th
+              onClick={() => onSort("department")}
+              className="py-2.5 px-3 min-w-[130px] cursor-pointer hover:text-[#3498db] select-none"
+            >
+              <div className="flex items-center gap-1">
+                <span>Department</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+              </div>
+            </th>
+            <th
+              onClick={() => onSort("join_date")}
+              className="py-2.5 px-3 min-w-[110px] cursor-pointer hover:text-[#3498db] select-none"
+            >
+              <div className="flex items-center gap-1">
+                <span>Joining Date</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+              </div>
+            </th>
+            <th className="py-2.5 px-3 min-w-[150px] select-none">
+              <div className="flex items-center gap-1">
+                <span>Contract</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+              </div>
+            </th>
+            <th className="py-2.5 px-3 min-w-[120px] select-none">
+              <div className="flex items-center gap-1">
+                <span>Rate</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+              </div>
+            </th>
+            <th
+              onClick={() => onSort("status")}
+              className="py-2.5 px-3 min-w-[100px] cursor-pointer hover:text-[#3498db] select-none"
+            >
+              <div className="flex items-center gap-1">
+                <span>Status</span>
+                <i className="ri-arrow-up-down-line text-slate-400 text-xs" />
+              </div>
+            </th>
+            <th className="py-2.5 px-3 w-16 text-center select-none">
+              <i className="ri-settings-4-line text-slate-400 text-sm" />
+            </th>
+          </tr>
+        </thead>
 
-      {/* Table Rows */}
-      {employees.map((e) => {
-        const empStatus =
-          (e.email && accountStatus[e.email.toLowerCase()]) ||
-          (e.phone && accountStatus[e.phone]) ||
-          undefined;
-
-        return (
-          <EmployeesTableRow
-            key={e.id}
-            employee={e}
-            accountStatus={empStatus}
-            biometricDevices={biometricDevices}
-            isSelected={selectedIds.has(e.id)}
-            visibleColumns={visibleColumns}
-            canManage={canManage}
-            invitingId={invitingId}
-            deletingId={deletingId}
-            tableGridStyle={tableGridStyle}
-            onSelectOne={onSelectOne}
-            onInvite={onInvite}
-            onSetUpPhoneAccount={onSetUpPhoneAccount}
-            onDelete={onDelete}
-          />
-        );
-      })}
-    </>
+        {/* Table Body */}
+        <tbody className="divide-y divide-slate-100 bg-white">
+          {employees.map((e, idx) => (
+            <EmployeesTableRow
+              key={e.id}
+              employee={e}
+              index={idx}
+              isSelected={selectedIds.has(e.id)}
+              canManage={canManage}
+              showSalary={showSalary}
+              onSelectOne={onSelectOne}
+              onInvite={onInvite}
+              onSetUpPhoneAccount={onSetUpPhoneAccount}
+              onDelete={onDelete}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 });
