@@ -3,10 +3,12 @@ import type { ParsedEmployeeRow } from "./types";
 
 interface ImportPreviewTableProps {
   rows: ParsedEmployeeRow[];
+  onEditRow?: (row: ParsedEmployeeRow) => void;
 }
 
 export const ImportPreviewTable = memo(function ImportPreviewTable({
   rows,
+  onEditRow,
 }: ImportPreviewTableProps) {
   const validCount = rows.filter((r) => r.isValid).length;
   const invalidCount = rows.length - validCount;
@@ -20,16 +22,18 @@ export const ImportPreviewTable = memo(function ImportPreviewTable({
           </span>
           <span className="font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
             <i className="ri-checkbox-circle-fill text-xs" />
-            Valid: <strong>{validCount}</strong>
+            Ready: <strong>{validCount}</strong>
           </span>
           {invalidCount > 0 && (
             <span className="font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1">
               <i className="ri-error-warning-fill text-xs" />
-              Errors: <strong>{invalidCount}</strong>
+              Needs Review: <strong>{invalidCount}</strong>
             </span>
           )}
         </div>
-        <span className="text-[11px] text-slate-400">Previewing employee records</span>
+        <span className="text-[11px] text-slate-400">
+          Click &quot;Edit in Form&quot; to inspect any employee record
+        </span>
       </div>
 
       <div className="border border-slate-200 dark:border-slate-700 rounded overflow-hidden">
@@ -49,7 +53,8 @@ export const ImportPreviewTable = memo(function ImportPreviewTable({
                 <th className="p-2 whitespace-nowrap">Department</th>
                 <th className="p-2 whitespace-nowrap">Position</th>
                 <th className="p-2 whitespace-nowrap">Join Date</th>
-                <th className="p-2 whitespace-nowrap">Basic Salary</th>
+                <th className="p-2 whitespace-nowrap">Salary</th>
+                <th className="p-2 text-center whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 bg-white dark:bg-slate-800">
@@ -65,15 +70,16 @@ export const ImportPreviewTable = memo(function ImportPreviewTable({
                       </span>
                     ) : (
                       <span
-                        className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-rose-50 text-rose-700 border border-rose-200"
+                        className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-rose-50 text-rose-700 border border-rose-200 cursor-pointer"
                         title={r.errors.join(", ")}
+                        onClick={() => onEditRow?.(r)}
                       >
                         {r.errors[0]}
                       </span>
                     )}
                   </td>
                   <td className="p-2 text-slate-400 font-mono">#{r.rowNumber}</td>
-                  <td className="p-2 font-semibold text-slate-800 dark:text-slate-100 whitespace-nowrap">{r.fullName}</td>
+                  <td className="p-2 font-semibold text-slate-800 dark:text-slate-100 whitespace-nowrap">{r.fullName || "—"}</td>
                   <td className="p-2 text-slate-600 dark:text-slate-300 whitespace-nowrap">{r.khName || "—"}</td>
                   <td className="p-2 text-slate-600 dark:text-slate-300 whitespace-nowrap">{r.gender}</td>
                   <td className="p-2 text-slate-600 dark:text-slate-300 whitespace-nowrap font-mono">{r.phone || "—"}</td>
@@ -85,6 +91,17 @@ export const ImportPreviewTable = memo(function ImportPreviewTable({
                   <td className="p-2 text-slate-600 dark:text-slate-300 whitespace-nowrap">{r.joinDate || "—"}</td>
                   <td className="p-2 text-slate-800 dark:text-slate-200 font-mono whitespace-nowrap">
                     {r.basicSalary != null ? `$${r.basicSalary}` : "—"}
+                  </td>
+                  <td className="p-2 text-center whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => onEditRow?.(r)}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:border-[#253C7D] text-[#253C7D] dark:text-[#7ba3d4] shadow-2xs hover:bg-blue-50/50 transition-colors cursor-pointer"
+                      title="Inspect and edit this employee record in full Employee Form"
+                    >
+                      <i className="ri-edit-line text-[10px]" />
+                      <span>Edit in Form</span>
+                    </button>
                   </td>
                 </tr>
               ))}

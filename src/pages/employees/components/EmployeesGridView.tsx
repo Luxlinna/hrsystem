@@ -5,6 +5,7 @@ import { isEmployeeBiometricEligible } from "../types";
 import { getStatusMeta } from "../constants";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 import { formatBiometricId } from "@/lib/biometricUtils";
+import { DefaultAvatarSvg } from "@/components/DefaultAvatarSvg";
 
 interface EmployeesGridViewProps {
   employees: Employee[];
@@ -71,14 +72,11 @@ export const EmployeesGridView = memo(function EmployeesGridView({
                     className="w-4 h-4 rounded border-gray-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                   />
                 </label>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#253C7D] to-[#3B5998] flex items-center justify-center text-white text-lg font-bold shadow-md overflow-hidden">
+                <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shadow-xs overflow-hidden border border-slate-200">
                   {e.avatar_url ? (
                     <img src={e.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span>
-                      {e.first_name?.[0]}
-                      {e.last_name?.[0]}
-                    </span>
+                    <DefaultAvatarSvg />
                   )}
                 </div>
               </div>

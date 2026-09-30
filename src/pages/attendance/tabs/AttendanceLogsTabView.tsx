@@ -3,7 +3,7 @@ import type { AttendanceRecord, Employee, WorkLocation } from "../types";
 import type { Holiday } from "@/services/holidays/holidaysService";
 import { SelfCheckInBanner } from "../components/SelfCheckInBanner";
 import { AttendanceKpiBar } from "../components/AttendanceKpiBar";
-import { AttendanceWorkSitePills } from "../components/AttendanceWorkSitePills";
+
 import { AttendanceControlBar } from "../components/AttendanceControlBar";
 import { RecordsTab } from "./RecordsTab";
 
@@ -15,6 +15,11 @@ interface Props {
   filters: any;
   employees: Employee[];
   workLocations: WorkLocation[];
+  branches?: { id: string; name: string }[];
+  departments?: string[];
+  positions?: string[];
+  employeeTypes?: string[];
+  employeeLevels?: string[];
   todayYMD: string;
   canManage: boolean;
   isFourPunchMode: boolean;
@@ -35,6 +40,11 @@ export const AttendanceLogsTabView = memo(function AttendanceLogsTabView({
   filters,
   employees,
   workLocations,
+  branches = [],
+  departments,
+  positions,
+  employeeTypes,
+  employeeLevels,
   todayYMD,
   canManage,
   isFourPunchMode,
@@ -65,13 +75,6 @@ export const AttendanceLogsTabView = memo(function AttendanceLogsTabView({
         absentCount={metrics.absentCount}
       />
 
-      {canManage && (
-        <AttendanceWorkSitePills
-          todayByWorkSite={metrics.todayByWorkSite}
-          filterWorkLocation={filters.filterWorkLocation}
-          setFilterWorkLocation={filters.setFilterWorkLocation}
-        />
-      )}
 
       <AttendanceControlBar
         canManage={canManage}
@@ -86,21 +89,20 @@ export const AttendanceLogsTabView = memo(function AttendanceLogsTabView({
         setFromDate={filters.setFromDate}
         toDate={filters.toDate}
         setToDate={filters.setToDate}
-        departments={filters.departments}
+        departments={departments && departments.length > 0 ? departments : filters.departments}
         filterDepartment={filters.filterDepartment}
         setFilterDepartment={filters.setFilterDepartment}
-        roles={filters.roles}
+        roles={positions && positions.length > 0 ? positions : filters.roles}
         filterRole={filters.filterRole}
         setFilterRole={filters.setFilterRole}
-        employmentTypes={filters.employmentTypes}
+        employmentTypes={employeeTypes && employeeTypes.length > 0 ? employeeTypes : filters.employmentTypes}
         filterEmploymentType={filters.filterEmploymentType}
         setFilterEmploymentType={filters.setFilterEmploymentType}
-        employees={employees}
-        filterEmployeeId={filters.filterEmployeeId}
-        setFilterEmployeeId={filters.setFilterEmployeeId}
+        employeeLevels={employeeLevels || []}
         filterStatus={filters.filterStatus}
         setFilterStatus={filters.setFilterStatus}
         workLocations={workLocations}
+        branches={branches}
         filterWorkLocation={filters.filterWorkLocation}
         setFilterWorkLocation={filters.setFilterWorkLocation}
         viewMode={filters.viewMode}

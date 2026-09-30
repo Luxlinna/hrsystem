@@ -22,9 +22,9 @@ export const StatusPillDropdown = memo(function StatusPillDropdown({
         onOpenChange?.(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
+    if (open) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onOpenChange]);
+  }, [open, onOpenChange]);
 
   const toggle = () => {
     const next = !open;
@@ -32,8 +32,9 @@ export const StatusPillDropdown = memo(function StatusPillDropdown({
     onOpenChange?.(next);
   };
 
+  const isSelected = filterStatus !== "all" && Boolean(filterStatus);
   const currentLabel =
-    filterStatus === "all"
+    !isSelected
       ? "Status"
       : STATUS_CONFIG[filterStatus]?.label || filterStatus;
 
@@ -42,10 +43,10 @@ export const StatusPillDropdown = memo(function StatusPillDropdown({
       <button
         type="button"
         onClick={toggle}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-2xs select-none ${
-          filterStatus !== "all"
-            ? "border border-sky-500 bg-sky-50/70 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-700"
-            : "border border-sky-400 dark:border-sky-500/70 bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-300 hover:bg-sky-50/40"
+        className={`px-3 py-1 rounded-full border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer select-none ${
+          open || isSelected
+            ? "border-[#253C7D] bg-[#253C7D] text-white shadow-xs"
+            : "border-[#253C7D]/40 text-[#253C7D] bg-white dark:bg-slate-800 hover:bg-[#253C7D]/5"
         }`}
         aria-expanded={open}
       >
@@ -58,7 +59,7 @@ export const StatusPillDropdown = memo(function StatusPillDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 mt-1.5 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-98 duration-100">
+        <div className="absolute left-0 mt-1.5 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
           <button
             type="button"
             onClick={() => {
@@ -66,20 +67,20 @@ export const StatusPillDropdown = memo(function StatusPillDropdown({
               setOpen(false);
               onOpenChange?.(false);
             }}
-            className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer transition-colors ${
-              filterStatus === "all"
-                ? "bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-bold"
+            className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer transition-colors ${
+              !isSelected
+                ? "bg-[#253C7D] text-white font-medium"
                 : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
             }`}
           >
             <span>All Statuses</span>
-            {filterStatus === "all" && <i className="ri-check-line font-bold" />}
+            {!isSelected && <i className="ri-check-line font-bold" />}
           </button>
 
           <div className="border-t border-slate-100 dark:border-slate-800 my-0.5" />
 
           {Object.entries(STATUS_CONFIG).map(([k, v]) => {
-            const isSelected = filterStatus === k;
+            const isCurrent = filterStatus === k;
             return (
               <button
                 key={k}
@@ -90,16 +91,16 @@ export const StatusPillDropdown = memo(function StatusPillDropdown({
                   onOpenChange?.(false);
                 }}
                 className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer transition-colors ${
-                  isSelected
-                    ? "bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-bold"
+                  isCurrent
+                    ? "bg-[#253C7D] text-white font-medium"
                     : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                 }`}
               >
                 <div className="flex items-center gap-1.5">
-                  <i className={`${v.icon} text-xs text-slate-400`} />
+                  <i className={`${v.icon} text-xs ${isCurrent ? "text-white" : "text-slate-400"}`} />
                   <span>{v.label}</span>
                 </div>
-                {isSelected && <i className="ri-check-line font-bold" />}
+                {isCurrent && <i className="ri-check-line font-bold" />}
               </button>
             );
           })}

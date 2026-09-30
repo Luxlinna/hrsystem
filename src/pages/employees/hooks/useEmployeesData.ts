@@ -3,14 +3,6 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/Toast";
 import { phoneToSyntheticEmail, isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
 import { compareBiometricIds } from "@/lib/biometricUtils";
-import {
-  BU_DEFAULT_CONTRACT_TYPES,
-  BU_DEFAULT_JOB_STATUSES,
-  BU_DEFAULT_DEPARTMENTS,
-  BU_DEFAULT_POSITIONS,
-  BU_DEFAULT_EMPLOYEE_TYPES,
-  BU_DEFAULT_EMPLOYEE_LEVELS,
-} from "../constants";
 import type { Employee, Branch, AppRole, AccountStatus, BiometricDeviceRef } from "../types";
 
 interface UseEmployeesDataProps {
@@ -24,19 +16,17 @@ const EMPLOYEE_SELECT_FIELDS =
 
 export function useEmployeesData({
   isPartnerBranchBlocked,
-  targetBranch,
-  selectedSiteId,
 }: UseEmployeesDataProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [workSites, setWorkSites] = useState<{ id: string; name: string; branch_id: string; is_default?: boolean }[]>([]);
   const [roles, setRoles] = useState<AppRole[]>([]);
-  const [contractTypes, setContractTypes] = useState<string[]>(BU_DEFAULT_CONTRACT_TYPES);
-  const [jobStatuses, setJobStatuses] = useState<string[]>(BU_DEFAULT_JOB_STATUSES);
-  const [departments, setDepartments] = useState<string[]>(BU_DEFAULT_DEPARTMENTS);
-  const [positions, setPositions] = useState<string[]>(BU_DEFAULT_POSITIONS);
-  const [employeeTypes, setEmployeeTypes] = useState<string[]>(BU_DEFAULT_EMPLOYEE_TYPES);
-  const [employeeLevels, setEmployeeLevels] = useState<string[]>(BU_DEFAULT_EMPLOYEE_LEVELS);
+  const [contractTypes, setContractTypes] = useState<string[]>([]);
+  const [jobStatuses, setJobStatuses] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [positions, setPositions] = useState<string[]>([]);
+  const [employeeTypes, setEmployeeTypes] = useState<string[]>([]);
+  const [employeeLevels, setEmployeeLevels] = useState<string[]>([]);
   const [managerEmails, setManagerEmails] = useState<Set<string>>(new Set());
   const [accountStatus, setAccountStatus] = useState<Record<string, AccountStatus>>({});
   const [biometricDevices, setBiometricDevices] = useState<BiometricDeviceRef[]>([]);
@@ -44,45 +34,41 @@ export function useEmployeesData({
 
   const loadEmployees = useCallback(() => {
     if (isPartnerBranchBlocked) {
-      setEmployees([]);
-      setLoading(false);
+      setEmployees([]); setLoading(false);
       return;
     }
 
-    const query = supabase
+    supabase
       .from("employees")
       .select(EMPLOYEE_SELECT_FIELDS)
       .is("deleted_at", null)
-      .order("first_name");
+      .order("first_name")
+      .then(({ data, error }) => {
+        setLoading(false);
+        if (error) {
+          toast("Error", "Failed to load employee directory", "error");
+          return;
+        }
+        const formatted = (data || []).map((x: any) => ({
+          ...x,
+          branches: Array.isArray(x.branches) ? x.branches[0] : x.branches || null,
+          work_locations: Array.isArray(x.work_locations) ? x.work_locations[0] : x.work_locations || null,
+        })) as Employee[];
 
-    query.then(({ data, error }) => {
-      setLoading(false);
-      if (error) {
-        toast("Error", "Failed to load employee directory", "error");
-        return;
-      }
-      const formatted = (data || []).map((x: any) => ({
-        ...x,
-        branches: Array.isArray(x.branches) ? x.branches[0] : x.branches || null,
-        work_locations: Array.isArray(x.work_locations) ? x.work_locations[0] : x.work_locations || null,
-      })) as Employee[];
+        formatted.sort((a, b) => {
+          const idComp = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
+          if (idComp !== 0) return idComp;
+          return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+        });
 
-      // Sort by BU Biometric ID from 001 until the last user
-      formatted.sort((a, b) => {
-        const idComp = compareBiometricIds(a.biometric_user_id, b.biometric_user_id);
-        if (idComp !== 0) return idComp;
-        return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+        setEmployees(formatted);
       });
-
-      setEmployees(formatted);
-    });
   }, [isPartnerBranchBlocked]);
 
   useEffect(() => {
     loadEmployees();
     if (isPartnerBranchBlocked) {
-      setBranches([]);
-      setWorkSites([]);
+      setBranches([]); setWorkSites([]);
       return;
     }
 
@@ -94,7 +80,7 @@ export function useEmployeesData({
       if (data) setWorkSites(data);
     });
 
-    const loadStr = async (tbl: string, setter: (vals: string[]) => void, fallbackVals: string[] = []) => {
+    const loadRealTable = async (tbl: string, setter: (vals: string[]) => void) => {
       try {
         const { data, error } = await supabase
           .from(tbl)
@@ -103,23 +89,20 @@ export function useEmployeesData({
           .order("sort_order", { ascending: true })
           .order("name", { ascending: true });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           setter(Array.from(new Set(data.map((d: any) => d.name).filter(Boolean))));
-        } else if (fallbackVals && fallbackVals.length > 0) {
-          setter(fallbackVals);
         }
       } catch {
-        if (fallbackVals && fallbackVals.length > 0) {
-          setter(fallbackVals);
-        }
+        // Only real data from database
       }
     };
 
-    loadStr("departments", setDepartments, BU_DEFAULT_DEPARTMENTS);
-    loadStr("positions", setPositions, BU_DEFAULT_POSITIONS);
-    loadStr("employee_levels", setEmployeeLevels, BU_DEFAULT_EMPLOYEE_LEVELS);
-    loadStr("contract_types", setContractTypes, BU_DEFAULT_CONTRACT_TYPES);
-    loadStr("job_statuses", setJobStatuses, BU_DEFAULT_JOB_STATUSES);
+    loadRealTable("departments", setDepartments);
+    loadRealTable("positions", setPositions);
+    loadRealTable("employee_types", setEmployeeTypes);
+    loadRealTable("employee_levels", setEmployeeLevels);
+    loadRealTable("contract_types", setContractTypes);
+    loadRealTable("job_statuses", setJobStatuses);
 
     supabase.from("app_roles").select("id, name, color").order("name").then(({ data }) => {
       if (data) setRoles(data);
@@ -159,9 +142,8 @@ export function useEmployeesData({
         (data || []).forEach((row: any) => {
           if (row.email) {
             const key = row.email.toLowerCase();
-            const status: AccountStatus = { invited: true, hasAccount: Boolean(row.user_id) };
-            statusMap[key] = status;
-            if (isPhoneSyntheticEmail(key)) statusMap[syntheticEmailToPhone(key)] = status;
+            statusMap[key] = { invited: true, hasAccount: Boolean(row.user_id) };
+            if (isPhoneSyntheticEmail(key)) statusMap[syntheticEmailToPhone(key)] = { invited: true, hasAccount: Boolean(row.user_id) };
           }
         });
         setAccountStatus(statusMap);

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { DatePreset, ViewMode, WorkLocation, Employee } from "../types";
+import type { DatePreset, ViewMode, WorkLocation } from "../types";
 import { AttendanceDateRangePicker } from "./AttendanceDateRangePicker";
 import { AttendanceFilterSelects } from "./AttendanceFilterSelects";
 
@@ -16,177 +16,138 @@ interface AttendanceControlBarProps {
   departments: string[]; filterDepartment: string; setFilterDepartment: (dept: string) => void;
   roles?: string[]; filterRole?: string; setFilterRole?: (role: string) => void;
   employmentTypes?: string[]; filterEmploymentType?: string; setFilterEmploymentType?: (type: string) => void;
-  employees?: Employee[]; filterEmployeeId?: string; setFilterEmployeeId?: (empId: string) => void;
+  employeeLevels?: string[]; filterEmployeeLevel?: string; setFilterEmployeeLevel?: (level: string) => void;
   filterStatus: string; setFilterStatus: (status: string) => void;
-  workLocations: WorkLocation[]; filterWorkLocation: string; setFilterWorkLocation: (id: string) => void;
+  workLocations: WorkLocation[];
+  branches?: { id: string; name: string }[];
+  filterWorkLocation: string; setFilterWorkLocation: (id: string) => void;
   viewMode: ViewMode; setViewMode: (mode: ViewMode) => void;
   todayYMD: string;
 }
 
 export const AttendanceControlBar = memo(function AttendanceControlBar({
-  filteredRecordsCount,
-  searchQuery,
-  setSearchQuery,
-  filterDatePreset,
-  setFilterDatePreset,
-  singleDate,
-  setSingleDate,
-  fromDate,
-  setFromDate,
-  toDate,
-  setToDate,
-  departments,
-  filterDepartment,
-  setFilterDepartment,
-  roles = [],
-  filterRole = "all",
-  setFilterRole,
-  employmentTypes = [],
-  filterEmploymentType = "all",
-  setFilterEmploymentType,
-  employees = [],
-  filterEmployeeId = "all",
-  setFilterEmployeeId,
-  filterStatus,
-  setFilterStatus,
-  workLocations,
-  filterWorkLocation,
-  setFilterWorkLocation,
-  viewMode,
-  setViewMode,
-  todayYMD,
+  filteredRecordsCount, searchQuery, setSearchQuery, filterDatePreset, setFilterDatePreset,
+  singleDate, setSingleDate, fromDate, setFromDate, toDate, setToDate,
+  departments, filterDepartment, setFilterDepartment, roles = [], filterRole = "all", setFilterRole,
+  employmentTypes = [], filterEmploymentType = "all", setFilterEmploymentType,
+  employeeLevels = [], filterEmployeeLevel = "", setFilterEmployeeLevel,
+  filterStatus, setFilterStatus, workLocations, branches = [], filterWorkLocation, setFilterWorkLocation,
+  viewMode, setViewMode, todayYMD,
 }: AttendanceControlBarProps) {
-  const isFiltered =
-    searchQuery || filterDepartment !== "all" || filterRole !== "all" ||
-    filterEmploymentType !== "all" || (filterEmployeeId && filterEmployeeId !== "all") ||
-    filterStatus !== "all" || filterWorkLocation !== "all" || filterDatePreset !== "all";
+  const isFiltered = Boolean(
+    searchQuery || (filterDepartment && filterDepartment !== "all") || (filterRole && filterRole !== "all") ||
+    (filterEmploymentType && filterEmploymentType !== "all") || Boolean(filterEmployeeLevel) ||
+    (filterStatus && filterStatus !== "all") || (filterWorkLocation && filterWorkLocation !== "all") ||
+    (filterDatePreset && filterDatePreset !== "all")
+  );
 
   const handleResetFilters = () => {
-    setSearchQuery("");
-    setFilterDepartment("all");
-    setFilterRole?.("all");
-    setFilterEmploymentType?.("all");
-    setFilterEmployeeId?.("all");
-    setFilterStatus("all");
-    setFilterWorkLocation("all");
-    setFilterDatePreset("all");
-    setFromDate("");
-    setToDate("");
-    setSingleDate(todayYMD);
+    setSearchQuery(""); setFilterDepartment("all"); setFilterRole?.("all");
+    setFilterEmploymentType?.("all"); setFilterEmployeeLevel?.(""); setFilterStatus("all");
+    setFilterWorkLocation("all"); setFilterDatePreset("all"); setFromDate(""); setToDate(""); setSingleDate(todayYMD);
   };
 
-  const availableEmployees =
-    filterWorkLocation === "all"
-      ? employees
-      : employees.filter(
-          (e) => !e.default_work_location_id || e.default_work_location_id === filterWorkLocation
-        );
-
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200/80 dark:border-slate-800 p-3.5 shadow-2xs mb-6 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
-      {/* Records Count Badge */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#253C7D]/10 dark:bg-sky-950/50 text-[#253C7D] dark:text-sky-300 rounded-xl font-bold text-xs border border-transparent dark:border-sky-800/40">
-          <i className="ri-calendar-check-line text-sm" />
+    <div className="bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 pb-3 pt-1 mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        {/* Left: Records Count Pill */}
+        <div className="px-3.5 py-1 rounded-full bg-slate-100/90 dark:bg-slate-800 text-xs font-semibold text-[#253C7D] dark:text-sky-300 flex items-center gap-2 shadow-2xs">
+          <i className="ri-calendar-check-line text-xs text-[#253C7D] dark:text-sky-400" />
           <span>Attendance Records</span>
-          <span className="bg-[#253C7D] dark:bg-sky-500 text-white dark:text-slate-950 text-[10px] px-1.5 py-0.5 rounded-full font-extrabold leading-none">
+          <span className="px-2 py-0.2 rounded-full bg-[#253C7D] text-white text-[10px] font-bold">
             {filteredRecordsCount}
           </span>
         </div>
-      </div>
 
-      {/* Filters Bar: Search, Date, Cascading Selects, Reset, View Mode */}
-      <div className="flex items-center gap-2.5 flex-wrap">
-        <div className="relative w-full sm:w-44">
-          <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400 text-xs" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search name, notes..."
-            className="w-full pl-8 pr-7 py-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-500 font-medium"
+        {/* Right: Search, Date Range, Filters, and View Switcher */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1 h-8 w-56 md:w-64 focus-within:border-[#253C7D] shadow-2xs">
+            <i className="ri-search-line text-slate-400 text-xs mr-2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search name, notes"
+              className="flex-1 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 bg-transparent focus:outline-none"
+            />
+            {searchQuery && (
+              <button type="button" onClick={() => setSearchQuery("")} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <i className="ri-close-line text-xs" />
+              </button>
+            )}
+          </div>
+
+          <AttendanceDateRangePicker
+            filterDatePreset={filterDatePreset}
+            setFilterDatePreset={setFilterDatePreset}
+            singleDate={singleDate}
+            setSingleDate={setSingleDate}
+            fromDate={fromDate}
+            setFromDate={setFromDate}
+            toDate={toDate}
+            setToDate={setToDate}
+            todayYMD={todayYMD}
           />
-          {searchQuery && (
+
+          <AttendanceFilterSelects
+            departments={departments}
+            filterDepartment={filterDepartment}
+            setFilterDepartment={setFilterDepartment}
+            roles={roles}
+            filterRole={filterRole}
+            setFilterRole={setFilterRole}
+            employmentTypes={employmentTypes}
+            filterEmploymentType={filterEmploymentType}
+            setFilterEmploymentType={setFilterEmploymentType}
+            employeeLevels={employeeLevels}
+            filterEmployeeLevel={filterEmployeeLevel}
+            setFilterEmployeeLevel={setFilterEmployeeLevel}
+            workLocations={workLocations}
+            branches={branches}
+            filterWorkLocation={filterWorkLocation}
+            setFilterWorkLocation={setFilterWorkLocation}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+          />
+
+          {isFiltered && (
             <button
               type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
+              onClick={handleResetFilters}
+              className="px-2.5 py-1 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-500 hover:text-slate-800 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
+              title="Reset Filters"
             >
-              <i className="ri-close-circle-fill text-xs" />
+              <i className="ri-refresh-line text-xs" />
+              <span>Reset</span>
             </button>
           )}
-        </div>
 
-        <AttendanceDateRangePicker
-          filterDatePreset={filterDatePreset}
-          setFilterDatePreset={setFilterDatePreset}
-          singleDate={singleDate}
-          setSingleDate={setSingleDate}
-          fromDate={fromDate}
-          setFromDate={setFromDate}
-          toDate={toDate}
-          setToDate={setToDate}
-          todayYMD={todayYMD}
-        />
-
-        <AttendanceFilterSelects
-          employees={employees}
-          availableEmployees={availableEmployees}
-          filterEmployeeId={filterEmployeeId}
-          setFilterEmployeeId={setFilterEmployeeId}
-          departments={departments}
-          filterDepartment={filterDepartment}
-          setFilterDepartment={setFilterDepartment}
-          roles={roles}
-          filterRole={filterRole}
-          setFilterRole={setFilterRole}
-          employmentTypes={employmentTypes}
-          filterEmploymentType={filterEmploymentType}
-          setFilterEmploymentType={setFilterEmploymentType}
-          workLocations={workLocations}
-          filterWorkLocation={filterWorkLocation}
-          setFilterWorkLocation={setFilterWorkLocation}
-          filterStatus={filterStatus}
-          setFilterStatus={setFilterStatus}
-        />
-
-        {isFiltered && (
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
-            title="Reset Filters"
-          >
-            <i className="ri-refresh-line mr-1" />
-            Reset
-          </button>
-        )}
-
-        <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-0.5 rounded-xl border border-gray-200 dark:border-slate-700">
-          <button
-            type="button"
-            onClick={() => setViewMode("table")}
-            className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              viewMode === "table"
-                ? "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-xs"
-                : "text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
-            }`}
-            title="Table View"
-          >
-            <i className="ri-table-line" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("cards")}
-            className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              viewMode === "cards"
-                ? "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-xs"
-                : "text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
-            }`}
-            title="Cards View"
-          >
-            <i className="ri-grid-fill" />
-          </button>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 h-8">
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={`px-2 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                viewMode === "table"
+                  ? "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-2xs"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+              title="Table View"
+            >
+              <i className="ri-table-line text-xs" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("cards")}
+              className={`px-2 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                viewMode === "cards"
+                  ? "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-2xs"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+              title="Cards View"
+            >
+              <i className="ri-grid-fill text-xs" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

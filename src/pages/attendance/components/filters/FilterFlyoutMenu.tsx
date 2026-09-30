@@ -1,152 +1,173 @@
-import { memo, useState, useRef, useEffect } from "react";
-import type { Employee, WorkLocation } from "../../types";
-import { FilterSubMenu } from "./FilterSubMenu";
-import { formatBiometricId } from "@/lib/biometricUtils";
+import { memo, useState, useRef, useEffect, useMemo } from "react";
+import type { WorkLocation } from "../../types";
+import { AttendanceFilterFlyoutPanel, type FilterOptionItem } from "./AttendanceFilterFlyoutPanel";
 
-interface Props {
-  employees: Employee[];
-  availableEmployees: Employee[];
-  filterEmployeeId?: string;
-  setFilterEmployeeId?: (id: string) => void;
-  departments: string[];
+interface FilterFlyoutMenuProps {
+  filterWorkLocation: string;
+  setFilterWorkLocation: (locId: string) => void;
   filterDepartment: string;
   setFilterDepartment: (dept: string) => void;
-  roles?: string[];
-  filterRole?: string;
-  setFilterRole?: (role: string) => void;
-  employmentTypes?: string[];
-  filterEmploymentType?: string;
-  setFilterEmploymentType?: (type: string) => void;
-  workLocations?: WorkLocation[];
-  filterWorkLocation?: string;
-  setFilterWorkLocation?: (locId: string) => void;
+  filterRole: string;
+  setFilterRole: (role: string) => void;
+  filterEmploymentType: string;
+  setFilterEmploymentType: (type: string) => void;
+  filterEmployeeLevel?: string;
+  setFilterEmployeeLevel?: (level: string) => void;
+  branches: { id: string; name: string }[];
+  workLocations: WorkLocation[];
+  depts: string[];
+  positions: string[];
+  employeeTypes: string[];
+  employeeLevels: string[];
   onOpenChange?: (isOpen: boolean) => void;
 }
 
-type MenuCategory = "site" | "department" | "designation" | "employee_type" | "employee" | null;
+type ActiveCategory = "site" | "department" | "position" | "employee_type" | "employee_level";
 
 export const FilterFlyoutMenu = memo(function FilterFlyoutMenu({
-  employees,
-  availableEmployees,
-  filterEmployeeId = "all",
-  setFilterEmployeeId,
-  departments,
-  filterDepartment,
-  setFilterDepartment,
-  roles = [],
-  filterRole = "all",
-  setFilterRole,
-  employmentTypes = [],
-  filterEmploymentType = "all",
-  setFilterEmploymentType,
+  filterWorkLocation, setFilterWorkLocation,
+  filterDepartment, setFilterDepartment,
+  filterRole, setFilterRole,
+  filterEmploymentType, setFilterEmploymentType,
+  filterEmployeeLevel = "", setFilterEmployeeLevel = () => {},
+  branches = [],
   workLocations = [],
-  filterWorkLocation = "all",
-  setFilterWorkLocation,
+  depts = [],
+  positions = [],
+  employeeTypes = [],
+  employeeLevels = [],
   onOpenChange,
-}: Props) {
-  const [open, setOpen] = useState(false);
-  const [activeSub, setActiveSub] = useState<MenuCategory>(null);
-  const ref = useRef<HTMLDivElement>(null);
+}: FilterFlyoutMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<ActiveCategory>("site");
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setActiveSub(null);
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
         onOpenChange?.(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onOpenChange]);
+  }, [isOpen, onOpenChange]);
 
-  const toggle = () => {
-    const next = !open;
-    setOpen(next);
-    setActiveSub(null);
-    onOpenChange?.(next);
-  };
+  const hasActiveFilter = Boolean(
+    (filterWorkLocation && filterWorkLocation !== "all") || (filterDepartment && filterDepartment !== "all") ||
+    (filterRole && filterRole !== "all") || (filterEmploymentType && filterEmploymentType !== "all") ||
+    Boolean(filterEmployeeLevel)
+  );
 
-  const activeCount = [
-    filterWorkLocation !== "all",
-    filterDepartment !== "all",
-    filterRole !== "all",
-    filterEmploymentType !== "all",
-    filterEmployeeId !== "all",
-  ].filter(Boolean).length;
+  const categories = useMemo(
+    () => [
+      { id: "site" as const, label: "Site", active: Boolean(filterWorkLocation && filterWorkLocation !== "all") },
+      { id: "department" as const, label: "Department", active: Boolean(filterDepartment && filterDepartment !== "all") },
+      { id: "position" as const, label: "Position", active: Boolean(filterRole && filterRole !== "all") },
+      { id: "employee_type" as const, label: "Employee Type", active: Boolean(filterEmploymentType && filterEmploymentType !== "all") },
+      { id: "employee_level" as const, label: "Employee Level", active: Boolean(filterEmployeeLevel) },
+    ],
+    [filterWorkLocation, filterDepartment, filterRole, filterEmploymentType, filterEmployeeLevel]
+  );
 
-  const availableRoles = roles.length > 0 ? roles : Array.from(new Set(employees.map((e) => e.role).filter(Boolean))).sort();
-  const availableEmpTypes = employmentTypes.length > 0 ? employmentTypes : Array.from(new Set(employees.map((e) => e.employment_type || e.contract_type).filter(Boolean) as string[])).sort();
+  const siteOptions = useMemo<FilterOptionItem[]>(() => {
+    const list: FilterOptionItem[] = [];
+    branches.forEach((b) => {
+      list.push({ id: b.id, label: b.name });
+      workLocations.filter((s) => s.branch_id === b.id).forEach((s) => {
+        list.push({ id: `site:${s.id}`, label: `${b.name} - ${s.name}` });
+      });
+    });
+    return list;
+  }, [branches, workLocations]);
 
-  const siteItems = workLocations.map((loc) => ({ id: loc.id, label: loc.name }));
-  const deptItems = departments.map((d) => ({ id: d, label: d }));
-  const roleItems = availableRoles.map((r) => ({ id: r, label: r }));
-  const empTypeItems = availableEmpTypes.map((t) => ({ id: t, label: t.replace("_", " ") }));
-  const employeeItems = availableEmployees.map((emp) => {
-    const rawBio = emp.biometric_user_id || emp.employee_code;
-    const bName = Array.isArray(emp.branches) ? emp.branches[0]?.name : emp.branches?.name || "";
-    const bioId = formatBiometricId(rawBio, bName);
-    return { id: emp.id, label: `${emp.first_name} ${emp.last_name}${bioId ? ` [${bioId}]` : ""}` };
-  });
+  const deptOptions = useMemo<FilterOptionItem[]>(
+    () => depts.filter(Boolean).map((d) => ({ id: d, label: d })),
+    [depts]
+  );
+  const positionOptions = useMemo<FilterOptionItem[]>(() => positions.filter(Boolean).map((p) => ({ id: p, label: p })), [positions]);
+  const typeOptions = useMemo<FilterOptionItem[]>(() => employeeTypes.filter(Boolean).map((t) => ({ id: t, label: t.replace(/_/g, " ") })), [employeeTypes]);
+  const levelOptions = useMemo<FilterOptionItem[]>(() => employeeLevels.filter(Boolean).map((l) => ({ id: l, label: l })), [employeeLevels]);
 
-  const categories = [
-    { key: "site" as MenuCategory, label: "Site", icon: "ri-building-line", isFiltered: filterWorkLocation !== "all", items: siteItems, selected: filterWorkLocation, onSelect: (id: string) => { setFilterWorkLocation?.(id); setOpen(false); } },
-    { key: "department" as MenuCategory, label: "Department", icon: "ri-team-line", isFiltered: filterDepartment !== "all", items: deptItems, selected: filterDepartment, onSelect: (id: string) => { setFilterDepartment(id); setOpen(false); } },
-    { key: "designation" as MenuCategory, label: "Position", icon: "ri-briefcase-line", isFiltered: filterRole !== "all", items: roleItems, selected: filterRole, onSelect: (id: string) => { setFilterRole?.(id); setOpen(false); } },
-    { key: "employee_type" as MenuCategory, label: "Employee Type", icon: "ri-user-settings-line", isFiltered: filterEmploymentType !== "all", items: empTypeItems, selected: filterEmploymentType, onSelect: (id: string) => { setFilterEmploymentType?.(id); setOpen(false); } },
-    ...(setFilterEmployeeId ? [{ key: "employee" as MenuCategory, label: "Employee", icon: "ri-user-line", isFiltered: filterEmployeeId !== "all", items: employeeItems, selected: filterEmployeeId, onSelect: (id: string) => { setFilterEmployeeId(id); setOpen(false); } }] : []),
-  ];
+  const currentCategoryData = useMemo(() => {
+    switch (activeCategory) {
+      case "site":
+        return {
+          items: siteOptions,
+          selected: filterWorkLocation && filterWorkLocation !== "all" ? filterWorkLocation.split(",").filter(Boolean) : [],
+          onApply: (ids: string[]) => setFilterWorkLocation(ids.length > 0 ? ids.join(",") : "all"),
+          onReset: () => setFilterWorkLocation("all"),
+        };
+      case "department":
+        return {
+          items: deptOptions,
+          selected: filterDepartment && filterDepartment !== "all" ? filterDepartment.split(",").filter(Boolean) : [],
+          onApply: (ids: string[]) => setFilterDepartment(ids.join(",") || "all"),
+          onReset: () => setFilterDepartment("all"),
+        };
+      case "position":
+        return {
+          items: positionOptions,
+          selected: filterRole && filterRole !== "all" ? filterRole.split(",").filter(Boolean) : [],
+          onApply: (ids: string[]) => setFilterRole(ids.join(",") || "all"),
+          onReset: () => setFilterRole("all"),
+        };
+      case "employee_type":
+        return {
+          items: typeOptions,
+          selected: filterEmploymentType && filterEmploymentType !== "all" ? filterEmploymentType.split(",").filter(Boolean) : [],
+          onApply: (ids: string[]) => setFilterEmploymentType(ids.join(",") || "all"),
+          onReset: () => setFilterEmploymentType("all"),
+        };
+      case "employee_level":
+        return {
+          items: levelOptions,
+          selected: filterEmployeeLevel ? filterEmployeeLevel.split(",").filter(Boolean) : [],
+          onApply: (ids: string[]) => setFilterEmployeeLevel(ids.join(",")),
+          onReset: () => setFilterEmployeeLevel(""),
+        };
+    }
+  }, [
+    activeCategory, siteOptions, deptOptions, positionOptions, typeOptions, levelOptions,
+    filterWorkLocation, filterDepartment, filterRole, filterEmploymentType, filterEmployeeLevel,
+    setFilterWorkLocation, setFilterDepartment, setFilterRole, setFilterEmploymentType, setFilterEmployeeLevel,
+  ]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative" ref={containerRef}>
       <button
         type="button"
-        onClick={toggle}
-        className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-white transition-all cursor-pointer shadow-xs active:scale-98 select-none ${
-          activeCount > 0 ? "bg-[#0284c7] hover:bg-[#0369a1] ring-2 ring-sky-300 dark:ring-sky-800" : "bg-[#0284c7] hover:bg-[#0369a1]"
+        onClick={() => { const next = !isOpen; setIsOpen(next); onOpenChange?.(next); }}
+        className={`px-3 py-1 rounded-full border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+          isOpen || hasActiveFilter ? "border-[#253C7D] bg-[#253C7D] text-white shadow-xs" : "border-[#253C7D]/40 text-[#253C7D] bg-white dark:bg-slate-800 hover:bg-[#253C7D]/5"
         }`}
-        aria-expanded={open}
       >
         <span>Filter</span>
-        {activeCount > 0 && (
-          <span className="bg-white text-[#0284c7] text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-extrabold leading-none">
-            {activeCount}
-          </span>
-        )}
-        <i className={`ri-arrow-down-s-line text-xs transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+        <i className="ri-arrow-down-s-line text-xs opacity-90" />
       </button>
 
-      {open && (
-        <div className="absolute left-0 mt-1.5 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 py-1 overflow-visible animate-in fade-in zoom-in-98 duration-100">
-          {categories.map((cat) => (
-            <div key={cat.key} className="relative" onMouseEnter={() => setActiveSub(cat.key)}>
+      {isOpen && (
+        <div onClick={(e) => e.stopPropagation()} className="absolute right-0 top-8 flex bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-xl z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
+          <AttendanceFilterFlyoutPanel items={currentCategoryData.items} selectedValues={currentCategoryData.selected} onApply={(ids) => { currentCategoryData.onApply(ids); setIsOpen(false); onOpenChange?.(false); }} onReset={currentCategoryData.onReset} />
+          <div className="w-36 py-1 bg-white dark:bg-slate-900">
+            {categories.map((cat) => (
               <button
+                key={cat.id}
                 type="button"
-                onClick={() => setActiveSub(activeSub === cat.key ? null : cat.key)}
-                className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left cursor-pointer transition-colors ${
-                  activeSub === cat.key || cat.isFiltered
-                    ? "bg-slate-50 dark:bg-slate-800 text-sky-700 dark:text-sky-300 font-bold"
-                    : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                onMouseEnter={() => setActiveCategory(cat.id)}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`w-full px-3 py-2 text-left flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                  activeCategory === cat.id ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <i className={`${cat.icon} text-xs text-slate-400`} />
+                <div className="flex items-center gap-1.5">
                   <span>{cat.label}</span>
-                  {cat.isFiltered && <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />}
+                  {cat.active && <span className="w-1.5 h-1.5 rounded-full bg-[#253C7D]" />}
                 </div>
-                <i className="ri-arrow-right-s-line text-xs text-slate-400" />
+                <i className={`ri-arrow-left-s-fill text-xs transition-colors ${activeCategory === cat.id ? "text-slate-500" : "text-slate-300 dark:text-slate-600"}`} />
               </button>
-
-              {activeSub === cat.key && (
-                <FilterSubMenu
-                  title={cat.label}
-                  items={cat.items}
-                  selectedId={cat.selected}
-                  onSelect={cat.onSelect}
-                />
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

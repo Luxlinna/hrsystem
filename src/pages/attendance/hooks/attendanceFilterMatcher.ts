@@ -13,22 +13,67 @@ interface MatchParams {
 }
 
 export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): boolean {
-  if (p.filterStatus !== "all" && r.status !== p.filterStatus) return false;
-  if (p.filterDepartment !== "all" && r.employees?.department !== p.filterDepartment) return false;
-  if (p.filterRole !== "all" && r.employees?.role !== p.filterRole) return false;
-  if (p.filterEmploymentType !== "all") {
-    const empType = (r.employees?.employment_type || r.employees?.contract_type || "").toLowerCase();
-    if (empType !== p.filterEmploymentType.toLowerCase()) return false;
+  if (p.filterStatus && p.filterStatus !== "all") {
+    const statuses = p.filterStatus.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (statuses.length > 0 && !statuses.includes(r.status.toLowerCase())) return false;
   }
-  if (p.filterEmployeeId !== "all" && r.employee_id !== p.filterEmployeeId) return false;
-  if (p.filterWorkLocation !== "all") {
-    if (p.filterWorkLocation === "main") {
-      if (r.work_location_id && r.work_location_id !== "main" && !(r.work_location as any)?.is_default) return false;
-    } else {
-      if (r.work_location_id !== p.filterWorkLocation) return false;
+
+  if (p.filterDepartment && p.filterDepartment !== "all") {
+    const depts = p.filterDepartment.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean);
+    const empDept = (r.employees?.department || "").toLowerCase();
+    if (depts.length > 0 && !depts.includes(empDept)) return false;
+  }
+
+  if (p.filterRole && p.filterRole !== "all") {
+    const roles = p.filterRole.split(",").map((role) => role.trim().toLowerCase()).filter(Boolean);
+    const empRole = (r.employees?.role || "").toLowerCase();
+    if (roles.length > 0 && !roles.includes(empRole)) return false;
+  }
+
+  if (p.filterEmploymentType && p.filterEmploymentType !== "all") {
+    const types = p.filterEmploymentType.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+    const empType = (r.employees?.employment_type || r.employees?.contract_type || "").toLowerCase();
+    if (types.length > 0 && !types.includes(empType)) return false;
+  }
+
+  if (p.filterEmployeeId && p.filterEmployeeId !== "all") {
+    const empIds = p.filterEmployeeId.split(",").map((id) => id.trim()).filter(Boolean);
+    if (empIds.length > 0 && !empIds.includes(r.employee_id)) return false;
+  }
+
+  if (p.filterWorkLocation && p.filterWorkLocation !== "all") {
+    const locList = p.filterWorkLocation.split(",").map((s) => s.trim()).filter(Boolean);
+    if (locList.length > 0) {
+      const recLocId = r.work_location_id || "";
+      const empLocId = r.employees?.default_work_location_id || "";
+      const empBranchId = r.employees?.branch_id || "";
+      const empBranchName = (r.employees?.branches?.name || "").toLowerCase();
+      const recLocName = (r.work_location?.name || "").toLowerCase();
+
+      const matched = locList.some((s) => {
+        if (s.startsWith("site:")) {
+          const rawId = s.substring(5);
+          return recLocId === rawId || empLocId === rawId;
+        } else if (s.startsWith("branch:")) {
+          const rawId = s.substring(7);
+          return empBranchId === rawId;
+        } else {
+          const sLower = s.toLowerCase();
+          return (
+            recLocId === s ||
+            empLocId === s ||
+            empBranchId === s ||
+            empBranchName === sLower ||
+            recLocName === sLower
+          );
+        }
+      });
+      if (!matched) return false;
     }
   }
+
   if (p.dateBounds && (r.date < p.dateBounds.start || r.date > p.dateBounds.end)) return false;
+
   if (p.searchQuery.trim()) {
     const q = p.searchQuery.toLowerCase().trim();
     const emp = r.employees;
@@ -56,5 +101,6 @@ export function matchAttendanceRecord(r: AttendanceRecord, p: MatchParams): bool
       return false;
     }
   }
+
   return true;
 }

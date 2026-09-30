@@ -20,6 +20,11 @@ export function useAttendanceData(
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myEmployee, setMyEmployee] = useState<Employee | null>(fallbackEmployee || null);
   const [workLocations, setWorkLocations] = useState<WorkLocation[]>([]);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [depts, setDepts] = useState<string[]>([]);
+  const [positions, setPositions] = useState<string[]>([]);
+  const [employeeTypes, setEmployeeTypes] = useState<string[]>([]);
+  const [employeeLevels, setEmployeeLevels] = useState<string[]>([]);
   const [biometricDevices, setBiometricDevices] = useState<BiometricDevice[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -31,24 +36,40 @@ export function useAttendanceData(
 
   const fetchData = useCallback(async () => {
     if ((isPartnerBranchBlocked && !canViewAllBranches) || !targetBranch) {
-      setRecords([]);
-      setEmployees([]);
-      setWorkLocations([]);
-      setBiometricDevices([]);
-      setLoading(false);
+      setRecords([]); setEmployees([]); setWorkLocations([]); setBranches([]); setBiometricDevices([]); setLoading(false);
       return;
     }
 
-    const { data: wlData } = await supabase
-      .from("work_locations")
-      .select("id, branch_id, name, description, is_default, work_start_time, work_end_time, break_start_time, break_end_time, is_four_punch_enabled")
-      .eq("branch_id", targetBranch)
-      .is("deleted_at", null)
-      .order("is_default", { ascending: false })
-      .order("name");
-    setWorkLocations((wlData as WorkLocation[]) || []);
+    // 1. Fetch Branches & WorkSites exactly like Employee Directory
+    supabase.from("branches").select("id, name").is("deleted_at", null).order("name").then(({ data }) => {
+      if (data) setBranches(data as { id: string; name: string }[]);
+    });
 
-    // Fetch biometric fingerprint devices registered to this branch
+    supabase.from("work_locations").select("id, name, branch_id, is_default, status").is("deleted_at", null).order("is_default", { ascending: false }).order("name").then(({ data }) => {
+      if (data) setWorkLocations(data as WorkLocation[]);
+    });
+
+    // 2. Fetch real BU tables for Departments, Positions, Employee Types, Levels
+    const loadRealTable = async (tbl: string, setter: (vals: string[]) => void) => {
+      try {
+        const { data, error } = await supabase
+          .from(tbl)
+          .select("name")
+          .is("deleted_at", null)
+          .order("sort_order", { ascending: true })
+          .order("name", { ascending: true });
+        if (!error && data) setter(Array.from(new Set(data.map((d: any) => d.name).filter(Boolean))));
+      } catch {
+        // DB only
+      }
+    };
+
+    loadRealTable("departments", setDepts);
+    loadRealTable("positions", setPositions);
+    loadRealTable("employee_types", setEmployeeTypes);
+    loadRealTable("employee_levels", setEmployeeLevels);
+
+    // 3. Fetch Biometric Devices
     const { data: bioData } = await supabase
       .from("biometric_devices")
       .select("id, branch_id, work_location_id, device_name, device_serial, status")
@@ -60,9 +81,7 @@ export function useAttendanceData(
       let empRecord = myEmployee || fallbackEmployee || null;
       if (!empRecord && user?.email) {
         const meQuery = applyUserEmployeeFilter(
-          supabase
-            .from("employees")
-            .select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site"),
+          supabase.from("employees").select("id, first_name, last_name, department, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site"),
           user.email
         );
         const { data: rows } = await meQuery.is("deleted_at", null).limit(5);
@@ -73,7 +92,6 @@ export function useAttendanceData(
       }
 
       if (isLeader) {
-        // Fetch all employees belonging to the selected branch
         const { data: team, error: empErr } = await supabase
           .from("employees")
           .select("id, first_name, last_name, department, division, line_manager, reports_to, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site")
@@ -91,8 +109,7 @@ export function useAttendanceData(
           const myDiv = ((empRecord as any).division || "").trim().toLowerCase();
 
           empList = empList.filter((e: any) => {
-            if (e.id === myId) return true;
-            if (e.reports_to === myId) return true;
+            if (e.id === myId || e.reports_to === myId) return true;
             const eLm = (e.line_manager || "").trim().toLowerCase();
             if (eLm && (eLm === myName || eLm === myEmail)) return true;
             if (myDept && e.department && e.department.trim().toLowerCase() === myDept) return true;
@@ -101,9 +118,9 @@ export function useAttendanceData(
           });
         }
 
-        // Natural numerical sorting by BU Biometric ID (001, 002, 003...)
         empList.sort((a, b) => compareBiometricIds(a.biometric_user_id, b.biometric_user_id));
         setEmployees(empList);
+
         const ids = empList.map((e) => e.id);
         const empMap = new Map(empList.map((e) => [e.id, e]));
 
@@ -125,13 +142,12 @@ export function useAttendanceData(
           let rec = { ...r, employees: emp };
           if (!rec.work_location_id && emp?.default_work_location_id) {
             const locId = emp.default_work_location_id;
-            const locObj = wlData?.find((wl) => wl.id === locId);
+            const locObj = workLocations?.find((wl) => wl.id === locId);
             rec = { ...rec, work_location_id: locId, work_location: locObj ? { id: locObj.id, name: locObj.name } : null };
           }
           return rec;
         });
 
-        // Sort by date descending, then naturally by BU Biometric ID
         mapped.sort((a, b) => {
           const dateComp = (b.date || "").localeCompare(a.date || "");
           if (dateComp !== 0) return dateComp;
@@ -139,7 +155,6 @@ export function useAttendanceData(
           if (bioComp !== 0) return bioComp;
           return (a.employees?.first_name || "").localeCompare(b.employees?.first_name || "");
         });
-
         setRecords(mapped);
       } else {
         if (empRecord) {
@@ -157,15 +172,14 @@ export function useAttendanceData(
             let rec = { ...r, employees: emp };
             if (!rec.work_location_id && emp?.default_work_location_id) {
               const locId = emp.default_work_location_id;
-              const locObj = wlData?.find((wl) => wl.id === locId);
+              const locObj = workLocations?.find((wl) => wl.id === locId);
               rec = { ...rec, work_location_id: locId, work_location: locObj ? { id: locObj.id, name: locObj.name } : null };
             }
             return rec;
           });
           setRecords(mapped);
         } else {
-          setEmployees([]);
-          setRecords([]);
+          setEmployees([]); setRecords([]);
         }
       }
     } catch (err) {
@@ -174,47 +188,21 @@ export function useAttendanceData(
     } finally {
       setLoading(false);
     }
-  }, [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, isLineManager, user?.email, fallbackEmployee, myEmployee]);
+  }, [isPartnerBranchBlocked, canViewAllBranches, targetBranch, isLeader, isLineManager, user?.email, fallbackEmployee, myEmployee, workLocations]);
 
   useEffect(() => {
-    // Real-time live sync for attendance scans from biometric terminals & mobile
     const channel = supabase
       .channel("attendance-live-sync")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "attendance_records" },
-        () => {
-          fetchData();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "attendance_records" }, () => fetchData())
       .subscribe();
-
-    // Fallback background refresh every 20 seconds
-    const interval = setInterval(() => {
-      fetchData();
-    }, 20000);
-
-    return () => {
-      supabase.removeChannel(channel);
-      clearInterval(interval);
-    };
+    const interval = setInterval(() => fetchData(), 20000);
+    return () => { supabase.removeChannel(channel); clearInterval(interval); };
   }, [fetchData]);
 
   return {
-    records,
-    setRecords,
-    employees,
-    setEmployees,
-    myEmployee,
-    setMyEmployee,
-    workLocations,
-    biometricDevices,
-    loading,
-    currentTime,
-    targetBranch,
-    isPartnerBranchBlocked,
-    userBranchName,
-    userBranchId,
-    fetchData,
+    records, setRecords, employees, setEmployees, myEmployee, setMyEmployee,
+    workLocations, branches, depts, positions, employeeTypes, employeeLevels,
+    biometricDevices, loading, currentTime, targetBranch,
+    isPartnerBranchBlocked, userBranchName, userBranchId, fetchData,
   };
 }

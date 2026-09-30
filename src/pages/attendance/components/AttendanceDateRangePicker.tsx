@@ -68,26 +68,26 @@ export const AttendanceDateRangePicker = memo(function AttendanceDateRangePicker
 
   return (
     <div className="relative inline-flex items-center">
-      {/* Segmented Pill Navigator */}
+      {/* Segmented Pill Navigator matching screenshot */}
       <div className="flex items-center h-8 bg-white dark:bg-slate-900 border border-sky-400 dark:border-sky-500 rounded-full shadow-2xs overflow-hidden">
         {/* Left Arrow: Previous */}
         <button
           type="button"
           onClick={() => handleShift("prev")}
           title="Previous period"
-          className="h-full px-2.5 flex items-center justify-center text-sky-500 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/50 border-r border-sky-400 dark:border-sky-500 transition-colors cursor-pointer"
+          className="h-full px-2 flex items-center justify-center text-sky-600 hover:text-sky-800 dark:text-sky-300 dark:hover:text-white hover:bg-sky-50 dark:hover:bg-slate-800 border-r border-sky-300 dark:border-sky-600 transition-colors cursor-pointer"
         >
-          <i className="ri-arrow-left-s-line text-sm" />
+          <i className="ri-arrow-left-s-line text-xs" />
         </button>
 
-        {/* Center: Calendar + Date Range Display (Opens Modal) */}
+        {/* Center: Calendar + Date Range Display */}
         <button
           type="button"
           onClick={() => setIsModalOpen((prev) => !prev)}
-          className="h-full px-3.5 flex items-center gap-2 text-sky-500 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/50 transition-colors cursor-pointer text-xs font-semibold select-none"
+          className="h-full px-3 flex items-center gap-1.5 text-sky-700 dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-xs font-semibold select-none"
         >
-          <i className="ri-calendar-line text-sm text-sky-500 dark:text-sky-400" />
-          <span className="tabular-nums tracking-tight font-medium text-sky-600 dark:text-sky-300">
+          <i className="ri-calendar-line text-xs text-sky-600 dark:text-sky-400" />
+          <span className="tabular-nums font-medium text-[11px]">
             {displayDateStr}
           </span>
         </button>
@@ -97,9 +97,9 @@ export const AttendanceDateRangePicker = memo(function AttendanceDateRangePicker
           type="button"
           onClick={() => handleShift("next")}
           title="Next period"
-          className="h-full px-2.5 flex items-center justify-center text-sky-500 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/50 border-l border-sky-400 dark:border-sky-500 transition-colors cursor-pointer"
+          className="h-full px-2 flex items-center justify-center text-sky-600 hover:text-sky-800 dark:text-sky-300 dark:hover:text-white hover:bg-sky-50 dark:hover:bg-slate-800 border-l border-sky-300 dark:border-sky-600 transition-colors cursor-pointer"
         >
-          <i className="ri-arrow-right-s-line text-sm" />
+          <i className="ri-arrow-right-s-line text-xs" />
         </button>
       </div>
 

@@ -1,5 +1,6 @@
 import { memo, useRef } from "react";
 import type { Employee } from "../../types";
+import { DefaultAvatarSvg } from "@/components/DefaultAvatarSvg";
 
 interface EmployeeDetailSidebarProps {
   employee: Employee;
@@ -77,7 +78,7 @@ export const EmployeeDetailSidebar = memo(function EmployeeDetailSidebar({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <i className="ri-user-3-line text-5xl sm:text-6xl text-slate-400 dark:text-slate-500" />
+              <DefaultAvatarSvg />
             )}
           </div>
 

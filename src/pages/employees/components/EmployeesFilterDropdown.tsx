@@ -1,6 +1,5 @@
 import { memo, useState, useRef, useEffect, useMemo } from "react";
 import type { Branch } from "../types";
-import { BU_DEFAULT_EMPLOYEE_TYPES, BU_DEFAULT_EMPLOYEE_LEVELS } from "../constants";
 import { EmployeesFilterFlyoutPanel, type FilterOptionItem } from "./filter/EmployeesFilterFlyoutPanel";
 
 interface EmployeesFilterDropdownProps {
@@ -35,12 +34,12 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
   setFilterEmployeeType,
   filterEmployeeLevel,
   setFilterEmployeeLevel,
-  branches,
+  branches = [],
   workSites = [],
-  depts,
+  depts = [],
   positions = [],
-  employeeTypes = BU_DEFAULT_EMPLOYEE_TYPES,
-  employeeLevels = BU_DEFAULT_EMPLOYEE_LEVELS,
+  employeeTypes = [],
+  employeeLevels = [],
 }: EmployeesFilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>("site");
@@ -84,9 +83,9 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
     () => depts.filter(Boolean).map((d) => ({ id: d as string, label: d as string })),
     [depts]
   );
-  const positionOptions = useMemo<FilterOptionItem[]>(() => positions.map((p) => ({ id: p, label: p })), [positions]);
-  const typeOptions = useMemo<FilterOptionItem[]>(() => employeeTypes.map((t) => ({ id: t, label: t })), [employeeTypes]);
-  const levelOptions = useMemo<FilterOptionItem[]>(() => employeeLevels.map((l) => ({ id: l, label: l })), [employeeLevels]);
+  const positionOptions = useMemo<FilterOptionItem[]>(() => positions.filter(Boolean).map((p) => ({ id: p, label: p })), [positions]);
+  const typeOptions = useMemo<FilterOptionItem[]>(() => employeeTypes.filter(Boolean).map((t) => ({ id: t, label: t.replace(/_/g, " ") })), [employeeTypes]);
+  const levelOptions = useMemo<FilterOptionItem[]>(() => employeeLevels.filter(Boolean).map((l) => ({ id: l, label: l })), [employeeLevels]);
 
   const currentCategoryData = useMemo(() => {
     switch (activeCategory) {

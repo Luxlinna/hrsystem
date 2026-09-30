@@ -2,7 +2,8 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { Employee } from "../../types";
 import { getProfileStatusMeta } from "../../constants";
-import { isPhoneSyntheticEmail } from "@/lib/phoneUtils";
+import { DefaultAvatarSvg } from "@/components/DefaultAvatarSvg";
+import { ProfileQuickContacts } from "./ProfileQuickContacts";
 
 interface ProfileHeaderProps {
   employee: Employee;
@@ -23,7 +24,6 @@ export const ProfileHeader = memo(function ProfileHeader({
   onToggleEditing,
   onUploadAvatar,
 }: ProfileHeaderProps) {
-  const initials = `${employee?.first_name?.[0] || ""}${employee?.last_name?.[0] || ""}`;
   const statusMeta = getProfileStatusMeta(employee.status);
 
   return (
@@ -57,8 +57,8 @@ export const ProfileHeader = memo(function ProfileHeader({
                   className="w-28 h-28 rounded-2xl object-cover border-2 border-white shadow-md ring-1 ring-gray-200"
                 />
               ) : (
-                <div className="w-28 h-28 rounded-2xl bg-gradient-to-tr from-[#253C7D] to-[#3B5998] flex items-center justify-center text-white text-3xl font-extrabold shadow-md">
-                  {initials}
+                <div className="w-28 h-28 rounded-2xl overflow-hidden border-2 border-white shadow-md ring-1 ring-gray-200 flex items-center justify-center">
+                  <DefaultAvatarSvg />
                 </div>
               )}
               {canEdit && (
@@ -85,7 +85,7 @@ export const ProfileHeader = memo(function ProfileHeader({
               )}
             </div>
 
-            {/* 2. Full Name + Position (directly below photo) */}
+            {/* 2. Full Name + Position */}
             <div className="space-y-0.5">
               <h1 className="text-xl md:text-2xl font-black text-gray-900 leading-tight flex items-center justify-center sm:justify-start gap-2 flex-wrap">
                 <span>{employee.first_name} {employee.last_name}</span>
@@ -170,44 +170,7 @@ export const ProfileHeader = memo(function ProfileHeader({
               </div>
             </div>
 
-            {/* Quick Contact & Credentials Section */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-4 border-t border-gray-100">
-              <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#253C7D] flex items-center justify-center shrink-0 text-sm font-bold">
-                  <i className="ri-mail-line" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Email</span>
-                  <p className="text-xs font-semibold text-gray-800 truncate select-all">
-                    {employee.email && !isPhoneSyntheticEmail(employee.email) ? employee.email : "Not assigned"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 text-sm font-bold">
-                  <i className="ri-phone-line" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Phone</span>
-                  <p className="text-xs font-semibold text-gray-800 truncate select-all">
-                    {employee.phone || "—"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center shrink-0 text-sm font-bold">
-                  <i className="ri-fingerprint-line" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Biometrics</span>
-                  <p className="text-xs font-semibold text-gray-800 truncate">
-                    {employee.biometric_user_id ? `ID #${employee.biometric_user_id}` : hasBiometric ? "Biometric Only" : "Not Enrolled"}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <ProfileQuickContacts employee={employee} hasBiometric={hasBiometric} />
           </div>
         </div>
       </div>

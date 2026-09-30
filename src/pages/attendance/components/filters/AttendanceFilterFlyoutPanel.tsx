@@ -5,24 +5,24 @@ export interface FilterOptionItem {
   label: string;
 }
 
-interface EmployeesFilterFlyoutPanelProps {
+interface AttendanceFilterFlyoutPanelProps {
   items: FilterOptionItem[];
   selectedValues: string[];
   onApply: (selectedIds: string[]) => void;
   onReset: () => void;
 }
 
-export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPanel({
+export const AttendanceFilterFlyoutPanel = memo(function AttendanceFilterFlyoutPanel({
   items,
   selectedValues,
   onApply,
   onReset,
-}: EmployeesFilterFlyoutPanelProps) {
+}: AttendanceFilterFlyoutPanelProps) {
   const [pending, setPending] = useState<Set<string>>(() => new Set(selectedValues));
   const [displayLimit, setDisplayLimit] = useState(30);
 
-  // Stable string keys prevent the effect from resetting pending state
-  // on every parent re-render that produces a new array reference.
+  // Use stable string keys so the effect only fires when the actual values change,
+  // not on every parent render that creates a new array reference.
   const itemsKey = items.map((i) => i.id).join(",");
   const selectedKey = [...selectedValues].sort().join(",");
 
@@ -56,18 +56,18 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
   const hasMore = items.length > displayLimit;
 
   return (
-    <div className="w-52 py-2 px-2.5 flex flex-col bg-white border-r border-slate-200">
+    <div className="w-52 py-2 px-2.5 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
       {/* Scrollable Checkbox List */}
-      <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 text-xs text-slate-700">
+      <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 text-xs text-slate-700 dark:text-slate-200">
         {/* 'All' Checkbox */}
-        <label className="flex items-center gap-2 px-1.5 py-1 hover:bg-slate-50 rounded cursor-pointer select-none">
+        <label className="flex items-center gap-2 px-1.5 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer select-none">
           <input
             type="checkbox"
             checked={allSelected}
             onChange={handleToggleAll}
             className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
           />
-          <span className="font-medium text-slate-800">All</span>
+          <span className="font-medium text-slate-800 dark:text-slate-100">All</span>
         </label>
 
         {/* Item Checkboxes */}
@@ -76,7 +76,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
           return (
             <label
               key={item.id}
-              className="flex items-center gap-2 px-1.5 py-0.5 hover:bg-slate-50 rounded cursor-pointer select-none"
+              className="flex items-center gap-2 px-1.5 py-0.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer select-none"
             >
               <input
                 type="checkbox"
@@ -84,7 +84,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
                 onChange={() => handleToggleItem(item.id)}
                 className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
-              <span className="truncate text-slate-700" title={item.label}>
+              <span className="truncate text-slate-700 dark:text-slate-200" title={item.label}>
                 {item.label}
               </span>
             </label>
@@ -96,16 +96,16 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
           <button
             type="button"
             onClick={() => setDisplayLimit((prev) => prev + 30)}
-            className="w-full text-left px-1.5 py-1 text-[11px] text-[#253C7D] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+            className="w-full text-left px-1.5 py-1 text-[11px] text-[#253C7D] dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
           >
             <i className="ri-refresh-line text-xs" />
-            <span>Load More {visibleItems.length}/ {items.length}</span>
+            <span>Load More ({visibleItems.length}/{items.length})</span>
           </button>
         )}
       </div>
 
-      {/* Bottom Action Buttons matching screenshot */}
-      <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center gap-2">
+      {/* Bottom Action Buttons matching ERP design */}
+      <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
         <button
           type="button"
           onClick={() => onApply(allSelected ? [] : Array.from(pending))}
@@ -120,7 +120,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
             setPending(new Set());
             onReset();
           }}
-          className="px-3 py-1.5 bg-slate-200/80 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded flex items-center justify-center gap-1 transition-colors cursor-pointer"
+          className="px-3 py-1.5 bg-slate-200/80 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded flex items-center justify-center gap-1 transition-colors cursor-pointer"
         >
           <i className="ri-refresh-line text-xs" />
           <span>Reset</span>

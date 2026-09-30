@@ -7,6 +7,7 @@ import { commitEmployeeImport } from "./import/importActions";
 import { ImportDropzone } from "./import/ImportDropzone";
 import { ImportColumnMapper } from "./import/ImportColumnMapper";
 import { ImportPreviewTable } from "./import/ImportPreviewTable";
+import { ImportRowEditModal } from "./import/ImportRowEditModal";
 
 type ImportStep = "upload" | "mapping" | "preview";
 
@@ -27,6 +28,7 @@ export const ImportEmployeesModal = memo(function ImportEmployeesModal({
   const [parsedRows, setParsedRows] = useState<ParsedEmployeeRow[]>([]);
   const [scanning, setScanning] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [editingRow, setEditingRow] = useState<ParsedEmployeeRow | null>(null);
 
   if (!isOpen) return null;
 
@@ -70,6 +72,13 @@ export const ImportEmployeesModal = memo(function ImportEmployeesModal({
     setMapping(autoMapping);
     setParsedRows(transformRowsWithMapping(rawRows, autoMapping));
     toast("Reset", "Restored auto-detected column matches.", "info");
+  };
+
+  const handleSaveEditedRow = (updated: ParsedEmployeeRow) => {
+    setParsedRows((prev) =>
+      prev.map((r) => (r.rowNumber === updated.rowNumber ? updated : r))
+    );
+    toast("Row Updated", `Updated details for ${updated.fullName}`, "success");
   };
 
   const handleCommit = async () => {
@@ -177,7 +186,12 @@ export const ImportEmployeesModal = memo(function ImportEmployeesModal({
             />
           )}
 
-          {step === "preview" && <ImportPreviewTable rows={parsedRows} />}
+          {step === "preview" && (
+            <ImportPreviewTable
+              rows={parsedRows}
+              onEditRow={(row) => setEditingRow(row)}
+            />
+          )}
         </div>
 
         {/* Footer */}
@@ -246,6 +260,15 @@ export const ImportEmployeesModal = memo(function ImportEmployeesModal({
           </div>
         </div>
       </div>
+
+      {/* Row Edit Modal */}
+      <ImportRowEditModal
+        row={editingRow}
+        branches={branches}
+        isOpen={Boolean(editingRow)}
+        onClose={() => setEditingRow(null)}
+        onSaveRow={handleSaveEditedRow}
+      />
     </div>
   );
 });

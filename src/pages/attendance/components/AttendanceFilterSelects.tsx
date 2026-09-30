@@ -1,13 +1,9 @@
 import { memo } from "react";
-import type { Employee, WorkLocation } from "../types";
+import type { WorkLocation } from "../types";
 import { StatusPillDropdown } from "./filters/StatusPillDropdown";
 import { FilterFlyoutMenu } from "./filters/FilterFlyoutMenu";
 
 interface Props {
-  employees: Employee[];
-  availableEmployees: Employee[];
-  filterEmployeeId?: string;
-  setFilterEmployeeId?: (empId: string) => void;
   departments: string[];
   filterDepartment: string;
   setFilterDepartment: (dept: string) => void;
@@ -17,7 +13,11 @@ interface Props {
   employmentTypes?: string[];
   filterEmploymentType?: string;
   setFilterEmploymentType?: (type: string) => void;
+  employeeLevels?: string[];
+  filterEmployeeLevel?: string;
+  setFilterEmployeeLevel?: (level: string) => void;
   workLocations?: WorkLocation[];
+  branches?: { id: string; name: string }[];
   filterWorkLocation?: string;
   setFilterWorkLocation?: (locId: string) => void;
   filterStatus: string;
@@ -25,51 +25,49 @@ interface Props {
 }
 
 export const AttendanceFilterSelects = memo(function AttendanceFilterSelects({
-  employees,
-  availableEmployees,
-  filterEmployeeId = "all",
-  setFilterEmployeeId,
-  departments,
+  departments = [],
   filterDepartment,
   setFilterDepartment,
   roles = [],
   filterRole = "all",
-  setFilterRole,
+  setFilterRole = () => {},
   employmentTypes = [],
   filterEmploymentType = "all",
-  setFilterEmploymentType,
+  setFilterEmploymentType = () => {},
+  employeeLevels = [],
+  filterEmployeeLevel = "",
+  setFilterEmployeeLevel = () => {},
   workLocations = [],
+  branches = [],
   filterWorkLocation = "all",
-  setFilterWorkLocation,
+  setFilterWorkLocation = () => {},
   filterStatus,
   setFilterStatus,
 }: Props) {
   return (
     <div className="flex items-center gap-2 relative">
-      {/* 1. Status Pill Dropdown */}
       <StatusPillDropdown
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
       />
 
-      {/* 2. Cascading Filter Flyout (Site, Dept, Role, Emp Type, Emp) */}
       <FilterFlyoutMenu
-        employees={employees}
-        availableEmployees={availableEmployees}
-        filterEmployeeId={filterEmployeeId}
-        setFilterEmployeeId={setFilterEmployeeId}
-        departments={departments}
-        filterDepartment={filterDepartment}
-        setFilterDepartment={setFilterDepartment}
-        roles={roles}
-        filterRole={filterRole}
-        setFilterRole={setFilterRole}
-        employmentTypes={employmentTypes}
-        filterEmploymentType={filterEmploymentType}
-        setFilterEmploymentType={setFilterEmploymentType}
+        branches={branches}
         workLocations={workLocations}
+        depts={departments}
+        positions={roles}
+        employeeTypes={employmentTypes}
+        employeeLevels={employeeLevels}
         filterWorkLocation={filterWorkLocation}
         setFilterWorkLocation={setFilterWorkLocation}
+        filterDepartment={filterDepartment}
+        setFilterDepartment={setFilterDepartment}
+        filterRole={filterRole}
+        setFilterRole={setFilterRole}
+        filterEmploymentType={filterEmploymentType}
+        setFilterEmploymentType={setFilterEmploymentType}
+        filterEmployeeLevel={filterEmployeeLevel}
+        setFilterEmployeeLevel={setFilterEmployeeLevel}
       />
     </div>
   );
