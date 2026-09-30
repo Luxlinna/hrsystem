@@ -77,7 +77,7 @@ export const TaskOutsideWorkMissionForm = memo(function TaskOutsideWorkMissionFo
   );
 
   const empCode =
-    selectedEmployee?.employee_code ||
+    (selectedEmployee as any)?.employee_code ||
     (selectedEmployee as any)?.biometric_user_id ||
     "1116";
 
@@ -129,7 +129,7 @@ export const TaskOutsideWorkMissionForm = memo(function TaskOutsideWorkMissionFo
               <option value="">Select Employee...</option>
               {employees.map((e) => (
                 <option key={e.id} value={e.id}>
-                  {e.first_name} {e.last_name} ({e.employee_code || (e as any).biometric_user_id || "No Code"})
+                  {e.first_name} {e.last_name} ({(e as any).employee_code || (e as any).biometric_user_id || "No Code"})
                 </option>
               ))}
             </select>

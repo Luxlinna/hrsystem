@@ -10,8 +10,8 @@ import type { AvailableAssetItem } from "./asset-tab/types";
 interface AddEmployeeAssetTabProps {
   form: EmployeeFormState;
   onChange: (field: keyof EmployeeFormState, value: any) => void;
-  cleanBranches?: Array<{ id: string; name: string; location: string | null }>;
-  currentBranch?: { id: string; name: string; location: string | null } | null;
+  cleanBranches?: Array<{ id: string; name: string; location?: string | null }>;
+  currentBranch?: { id: string; name: string; location?: string | null } | null;
 }
 
 export const AddEmployeeAssetTab = memo(function AddEmployeeAssetTab({

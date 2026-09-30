@@ -1,6 +1,6 @@
 import { useState, memo } from "react";
 import type { AvailableAssetItem, AssignFormState } from "./types";
-import type { EmployeeAssetBookingItem } from "../../types";
+import type { EmployeeAssetBookingItem } from "../../../types";
 
 interface AssignAssetModalProps {
   isOpen: boolean;

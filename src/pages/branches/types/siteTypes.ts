@@ -55,17 +55,17 @@ export interface WorkSiteFormState {
   afternoon_check_out_start: string;
   afternoon_check_out_end: string;
   is_four_punch_enabled: boolean;
-  site_type: string;
+  site_type?: string;
   company_name?: string;
-  address: string;
-  city: string;
-  province: string;
-  postal_code: string;
-  country: string;
-  phone_number: string;
-  email: string;
-  website: string;
-  status: "active" | "disabled";
+  address?: string;
+  city?: string;
+  province?: string;
+  postal_code?: string;
+  country?: string;
+  phone_number?: string;
+  email?: string;
+  website?: string;
+  status?: "active" | "disabled" | string;
 }
 
 export interface BiometricDevice {

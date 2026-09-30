@@ -1,5 +1,5 @@
 import { memo, useState, useMemo } from "react";
-import type { Task, Employee } from "../../types";
+import type { Task, Employee, QuickTabType } from "../../types";
 import { TaskReportsToolbar } from "./TaskReportsToolbar";
 import { TaskReportEmployeeCard, type EmployeeReportData } from "./TaskReportEmployeeCard";
 
@@ -10,7 +10,7 @@ interface TaskReportsViewProps {
   assigneeFilter?: string;
   priorityFilter?: string;
   search?: string;
-  quickTab?: "all" | "team" | "my" | "urgent";
+  quickTab?: QuickTabType;
   currentEmployeeId?: string | null;
 }
 

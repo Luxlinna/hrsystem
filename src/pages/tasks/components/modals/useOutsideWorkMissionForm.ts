@@ -143,7 +143,7 @@ export function useOutsideWorkMissionForm({
             role: primaryEmployee.role,
             department: primaryEmployee.department,
             email: primaryEmployee.email,
-            phone: primaryEmployee.phone,
+            phone: (primaryEmployee as any).phone || "",
           },
           teamMembers: otherTeamMembers.map((m) => ({
             id: m.id,
@@ -152,7 +152,7 @@ export function useOutsideWorkMissionForm({
             role: m.role,
             department: m.department,
             email: m.email,
-            phone: m.phone,
+            phone: (m as any).phone || "",
           })),
         }).catch((err) => console.warn("Failed to notify mission invitees:", err));
       }

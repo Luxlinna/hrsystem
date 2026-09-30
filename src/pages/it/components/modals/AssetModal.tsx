@@ -1,5 +1,7 @@
-import React, { useState, memo } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
+import { createPortal } from "react-dom";
 import type { ITAsset, AssetFormState, Employee, Branch } from "../../types";
+import { supabase } from "@/lib/supabase";
 import { uploadFileToS3 } from "@/lib/s3-storage";
 import { toast } from "@/components/Toast";
 import { AssetModalFormFields } from "./AssetModalFormFields";
@@ -35,23 +37,51 @@ export const AssetModal = memo(function AssetModal({
 }: AssetModalProps) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [refreshingSites, setRefreshingSites] = useState(false);
+  const [workSites, setWorkSites] = useState<Array<{ id: string; name: string; branch_id: string | null }>>([]);
 
-  // Automatically enforce active BU when operating inside a specific Business Unit
-  React.useEffect(() => {
-    if (isOpen && activeBranchName) {
-      setAssetForm((prev) => {
-        const targetId = activeBranchId || branches.find((b) => b.name === activeBranchName)?.id || prev.branch_id;
-        if (prev.site !== activeBranchName || prev.branch_id !== targetId) {
-          return {
-            ...prev,
-            site: activeBranchName,
-            branch_id: targetId || "",
-          };
-        }
-        return prev;
-      });
+  const fetchWorkSites = useCallback(async (branchId?: string | null) => {
+    setRefreshingSites(true);
+    try {
+      let query = supabase
+        .from("work_locations")
+        .select("id, name, branch_id")
+        .is("deleted_at", null)
+        .order("name");
+
+      if (branchId && branchId !== "all") {
+        query = query.eq("branch_id", branchId);
+      }
+
+      const { data } = await query;
+      setWorkSites(data || []);
+    } catch (err) {
+      console.error("Failed to load work sites:", err);
+    } finally {
+      setRefreshingSites(false);
     }
-  }, [isOpen, activeBranchId, activeBranchName, branches, setAssetForm]);
+  }, []);
+
+  // Initialize branch and fetch work sites when opening modal
+  useEffect(() => {
+    if (isOpen) {
+      const initialBranchId =
+        assetForm.branch_id ||
+        activeBranchId ||
+        (activeBranchName ? branches.find((b) => b.name === activeBranchName)?.id : branches[0]?.id) ||
+        "";
+
+      if (!assetForm.branch_id && initialBranchId) {
+        const branchObj = branches.find((b) => b.id === initialBranchId);
+        setAssetForm((prev) => ({
+          ...prev,
+          branch_id: initialBranchId,
+          site: prev.site || branchObj?.name || "Main Office",
+        }));
+      }
+
+      fetchWorkSites(initialBranchId);
+    }
+  }, [isOpen, activeBranchId, activeBranchName, branches, assetForm.branch_id, fetchWorkSites, setAssetForm]);
 
   // Handle Photo Upload directly to AWS S3
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,31 +137,32 @@ export const AssetModal = memo(function AssetModal({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div className="relative w-full max-w-3xl bg-white rounded-lg shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        {/* Form Header matching Screenshot 2 */}
-        <div className="p-4 px-6 border-b border-slate-200 flex items-center justify-between bg-white">
-          <h2 className="text-sm font-bold text-[#2585c8] uppercase tracking-wide">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="relative w-full max-w-3xl bg-white rounded-md shadow-2xl border border-gray-200 overflow-hidden animate-cover-down">
+        {/* Form Header matching Screenshot */}
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
+          <h2 className="text-xs font-bold text-[#3498db] uppercase tracking-wider">
             {editingAsset ? "EDIT ASSET INVENTORY" : "CREATE ASSET INVENTORY"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
+            className="w-7 h-7 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer text-lg leading-none"
           >
-            <i className="ri-close-line text-base" />
+            &times;
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={onSubmit} className="p-6 space-y-4 max-h-[82vh] overflow-y-auto">
+        <form onSubmit={onSubmit} className="p-6 space-y-4 max-h-[82vh] overflow-y-auto bg-white">
           <AssetModalFormFields
             assetForm={assetForm}
             setAssetForm={setAssetForm}
             branches={branches}
+            workSites={workSites}
             activeBranchName={activeBranchName}
-            onRefreshSites={handleRefreshSites}
+            onRefreshSites={() => fetchWorkSites(assetForm.branch_id)}
             refreshingSites={refreshingSites}
           />
 
@@ -143,17 +174,17 @@ export const AssetModal = memo(function AssetModal({
             onRemovePhoto={handleRemovePhoto}
           />
 
-          {/* Footer Buttons: Save and Discard matching Screenshot 2 */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2.5 bg-white">
+          {/* Footer Buttons matching Screenshot */}
+          <div className="pt-4 mt-6 border-t border-gray-100 flex items-center justify-end gap-2.5">
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 rounded-sm bg-[#2585c8] hover:bg-[#1f73b0] text-white text-xs font-semibold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 disabled:opacity-50"
+              className="px-4 py-1.5 rounded bg-[#3498db] hover:bg-[#2980b9] text-white text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer transition-colors shadow-none disabled:opacity-50"
             >
               {saving ? (
                 <i className="ri-loader-4-line text-xs animate-spin" />
               ) : (
-                <i className="ri-save-line text-xs" />
+                <i className="ri-checkbox-circle-fill text-xs" />
               )}
               <span>Save</span>
             </button>
@@ -161,14 +192,17 @@ export const AssetModal = memo(function AssetModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-sm border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer"
+              className="px-4 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer transition-colors shadow-none"
             >
-              Discard
+              <i className="ri-close-fill text-xs text-gray-800" />
+              <span>Cancel</span>
             </button>
           </div>
         </form>
       </div>
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(modalContent, document.body) : null;
 });
 

@@ -20,7 +20,7 @@ export const AssetModalAttachmentSection: React.FC<AssetModalAttachmentSectionPr
   return (
     <div className="pt-3 border-t border-slate-200">
       <div className="space-y-2.5">
-        <h3 className="text-xs font-bold text-[#2585c8] uppercase tracking-wider">
+        <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
           ATTACHMENT INFO
         </h3>
 
@@ -40,7 +40,7 @@ export const AssetModalAttachmentSection: React.FC<AssetModalAttachmentSectionPr
             className="px-3 py-1.5 rounded-sm border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
           >
             {uploadingPhoto ? (
-              <i className="ri-loader-4-line text-xs animate-spin text-[#2585c8]" />
+              <i className="ri-loader-4-line text-xs animate-spin text-[#253C7D]" />
             ) : (
               <i className="ri-attachment-line text-xs text-slate-500" />
             )}
@@ -78,7 +78,7 @@ export const AssetModalAttachmentSection: React.FC<AssetModalAttachmentSectionPr
                 href={photoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-1 text-slate-400 hover:text-[#2585c8] rounded transition-colors"
+                className="p-1 text-slate-400 hover:text-[#253C7D] rounded transition-colors"
                 title="View Full Photo"
               >
                 <i className="ri-external-link-line text-xs" />

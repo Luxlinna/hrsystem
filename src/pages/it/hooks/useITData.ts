@@ -15,8 +15,12 @@ export function useITData() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Fetch branches
-      const { data: b } = await supabase.from("branches").select("id, name").order("name");
+      // 1. Fetch active, non-deleted branches
+      const { data: b } = await supabase
+        .from("branches")
+        .select("id, name")
+        .is("deleted_at", null)
+        .order("name");
       setBranches((b as Branch[]) || []);
 
       // 2. Strict Partner Branch Isolation: If user does not belong to this branch, block IT access

@@ -44,7 +44,7 @@ export const RoleTreeNodeCard = memo(function RoleTreeNodeCard({
     searchTerm.trim() !== "" &&
     (meta.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       categoryRoles.some((r) => r.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      categoryUsers.some((u) => u.name.toLowerCase().includes(searchTerm.toLowerCase())));
+      categoryUsers.some((u) => (u.display_name || u.email || "").toLowerCase().includes(searchTerm.toLowerCase())));
 
   return (
     <div
@@ -64,7 +64,7 @@ export const RoleTreeNodeCard = memo(function RoleTreeNodeCard({
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-slate-400">
             <span>Level {levelNumber}</span>
             <span>&bull;</span>
-            <span>{meta.level}</span>
+            <span>{meta.name}</span>
           </div>
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shadow-2xs ${meta.badgeColor}`}>
             {meta.badge}

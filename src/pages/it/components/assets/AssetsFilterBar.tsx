@@ -1,6 +1,7 @@
 import { memo, useState, useRef, useEffect } from "react";
-import type { Branch, ITAsset } from "../../types";
+import type { Branch, ITAsset, ITTabType } from "../../types";
 import { ASSET_CATEGORIES, ASSET_CONDITIONS } from "../../constants";
+import { AssetNavDropdown } from "../navigation/AssetNavDropdown";
 
 interface AssetsFilterBarProps {
   assetSearch: string;
@@ -25,6 +26,7 @@ interface AssetsFilterBarProps {
   onExport?: (format: "csv" | "excel" | "json") => void;
   onImport?: () => void;
   assets?: ITAsset[];
+  onSelectTab?: (tab: ITTabType) => void;
 }
 
 export const AssetsFilterBar = memo(function AssetsFilterBar({
@@ -47,6 +49,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
   onBulkDelete,
   onExport,
   onImport,
+  onSelectTab,
 }: AssetsFilterBarProps) {
   const [searchInput, setSearchInput] = useState(assetSearch);
   const [showBulkMenu, setShowBulkMenu] = useState(false);
@@ -104,11 +107,17 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-4 select-none">
-      {/* Search Bar matching Screenshot 1 */}
-      <form
-        onSubmit={handleSearchSubmit}
-        className="flex items-center rounded-sm border border-slate-300 focus-within:border-[#2585c8] bg-white overflow-hidden shadow-2xs max-w-xs w-full transition-colors h-8"
+    <div className="space-y-2 mb-4 select-none">
+      {onSelectTab && (
+        <div className="flex items-center gap-3">
+          <AssetNavDropdown currentTab="assets" onSelectTab={onSelectTab} />
+        </div>
+      )}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        {/* Search Bar matching Screenshot 1 */}
+        <form
+          onSubmit={handleSearchSubmit}
+        className="flex items-center rounded-sm border border-slate-300 focus-within:border-[#253C7D] bg-white overflow-hidden shadow-2xs max-w-xs w-full transition-colors h-8"
       >
         <input
           type="text"
@@ -135,7 +144,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
         )}
         <button
           type="submit"
-          className="bg-[#2585c8] hover:bg-[#1f73b0] text-white px-3 h-full flex items-center justify-center transition-colors cursor-pointer shrink-0"
+          className="bg-[#253C7D] hover:bg-[#1E2E5D] text-white px-3 h-full flex items-center justify-center transition-colors cursor-pointer shrink-0"
           title="Search"
         >
           <i className="ri-search-line text-xs" />
@@ -149,7 +158,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
           <button
             type="button"
             onClick={() => setShowBulkMenu((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#62a7e0] bg-white hover:bg-[#f0f7fd] text-[#2585c8] text-xs font-medium transition-all shadow-2xs cursor-pointer h-7"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#253C7D]/30 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] text-xs font-semibold transition-all shadow-2xs cursor-pointer h-7"
           >
             <span>Bulk Action</span>
             <i className="ri-arrow-down-s-line text-xs" />
@@ -203,7 +212,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
           type="button"
           onClick={onImport}
           title="Import Assets (CSV / Excel)"
-          className="w-7 h-7 rounded-sm border border-[#62a7e0] bg-white hover:bg-[#f0f7fd] text-[#2585c8] flex items-center justify-center transition-all shadow-2xs cursor-pointer"
+          className="w-7 h-7 rounded-sm border border-[#253C7D]/30 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] flex items-center justify-center transition-all shadow-2xs cursor-pointer"
         >
           <i className="ri-upload-cloud-2-line text-xs" />
         </button>
@@ -214,7 +223,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
             type="button"
             onClick={() => setShowExportMenu((prev) => !prev)}
             title="Export Assets"
-            className="w-7 h-7 rounded-sm border border-[#62a7e0] bg-white hover:bg-[#f0f7fd] text-[#2585c8] flex items-center justify-center transition-all shadow-2xs cursor-pointer"
+            className="w-7 h-7 rounded-sm border border-[#253C7D]/30 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] flex items-center justify-center transition-all shadow-2xs cursor-pointer"
           >
             <i className="ri-download-cloud-2-line text-xs" />
           </button>
@@ -266,7 +275,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
           <button
             type="button"
             onClick={() => setShowDateMenu((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#62a7e0] bg-white hover:bg-[#f0f7fd] text-[#2585c8] text-xs font-medium transition-all shadow-2xs cursor-pointer h-7"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#253C7D]/30 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] text-xs font-semibold transition-all shadow-2xs cursor-pointer h-7"
           >
             <i className="ri-calendar-line text-xs" />
             <span>{dateRangeLabel}</span>
@@ -294,12 +303,12 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
                   }}
                   className={`w-full px-3.5 py-2 text-left flex items-center justify-between font-medium ${
                     dateRangeLabel === range
-                      ? "bg-slate-50 text-[#2585c8] font-bold"
+                      ? "bg-slate-50 text-[#253C7D] font-bold"
                       : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   <span>{range}</span>
-                  {dateRangeLabel === range && <i className="ri-check-line text-[#2585c8]" />}
+                  {dateRangeLabel === range && <i className="ri-check-line text-[#253C7D]" />}
                 </button>
               ))}
             </div>
@@ -311,8 +320,8 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
           <button
             type="button"
             onClick={() => setShowFilterMenu((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#62a7e0] bg-white hover:bg-[#f0f7fd] text-[#2585c8] text-xs font-medium transition-all shadow-2xs cursor-pointer h-7 ${
-              hasActiveFilters ? "ring-2 ring-[#2585c8]/20 font-bold" : ""
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#253C7D]/30 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] text-xs font-semibold transition-all shadow-2xs cursor-pointer h-7 ${
+              hasActiveFilters ? "ring-2 ring-[#253C7D]/20 font-bold" : ""
             }`}
           >
             <span>Filter</span>
@@ -329,7 +338,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
                   <button
                     type="button"
                     onClick={clearAllFilters}
-                    className="text-[11px] font-semibold text-[#2585c8] hover:underline"
+                    className="text-[11px] font-semibold text-[#253C7D] hover:underline"
                   >
                     Reset
                   </button>
@@ -344,7 +353,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
                 <select
                   value={assetTypeFilter}
                   onChange={(e) => setAssetTypeFilter(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:border-[#2585c8]"
+                  className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:border-[#253C7D]"
                 >
                   <option value="all">All Categories</option>
                   {ASSET_CATEGORIES.map((cat) => (
@@ -361,7 +370,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
                 <select
                   value={assetStatusFilter}
                   onChange={(e) => setAssetStatusFilter(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:border-[#2585c8]"
+                  className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:border-[#253C7D]"
                 >
                   <option value="all">All Statuses</option>
                   <option value="active">Active / Deployed</option>
@@ -380,7 +389,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
                   <select
                     value={assetConditionFilter}
                     onChange={(e) => setAssetConditionFilter(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:border-[#2585c8]"
+                    className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:border-[#253C7D]"
                   >
                     <option value="all">All Conditions</option>
                     {ASSET_CONDITIONS.map((cond) => (
@@ -401,7 +410,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
                   <select
                     value={assetBranchFilter}
                     onChange={(e) => setAssetBranchFilter(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:border-[#2585c8]"
+                    className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:border-[#253C7D]"
                   >
                     <option value="all">All Sites</option>
                     {branches.map((b) => (
@@ -417,6 +426,7 @@ export const AssetsFilterBar = memo(function AssetsFilterBar({
         </div>
       </div>
     </div>
+  </div>
   );
 });
 

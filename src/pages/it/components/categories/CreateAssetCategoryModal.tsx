@@ -1,4 +1,5 @@
 import { useState, memo, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import type { AssetCategoryCardConfig } from "../../constants";
 import { uploadFileToS3, uploadMultipleFilesToS3 } from "@/lib/s3-storage";
 import { toast } from "@/components/Toast";
@@ -15,6 +16,7 @@ export interface AssetCategoryFormData {
   serialNumber?: string;
   sellerName?: string;
   invoiceRef?: string;
+  serialNumbersList?: string[];
   imageUrl?: string | null;
   attachments?: Array<{ name: string; url: string; size?: number; type?: string }>;
 }
@@ -181,53 +183,53 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="bg-white rounded-md shadow-2xl border border-gray-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-cover-down">
         {/* Header */}
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
+        <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center justify-between">
+          <h3 className="text-xs font-bold text-[#3498db] uppercase tracking-wider">
             {initialData ? "EDIT ASSET CATEGORY" : "CREATE ASSET CATEGORY"}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-lg leading-none cursor-pointer"
+            className="w-7 h-7 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer text-lg leading-none"
           >
             &times;
           </button>
         </div>
 
         {/* Form Body in Standard Uniform 2-Column ERP Grid */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
           
           {/* 1. Name Field */}
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-4">
-            <label className="text-xs font-semibold text-slate-700 sm:text-right">
-              Name <span className="text-rose-500">*</span>
+            <label className="text-xs font-medium text-gray-700 sm:text-right">
+              Name <span className="text-red-500">*</span>
             </label>
             <div>
               <input
                 type="text"
                 required
-                placeholder="Name"
+                placeholder="Category Name"
                 value={formData.name}
                 onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                className="w-full max-w-md px-3 py-2 rounded-md border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white shadow-2xs"
+                className="w-full max-w-md px-3 py-1.5 rounded border border-gray-300 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#3498db] bg-white transition-colors"
               />
             </div>
           </div>
 
           {/* 2. Type Field */}
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-4">
-            <label className="text-xs font-semibold text-slate-700 sm:text-right">
-              Type <span className="text-rose-500">*</span>
+            <label className="text-xs font-medium text-gray-700 sm:text-right">
+              Type <span className="text-red-500">*</span>
             </label>
             <div>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData((p) => ({ ...p, type: e.target.value }))}
-                className="w-full max-w-md px-3 py-2 rounded-md border border-slate-300 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] shadow-2xs"
+                className="w-full max-w-md px-3 py-1.5 rounded border border-gray-300 text-xs text-gray-800 bg-white focus:outline-none focus:border-[#3498db] cursor-pointer transition-colors"
               >
                 {CATEGORY_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -241,15 +243,15 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
           {/* 3. Checkboxes Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-4">
             <div className="hidden sm:block" />
-            <div className="space-y-3.5 max-w-md">
+            <div className="space-y-3 max-w-md bg-slate-100 p-4 rounded-lg border border-slate-300 shadow-2xs">
               {/* Row 1 */}
               <div>
-                <label className="inline-flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer select-none">
+                <label className="inline-flex items-center gap-2.5 text-xs font-bold text-slate-900 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={formData.manageQuantity}
                     onChange={(e) => setFormData((p) => ({ ...p, manageQuantity: e.target.checked }))}
-                    className="w-4 h-4 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D]"
+                    className="w-4 h-4 rounded border-slate-400 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                   />
                   <span>Manage Quantity</span>
                 </label>
@@ -257,22 +259,22 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
 
               {/* Row 2: 2 Columns */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <label className="inline-flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer select-none">
+                <label className="inline-flex items-center gap-2.5 text-xs font-bold text-slate-900 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={formData.allowRequest}
                     onChange={(e) => setFormData((p) => ({ ...p, allowRequest: e.target.checked }))}
-                    className="w-4 h-4 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D]"
+                    className="w-4 h-4 rounded border-slate-400 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                   />
                   <span>Allow Request</span>
                 </label>
 
-                <label className="inline-flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer select-none">
+                <label className="inline-flex items-center gap-2.5 text-xs font-bold text-slate-900 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={formData.trackSerialNumber}
                     onChange={(e) => setFormData((p) => ({ ...p, trackSerialNumber: e.target.checked }))}
-                    className="w-4 h-4 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D]"
+                    className="w-4 h-4 rounded border-slate-400 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                   />
                   <span>Track Serial Number</span>
                 </label>
@@ -280,22 +282,22 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
 
               {/* Row 3: 2 Columns */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <label className="inline-flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer select-none">
+                <label className="inline-flex items-center gap-2.5 text-xs font-bold text-slate-900 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={formData.trackWarranty}
                     onChange={(e) => setFormData((p) => ({ ...p, trackWarranty: e.target.checked }))}
-                    className="w-4 h-4 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D]"
+                    className="w-4 h-4 rounded border-slate-400 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                   />
                   <span>Track Warranty</span>
                 </label>
 
-                <label className="inline-flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer select-none">
+                <label className="inline-flex items-center gap-2.5 text-xs font-bold text-slate-900 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={formData.trackTagging}
                     onChange={(e) => setFormData((p) => ({ ...p, trackTagging: e.target.checked }))}
-                    className="w-4 h-4 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D]"
+                    className="w-4 h-4 rounded border-slate-400 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                   />
                   <span>Track Tagging</span>
                 </label>
@@ -305,7 +307,7 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
 
           {/* 4. Tag Field */}
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-4">
-            <label className="text-xs font-semibold text-slate-700 sm:text-right">
+            <label className="text-xs font-bold text-slate-900 sm:text-right">
               Tag
             </label>
             <div>
@@ -314,14 +316,14 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
                 placeholder="Tag"
                 value={formData.tag}
                 onChange={(e) => setFormData((p) => ({ ...p, tag: e.target.value }))}
-                className="w-full max-w-md px-3 py-2 rounded-md border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white shadow-2xs"
+                className="w-full max-w-md px-3.5 py-2 rounded-md border border-slate-300 hover:border-slate-400 text-xs text-slate-900 font-semibold placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/20 bg-white shadow-xs transition-all font-mono"
               />
             </div>
           </div>
 
           {/* 5. Seller / Vendor Name */}
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-4">
-            <label className="text-xs font-semibold text-slate-700 sm:text-right">
+            <label className="text-xs font-bold text-slate-900 sm:text-right">
               Seller Name
             </label>
             <div>
@@ -330,14 +332,14 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
                 placeholder="Seller / Vendor Name"
                 value={formData.sellerName}
                 onChange={(e) => setFormData((p) => ({ ...p, sellerName: e.target.value }))}
-                className="w-full max-w-md px-3 py-2 rounded-md border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white shadow-2xs"
+                className="w-full max-w-md px-3.5 py-2 rounded-md border border-slate-300 hover:border-slate-400 text-xs text-slate-900 font-semibold placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/20 bg-white shadow-xs transition-all"
               />
             </div>
           </div>
 
           {/* 6. Purchase Invoice / PO Ref */}
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-4">
-            <label className="text-xs font-semibold text-slate-700 sm:text-right">
+            <label className="text-xs font-bold text-slate-900 sm:text-right">
               Invoice / PO Ref
             </label>
             <div>
@@ -346,14 +348,14 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
                 placeholder="Invoice or Purchase Order Ref #"
                 value={formData.invoiceRef}
                 onChange={(e) => setFormData((p) => ({ ...p, invoiceRef: e.target.value }))}
-                className="w-full max-w-md px-3 py-2 rounded-md border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white shadow-2xs"
+                className="w-full max-w-md px-3.5 py-2 rounded-md border border-slate-300 hover:border-slate-400 text-xs text-slate-900 font-semibold placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/20 bg-white shadow-xs transition-all"
               />
             </div>
           </div>
 
           {/* 7. Clean Single Serial Number Field */}
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-4">
-            <label className="text-xs font-semibold text-slate-700 sm:text-right">
+            <label className="text-xs font-bold text-slate-900 sm:text-right">
               Serial Number
             </label>
             <div>
@@ -362,20 +364,20 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
                 placeholder="Serial Number"
                 value={formData.serialNumber}
                 onChange={(e) => setFormData((p) => ({ ...p, serialNumber: e.target.value }))}
-                className="w-full max-w-md px-3 py-2 rounded-md border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] bg-white font-mono shadow-2xs"
+                className="w-full max-w-md px-3.5 py-2 rounded-md border border-slate-300 hover:border-slate-400 text-xs text-slate-900 font-mono font-semibold placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-[#253C7D] focus:ring-2 focus:ring-[#253C7D]/20 bg-white shadow-xs transition-all"
               />
             </div>
           </div>
 
           {/* 8. Photo Upload Field */}
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-4">
-            <label className="text-xs font-semibold text-slate-700 sm:text-right pt-2">
+            <label className="text-xs font-bold text-slate-900 sm:text-right pt-2">
               Photo
             </label>
             <div className="flex items-center gap-3">
               <div
                 onClick={() => imageInputRef.current?.click()}
-                className="w-16 h-16 rounded-lg border border-dashed border-slate-300 hover:border-[#253C7D] bg-slate-50 hover:bg-[#253C7D]/5 flex flex-col items-center justify-center overflow-hidden relative group cursor-pointer transition-all shadow-2xs shrink-0"
+                className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 hover:border-[#253C7D] bg-slate-100 hover:bg-[#253C7D]/10 flex flex-col items-center justify-center overflow-hidden relative group cursor-pointer transition-all shadow-2xs shrink-0"
               >
                 {formData.imageUrl ? (
                   <>
@@ -384,14 +386,14 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
                       alt="Category"
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] transition-opacity">
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[11px] font-bold transition-opacity">
                       <span>Change</span>
                     </div>
                   </>
                 ) : (
                   <div className="text-center p-1">
-                    <i className={uploadingImage ? "ri-loader-4-line animate-spin text-[#253C7D] text-base" : "ri-image-add-line text-slate-400 text-base"} />
-                    <span className="text-[9px] text-slate-500 block font-medium">
+                    <i className={uploadingImage ? "ri-loader-4-line animate-spin text-[#253C7D] text-xl" : "ri-image-add-line text-slate-600 text-xl"} />
+                    <span className="text-[11px] text-slate-700 block font-bold mt-0.5">
                       {uploadingImage ? "..." : "Upload"}
                     </span>
                   </div>
@@ -410,7 +412,7 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
                 <button
                   type="button"
                   onClick={() => setFormData((p) => ({ ...p, imageUrl: null }))}
-                  className="text-xs text-rose-600 hover:underline cursor-pointer"
+                  className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
                 >
                   Remove Photo
                 </button>
@@ -420,7 +422,7 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
 
           {/* 9. Attachment Dropzone Field */}
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-4">
-            <label className="text-xs font-semibold text-slate-700 sm:text-right pt-2">
+            <label className="text-xs font-bold text-slate-900 sm:text-right pt-2">
               Attachment
             </label>
             <div className="w-full max-w-md space-y-2">
@@ -437,8 +439,8 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
                     handleDocFiles(e.dataTransfer.files);
                   }
                 }}
-                className={`border border-dashed rounded-md p-3 text-center transition-all bg-white ${
-                  isDocDragOver ? "border-[#253C7D] bg-[#253C7D]/5" : "border-slate-300 hover:border-slate-400"
+                className={`border-2 border-dashed rounded-lg p-4 text-center transition-all bg-slate-100 ${
+                  isDocDragOver ? "border-[#253C7D] bg-[#253C7D]/15" : "border-slate-300 hover:border-[#253C7D] hover:bg-[#253C7D]/5"
                 }`}
               >
                 <input
@@ -450,14 +452,14 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
                   onChange={(e) => handleDocFiles(e.target.files)}
                 />
 
-                <div className="flex items-center justify-center gap-1.5 text-xs text-slate-600">
-                  <i className={uploadingDocs ? "ri-loader-4-line animate-spin text-[#253C7D]" : "ri-upload-cloud-line text-slate-400 text-base"} />
-                  <span>Drop file here or</span>
+                <div className="flex items-center justify-center gap-1.5 text-xs text-slate-800">
+                  <i className={uploadingDocs ? "ri-loader-4-line animate-spin text-[#253C7D] text-lg" : "ri-upload-cloud-line text-slate-600 text-lg"} />
+                  <span className="font-semibold">Drop file here or</span>
                   <button
                     type="button"
                     onClick={() => docInputRef.current?.click()}
                     disabled={uploadingDocs}
-                    className="font-medium text-[#253C7D] hover:underline cursor-pointer ml-0.5"
+                    className="font-bold text-[#253C7D] hover:underline cursor-pointer ml-0.5"
                   >
                     Browse
                   </button>
@@ -470,18 +472,18 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
                   {formData.attachments.map((att, idx) => (
                     <div
                       key={att.url || idx}
-                      className="flex items-center justify-between px-3 py-1.5 rounded-md bg-slate-50 border border-slate-200 text-xs"
+                      className="flex items-center justify-between px-3.5 py-2 rounded-md bg-white border border-slate-300 text-xs shadow-2xs"
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <i className="ri-file-text-line text-[#253C7D]" />
-                        <span className="truncate font-medium text-slate-700">{att.name}</span>
+                        <i className="ri-file-text-line text-[#253C7D] text-sm" />
+                        <span className="truncate font-bold text-slate-900">{att.name}</span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <a
                           href={att.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-slate-400 hover:text-slate-700"
+                          className="text-slate-600 hover:text-slate-900 p-1"
                           title="Open document"
                         >
                           <i className="ri-external-link-line" />
@@ -489,7 +491,7 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
                         <button
                           type="button"
                           onClick={() => handleRemoveDoc(att.url)}
-                          className="text-slate-400 hover:text-rose-600 cursor-pointer"
+                          className="text-slate-500 hover:text-rose-600 p-1 cursor-pointer"
                           title="Remove"
                         >
                           <i className="ri-delete-bin-line" />
@@ -503,26 +505,29 @@ export const CreateAssetCategoryModal = memo(function CreateAssetCategoryModal({
           </div>
         </form>
 
-        {/* Footer buttons matching Screenshot 2 */}
-        <div className="p-4 border-t border-slate-100 flex items-center justify-end gap-2 bg-slate-50/50">
+        {/* Footer buttons matching Screenshot */}
+        <div className="px-6 py-3.5 border-t border-gray-100 flex items-center justify-end gap-2.5 bg-white">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!formData.name.trim() || uploadingImage || uploadingDocs}
-            className="px-5 py-2 rounded-md bg-[#253C7D] hover:bg-[#1E3064] disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            className="px-4 py-1.5 rounded bg-[#3498db] hover:bg-[#2980b9] disabled:opacity-50 text-white text-xs font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-none"
           >
-            <i className="ri-save-line" />
+            <i className="ri-checkbox-circle-fill text-xs" />
             <span>Done</span>
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-md border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-none"
           >
-            Discard
+            <i className="ri-close-fill text-xs text-gray-800" />
+            <span>Cancel</span>
           </button>
         </div>
       </div>
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(modalContent, document.body) : null;
 });

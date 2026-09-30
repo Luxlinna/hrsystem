@@ -4,6 +4,8 @@ import { ITTabsBar } from "./components/ITTabsBar";
 import { AssetsFilterBar } from "./components/assets/AssetsFilterBar";
 import { AssetsTabContent } from "./components/assets/AssetsTabContent";
 import { AssetInventorySettings } from "./components/settings/AssetInventorySettings";
+import { AssetAssignmentsTabContent } from "./components/assignments/AssetAssignmentsTabContent";
+import { AssetHistoryTabContent } from "./components/history/AssetHistoryTabContent";
 import { TicketsFilterBar } from "./components/tickets/TicketsFilterBar";
 import { TicketsTabContent } from "./components/tickets/TicketsTabContent";
 import { TicketDetailDrawer } from "./components/tickets/TicketDetailDrawer";
@@ -15,6 +17,7 @@ import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShi
 import { useITManagement } from "./hooks/useITManagement";
 import { exportAssetsToCSV, exportAssetsToExcel, exportToJSON } from "./exportUtils";
 import { toast } from "@/components/Toast";
+import type { ITTabType } from "./types";
 
 export default function ITManagement() {
   const it = useITManagement();
@@ -24,6 +27,33 @@ export default function ITManagement() {
 
   const activeBranch = it.branches.find((b) => b.id === (it.targetBranch || it.userBranchId));
   const activeBranchName = activeBranch?.name;
+
+  const [slideDirection, setSlideDirection] = useState<"next" | "prev">("next");
+
+  const IT_TAB_ORDER: ITTabType[] = [
+    "categories",
+    "assets",
+    "assignments",
+    "history",
+    "settings",
+    "tickets",
+    "stationery",
+    "security",
+  ];
+
+  const handleSelectTab = (newTab: ITTabType) => {
+    const currentIdx = IT_TAB_ORDER.indexOf(it.tab);
+    const targetIdx = IT_TAB_ORDER.indexOf(newTab);
+    setSlideDirection(targetIdx >= currentIdx ? "next" : "prev");
+    it.setTab(newTab);
+  };
+
+  const isAssetModuleTab =
+    it.tab === "assets" ||
+    it.tab === "categories" ||
+    it.tab === "assignments" ||
+    it.tab === "history" ||
+    it.tab === "settings";
 
   // Selection handlers
   const handleToggleSelectAsset = (id: string) => {
@@ -93,10 +123,7 @@ export default function ITManagement() {
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
         <ITHeader
           canManage={false}
-          activeAssetsCount={0}
-          openTicketsCount={0}
           onOpenAssetModal={() => {}}
-          onOpenTicketModal={() => {}}
         />
         <PartnerBranchPrivacyShield
           moduleName="IT Assets &amp; Helpdesk"
@@ -109,22 +136,34 @@ export default function ITManagement() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-4">
-      {it.tab !== "settings" && (
+      {!isAssetModuleTab && (
         <ITHeader
           canManage={it.canManage}
           onOpenAssetModal={() => {
             it.setEditingAsset(null);
             it.setAssetModal(true);
           }}
-          onOpenSettings={() => it.setTab("settings")}
+          onOpenSettings={() => handleSelectTab("settings")}
           tab={it.tab}
         />
       )}
 
-      {it.tab !== "assets" && it.tab !== "settings" && (
+      {it.tab === "assets" && (
+        <ITHeader
+          canManage={it.canManage}
+          onOpenAssetModal={() => {
+            it.setEditingAsset(null);
+            it.setAssetModal(true);
+          }}
+          onOpenSettings={() => handleSelectTab("settings")}
+          tab={it.tab}
+        />
+      )}
+
+      {!isAssetModuleTab && (
         <ITTabsBar
           activeTab={it.tab}
-          setActiveTab={it.setTab}
+          setActiveTab={handleSelectTab}
           assetsCount={it.assets.length}
           openTicketsCount={it.openTickets}
           stationeryItemsCount={it.stationery.items.length}
@@ -132,116 +171,142 @@ export default function ITManagement() {
         />
       )}
 
-      {it.tab === "settings" && (
-        <AssetInventorySettings
-          onBack={() => it.setTab("assets")}
-          canManage={it.canManage}
-        />
-      )}
-
-      {it.tab === "assets" && (
-        <>
-          <AssetsFilterBar
-            assetSearch={it.assetSearch}
-            setAssetSearch={it.setAssetSearch}
-            assetTypeFilter={it.assetTypeFilter}
-            setAssetTypeFilter={it.setAssetTypeFilter}
-            assetStatusFilter={it.assetStatusFilter}
-            setAssetStatusFilter={it.setAssetStatusFilter}
-            assetConditionFilter={assetConditionFilter}
-            setAssetConditionFilter={setAssetConditionFilter}
-            assetBranchFilter={it.assetBranchFilter}
-            setAssetBranchFilter={it.setAssetBranchFilter}
-            dateRangeLabel={dateRangeLabel}
-            setDateRangeLabel={setDateRangeLabel}
-            assetViewMode={it.assetViewMode}
-            setAssetViewMode={it.setAssetViewMode}
-            branches={it.branches}
-            selectedAssetIds={selectedAssetIds}
-            onSelectAll={handleSelectAllAssets}
-            onClearSelection={handleClearAssetSelection}
-            onBulkDelete={handleBulkDeleteAssets}
-            onExport={handleExportAssets}
-            onImport={() => {
-              it.setEditingAsset(null);
-              it.setAssetModal(true);
-            }}
-          />
-          <AssetsTabContent
-            assets={it.filteredAssets.filter((a) =>
-              assetConditionFilter === "all" ? true : a.condition === assetConditionFilter
-            )}
-            assetTypeStats={it.assetTypeStats}
-            totalAssetsCount={it.assets.length}
-            viewMode={it.assetViewMode}
+      {/* Slide Presentation Transition Container */}
+      <div
+        key={it.tab}
+        className={`w-full ${
+          slideDirection === "next" ? "animate-cover-next" : "animate-cover-prev"
+        }`}
+      >
+        {it.tab === "settings" && (
+          <AssetInventorySettings
+            onBack={() => handleSelectTab("assets")}
             canManage={it.canManage}
-            onOpenAssetModal={() => {
+          />
+        )}
+
+        {it.tab === "assets" && (
+          <>
+            <AssetsFilterBar
+              assetSearch={it.assetSearch}
+              setAssetSearch={it.setAssetSearch}
+              assetTypeFilter={it.assetTypeFilter}
+              setAssetTypeFilter={it.setAssetTypeFilter}
+              assetStatusFilter={it.assetStatusFilter}
+              setAssetStatusFilter={it.setAssetStatusFilter}
+              assetConditionFilter={assetConditionFilter}
+              setAssetConditionFilter={setAssetConditionFilter}
+              assetBranchFilter={it.assetBranchFilter}
+              setAssetBranchFilter={it.setAssetBranchFilter}
+              dateRangeLabel={dateRangeLabel}
+              setDateRangeLabel={setDateRangeLabel}
+              assetViewMode={it.assetViewMode}
+              setAssetViewMode={it.setAssetViewMode}
+              branches={it.branches}
+              selectedAssetIds={selectedAssetIds}
+              onSelectAll={handleSelectAllAssets}
+              onClearSelection={handleClearAssetSelection}
+              onBulkDelete={handleBulkDeleteAssets}
+              onExport={handleExportAssets}
+              onImport={() => {
+                it.setEditingAsset(null);
+                it.setAssetModal(true);
+              }}
+              onSelectTab={handleSelectTab}
+            />
+            <AssetsTabContent
+              assets={it.filteredAssets.filter((a) =>
+                assetConditionFilter === "all" ? true : a.condition === assetConditionFilter
+              )}
+              assetTypeStats={it.assetTypeStats}
+              totalAssetsCount={it.assets.length}
+              viewMode={it.assetViewMode}
+              canManage={it.canManage}
+              onOpenAssetModal={() => {
+                it.setEditingAsset(null);
+                it.setAssetModal(true);
+              }}
+              onEditAsset={it.openEditAsset}
+              onDeleteAsset={it.handleDeleteAsset}
+              selectedAssetIds={selectedAssetIds}
+              onToggleSelect={handleToggleSelectAsset}
+              onToggleSelectAll={handleToggleSelectAllAssets}
+            />
+          </>
+        )}
+
+        {it.tab === "categories" && (
+          <AssetCategoriesTabContent
+            assets={it.assets}
+            canManage={it.canManage}
+            onSelectTab={handleSelectTab}
+            onSelectCategory={(categoryName) => {
+              it.setAssetSearch(categoryName.split(":")[0] || categoryName);
+              handleSelectTab("assets");
+            }}
+            onOpenAssetModalForCategory={(categoryName) => {
               it.setEditingAsset(null);
+              it.setAssetForm((prev) => ({
+                ...prev,
+                category: categoryName,
+                type: categoryName.includes("Laptop") ? "Laptop" :
+                  categoryName.includes("Desktop") ? "Display" :
+                  categoryName.includes("Phone") || categoryName.includes("Contact") ? "Mobile" : "Other",
+              }));
               it.setAssetModal(true);
             }}
-            onEditAsset={it.openEditAsset}
-            onDeleteAsset={it.handleDeleteAsset}
-            selectedAssetIds={selectedAssetIds}
-            onToggleSelect={handleToggleSelectAsset}
-            onToggleSelectAll={handleToggleSelectAllAssets}
           />
-        </>
-      )}
+        )}
 
-
-
-      {it.tab === "categories" && (
-        <AssetCategoriesTabContent
-          assets={it.assets}
-          canManage={it.canManage}
-          onSelectCategory={(categoryName) => {
-            it.setAssetSearch(categoryName.split(":")[0] || categoryName);
-            it.setTab("assets");
-          }}
-          onOpenAssetModalForCategory={(categoryName) => {
-            it.setEditingAsset(null);
-            it.setAssetForm((prev) => ({
-              ...prev,
-              category: categoryName,
-              type: categoryName.includes("Laptop") ? "Laptop" :
-                categoryName.includes("Desktop") ? "Display" :
-                categoryName.includes("Phone") || categoryName.includes("Contact") ? "Mobile" : "Other",
-            }));
-            it.setAssetModal(true);
-          }}
-        />
-      )}
-
-      {it.tab === "tickets" && (
-        <>
-          <TicketsFilterBar
-            ticketSearch={it.ticketSearch}
-            setTicketSearch={it.setTicketSearch}
-            ticketStatusFilter={it.ticketStatusFilter}
-            setTicketStatusFilter={it.setTicketStatusFilter}
-            ticketPriorityFilter={it.ticketPriorityFilter}
-            setTicketPriorityFilter={it.setTicketPriorityFilter}
-            ticketCategoryFilter={it.ticketCategoryFilter}
-            setTicketCategoryFilter={it.setTicketCategoryFilter}
+        {it.tab === "assignments" && (
+          <AssetAssignmentsTabContent
+            assets={it.assets}
+            canManage={it.canManage}
+            onSelectTab={handleSelectTab}
+            onUpdateAsset={(updated) => {
+              it.setEditingAsset(updated);
+            }}
           />
-          <TicketsTabContent
-            tickets={it.filteredTickets}
-            onSelectTicket={it.setSelectedTicket}
-            onUpdateStatus={it.updateTicketStatus}
-            onDeleteTicket={it.handleDeleteTicket}
-            onOpenTicketModal={() => it.setTicketModal(true)}
+        )}
+
+        {it.tab === "history" && (
+          <AssetHistoryTabContent
+            assets={it.assets}
+            onSelectTab={handleSelectTab}
           />
-        </>
-      )}
+        )}
 
-      {it.tab === "stationery" && (
-        <StationeryTabContent
-          stationery={it.stationery}
-          canManage={it.canManage}
-        />
-      )}
+        {it.tab === "tickets" && (
+          <>
+            <TicketsFilterBar
+              ticketSearch={it.ticketSearch}
+              setTicketSearch={it.setTicketSearch}
+              ticketStatusFilter={it.ticketStatusFilter}
+              setTicketStatusFilter={it.setTicketStatusFilter}
+              ticketPriorityFilter={it.ticketPriorityFilter}
+              setTicketPriorityFilter={it.setTicketPriorityFilter}
+              ticketCategoryFilter={it.ticketCategoryFilter}
+              setTicketCategoryFilter={it.setTicketCategoryFilter}
+            />
+            <TicketsTabContent
+              tickets={it.filteredTickets}
+              onSelectTicket={it.setSelectedTicket}
+              onUpdateStatus={it.updateTicketStatus}
+              onDeleteTicket={it.handleDeleteTicket}
+              onOpenTicketModal={() => it.setTicketModal(true)}
+            />
+          </>
+        )}
 
-      {it.tab === "security" && <SecurityTabContent />}
+        {it.tab === "stationery" && (
+          <StationeryTabContent
+            stationery={it.stationery}
+            canManage={it.canManage}
+          />
+        )}
+
+        {it.tab === "security" && <SecurityTabContent />}
+      </div>
 
       <TicketDetailDrawer
         selectedTicket={it.selectedTicket}

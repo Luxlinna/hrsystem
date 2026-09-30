@@ -33,6 +33,8 @@ export interface AppRole {
   candidate_approval_hr_sign?: boolean;
   candidate_approval_director_sign?: boolean;
   candidate_approval_chairwoman_sign?: boolean;
+  hiring_requests_chairman_approve?: boolean;
+  hiring_requests_branch_approve?: boolean;
   created_at: string;
 }
 
@@ -124,6 +126,8 @@ export interface RoleFormState {
   candidate_approval_hr_sign?: boolean;
   candidate_approval_director_sign?: boolean;
   candidate_approval_chairwoman_sign?: boolean;
+  hiring_requests_chairman_approve?: boolean;
+  hiring_requests_branch_approve?: boolean;
 }
 
 export interface NewUserState {

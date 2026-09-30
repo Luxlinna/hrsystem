@@ -33,8 +33,8 @@ interface BranchTabContentProps {
   allowedBranches: Branch[];
   onSelectBranch: (branch: Branch) => void;
   onSelectBranchId: (id: string) => void;
-  onDeleteBranch: (id: string) => Promise<boolean | void>;
-  onOpenEditModal: (branch: Branch, tab: "general" | "address" | "schedule") => void;
+  onDeleteBranch: (branch: Branch) => Promise<boolean | void> | void;
+  onOpenEditModal: (branch: Branch, tab?: "profile" | "schedule") => void;
   setActiveTab: (tab: BranchTabType) => void;
 }
 
@@ -98,7 +98,7 @@ export function BranchTabContent({
           <BranchCompanyProfileSection
             branch={currentBranch}
             canManage={canManage}
-            onOpenEditModal={onOpenEditModal}
+            onOpenEditModal={(b) => onOpenEditModal(b, "profile")}
             allowedBranches={allowedBranches}
             onSelectBranchId={onSelectBranchId}
             hideHeader={false}

@@ -189,7 +189,7 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
           <div className="sm:ml-[33.33%] space-y-1.5 max-w-sm pt-1">
             {form.payroll_attachments?.map((att, idx) => (
               <div
-                key={att.id || idx}
+                key={att.url || idx}
                 className="flex items-center justify-between px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs text-slate-700"
               >
                 <div className="flex items-center gap-1.5 truncate">

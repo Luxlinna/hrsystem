@@ -53,7 +53,7 @@ export const AssetsTabContent = memo(function AssetsTabContent({
           {canManage && (
             <button
               onClick={onOpenAssetModal}
-              className="mt-3 px-3.5 py-1.5 bg-[#2585c8] text-white text-xs font-medium rounded-sm shadow-2xs hover:bg-[#1f73b0] transition-all cursor-pointer"
+              className="mt-3 px-3.5 py-1.5 bg-[#253C7D] text-white text-xs font-semibold rounded-sm shadow-2xs hover:bg-[#1E2E5D] transition-all cursor-pointer"
             >
               + Register New Asset
             </button>

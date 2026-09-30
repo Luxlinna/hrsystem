@@ -88,7 +88,7 @@ export const AssetsTableView = memo(function AssetsTableView({
                   if (el) el.indeterminate = isSomeSelected;
                 }}
                 onChange={onToggleSelectAll}
-                className="w-3.5 h-3.5 rounded-sm border-slate-300 text-[#2585c8] focus:ring-[#2585c8] cursor-pointer"
+                className="w-3.5 h-3.5 rounded-sm border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
               />
             </th>
 
@@ -197,7 +197,7 @@ export const AssetsTableView = memo(function AssetsTableView({
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => onToggleSelect?.(asset.id)}
-                      className="w-3.5 h-3.5 rounded-sm border-slate-300 text-[#2585c8] focus:ring-[#2585c8] cursor-pointer"
+                      className="w-3.5 h-3.5 rounded-sm border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
                     />
                   </td>
 
@@ -228,7 +228,7 @@ export const AssetsTableView = memo(function AssetsTableView({
                         <button
                           type="button"
                           onClick={() => onEdit(asset)}
-                          className="p-1 text-slate-400 hover:text-[#2585c8] hover:bg-slate-100 rounded transition-colors"
+                          className="p-1 text-slate-400 hover:text-[#253C7D] hover:bg-slate-100 rounded transition-colors"
                           title="Edit"
                         >
                           <i className="ri-edit-line text-xs" />

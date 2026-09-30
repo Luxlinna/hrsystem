@@ -83,7 +83,7 @@ export interface TicketFormState {
   branch_id?: string;
 }
 
-export type ITTabType = "assets" | "categories" | "tickets" | "security" | "stationery" | "settings";
+export type ITTabType = "assets" | "categories" | "assignments" | "history" | "tickets" | "security" | "stationery" | "settings";
 
 export interface AssetLocation {
   id: string;

@@ -3,7 +3,7 @@ import type { Branch } from "../types";
 interface BranchSchedulePolicySectionProps {
   branch: Branch;
   canManage: boolean;
-  onOpenEditModal: (branch: Branch, tab: "general" | "address" | "schedule") => void;
+  onOpenEditModal: (branch: Branch, tab?: "profile" | "schedule") => void;
 }
 
 export function BranchSchedulePolicySection({

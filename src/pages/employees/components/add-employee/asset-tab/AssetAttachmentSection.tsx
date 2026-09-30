@@ -1,5 +1,5 @@
 import { memo, useRef, useState, useCallback } from "react";
-import type { EmployeeAssetAttachment } from "../../types";
+import type { EmployeeAssetAttachment } from "../../../types";
 import { uploadMultipleFilesToS3 } from "@/lib/s3-storage";
 import { toast } from "@/components/Toast";
 

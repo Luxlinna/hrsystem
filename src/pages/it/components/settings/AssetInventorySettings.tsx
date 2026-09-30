@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import type { AssetLocation, AssetConditionItem } from "../../types";
 import { toast } from "@/components/Toast";
 
@@ -147,7 +148,7 @@ export const AssetInventorySettings: React.FC<AssetInventorySettingsProps> = ({
           }}
           className={`pb-2 transition-all cursor-pointer ${
             activeTab === "locations"
-              ? "border-b-2 border-[#2585c8] text-[#2585c8] font-bold"
+              ? "border-b-2 border-[#253C7D] text-[#253C7D] font-bold"
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
@@ -162,7 +163,7 @@ export const AssetInventorySettings: React.FC<AssetInventorySettingsProps> = ({
           }}
           className={`pb-2 transition-all cursor-pointer ${
             activeTab === "conditions"
-              ? "border-b-2 border-[#2585c8] text-[#2585c8] font-bold"
+              ? "border-b-2 border-[#253C7D] text-[#253C7D] font-bold"
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
@@ -172,14 +173,14 @@ export const AssetInventorySettings: React.FC<AssetInventorySettingsProps> = ({
 
       {/* Section Header: LOCATION INFO / CONDITION INFO */}
       <div className="flex items-center justify-between pt-2">
-        <h2 className="text-xs font-bold text-[#2585c8] uppercase tracking-wider">
+        <h2 className="text-xs font-bold text-[#253C7D] uppercase tracking-wider">
           {activeTab === "locations" ? "LOCATION INFO" : "CONDITION INFO"}
         </h2>
         {canManage && (
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#62a7e0] bg-white hover:bg-[#f0f7fd] text-[#2585c8] text-xs font-medium transition-all shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#253C7D]/30 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] text-xs font-semibold transition-all shadow-2xs cursor-pointer"
           >
             <i className="ri-add-circle-line text-xs" />
             <span>{activeTab === "locations" ? "Add Location" : "Add Condition"}</span>
@@ -190,7 +191,7 @@ export const AssetInventorySettings: React.FC<AssetInventorySettingsProps> = ({
       {/* Filter Toolbar matching Screenshot */}
       <div className="flex items-center justify-between gap-3">
         {/* Search */}
-        <div className="flex items-center rounded-sm border border-slate-300 focus-within:border-[#2585c8] bg-white overflow-hidden shadow-2xs max-w-xs w-full transition-colors h-8">
+        <div className="flex items-center rounded-sm border border-slate-300 focus-within:border-[#253C7D] bg-white overflow-hidden shadow-2xs max-w-xs w-full transition-colors h-8">
           <input
             type="text"
             value={searchQuery}
@@ -207,7 +208,7 @@ export const AssetInventorySettings: React.FC<AssetInventorySettingsProps> = ({
               <i className="ri-close-line text-xs" />
             </button>
           )}
-          <div className="bg-[#2585c8] text-white px-3 h-full flex items-center justify-center">
+          <div className="bg-[#253C7D] text-white px-3 h-full flex items-center justify-center">
             <i className="ri-search-line text-xs" />
           </div>
         </div>
@@ -217,7 +218,7 @@ export const AssetInventorySettings: React.FC<AssetInventorySettingsProps> = ({
           <button
             type="button"
             onClick={() => setShowStatusMenu((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#62a7e0] bg-white hover:bg-[#f0f7fd] text-[#2585c8] text-xs font-medium transition-all shadow-2xs cursor-pointer h-7"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#253C7D]/30 bg-white hover:bg-[#253C7D]/5 text-[#253C7D] text-xs font-semibold transition-all shadow-2xs cursor-pointer h-7"
           >
             <span>Status</span>
             <i className="ri-arrow-down-s-line text-xs" />
@@ -234,11 +235,11 @@ export const AssetInventorySettings: React.FC<AssetInventorySettingsProps> = ({
                     setShowStatusMenu(false);
                   }}
                   className={`w-full px-3 py-1.5 text-left flex items-center justify-between font-medium ${
-                    statusFilter === st ? "bg-slate-50 text-[#2585c8] font-bold" : "text-slate-700 hover:bg-slate-50"
+                    statusFilter === st ? "bg-slate-50 text-[#253C7D] font-bold" : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   <span>{st === "all" ? "All Statuses" : st}</span>
-                  {statusFilter === st && <i className="ri-check-line text-[#2585c8]" />}
+                  {statusFilter === st && <i className="ri-check-line text-[#253C7D]" />}
                 </button>
               ))}
             </div>
@@ -293,7 +294,7 @@ export const AssetInventorySettings: React.FC<AssetInventorySettingsProps> = ({
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(item)}
-                          className="p-1 text-slate-400 hover:text-[#2585c8] hover:bg-slate-100 rounded transition-colors"
+                          className="p-1 text-slate-400 hover:text-[#253C7D] hover:bg-slate-100 rounded transition-colors"
                           title="Edit"
                         >
                           <i className="ri-edit-line text-xs" />
@@ -317,82 +318,77 @@ export const AssetInventorySettings: React.FC<AssetInventorySettingsProps> = ({
       </div>
 
       {/* Add / Edit Modal matching Screenshot */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="relative w-full max-w-xl bg-white rounded-md shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            {/* Modal Header matching Screenshot */}
-            <div className="p-4 px-6 border-b border-slate-200 flex items-center justify-between bg-white">
-              <h2 className="text-sm font-bold text-[#2585c8] uppercase tracking-wide">
-                {activeTab === "locations" ? "LOCATION" : "CONDITION"}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="w-7 h-7 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <i className="ri-close-line text-base" />
-              </button>
+      {isModalOpen && typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+            <div className="relative w-full max-w-lg bg-white rounded-md shadow-2xl border border-gray-200 overflow-hidden animate-cover-down">
+              {/* Modal Header matching Screenshot */}
+              <div className="px-6 py-4 border-b border-gray-100 bg-white">
+                <h2 className="text-xs font-bold text-[#3498db] tracking-wider uppercase">
+                  {activeTab === "locations" ? "LOCATION" : "CONDITION"}
+                </h2>
+              </div>
+
+              <form onSubmit={handleSave} className="p-6 space-y-4 bg-white">
+                {/* Field: Name */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                  <label className="sm:col-span-4 text-xs font-medium text-gray-700 sm:text-right pr-1">
+                    {activeTab === "locations" ? "Location Name" : "Condition Name"}{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <div className="sm:col-span-8">
+                    <input
+                      type="text"
+                      required
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                      placeholder={activeTab === "locations" ? "Location Name" : "Condition Name"}
+                      className="w-full px-3 py-1.5 rounded border border-gray-300 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#3498db] bg-white transition-colors"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Field: Remark */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
+                  <label className="sm:col-span-4 text-xs font-medium text-gray-700 sm:text-right pr-1 pt-1.5">
+                    Remark
+                  </label>
+                  <div className="sm:col-span-8">
+                    <textarea
+                      rows={3}
+                      value={formRemark}
+                      onChange={(e) => setFormRemark(e.target.value)}
+                      placeholder="Remark"
+                      className="w-full px-3 py-1.5 rounded border border-gray-300 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#3498db] bg-white resize-y transition-colors"
+                    />
+                  </div>
+                </div>
+
+                {/* Footer Buttons: Done and Cancel matching Screenshot */}
+                <div className="pt-4 mt-6 border-t border-gray-100 flex items-center justify-end gap-2.5">
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 rounded bg-[#3498db] hover:bg-[#2980b9] text-white text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer transition-colors shadow-none"
+                  >
+                    <i className="ri-checkbox-circle-fill text-xs" />
+                    <span>Done</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-1.5 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer transition-colors shadow-none"
+                  >
+                    <i className="ri-close-fill text-xs text-gray-800" />
+                    <span>Cancel</span>
+                  </button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleSave} className="p-6 space-y-4">
-              {/* Field: Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-center">
-                <label className="sm:col-span-4 text-xs font-semibold text-slate-700 sm:text-right sm:pr-2">
-                  {activeTab === "locations" ? "Location Name" : "Condition Name"}{" "}
-                  <span className="text-rose-500">*</span>
-                </label>
-                <div className="sm:col-span-8">
-                  <input
-                    type="text"
-                    required
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder={activeTab === "locations" ? "Location Name" : "Condition Name"}
-                    className="w-full px-3 py-1.5 rounded-sm bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#2585c8]"
-                    autoFocus
-                  />
-                </div>
-              </div>
-
-              {/* Field: Remark */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-start">
-                <label className="sm:col-span-4 text-xs font-semibold text-slate-700 sm:text-right sm:pr-2 sm:pt-2">
-                  Remark
-                </label>
-                <div className="sm:col-span-8">
-                  <textarea
-                    rows={3}
-                    value={formRemark}
-                    onChange={(e) => setFormRemark(e.target.value)}
-                    placeholder="Remark"
-                    className="w-full px-3 py-1.5 rounded-sm bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#2585c8] resize-y"
-                  />
-                </div>
-              </div>
-
-              {/* Footer Buttons: Done and Cancel matching Screenshot */}
-              <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2.5">
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-sm bg-[#2585c8] hover:bg-[#1f73b0] text-white text-xs font-semibold transition-all inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                >
-                  <i className="ri-checkbox-circle-line text-xs" />
-                  <span>Done</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-1.5 rounded-sm border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-1"
-                >
-                  <i className="ri-close-line text-xs" />
-                  <span>Cancel</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

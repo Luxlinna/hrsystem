@@ -11,8 +11,8 @@ interface AddEmployeeTabRouterProps {
   activeTab: AddEmployeeStepId;
   form: EmployeeFormState;
   onChange: (field: keyof EmployeeFormState, value: any) => void;
-  cleanBranches: Array<{ id: string; name: string; location?: string }>;
-  currentBranch?: { id: string; name: string; location?: string };
+  cleanBranches?: Array<{ id: string; name: string; location?: string | null }>;
+  currentBranch?: { id: string; name: string; location?: string | null } | null;
   currentBranchName?: string;
   workSites: Array<{ id: string; name: string; description: string | null; branch_id: string | null }>;
   currentSiteSelectValue?: string;

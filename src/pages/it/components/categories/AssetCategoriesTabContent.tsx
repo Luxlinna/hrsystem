@@ -1,14 +1,16 @@
 import React, { useState, useMemo, memo } from "react";
-import type { ITAsset } from "../../types";
+import type { ITAsset, ITTabType } from "../../types";
 import { STANDARD_ASSET_CATEGORIES, type AssetCategoryCardConfig } from "../../constants";
 import { CreateAssetCategoryModal, type AssetCategoryFormData } from "./CreateAssetCategoryModal";
 import { AssetSettingView } from "./AssetSettingView";
+import { AssetNavDropdown } from "../navigation/AssetNavDropdown";
 
 interface AssetCategoriesTabContentProps {
   assets: ITAsset[];
   canManage: boolean;
   onSelectCategory: (categoryName: string) => void;
   onOpenAssetModalForCategory: (categoryName: string) => void;
+  onSelectTab?: (tab: ITTabType) => void;
 }
 
 export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps> = memo(
@@ -17,9 +19,16 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
     canManage,
     onSelectCategory,
     onOpenAssetModalForCategory,
+    onSelectTab,
   }) {
     // Secondary sub-tabs matching Screenshot 1: "Asset Category" | "Asset Setting"
     const [subTab, setSubTab] = useState<"category" | "setting">("category");
+    const [subTabDirection, setSubTabDirection] = useState<"next" | "prev">("next");
+
+    const handleSelectSubTab = (newSubTab: "category" | "setting") => {
+      setSubTabDirection(newSubTab === "setting" ? "next" : "prev");
+      setSubTab(newSubTab);
+    };
 
     // Dynamic Categories list
     const [categoriesList, setCategoriesList] = useState<AssetCategoryCardConfig[]>(() => {
@@ -215,11 +224,11 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
         <div className="flex items-center gap-8 border-b border-slate-200/80">
           <button
             type="button"
-            onClick={() => setSubTab("category")}
+            onClick={() => handleSelectSubTab("category")}
             className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${
               subTab === "category"
-                ? "text-slate-800"
-                : "text-slate-400 hover:text-slate-600"
+                ? "text-[#253C7D]"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <span>Asset Category</span>
@@ -230,11 +239,11 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
 
           <button
             type="button"
-            onClick={() => setSubTab("setting")}
+            onClick={() => handleSelectSubTab("setting")}
             className={`pb-3 text-sm font-semibold transition-all relative cursor-pointer ${
               subTab === "setting"
-                ? "text-slate-800 font-bold"
-                : "text-slate-400 hover:text-slate-600"
+                ? "text-[#253C7D] font-bold"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <span>Asset Setting</span>
@@ -244,13 +253,20 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
           </button>
         </div>
 
-        {subTab === "category" ? (
-          <>
-            {/* Top Row: Title & Action Button matching Screenshot 1 */}
-            <div className="flex items-center justify-between pt-2">
-              <h2 className="text-xl font-normal text-slate-600 tracking-tight">
-                Asset Category
-              </h2>
+        {/* Animated SubTab Presentation Container */}
+        <div
+          key={subTab}
+          className={`w-full ${
+            subTabDirection === "next" ? "animate-cover-next" : "animate-cover-prev"
+          }`}
+        >
+          {subTab === "category" ? (
+            <div className="space-y-4">
+              {/* Top Row: Title & Action Button matching Screenshot 1 */}
+              <div className="flex items-center justify-between pt-1">
+                <h2 className="text-xl font-normal text-slate-700 tracking-tight">
+                  Asset Category
+                </h2>
 
               <div className="relative">
                 <button
@@ -259,17 +275,17 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
                     e.stopPropagation();
                     setShowCategoryDropdown(!showCategoryDropdown);
                   }}
-                  className="px-4 py-2 rounded-md bg-[#253C7D] hover:bg-[#1E3064] text-white text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
+                  className="px-3.5 py-1.5 rounded-sm bg-[#253C7D] hover:bg-[#1E2E5D] text-white text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
                 >
                   <span>Category</span>
-                  <i className="ri-arrow-down-s-line text-sm" />
+                  <i className="ri-arrow-down-s-line text-xs" />
                 </button>
 
                 {/* Dropdown Menu */}
                 {showCategoryDropdown && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute right-0 top-10 w-48 rounded-lg bg-white border border-slate-200 shadow-xl py-1 z-30 animate-in fade-in zoom-in-95 duration-100"
+                    className="absolute right-0 top-9 w-48 rounded-md bg-white border border-slate-200/90 shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 text-xs"
                   >
                     <button
                       type="button"
@@ -278,10 +294,10 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
                         setEditingCategory(null);
                         setShowCategoryModal(true);
                       }}
-                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-[#253C7D] hover:bg-[#253C7D]/10 flex items-center gap-2 cursor-pointer"
+                      className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                     >
-                      <i className="ri-add-line text-sm" />
-                      <span>+ Create Category</span>
+                      <i className="ri-add-circle-line text-base text-slate-500" />
+                      <span>Create Category</span>
                     </button>
                     <button
                       type="button"
@@ -289,9 +305,9 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
                         setShowCategoryDropdown(false);
                         onOpenAssetModalForCategory("");
                       }}
-                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                      className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                     >
-                      <i className="ri-folder-add-line" />
+                      <i className="ri-box-3-line text-base text-slate-500" />
                       <span>Register Asset</span>
                     </button>
                   </div>
@@ -299,20 +315,27 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
               </div>
             </div>
 
+            {/* Asset Navigation Trigger on left */}
+            {onSelectTab && (
+              <div className="flex items-center gap-4">
+                <AssetNavDropdown currentTab="categories" onSelectTab={onSelectTab} />
+              </div>
+            )}
+
             {/* Filter Bar matching Screenshot 1 */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               {/* Search Box with blue search button attached on right */}
-              <div className="flex rounded-md overflow-hidden border border-slate-300 bg-white max-w-sm w-full shadow-2xs focus-within:border-[#253C7D] focus-within:ring-1 focus-within:ring-[#253C7D]">
+              <div className="flex rounded-sm overflow-hidden border border-slate-300 bg-white max-w-sm w-full shadow-2xs focus-within:border-[#253C7D] h-8">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search..."
-                  className="flex-1 px-3.5 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none bg-white"
+                  className="flex-1 px-3 py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none bg-white"
                 />
                 <button
                   type="button"
-                  className="px-3.5 bg-[#253C7D] hover:bg-[#1E3064] text-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="px-3 bg-[#253C7D] hover:bg-[#1E2E5D] text-white flex items-center justify-center transition-colors cursor-pointer"
                 >
                   <i className="ri-search-line text-xs" />
                 </button>
@@ -325,7 +348,7 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
                   <select
                     value={featureFilter}
                     onChange={(e) => setFeatureFilter(e.target.value)}
-                    className="appearance-none px-4 py-1.5 pr-8 rounded-full border border-slate-300 text-xs text-slate-600 bg-white hover:border-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer shadow-2xs"
+                    className="appearance-none px-4 py-1.5 pr-8 rounded-full border border-slate-300 text-xs text-slate-600 bg-white hover:border-slate-400 focus:outline-none focus:border-[#253C7D] cursor-pointer shadow-2xs"
                   >
                     <option value="All">Features</option>
                     <option value="Track Serial Number">Track Serial Number</option>
@@ -342,7 +365,7 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="appearance-none px-4 py-1.5 pr-8 rounded-full border border-slate-300 text-xs text-slate-600 bg-white hover:border-slate-400 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] cursor-pointer shadow-2xs"
+                    className="appearance-none px-4 py-1.5 pr-8 rounded-full border border-slate-300 text-xs text-slate-600 bg-white hover:border-slate-400 focus:outline-none focus:border-[#253C7D] cursor-pointer shadow-2xs"
                   >
                     <option value="All">Status</option>
                     <option value="Active">Active</option>
@@ -532,20 +555,21 @@ export const AssetCategoriesTabContent: React.FC<AssetCategoriesTabContentProps>
                 </div>
               ))}
             </div>
-          </>
-        ) : (
-          /* Asset Setting Tab View (Matching Screenshot 1 & 2) */
-          <AssetSettingView
-            categories={categoriesList}
-            onUpdateCategoryTags={(tagsMap) => {
-              const updated = categoriesList.map((c) => ({
-                ...c,
-                tag: tagsMap[c.id] !== undefined ? tagsMap[c.id] : c.tag,
-              }));
-              saveCategories(updated);
-            }}
-          />
-        )}
+            </div>
+          ) : (
+            /* Asset Setting Tab View (Matching Screenshot 1 & 2) */
+            <AssetSettingView
+              categories={categoriesList}
+              onUpdateCategoryTags={(tagsMap) => {
+                const updated = categoriesList.map((c) => ({
+                  ...c,
+                  tag: tagsMap[c.id] !== undefined ? tagsMap[c.id] : c.tag,
+                }));
+                saveCategories(updated);
+              }}
+            />
+          )}
+        </div>
 
         {/* Modal for Creating / Editing Asset Category */}
         <CreateAssetCategoryModal

@@ -24,7 +24,6 @@ export function CreateOrEditContractTypeForm({
     term: (editingContractType?.term as "None" | "Probation" | "FDC" | "UDC") || "None",
     period_months: editingContractType?.period_months ? String(editingContractType.period_months) : "",
     alert_days_before: editingContractType?.alert_days_before != null ? String(editingContractType.alert_days_before) : "30",
-    template_name: "",
     status: (editingContractType?.status as "active" | "disabled") || "active",
   }));
 
@@ -35,7 +34,6 @@ export function CreateOrEditContractTypeForm({
         term: (editingContractType.term as "None" | "Probation" | "FDC" | "UDC") || "None",
         period_months: editingContractType.period_months ? String(editingContractType.period_months) : "",
         alert_days_before: editingContractType.alert_days_before != null ? String(editingContractType.alert_days_before) : "30",
-        template_name: "",
         status: (editingContractType.status as "active" | "disabled") || "active",
       });
     }

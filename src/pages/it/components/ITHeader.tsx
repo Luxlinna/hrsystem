@@ -53,7 +53,7 @@ export const ITHeader = memo(function ITHeader({
             <button
               type="button"
               onClick={() => setShowAssetMenu((prev) => !prev)}
-              className="inline-flex items-center gap-2 bg-[#2585c8] hover:bg-[#1f73b0] text-white px-3.5 py-1.5 rounded-sm text-xs font-medium transition-all shadow-2xs cursor-pointer active:scale-98"
+              className="inline-flex items-center gap-2 bg-[#253C7D] hover:bg-[#1E2E5D] text-white px-3.5 py-1.5 rounded-sm text-xs font-semibold transition-all shadow-2xs cursor-pointer active:scale-98"
             >
               <span>Asset Inventory</span>
               <i className="ri-arrow-down-s-line text-xs ml-0.5" />

@@ -29,7 +29,7 @@ export default function TasksPage() {
   if (isPartnerBranchBlocked) {
     return (
       <div className="w-full min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-5 font-sans">
-        <TasksHeader onNewTask={() => {}} />
+        <TasksHeader onNewOutsideWork={() => {}} />
         <PartnerBranchPrivacyShield
           moduleName="Task Management"
           userBranchName={userBranchName}

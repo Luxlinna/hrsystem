@@ -7,7 +7,7 @@ export function useITFilters(
   tickets: ITTicket[],
   setSelectedTicket: (ticket: ITTicket | null) => void
 ) {
-  const [tab, setTab] = useState<ITTabType>("assets");
+  const [tab, setTab] = useState<ITTabType>("categories");
 
   // Asset Filters & View Mode
   const [assetSearch, setAssetSearch] = useState("");

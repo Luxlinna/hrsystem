@@ -67,7 +67,7 @@ export function useTasksData() {
     if (data) {
       let list = [...data];
       if (currentEmployee && !list.some((e) => e.id === currentEmployee.id)) {
-        list.push(currentEmployee);
+        list.push(currentEmployee as any);
       }
       setEmployees(list);
     }

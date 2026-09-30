@@ -1,5 +1,5 @@
 import { useState, memo } from "react";
-import type { EmployeeAssetBookingItem } from "../../types";
+import type { EmployeeAssetBookingItem } from "../../../types";
 
 interface AssetBookingTableProps {
   bookings: EmployeeAssetBookingItem[];
