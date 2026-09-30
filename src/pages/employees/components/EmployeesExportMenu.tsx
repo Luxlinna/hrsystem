@@ -1,6 +1,6 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
 import type { Employee, AccountStatus } from "../types";
-import { exportEmployeesPDF, exportEmployeesXLSX, exportEmployeesCSV } from "../exportUtils";
+import { exportEmployeesPDF, exportEmployeesXLSX } from "../exportUtils";
 
 interface EmployeesExportMenuProps {
   employees: Employee[];
@@ -8,7 +8,7 @@ interface EmployeesExportMenuProps {
   disabled?: boolean;
 }
 
-type Format = "pdf" | "xlsx" | "csv";
+type Format = "pdf" | "xlsx";
 
 export const EmployeesExportMenu = memo(function EmployeesExportMenu({
   employees,
@@ -38,8 +38,6 @@ export const EmployeesExportMenu = memo(function EmployeesExportMenu({
           exportEmployeesPDF(employees, accountStatus);
         } else if (fmt === "xlsx") {
           await exportEmployeesXLSX(employees, accountStatus);
-        } else if (fmt === "csv") {
-          exportEmployeesCSV(employees, accountStatus);
         }
       } finally {
         setTimeout(() => setExporting(null), 700);
@@ -104,16 +102,6 @@ export const EmployeesExportMenu = memo(function EmployeesExportMenu({
               <i className="ri-file-excel-2-line text-emerald-600 text-sm" />
               <span className="flex-1">Excel Spreadsheet</span>
               <span className="text-[10px] text-slate-400 dark:text-slate-500">.xlsx</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleExport("csv")}
-              className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 flex items-center gap-2.5 transition-colors cursor-pointer"
-            >
-              <i className="ri-file-text-line text-[#253C7D] dark:text-blue-400 text-sm" />
-              <span className="flex-1">CSV File</span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500">.csv</span>
             </button>
           </div>
         </div>

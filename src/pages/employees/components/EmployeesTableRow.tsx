@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Employee } from "../types";
+import { getJobStatusBadge } from "../constants";
 
 interface EmployeesTableRowProps {
   employee: Employee;
@@ -38,7 +39,7 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
 }: EmployeesTableRowProps) {
   const [showActionMenu, setShowActionMenu] = useState(false);
 
-  const isStatusActive = e.status === "active" || e.status === "onboarding";
+  const statusBadge = getJobStatusBadge(e.status);
   const fullName = e.full_name || `${e.first_name || ""} ${e.last_name || ""}`.trim() || "Unnamed";
   const employeeCode = e.employee_code || e.biometric_user_id || "—";
   const designation = e.position || e.role || "Staff";
@@ -127,16 +128,12 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
 
       <td className="py-2.5 px-3">
         <div className="space-y-1">
-          <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded text-white whitespace-nowrap ${
-            isStatusActive ? "bg-emerald-500 dark:bg-emerald-600" : "bg-[#4b5563] dark:bg-slate-600"
-          }`}>
-            {isStatusActive ? "Employed" : "Exited"}
+          <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded text-white whitespace-nowrap ${statusBadge.jobColor}`}>
+            {statusBadge.jobStatus}
           </span>
           <div>
-            <span className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded text-white whitespace-nowrap ${
-              isStatusActive ? "bg-emerald-500 dark:bg-emerald-600" : "bg-[#1e293b] dark:bg-slate-700"
-            }`}>
-              {isStatusActive ? "Active" : "Deactivate"}
+            <span className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded text-white whitespace-nowrap ${statusBadge.lifecycleColor}`}>
+              {statusBadge.lifecycleStatus}
             </span>
           </div>
         </div>

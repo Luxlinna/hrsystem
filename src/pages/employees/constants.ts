@@ -102,6 +102,53 @@ export const BU_DEFAULT_JOB_STATUSES = [
   "Black List",
 ];
 
+export function getJobStatusBadge(status?: string | null): {
+  jobStatus: string;
+  jobColor: string;
+  lifecycleStatus: string;
+  lifecycleColor: string;
+} {
+  const st = (status || "active").toLowerCase().trim();
+  if (st === "onboarding" || st.includes("not") || st === "pending") {
+    return {
+      jobStatus: "Not Employed Yet",
+      jobColor: "bg-amber-500 dark:bg-amber-600",
+      lifecycleStatus: "Onboarding",
+      lifecycleColor: "bg-amber-500 dark:bg-amber-600",
+    };
+  }
+  if (st === "inactive" || st === "exited" || st === "terminated" || st === "resigned") {
+    return {
+      jobStatus: "Exited",
+      jobColor: "bg-[#4b5563] dark:bg-slate-600",
+      lifecycleStatus: "Deactivate",
+      lifecycleColor: "bg-[#1e293b] dark:bg-slate-700",
+    };
+  }
+  if (st === "suspended" || st.includes("black")) {
+    return {
+      jobStatus: "Black List",
+      jobColor: "bg-rose-500 dark:bg-rose-600",
+      lifecycleStatus: "Suspended",
+      lifecycleColor: "bg-rose-500 dark:bg-rose-600",
+    };
+  }
+  if (st === "on_leave") {
+    return {
+      jobStatus: "Employed",
+      jobColor: "bg-emerald-500 dark:bg-emerald-600",
+      lifecycleStatus: "On Leave",
+      lifecycleColor: "bg-[#253C7D] dark:bg-blue-600",
+    };
+  }
+  return {
+    jobStatus: "Employed",
+    jobColor: "bg-emerald-500 dark:bg-emerald-600",
+    lifecycleStatus: "Active",
+    lifecycleColor: "bg-emerald-500 dark:bg-emerald-600",
+  };
+}
+
 export function getBranchCode(branchName: string): string {
   const lower = (branchName || "").toLowerCase().trim();
   if (lower.includes("express") || lower.includes("exp")) return "EXP";

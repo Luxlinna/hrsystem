@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import type { Employee, AccountStatus, VisibleColumns, SortField, SortDirection, ViewMode, EmployeeStats } from "../types";
-import { INITIAL_VISIBLE_COLUMNS, COLUMN_WIDTHS } from "../constants";
+import { INITIAL_VISIBLE_COLUMNS, COLUMN_WIDTHS, getJobStatusBadge } from "../constants";
 import { exportEmployeesCSV } from "../exportUtils";
 import { matchEmployeeSearch, compareEmployees } from "../searchUtils";
 
@@ -125,17 +125,11 @@ function matchEmployeeContract(contractType?: string | null, selected?: string |
 
 function matchEmployeeJobStatus(status?: string | null, selected?: string[]): boolean {
   if (!selected || selected.length === 0) return true;
-  if (!status) return false;
-  const st = status.toLowerCase();
-
+  const { jobStatus } = getJobStatusBadge(status);
   return selected.some((s) => {
-    const sLower = s.toLowerCase();
+    const sLower = s.toLowerCase().trim();
     if (sLower === "all") return true;
-    if (sLower.includes("not employed")) return st === "onboarding" || st.includes("not");
-    if (sLower.includes("employed")) return st === "active" || st === "onboarding" || st === "employed";
-    if (sLower.includes("exited")) return st === "inactive" || st === "suspended" || st === "exited" || st === "terminated";
-    if (sLower.includes("black")) return st === "blacklisted" || st === "blacklist" || st === "black_list";
-    return st.includes(sLower) || sLower.includes(st);
+    return sLower === jobStatus.toLowerCase();
   });
 }
 
