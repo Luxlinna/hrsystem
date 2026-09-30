@@ -1,8 +1,8 @@
 import { memo } from "react";
 import type { AttendanceRecord, Employee, WorkLocation } from "../types";
 import type { Holiday } from "@/services/holidays/holidaysService";
-import { SelfCheckInBanner } from "../components/SelfCheckInBanner";
-import { AttendanceKpiBar } from "../components/AttendanceKpiBar";
+
+
 
 import { AttendanceControlBar } from "../components/AttendanceControlBar";
 import { RecordsTab } from "./RecordsTab";
@@ -58,22 +58,7 @@ export const AttendanceLogsTabView = memo(function AttendanceLogsTabView({
 }: Props) {
   return (
     <>
-      <SelfCheckInBanner
-        myEmployee={myEmployee}
-        myTodayRecord={myTodayRecord}
-        todayHoliday={todayHoliday}
-      />
 
-      <AttendanceKpiBar
-        filterDatePreset={filters.filterDatePreset}
-        filterStatus={filters.filterStatus}
-        setFilterStatus={filters.setFilterStatus}
-        presentCount={metrics.presentCount}
-        workingNow={metrics.workingNow}
-        lateCount={metrics.lateCount}
-        remoteCount={metrics.remoteCount}
-        absentCount={metrics.absentCount}
-      />
 
 
       <AttendanceControlBar

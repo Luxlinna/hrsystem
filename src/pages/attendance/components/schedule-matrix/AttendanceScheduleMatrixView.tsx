@@ -29,10 +29,23 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
     scheduledEmployees,
     unscheduledEmployees,
     departmentList,
+    branches,
+    workLocations,
+    positionList,
+    employeeTypeList,
+    employeeLevelList,
     search,
     setSearch,
     filterDept,
     setFilterDept,
+    filterWorkLocation,
+    setFilterWorkLocation,
+    filterRole,
+    setFilterRole,
+    filterEmploymentType,
+    setFilterEmploymentType,
+    filterEmployeeLevel,
+    setFilterEmployeeLevel,
     activeTab,
     setActiveTab,
     selectedIds,
@@ -71,7 +84,20 @@ export const AttendanceScheduleMatrixView = memo(function AttendanceScheduleMatr
         nextMonth={nextMonth}
         filterDept={filterDept}
         setFilterDept={setFilterDept}
+        filterWorkLocation={filterWorkLocation}
+        setFilterWorkLocation={setFilterWorkLocation}
+        filterRole={filterRole}
+        setFilterRole={setFilterRole}
+        filterEmploymentType={filterEmploymentType}
+        setFilterEmploymentType={setFilterEmploymentType}
+        filterEmployeeLevel={filterEmployeeLevel}
+        setFilterEmployeeLevel={setFilterEmployeeLevel}
         departmentList={departmentList}
+        branches={branches}
+        workLocations={workLocations}
+        positionList={positionList}
+        employeeTypeList={employeeTypeList}
+        employeeLevelList={employeeLevelList}
         matrixViewMode={matrixViewMode}
         setMatrixViewMode={setMatrixViewMode}
         onViewModeChange={onViewModeChange}

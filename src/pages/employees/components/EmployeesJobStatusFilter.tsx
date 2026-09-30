@@ -9,9 +9,11 @@ interface EmployeesJobStatusFilterProps {
 
 export const EmployeesJobStatusFilter = memo(function EmployeesJobStatusFilter({
   selectedJobStatuses = [],
-  jobStatuses = BU_DEFAULT_JOB_STATUSES,
+  jobStatuses: rawJobStatuses = [],
   onApplyJobStatusFilter,
 }: EmployeesJobStatusFilterProps) {
+  // Use DB data when available; fall back to hardcoded list if DB table is empty
+  const jobStatuses = rawJobStatuses.length > 0 ? rawJobStatuses : BU_DEFAULT_JOB_STATUSES;
   const [isOpen, setIsOpen] = useState(false);
   const [tempSelected, setTempSelected] = useState<string[]>(selectedJobStatuses);
   const popoverRef = useRef<HTMLDivElement>(null);

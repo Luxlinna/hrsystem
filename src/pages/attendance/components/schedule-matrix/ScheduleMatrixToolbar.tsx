@@ -1,5 +1,7 @@
 import { useState, memo } from "react";
 import type { MatrixViewMode } from "./types";
+import { FilterFlyoutMenu } from "../filters/FilterFlyoutMenu";
+import type { WorkLocation } from "../../types";
 
 interface ScheduleMatrixToolbarProps {
   search: string;
@@ -9,7 +11,20 @@ interface ScheduleMatrixToolbarProps {
   nextMonth: () => void;
   filterDept: string;
   setFilterDept: (val: string) => void;
+  filterWorkLocation: string;
+  setFilterWorkLocation: (val: string) => void;
+  filterRole: string;
+  setFilterRole: (val: string) => void;
+  filterEmploymentType: string;
+  setFilterEmploymentType: (val: string) => void;
+  filterEmployeeLevel: string;
+  setFilterEmployeeLevel: (val: string) => void;
   departmentList: string[];
+  branches: { id: string; name: string }[];
+  workLocations: { id: string; name: string; branch_id: string }[];
+  positionList: string[];
+  employeeTypeList: string[];
+  employeeLevelList: string[];
   matrixViewMode?: MatrixViewMode;
   setMatrixViewMode?: (mode: MatrixViewMode) => void;
   onViewModeChange?: (mode: string) => void;
@@ -23,11 +38,23 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
   nextMonth,
   filterDept,
   setFilterDept,
+  filterWorkLocation,
+  setFilterWorkLocation,
+  filterRole,
+  setFilterRole,
+  filterEmploymentType,
+  setFilterEmploymentType,
+  filterEmployeeLevel,
+  setFilterEmployeeLevel,
   departmentList,
+  branches,
+  workLocations,
+  positionList,
+  employeeTypeList,
+  employeeLevelList,
   matrixViewMode = "timesheet",
   setMatrixViewMode,
 }: ScheduleMatrixToolbarProps) {
-  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
 
   return (
@@ -76,7 +103,7 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
 
       {/* Right Controls */}
       <div className="flex flex-wrap items-center gap-2.5">
-        {/* View Dropdown (Time Sheet / Roster) */}
+        {/* View Dropdown */}
         <div className="relative">
           <button
             type="button"
@@ -93,26 +120,16 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
               <div className="absolute left-0 top-full mt-1.5 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 text-xs select-none">
                 <button
                   type="button"
-                  onClick={() => {
-                    setMatrixViewMode?.("roster");
-                    setViewMenuOpen(false);
-                  }}
-                  className={`w-full px-3 py-2 text-left flex items-center justify-between cursor-pointer ${
-                    matrixViewMode === "roster" ? "font-bold text-[#253C7D] bg-indigo-50/70" : "text-gray-700 hover:bg-gray-50"
-                  }`}
+                  onClick={() => { setMatrixViewMode?.("roster"); setViewMenuOpen(false); }}
+                  className={`w-full px-3 py-2 text-left flex items-center justify-between cursor-pointer ${matrixViewMode === "roster" ? "font-bold text-[#253C7D] bg-indigo-50/70" : "text-gray-700 hover:bg-gray-50"}`}
                 >
                   <span>Roster</span>
                   {matrixViewMode === "roster" && <i className="ri-check-line text-[#253C7D] font-bold" />}
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setMatrixViewMode?.("timesheet");
-                    setViewMenuOpen(false);
-                  }}
-                  className={`w-full px-3 py-2 text-left flex items-center justify-between cursor-pointer ${
-                    matrixViewMode === "timesheet" ? "font-bold text-[#253C7D] bg-indigo-50/70" : "text-gray-700 hover:bg-gray-50"
-                  }`}
+                  onClick={() => { setMatrixViewMode?.("timesheet"); setViewMenuOpen(false); }}
+                  className={`w-full px-3 py-2 text-left flex items-center justify-between cursor-pointer ${matrixViewMode === "timesheet" ? "font-bold text-[#253C7D] bg-indigo-50/70" : "text-gray-700 hover:bg-gray-50"}`}
                 >
                   <span>Time Sheet</span>
                   {matrixViewMode === "timesheet" && <i className="ri-check-line text-[#253C7D] font-bold" />}
@@ -132,12 +149,10 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
           >
             <i className="ri-arrow-left-s-line text-sm" />
           </button>
-
           <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-white min-w-[210px] justify-center">
             <i className="ri-calendar-line text-blue-500" />
             <span>{dateRangeLabel}</span>
           </div>
-
           <button
             type="button"
             onClick={nextMonth}
@@ -148,46 +163,25 @@ export const ScheduleMatrixToolbar = memo(function ScheduleMatrixToolbar({
           </button>
         </div>
 
-        {/* Filter Dropdown */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setFilterMenuOpen((v) => !v)}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white border rounded-full text-xs font-semibold transition-colors cursor-pointer shadow-2xs ${
-              filterDept !== "all"
-                ? "border-blue-500 text-blue-600 bg-blue-50/50"
-                : "border-gray-300 text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            <i className="ri-filter-3-line text-gray-500" />
-            <span>Filter</span>
-            <i className="ri-arrow-down-s-line text-gray-400" />
-          </button>
-
-          {filterMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-20" onClick={() => setFilterMenuOpen(false)} />
-              <div className="absolute right-0 top-full mt-1.5 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-30 p-3 space-y-2 text-xs">
-                <p className="font-bold text-gray-900 text-[11px] uppercase tracking-wider">Department</p>
-                <select
-                  value={filterDept}
-                  onChange={(e) => {
-                    setFilterDept(e.target.value);
-                    setFilterMenuOpen(false);
-                  }}
-                  className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="all">All Departments</option>
-                  {departmentList.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
-        </div>
+        {/* Full Filter — identical to Attendance Logs */}
+        <FilterFlyoutMenu
+          filterWorkLocation={filterWorkLocation}
+          setFilterWorkLocation={setFilterWorkLocation}
+          filterDepartment={filterDept}
+          setFilterDepartment={setFilterDept}
+          filterRole={filterRole}
+          setFilterRole={setFilterRole}
+          filterEmploymentType={filterEmploymentType}
+          setFilterEmploymentType={setFilterEmploymentType}
+          filterEmployeeLevel={filterEmployeeLevel}
+          setFilterEmployeeLevel={setFilterEmployeeLevel}
+          branches={branches}
+          workLocations={workLocations as WorkLocation[]}
+          depts={departmentList}
+          positions={positionList}
+          employeeTypes={employeeTypeList}
+          employeeLevels={employeeLevelList}
+        />
       </div>
     </div>
   );

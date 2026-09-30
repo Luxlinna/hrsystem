@@ -92,12 +92,19 @@ export function useAttendanceData(
       }
 
       if (isLeader) {
-        const { data: team, error: empErr } = await supabase
+        // SuperAdmin (canViewAllBranches) fetches all employees across all BUs.
+        // Regular leaders only see their own branch.
+        let empQuery = supabase
           .from("employees")
           .select("id, first_name, last_name, department, division, line_manager, reports_to, role, avatar_url, branch_id, branches(id, name), default_work_location_id, employee_code, biometric_user_id, basic_salary, contract_rate, contract_rate_currency, contract_rate_frequency, tax_method, contract_type, employment_type, site")
           .is("deleted_at", null)
-          .eq("branch_id", targetBranch)
           .order("first_name");
+
+        if (!canViewAllBranches) {
+          empQuery = empQuery.eq("branch_id", targetBranch);
+        }
+
+        const { data: team, error: empErr } = await empQuery;
         if (empErr) console.warn("Error fetching attendance employees:", empErr);
 
         let empList = (team as unknown as Employee[]) || [];
@@ -132,7 +139,7 @@ export function useAttendanceData(
             .is("deleted_at", null)
             .in("employee_id", ids)
             .order("date", { ascending: false })
-            .limit(2000);
+            .limit(canViewAllBranches ? 5000 : 2000);
           if (recErr) console.warn("Error fetching attendance records:", recErr);
           rawRecords = (recData as unknown as AttendanceRecord[]) || [];
         }
