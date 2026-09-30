@@ -68,7 +68,7 @@ export default function AdminPortal() {
               users={admin.data.users}
               roles={admin.data.roles}
               employees={admin.data.employees}
-              branches={admin.scopedBranches}
+              branches={admin.data.branches}
               filterBranch={admin.filterBranch}
               setFilterBranch={admin.setFilterBranch}
               searchQuery={admin.searchQuery}

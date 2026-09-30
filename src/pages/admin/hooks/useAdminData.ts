@@ -112,6 +112,9 @@ export function useAdminData() {
 
     const employeeMap = new Map();
     (employeesRes.data || []).forEach((e: any) => {
+      if (e.user_id) {
+        employeeMap.set(`user:${e.user_id}`, e);
+      }
       if (e.email) {
         employeeMap.set(e.email.toLowerCase(), e);
         if (isPhoneSyntheticEmail(e.email)) {

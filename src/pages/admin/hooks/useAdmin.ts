@@ -66,16 +66,14 @@ export function useAdmin() {
     else if (tabParam === "roles") setActiveTab("roles");
   }, [searchParams, isSuperAdmin, isBranchAdmin]);
 
-  // Sync filterBranch when header branch switches
+  // Sync filterBranch when header branch switches.
+  // Super Admins always default to "all" so they can see users across all BUs.
+  // Non-super-admins are scoped to their own branch.
   useEffect(() => {
     if (!isSuperAdmin) {
       setFilterBranch(userBranchId || "all");
-      return;
     }
-    if (selectedBranchId) {
-      setFilterBranch(selectedBranchId);
-    }
-  }, [isSuperAdmin, userBranchId, selectedBranchId]);
+  }, [isSuperAdmin, userBranchId]);
 
   // Scope branch tabs to the currently selected header branch and its sub-sites
   const scopedBranches = useMemo(() => {

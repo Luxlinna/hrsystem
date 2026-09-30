@@ -20,20 +20,36 @@ export function buildEnrichedAssignments(
   branchesList: any[]
 ): UserAssignment[] {
   return activeAssignments.map((assignmentUser) => {
-    let emp = assignmentUser.email ? employeeMap.get(assignmentUser.email.toLowerCase()) : null;
+    let emp = assignmentUser.user_id ? employeeMap.get(`user:${assignmentUser.user_id}`) : null;
+    if (!emp && assignmentUser.email) {
+      emp = employeeMap.get(assignmentUser.email.toLowerCase());
+    }
     if (!emp && assignmentUser.email && isPhoneSyntheticEmail(assignmentUser.email)) {
       const p = syntheticEmailToPhone(assignmentUser.email);
       emp = employeeMap.get(p) || employeeMap.get(normalizePhone(p));
     }
-    const bName = emp?.branches ? (emp.branches as any).name : null;
-    const site = emp?.default_work_location_id ? locationsMap.get(emp.default_work_location_id) : null;
+
+    const empBranchId = emp?.branch_id;
+    const empSiteId = emp?.default_work_location_id;
+    const fallbackBranchId = (assignmentUser as any).branch_id || assignmentUser.app_roles?.branch_id || null;
+    const fallbackSiteId = (assignmentUser as any).default_work_location_id || assignmentUser.app_roles?.work_location_id || null;
+
+    const finalSiteId = empSiteId || fallbackSiteId || null;
+    const site = finalSiteId ? locationsMap.get(finalSiteId) : null;
+    const finalBranchId = empBranchId || site?.branch_id || fallbackBranchId || null;
+
+    const bName = emp?.branches
+      ? (emp.branches as any).name
+      : (finalBranchId ? branchesList.find((b) => b.id === finalBranchId)?.name : null);
+    const sName = site?.name || null;
+
     return {
       ...assignmentUser,
       display_name: assignmentUser.display_name || (emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : null),
-      branch_id: emp?.branch_id || site?.branch_id || null,
+      branch_id: finalBranchId,
       branch_name: bName || (site ? branchesList.find((b) => b.id === site.branch_id)?.name : null) || "Headquarters",
-      default_work_location_id: emp?.default_work_location_id || null,
-      site_name: site?.name || null,
+      default_work_location_id: finalSiteId,
+      site_name: sName,
     };
   });
 }

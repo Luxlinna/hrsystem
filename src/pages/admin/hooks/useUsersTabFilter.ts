@@ -22,17 +22,28 @@ export function useUsersTabFilter(
 
     return list.filter((u) => {
       if (!u) return false;
+
       if (filterBranch && filterBranch !== "all") {
-        if (typeof filterBranch === "string" && filterBranch.startsWith("site:")) {
-          const sId = filterBranch.substring(5);
-          if (u.default_work_location_id !== sId) return false;
-        } else if (isSuperAdmin) {
-          const targetB = bList.find((b) => b && b.id === filterBranch);
-          const isDirectMatch = u.branch_id === filterBranch;
-          const uBranchName = (u.branch_name || "").toLowerCase().trim();
-          const targetBName = (targetB?.name || "").toLowerCase().trim();
-          const isNameMatch = Boolean(uBranchName && targetBName && uBranchName === targetBName);
-          if (!isDirectMatch && !isNameMatch) return false;
+        // Support comma-separated multi-select (from flyout) or single ID (from pill)
+        const ids = filterBranch.split(",").map((s) => s.trim()).filter(Boolean);
+        if (ids.length > 0) {
+          const matched = ids.some((id) => {
+            if (id.startsWith("site:")) {
+              const siteId = id.substring(5);
+              return (
+                u.default_work_location_id === siteId ||
+                u.app_roles?.work_location_id === siteId
+              );
+            }
+            // BU match: direct id or name match
+            const targetB = bList.find((b) => b && b.id === id);
+            const isDirectMatch = u.branch_id === id || u.app_roles?.branch_id === id;
+            const uBranchName = (u.branch_name || "").toLowerCase().trim();
+            const targetBName = (targetB?.name || "").toLowerCase().trim();
+            const isNameMatch = Boolean(uBranchName && targetBName && uBranchName === targetBName);
+            return isDirectMatch || isNameMatch;
+          });
+          if (!matched) return false;
         }
       }
 
@@ -57,12 +68,14 @@ export function useUsersTabFilter(
 
     list.forEach((u) => {
       if (!u) return;
-      if (u.branch_id) map[u.branch_id] = (map[u.branch_id] || 0) + 1;
-      if (u.default_work_location_id) {
-        const sKey = `site:${u.default_work_location_id}`;
+      const bId = u.branch_id || u.app_roles?.branch_id;
+      if (bId) map[bId] = (map[bId] || 0) + 1;
+      const locId = u.default_work_location_id || u.app_roles?.work_location_id;
+      if (locId) {
+        const sKey = `site:${locId}`;
         map[sKey] = (map[sKey] || 0) + 1;
       }
-      if (!u.branch_id && u.branch_name) {
+      if (!bId && u.branch_name) {
         const uBName = (u.branch_name || "").toLowerCase().trim();
         const matched = bList.find((b) => b && !b.is_site && (b.name || "").toLowerCase().trim() === uBName);
         if (matched?.id) map[matched.id] = (map[matched.id] || 0) + 1;
@@ -74,6 +87,8 @@ export function useUsersTabFilter(
   const scopedTotal = useMemo(() => {
     const list = Array.isArray(users) ? users : [];
     if (!isSuperAdmin) return list.length;
+    // When Super Admin views all BUs, scopedTotal = total user count
+    if (!filterBranch || filterBranch === "all") return list.length;
     const bList = Array.isArray(branches) ? branches : [];
     const parentBranch = bList.find((b) => b && !b.is_site);
     if (!parentBranch) return list.length;
@@ -81,16 +96,18 @@ export function useUsersTabFilter(
     const parentName = (parentBranch.name || "").toLowerCase().trim();
     return list.filter((u) => {
       if (!u) return false;
-      const isDirect = u.branch_id === parentBranch.id;
+      const bId = u.branch_id || u.app_roles?.branch_id;
+      const isDirect = bId === parentBranch.id;
       const uBName = (u.branch_name || "").toLowerCase().trim();
       const isNameMatch = Boolean(uBName && parentName && uBName === parentName);
+      const locId = u.default_work_location_id || u.app_roles?.work_location_id;
       const isSiteMatch = Boolean(
-        u.default_work_location_id &&
-        bList.some((b) => b && b.is_site && b.id === `site:${u.default_work_location_id}`)
+        locId &&
+        bList.some((b) => b && b.is_site && b.id === `site:${locId}`)
       );
       return isDirect || isNameMatch || isSiteMatch;
     }).length;
-  }, [users, branches, isSuperAdmin]);
+  }, [users, branches, isSuperAdmin, filterBranch]);
 
   return { displayedUsers, branchCounts, scopedTotal };
 }
