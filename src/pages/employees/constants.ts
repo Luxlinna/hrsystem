@@ -347,6 +347,7 @@ export const INITIAL_EMPLOYEE_FORM: EmployeeFormState = {
   working_hour: "8:00 AM - 5:00 PM (44 hrs/wk)",
   total_working_days: "5.5 Days/Week (Mon - Sat Noon)",
   employment_type: "Full Time",
+  employee_level: "Junior",
   start_date: new Date().toISOString().split("T")[0],
   join_date: new Date().toISOString().split("T")[0],
   line_manager: "",

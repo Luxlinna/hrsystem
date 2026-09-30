@@ -336,6 +336,7 @@ export interface EmployeeFormState {
   working_hour: string;
   total_working_days: string;
   employment_type: string;
+  employee_level?: string;
   start_date: string;
   join_date: string;
   line_manager: string;

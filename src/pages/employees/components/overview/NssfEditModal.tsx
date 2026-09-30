@@ -22,9 +22,7 @@ export const NssfEditModal: React.FC<NssfEditModalProps> = ({
   const defaultIdentityCode =
     employee.nssf_number ||
     employee.employee_code ||
-    (employee as any).national_id_number ||
-    employee.national_id ||
-    (employee as any).id_card_number ||
+    employee.national_id_number ||
     employee.biometric_user_id ||
     "";
 

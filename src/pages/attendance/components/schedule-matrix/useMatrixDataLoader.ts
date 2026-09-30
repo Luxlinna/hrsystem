@@ -133,7 +133,7 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
     } finally {
       setLoading(false);
     }
-  }, [targetBranch, currentDate, isSuperAdmin]);
+  }, [currentDate]);
 
   useEffect(() => {
     loadMatrixData();

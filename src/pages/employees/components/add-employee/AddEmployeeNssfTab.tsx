@@ -15,9 +15,10 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
+  const khName = form.kh_name || (form as any).khmer_name || "";
   const khParts = useMemo(
-    () => (form.kh_name || (form as any).khmer_name || "").trim().split(/\s+/).filter(Boolean),
-    [form.kh_name]
+    () => khName.trim().split(/\s+/).filter(Boolean),
+    [khName]
   );
   const defaultKhLast = khParts.length > 1 ? khParts[0] : (khParts[0] || "");
   const defaultKhFirst = khParts.length > 1 ? khParts.slice(1).join(" ") : (khParts[0] || "");
@@ -26,15 +27,12 @@ export const AddEmployeeNssfTab = memo(function AddEmployeeNssfTab({
     form.nssf_number ||
     form.employee_code ||
     form.national_id_number ||
-    form.national_id ||
-    form.id_card_number ||
     form.biometric_user_id ||
     "";
 
   const defaultJoiningDate =
     form.join_date ||
     form.start_date ||
-    form.hire_date ||
     new Date().toISOString().slice(0, 10);
 
   const nssf: EmployeeNssfInfo = useMemo(() => {

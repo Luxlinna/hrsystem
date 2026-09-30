@@ -73,7 +73,7 @@ export function useSelfServiceData() {
       }
       setLoading(false);
     })();
-  }, [permsLoading, user?.email]);
+  }, [permsLoading, user?.email, user?.user_metadata]);
 
   useEffect(() => {
     if (!selectedEmployee || !user) return;

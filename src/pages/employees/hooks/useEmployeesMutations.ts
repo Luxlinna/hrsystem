@@ -554,7 +554,7 @@ export function useEmployeesMutations({
         setSubmitting(false);
       }
     },
-    [form, targetBranch, actorName, roleName, loadEmployees]
+    [form, targetBranch, actorName, roleName, loadEmployees, editingEmployeeId]
   );
 
   const deleteEmployee = useCallback(

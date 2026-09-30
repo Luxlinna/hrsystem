@@ -59,7 +59,7 @@ export function useUsersTabFilter(
       }
       return true;
     });
-  }, [users, filterBranch, searchQuery, branches, isSuperAdmin]);
+  }, [users, filterBranch, searchQuery, branches]);
 
   const branchCounts = useMemo(() => {
     const map: Record<string, number> = {};

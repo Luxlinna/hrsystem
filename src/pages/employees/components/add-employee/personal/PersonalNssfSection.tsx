@@ -17,15 +17,12 @@ export const PersonalNssfSection = memo(function PersonalNssfSection({
     form.nssf_number ||
     form.employee_code ||
     form.national_id_number ||
-    form.national_id ||
-    form.id_card_number ||
     form.biometric_user_id ||
     "";
 
   const defaultJoiningDate =
     form.join_date ||
     form.start_date ||
-    form.hire_date ||
     new Date().toISOString().slice(0, 10);
 
   const nssf: EmployeeNssfInfo = {
