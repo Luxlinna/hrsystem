@@ -26,11 +26,97 @@ export function useEmployeesMutations({
   loadEmployees,
 }: UseEmployeesMutationsProps) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null);
   const [phoneAccountEmployee, setPhoneAccountEmployee] = useState<Employee | null>(null);
   const [form, setForm] = useState<EmployeeFormState>(INITIAL_EMPLOYEE_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleOpenEditModal = useCallback(
+    (emp: Employee) => {
+      setEditingEmployeeId(emp.id);
+      setForm({
+        ...INITIAL_EMPLOYEE_FORM,
+        first_name: emp.first_name || "",
+        last_name: emp.last_name || "",
+        kh_name: emp.kh_name || emp.foreign_name || "",
+        full_name: emp.full_name || `${emp.first_name || ""} ${emp.last_name || ""}`.trim(),
+        display_name: emp.display_name || "",
+        display_name_format: (emp as any).display_name_format || "First Name Last Name",
+        foreign_name: emp.foreign_name || emp.kh_name || "",
+        foreign_name_format: (emp as any).foreign_name_format || "Last Name First Name",
+        gender: emp.gender?.toLowerCase() === "female" ? "Female" : emp.gender?.toLowerCase() === "other" ? "Other" : "Male",
+        date_of_birth: emp.date_of_birth || (emp as any).dob || "",
+        nationality: emp.nationality || "Khmer",
+        marital_status: emp.marital_status || "Single",
+        is_resident: Boolean(emp.is_resident ?? true),
+        fringe_benefit: Boolean(emp.fringe_benefit),
+        tax_method: emp.tax_method || "Resident",
+        blood_group: emp.blood_group || "None",
+        religion: emp.religion || "None",
+        employee_tax_number: emp.employee_tax_number || "",
+        national_id_number: emp.national_id_number || "",
+        employee_code: emp.employee_code || "",
+        biometric_user_id: emp.biometric_user_id || "",
+        title: emp.title || "Mr",
+        department: emp.department || "Operations",
+        role: emp.role || "Staff",
+        position: emp.position || "",
+        branch_id: emp.branch_id || "",
+        code_bu: emp.code_bu || "",
+        bu_full_name: emp.bu_full_name || emp.branches?.name || "",
+        handle_bu: emp.handle_bu || "",
+        site: emp.site || (emp as any).work_locations?.name || "Main Office",
+        working_location: emp.working_location || "",
+        default_work_location_id: emp.default_work_location_id || "",
+        reports_to: emp.reports_to || "",
+        employment_type: emp.employment_type || "FULL-TIME",
+        start_date: emp.start_date || emp.join_date || "",
+        join_date: emp.join_date || emp.start_date || "",
+        contract_type: emp.contract_type || "PERMANENT (UDC)",
+        contract_effective_date: emp.contract_effective_date || "",
+        contract_end_date: emp.contract_end_date || "",
+        contract_rate: emp.contract_rate || (emp.basic_salary ? String(emp.basic_salary) : ""),
+        contract_rate_after: emp.contract_rate_after || "",
+        contract_rate_currency: emp.contract_rate_currency || "USD",
+        contract_rate_frequency: emp.tax_salary_frequency || "Monthly",
+        basic_salary: emp.basic_salary ? String(emp.basic_salary) : "",
+        bank_name: emp.bank_name || "",
+        bank_account_number: emp.bank_account_number || "",
+        nssf_number: emp.nssf_number || "",
+        register_nssf: Boolean(emp.register_nssf),
+        email: emp.email || "",
+        phone: emp.phone || "",
+        current_address: emp.current_address || "",
+        permanent_address: emp.permanent_address || "",
+        avatar_url: emp.avatar_url || "",
+        status: emp.status || "active",
+        hiring_status: (emp as any).hiring_status || "probation",
+        rate_items: (emp.rate_items as any) || [],
+        asset_bookings: (emp.asset_bookings as any) || [],
+        documents: (emp.documents as any) || [],
+        payroll_attachments: (emp.payroll_attachments as any) || [],
+        personal_attachments: (emp.personal_attachments as any) || [],
+        bank_accounts: (emp.bank_accounts as any) || [],
+        identifications: (emp.identifications as any) || [],
+        emergency_contacts: (emp.emergency_contacts as any) || [],
+        family_members: (emp.family_members as any) || [],
+        education_history: (emp.education_history as any) || [],
+        training_history: (emp.training_history as any) || [],
+        employment_history: (emp.employment_history as any) || [],
+        achievement_history: (emp.achievement_history as any) || [],
+      });
+      setShowAddModal(true);
+    },
+    [setForm, setShowAddModal]
+  );
+
+  const handleCloseModal = useCallback(() => {
+    setShowAddModal(false);
+    setEditingEmployeeId(null);
+    setForm(INITIAL_EMPLOYEE_FORM);
+  }, [setForm, setShowAddModal]);
 
   const inviteUser = useCallback(
     async (email: string, firstName: string, lastName: string, empRole: string) => {
@@ -172,12 +258,17 @@ export function useEmployeesMutations({
         if (cleanPhone) {
           const normPhone = normalizePhone(cleanPhone);
           if (normPhone && normPhone.length >= 6) {
-            const { data: existingPhoneRows } = await supabase
+            let phoneQuery = supabase
               .from("employees")
               .select("id, first_name, last_name, phone")
               .is("deleted_at", null)
-              .or(`phone.ilike.%${normPhone}%,phone.eq.${cleanPhone}`)
-              .limit(10);
+              .or(`phone.ilike.%${normPhone}%,phone.eq.${cleanPhone}`);
+
+            if (editingEmployeeId) {
+              phoneQuery = phoneQuery.neq("id", editingEmployeeId);
+            }
+
+            const { data: existingPhoneRows } = await phoneQuery.limit(10);
 
             const dupPhoneEmp = (existingPhoneRows || []).find((e) => {
               if (!e.phone) return false;
@@ -198,12 +289,17 @@ export function useEmployeesMutations({
 
         // Check for duplicate email
         if (cleanEmail) {
-          const { data: existingEmailRows } = await supabase
+          let emailQuery = supabase
             .from("employees")
             .select("id, first_name, last_name, email")
             .is("deleted_at", null)
-            .ilike("email", cleanEmail)
-            .limit(1);
+            .ilike("email", cleanEmail);
+
+          if (editingEmployeeId) {
+            emailQuery = emailQuery.neq("id", editingEmployeeId);
+          }
+
+          const { data: existingEmailRows } = await emailQuery.limit(1);
 
           if (existingEmailRows && existingEmailRows.length > 0) {
             const dupEmailEmp = existingEmailRows[0];
@@ -234,6 +330,14 @@ export function useEmployeesMutations({
           resolvedBiometricId = String(maxPin + 1).padStart(3, "0");
         }
 
+        let cleanGender = "Male";
+        if (form.gender) {
+          const gLower = form.gender.toLowerCase().trim();
+          if (gLower === "female") cleanGender = "Female";
+          else if (gLower === "other") cleanGender = "Other";
+          else cleanGender = "Male";
+        }
+
         const payload = {
           // Personal Info & Identity
           title: form.title || "Mr",
@@ -244,7 +348,7 @@ export function useEmployeesMutations({
           foreign_name: form.foreign_name?.trim() || null,
           employee_code: form.employee_code?.trim() || resolvedBiometricId || null,
           kh_name: form.kh_name?.trim() || null,
-          gender: form.gender || "Male",
+          gender: cleanGender,
           date_of_birth: form.date_of_birth || null,
           marital_status: form.marital_status || "Single",
           nationality: form.nationality || "Khmer",
@@ -337,6 +441,32 @@ export function useEmployeesMutations({
           biometric_user_id: resolvedBiometricId,
         };
 
+        if (editingEmployeeId) {
+          const { error: updateErr } = await supabase
+            .from("employees")
+            .update(payload)
+            .eq("id", editingEmployeeId);
+
+          if (updateErr) throw updateErr;
+
+          toast("Updated", `${resolvedFullName} has been updated.`, "success");
+          await logActivity({
+            module: "employees",
+            action: "updated",
+            entityType: "employee",
+            entityId: editingEmployeeId,
+            actorName,
+            actorRole: roleName,
+            description: `Updated employee ${resolvedFullName}`,
+          });
+
+          setShowAddModal(false);
+          setEditingEmployeeId(null);
+          setForm(INITIAL_EMPLOYEE_FORM);
+          loadEmployees();
+          return;
+        }
+
         const { data: newEmp, error } = await supabase.from("employees").insert(payload).select().single();
         if (error) throw error;
 
@@ -391,6 +521,7 @@ export function useEmployeesMutations({
         }
 
         setShowAddModal(false);
+        setEditingEmployeeId(null);
         setForm(INITIAL_EMPLOYEE_FORM);
         loadEmployees();
       } catch (err: any) {
@@ -469,7 +600,7 @@ export function useEmployeesMutations({
       try {
         const { error } = await supabase
           .from("employees")
-          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .update({ status: newStatus })
           .eq("id", emp.id);
 
         if (error) throw error;
@@ -507,7 +638,7 @@ export function useEmployeesMutations({
       try {
         const { error } = await supabase
           .from("employees")
-          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .update({ status: newStatus })
           .eq("id", emp.id);
 
         if (error) throw error;
@@ -537,6 +668,10 @@ export function useEmployeesMutations({
   return {
     showAddModal,
     setShowAddModal,
+    editingEmployeeId,
+    setEditingEmployeeId,
+    handleOpenEditModal,
+    handleCloseModal,
     phoneAccountEmployee,
     setPhoneAccountEmployee,
     form,

@@ -122,6 +122,10 @@ export function useEmployees() {
     setPage: filters.setPage,
     showAddModal: mutations.showAddModal,
     setShowAddModal: mutations.setShowAddModal,
+    editingEmployeeId: mutations.editingEmployeeId,
+    setEditingEmployeeId: mutations.setEditingEmployeeId,
+    handleOpenEditModal: mutations.handleOpenEditModal,
+    handleCloseModal: mutations.handleCloseModal,
     form: mutations.form,
     setForm: mutations.setForm,
     submitting: mutations.submitting,
@@ -165,5 +169,8 @@ export function useEmployees() {
     disableEmployee: mutations.disableEmployee,
     deactivateEmployee: mutations.deactivateEmployee,
     roles: data.roles,
+    loadEmployees: data.loadEmployees,
+    actorName,
+    roleName,
   };
 }

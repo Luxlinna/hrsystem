@@ -1,4 +1,4 @@
-import { memo, useState, useRef, useCallback, useEffect } from "react";
+import { memo, useState, useRef, useCallback, useMemo } from "react";
 import type { Employee } from "../../../types";
 import type { EmployeeMovement } from "@/pages/movements/types";
 import { uploadFileToS3 } from "@/lib/s3-storage";
@@ -32,16 +32,39 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
     return `${Math.round(bytes / 1024)} KB`;
   };
 
-  const collectAllAttachments = useCallback((): MovementAttachmentItem[] => {
+  const [localAdded, setLocalAdded] = useState<MovementAttachmentItem[]>([]);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+
+  // Derive all server attachments purely with useMemo (no unstable useEffect loops)
+  const attachments = useMemo(() => {
     const items: MovementAttachmentItem[] = [];
     const seenUrls = new Set<string>();
 
-    // 1. Movement records with documents
-    movements.forEach((m) => {
-      if (m.document_url && !seenUrls.has(m.document_url)) {
+    // Include any locally added files
+    localAdded.forEach((item) => {
+      if (item.url && !seenUrls.has(item.url) && !deletedIds.has(item.id)) {
+        seenUrls.add(item.url);
+        items.push(item);
+      }
+    });
+
+    // 1. Initial attachments (if passed)
+    if (Array.isArray(initialAttachments) && initialAttachments.length > 0) {
+      initialAttachments.forEach((item) => {
+        if (item.url && !seenUrls.has(item.url) && !deletedIds.has(item.id)) {
+          seenUrls.add(item.url);
+          items.push(item);
+        }
+      });
+    }
+
+    // 2. Movement records with documents
+    (movements || []).forEach((m) => {
+      const id = `mov-doc-${m.id}`;
+      if (m.document_url && !seenUrls.has(m.document_url) && !deletedIds.has(id)) {
         seenUrls.add(m.document_url);
         items.push({
-          id: `mov-doc-${m.id}`,
+          id,
           name: m.document_name || `${m.title || "Movement"} Document.pdf`,
           url: m.document_url,
           sizeText: "Attachment",
@@ -50,13 +73,14 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
       }
     });
 
-    // 2. Employee documents array
+    // 3. Employee documents array
     (employeeDocs || []).forEach((d: any, i: number) => {
       const url = d?.url || d?.file_url;
-      if (url && !seenUrls.has(url)) {
+      const id = `emp-doc-${i}-${d.id || i}`;
+      if (url && !seenUrls.has(url) && !deletedIds.has(id)) {
         seenUrls.add(url);
         items.push({
-          id: `emp-doc-${i}-${d.id || Date.now()}`,
+          id,
           name: d.name || "Document.pdf",
           url: url,
           sizeText: d.size ? formatFileSize(d.size) : "Attachment",
@@ -65,14 +89,15 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
       }
     });
 
-    // 3. Asset attachments array
+    // 4. Asset attachments array
     if (Array.isArray(employeeAssetAttachments)) {
       employeeAssetAttachments.forEach((att: any, i: number) => {
         const url = att?.url || att?.file_url;
-        if (url && !seenUrls.has(url)) {
+        const id = `asset-att-${i}-${att.id || i}`;
+        if (url && !seenUrls.has(url) && !deletedIds.has(id)) {
           seenUrls.add(url);
           items.push({
-            id: `asset-att-${i}-${att.id || Date.now()}`,
+            id,
             name: att.name || "Asset Document.pdf",
             url: url,
             sizeText: att.size ? formatFileSize(att.size) : "Attachment",
@@ -83,18 +108,7 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
     }
 
     return items;
-  }, [movements, employeeDocs, employeeAssetAttachments]);
-
-  const [attachments, setAttachments] = useState<MovementAttachmentItem[]>(() => {
-    if (initialAttachments.length > 0) return initialAttachments;
-    return collectAllAttachments();
-  });
-
-  // Sync state whenever employee documents, asset attachments or movements change
-  useEffect(() => {
-    const fresh = collectAllAttachments();
-    setAttachments(fresh);
-  }, [collectAllAttachments]);
+  }, [localAdded, deletedIds, initialAttachments, movements, employeeDocs, employeeAssetAttachments]);
 
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -114,10 +128,7 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
           uploadedAt: new Date().toISOString(),
         };
 
-        setAttachments((prev) => {
-          if (prev.some((p) => p.url === s3.url)) return prev;
-          return [...prev, item];
-        });
+        setLocalAdded((prev) => [...prev, item]);
 
         const currentDocs = Array.isArray(employeeDocs) ? employeeDocs : [];
         const newDocEntry = {
@@ -164,7 +175,8 @@ export const EmployeeMovementAttachmentSection = memo(function EmployeeMovementA
 
   const handleDeleteAttachment = async (id: string) => {
     const target = attachments.find((a) => a.id === id);
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
+    setDeletedIds((prev) => new Set(prev).add(id));
+
     if (target && target.url && !target.url.startsWith("#")) {
       const remainingDocs = (employeeDocs || []).filter((d: any) => d.url !== target.url && d.file_url !== target.url);
       const updatePayload: Record<string, any> = { documents: remainingDocs };

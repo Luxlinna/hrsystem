@@ -1,0 +1,48 @@
+import type { Branch, VisibleColumns, ViewMode, Employee, AccountStatus } from "../../types";
+
+export interface EmployeesFilterBarProps {
+  search: string;
+  setSearch: (search: string) => void;
+  showFilters: boolean;
+  setShowFilters: (show: boolean) => void;
+  showColumnMenu: boolean;
+  setShowColumnMenu: (show: boolean) => void;
+  filterDept: string;
+  setFilterDept: (dept: string) => void;
+  filterStatus: string;
+  setFilterStatus: (status: string) => void;
+  filterJobStatus?: string[];
+  setFilterJobStatus?: (statuses: string[]) => void;
+  filterRole?: string;
+  setFilterRole?: (role: string) => void;
+  filterEmployeeType?: string;
+  setFilterEmployeeType?: (type: string) => void;
+  filterEmployeeLevel?: string;
+  setFilterEmployeeLevel?: (level: string) => void;
+  filterBranch: string;
+  setFilterBranch: (branch: string) => void;
+  filterAccount: string;
+  setFilterAccount: (acc: string) => void;
+  filterDateOption?: string;
+  setFilterDateOption?: (opt: string) => void;
+  filterContractType?: string[];
+  setFilterContractType?: (types: string[]) => void;
+  contractTypes?: string[];
+  jobStatuses?: string[];
+  positions?: string[];
+  employeeTypes?: string[];
+  employeeLevels?: string[];
+  depts: (string | null | undefined)[];
+  branches: Branch[];
+  workSites?: { id: string; name: string; branch_id: string }[];
+  visibleColumns: VisibleColumns;
+  setVisibleColumns: React.Dispatch<React.SetStateAction<VisibleColumns>>;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+  employees?: Employee[];
+  accountStatus?: Record<string, AccountStatus>;
+  onExportCSV?: () => void;
+  onOpenImport?: () => void;
+  showSalary?: boolean;
+  setShowSalary?: (show: boolean) => void;
+}

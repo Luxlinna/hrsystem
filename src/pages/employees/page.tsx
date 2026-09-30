@@ -8,6 +8,7 @@ import { EmployeesGridView } from "./components/EmployeesGridView";
 import { Pagination } from "./components/Pagination";
 import { AddEmployeeModal } from "./components/AddEmployeeModal";
 import { SetUpPhoneAccountModal } from "./components/SetUpPhoneAccountModal";
+import { ImportEmployeesModal } from "./components/ImportEmployeesModal";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useEmployees } from "./hooks/useEmployees";
 import { useEmployeePermission } from "./hooks/useEmployeePermission";
@@ -23,7 +24,9 @@ export default function EmployeesPage() {
     filterWorkLocation, setFilterWorkLocation, employeeLocations = [],
     filterAccount, setFilterAccount, filterDateOption, setFilterDateOption,
     filterContractType, setFilterContractType, sortField, sortDirection, selectedIds, selectAll,
-    pageSize, setPageSize, page, setPage, showAddModal, setShowAddModal, form, setForm,
+    pageSize, setPageSize, page, setPage, showAddModal, setShowAddModal,
+    editingEmployeeId, setEditingEmployeeId, handleOpenEditModal, handleCloseModal,
+    form, setForm,
     submitting, accountStatus, invitingId, deletingId, showFilters, setShowFilters,
     showColumnMenu, setShowColumnMenu, visibleColumns, setVisibleColumns, viewMode,
     setViewMode, depts, positions, employeeTypes, employeeLevels, branchCount, managers, stats, filtered, empTotalPages,
@@ -31,13 +34,16 @@ export default function EmployeesPage() {
     handleSelectOne, bulkInvite, bulkDelete, handleAddEmployee,
     inviteUser, phoneAccountEmployee, setPhoneAccountEmployee, setUpPhoneUser,
     deleteEmployee, disableEmployee, deactivateEmployee, roles,
+    loadEmployees, actorName, roleName,
   } = useEmployees();
 
   const navigate = useNavigate();
   const { canManageEmployeeSettings } = useEmployeePermission();
   const [showSalary, setShowSalary] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const handleOpenAddModal = useCallback(() => {
+    setEditingEmployeeId(null);
     const isSite = selectedBranchId && selectedBranchId.startsWith("site:");
     const branchId = isSite
       ? (visibleBranches.find((b) => b.id === selectedBranchId)?.branch_id || "")
@@ -60,7 +66,7 @@ export default function EmployeesPage() {
       default_work_location_id: siteId,
     });
     setShowAddModal(true);
-  }, [selectedBranchId, targetBranch, userBranchId, visibleBranches, branches, setForm, setShowAddModal]);
+  }, [selectedBranchId, targetBranch, userBranchId, visibleBranches, branches, setForm, setShowAddModal, setEditingEmployeeId]);
 
   const handleInviteEmployee = useCallback(
     (e: any) => inviteUser(e.email, e.first_name, e.last_name, e.role),
@@ -137,6 +143,7 @@ export default function EmployeesPage() {
         setViewMode={setViewMode}
         employees={filtered}
         accountStatus={accountStatus}
+        onOpenImport={() => setShowImportModal(true)}
         showSalary={showSalary}
         setShowSalary={setShowSalary}
       />
@@ -171,6 +178,7 @@ export default function EmployeesPage() {
             onInvite={handleInviteEmployee}
             onSetUpPhoneAccount={setPhoneAccountEmployee}
             onDelete={deleteEmployee}
+            onEdit={handleOpenEditModal}
             onDisable={disableEmployee}
             onDeactivate={deactivateEmployee}
           />
@@ -215,13 +223,14 @@ export default function EmployeesPage() {
 
       <AddEmployeeModal
         isOpen={showAddModal}
+        isEdit={Boolean(editingEmployeeId)}
         form={form}
         setForm={setForm}
         branches={branches}
         managers={managers}
         submitting={submitting}
         isSuperAdmin={isSuperAdmin}
-        onClose={() => setShowAddModal(false)}
+        onClose={handleCloseModal}
         onSubmit={handleAddEmployee}
       />
 
@@ -231,6 +240,15 @@ export default function EmployeesPage() {
         isOpen={Boolean(phoneAccountEmployee)}
         onClose={() => setPhoneAccountEmployee(null)}
         onSubmit={setUpPhoneUser}
+      />
+
+      <ImportEmployeesModal
+        isOpen={showImportModal}
+        branches={branches}
+        actorName={actorName}
+        roleName={roleName}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={loadEmployees}
       />
     </div>
   );

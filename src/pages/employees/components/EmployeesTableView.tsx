@@ -22,6 +22,7 @@ interface EmployeesTableViewProps {
   onInvite: (e: Employee) => void;
   onSetUpPhoneAccount?: (e: Employee) => void;
   onDelete: (e: Employee) => void;
+  onEdit?: (e: Employee) => void;
   onDisable?: (e: Employee) => void;
   onDeactivate?: (e: Employee) => void;
 }
@@ -38,6 +39,7 @@ export const EmployeesTableView = memo(function EmployeesTableView({
   onInvite,
   onSetUpPhoneAccount,
   onDelete,
+  onEdit,
   onDisable,
   onDeactivate,
 }: EmployeesTableViewProps) {
@@ -135,6 +137,7 @@ export const EmployeesTableView = memo(function EmployeesTableView({
               onInvite={onInvite}
               onSetUpPhoneAccount={onSetUpPhoneAccount}
               onDelete={onDelete}
+              onEdit={onEdit}
               onDisable={onDisable}
               onDeactivate={onDeactivate}
             />

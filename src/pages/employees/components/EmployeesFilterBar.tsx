@@ -1,57 +1,11 @@
 import { memo } from "react";
-import type { Branch, VisibleColumns, ViewMode, Employee, AccountStatus } from "../types";
+import type { EmployeesFilterBarProps } from "./filter/filterBarTypes";
 import { EmployeesExportMenu } from "./EmployeesExportMenu";
 import { EmployeesAllDateFilter } from "./EmployeesAllDateFilter";
 import { EmployeesContractTypeFilter } from "./EmployeesContractTypeFilter";
 import { EmployeesJobStatusFilter } from "./EmployeesJobStatusFilter";
 import { EmployeesFilterDropdown } from "./EmployeesFilterDropdown";
 import { EmployeesAdvancedFilters } from "./EmployeesAdvancedFilters";
-
-interface EmployeesFilterBarProps {
-  search: string;
-  setSearch: (search: string) => void;
-  showFilters: boolean;
-  setShowFilters: (show: boolean) => void;
-  showColumnMenu: boolean;
-  setShowColumnMenu: (show: boolean) => void;
-  filterDept: string;
-  setFilterDept: (dept: string) => void;
-  filterStatus: string;
-  setFilterStatus: (status: string) => void;
-  filterJobStatus?: string[];
-  setFilterJobStatus?: (statuses: string[]) => void;
-  filterRole?: string;
-  setFilterRole?: (role: string) => void;
-  filterEmployeeType?: string;
-  setFilterEmployeeType?: (type: string) => void;
-  filterEmployeeLevel?: string;
-  setFilterEmployeeLevel?: (level: string) => void;
-  filterBranch: string;
-  setFilterBranch: (branch: string) => void;
-  filterAccount: string;
-  setFilterAccount: (acc: string) => void;
-  filterDateOption?: string;
-  setFilterDateOption?: (opt: string) => void;
-  filterContractType?: string[];
-  setFilterContractType?: (types: string[]) => void;
-  contractTypes?: string[];
-  jobStatuses?: string[];
-  positions?: string[];
-  employeeTypes?: string[];
-  employeeLevels?: string[];
-  depts: (string | null | undefined)[];
-  branches: Branch[];
-  workSites?: { id: string; name: string; branch_id: string }[];
-  visibleColumns: VisibleColumns;
-  setVisibleColumns: React.Dispatch<React.SetStateAction<VisibleColumns>>;
-  viewMode: ViewMode;
-  setViewMode: (mode: ViewMode) => void;
-  employees?: Employee[];
-  accountStatus?: Record<string, AccountStatus>;
-  onExportCSV?: () => void;
-  showSalary?: boolean;
-  setShowSalary?: (show: boolean) => void;
-}
 
 export const EmployeesFilterBar = memo(function EmployeesFilterBar({
   search,
@@ -92,6 +46,7 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
   setVisibleColumns,
   employees = [],
   accountStatus = {},
+  onOpenImport,
   showSalary = false,
   setShowSalary,
 }: EmployeesFilterBarProps) {
@@ -129,8 +84,9 @@ export const EmployeesFilterBar = memo(function EmployeesFilterBar({
           {/* Import Button */}
           <button
             type="button"
-            className="w-7 h-7 rounded border border-slate-300 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50 flex items-center justify-center text-sm cursor-pointer"
-            title="Import Data"
+            onClick={onOpenImport}
+            className="w-7 h-7 rounded border border-slate-300 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50 flex items-center justify-center text-sm cursor-pointer transition-colors"
+            title="Import Data (Excel / CSV)"
           >
             <i className="ri-download-2-line text-xs text-[#253C7D]" />
           </button>

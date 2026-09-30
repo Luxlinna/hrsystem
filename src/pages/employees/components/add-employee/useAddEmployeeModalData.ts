@@ -45,14 +45,12 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
       supabase.from("user_role_assignments").select("id, user_id, email, display_name, role_id, deleted_at, app_roles(id, name, is_admin, branch_id)").is("deleted_at", null),
       supabase.from("departments").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
       supabase.from("positions").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
-      supabase.from("employee_types").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
       supabase.from("contract_types").select("id, name, term, branch_id").is("deleted_at", null).order("sort_order"),
-    ]).then(([bRes, wRes, eRes, uRes, dRes, pRes, tRes, cRes]) => {
+    ]).then(([bRes, wRes, eRes, uRes, dRes, pRes, cRes]) => {
       if (bRes.data) setDbBranches(bRes.data);
       if (wRes.data) setDbWorkLocations(wRes.data);
       if (dRes.data) setDbDepartments(dRes.data);
       if (pRes.data) setDbPositions(pRes.data);
-      if (tRes.data) setDbEmployeeTypes(tRes.data);
       if (cRes.data) setDbContractTypes(cRes.data);
 
       const rawEmployees = (eRes.data || []) as any[];

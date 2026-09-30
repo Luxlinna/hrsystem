@@ -16,8 +16,6 @@ export const ProfilePersonalInfoSection = memo(function ProfilePersonalInfoSecti
     employee.full_name ||
     "-";
 
-  const foreignName = employee.kh_name || employee.foreign_name || "-";
-  const displayForeignAs = "Last Name First Name";
   const enrolledId = employee.biometric_user_id || employee.employee_code || "-";
   const paymentMethod = employee.bank_accounts?.[0]?.payment_method || "-";
 
@@ -49,13 +47,8 @@ export const ProfilePersonalInfoSection = memo(function ProfilePersonalInfoSecti
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
-          <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Foreign Name</span>
-          <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{foreignName}</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
-          <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Display Foreign Name as</span>
-          <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{displayForeignAs}</span>
+          <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Khmer Name (KH Name)</span>
+          <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{employee.kh_name || "-"}</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">

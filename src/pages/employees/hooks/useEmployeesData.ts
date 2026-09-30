@@ -94,20 +94,32 @@ export function useEmployeesData({
       if (data) setWorkSites(data);
     });
 
-    const loadStr = (tbl: string, setter: (vals: string[]) => void) => {
-      supabase.from(tbl).select("name").is("deleted_at", null).order("sort_order").order("name").then(({ data, error }) => {
+    const loadStr = async (tbl: string, setter: (vals: string[]) => void, fallbackVals: string[] = []) => {
+      try {
+        const { data, error } = await supabase
+          .from(tbl)
+          .select("name")
+          .is("deleted_at", null)
+          .order("sort_order", { ascending: true })
+          .order("name", { ascending: true });
+
         if (!error && data && data.length > 0) {
           setter(Array.from(new Set(data.map((d: any) => d.name).filter(Boolean))));
+        } else if (fallbackVals && fallbackVals.length > 0) {
+          setter(fallbackVals);
         }
-      });
+      } catch {
+        if (fallbackVals && fallbackVals.length > 0) {
+          setter(fallbackVals);
+        }
+      }
     };
 
-    loadStr("departments", setDepartments);
-    loadStr("positions", setPositions);
-    loadStr("employee_types", setEmployeeTypes);
-    loadStr("employee_levels", setEmployeeLevels);
-    loadStr("contract_types", setContractTypes);
-    loadStr("job_statuses", setJobStatuses);
+    loadStr("departments", setDepartments, BU_DEFAULT_DEPARTMENTS);
+    loadStr("positions", setPositions, BU_DEFAULT_POSITIONS);
+    loadStr("employee_levels", setEmployeeLevels, BU_DEFAULT_EMPLOYEE_LEVELS);
+    loadStr("contract_types", setContractTypes, BU_DEFAULT_CONTRACT_TYPES);
+    loadStr("job_statuses", setJobStatuses, BU_DEFAULT_JOB_STATUSES);
 
     supabase.from("app_roles").select("id, name, color").order("name").then(({ data }) => {
       if (data) setRoles(data);

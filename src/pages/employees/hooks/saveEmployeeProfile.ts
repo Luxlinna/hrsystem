@@ -80,6 +80,14 @@ export async function executeSaveEmployeeProfile({
     }
   }
 
+  let cleanGender = form.gender;
+  if (cleanGender) {
+    const gLower = cleanGender.toLowerCase().trim();
+    if (gLower === "female") cleanGender = "Female";
+    else if (gLower === "other") cleanGender = "Other";
+    else cleanGender = "Male";
+  }
+
   const { error } = await supabase
     .from("employees")
     .update({
@@ -89,7 +97,7 @@ export async function executeSaveEmployeeProfile({
       display_name: form.display_name,
       foreign_name: form.foreign_name,
       title: form.title,
-      gender: form.gender,
+      gender: cleanGender || null,
       date_of_birth: form.date_of_birth,
       marital_status: form.marital_status,
       nationality: form.nationality,

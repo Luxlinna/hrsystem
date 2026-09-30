@@ -14,6 +14,7 @@ import { AddEmployeeFormFooter } from "./add-employee/AddEmployeeFormFooter";
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
+  isEdit?: boolean;
   form: EmployeeFormState;
   setForm: React.Dispatch<React.SetStateAction<EmployeeFormState>>;
   branches: Branch[];
@@ -26,6 +27,7 @@ interface AddEmployeeModalProps {
 
 export const AddEmployeeModal = memo(function AddEmployeeModal({
   isOpen,
+  isEdit = false,
   form,
   setForm,
   submitting,
@@ -103,7 +105,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
       style={{ left: leftOffset }}
     >
       {/* Top Header */}
-      <AddEmployeeHeader onClose={onClose} />
+      <AddEmployeeHeader isEdit={isEdit} onClose={onClose} />
 
       {/* Main 2-Column Content Body */}
       <form onSubmit={onSubmit} className="flex-1 overflow-y-auto bg-white p-6 sm:p-8">

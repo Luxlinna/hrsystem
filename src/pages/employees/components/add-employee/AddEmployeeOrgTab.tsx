@@ -28,8 +28,11 @@ interface AddEmployeeOrgTabProps {
 export const AddEmployeeOrgTab = memo(function AddEmployeeOrgTab({
   form,
   onChange,
+  cleanBranches = [],
+  currentBranch,
   currentBranchName,
   workSites,
+  onSelectBranch,
   onSelectSite,
   buManagers = [],
   departments = [],
@@ -40,12 +43,15 @@ export const AddEmployeeOrgTab = memo(function AddEmployeeOrgTab({
   return (
     <div className="w-full">
       <div className="bg-white rounded-xl p-6 sm:p-8 border border-slate-200/90 shadow-2xs space-y-6">
-        {/* 1. Joining Info with dynamic BU departments, positions, and employeeTypes */}
+        {/* 1. Joining Info with dynamic BU departments, positions, employeeTypes, and sites */}
         <OrgJoiningInfoSection
           form={form}
           onChange={onChange}
-          workSites={workSites}
+          cleanBranches={cleanBranches}
+          currentBranch={currentBranch}
           currentBranchName={currentBranchName}
+          workSites={workSites}
+          onSelectBranch={onSelectBranch}
           onSelectSite={onSelectSite}
           buManagers={buManagers}
           departments={departments}
