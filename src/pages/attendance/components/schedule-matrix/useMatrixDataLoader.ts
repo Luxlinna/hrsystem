@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { compareBiometricIds } from "@/lib/biometricUtils";
 
-export function useMatrixDataLoader(targetBranch: string | null, currentDate: Date) {
+export function useMatrixDataLoader(targetBranch: string | null, currentDate: Date, isSuperAdmin: boolean = false) {
   const [loading, setLoading] = useState(true);
   const [rawEmployees, setRawEmployees] = useState<any[]>([]);
   const [templateAssignments, setTemplateAssignments] = useState<Record<string, any>>({});
@@ -21,7 +21,8 @@ export function useMatrixDataLoader(targetBranch: string | null, currentDate: Da
         .is("deleted_at", null)
         .order("first_name");
 
-      if (targetBranch) {
+      // SuperAdmin sees all employees across all BUs; others are scoped to their branch
+      if (targetBranch && !isSuperAdmin) {
         empQuery = empQuery.eq("branch_id", targetBranch);
       }
 

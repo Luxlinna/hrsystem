@@ -50,7 +50,7 @@ export function useAttendanceData(
     });
 
     // 2. Fetch real BU tables for Departments, Positions, Employee Types, Levels
-    const loadRealTable = async (tbl: string, setter: (vals: string[]) => void) => {
+    const loadRealTable = async (tbl: string, setter: (vals: string[]) => void, fallback: string[] = []) => {
       try {
         const { data, error } = await supabase
           .from(tbl)
@@ -58,16 +58,21 @@ export function useAttendanceData(
           .is("deleted_at", null)
           .order("sort_order", { ascending: true })
           .order("name", { ascending: true });
-        if (!error && data) setter(Array.from(new Set(data.map((d: any) => d.name).filter(Boolean))));
+        if (!error && data) {
+          const vals = Array.from(new Set(data.map((d: any) => d.name).filter(Boolean)));
+          setter(vals.length > 0 ? vals : fallback);
+        } else if (fallback.length > 0) {
+          setter(fallback);
+        }
       } catch {
-        // DB only
+        if (fallback.length > 0) setter(fallback);
       }
     };
 
     loadRealTable("departments", setDepts);
     loadRealTable("positions", setPositions);
-    loadRealTable("employee_types", setEmployeeTypes);
-    loadRealTable("employee_levels", setEmployeeLevels);
+    loadRealTable("employee_types", setEmployeeTypes, ["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
+    loadRealTable("employee_levels", setEmployeeLevels, ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
 
     // 3. Fetch Biometric Devices
     const { data: bioData } = await supabase

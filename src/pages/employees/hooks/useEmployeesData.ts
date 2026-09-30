@@ -80,7 +80,7 @@ export function useEmployeesData({
       if (data) setWorkSites(data);
     });
 
-    const loadRealTable = async (tbl: string, setter: (vals: string[]) => void) => {
+    const loadRealTable = async (tbl: string, setter: (vals: string[]) => void, fallback: string[] = []) => {
       try {
         const { data, error } = await supabase
           .from(tbl)
@@ -90,17 +90,20 @@ export function useEmployeesData({
           .order("name", { ascending: true });
 
         if (!error && data) {
-          setter(Array.from(new Set(data.map((d: any) => d.name).filter(Boolean))));
+          const vals = Array.from(new Set(data.map((d: any) => d.name).filter(Boolean)));
+          setter(vals.length > 0 ? vals : fallback);
+        } else if (fallback.length > 0) {
+          setter(fallback);
         }
       } catch {
-        // Only real data from database
+        if (fallback.length > 0) setter(fallback);
       }
     };
 
     loadRealTable("departments", setDepartments);
     loadRealTable("positions", setPositions);
-    loadRealTable("employee_types", setEmployeeTypes);
-    loadRealTable("employee_levels", setEmployeeLevels);
+    loadRealTable("employee_types", setEmployeeTypes, ["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
+    loadRealTable("employee_levels", setEmployeeLevels, ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
     loadRealTable("contract_types", setContractTypes);
     loadRealTable("job_statuses", setJobStatuses);
 

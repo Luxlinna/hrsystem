@@ -8,7 +8,7 @@ import { buildAvailableShiftList, deriveShiftCode } from "./matrixShiftHelper";
 import type { DayColumn, EmployeeRosterRow } from "./types";
 
 export function useAttendanceScheduleMatrix() {
-  const { targetBranch } = useBranchScope();
+  const { targetBranch, isSuperAdmin } = useBranchScope();
 
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2026, 8, 1));
   const [activeTab, setActiveTab] = useState<"schedules" | "no_schedules">("schedules");
@@ -33,13 +33,18 @@ export function useAttendanceScheduleMatrix() {
     supabase.from("work_locations").select("id, name, branch_id").is("deleted_at", null).order("name").then(({ data }) => {
       if (data) setWorkLocations(data);
     });
-    const loadTable = async (tbl: string, setter: (v: string[]) => void) => {
+    const loadTable = async (tbl: string, setter: (v: string[]) => void, fallback: string[] = []) => {
       const { data } = await supabase.from(tbl).select("name").is("deleted_at", null).order("sort_order", { ascending: true }).order("name");
-      if (data) setter(Array.from(new Set(data.map((d: any) => d.name).filter(Boolean))));
+      if (data) {
+        const vals = Array.from(new Set(data.map((d: any) => d.name).filter(Boolean)));
+        setter(vals.length > 0 ? vals : fallback);
+      } else if (fallback.length > 0) {
+        setter(fallback);
+      }
     };
     loadTable("positions", setPositionList);
-    loadTable("employee_types", setEmployeeTypeList);
-    loadTable("employee_levels", setEmployeeLevelList);
+    loadTable("employee_types", setEmployeeTypeList, ["FULL-TIME", "HOD", "INTERNSHIP", "PART-TIME"]);
+    loadTable("employee_levels", setEmployeeLevelList, ["Intern", "Junior", "Mid-level", "Senior", "Lead", "Manager", "Director", "Executive"]);
   }, []);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [manualCellOverrides, setManualCellOverrides] = useState<Record<string, string>>(() => {
@@ -56,7 +61,7 @@ export function useAttendanceScheduleMatrix() {
     templatesById,
     attendanceRecords,
     loadMatrixData,
-  } = useMatrixDataLoader(targetBranch, currentDate);
+  } = useMatrixDataLoader(targetBranch, currentDate, isSuperAdmin);
 
   const availableShifts = useMemo(() => {
     return buildAvailableShiftList(rawShifts, rawTemplates);
