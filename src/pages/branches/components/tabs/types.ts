@@ -1,6 +1,7 @@
 export type BranchTabType =
   | "profile"
   | "sites"
+  | "divisions"
   | "departments"
   | "positions"
   | "employee-types"
@@ -22,6 +23,13 @@ export interface TabItem {
 }
 
 export const STRUCTURE_TABS: TabItem[] = [
+  {
+    id: "divisions",
+    label: "Divisions",
+    icon: "ri-layout-masonry-line",
+    description: "Corporate divisions & business groups",
+    group: "structure",
+  },
   {
     id: "departments",
     label: "Departments",

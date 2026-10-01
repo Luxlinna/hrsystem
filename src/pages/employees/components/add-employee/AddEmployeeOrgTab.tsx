@@ -19,6 +19,7 @@ interface AddEmployeeOrgTabProps {
   onSelectBranch?: (branchId: string) => void;
   onSelectSite: (siteIdOrVal: string) => void;
   buManagers?: ModalManagerEmployee[];
+  divisions?: string[];
   departments?: string[];
   positions?: string[];
   employeeTypes?: string[];
@@ -35,6 +36,7 @@ export const AddEmployeeOrgTab = memo(function AddEmployeeOrgTab({
   onSelectBranch,
   onSelectSite,
   buManagers = [],
+  divisions = [],
   departments = [],
   positions = [],
   employeeTypes = [],
@@ -43,7 +45,7 @@ export const AddEmployeeOrgTab = memo(function AddEmployeeOrgTab({
   return (
     <div className="w-full">
       <div className="bg-white rounded-xl p-6 sm:p-8 border border-slate-200/90 shadow-2xs space-y-6">
-        {/* 1. Joining Info with dynamic BU departments, positions, employeeTypes, and sites */}
+        {/* 1. Joining Info with dynamic BU divisions, departments, positions, employeeTypes, and sites */}
         <OrgJoiningInfoSection
           form={form}
           onChange={onChange}
@@ -54,6 +56,7 @@ export const AddEmployeeOrgTab = memo(function AddEmployeeOrgTab({
           onSelectBranch={onSelectBranch}
           onSelectSite={onSelectSite}
           buManagers={buManagers}
+          divisions={divisions}
           departments={departments}
           positions={positions}
           employeeTypes={employeeTypes}

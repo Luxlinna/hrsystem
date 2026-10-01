@@ -1,3 +1,25 @@
+export interface Division {
+  id: string;
+  branch_id?: string | null;
+  name: string;
+  code?: string | null;
+  head_of_division_id?: string | null;
+  head_of_division_name?: string | null;
+  sort_order?: number;
+  status: "active" | "disabled" | string;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+}
+
+export interface DivisionFormState {
+  name: string;
+  code: string;
+  head_of_division_id: string;
+  head_of_division_name: string;
+  status: "active" | "disabled";
+}
+
 export interface Department {
   id: string;
   branch_id?: string | null;

@@ -14,7 +14,7 @@ export function useSelfServiceData() {
 
   const [searchParams] = useSearchParams();
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "payslips");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "attendance");
   const quickCheckIn = searchParams.get("quickCheckIn") === "1";
   const quickCheckOut = searchParams.get("quickCheckOut") === "1";
   const [loading, setLoading] = useState(true);

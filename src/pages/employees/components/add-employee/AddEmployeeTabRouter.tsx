@@ -19,6 +19,7 @@ interface AddEmployeeTabRouterProps {
   onSelectSite: (siteIdOrVal: string) => void;
   buManagers?: ModalManagerEmployee[];
   buCeos?: ModalManagerEmployee[];
+  divisions?: string[];
   departments?: string[];
   positions?: string[];
   employeeTypes?: string[];
@@ -37,6 +38,7 @@ export const AddEmployeeTabRouter = memo(function AddEmployeeTabRouter({
   onSelectBranch,
   onSelectSite,
   buManagers = [],
+  divisions = [],
   departments = [],
   positions = [],
   employeeTypes = [],
@@ -58,6 +60,7 @@ export const AddEmployeeTabRouter = memo(function AddEmployeeTabRouter({
           onSelectBranch={onSelectBranch}
           onSelectSite={onSelectSite}
           buManagers={buManagers}
+          divisions={divisions}
           departments={departments}
           positions={positions}
           employeeTypes={employeeTypes}

@@ -44,167 +44,130 @@ export const MeetingRoomsFilterBar = memo(function MeetingRoomsFilterBar({
   const distinctFloors = availableFloors && availableFloors.length > 0 ? availableFloors : [3, 5];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200/80 p-3.5 shadow-2xs space-y-3">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 shadow-2xs space-y-3 transition-colors">
+      {/* Top Row: Date Navigation & Booking Status Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Date Navigator */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => onShiftDate(-1)}
-            className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 transition-colors cursor-pointer"
-            title="Previous Day"
-          >
-            <i className="ri-arrow-left-s-line text-sm" />
-          </button>
-          <button
-            onClick={onJumpToToday}
-            className="px-2.5 py-1 text-xs font-bold text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
-          >
-            Today
-          </button>
-          <button
-            onClick={() => onShiftDate(1)}
-            className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 transition-colors cursor-pointer"
-            title="Next Day"
-          >
-            <i className="ri-arrow-right-s-line text-sm" />
-          </button>
-          <span className="font-extrabold text-sm text-gray-900 ml-1">
+          <div className="inline-flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-200/80 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => onShiftDate(-1)}
+              className="p-1 rounded text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
+              title="Previous Day"
+            >
+              <i className="ri-arrow-left-s-line text-xs" />
+            </button>
+            <button
+              type="button"
+              onClick={onJumpToToday}
+              className="px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 rounded transition-all cursor-pointer"
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => onShiftDate(1)}
+              className="p-1 rounded text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
+              title="Next Day"
+            >
+              <i className="ri-arrow-right-s-line text-xs" />
+            </button>
+          </div>
+          <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 ml-1">
             {formatDateDisplay(selectedDate)}
           </span>
         </div>
 
-        {/* Status Tabs */}
-        <div className="flex items-center gap-1.5 bg-gray-50 p-1 rounded-xl border border-gray-100">
-          <button
-            onClick={() => setStatusTab("all")}
-            className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              statusTab === "all"
-                ? "bg-[#253C7D] text-white shadow-xs"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            All Bookings
-          </button>
-          <button
-            onClick={() => setStatusTab("pending")}
-            className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
-              statusTab === "pending"
-                ? "bg-amber-600 text-white shadow-xs"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <span>Pending</span>
-            {pendingCount > 0 && (
-              <span
-                className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
-                  statusTab === "pending" ? "bg-amber-800 text-white" : "bg-amber-100 text-amber-800"
-                }`}
-              >
-                {pendingCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setStatusTab("my")}
-            className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              statusTab === "my"
-                ? "bg-[#253C7D] text-white shadow-xs"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            My Bookings
-          </button>
-        </div>
-      </div>
-
-      {/* Second Row: Floor Filter & Room Selector & Search */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-2 border-t border-gray-100">
-        {/* Floor Filter Buttons */}
-        <div className="flex items-center gap-1.5 w-full sm:w-auto flex-wrap">
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mr-1">Floor:</span>
-          <button
-            onClick={() => setFilterFloor("all")}
-            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              filterFloor === "all"
-                ? "bg-gray-900 text-white shadow-xs"
-                : "bg-gray-100 hover:bg-gray-200 text-gray-600"
-            }`}
-          >
-            All Floors
-          </button>
-          {distinctFloors.map((fl) => {
-            const flStr = String(fl);
-            const isVip = fl === 5;
-            const isSelected = filterFloor === flStr;
+        {/* Status Tabs Segment */}
+        <div className="inline-flex items-center bg-slate-100/90 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/70 dark:border-slate-700 self-start sm:self-auto">
+          {(["all", "pending", "my"] as const).map((tab) => {
+            const isActive = statusTab === tab;
+            const label = tab === "all" ? "All Bookings" : tab === "pending" ? "Pending" : "My Bookings";
             return (
               <button
-                key={fl}
-                onClick={() => setFilterFloor(flStr)}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  isSelected
-                    ? isVip
-                      ? "bg-purple-600 text-white shadow-xs"
-                      : "bg-sky-600 text-white shadow-xs"
-                    : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+                key={tab}
+                type="button"
+                onClick={() => setStatusTab(tab)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  isActive
+                    ? tab === "pending"
+                      ? "bg-amber-500 text-white shadow-xs font-bold"
+                      : "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-xs font-bold"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
-                {isVip ? "Floor 5 (VIP)" : `Floor ${fl}`}
+                <span>{label}</span>
+                {tab === "pending" && pendingCount > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${isActive ? "bg-amber-700 text-white" : "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300"}`}>
+                    {pendingCount}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
+      </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto flex-1 justify-end flex-wrap">
-          {/* Branch Filter (for cross-branch HR Division & Super Admin) */}
+      {/* Bottom Row: Clean Filter Controls */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+        {/* Search */}
+        <div className="relative flex-1 sm:max-w-xs">
+          <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search bookings or rooms..."
+            className="w-full pl-8 pr-7 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 font-medium transition-colors"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <i className="ri-close-circle-fill text-xs" />
+            </button>
+          )}
+        </div>
+
+        {/* Filters Group */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={filterFloor}
+            onChange={(e) => setFilterFloor(e.target.value)}
+            className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer"
+          >
+            <option value="all">All Floors</option>
+            {distinctFloors.map((fl) => (
+              <option key={fl} value={String(fl)}>Floor {fl}</option>
+            ))}
+          </select>
+
+          <select
+            value={filterRoomId}
+            onChange={(e) => setFilterRoomId(e.target.value)}
+            className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer max-w-[180px] truncate"
+          >
+            <option value="all">All Rooms</option>
+            {rooms.map((r) => (
+              <option key={r.id} value={r.id}>{r.name} (F{r.floor || 3})</option>
+            ))}
+          </select>
+
           {availableBranches && availableBranches.length > 1 && setBranchFilter && (
             <select
               value={branchFilter}
               onChange={(e) => setBranchFilter(e.target.value)}
-              className="px-2.5 py-1 bg-blue-50/80 border border-blue-200 rounded-xl text-xs text-[#253C7D] font-bold focus:outline-none focus:border-[#253C7D] cursor-pointer"
-              title="Filter rooms by branch"
+              className="px-3 py-1.5 bg-blue-50 dark:bg-sky-950/60 border border-blue-200 dark:border-sky-800/60 rounded-xl text-xs text-[#253C7D] dark:text-sky-300 font-semibold focus:outline-none focus:border-[#253C7D] cursor-pointer"
             >
               <option value="all">All Branches ({availableBranches.length})</option>
               {availableBranches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
+                <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
           )}
-
-          {/* Room Selector */}
-          <select
-            value={filterRoomId}
-            onChange={(e) => setFilterRoomId(e.target.value)}
-            className="px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 font-medium focus:outline-none focus:border-[#253C7D] cursor-pointer"
-          >
-            <option value="all">All Rooms</option>
-            {rooms.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name} (Floor {r.floor || 3}){r.branch_name ? ` · ${r.branch_name}` : ""}
-              </option>
-            ))}
-          </select>
-
-          {/* Search */}
-          <div className="relative w-full sm:w-64">
-            <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search title, employee, team..."
-              className="w-full pl-7 pr-6 py-1 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:border-[#253C7D] font-medium"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-              >
-                <i className="ri-close-circle-fill text-xs" />
-              </button>
-            )}
-          </div>
         </div>
       </div>
     </div>

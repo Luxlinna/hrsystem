@@ -29,7 +29,7 @@ export const ALL_MODULES = [
   { key: "documents", label: "Documents", icon: "ri-folder-line", group: "Operations" },
   { key: "reports", label: "Reports", icon: "ri-file-chart-line", group: "Insights" },
   { key: "audit-log", label: "Audit Log", icon: "ri-shield-check-line", group: "Insights" },
-  { key: "branches", label: "BU", icon: "ri-building-line", group: "System" },
+  { key: "branches", label: "Organization", icon: "ri-building-line", group: "System" },
   { key: "notifications", label: "Notifications", icon: "ri-notification-3-line", group: "System" },
   { key: "unity-apps", label: "Unity Apps", icon: "ri-apps-line", group: "System" },
   { key: "settings", label: "Settings", icon: "ri-settings-3-line", group: "System" },

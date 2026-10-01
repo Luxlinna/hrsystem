@@ -6,6 +6,7 @@ import { BranchGrid } from "./BranchGrid";
 import { BranchCompanyProfileSection } from "./BranchCompanyProfileSection";
 import { BranchWorkSitesSection } from "./BranchWorkSitesSection";
 import { BranchBiometricsSection } from "./BranchBiometricsSection";
+import { BranchDivisionsSection } from "./BranchDivisionsSection";
 import { BranchDepartmentsSection } from "./BranchDepartmentsSection";
 import { BranchPositionsSection } from "./BranchPositionsSection";
 import { BranchEmployeeTypesSection } from "./BranchEmployeeTypesSection";
@@ -118,6 +119,12 @@ export function BranchTabContent({
           <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
             <BranchBiometricsSection branchId={currentBranch.id} branchName={currentBranch.name} canManage={canManage} />
           </div>
+        </div>
+      )}
+
+      {activeTab === "divisions" && (
+        <div className="space-y-4 sm:space-y-6 pt-1 sm:pt-2">
+          <BranchDivisionsSection branchId={currentBranch.id} canManage={canManage} />
         </div>
       )}
 

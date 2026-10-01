@@ -63,7 +63,7 @@ const INSIGHTS_ITEMS: DrawerItem[] = [
 const SYSTEM_ITEMS: DrawerItem[] = [
   { path: "/admin?tab=users", label: "Admin Portal", sublabel: "Accounts & permissions", icon: "ri-user-settings-line", module: "admin" },
   { path: "/notifications", label: "Notifications", sublabel: "Alerts & updates", icon: "ri-notification-3-line", module: "notifications" },
-  { path: "/branches", label: "BU", sublabel: "Business Unique / Units", icon: "ri-building-line", module: "branches" },
+  { path: "/branches", label: "Organization", sublabel: "Organization & Units", icon: "ri-building-line", module: "branches" },
   { path: "/settings", label: "Settings", sublabel: "System configuration", icon: "ri-settings-3-line", module: "settings" },
 ];
 

@@ -59,13 +59,18 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
-            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Site</span>
-            <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{site}</span>
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Division</span>
+            <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{employee.division || "—"}</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
             <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Department</span>
             <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{department}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Site</span>
+            <span className="sm:col-span-9 text-slate-900 dark:text-slate-100">{site}</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1">

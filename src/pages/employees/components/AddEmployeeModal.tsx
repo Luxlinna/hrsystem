@@ -64,6 +64,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
     currentBranchName,
     workSites,
     currentSiteSelectValue,
+    divisions,
     departments,
     positions,
     employeeTypes,
@@ -213,6 +214,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
                 onSelectSite={handleSelectSite}
                 buManagers={buManagers}
                 buCeos={buCeos}
+                divisions={divisions}
                 departments={departments}
                 positions={positions}
                 employeeTypes={employeeTypes}

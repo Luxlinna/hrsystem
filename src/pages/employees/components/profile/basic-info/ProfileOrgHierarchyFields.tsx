@@ -57,6 +57,23 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
         )}
       </div>
 
+      {/* Division */}
+      <div>
+        <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+          Division
+        </label>
+        {editing ? (
+          <input
+            value={form.division || ""}
+            onChange={(e) => setForm({ ...form, division: e.target.value })}
+            placeholder="e.g. Commercial & Operations"
+            className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold focus:outline-none focus:border-[#253C7D]"
+          />
+        ) : (
+          <p className="text-xs text-gray-900 font-bold">{employee.division || "—"}</p>
+        )}
+      </div>
+
       {/* Department */}
       <div>
         <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">

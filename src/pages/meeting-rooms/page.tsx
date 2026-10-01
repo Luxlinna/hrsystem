@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { MeetingRoomsHeader } from "./components/MeetingRoomsHeader";
-import { MeetingRoomsStatsRow } from "./components/MeetingRoomsStatsRow";
 import { MeetingRoomsFilterBar } from "./components/MeetingRoomsFilterBar";
 import { TimelineViewContent } from "./components/timeline/TimelineViewContent";
 import { MonthViewContent } from "./components/month/MonthViewContent";
@@ -70,18 +69,7 @@ export default function MeetingRoomsPage() {
         onCreateRoom={() => setCreateRoomOpen(true)}
       />
 
-      <MeetingRoomsStatsRow
-        totalRoomsCount={m.rooms.length}
-        floor3Count={m.floor3RoomsCount}
-        floor5Count={m.floor5RoomsCount}
-        todayBookingsCount={m.todayBookingsCount}
-        pendingCount={m.pendingCount}
-        onFilterFloor={m.setFilterFloor}
-        onSelectStatusTab={m.setStatusTab}
-        onJumpToToday={m.jumpToToday}
-        availableFloors={m.availableFloors}
-        floorCounts={m.floorCounts}
-      />
+
 
       <MeetingRoomsFilterBar
         selectedDate={m.selectedDate}
