@@ -474,6 +474,13 @@ export function useEmployeesMutations({
             description: `Updated employee ${resolvedFullName}`,
           });
 
+          try {
+            const idKey = form.employee_code || editingEmployeeId || form.email || "current";
+            localStorage.removeItem(`hr_edit_employee_draft_${idKey}`);
+          } catch {
+            /* ignore */
+          }
+
           setShowAddModal(false);
           setEditingEmployeeId(null);
           setForm(INITIAL_EMPLOYEE_FORM);

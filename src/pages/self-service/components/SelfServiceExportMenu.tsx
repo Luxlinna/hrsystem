@@ -198,39 +198,39 @@ export const SelfServiceExportMenu = memo(function SelfServiceExportMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
-          <div className="px-3 py-1.5 border-b border-gray-100 dark:border-slate-800 mb-1 flex items-center justify-between">
-            <span className="text-[10px] font-extrabold text-gray-400 dark:text-slate-400 uppercase tracking-wider">
+        <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 mb-1 flex items-center justify-between">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
               {scopeLabel}
             </span>
-            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
               Personal Record
             </span>
           </div>
 
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {exportOptions.map((opt) => (
               <button
                 key={opt.fmt}
                 type="button"
                 onClick={() => handleExport(opt.fmt)}
-                className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors text-left cursor-pointer group"
+                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-all text-left cursor-pointer group"
               >
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 transition-colors ${opt.color}`}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 transition-colors shadow-2xs ${opt.color}`}
                 >
                   <i className={opt.icon} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-800 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-blue-400 transition-colors truncate">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#253C7D] dark:group-hover:text-sky-400 transition-colors truncate">
                       {opt.label}
                     </span>
-                    <span className="text-[10px] font-mono text-gray-400 dark:text-slate-500 ml-1">
+                    <span className="text-[10px] font-mono font-semibold text-slate-400 dark:text-slate-500 shrink-0">
                       {opt.ext}
                     </span>
                   </div>
-                  <p className="text-[10px] text-gray-400 dark:text-slate-400 font-medium truncate mt-0.5">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-400 font-normal truncate mt-0.5">
                     {opt.desc}
                   </p>
                 </div>

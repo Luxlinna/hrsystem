@@ -160,7 +160,7 @@ export const AddEmployeeModal = memo(function AddEmployeeModal({
           {/* Right Column: Tab Bar + Active Section + Form Actions */}
           <div className="flex-1 min-w-0 w-full space-y-6">
             {/* Draft Restore Notification Banner */}
-            {!isEdit && availableDraft && (
+            {availableDraft && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
                 <div className="flex items-center gap-2 text-amber-900">
                   <i className="ri-draft-line text-base text-amber-600 shrink-0" />

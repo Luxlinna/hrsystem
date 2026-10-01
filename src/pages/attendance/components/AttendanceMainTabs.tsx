@@ -14,7 +14,7 @@ export const AttendanceMainTabs = memo(function AttendanceMainTabs({
     label: string;
     icon: string;
   }> = [
-    { id: "attendance", label: "Attendance Logs", icon: "ri-calendar-check-line" },
+    { id: "attendance", label: "Attendance Logs", icon: "ri-fingerprint-line" },
     { id: "attendance-schedule", label: "Attendance Schedule", icon: "ri-table-line" },
     { id: "schedule-templates", label: "Schedule Templates", icon: "ri-calendar-schedule-line" },
     { id: "shifts", label: "Shifts", icon: "ri-time-line" },

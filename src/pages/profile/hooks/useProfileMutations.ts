@@ -7,6 +7,7 @@ interface UseProfileMutationsProps {
   employee: MyEmployee | null;
   setEmployee: React.Dispatch<React.SetStateAction<MyEmployee | null>>;
   displayName: string;
+  setDisplayName?: React.Dispatch<React.SetStateAction<string>>;
   phone: string;
 }
 
@@ -14,6 +15,7 @@ export function useProfileMutations({
   employee,
   setEmployee,
   displayName,
+  setDisplayName,
   phone,
 }: UseProfileMutationsProps) {
   const avatarMutations = useProfileAvatarMutations({ employee });
@@ -21,6 +23,7 @@ export function useProfileMutations({
     employee,
     setEmployee,
     displayName,
+    setDisplayName,
     phone,
   });
   const professionalMutations = useProfileProfessionalMutations({

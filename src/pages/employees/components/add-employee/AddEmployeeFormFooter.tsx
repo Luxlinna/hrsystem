@@ -46,7 +46,7 @@ export const AddEmployeeFormFooter = memo(function AddEmployeeFormFooter({
         </button>
       </div>
 
-      {!isEdit && lastSavedAt && onClearDraft && (
+      {lastSavedAt && onClearDraft && (
         <div className="flex items-center gap-2 text-[11px] text-slate-500">
           <span className="flex items-center gap-1 text-emerald-600 font-medium">
             <i className="ri-check-double-line text-xs" />

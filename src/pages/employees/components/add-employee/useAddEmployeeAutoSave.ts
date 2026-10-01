@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { EmployeeFormState } from "../../types";
 
+function getDraftStorageKey(isEdit: boolean, form: EmployeeFormState): string {
+  if (isEdit) {
+    const idKey = form.employee_code || (form as any).id || form.email || "current";
+    return `hr_edit_employee_draft_${idKey}`;
+  }
+  return "hr_add_employee_draft";
+}
+
 export function useAddEmployeeAutoSave(
   isOpen: boolean,
   isEdit: boolean,
@@ -35,9 +43,10 @@ export function useAddEmployeeAutoSave(
 
   // When modal opens, check if an existing draft is available (without silently overwriting)
   useEffect(() => {
-    if (isOpen && !isEdit) {
+    if (isOpen) {
       try {
-        const savedDraft = localStorage.getItem("hr_add_employee_draft");
+        const draftKey = getDraftStorageKey(isEdit, form);
+        const savedDraft = localStorage.getItem(draftKey);
         if (savedDraft) {
           const parsed = JSON.parse(savedDraft);
           const hasContent = Boolean(
@@ -67,18 +76,19 @@ export function useAddEmployeeAutoSave(
       setAvailableDraft(null);
       setAutoSaveStatus("idle");
     }
-  }, [isOpen, isEdit]);
+  }, [isOpen, isEdit, form.employee_code, (form as any).id, form.email]);
 
   // Track field changes and trigger auto-save when user types
   useEffect(() => {
-    if (!isOpen || isEdit || !autoSaveEnabled || !isDirtyRef.current) return;
+    if (!isOpen || !autoSaveEnabled || !isDirtyRef.current) return;
 
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     setAutoSaveStatus("saving");
 
     autoSaveTimerRef.current = setTimeout(() => {
       try {
-        localStorage.setItem("hr_add_employee_draft", JSON.stringify(form));
+        const draftKey = getDraftStorageKey(isEdit, form);
+        localStorage.setItem(draftKey, JSON.stringify(form));
         const now = new Date();
         setLastSavedAt(now);
         setAvailableDraft(null); // It's currently loaded in the active form
@@ -111,7 +121,8 @@ export function useAddEmployeeAutoSave(
 
   const clearDraft = useCallback(() => {
     try {
-      localStorage.removeItem("hr_add_employee_draft");
+      const draftKey = getDraftStorageKey(isEdit, form);
+      localStorage.removeItem(draftKey);
       setLastSavedAt(null);
       setAvailableDraft(null);
       setAutoSaveStatus("idle");
@@ -119,7 +130,7 @@ export function useAddEmployeeAutoSave(
     } catch (err) {
       console.error("Failed to clear employee draft:", err);
     }
-  }, []);
+  }, [isEdit, form]);
 
   return {
     autoSaveEnabled,

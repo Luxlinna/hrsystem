@@ -64,7 +64,7 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
   {
     table: "attendance_records",
     name: "Attendance Records",
-    icon: "ri-calendar-check-line",
+    icon: "ri-fingerprint-line",
     select: "id, date, status, deleted_at, deleted_by, employees!inner(first_name, last_name, branch_id)",
     label: (r) => `${r.employees?.first_name || "Unknown"} ${r.employees?.last_name || "employee"} · ${r.date}`,
     detail: (r) => `Attendance · ${r.status}`,

@@ -6,7 +6,7 @@ interface ProfileAccountFormProps {
   displayName: string;
   setDisplayName: (name: string) => void;
   savingName: boolean;
-  onSaveName: () => void;
+  onSaveName: (payload?: { firstName?: string; lastName?: string; username?: string }) => void;
   email?: string;
   employee: MyEmployee | null;
   phone: string;
@@ -51,18 +51,18 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
   const [timezone, setTimezone] = useState("(UTC+07:00) Bangkok, Hanoi, Jakarta");
 
   useEffect(() => {
-    if (employee?.first_name) setFirstName(employee.first_name);
-    if (employee?.last_name) setLastName(employee.last_name);
-    if (employee?.employee_code) setUsername(employee.employee_code);
+    if (employee?.first_name !== undefined) setFirstName(employee.first_name || "");
+    if (employee?.last_name !== undefined) setLastName(employee.last_name || "");
+    if (employee?.employee_code !== undefined) setUsername(employee.employee_code || "");
     if (email) setUserEmail(email);
   }, [employee, email]);
 
   const handleSave = () => {
-    const combined = `${firstName} ${lastName}`.trim();
-    if (combined && combined !== displayName) {
-      setDisplayName(combined);
-    }
-    onSaveName();
+    onSaveName({
+      firstName,
+      lastName,
+      username,
+    });
   };
 
   const handleDiscard = () => {
@@ -72,13 +72,10 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
     setUserEmail(email || "");
   };
 
-  // Derive roles list safely
+  // Derive role safely
   const roleName = typeof userRole === "string" ? userRole : (userRole as any)?.name;
-  const roles: string[] = (
-    roleName
-      ? [roleName, "HR Manager"]
-      : ["Admin", "HR Manager"]
-  ).filter((v, i, a) => a.indexOf(v) === i);
+  const roles: string[] = roleName ? [roleName] : ["Employee"];
+  const accountType = roleName || (employee ? "Employee" : "User");
 
   return (
     <div className="w-full">
@@ -117,8 +114,10 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
               Account Type
             </label>
             <div>
-              <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-[2px] bg-[#20c997] text-white">
-                Employee
+              <span className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-[2px] ${
+                accountType === "Super Admin" ? "bg-[#253C7D] text-white" : "bg-[#20c997] text-white"
+              }`}>
+                {accountType}
               </span>
             </div>
           </div>

@@ -9,6 +9,7 @@ interface UseProfileAccountMutationsProps {
   employee: MyEmployee | null;
   setEmployee: React.Dispatch<React.SetStateAction<MyEmployee | null>>;
   displayName: string;
+  setDisplayName?: React.Dispatch<React.SetStateAction<string>>;
   phone: string;
 }
 
@@ -16,6 +17,7 @@ export function useProfileAccountMutations({
   employee,
   setEmployee,
   displayName,
+  setDisplayName,
   phone,
 }: UseProfileAccountMutationsProps) {
   const { updateProfile, updatePassword } = useAuth();
@@ -42,31 +44,57 @@ export function useProfileAccountMutations({
     toast("Saved", "Your phone number has been updated.", "success");
   }, [employee, phone, setEmployee]);
 
-  const handleSaveName = useCallback(async () => {
-    if (!displayName.trim()) {
-      toast("Name required", "Display name can't be empty.", "error");
+  const handleSaveName = useCallback(async (payload?: { firstName?: string; lastName?: string; username?: string }) => {
+    const fName = payload?.firstName !== undefined ? payload.firstName.trim() : (employee?.first_name || "");
+    const lName = payload?.lastName !== undefined ? payload.lastName.trim() : (employee?.last_name || "");
+    const empCode = payload?.username !== undefined ? payload.username.trim() : (employee?.employee_code || "");
+    
+    const combined = `${fName} ${lName}`.trim() || displayName.trim();
+    if (!combined) {
+      toast("Name required", "Please enter a valid first and last name.", "error");
       return;
     }
+
     setSavingName(true);
     try {
-      await updateProfile({ display_name: displayName.trim() });
+      await updateProfile({ display_name: combined });
+      if (setDisplayName) {
+        setDisplayName(combined);
+      }
+
       if (employee?.id) {
-        const nameParts = displayName.trim().split(" ");
-        const firstName = nameParts[0] || "";
-        const lastName = nameParts.slice(1).join(" ") || "";
-        await supabase
+        const empUpdates: Record<string, any> = {
+          first_name: fName,
+          last_name: lName,
+        };
+        if (empCode) {
+          empUpdates.employee_code = empCode;
+        }
+
+        const { error } = await supabase
           .from("employees")
-          .update({ first_name: firstName, last_name: lastName })
+          .update(empUpdates)
           .eq("id", employee.id);
+
+        if (error) throw error;
+
+        setEmployee((prev) => (prev ? {
+          ...prev,
+          first_name: fName,
+          last_name: lName,
+          employee_code: empCode || prev.employee_code,
+        } : prev));
+
         invalidateMyEmployeeCache();
       }
-      toast("Saved", "Your name has been updated.", "success");
+
+      toast("Saved", "Account settings have been updated successfully.", "success");
     } catch (err: any) {
-      toast("Failed", err.message || "Could not update name.", "error");
+      toast("Failed", err.message || "Could not update account settings.", "error");
     } finally {
       setSavingName(false);
     }
-  }, [displayName, employee?.id, updateProfile]);
+  }, [displayName, employee, updateProfile, setDisplayName, setEmployee]);
 
   const handleChangePassword = useCallback(async () => {
     if (newPassword.length < 8) {

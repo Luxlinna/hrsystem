@@ -9,6 +9,7 @@ export function useProfile() {
     employee: data.employee,
     setEmployee: data.setEmployee,
     displayName: data.displayName,
+    setDisplayName: data.setDisplayName,
     phone: data.phone,
   });
 
