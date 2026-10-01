@@ -60,22 +60,25 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
     (clockOutMin != null && scheduledEndMin != null && scheduledEndMin - clockOutMin > 5)
   );
 
-  let statusBadge: { label: string; bg: string; text: string } | null = null;
+  const badges: { label: string; bg: string; text: string }[] = [];
   if (isHoliday) {
-    statusBadge = { label: "Holiday", bg: "bg-blue-600", text: "text-white" };
+    badges.push({ label: "Holiday", bg: "bg-blue-600", text: "text-white" });
   } else if (!hasClockIn) {
-    statusBadge = { label: "Error : No clock in", bg: "bg-rose-500", text: "text-white" };
+    badges.push({ label: "Error : No clock in", bg: "bg-rose-500", text: "text-white" });
   } else if (!hasClockOut && r.date < todayYMD) {
-    statusBadge = { label: "Error : No clock out", bg: "bg-rose-500", text: "text-white" };
+    badges.push({ label: "Error : No clock out", bg: "bg-rose-500", text: "text-white" });
   } else if (!hasClockOut && r.date === todayYMD) {
-    statusBadge = { label: "Working Now", bg: "bg-emerald-600", text: "text-white" };
-  } else if (isLate) {
-    statusBadge = { label: `Late ${r.late_minutes ? `${r.late_minutes}m` : ""}`, bg: "bg-amber-500", text: "text-white" };
-  } else if (isEarlyLeave) {
-    const earlyMins = (clockOutMin != null && scheduledEndMin != null && scheduledEndMin > clockOutMin)
-      ? scheduledEndMin - clockOutMin
-      : (r.early_leave_minutes || 0);
-    statusBadge = { label: `Early ${earlyMins}m`, bg: "bg-orange-500", text: "text-white" };
+    badges.push({ label: "Working Now", bg: "bg-emerald-600", text: "text-white" });
+  } else {
+    if (isLate) {
+      badges.push({ label: `Late ${r.late_minutes ? `${r.late_minutes}m` : ""}`, bg: "bg-amber-500", text: "text-white" });
+    }
+    if (isEarlyLeave) {
+      const earlyMins = (clockOutMin != null && scheduledEndMin != null && scheduledEndMin > clockOutMin)
+        ? scheduledEndMin - clockOutMin
+        : (r.early_leave_minutes || 0);
+      badges.push({ label: `Early ${earlyMins}m`, bg: "bg-orange-500", text: "text-white" });
+    }
   }
 
   const locationName = r.work_location?.name || emp?.branches?.name || "Main Office";
@@ -157,11 +160,16 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
       />
 
       <td className="py-2.5 px-3 whitespace-nowrap">
-        {statusBadge && (
-          <span className={`px-2 py-0.5 rounded text-[11px] font-bold inline-block shadow-2xs ${statusBadge.bg} ${statusBadge.text}`}>
-            {statusBadge.label}
-          </span>
-        )}
+        <div className="flex items-center gap-1 flex-wrap">
+          {badges.map((b, idx) => (
+            <span
+              key={idx}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold inline-block shadow-2xs ${b.bg} ${b.text}`}
+            >
+              {b.label}
+            </span>
+          ))}
+        </div>
       </td>
 
       <AttendanceRowActions

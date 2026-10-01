@@ -28,6 +28,16 @@ export function normalizeGender(val: string): string {
   return "Male";
 }
 
+export function normalizeStatus(val?: string | null): "active" | "onboarding" | "on_leave" | "suspended" | "inactive" {
+  if (!val) return "active";
+  const st = String(val).toLowerCase().trim().replace(/[\s_-]+/g, "_");
+  if (st === "onboarding" || st.includes("not") || st.includes("pending")) return "onboarding";
+  if (st.includes("leave")) return "on_leave";
+  if (st.includes("suspend") || st.includes("black")) return "suspended";
+  if (st === "inactive" || st.includes("exit") || st.includes("deactivat") || st.includes("terminat") || st.includes("resign")) return "inactive";
+  return "active";
+}
+
 export function parseExcelDate(val: any): string | undefined {
   if (!val) return undefined;
   if (typeof val === "number") {

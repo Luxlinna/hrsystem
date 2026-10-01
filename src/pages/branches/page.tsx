@@ -43,6 +43,7 @@ export default function Branches() {
     useCurrentLocation,
     handleGeocodeAddress,
     handleDeleteBranch,
+    canCreateBranch,
   } = useBranches();
 
   // Active tab: defaults to "profile" (Company Profile)
@@ -99,8 +100,8 @@ export default function Branches() {
               </div>
             </div>
 
-            {/* Super Admin Top Actions */}
-            {isSuperAdmin && (
+            {/* Admin / Super Admin Top Actions */}
+            {canCreateBranch && (
               <div className="flex items-center gap-2">
                 <button
                   type="button"

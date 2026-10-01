@@ -10,21 +10,45 @@ export function detectColumnMappings(
     cleaned: cleanKey(h),
   }));
 
-  for (const field of SYSTEM_FIELDS) {
-    // 1. Exact match with field key or label
-    let match = cleanedDetected.find(
-      (d) => d.cleaned === cleanKey(field.key) || d.cleaned === cleanKey(field.label)
-    );
+  const claimedHeaders = new Set<string>();
 
-    // 2. Alias match
-    if (!match) {
-      match = cleanedDetected.find((d) =>
-        field.aliases.some((alias) => d.cleaned === cleanKey(alias) || d.cleaned.includes(cleanKey(alias)))
-      );
-    }
+  // Pass 1: Exact match on field key, label, or exact alias
+  for (const field of SYSTEM_FIELDS) {
+    const fieldCleanedKey = cleanKey(field.key);
+    const fieldCleanedLabel = cleanKey(field.label);
+    const cleanedAliases = (field.aliases || []).map(cleanKey);
+
+    const match = cleanedDetected.find(
+      (d) =>
+        !claimedHeaders.has(d.original) &&
+        (d.cleaned === fieldCleanedKey ||
+          d.cleaned === fieldCleanedLabel ||
+          cleanedAliases.includes(d.cleaned))
+    );
 
     if (match) {
       mapping[field.key] = match.original;
+      claimedHeaders.add(match.original);
+    }
+  }
+
+  // Pass 2: Exact containment match for long distinctive terms (min length 4)
+  for (const field of SYSTEM_FIELDS) {
+    if (mapping[field.key]) continue;
+
+    const cleanedAliases = (field.aliases || []).map(cleanKey);
+    const match = cleanedDetected.find((d) => {
+      if (claimedHeaders.has(d.original)) return false;
+      if (d.cleaned.length < 4) return false;
+      return cleanedAliases.some((alias) => {
+        if (alias.length < 4) return false;
+        return d.cleaned.includes(alias) || alias.includes(d.cleaned);
+      });
+    });
+
+    if (match) {
+      mapping[field.key] = match.original;
+      claimedHeaders.add(match.original);
     } else {
       mapping[field.key] = "";
     }

@@ -1,7 +1,7 @@
 import { toast } from "@/components/Toast";
 import type { Branch } from "../../types";
 import { TEMPLATE_HEADERS, type ParsedEmployeeRow, type ColumnMappingState } from "./types";
-import { extractVal, normalizeGender, parseExcelDate, parseSalary, isRowCompletelyEmpty } from "./fieldNormalizer";
+import { extractVal, normalizeGender, normalizeStatus, parseExcelDate, parseSalary, isRowCompletelyEmpty } from "./fieldNormalizer";
 
 export async function downloadEmployeeTemplate(branches: Branch[]) {
   try {
@@ -12,7 +12,7 @@ export async function downloadEmployeeTemplate(branches: Branch[]) {
         "EMP001", "Sok Dara", "សុខ តារា", "Male", "Mr", "1998-05-20", "010203040",
         "012345678", "dara.sok@example.com", branches[0]?.name || "Main BU", "Main Office",
         "Operations", "Staff", "FULL-TIME", "Junior", "2026-01-15", "PERMANENT (UDC)",
-        "350", "ABA Bank", "000123456", "123456789", "Phnom Penh",
+        "ABA Bank", "000123456", "123456789", "Phnom Penh",
       ],
     ]);
     ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.max(h.length + 4, 16) }));
@@ -102,7 +102,7 @@ export function transformRowsWithMapping(
     const joinDate = parseExcelDate(getMapped("joinDate") || extractVal(row, ["Joining Date", "Join Date", "Start Date"])) || new Date().toISOString().slice(0, 10);
     const contractType = getMapped("contractType") || extractVal(row, ["Contract Type", "Contract"]) || "PERMANENT (UDC)";
     const contractEndDate = parseExcelDate(getMapped("contractEndDate") || extractVal(row, ["Contract End Date"]));
-    const status = getMapped("status") || "active";
+    const status = normalizeStatus(getMapped("status") || extractVal(row, ["Employment Status", "Status", "Job Status"]));
 
     // 4. Compensation & Payroll
     const basicSalary = parseSalary(getMapped("basicSalary") || extractVal(row, ["Basic Salary / Rate", "Basic Salary", "Salary"]));

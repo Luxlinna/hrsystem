@@ -53,7 +53,6 @@ export const ImportPreviewTable = memo(function ImportPreviewTable({
                 <th className="p-2 whitespace-nowrap">Department</th>
                 <th className="p-2 whitespace-nowrap">Position</th>
                 <th className="p-2 whitespace-nowrap">Join Date</th>
-                <th className="p-2 whitespace-nowrap">Salary</th>
                 <th className="p-2 text-center whitespace-nowrap">Action</th>
               </tr>
             </thead>
@@ -89,9 +88,6 @@ export const ImportPreviewTable = memo(function ImportPreviewTable({
                   <td className="p-2 text-slate-600 dark:text-slate-300 whitespace-nowrap">{r.department || "—"}</td>
                   <td className="p-2 text-slate-600 dark:text-slate-300 whitespace-nowrap">{r.position || "—"}</td>
                   <td className="p-2 text-slate-600 dark:text-slate-300 whitespace-nowrap">{r.joinDate || "—"}</td>
-                  <td className="p-2 text-slate-800 dark:text-slate-200 font-mono whitespace-nowrap">
-                    {r.basicSalary != null ? `$${r.basicSalary}` : "—"}
-                  </td>
                   <td className="p-2 text-center whitespace-nowrap">
                     <button
                       type="button"

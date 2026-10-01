@@ -35,9 +35,20 @@ export function useBranchMutations({
 
   const handleAddBranch = useCallback(
     async (form: BranchFormState) => {
-      if (!form.name || !form.location || !form.manager_name) return;
+      const buName = (form.company_name?.trim() || form.name?.trim() || "").trim();
+      const buLocation = (form.physical_address?.trim() || form.location?.trim() || form.physical_city?.trim() || "Phnom Penh").trim();
+      const buManager = (form.manager_name?.trim() || "").trim();
+
+      if (!buName) {
+        toast("Missing BU Name", "Please enter a Company / Business Unit name.", "error");
+        return;
+      }
+      if (!buManager) {
+        toast("Missing Manager", "Please specify a BU Manager name.", "error");
+        return;
+      }
       if (!editingBranchId && !canCreateBranch) {
-        toast("Access Denied", "Only Super Admin can create new BUs.", "error");
+        toast("Access Denied", "Only administrators can create new BUs.", "error");
         return;
       }
       if (editingBranchId && isBranchAdmin && userBranchId && editingBranchId !== userBranchId) {
@@ -45,8 +56,8 @@ export function useBranchMutations({
         return;
       }
       setSubmitting(true);
-      const latitude = form.latitude.trim() ? Number(form.latitude) : null;
-      const longitude = form.longitude.trim() ? Number(form.longitude) : null;
+      const latitude = form.latitude?.trim() ? Number(form.latitude) : null;
+      const longitude = form.longitude?.trim() ? Number(form.longitude) : null;
       if (
         (latitude != null && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) ||
         (longitude != null && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180))
@@ -71,10 +82,10 @@ export function useBranchMutations({
       let entityId: string | null = editingBranchId;
 
       const basePayload: Record<string, any> = {
-        name: form.name.trim(),
-        location: form.physical_address?.trim() || form.location.trim(),
-        manager_name: form.manager_name.trim(),
-        status: form.status,
+        name: buName,
+        location: buLocation,
+        manager_name: buManager,
+        status: form.status || "active",
         latitude,
         longitude,
         geofence_radius_m,
