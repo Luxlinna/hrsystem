@@ -9,6 +9,9 @@ import { Pagination } from "./components/Pagination";
 import { AddEmployeeModal } from "./components/AddEmployeeModal";
 import { SetUpPhoneAccountModal } from "./components/SetUpPhoneAccountModal";
 import { ImportEmployeesModal } from "./components/ImportEmployeesModal";
+import { PrivacyPinModal } from "@/components/PrivacyPinModal";
+import { isPrivacyPinEnabled } from "@/lib/privacyPin";
+import { useAuth } from "@/context/AuthContext";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useEmployees } from "./hooks/useEmployees";
 import { useEmployeePermission } from "./hooks/useEmployeePermission";
@@ -37,10 +40,25 @@ export default function EmployeesPage() {
     loadEmployees, actorName, roleName,
   } = useEmployees();
 
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { canManageEmployeeSettings } = useEmployeePermission();
   const [showSalary, setShowSalary] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+
+  const handleToggleSalary = useCallback(() => {
+    if (showSalary) {
+      setShowSalary(false);
+      return;
+    }
+    // If turning on and privacy PIN is configured:
+    if (isPrivacyPinEnabled(user?.email)) {
+      setShowPinModal(true);
+    } else {
+      setShowSalary(true);
+    }
+  }, [showSalary, user?.email]);
 
   const handleOpenAddModal = useCallback(() => {
     setEditingEmployeeId(null);
@@ -143,7 +161,7 @@ export default function EmployeesPage() {
         accountStatus={accountStatus}
         onOpenImport={() => setShowImportModal(true)}
         showSalary={showSalary}
-        setShowSalary={setShowSalary}
+        setShowSalary={handleToggleSalary}
       />
 
       <SelectedActionsBar
@@ -247,6 +265,15 @@ export default function EmployeesPage() {
         roleName={roleName}
         onClose={() => setShowImportModal(false)}
         onSuccess={loadEmployees}
+      />
+
+      <PrivacyPinModal
+        isOpen={showPinModal}
+        onClose={() => setShowPinModal(false)}
+        onSuccess={() => setShowSalary(true)}
+        userEmail={user?.email}
+        title="Privacy PIN Required"
+        description="Enter your Privacy PIN code to reveal masked employee salaries."
       />
     </div>
   );

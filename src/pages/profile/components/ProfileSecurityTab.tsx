@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from "react";
+import { getPrivacyPin, setPrivacyPin, removePrivacyPin } from "@/lib/privacyPin";
 
 interface ProfileSecurityTabProps {
   email?: string;
@@ -7,25 +8,24 @@ interface ProfileSecurityTabProps {
 export const ProfileSecurityTab = memo(function ProfileSecurityTab({
   email,
 }: ProfileSecurityTabProps) {
-  const storageKey = `hrms_privacy_pin_${email || "default"}`;
   const [turnOn, setTurnOn] = useState(false);
   const [pinCode, setPinCode] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(storageKey);
+    const stored = getPrivacyPin(email);
     if (stored) {
       setTurnOn(true);
       setPinCode(stored);
       setConfirmPin(stored);
     }
-  }, [storageKey]);
+  }, [email]);
 
   const handleToggle = (checked: boolean) => {
     setTurnOn(checked);
     if (!checked) {
-      localStorage.removeItem(storageKey);
+      removePrivacyPin(email);
       setPinCode("");
       setConfirmPin("");
     }
@@ -33,7 +33,7 @@ export const ProfileSecurityTab = memo(function ProfileSecurityTab({
 
   const handleSavePin = () => {
     if (pinCode && pinCode === confirmPin) {
-      localStorage.setItem(storageKey, pinCode);
+      setPrivacyPin(pinCode, email);
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
     }
