@@ -108,30 +108,28 @@ export const EmployeesTableRow = memo(function EmployeesTableRow({
 
       {/* Salary */}
       <td className="py-2.5 px-3">
-        <p className="font-mono text-slate-700 dark:text-slate-200 font-semibold">
+        <p className="font-mono text-slate-700 dark:text-slate-200 font-semibold text-xs">
           {showSalary ? `${e.basic_salary || e.contract_rate || 0} USD` : "*****"}
         </p>
-        <div className="flex items-center gap-1 mt-0.5">
-          <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-[#253C7D] dark:bg-[#253C7D]/80 text-white">
+        <div className="flex items-center gap-1 mt-1">
+          <span className="text-[10px] font-normal px-1.5 py-0.5 rounded-[2px] bg-[#5b9bd5] dark:bg-blue-600 text-white leading-tight whitespace-nowrap">
             {e.tax_salary_frequency || "Monthly"}
           </span>
-          <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-[#253C7D] dark:bg-[#253C7D]/80 text-white">
-            {e.payroll_structure || "Gross"}
+          <span className="text-[10px] font-normal px-1.5 py-0.5 rounded-[2px] bg-[#5b9bd5] dark:bg-blue-600 text-white leading-tight whitespace-nowrap">
+            {e.payroll_structure === "Standard Monthly" ? "Gross" : (e.payroll_structure || "Gross")}
           </span>
         </div>
       </td>
 
       {/* Status */}
       <td className="py-2.5 px-3">
-        <div className="space-y-1">
-          <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded text-white whitespace-nowrap ${statusBadge.jobColor}`}>
+        <div className="flex flex-col gap-0.5 items-start">
+          <span className={`inline-block text-[10px] font-normal px-1.5 py-0.5 rounded-[2px] text-white whitespace-nowrap leading-tight ${statusBadge.jobColor}`}>
             {statusBadge.jobStatus}
           </span>
-          <div>
-            <span className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded text-white whitespace-nowrap ${statusBadge.lifecycleColor}`}>
-              {statusBadge.lifecycleStatus}
-            </span>
-          </div>
+          <span className={`inline-block text-[10px] font-normal px-1.5 py-0.5 rounded-[2px] text-white whitespace-nowrap leading-tight ${statusBadge.lifecycleColor}`}>
+            {statusBadge.lifecycleStatus}
+          </span>
         </div>
       </td>
 

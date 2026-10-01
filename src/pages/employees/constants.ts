@@ -112,40 +112,40 @@ export function getJobStatusBadge(status?: string | null): {
   if (st === "onboarding" || st.includes("not") || st === "pending") {
     return {
       jobStatus: "Not Employed Yet",
-      jobColor: "bg-amber-500 dark:bg-amber-600",
+      jobColor: "bg-[#e67e22] dark:bg-amber-600",
       lifecycleStatus: "Onboarding",
-      lifecycleColor: "bg-amber-500 dark:bg-amber-600",
+      lifecycleColor: "bg-[#e67e22] dark:bg-amber-600",
     };
   }
   if (st === "inactive" || st === "exited" || st === "terminated" || st === "resigned") {
     return {
       jobStatus: "Exited",
-      jobColor: "bg-[#4b5563] dark:bg-slate-600",
+      jobColor: "bg-[#6c757d] dark:bg-slate-600",
       lifecycleStatus: "Deactivate",
-      lifecycleColor: "bg-[#1e293b] dark:bg-slate-700",
+      lifecycleColor: "bg-[#212529] dark:bg-slate-800",
     };
   }
   if (st === "suspended" || st.includes("black")) {
     return {
       jobStatus: "Black List",
-      jobColor: "bg-rose-500 dark:bg-rose-600",
+      jobColor: "bg-[#dc3545] dark:bg-rose-600",
       lifecycleStatus: "Suspended",
-      lifecycleColor: "bg-rose-500 dark:bg-rose-600",
+      lifecycleColor: "bg-[#dc3545] dark:bg-rose-600",
     };
   }
   if (st === "on_leave") {
     return {
       jobStatus: "Employed",
-      jobColor: "bg-emerald-500 dark:bg-emerald-600",
+      jobColor: "bg-[#20c997] dark:bg-emerald-600",
       lifecycleStatus: "On Leave",
-      lifecycleColor: "bg-[#253C7D] dark:bg-blue-600",
+      lifecycleColor: "bg-[#5b9bd5] dark:bg-blue-600",
     };
   }
   return {
     jobStatus: "Employed",
-    jobColor: "bg-emerald-500 dark:bg-emerald-600",
+    jobColor: "bg-[#20c997] dark:bg-emerald-600",
     lifecycleStatus: "Active",
-    lifecycleColor: "bg-emerald-500 dark:bg-emerald-600",
+    lifecycleColor: "bg-[#20c997] dark:bg-emerald-600",
   };
 }
 
