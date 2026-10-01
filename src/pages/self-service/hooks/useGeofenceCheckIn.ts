@@ -59,11 +59,15 @@ export function useGeofenceCheckIn({
       }
     } catch (err: any) {
       const codeNote = err?.code != null ? ` (code ${err.code}${err?.message ? `: ${err.message}` : ""})` : err?.message ? ` (${err.message})` : "";
-      setCheckInMessage(
-        err?.code === 1
-          ? `Location access was denied. Please enable location permissions for this site and try again.${codeNote}`
-          : `Couldn't get your location. On a laptop/desktop, this is usually the OS-level Location Services setting, not just the browser — check Settings > Privacy > Location (Windows) or System Settings > Privacy & Security > Location Services (Mac), then try again.${codeNote}`
-      );
+      if (err?.code === 1) {
+        setCheckInMessage(
+          `Location access was denied. Please check: 1) In Chrome address bar, click the tune/lock icon next to the URL and set Location to "Allow". 2) In Windows Settings > Privacy & security > Location, ensure "Location services" & "Let desktop apps access your location" are ON.${codeNote}`
+        );
+      } else {
+        setCheckInMessage(
+          `Couldn't get your location. On a laptop/desktop, ensure OS-level Location Services are ON (Windows Settings > Privacy > Location or Mac System Settings > Privacy > Location Services) and Wi-Fi is active, then try again.${codeNote}`
+        );
+      }
       setCheckInStep("error");
     }
   }, [branch, branchLoading, onWithinRange, showToast]);
