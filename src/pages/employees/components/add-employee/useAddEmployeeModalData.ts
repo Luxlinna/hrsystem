@@ -44,7 +44,7 @@ export function useAddEmployeeModalData(isOpen: boolean, form: EmployeeFormState
       supabase.from("work_locations").select("id, name, description, branch_id").is("deleted_at", null).order("name"),
       supabase.from("employees").select("id, first_name, last_name, email, phone, department, role, position, branch_id, bu_full_name, code_bu, branches(id, name)").is("deleted_at", null).order("first_name"),
       supabase.from("user_role_assignments").select("id, user_id, email, display_name, role_id, deleted_at, app_roles(id, name, is_admin, branch_id)").is("deleted_at", null),
-      supabase.from("divisions").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
+      supabase.from("divisions").select("id, name, branch_id").is("deleted_at", null).order("name"),
       supabase.from("departments").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
       supabase.from("positions").select("id, name, branch_id").is("deleted_at", null).order("sort_order"),
       supabase.from("contract_types").select("id, name, term, branch_id").is("deleted_at", null).order("sort_order"),

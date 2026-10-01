@@ -4,6 +4,7 @@ import type { AttendanceRecord, AttendanceTabKey, DatePreset, Employee, ViewMode
 import { computeDateRangeBounds } from "./attendanceDateRangeUtils";
 import { matchAttendanceRecord } from "./attendanceFilterMatcher";
 import { exportAttendanceToCSV } from "./attendanceExportCSV";
+import { expandRecordsToCalendarDays } from "./attendanceCalendarExpansion";
 
 export function useAttendanceFilters(records: AttendanceRecord[], employees: Employee[], todayYMD: string) {
   const [activeTab, setActiveTab] = useState<AttendanceTabKey>("records");
@@ -17,9 +18,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
 
   const setViewMode = useCallback((mode: ViewMode) => {
     setViewModeState(mode);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("hrm_attendance_view_mode", mode);
-    }
+    if (typeof window !== "undefined") localStorage.setItem("hrm_attendance_view_mode", mode);
   }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,7 +56,7 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
   }, [records, dateRangeBounds]);
 
   const filteredRecords = useMemo(() => {
-    return records.filter((r) =>
+    const rawMatches = records.filter((r) =>
       matchAttendanceRecord(r, {
         filterStatus,
         filterDepartment,
@@ -69,7 +68,26 @@ export function useAttendanceFilters(records: AttendanceRecord[], employees: Emp
         searchQuery,
       })
     );
-  }, [records, filterStatus, filterDepartment, filterRole, filterEmploymentType, filterEmployeeId, filterWorkLocation, dateRangeBounds, searchQuery]);
+
+    const query = searchQuery.trim().toLowerCase();
+    const matchedEmps = employees.filter((e) => {
+      if (filterEmployeeId !== "all" && e.id !== filterEmployeeId) return false;
+      if (filterDepartment !== "all" && e.department !== filterDepartment) return false;
+      if (filterRole !== "all" && e.role !== filterRole) return false;
+      if (filterEmploymentType !== "all" && (e.employment_type || e.contract_type) !== filterEmploymentType) return false;
+      if (query) {
+        const full = `${e.first_name} ${e.last_name} ${e.employee_code || ""}`.toLowerCase();
+        if (!full.includes(query)) return false;
+      }
+      return true;
+    });
+
+    if (matchedEmps.length > 0 && matchedEmps.length <= 15 && dateRangeBounds) {
+      return expandRecordsToCalendarDays(rawMatches, matchedEmps, dateRangeBounds, todayYMD);
+    }
+
+    return rawMatches;
+  }, [records, employees, filterStatus, filterDepartment, filterRole, filterEmploymentType, filterEmployeeId, filterWorkLocation, dateRangeBounds, searchQuery, todayYMD]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
   const safePage = Math.min(page, totalPages);

@@ -1,4 +1,5 @@
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import type { BasicInfoOrgProps } from "./types";
 
 export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields({
@@ -10,6 +11,28 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
   allEmployees,
   branches,
 }: BasicInfoOrgProps) {
+  const [dbDivisions, setDbDivisions] = useState<string[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("divisions")
+      .select("name")
+      .is("deleted_at", null)
+      .order("name")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setDbDivisions(Array.from(new Set(data.map((d) => d.name))));
+        }
+      });
+  }, []);
+
+  const allDivisionOptions = Array.from(
+    new Set([
+      ...(form.division ? [form.division] : []),
+      ...(employee.division ? [employee.division] : []),
+      ...dbDivisions,
+    ])
+  );
   return (
     <>
       {/* Business Unit (BU) */}
@@ -63,12 +86,18 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
           Division
         </label>
         {editing ? (
-          <input
-            value={form.division || ""}
+          <select
+            value={form.division || employee.division || ""}
             onChange={(e) => setForm({ ...form, division: e.target.value })}
-            placeholder="e.g. Commercial & Operations"
-            className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold focus:outline-none focus:border-[#253C7D]"
-          />
+            className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold focus:outline-none focus:border-[#253C7D] bg-white cursor-pointer"
+          >
+            <option value="">-- Select Division --</option>
+            {allDivisionOptions.map((div) => (
+              <option key={div} value={div}>
+                {div}
+              </option>
+            ))}
+          </select>
         ) : (
           <p className="text-xs text-gray-900 font-bold">{employee.division || "—"}</p>
         )}

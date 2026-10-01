@@ -14,8 +14,8 @@ interface AttendanceHeaderProps {
   hasEmployee: boolean;
   onExportCSV?: () => void;
   onOpenLogModal: () => void;
-  activeMainTab?: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts";
-  setActiveMainTab?: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts") => void;
+  activeMainTab?: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "working-hours";
+  setActiveMainTab?: (tab: "attendance" | "attendance-schedule" | "schedule-templates" | "shifts" | "working-hours") => void;
   records?: AttendanceRecord[];
   summaries?: EmployeeSummaryItem[];
   isFourPunchMode?: boolean;

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { DivisionActionMenu } from "./DivisionActionMenu";
 import { DepartmentStatusFilter } from "../departments/DepartmentStatusFilter";
+import { DivisionsTableRow } from "./DivisionsTableRow";
 import type { Division } from "../../types";
 
 interface DivisionsTableProps {
@@ -44,12 +44,10 @@ export function DivisionsTable({
   const filteredAndSorted = useMemo(() => {
     let result = [...divisions];
 
-    // Status filter
     if (statusFilter !== "all") {
       result = result.filter((d) => (d.status || "active") === statusFilter);
     }
 
-    // Search filter
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -60,18 +58,9 @@ export function DivisionsTable({
       );
     }
 
-    // Sort
     result.sort((a, b) => {
-      let valA: string | number = "";
-      let valB: string | number = "";
-
-      if (sortField === "name") {
-        valA = a.name || "";
-        valB = b.name || "";
-      } else if (sortField === "head") {
-        valA = a.head_of_division_name || "";
-        valB = b.head_of_division_name || "";
-      }
+      let valA = sortField === "name" ? a.name || "" : a.head_of_division_name || "";
+      let valB = sortField === "name" ? b.name || "" : b.head_of_division_name || "";
 
       return sortDirection === "asc"
         ? String(valA).localeCompare(String(valB))
@@ -123,7 +112,6 @@ export function DivisionsTable({
           </button>
         </div>
 
-        {/* Status Filter Pill */}
         <DepartmentStatusFilter
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
@@ -174,45 +162,18 @@ export function DivisionsTable({
                 </td>
               </tr>
             ) : (
-              filteredAndSorted.map((div, index) => {
-                const isDisabled = div.status === "disabled";
-                return (
-                  <tr
-                    key={div.id || index}
-                    className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
-                  >
-                    <td className="py-3 px-6 font-normal text-slate-600 dark:text-slate-400">
-                      {index + 1}
-                    </td>
-                    <td className="py-3 px-6">
-                      <div className="flex flex-col items-start gap-1">
-                        <span className="font-semibold uppercase text-slate-800 dark:text-slate-100">
-                          {div.name}
-                        </span>
-                        {isDisabled && (
-                          <span className="inline-block px-1.5 py-0.5 bg-[#f0ad4e] text-white text-[9.5px] font-semibold rounded leading-none shadow-2xs">
-                            Disabled
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-6 text-slate-700 dark:text-slate-300">
-                      {div.head_of_division_name || "—"}
-                    </td>
-                    <td className="py-3 px-6 text-right">
-                      {canManage && (
-                        <DivisionActionMenu
-                          division={div}
-                          onView={onView}
-                          onEdit={onEdit}
-                          onToggleStatus={onToggleStatus}
-                          onDelete={onDelete}
-                        />
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
+              filteredAndSorted.map((div, index) => (
+                <DivisionsTableRow
+                  key={div.id || index}
+                  division={div}
+                  index={index}
+                  canManage={canManage}
+                  onView={onView}
+                  onEdit={onEdit}
+                  onToggleStatus={onToggleStatus}
+                  onDelete={onDelete}
+                />
+              ))
             )}
           </tbody>
         </table>

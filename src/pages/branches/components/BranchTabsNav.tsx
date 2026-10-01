@@ -46,12 +46,6 @@ export function BranchTabsNav({
       icon: "ri-map-pin-2-line",
       group: "core" as const,
     },
-    {
-      id: "schedule" as BranchTabType,
-      label: "Grace & Shift Policy",
-      icon: "ri-time-line",
-      group: "core" as const,
-    },
     ...STRUCTURE_TABS,
   ];
 
@@ -117,19 +111,6 @@ export function BranchTabsNav({
         >
           <i className="ri-map-pin-2-line text-sm sm:text-base" />
           <span>Sites</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("schedule")}
-          className={`pb-2.5 sm:pb-3 px-3 font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-            activeTab === "schedule"
-              ? "border-[#0088cc] text-[#0088cc]"
-              : "border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300"
-          }`}
-        >
-          <i className="ri-time-line text-sm sm:text-base" />
-          <span>Grace & Shift Policy</span>
         </button>
 
         {/* Dropdown Menu for Structure & Master Data */}

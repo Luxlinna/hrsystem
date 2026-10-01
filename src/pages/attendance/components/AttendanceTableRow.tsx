@@ -47,12 +47,13 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
   const hasClockOut = Boolean(r.clock_out);
   const isRowFourPunch = Boolean(isFourPunchMode && (r.work_location?.is_four_punch_enabled ?? true));
   const isHoliday = holidayMap?.has(r.date);
+  const isSunday = day === "Sun" || new Date(`${r.date}T00:00:00`).getDay() === 0;
+  const isSaturday = day === "Sat" || new Date(`${r.date}T00:00:00`).getDay() === 6;
 
   const lastWindow = windows && windows.length > 0 ? windows[windows.length - 1] : null;
   const scheduledEndMin = lastWindow ? parseTimeToMinutes(lastWindow.time_out) : null;
   const clockOutMin = parseTimeToMinutes(r.clock_out);
-  const isClockOutAfterScheduledEnd =
-    clockOutMin != null && scheduledEndMin != null && clockOutMin >= scheduledEndMin;
+  const isClockOutAfterScheduledEnd = clockOutMin != null && scheduledEndMin != null && clockOutMin >= scheduledEndMin;
 
   const isLate = r.status === "late" || (r.late_minutes != null && r.late_minutes > 0);
   const isEarlyLeave = !isClockOutAfterScheduledEnd && (
@@ -61,8 +62,18 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
   );
 
   const badges: { label: string; bg: string; text: string }[] = [];
-  if (isHoliday) {
+  if (r.status === "Sunday" || r.status === "Off" || (isSunday && !hasClockIn && !hasClockOut)) {
+    badges.push({ label: "Off", bg: "bg-purple-600 dark:bg-purple-700", text: "text-white" });
+  } else if (r.status === "Saturday" || (isSaturday && !hasClockIn && !hasClockOut)) {
+    badges.push({ label: "Off", bg: "bg-slate-500 dark:bg-slate-600", text: "text-white" });
+  } else if (r.status === "Holiday" || isHoliday) {
     badges.push({ label: "Holiday", bg: "bg-blue-600", text: "text-white" });
+  } else if (!hasClockIn && !hasClockOut) {
+    if (r.date > todayYMD) {
+      badges.push({ label: "Scheduled", bg: "bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700", text: "text-slate-600 dark:text-slate-300" });
+    } else {
+      badges.push({ label: "Off", bg: "bg-slate-400 dark:bg-slate-600", text: "text-white" });
+    }
   } else if (!hasClockIn) {
     badges.push({ label: "Error : No clock in", bg: "bg-rose-500", text: "text-white" });
   } else if (!hasClockOut && r.date < todayYMD) {
@@ -84,7 +95,9 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
   const locationName = r.work_location?.name || emp?.branches?.name || "Main Office";
 
   return (
-    <tr className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors border-b border-gray-100 dark:border-slate-800/80 text-xs">
+    <tr className={`hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors border-b border-gray-100 dark:border-slate-800/80 text-xs ${
+      isSunday ? "bg-purple-50/20 dark:bg-purple-950/10" : ""
+    }`}>
       <td className="py-2.5 px-3 text-center">
         <input
           type="checkbox"
@@ -100,31 +113,22 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
 
       <td className="py-2.5 px-3 whitespace-nowrap">
         <p className="font-bold text-gray-800 dark:text-slate-200 text-xs">{dmy}</p>
-        <span className="inline-block px-1.5 py-0.2 text-[10.5px] font-semibold text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded">
+        <span className={`inline-block px-1.5 py-0.2 text-[10.5px] font-semibold rounded border ${
+          isSunday ? "bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800" : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700"
+        }`}>
           {day}
         </span>
       </td>
 
-      <AttendanceRowEmployeeCell
-        record={r}
-        employee={emp}
-        onSelectRecord={onSelectRecord}
-      />
+      <AttendanceRowEmployeeCell record={r} employee={emp} onSelectRecord={onSelectRecord} />
 
       <td className="py-2.5 px-3 whitespace-nowrap">
-        <span className="text-gray-700 dark:text-slate-300 font-medium text-xs">
-          {emp?.role || "Staff Member"}
-        </span>
+        <span className="text-gray-700 dark:text-slate-300 font-medium text-xs">{emp?.role || "Staff Member"}</span>
       </td>
 
       <td className="py-2.5 px-3 whitespace-nowrap">
-        <p className="font-bold text-gray-800 dark:text-slate-200 uppercase tracking-tight text-xs">
-          {emp?.department || "OPERATIONS"}
-        </p>
-        <span
-          className="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10.5px] font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 max-w-[150px] truncate"
-          title={locationName}
-        >
+        <p className="font-bold text-gray-800 dark:text-slate-200 uppercase tracking-tight text-xs">{emp?.department || "OPERATIONS"}</p>
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10.5px] font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 max-w-[150px] truncate" title={locationName}>
           <i className="ri-building-line text-[10.5px] text-gray-400 dark:text-slate-500 shrink-0" />
           <span className="truncate">{locationName}</span>
         </span>
@@ -137,10 +141,7 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
         </p>
         <div className="flex items-center gap-1.5 flex-wrap">
           {windows.map((w, i) => (
-            <span
-              key={w.id || i}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-mono"
-            >
+            <span key={w.id || i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-mono">
               <i className="ri-time-line text-[#253C7D] dark:text-sky-400 text-[11px]" />
               {w.time_in} - {w.time_out}
             </span>
@@ -151,35 +152,19 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
         </div>
       </td>
 
-      <AttendanceRowPunchCell
-        record={r}
-        hasClockIn={hasClockIn}
-        hasClockOut={hasClockOut}
-        isRowFourPunch={isRowFourPunch}
-        onEditRecord={onEditRecord}
-      />
+      <AttendanceRowPunchCell record={r} hasClockIn={hasClockIn} hasClockOut={hasClockOut} isRowFourPunch={isRowFourPunch} onEditRecord={onEditRecord} />
 
       <td className="py-2.5 px-3 whitespace-nowrap">
         <div className="flex items-center gap-1 flex-wrap">
           {badges.map((b, idx) => (
-            <span
-              key={idx}
-              className={`px-2 py-0.5 rounded text-[11px] font-bold inline-block shadow-2xs ${b.bg} ${b.text}`}
-            >
+            <span key={idx} className={`px-2 py-0.5 rounded text-[11px] font-bold inline-block shadow-2xs ${b.bg} ${b.text}`}>
               {b.label}
             </span>
           ))}
         </div>
       </td>
 
-      <AttendanceRowActions
-        record={r}
-        canManage={canManage}
-        onSelectRecord={onSelectRecord}
-        onEditRecord={onEditRecord}
-        onDeleteRecord={onDeleteRecord}
-        onLogTimeForEmployee={onLogTimeForEmployee}
-      />
+      <AttendanceRowActions record={r} canManage={canManage} onSelectRecord={onSelectRecord} onEditRecord={onEditRecord} onDeleteRecord={onDeleteRecord} onLogTimeForEmployee={onLogTimeForEmployee} />
     </tr>
   );
 });
