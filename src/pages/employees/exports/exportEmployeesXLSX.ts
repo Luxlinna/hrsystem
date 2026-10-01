@@ -1,19 +1,54 @@
 import type { Employee, AccountStatus } from "../types";
+import { supabase } from "@/lib/supabase";
 
 const getXLSX = async () => {
   return await import("xlsx");
 };
 
+const isUuid = (val?: string | null) =>
+  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
 export async function exportEmployeesXLSX(
   employees: Employee[],
   accountStatus: Record<string, AccountStatus> = {}
 ): Promise<boolean> {
+  const empMap = new Map<string, string>();
+  employees.forEach((emp) => {
+    const name = emp.full_name || `${emp.first_name || ""} ${emp.last_name || ""}`.trim();
+    if (emp.id && name) empMap.set(emp.id, name);
+    if (emp.employee_code && name) empMap.set(emp.employee_code, name);
+  });
+
+  const missingIds = employees
+    .map((e) => e.reports_to || (isUuid(e.line_manager) ? e.line_manager : null))
+    .filter((id): id is string => Boolean(id && isUuid(id) && !empMap.has(id)));
+
+  if (missingIds.length > 0) {
+    const { data: managers } = await supabase
+      .from("employees")
+      .select("id, first_name, last_name, full_name")
+      .in("id", [...new Set(missingIds)]);
+    (managers || []).forEach((m: any) => {
+      const name = m.full_name || `${m.first_name || ""} ${m.last_name || ""}`.trim();
+      if (m.id && name) empMap.set(m.id, name);
+    });
+  }
+
+  const resolveManager = (e: Employee) => {
+    if (e.reports_to && empMap.has(e.reports_to)) return empMap.get(e.reports_to)!;
+    if (e.line_manager) {
+      if (empMap.has(e.line_manager)) return empMap.get(e.line_manager)!;
+      if (!isUuid(e.line_manager)) return e.line_manager;
+    }
+    return "—";
+  };
+
+  const emptyRow: Record<string, string | number> = { "No.": 1, "Employee ID": "—", "Full Name (EN)": "No employees found" };
   const data = employees.length > 0
     ? employees.map((e, index) => {
         const acc = accountStatus[e.email];
         const accountStatusValue = acc?.hasAccount ? "Active Account" : acc?.invited ? "Invited" : "No Account";
         const fullName = e.full_name || `${e.first_name || ""} ${e.last_name || ""}`.trim() || "—";
-        const salary = e.basic_salary != null ? e.basic_salary : e.contract_rate != null ? e.contract_rate : "—";
         const currency = e.contract_rate_currency || "USD";
         const contractEnd = e.contract_end_date || e.fdc_end_date || "Continuous";
         const bankName = e.bank_name || (e.bank_accounts?.[0]?.payment_method ?? "—");
@@ -47,14 +82,13 @@ export async function exportEmployeesXLSX(
           "Emergency Contact Name": emContact,
           "Emergency Contact Phone": emPhone,
           "Business Unit": e.branches?.name || e.code_bu,
-          "BU Code": e.code_bu || "—",
           "Division": e.division || "—",
           "Department": e.department || "—",
           "Position / Role": e.position || e.role || "—",
           "Employee Level": e.employee_level || "—",
           "Employment Type": e.employment_type || "Full Time",
           "Work Location / Site": e.work_locations?.name || e.working_location || "Main Office",
-          "Line Manager / Reports To": e.line_manager || e.reports_to || "—",
+          "Line Manager / Reports To": resolveManager(e),
           "Biometric User ID": e.biometric_user_id || "—",
           "Joining Date": e.join_date || e.start_date || "—",
           "Employment Status": (e.status || "active").replace(/_/g, " ").toUpperCase(),
@@ -62,7 +96,6 @@ export async function exportEmployeesXLSX(
           "Contract Effective Date": e.contract_effective_date || e.join_date || "—",
           "Contract End Date": contractEnd,
           "Contract Remark": e.contract_remark || "—",
-          "Basic Salary / Rate": salary,
           "Currency": currency,
           "Salary Frequency": e.tax_salary_frequency || e.contract_rate_frequency || "Monthly",
           "Tax Method": e.tax_method || "Gross",
@@ -74,114 +107,12 @@ export async function exportEmployeesXLSX(
           "User Account Status": accountStatusValue,
         };
       })
-    : [
-        {
-          "No.": 1,
-          "Employee ID": "—",
-          "Full Name (EN)": "No employees found",
-          "First Name": "—",
-          "Last Name": "—",
-          "Khmer Name": "—",
-          "Gender": "—",
-          "Date of Birth": "—",
-          "Marital Status": "—",
-          "Nationality": "—",
-          "Resident Status": "—",
-          "Blood Group": "—",
-          "Religion": "—",
-          "National ID / Passport": "—",
-          "Tax ID Number": "—",
-          "Work Email": "—",
-          "Primary Phone": "—",
-          "Home Phone": "—",
-          "Office Phone": "—",
-          "Current Address": "—",
-          "Permanent Address": "—",
-          "Emergency Contact Name": "—",
-          "Emergency Contact Phone": "—",
-          "Business Unit": "—",
-          "BU Code": "—",
-          "Division": "—",
-          "Department": "—",
-          "Position / Role": "—",
-          "Employee Level": "—",
-          "Employment Type": "—",
-          "Work Location / Site": "—",
-          "Line Manager / Reports To": "—",
-          "Biometric User ID": "—",
-          "Joining Date": "—",
-          "Employment Status": "—",
-          "Contract Type": "—",
-          "Contract Effective Date": "—",
-          "Contract End Date": "—",
-          "Contract Remark": "—",
-          "Basic Salary / Rate": "—",
-          "Currency": "—",
-          "Salary Frequency": "—",
-          "Tax Method": "—",
-          "Tax Salary": "—",
-          "NSSF Number": "—",
-          "NSSF Registered": "—",
-          "Disbursement Bank": "—",
-          "Bank Account Number": "—",
-          "User Account Status": "—",
-        },
-      ];
+    : [emptyRow];
 
   const XLSX = await getXLSX();
   const ws = XLSX.utils.json_to_sheet(data);
-
-  ws["!cols"] = [
-    { wch: 6 },  // No.
-    { wch: 14 }, // Employee ID
-    { wch: 22 }, // Full Name (EN)
-    { wch: 14 }, // First Name
-    { wch: 14 }, // Last Name
-    { wch: 18 }, // Khmer Name
-    { wch: 10 }, // Gender
-    { wch: 14 }, // Date of Birth
-    { wch: 14 }, // Marital Status
-    { wch: 14 }, // Nationality
-    { wch: 14 }, // Resident Status
-    { wch: 12 }, // Blood Group
-    { wch: 12 }, // Religion
-    { wch: 20 }, // National ID
-    { wch: 16 }, // Tax ID Number
-    { wch: 26 }, // Email
-    { wch: 16 }, // Primary Phone
-    { wch: 16 }, // Home Phone
-    { wch: 16 }, // Office Phone
-    { wch: 30 }, // Current Address
-    { wch: 30 }, // Permanent Address
-    { wch: 22 }, // Emergency Contact Name
-    { wch: 18 }, // Emergency Contact Phone
-    { wch: 22 }, // Branch / BU
-    { wch: 12 }, // BU Code
-    { wch: 16 }, // Division
-    { wch: 18 }, // Department
-    { wch: 22 }, // Position / Role
-    { wch: 14 }, // Level
-    { wch: 16 }, // Employment Type
-    { wch: 20 }, // Work Location / Site
-    { wch: 22 }, // Line Manager
-    { wch: 16 }, // Biometric ID
-    { wch: 14 }, // Joining Date
-    { wch: 14 }, // Status
-    { wch: 16 }, // Contract Type
-    { wch: 18 }, // Contract Effective Date
-    { wch: 18 }, // Contract End Date
-    { wch: 22 }, // Contract Remark
-    { wch: 16 }, // Basic Salary
-    { wch: 10 }, // Currency
-    { wch: 16 }, // Frequency
-    { wch: 12 }, // Tax Method
-    { wch: 12 }, // Tax Salary
-    { wch: 16 }, // NSSF Number
-    { wch: 14 }, // NSSF Registered
-    { wch: 20 }, // Bank Name
-    { wch: 22 }, // Bank Account Number
-    { wch: 18 }, // User Account Status
-  ];
+  const widths = [6, 14, 22, 14, 14, 18, 10, 14, 14, 14, 14, 12, 12, 20, 16, 26, 16, 16, 16, 30, 30, 22, 18, 22, 16, 18, 22, 14, 16, 20, 22, 16, 14, 14, 16, 18, 18, 22, 10, 16, 12, 12, 16, 14, 20, 22, 18];
+  ws["!cols"] = widths.map((wch) => ({ wch }));
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Employee Form Data");

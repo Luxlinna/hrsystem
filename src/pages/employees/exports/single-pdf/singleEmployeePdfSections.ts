@@ -41,7 +41,13 @@ export function renderContactSection(e: Employee, fullAddress: string): string {
     </div>`;
 }
 
-export function renderEmploymentSection(e: Employee, branchName: string, siteName: string, dept: string, pos: string, joinDate: string): string {
+export function renderEmploymentSection(e: Employee, branchName: string, siteName: string, dept: string, pos: string, joinDate: string, managerName = "—"): string {
+  const lineManagerDisplay = managerName && managerName !== "—"
+    ? managerName
+    : e.line_manager && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(e.line_manager)
+    ? e.line_manager
+    : "—";
+
   return `
     <div class="section-block">
       <div class="section-header"><span>3. Employment &amp; Organization Terms</span></div>
@@ -53,7 +59,7 @@ export function renderEmploymentSection(e: Employee, branchName: string, siteNam
           <div class="data-item"><div class="data-label">Employee Level</div><div class="data-val">${e.employee_level || "—"}</div></div>
           <div class="data-item"><div class="data-label">Employment Type</div><div class="data-val">${e.employment_type || "Full Time"}</div></div>
           <div class="data-item"><div class="data-label">Work Location</div><div class="data-val">${siteName}</div></div>
-          <div class="data-item"><div class="data-label">Line Manager</div><div class="data-val">${e.line_manager || e.reports_to || "—"}</div></div>
+          <div class="data-item"><div class="data-label">Line Manager</div><div class="data-val">${lineManagerDisplay}</div></div>
           <div class="data-item"><div class="data-label">Biometric User ID</div><div class="data-val-mono">${e.biometric_user_id || "—"}</div></div>
         </div>
         <div style="margin-top:6px; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px 12px; border-top:1px dashed #e2e8f0; padding-top:6px;">
@@ -66,16 +72,16 @@ export function renderEmploymentSection(e: Employee, branchName: string, siteNam
     </div>`;
 }
 
-export function renderPayrollSection(e: Employee, salary: string, salaryFreq: string, bankAccountStr: string): string {
+export function renderPayrollSection(e: Employee, salaryFreq: string, bankAccountStr: string): string {
   return `
     <div class="section-block">
       <div class="section-header"><span>4. Payroll, Compensation &amp; Bank Account</span></div>
       <div class="section-body">
         <div class="data-grid-4">
-          <div class="data-item"><div class="data-label">Basic Salary / Rate</div><div class="data-val-mono" style="color:#047857;font-size:10.5px">${salary}</div></div>
           <div class="data-item"><div class="data-label">Salary Frequency</div><div class="data-val">${salaryFreq}</div></div>
           <div class="data-item"><div class="data-label">NSSF Number</div><div class="data-val-mono">${e.nssf_number || (e.register_nssf ? "Registered" : "—")}</div></div>
           <div class="data-item"><div class="data-label">Tax Method</div><div class="data-val">${e.tax_method || "Gross"}</div></div>
+          <div class="data-item"><div class="data-label">Tax Salary</div><div class="data-val-mono">${e.tax_salary ?? "—"}</div></div>
         </div>
         <div style="margin-top:6px; border-top:1px dashed #e2e8f0; padding-top:6px;">
           <div class="data-label">Disbursement Bank Accounts</div>

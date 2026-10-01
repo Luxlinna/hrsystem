@@ -1,4 +1,5 @@
 import type { Employee } from "../types";
+import { supabase } from "@/lib/supabase";
 
 const getXLSX = async () => {
   return await import("xlsx");
@@ -16,7 +17,6 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
   const siteName = e.work_locations?.name || e.working_location || "Main Office";
   const joinDate = e.join_date || e.start_date || "—";
   const status = (e.status || "active").replace(/_/g, " ").toUpperCase();
-  const salary = e.basic_salary != null ? `${e.basic_salary}` : e.contract_rate != null ? `${e.contract_rate}` : "—";
   const currency = e.contract_rate_currency || "USD";
   const salaryFreq = e.tax_salary_frequency || e.contract_rate_frequency || "Monthly";
   const contractEnd = e.contract_end_date || e.fdc_end_date || "Continuous";
@@ -25,6 +25,24 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
   const emContact = e.emergency_contact_name || (e.emergency_contacts?.[0]?.contact_person ?? "—");
   const emPhone = e.emergency_phone_number || (e.emergency_contacts?.[0]?.phone_number ?? "—");
   const fullAddr = [e.current_address, e.permanent_city, e.permanent_province, e.permanent_country].filter(Boolean).join(", ") || e.permanent_address || "—";
+
+  const isUuid = (val?: string | null) =>
+    Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
+  let managerName = "—";
+  const managerTarget = e.reports_to || (isUuid(e.line_manager) ? e.line_manager : null);
+  if (managerTarget && isUuid(managerTarget)) {
+    const { data: mgr } = await supabase
+      .from("employees")
+      .select("first_name, last_name, full_name")
+      .eq("id", managerTarget)
+      .maybeSingle();
+    if (mgr) {
+      managerName = mgr.full_name || `${mgr.first_name || ""} ${mgr.last_name || ""}`.trim() || "—";
+    }
+  } else if (e.line_manager && !isUuid(e.line_manager)) {
+    managerName = e.line_manager;
+  }
 
   // ── Sheet 1: Master Directory Format (All 49 Form Columns) ──
   const directoryRow = [{
@@ -52,14 +70,13 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
     "Emergency Contact Name": emContact,
     "Emergency Contact Phone": emPhone,
     "Business Unit": branchName,
-    "BU Code": e.code_bu || "—",
     "Division": e.division || "—",
     "Department": department,
     "Position / Role": position,
     "Employee Level": e.employee_level || "—",
     "Employment Type": e.employment_type || "Full Time",
     "Work Location / Site": siteName,
-    "Line Manager / Reports To": e.line_manager || e.reports_to || "—",
+    "Line Manager / Reports To": managerName,
     "Biometric User ID": e.biometric_user_id || "—",
     "Joining Date": joinDate,
     "Employment Status": status,
@@ -67,7 +84,6 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
     "Contract Effective Date": e.contract_effective_date || joinDate,
     "Contract End Date": contractEnd,
     "Contract Remark": e.contract_remark || "—",
-    "Basic Salary / Rate": salary,
     "Currency": currency,
     "Salary Frequency": salaryFreq,
     "Tax Method": e.tax_method || "Gross",
@@ -101,17 +117,16 @@ export async function exportSingleEmployeeXLSX(e: Employee): Promise<boolean> {
     ["Current Address", e.current_address || "—", "Permanent Address", e.permanent_address || "—"],
     [],
     ["--- EMPLOYMENT & ORGANIZATIONAL TERMS ---"],
-    ["Business Unit", branchName, "BU Code", e.code_bu || "—"],
-    ["Division", e.division || "—", "Department", department],
-    ["Job Title / Designation", position, "Employee Level", e.employee_level || "—"],
-    ["Employment Type", e.employment_type || "Full Time", "Work Site Location", siteName],
-    ["Line Manager / Reports To", e.line_manager || e.reports_to || "—", "Biometric ID", e.biometric_user_id || "—"],
-    ["Employment Status", status, "Joining Date", joinDate],
-    ["Contract Type", e.contract_type || "UDC", "Contract Effective Date", e.contract_effective_date || joinDate],
-    ["Contract End Date", contractEnd, "Contract Remark", e.contract_remark || "—"],
+    ["Business Unit", branchName, "Division", e.division || "—"],
+    ["Department", department, "Job Title / Designation", position],
+    ["Employee Level", e.employee_level || "—", "Employment Type", e.employment_type || "Full Time"],
+    ["Work Site Location", siteName, "Line Manager / Reports To", managerName],
+    ["Biometric ID", e.biometric_user_id || "—", "Employment Status", status],
+    ["Joining Date", joinDate, "Contract Type", e.contract_type || "UDC"],
+    ["Contract Effective Date", e.contract_effective_date || joinDate, "Contract End Date", contractEnd],
+    ["Contract Remark", e.contract_remark || "—"],
     [],
     ["--- PAYROLL, COMPENSATION & BANKING ---"],
-    ["Basic Salary / Rate", salary, "Currency", currency],
     ["Salary Frequency", salaryFreq, "Tax Method", e.tax_method || "Gross"],
     ["NSSF Number", e.nssf_number || "—", "NSSF Registered", e.register_nssf ? "Yes" : "No"],
     ["Disbursement Bank", bankName, "Bank Account Number", bankAccount],

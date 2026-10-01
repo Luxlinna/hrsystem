@@ -8,8 +8,9 @@ import {
   renderEmergencyAndFamilySection,
   renderEducationAndWorkSection,
 } from "./single-pdf/singleEmployeePdfSections";
+import { supabase } from "@/lib/supabase";
 
-export function exportSingleEmployeePDF(employee: Employee): boolean {
+export async function exportSingleEmployeePDF(employee: Employee): Promise<boolean> {
   const fullName = employee.full_name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || "Employee";
   const empCode = employee.employee_code || employee.id.slice(0, 8);
   const position = employee.position || employee.role || "Staff";
@@ -18,8 +19,25 @@ export function exportSingleEmployeePDF(employee: Employee): boolean {
   const siteName = employee.work_locations?.name || employee.working_location || "Main Office";
   const joinDate = employee.join_date || employee.start_date || "—";
   const status = (employee.status || "active").replace(/_/g, " ").toUpperCase();
-  const salary = employee.basic_salary != null ? `${employee.basic_salary} ${employee.contract_rate_currency || "USD"}` : employee.contract_rate != null ? `${employee.contract_rate} ${employee.contract_rate_currency || "USD"}` : "—";
   const salaryFreq = employee.tax_salary_frequency || employee.contract_rate_frequency || "Monthly";
+
+  const isUuid = (val?: string | null) =>
+    Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
+  let managerName = "—";
+  const managerTarget = employee.reports_to || (isUuid(employee.line_manager) ? employee.line_manager : null);
+  if (managerTarget && isUuid(managerTarget)) {
+    const { data: mgr } = await supabase
+      .from("employees")
+      .select("first_name, last_name, full_name")
+      .eq("id", managerTarget)
+      .maybeSingle();
+    if (mgr) {
+      managerName = mgr.full_name || `${mgr.first_name || ""} ${mgr.last_name || ""}`.trim() || "—";
+    }
+  } else if (employee.line_manager && !isUuid(employee.line_manager)) {
+    managerName = employee.line_manager;
+  }
 
   const getStatusColor = (st: string) => {
     switch (st.toLowerCase()) {
@@ -83,15 +101,15 @@ export function exportSingleEmployeePDF(employee: Employee): boolean {
           <div class="hero-meta-item"><strong>Employee ID</strong><span class="data-val-mono">${empCode}</span></div>
           <div class="hero-meta-item"><strong>Position</strong><span class="data-val">${position}</span></div>
           <div class="hero-meta-item"><strong>Department</strong><span class="data-val">${department}</span></div>
-          <div class="hero-meta-item"><strong>Branch / BU</strong><span class="data-val">${branchName}</span></div>
+          <div class="hero-meta-item"><strong>Business Unit</strong><span class="data-val">${branchName}</span></div>
         </div>
       </div>
     </div>
 
     ${renderPersonalSection(employee, idStr)}
     ${renderContactSection(employee, fullAddress)}
-    ${renderEmploymentSection(employee, branchName, siteName, department, position, joinDate)}
-    ${renderPayrollSection(employee, salary, salaryFreq, bankAccountStr)}
+    ${renderEmploymentSection(employee, branchName, siteName, department, position, joinDate, managerName)}
+    ${renderPayrollSection(employee, salaryFreq, bankAccountStr)}
     ${renderEmergencyAndFamilySection(employee)}
     ${renderEducationAndWorkSection(employee)}
 
