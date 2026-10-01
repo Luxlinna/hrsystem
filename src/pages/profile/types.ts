@@ -38,6 +38,15 @@ export interface MyEmployee {
   resume_name?: string | null;
   candidate_code?: string | null;
   candidate_id?: string | null;
+  position?: string | null;
+  employee_code?: string | null;
+  employment_type?: string | null;
+  contract_type?: string | null;
+  site?: string | null;
+  work_locations?: { name: string } | null;
+  code_bu?: string | null;
+  bu_full_name?: string | null;
+  start_date?: string | null;
   source?: string | null;
   assigned_recruiter_name?: string | null;
   tags?: string[] | null;

@@ -1,106 +1,95 @@
 import { useState } from "react";
-import { ProfileHeader } from "./components/ProfileHeader";
-import { ProfileAvatarSection } from "./components/ProfileAvatarSection";
-import { ProfileAccountForm } from "./components/ProfileAccountForm";
-import { ProfileProfessionalSection } from "./components/ProfileProfessionalSection";
-import { ProfileWorkInfoSidebar } from "./components/ProfileWorkInfoSidebar";
-import AvatarCropModal from "@/components/AvatarCropModal";
 import { useProfile } from "./hooks/useProfile";
+import { GoldFramedAvatar } from "./components/GoldFramedAvatar";
+import { ProfileEmployeeInfoCard } from "./components/ProfileEmployeeInfoCard";
+import { ProfileAccountForm } from "./components/ProfileAccountForm";
+import { ProfileLoginAttemptsTab } from "./components/ProfileLoginAttemptsTab";
+import { ProfileSecurityTab } from "./components/ProfileSecurityTab";
+import AvatarCropModal from "@/components/AvatarCropModal";
+
+type ProfileTab = "overview" | "account" | "login_attempts" | "security";
 
 export default function Profile() {
-  const [activeTab, setActiveTab] = useState<"candidate" | "account">("candidate");
+  const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
   const profile = useProfile();
 
-  const candidateId =
-    profile.employee?.candidate_code ||
-    (profile.employee?.candidate_id
-      ? `CAN-2026-${profile.employee.candidate_id.slice(0, 6).toUpperCase()}`
-      : null);
+  const navItems: { id: ProfileTab; label: string; icon: string }[] = [
+    { id: "overview", label: "Overview", icon: "ri-macbook-line" },
+    { id: "account", label: "Account Settings", icon: "ri-settings-3-line" },
+    { id: "login_attempts", label: "Login Attempts", icon: "ri-lock-line" },
+    { id: "security", label: "Security", icon: "ri-shield-check-line" },
+  ];
 
   return (
-    <div className="p-6 lg:p-8 min-h-screen bg-[#F8FAFC] font-sans">
-      <ProfileHeader />
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-[#F0F3F8] dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-200">
+      {/* Top Page Title matching Screenshot 1 */}
+      <div className="mb-5">
+        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+          My Profile
+        </h1>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 w-full">
-        {/* ── LEFT: account & candidate master ── */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-2xs">
-            <ProfileAvatarSection
+      <div className="flex flex-col md:flex-row gap-6 items-start w-full max-w-7xl">
+        {/* ── LEFT SIDEBAR: Avatar, Name & Navigation ── */}
+        <div className="w-full md:w-64 lg:w-72 bg-white dark:bg-slate-900 rounded-md border border-slate-200/80 dark:border-slate-800 shadow-2xs p-6 flex flex-col items-center shrink-0">
+          {/* Avatar with Golden Frame */}
+          <div className="relative group cursor-pointer" onClick={profile.handleAvatarSelect}>
+            <GoldFramedAvatar
               avatarUrl={profile.avatarUrl}
-              displayName={profile.displayName}
-              email={profile.user?.email}
               initials={profile.initials}
-              savingCrop={profile.savingCrop}
-              removingAvatar={profile.removingAvatar}
-              editMenuOpen={profile.editMenuOpen}
-              setEditMenuOpen={profile.setEditMenuOpen}
-              fileInputRef={profile.fileInputRef}
-              onAvatarSelect={profile.handleAvatarSelect}
-              onEditAvatar={profile.handleEditAvatar}
-              onRemoveAvatar={profile.handleRemoveAvatar}
-              roleName={profile.employee?.role}
-              department={profile.employee?.department}
+              size="lg"
             />
-
-            {/* Segmented Tab Navigation */}
-            <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/70 mt-6">
-              <button
-                type="button"
-                onClick={() => setActiveTab("candidate")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-[13px] font-bold transition-all cursor-pointer ${
-                  activeTab === "candidate"
-                    ? "bg-white text-[#253C7D] shadow-xs"
-                    : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                <i className="ri-profile-line text-[15px]"></i>
-                <span>Candidate Master & CV</span>
-                {candidateId && (
-                  <span className="text-[10px] font-mono font-bold bg-blue-50 text-[#253C7D] px-2 py-0.5 rounded-md border border-blue-200/60 ml-1">
-                    {candidateId}
-                  </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab("account")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-[13px] font-bold transition-all cursor-pointer ${
-                  activeTab === "account"
-                    ? "bg-white text-gray-900 shadow-xs"
-                    : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                <i className="ri-shield-keyhole-line text-[15px]"></i>
-                <span>Account & Security</span>
-              </button>
+            {/* Quick edit badge overlay */}
+            <div className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-[#253C7D] text-white flex items-center justify-center text-xs shadow-md border-2 border-white dark:border-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
+              <i className="ri-camera-line" />
             </div>
+            <input
+              ref={profile.fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={profile.handleEditAvatar}
+            />
           </div>
 
-          {activeTab === "candidate" && (
-            <ProfileProfessionalSection
+          {/* User Name */}
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-3 text-center">
+            {profile.displayName || "Yos Steven"}
+          </h2>
+
+          {/* Navigation Menu */}
+          <nav className="w-full mt-6 pt-2 space-y-0.5 border-t border-slate-100 dark:border-slate-800">
+            {navItems.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded text-xs font-medium transition-all text-left cursor-pointer ${
+                    isActive
+                      ? "bg-slate-100 dark:bg-slate-800 text-[#253C7D] dark:text-sky-400 border-l-3 border-[#253C7D] dark:border-sky-400 font-semibold"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  }`}
+                >
+                  <i className={`${item.icon} text-sm ${isActive ? "text-[#253C7D] dark:text-sky-400" : "text-slate-400"}`} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* ── RIGHT MAIN PANEL ── */}
+        <div className="flex-1 w-full bg-white dark:bg-slate-900 rounded-md border border-slate-200/80 dark:border-slate-800 shadow-2xs p-6 min-h-[420px]">
+          {activeTab === "overview" && (
+            <ProfileEmployeeInfoCard
               employee={profile.employee}
-              location={profile.location}
-              setLocation={profile.setLocation}
-              education={profile.education}
-              setEducation={profile.setEducation}
-              workExperience={profile.workExperience}
-              setWorkExperience={profile.setWorkExperience}
-              skills={profile.skills}
-              setSkills={profile.setSkills}
-              languages={profile.languages}
-              setLanguages={profile.setLanguages}
-              expectedSalary={profile.expectedSalary}
-              setExpectedSalary={profile.setExpectedSalary}
-              noticePeriod={profile.noticePeriod}
-              setNoticePeriod={profile.setNoticePeriod}
-              resumeUrl={profile.resumeUrl}
-              resumeName={profile.resumeName}
-              savingProfessional={profile.savingProfessional}
-              uploadingResume={profile.uploadingResume}
-              onSaveProfessional={profile.handleSaveProfessional}
-              onResumeUpload={profile.handleResumeUpload}
-              onRemoveResume={profile.handleRemoveResume}
+              displayName={profile.displayName}
+              avatarUrl={profile.avatarUrl}
+              initials={profile.initials}
+              managerName={profile.managerName}
+              employeeLoading={profile.employeeLoading}
             />
           )}
 
@@ -122,24 +111,22 @@ export default function Profile() {
               setConfirmPassword={profile.setConfirmPassword}
               savingPassword={profile.savingPassword}
               onChangePassword={profile.handleChangePassword}
+              userRole={profile.role?.name || "Admin"}
             />
           )}
-        </div>
 
-        {/* ── RIGHT: read-only work info sidebar ── */}
-        <ProfileWorkInfoSidebar
-          role={profile.role}
-          roleLoading={profile.roleLoading}
-          employee={profile.employee}
-          employeeLoading={profile.employeeLoading}
-          tenure={profile.tenure}
-          managerName={profile.managerName}
-          userCreatedAt={profile.user?.created_at}
-          userLastSignInAt={profile.user?.last_sign_in_at}
-          directReports={profile.directReports}
-          canViewEmployees={profile.can("employees.read")}
-          email={profile.user?.email}
-        />
+          {activeTab === "login_attempts" && (
+            <ProfileLoginAttemptsTab
+              userCreatedAt={profile.user?.created_at}
+              userLastSignInAt={profile.user?.last_sign_in_at}
+              email={profile.user?.email}
+            />
+          )}
+
+          {activeTab === "security" && (
+            <ProfileSecurityTab email={profile.user?.email} />
+          )}
+        </div>
       </div>
 
       {profile.avatarSrc && (
@@ -153,3 +140,4 @@ export default function Profile() {
     </div>
   );
 }
+
