@@ -41,11 +41,12 @@ export function useAddEmployeeAutoSave(
     }
   }, []);
 
+  const draftKey = getDraftStorageKey(isEdit, form);
+
   // When modal opens, check if an existing draft is available (without silently overwriting)
   useEffect(() => {
     if (isOpen) {
       try {
-        const draftKey = getDraftStorageKey(isEdit, form);
         const savedDraft = localStorage.getItem(draftKey);
         if (savedDraft) {
           const parsed = JSON.parse(savedDraft);
@@ -76,7 +77,7 @@ export function useAddEmployeeAutoSave(
       setAvailableDraft(null);
       setAutoSaveStatus("idle");
     }
-  }, [isOpen, isEdit, form.employee_code, (form as any).id, form.email]);
+  }, [isOpen, draftKey]);
 
   // Track field changes and trigger auto-save when user types
   useEffect(() => {

@@ -62,12 +62,12 @@ export const AttendanceTableRow = memo(function AttendanceTableRow({
   );
 
   const badges: { label: string; bg: string; text: string }[] = [];
-  if (r.status === "Sunday" || r.status === "Off" || (isSunday && !hasClockIn && !hasClockOut)) {
-    badges.push({ label: "Off", bg: "bg-purple-600 dark:bg-purple-700", text: "text-white" });
-  } else if (r.status === "Saturday" || (isSaturday && !hasClockIn && !hasClockOut)) {
-    badges.push({ label: "Off", bg: "bg-slate-500 dark:bg-slate-600", text: "text-white" });
-  } else if (r.status === "Holiday" || isHoliday) {
+  if (r.status === "holiday" || isHoliday) {
     badges.push({ label: "Holiday", bg: "bg-blue-600", text: "text-white" });
+  } else if (isSunday && !hasClockIn && !hasClockOut) {
+    badges.push({ label: "Off", bg: "bg-purple-600 dark:bg-purple-700", text: "text-white" });
+  } else if (isSaturday && !hasClockIn && !hasClockOut) {
+    badges.push({ label: "Off", bg: "bg-slate-500 dark:bg-slate-600", text: "text-white" });
   } else if (!hasClockIn && !hasClockOut) {
     if (r.date > todayYMD) {
       badges.push({ label: "Scheduled", bg: "bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700", text: "text-slate-600 dark:text-slate-300" });

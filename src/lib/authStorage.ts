@@ -153,7 +153,9 @@ export function clearAllAuthSessionData(): void {
   }
   try {
     sessionStorage.clear();
-  } catch {}
+  } catch (err) {
+    void err;
+  }
   try {
     // Clear any legacy localStorage auth tokens
     const keysToRemove: string[] = [];
@@ -164,5 +166,7 @@ export function clearAllAuthSessionData(): void {
       }
     }
     keysToRemove.forEach((k) => localStorage.removeItem(k));
-  } catch {}
+  } catch (err) {
+    void err;
+  }
 }

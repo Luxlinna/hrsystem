@@ -44,7 +44,7 @@ export function AdjustWorkingHoursModal({
       setFormState((p) => ({
         ...p,
         morning_check_in_start: p.morning_check_in_start === "00:00" ? "06:00" : p.morning_check_in_start,
-        morning_check_in_end: p.morning_check_end === "23:59" ? "10:00" : p.morning_check_in_end,
+        morning_check_in_end: p.morning_check_in_end === "23:59" ? "10:00" : p.morning_check_in_end,
         afternoon_check_out_start: p.afternoon_check_out_start === "00:00" ? "16:00" : p.afternoon_check_out_start,
         afternoon_check_out_end: p.afternoon_check_out_end === "23:59" ? "22:00" : p.afternoon_check_out_end,
       }));

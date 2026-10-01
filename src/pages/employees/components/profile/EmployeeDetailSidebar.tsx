@@ -45,19 +45,6 @@ export const EmployeeDetailSidebar = memo(function EmployeeDetailSidebar({
 
   const departmentName = employee.department || employee.division || "";
 
-  const rawBranchLocation =
-    employee.working_location ||
-    employee.site ||
-    employee.branches?.name ||
-    (employee as any).branch_name ||
-    employee.permanent_city ||
-    "";
-
-  const branchLocation =
-    rawBranchLocation && rawBranchLocation.toLowerCase() !== buName.toLowerCase()
-      ? rawBranchLocation
-      : "";
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && onUploadAvatar) {
@@ -132,13 +119,6 @@ export const EmployeeDetailSidebar = memo(function EmployeeDetailSidebar({
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-medium border border-slate-200 dark:border-slate-700">
               <i className="ri-team-line text-slate-400 text-[11px]" />
               <span className="truncate max-w-[180px]">{departmentName}</span>
-            </span>
-          )}
-
-          {branchLocation && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-medium border border-slate-200 dark:border-slate-700">
-              <i className="ri-map-pin-line text-slate-400 text-[11px]" />
-              <span className="truncate max-w-[200px]">{branchLocation}</span>
             </span>
           )}
         </div>

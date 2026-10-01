@@ -48,26 +48,13 @@ export const PersonalPermanentAddressSection = memo(function PersonalPermanentAd
 
       {/* 2. Permanent Address */}
       <div className="space-y-3 pt-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-lg bg-[#253C7D] text-white flex items-center justify-center text-xs shadow-2xs">
-              <i className="ri-map-pin-user-line text-xs" />
-            </span>
-            <h3 className="text-xs font-black text-[#253C7D] uppercase tracking-wider">
-              Permanent Address Info
-            </h3>
-          </div>
-
-          {/* Same as Present Address Toggle */}
-          <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl cursor-pointer select-none transition-colors shadow-2xs">
-            <input
-              type="checkbox"
-              checked={form.same_as_present_address !== false}
-              onChange={(e) => handleSameAsPresentToggle(e.target.checked)}
-              className="w-4 h-4 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
-            />
-            <span>Same as Current Address</span>
-          </label>
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-lg bg-[#253C7D] text-white flex items-center justify-center text-xs shadow-2xs">
+            <i className="ri-map-pin-user-line text-xs" />
+          </span>
+          <h3 className="text-xs font-black text-[#253C7D] uppercase tracking-wider">
+            Permanent Address Info
+          </h3>
         </div>
 
         <div>
@@ -81,6 +68,19 @@ export const PersonalPermanentAddressSection = memo(function PersonalPermanentAd
             placeholder="e.g. Street 271, Sangkat Boeng Tumpun, Phnom Penh"
             className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#253C7D] focus:ring-1 focus:ring-[#253C7D] transition-all shadow-2xs"
           />
+        </div>
+
+        {/* Same as Present Address Toggle */}
+        <div className="pt-1">
+          <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl cursor-pointer select-none transition-colors shadow-2xs">
+            <input
+              type="checkbox"
+              checked={form.same_as_present_address !== false}
+              onChange={(e) => handleSameAsPresentToggle(e.target.checked)}
+              className="w-4 h-4 rounded text-[#253C7D] focus:ring-[#253C7D] border-slate-300 cursor-pointer"
+            />
+            <span>Same as Current Address</span>
+          </label>
         </div>
       </div>
     </div>

@@ -79,7 +79,7 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1 items-center">
-            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Rate</span>
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Salary</span>
             <span className="sm:col-span-9 text-slate-900 dark:text-slate-100 inline-flex items-center gap-1.5 flex-wrap">
               <span>USD {showJoinRate ? joinRateVal : "*****"}</span>
               <span className="bg-[#0284c7] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded shadow-2xs">
@@ -92,7 +92,7 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
                 type="button"
                 onClick={() => setShowJoinRate((p) => !p)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                title={showJoinRate ? "Hide Rate" : "Show Rate"}
+                title={showJoinRate ? "Hide Salary" : "Show Salary"}
               >
                 <i className={showJoinRate ? "ri-eye-off-line" : "ri-eye-line"} />
               </button>
@@ -138,7 +138,7 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1 items-center">
-            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Rate</span>
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Salary</span>
             <span className="sm:col-span-9 text-slate-900 dark:text-slate-100 inline-flex items-center gap-1.5 flex-wrap">
               <span>USD {showContractRate ? contractRateVal : "*****"}</span>
               <span className="bg-[#0284c7] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded shadow-2xs">
@@ -148,7 +148,7 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
                 type="button"
                 onClick={() => setShowContractRate((p) => !p)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                title={showContractRate ? "Hide Rate" : "Show Rate"}
+                title={showContractRate ? "Hide Salary" : "Show Salary"}
               >
                 <i className={showContractRate ? "ri-eye-off-line" : "ri-eye-line"} />
               </button>
@@ -156,7 +156,7 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1 items-center">
-            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Rate After Contract</span>
+            <span className="sm:col-span-3 text-slate-700 dark:text-slate-300">Salary After Probation</span>
             <span className="sm:col-span-9 text-slate-900 dark:text-slate-100 inline-flex items-center gap-1.5 flex-wrap">
               <span>USD {showAfterRate ? afterRateVal : "*****"}</span>
               <span className="bg-[#0284c7] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded shadow-2xs">
@@ -166,7 +166,7 @@ export const JoiningMainInfoSection = memo(function JoiningMainInfoSection({
                 type="button"
                 onClick={() => setShowAfterRate((p) => !p)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                title={showAfterRate ? "Hide Rate" : "Show Rate"}
+                title={showAfterRate ? "Hide Salary" : "Show Salary"}
               >
                 <i className={showAfterRate ? "ri-eye-off-line" : "ri-eye-line"} />
               </button>
