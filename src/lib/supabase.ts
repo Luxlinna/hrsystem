@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { authSessionStorage } from './authStorage';
 
 const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -18,7 +19,7 @@ const fetchWithAuthRetry: typeof fetch = async (input, init) => {
   if (response.status !== 401) return response;
 
   try {
-    // 1. Check if another tab has already refreshed the session in localStorage
+    // 1. Check if another tab has already refreshed the session in session/cookie storage
     const { data: currentSessionData } = await supabase.auth.getSession();
     const currentToken = currentSessionData?.session?.access_token;
 
@@ -58,7 +59,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: localStorage,
+    storage: authSessionStorage,
   },
   global: { fetch: fetchWithAuthRetry },
 });

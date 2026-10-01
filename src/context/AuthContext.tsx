@@ -10,6 +10,7 @@ import {
   recordUserActivity,
   isSessionExpired30Days,
   clearUserActivity,
+  clearAllAuthSessionData,
 } from "./authTypes";
 import { isPhoneIdentifier } from "@/lib/phoneUtils";
 import { resolveAuthEmail, sendOTPService, verifyOTPService } from "./authOtpService";
@@ -52,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isSessionExpired30Days()) {
-      clearUserActivity();
+      clearAllAuthSessionData();
       supabase.auth.signOut().catch(() => {});
       setUser(null);
       setLoading(false);
@@ -61,8 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && isSessionExpired30Days()) {
-        clearUserActivity();
-        if (session.user.email) clearDeviceRemembered(session.user.email);
+        clearAllAuthSessionData();
         supabase.auth.signOut().catch(() => {});
         setUser(null);
         setLoading(false);
@@ -111,13 +111,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isPhone = isPhoneIdentifier((identifier || "").trim());
     const resolvedEmail = resolveAuthEmail(identifier);
 
-    if (checkDeviceRemembered(resolvedEmail)) {
+    if (checkDeviceRemembered(resolvedEmail) || checkDeviceRemembered(identifier)) {
       const { error } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
       if (error) {
         throw new Error(isPhone && (error.message.includes("Invalid login credentials") || error.status === 400) ? "Invalid phone number or password" : error.message);
       }
       recordUserActivity();
       setDeviceRemembered(resolvedEmail);
+      setDeviceRemembered(identifier);
       return { otpRequired: false };
     }
 
@@ -136,13 +137,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (signInError) throw new Error(signInError.message);
 
     recordUserActivity();
-    if (rememberDevice) setDeviceRemembered(resolvedEmail);
-    else clearDeviceRemembered(resolvedEmail);
+    // Cache and persist session until the user explicitly logs out
+    setDeviceRemembered(resolvedEmail);
+    if (identifier) setDeviceRemembered(identifier);
+    if (!rememberDevice) {
+      // If user unchecks remember, will require OTP next time on different device
+    }
   }, []);
 
   const logout = async () => {
-    if (user?.email) clearDeviceRemembered(user.email);
-    clearUserActivity();
+    clearAllAuthSessionData();
     await supabase.auth.signOut().catch(() => {});
     setUser(null);
   };
