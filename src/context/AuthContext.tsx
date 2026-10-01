@@ -154,10 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(detail || error.message || "Failed to verify OTP");
     }
     if (data?.error) throw new Error(data.error);
-
-    await supabase.auth.signOut().catch(() => {});
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
-    if (signInError) throw new Error(signInError.message);
+ 
+     const { error: signInError } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
+     if (signInError) throw new Error(signInError.message);
 
     if (rememberDevice) {
       setDeviceRemembered(resolvedEmail);

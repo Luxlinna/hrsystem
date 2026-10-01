@@ -3,56 +3,62 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// A stale/expired access token (e.g. after the tab was offline past the
-// refresh window) causes PostgREST to return 401 instead of Supabase-js
-// proactively refreshing. Retry once with a freshly refreshed session
-// before giving up and signing the user out.
+// Multi-tab safe token refresh and retry handler.
+// Instead of aggressively calling signOut() on any 401 (which kills active sessions
+// across other tabs and causes concurrent tab crashes), we attempt to sync with
+// the latest session or refresh once, then return the response without destroying the session.
 let refreshPromise: ReturnType<typeof supabase.auth.refreshSession> | null = null;
-let signOutPromise: ReturnType<typeof supabase.auth.signOut> | null = null;
-
-// Once a refresh attempt has confirmed the session is truly dead, every
-// other request already in flight is about to 401 too — without this,
-// each one independently reruns the refresh (which fails again) and calls
-// signOut() again, firing a fresh /auth/v1/logout request (and console
-// 403, since the session it's trying to revoke no longer exists server
-// -side) per request instead of once. AuthContext flips this back off as
-// soon as a real session exists again (sign-in or a successful refresh).
-let sessionKnownDead = false;
 
 export function markSessionAlive() {
-  sessionKnownDead = false;
+  // Kept for backward compatibility
 }
 
 const fetchWithAuthRetry: typeof fetch = async (input, init) => {
   const response = await fetch(input, init);
-  if (response.status !== 401 || sessionKnownDead) return response;
+  if (response.status !== 401) return response;
 
-  if (!refreshPromise) {
-    refreshPromise = supabase.auth.refreshSession().finally(() => {
-      refreshPromise = null;
-    });
-  }
-  const { data, error } = await refreshPromise;
+  try {
+    // 1. Check if another tab has already refreshed the session in localStorage
+    const { data: currentSessionData } = await supabase.auth.getSession();
+    const currentToken = currentSessionData?.session?.access_token;
 
-  if (error || !data.session) {
-    sessionKnownDead = true;
-    // Several requests can all 401 around the same moment and land here
-    // once the shared refresh above fails — dedupe so we fire one logout
-    // call instead of one per failed request.
-    if (!signOutPromise) {
-      signOutPromise = supabase.auth.signOut().finally(() => {
-        signOutPromise = null;
+    // Check previous header token
+    const oldHeader = init?.headers ? new Headers(init.headers).get('Authorization') : null;
+    const oldToken = oldHeader ? oldHeader.replace(/^Bearer\s+/i, '') : null;
+
+    if (currentToken && currentToken !== oldToken) {
+      // Another tab already got a newer token, retry immediately with it
+      const headers = new Headers(init?.headers);
+      headers.set('Authorization', `Bearer ${currentToken}`);
+      return fetch(input, { ...init, headers });
+    }
+
+    // 2. If token hasn't changed, attempt a single deduplicated refresh
+    if (!refreshPromise) {
+      refreshPromise = supabase.auth.refreshSession().finally(() => {
+        refreshPromise = null;
       });
     }
-    await signOutPromise;
-    return response;
+    const { data: refreshedData, error: refreshError } = await refreshPromise;
+
+    if (!refreshError && refreshedData?.session?.access_token) {
+      const headers = new Headers(init?.headers);
+      headers.set('Authorization', `Bearer ${refreshedData.session.access_token}`);
+      return fetch(input, { ...init, headers });
+    }
+  } catch {
+    // Network or parse issue — do not log out, just return original 401 response
   }
 
-  const headers = new Headers(init?.headers);
-  headers.set('Authorization', `Bearer ${data.session.access_token}`);
-  return fetch(input, { ...init, headers });
+  return response;
 };
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: localStorage,
+  },
   global: { fetch: fetchWithAuthRetry },
 });
