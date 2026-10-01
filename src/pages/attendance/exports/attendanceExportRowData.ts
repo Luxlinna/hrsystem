@@ -10,7 +10,7 @@ export interface AttendanceExportRow {
   dayOfWeek: string;
   employeeName: string;
   biometricId: string;
-  designation: string;
+  position: string;
   department: string;
   location: string;
   scheduleTitle: string;
@@ -22,7 +22,6 @@ export interface AttendanceExportRow {
   breakIn: string;
   workedHours: string;
   status: string;
-  salary: string;
   notes: string;
 }
 
@@ -45,12 +44,19 @@ export function getExportStatus(r: AttendanceRecord): string {
   if (!hasClockIn) return "Error : No clock in";
   if (!hasClockOut && r.date < todayYMD) return "Error : No clock out";
   if (!hasClockOut && r.date === todayYMD) return "Working Now";
+  
+  const statuses: string[] = [];
   if (r.status === "late" || (r.late_minutes && r.late_minutes > 0)) {
-    return `Late ${r.late_minutes}m`;
+    statuses.push(`Late ${r.late_minutes}m`);
   }
+  if (r.early_leave_minutes && r.early_leave_minutes > 0) {
+    statuses.push(`Early ${r.early_leave_minutes}m`);
+  }
+  if (statuses.length > 0) return statuses.join(", ");
+
   if (r.status === "remote") return "Remote";
   if (r.status === "absent") return "Absent";
-  return "On Time";
+  return "";
 }
 
 export function mapRecordToExportRow(
@@ -68,11 +74,6 @@ export function mapRecordToExportRow(
     : (emp?.branches?.name || r.work_location?.name || "");
   const bioId = formatBiometricId(rawBio, bName) || "—";
 
-  const rawSalary = emp?.basic_salary ?? emp?.contract_rate ?? null;
-  const currency = emp?.contract_rate_currency || "$";
-  const numSalary = rawSalary !== null && rawSalary !== undefined && rawSalary !== "" ? Number(rawSalary) : null;
-  const salary = numSalary !== null && !Number.isNaN(numSalary) ? `${currency} ${numSalary.toFixed(2)}` : `${currency} —`;
-
   const windowsText = sched.windows.map((w) => `${w.time_in} - ${w.time_out}`).join(", ");
   const netHours = calcNetHours(r.clock_in, r.clock_out, r.break_out, r.break_in, r.hours_worked);
 
@@ -82,7 +83,7 @@ export function mapRecordToExportRow(
     dayOfWeek: day,
     employeeName: `${emp?.first_name || ""} ${emp?.last_name || ""}`.trim() || "Employee",
     biometricId: bioId,
-    designation: emp?.role || "Staff Member",
+    position: emp?.position || emp?.role || "Staff Member",
     department: emp?.department || "OPERATIONS",
     location: r.work_location?.name || emp?.branches?.name || emp?.site || "Main Office",
     scheduleTitle: sched.shiftTitle,
@@ -94,7 +95,6 @@ export function mapRecordToExportRow(
     breakIn: r.break_in ? formatTime(r.break_in) : "N/A",
     workedHours: netHours !== "—" ? netHours : "0h",
     status: getExportStatus(r),
-    salary,
     notes: r.notes || "—",
   };
 }

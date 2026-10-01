@@ -21,7 +21,7 @@ export async function exportAttendanceRecordsXLSX(
             "Day": row.dayOfWeek,
             "Employee Name": row.employeeName,
             "Biometric ID": row.biometricId,
-            "Designation": row.designation,
+            "Position": row.position,
             "Department": row.department,
             "Location": row.location,
             "Schedules": row.scheduleTitle,
@@ -32,7 +32,6 @@ export async function exportAttendanceRecordsXLSX(
             "Evening Out": row.clockOut,
             "Clocked Hours": row.workedHours,
             "Status": row.status,
-            "Salary": row.salary,
             "Notes": row.notes,
           };
         }
@@ -43,7 +42,7 @@ export async function exportAttendanceRecordsXLSX(
           "Day": row.dayOfWeek,
           "Employee Name": row.employeeName,
           "Biometric ID": row.biometricId,
-          "Designation": row.designation,
+          "Position": row.position,
           "Department": row.department,
           "Location": row.location,
           "Schedules": row.scheduleTitle,
@@ -52,7 +51,6 @@ export async function exportAttendanceRecordsXLSX(
           "Clock Out": row.clockOut,
           "Clocked Hours": row.workedHours,
           "Status": row.status,
-          "Salary": row.salary,
           "Notes": row.notes,
         };
       })
@@ -63,7 +61,7 @@ export async function exportAttendanceRecordsXLSX(
           "Day": "—",
           "Employee Name": "No records found",
           "Biometric ID": "—",
-          "Designation": "—",
+          "Position": "—",
           "Department": "—",
           "Location": "—",
           "Schedules": "—",
@@ -73,7 +71,6 @@ export async function exportAttendanceRecordsXLSX(
             : { "Clock In": "—", "Clock Out": "—" }),
           "Clocked Hours": "—",
           "Status": "—",
-          "Salary": "—",
           "Notes": "—",
         },
       ];
@@ -97,7 +94,6 @@ export async function exportAttendanceRecordsXLSX(
       : [{ wch: 12 }, { wch: 12 }]),
     { wch: 14 },
     { wch: 18 },
-    { wch: 14 },
     { wch: 25 },
   ];
 

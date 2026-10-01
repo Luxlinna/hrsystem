@@ -4,6 +4,7 @@ export interface Employee {
   last_name: string;
   department: string;
   role: string;
+  position?: string | null;
   avatar_url: string | null;
   branch_id?: string | null;
   branches?: { id: string; name: string } | null;

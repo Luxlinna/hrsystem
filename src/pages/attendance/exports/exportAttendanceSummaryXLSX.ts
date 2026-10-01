@@ -23,7 +23,7 @@ export async function exportAttendanceSummaryXLSX(summaries: EmployeeSummaryItem
           "Employee Name": empName,
           "Biometric ID": bioId,
           Department: s.department || "—",
-          Designation: s.role || "Staff",
+          Position: s.position || s.role || "Staff",
           "Present Days": s.present || 0,
           "Late Days": s.late || 0,
           "Absent Days": s.absent || 0,
@@ -31,7 +31,6 @@ export async function exportAttendanceSummaryXLSX(summaries: EmployeeSummaryItem
           "Total Hours": Number(s.totalHours || 0).toFixed(1),
           "Total Late Minutes": s.totalLateMinutes || 0,
           "Attendance Rate": `${Math.round(s.attendanceRate || 0)}%`,
-          Salary: salary,
           "Last Seen": s.lastSeen || "—",
         };
       })
@@ -40,7 +39,7 @@ export async function exportAttendanceSummaryXLSX(summaries: EmployeeSummaryItem
         "Employee Name": "No summary data found",
         "Biometric ID": "—",
         Department: "—",
-        Designation: "—",
+        Position: "—",
         "Present Days": 0,
         "Late Days": 0,
         "Absent Days": 0,
@@ -48,7 +47,6 @@ export async function exportAttendanceSummaryXLSX(summaries: EmployeeSummaryItem
         "Total Hours": "0",
         "Total Late Minutes": 0,
         "Attendance Rate": "0%",
-        Salary: "—",
         "Last Seen": "—",
       }];
 
@@ -67,7 +65,6 @@ export async function exportAttendanceSummaryXLSX(summaries: EmployeeSummaryItem
     { wch: 14 },
     { wch: 18 },
     { wch: 16 },
-    { wch: 14 },
     { wch: 16 },
   ];
   const wb = XLSX.utils.book_new();

@@ -20,7 +20,7 @@ export function exportAttendanceRecordsCSV(
         "Day",
         "Employee Name",
         "Biometric ID",
-        "Designation",
+        "Position",
         "Department",
         "Location",
         "Schedule Shift",
@@ -32,7 +32,6 @@ export function exportAttendanceRecordsCSV(
         "Evening Out",
         "Clocked Hours",
         "Status",
-        "Salary",
         "Notes",
       ]
     : [
@@ -41,7 +40,7 @@ export function exportAttendanceRecordsCSV(
         "Day",
         "Employee Name",
         "Biometric ID",
-        "Designation",
+        "Position",
         "Department",
         "Location",
         "Schedule Shift",
@@ -51,7 +50,6 @@ export function exportAttendanceRecordsCSV(
         "Clock Out",
         "Clocked Hours",
         "Status",
-        "Salary",
         "Notes",
       ];
 
@@ -64,7 +62,7 @@ export function exportAttendanceRecordsCSV(
         escapeCSV(row.dayOfWeek),
         escapeCSV(row.employeeName),
         escapeCSV(row.biometricId),
-        escapeCSV(row.designation),
+        escapeCSV(row.position),
         escapeCSV(row.department),
         escapeCSV(row.location),
         escapeCSV(row.scheduleTitle),
@@ -76,7 +74,6 @@ export function exportAttendanceRecordsCSV(
         escapeCSV(row.clockOut),
         escapeCSV(row.workedHours),
         escapeCSV(row.status),
-        escapeCSV(row.salary),
         escapeCSV(row.notes),
       ].join(",");
     }
@@ -87,7 +84,7 @@ export function exportAttendanceRecordsCSV(
       escapeCSV(row.dayOfWeek),
       escapeCSV(row.employeeName),
       escapeCSV(row.biometricId),
-      escapeCSV(row.designation),
+      escapeCSV(row.position),
       escapeCSV(row.department),
       escapeCSV(row.location),
       escapeCSV(row.scheduleTitle),
@@ -97,7 +94,6 @@ export function exportAttendanceRecordsCSV(
       escapeCSV(row.clockOut),
       escapeCSV(row.workedHours),
       escapeCSV(row.status),
-      escapeCSV(row.salary),
       escapeCSV(row.notes),
     ].join(",");
   });

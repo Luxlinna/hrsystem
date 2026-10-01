@@ -7,7 +7,7 @@ export function exportAttendanceSummaryCSV(summaries: EmployeeSummaryItem[]): bo
     "Employee Name",
     "Biometric ID",
     "Department",
-    "Designation",
+    "Position",
     "Present Days",
     "Late Days",
     "Absent Days",
@@ -15,7 +15,6 @@ export function exportAttendanceSummaryCSV(summaries: EmployeeSummaryItem[]): bo
     "Total Hours",
     "Total Late Minutes",
     "Attendance Rate",
-    "Salary",
     "Last Seen",
   ];
 
@@ -25,17 +24,12 @@ export function exportAttendanceSummaryCSV(summaries: EmployeeSummaryItem[]): bo
     const bName = Array.isArray(s.branches) ? s.branches[0]?.name : (s.branches?.name || s.site || "");
     const bioId = formatBiometricId(rawBio, bName) || "—";
 
-    const rawSalary = s.basic_salary ?? s.contract_rate ?? null;
-    const currency = s.contract_rate_currency || "$";
-    const numSalary = rawSalary !== null && rawSalary !== undefined && rawSalary !== "" ? Number(rawSalary) : null;
-    const salary = numSalary !== null && !Number.isNaN(numSalary) ? `${currency} ${numSalary.toFixed(2)}` : `${currency} —`;
-
     return [
       idx + 1,
       `"${empName.replace(/"/g, '""')}"`,
       `"${bioId.replace(/"/g, '""')}"`,
       `"${(s.department || "—").replace(/"/g, '""')}"`,
-      `"${(s.role || "Staff").replace(/"/g, '""')}"`,
+      `"${(s.position || s.role || "Staff").replace(/"/g, '""')}"`,
       s.present || 0,
       s.late || 0,
       s.absent || 0,
@@ -43,7 +37,6 @@ export function exportAttendanceSummaryCSV(summaries: EmployeeSummaryItem[]): bo
       Number(s.totalHours || 0).toFixed(1),
       s.totalLateMinutes || 0,
       `"${Math.round(s.attendanceRate || 0)}%"`,
-      `"${salary.replace(/"/g, '""')}"`,
       `"${(s.lastSeen || "—").replace(/"/g, '""')}"`,
     ].join(",");
   });
