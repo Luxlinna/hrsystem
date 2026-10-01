@@ -1,6 +1,5 @@
 import { useSelfServiceData } from "./hooks/useSelfServiceData";
 import { ProfileBanner } from "./components/ProfileBanner";
-import { OverviewGrid } from "./components/OverviewGrid";
 import { TabsNav } from "./components/TabsNav";
 import { TabContent } from "./components/TabContent";
 import { SelfServiceExportMenu } from "./components/SelfServiceExportMenu";
@@ -17,10 +16,6 @@ export default function SelfServicePage() {
     noOwnRecord,
     managerName,
     todayAttendance,
-    pendingLeaveCount,
-    latestPayslip,
-    unreadCount,
-    activeOutsideWork,
     user,
   } = useSelfServiceData();
 
@@ -85,19 +80,11 @@ export default function SelfServicePage() {
 
         {/* Profile Identity Card */}
         {selectedEmployee && (
-          <ProfileBanner employee={selectedEmployee} managerName={managerName} />
-        )}
-
-        {/* KPI Overview Grid */}
-        {selectedEmployee && (
-          <OverviewGrid
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
+          <ProfileBanner
+            employee={selectedEmployee}
+            managerName={managerName}
             todayAttendance={todayAttendance}
-            pendingLeaveCount={pendingLeaveCount}
-            latestPayslip={latestPayslip}
-            unreadCount={unreadCount}
-            activeOutsideWork={activeOutsideWork}
+            onGoToCheckIn={() => setActiveTab("checkin")}
           />
         )}
 

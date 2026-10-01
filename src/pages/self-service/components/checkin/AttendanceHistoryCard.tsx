@@ -109,7 +109,7 @@ export function AttendanceHistoryCard({
                   <div
                     key={r.id}
                     className={`grid grid-cols-[1.4fr_1fr_1.3fr_1fr_0.9fr] items-center px-4 py-2.5 border-b border-gray-50 dark:border-slate-800 last:border-0 text-[12px] hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
-                      r.date === today ? "bg-[#253C7D]/[0.03] dark:bg-blue-500/10" : ""
+                      r.date === today ? "bg-[#253C7D]/[0.03] dark:bg-[#29ABE2]/10" : ""
                     }`}
                   >
                     <span className="text-gray-800 dark:text-slate-200 font-semibold">
@@ -118,7 +118,7 @@ export function AttendanceHistoryCard({
                         {dt.toLocaleDateString("en-US", { weekday: "short" })}
                       </span>
                       {r.date === today && (
-                        <span className="ml-1.5 text-[9px] font-bold text-[#253C7D] dark:text-blue-400 bg-[#253C7D]/10 dark:bg-blue-500/20 px-1.5 py-0.5 rounded">TODAY</span>
+                        <span className="ml-1.5 text-[9px] font-bold text-[#253C7D] dark:text-[#29ABE2] bg-[#253C7D]/10 dark:bg-[#29ABE2]/20 px-1.5 py-0.5 rounded">TODAY</span>
                       )}
                     </span>
                     <span className="text-gray-600 dark:text-slate-400 tabular-nums">

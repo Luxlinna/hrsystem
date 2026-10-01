@@ -33,7 +33,7 @@ export default function Profile() {
         {/* ── LEFT SIDEBAR: Avatar, Name & Navigation ── */}
         <div className="w-full md:w-64 lg:w-72 bg-white dark:bg-slate-900 rounded-md border border-slate-200/80 dark:border-slate-800 shadow-2xs p-6 flex flex-col items-center shrink-0">
           {/* Avatar with Golden Frame */}
-          <div className="relative group cursor-pointer" onClick={profile.handleAvatarSelect}>
+          <div className="relative group cursor-pointer" onClick={() => profile.fileInputRef.current?.click()}>
             <GoldFramedAvatar
               avatarUrl={profile.avatarUrl}
               initials={profile.initials}

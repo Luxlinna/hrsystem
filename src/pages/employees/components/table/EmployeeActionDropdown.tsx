@@ -2,6 +2,7 @@ import { memo, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import type { Employee } from "../../types";
+import { exportSingleEmployeePDF, exportSingleEmployeeXLSX } from "../../exportUtils";
 
 interface EmployeeActionDropdownProps {
   employee: Employee;
@@ -68,8 +69,32 @@ export const EmployeeActionDropdown = memo(function EmployeeActionDropdown({
               <i className="ri-user-line text-slate-400" /> View Profile
             </Link>
 
+            <button
+              type="button"
+              onClick={() => {
+                setShowMenu(false);
+                exportSingleEmployeePDF(e);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer"
+            >
+              <i className="ri-file-pdf-2-line text-rose-500" /> Export PDF Form
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                setShowMenu(false);
+                await exportSingleEmployeeXLSX(e);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer"
+            >
+              <i className="ri-file-excel-2-line text-emerald-600" /> Export Excel Form
+            </button>
+
             {canManage && (
               <>
+                <div className="my-1 border-t border-slate-100 dark:border-slate-700/60" />
+
                 <button type="button" onClick={() => { setShowMenu(false); onEdit?.(e); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer">
                   <i className="ri-edit-line text-slate-400" /> Edit Employee
                 </button>

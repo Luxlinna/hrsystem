@@ -12,7 +12,7 @@ export function exportEmployeesCSV(
     "Phone",
     "Role",
     "Department",
-    "Branch",
+    "Business Unit",
     "Status",
     "Join Date",
     "Account Status",

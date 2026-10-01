@@ -48,15 +48,15 @@ export function Last7DaysCard({
               key={d}
               className={`rounded-lg border p-1.5 flex flex-col items-center justify-between text-center transition-all ${
                 isT
-                  ? "border-blue-600 dark:border-blue-500 bg-blue-50/25 dark:bg-blue-950/30 ring-1 ring-blue-600/20 dark:ring-blue-500/20"
+                  ? "border-[#253C7D] dark:border-[#29ABE2] bg-[#253C7D]/5 dark:bg-[#29ABE2]/10 ring-1 ring-[#253C7D]/25 dark:ring-[#29ABE2]/25"
                   : "border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
-              <span className={`text-[9px] font-bold uppercase tracking-tight ${isT ? "text-blue-700 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`}>
+              <span className={`text-[9px] font-bold uppercase tracking-tight ${isT ? "text-[#253C7D] dark:text-[#29ABE2]" : "text-slate-400 dark:text-slate-500"}`}>
                 {dayName}
               </span>
 
-              <span className={`text-xs sm:text-sm font-bold tabular-nums my-0.5 ${isT ? "text-blue-700 dark:text-blue-400" : "text-slate-800 dark:text-slate-200"}`}>
+              <span className={`text-xs sm:text-sm font-bold tabular-nums my-0.5 ${isT ? "text-[#253C7D] dark:text-[#29ABE2]" : "text-slate-800 dark:text-slate-200"}`}>
                 {dayNum}
               </span>
 

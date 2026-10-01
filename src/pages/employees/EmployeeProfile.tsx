@@ -88,7 +88,7 @@ export default function EmployeeProfile() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-[#F7F9FA] dark:bg-slate-950 font-sans">
-      <EmployeeDetailHeader />
+      <EmployeeDetailHeader employee={employee} />
 
       <div className="flex flex-col lg:flex-row items-start gap-6">
         <EmployeeDetailSidebar
