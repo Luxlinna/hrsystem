@@ -126,14 +126,6 @@ export function CreateOrEditDepartmentForm({
                   {editingDepartment?.head_of_department_name || form.head_of_department_name || "—"}
                 </span>
               </div>
-              <div className="flex items-center py-1">
-                <span className="w-48 sm:w-64 text-slate-600 dark:text-slate-400 font-normal">
-                  Sort Order
-                </span>
-                <span className="text-slate-900 dark:text-slate-100 font-normal">
-                  {editingDepartment?.sort_order ?? form.sort_order ?? "0"}
-                </span>
-              </div>
             </div>
           </div>
         </div>
@@ -160,96 +152,42 @@ export function CreateOrEditDepartmentForm({
 
             {/* Parent Department */}
             <FormRow label="Parent Department">
-              <div className="relative flex items-center w-full">
-                <select
-                  value={form.parent_department_id || ""}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const parent = availableParents.find((p) => p.id === val);
-                    setForm((prev) => ({
-                      ...prev,
-                      parent_department_id: val,
-                      parent_department_name: parent ? parent.name : "",
-                    }));
-                  }}
-                  className="w-full px-3 py-1.5 pr-8 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2b8de3] cursor-pointer"
-                >
-                  <option value="">Select</option>
-                  {availableParents.map((parent) => (
-                    <option key={parent.id} value={parent.id}>
-                      {parent.name}
-                    </option>
-                  ))}
-                </select>
-                {form.parent_department_id && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        parent_department_id: "",
-                        parent_department_name: "",
-                      }))
-                    }
-                    className="absolute right-6 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                    title="Clear"
-                  >
-                    <i className="ri-close-line text-xs" />
-                  </button>
-                )}
-              </div>
+              <input
+                type="text"
+                value={form.parent_department_name || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const parent = availableParents.find(
+                    (p) => p.name.toLowerCase().trim() === val.toLowerCase().trim()
+                  );
+                  setForm((prev) => ({
+                    ...prev,
+                    parent_department_name: val,
+                    parent_department_id: parent ? parent.id : "",
+                  }));
+                }}
+                placeholder="Parent Department name"
+                className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#2b8de3]"
+              />
             </FormRow>
 
             {/* Head of Department */}
             <FormRow label="Head of Department">
-              <div className="relative flex items-center w-full">
-                <select
-                  value={form.head_of_department_id || ""}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const emp = employees.find((em) => em.id === val);
-                    setForm((prev) => ({
-                      ...prev,
-                      head_of_department_id: val,
-                      head_of_department_name: emp ? emp.name : "",
-                    }));
-                  }}
-                  className="w-full px-3 py-1.5 pr-8 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2b8de3] cursor-pointer"
-                >
-                  <option value="">Search...</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.name} {emp.role ? `(${emp.role})` : ""}
-                    </option>
-                  ))}
-                </select>
-                {form.head_of_department_id && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        head_of_department_id: "",
-                        head_of_department_name: "",
-                      }))
-                    }
-                    className="absolute right-6 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                    title="Clear"
-                  >
-                    <i className="ri-close-line text-xs" />
-                  </button>
-                )}
-              </div>
-            </FormRow>
-
-            {/* Sort Order */}
-            <FormRow label="Sort Order">
               <input
-                type="number"
-                min="0"
-                value={form.sort_order}
-                onChange={(e) => setForm((prev) => ({ ...prev, sort_order: e.target.value }))}
-                placeholder="0"
+                type="text"
+                value={form.head_of_department_name || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const matched = employees.find(
+                    (emp) => emp.name.toLowerCase().trim() === val.toLowerCase().trim()
+                  );
+                  setForm((prev) => ({
+                    ...prev,
+                    head_of_department_name: val,
+                    head_of_department_id: matched ? matched.id : "",
+                  }));
+                }}
+                placeholder="Head of Department name"
                 className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#2b8de3]"
               />
             </FormRow>
