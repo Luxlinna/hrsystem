@@ -225,7 +225,7 @@ function CheckInActions(props: Props) {
             className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-xs transition-all disabled:opacity-60 cursor-pointer active:scale-98 shadow-xs"
           >
             <i className="ri-fingerprint-line text-sm" />
-            <span>Record Arrival</span>
+            <span>Check In</span>
           </button>
           {branch?.latitude && (
             <p className="text-slate-400 text-[10px] text-center truncate">
@@ -254,7 +254,7 @@ function CheckInActions(props: Props) {
             className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded-lg text-xs transition-colors disabled:opacity-60 cursor-pointer"
           >
             <i className="ri-checkbox-circle-line text-sm" />
-            <span>{processing ? "Confirming..." : "Confirm Entry"}</span>
+            <span>{processing ? "Checking In..." : "Check In"}</span>
           </button>
           <button
             onClick={onResetCheckInFlow}
@@ -308,7 +308,7 @@ function CheckInActions(props: Props) {
             className="w-full flex items-center justify-center gap-1.5 bg-white hover:bg-slate-100 text-slate-900 font-bold py-2 px-4 rounded-lg text-xs transition-all disabled:opacity-60 cursor-pointer active:scale-98 shadow-xs"
           >
             <i className="ri-logout-box-r-line text-sm" />
-            <span>{processing ? "Logging Out..." : "Record Departure"}</span>
+            <span>{processing ? "Checking Out..." : "Check Out"}</span>
           </button>
         </div>
       )}

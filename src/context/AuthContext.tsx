@@ -7,13 +7,38 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { User } from "@supabase/supabase-js";
+import { createClient, type User } from "@supabase/supabase-js";
 import { supabase, markSessionAlive } from "@/lib/supabase";
 import type { AuthContextType } from "./authTypes";
-import { checkDeviceRemembered, setDeviceRemembered, clearDeviceRemembered } from "./authTypes";
+import {
+  checkDeviceRemembered,
+  setDeviceRemembered,
+  clearDeviceRemembered,
+  recordUserActivity,
+  isSessionExpired30Days,
+  clearUserActivity,
+} from "./authTypes";
 import { isPhoneIdentifier, isPhoneSyntheticEmail, phoneToSyntheticEmail } from "@/lib/phoneUtils";
 
 export type { AuthContextType };
+
+const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY || "";
+
+// Dedicated isolated client for verifying passwords before sending OTP.
+// persistSession: false ensures this never overwrites localStorage or affects other open tabs.
+const authVerifierClient = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    storage: {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    },
+  },
+});
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -38,11 +63,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (isSessionExpired30Days()) {
+      clearUserActivity();
+      supabase.auth.signOut().catch(() => {});
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && isSessionExpired30Days()) {
+        clearUserActivity();
+        if (session.user.email) clearDeviceRemembered(session.user.email);
+        supabase.auth.signOut().catch(() => {});
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       setUser(session?.user ?? null);
       setLoading(false);
       supabase.realtime.setAuth(session?.access_token ?? null);
-      if (session) markSessionAlive();
+      if (session) {
+        markSessionAlive();
+        recordUserActivity();
+      }
     });
 
     const {
@@ -51,10 +95,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       setLoading(false);
       supabase.realtime.setAuth(session?.access_token ?? null);
-      if (session) markSessionAlive();
+      if (session) {
+        markSessionAlive();
+        recordUserActivity();
+      }
     });
 
-    return () => subscription.unsubscribe();
+    let lastRecorded = 0;
+    const handleActivity = () => {
+      const now = Date.now();
+      if (now - lastRecorded > 60000) {
+        lastRecorded = now;
+        recordUserActivity();
+      }
+    };
+
+    window.addEventListener("pointerdown", handleActivity, { passive: true });
+    window.addEventListener("keydown", handleActivity, { passive: true });
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("pointerdown", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+    };
   }, []);
 
   const sendOTP = useCallback(async (identifier: string) => {
@@ -111,10 +174,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         throw error;
       }
+      recordUserActivity();
+      setDeviceRemembered(resolvedEmail);
       return { otpRequired: false };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
+    // Verify credentials on stateless client — this never touches localStorage or other tabs!
+    const { error } = await authVerifierClient.auth.signInWithPassword({ email: resolvedEmail, password });
     if (error) {
       if (isPhone && (error.message.includes("Invalid login credentials") || error.status === 400)) {
         throw new Error("Invalid phone number or password");
@@ -122,14 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
 
-    try {
-      await sendOTP(resolvedEmail);
-    } catch (otpErr) {
-      await supabase.auth.signOut().catch(() => {});
-      throw otpErr;
-    }
-
-    await supabase.auth.signOut();
+    await sendOTP(resolvedEmail);
     return { otpRequired: true };
   };
 
@@ -155,15 +214,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (data?.error) throw new Error(data.error);
  
-     const { error: signInError } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
-     if (signInError) throw new Error(signInError.message);
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
+    if (signInError) throw new Error(signInError.message);
 
+    recordUserActivity();
     if (rememberDevice) {
       setDeviceRemembered(resolvedEmail);
+    } else {
+      clearDeviceRemembered(resolvedEmail);
     }
   }, []);
 
   const logout = async () => {
+    if (user?.email) {
+      clearDeviceRemembered(user.email);
+    }
+    clearUserActivity();
     await supabase.auth.signOut().catch(() => {});
     setUser(null);
   };

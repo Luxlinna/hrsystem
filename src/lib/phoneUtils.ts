@@ -14,6 +14,8 @@ export function normalizePhone(phone: string): string {
   // If starts with 855 and has country code prefix, convert to Cambodian national 0...
   if (digits.startsWith("855") && digits.length >= 11) {
     digits = "0" + digits.slice(3);
+  } else if (!digits.startsWith("0") && digits.length > 0) {
+    digits = "0" + digits;
   }
   return digits;
 }

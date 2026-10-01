@@ -16,8 +16,15 @@ export function useLogin() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [telegramBotUrl, setTelegramBotUrl] = useState<string | null>(null);
   const otpInputRef = useRef<(HTMLInputElement | null)[]>([]);
-  const { login, sendOTP, verifyOTP } = useAuth();
+  const { user, loading: authLoading, login, sendOTP, verifyOTP } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect to dashboard if already logged in (e.g. multi-tab)
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   // Resend cooldown timer
   useEffect(() => {
