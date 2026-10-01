@@ -59,7 +59,7 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className={`flex items-center shrink-0 transition-all duration-300 ${isExpanded ? "justify-start px-5 pt-6 pb-4" : "justify-center pt-5 pb-3"}`}>
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/self-service" className="flex items-center gap-2">
           <img
             src="/logo-mark.png"
             alt="HRM_OPS Logo"

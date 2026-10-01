@@ -22,7 +22,7 @@ export interface DrawerGroup {
 
 const CORE_ITEMS: DrawerItem[] = [
   { path: "/self-service", label: "Self-Service", sublabel: "Employee view", icon: "ri-user-settings-line", module: "self-service" },
-  { path: "/", label: "Dashboard", sublabel: "Main overview", icon: "ri-dashboard-line", module: "dashboard" },
+  { path: "/dashboard", label: "Dashboard", sublabel: "Main overview", icon: "ri-dashboard-line", module: "dashboard" },
   { path: "/employees", label: "Directory", sublabel: "Browse all staff", icon: "ri-user-search-line", module: "employees" },
   { path: "/analytics", label: "Analytics", sublabel: "Charts & insights", icon: "ri-bar-chart-2-line", module: "analytics" },
 ];
@@ -91,7 +91,8 @@ export const MODULE_SEARCH_RESULTS: SearchResult[] = [
 }));
 
 export const PATH_MODULE_OVERRIDES: Record<string, string> = {
-  "/": "dashboard",
+  "/": "self-service",
+  "/dashboard": "dashboard",
   "/payroll-module": "payroll",
   "/admin": "admin",
 };

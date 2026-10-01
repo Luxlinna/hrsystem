@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 
 const NAV_ITEMS = [
-  { path: "/?view=dashboard", label: "Home", icon: "ri-home-5-line", activeIcon: "ri-home-5-fill" },
+  { path: "/self-service", label: "Self-Service", icon: "ri-user-settings-line", activeIcon: "ri-user-settings-fill" },
   { path: "/leave", label: "My Leave", icon: "ri-calendar-line", activeIcon: "ri-calendar-fill" },
   { path: "/self-service?tab=attendance", label: "My Attendance", icon: "ri-fingerprint-line", activeIcon: "ri-fingerprint-line" },
   { path: "/payroll-module", label: "My Payroll", icon: "ri-wallet-3-line", activeIcon: "ri-wallet-3-fill" },
@@ -19,11 +19,11 @@ export default function BottomNav() {
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
         {NAV_ITEMS.map((item) => {
           const isAttendance = item.label === "My Attendance";
-          const isHome = item.label === "Home";
+          const isSelfService = item.label === "Self-Service";
           const isActive = isAttendance
-            ? location.pathname.startsWith("/self-service") || location.pathname.startsWith("/attendance")
-            : isHome
-            ? location.pathname === "/"
+            ? (location.pathname.startsWith("/self-service") && location.search.includes("tab=attendance")) || location.pathname.startsWith("/attendance")
+            : isSelfService
+            ? location.pathname.startsWith("/self-service") && !location.search.includes("tab=attendance")
             : location.pathname.startsWith(item.path.split("?")[0]);
           return (
             <Link

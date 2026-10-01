@@ -16,12 +16,21 @@ export const ProfileOrgHierarchyFields = memo(function ProfileOrgHierarchyFields
   useEffect(() => {
     supabase
       .from("divisions")
-      .select("name")
+      .select("name, status")
       .is("deleted_at", null)
       .order("name")
       .then(({ data }) => {
         if (data && data.length > 0) {
-          setDbDivisions(Array.from(new Set(data.map((d) => d.name))));
+          setDbDivisions(
+            Array.from(
+              new Set(
+                data
+                  .filter((d) => !d.status || d.status !== "disabled")
+                  .map((d) => d.name.trim())
+                  .filter(Boolean)
+              )
+            )
+          );
         }
       });
   }, []);

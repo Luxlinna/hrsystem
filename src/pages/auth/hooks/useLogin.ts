@@ -19,10 +19,10 @@ export function useLogin() {
   const { user, loading: authLoading, login, sendOTP, verifyOTP } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect to dashboard if already logged in (e.g. multi-tab)
+  // Redirect to self-service if already logged in (e.g. multi-tab)
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/", { replace: true });
+      navigate("/self-service", { replace: true });
     }
   }, [user, authLoading, navigate]);
 
@@ -51,7 +51,7 @@ export function useLogin() {
         setStep("otp");
         setResendCooldown(30);
       } else {
-        navigate("/");
+        navigate("/self-service");
       }
     } catch (err: any) {
       if (err.telegramNotConnected || err.botUrl || err.message?.includes("Telegram is not connected")) {
@@ -72,7 +72,7 @@ export function useLogin() {
     setLoading(true);
     try {
       await verifyOTP(email, code, password, rememberDevice);
-      navigate("/");
+      navigate("/self-service");
     } catch (err: any) {
       setError(err.message || "Invalid verification code");
       setOtp(["", "", "", "", "", ""]);

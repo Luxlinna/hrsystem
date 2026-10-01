@@ -37,7 +37,10 @@ export const OrgJoiningInfoSection = memo(function OrgJoiningInfoSection({
   const currentPos = form.position || form.role || "";
   const allPositions = currentPos && !positions.includes(currentPos) ? [currentPos, ...positions] : positions;
   const currentDiv = form.division || "";
-  const allDivisions = currentDiv && !divisions.includes(currentDiv) ? [currentDiv, ...divisions] : divisions;
+  const allDivisions = Array.from(new Set([
+    ...(currentDiv ? [currentDiv] : []),
+    ...divisions,
+  ]));
 
   return (
     <div className="space-y-4">

@@ -22,9 +22,11 @@ export function useDivisions(branchId?: string) {
 
   const fetchEmployees = useCallback(async () => {
     try {
-      let q = supabase.from("employees").select("id, first_name, last_name, role, avatar_url").is("deleted_at", null).order("first_name", { ascending: true });
-      if (branchId) q = q.eq("branch_id", branchId);
-      const { data } = await q;
+      const { data } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, role, avatar_url")
+        .is("deleted_at", null)
+        .order("first_name", { ascending: true });
       if (data) {
         setEmployees(data.map((e) => ({
           id: e.id,
@@ -36,14 +38,16 @@ export function useDivisions(branchId?: string) {
     } catch (err) {
       console.error("Error fetching employees for division head:", err);
     }
-  }, [branchId]);
+  }, []);
 
   const fetchDivisions = useCallback(async () => {
     setLoading(true);
     try {
-      let q = supabase.from("divisions").select("*").is("deleted_at", null).order("name", { ascending: true });
-      if (branchId) q = q.or(`branch_id.eq.${branchId},branch_id.is.null`);
-      const { data, error } = await q;
+      const { data, error } = await supabase
+        .from("divisions")
+        .select("*")
+        .is("deleted_at", null)
+        .order("name", { ascending: true });
       setDivisions(!error && data ? (data as Division[]) : []);
     } catch (err) {
       console.error("Error fetching divisions:", err);
@@ -51,7 +55,7 @@ export function useDivisions(branchId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [branchId]);
+  }, []);
 
   useEffect(() => {
     fetchDivisions();

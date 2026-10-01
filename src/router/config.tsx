@@ -72,7 +72,8 @@ const routes: RouteObject[] = [
     path: "/",
     element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
     children: [
-      { index: true, element: mod("dashboard", <Home />) },
+      { index: true, element: <Navigate to="/self-service" replace /> },
+      { path: "dashboard", element: mod("dashboard", <Home />) },
       { path: "employees", element: mod("employees", <Employees />) },
       { path: "employees/settings", element: mod("employees", <EmployeeSettingsPage />) },
       { path: "employees/:id", element: mod("employees", <EmployeeProfile />) },
