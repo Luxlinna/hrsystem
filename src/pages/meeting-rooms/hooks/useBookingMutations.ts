@@ -81,9 +81,19 @@ export function useBookingMutations({
       }).eq("id", editingBooking.id);
 
       setSaving(false);
-      if (error) return showToast("error", "Failed to update reservation.");
+      if (error) {
+        const isOverlap = error.code === "23P01" || error.message?.includes("room_bookings_no_overlap");
+        const msg = isOverlap
+          ? `${modalRoom.name} already has a conflicting reservation for this time slot.`
+          : (error.message ? `Failed to update reservation: ${error.message}` : "Failed to update reservation.");
+        return showToast("error", msg);
+      }
 
-      await sendBookingNotification({ isEdit: true, bookingId: editingBooking.id, modalRoom, bookingForm, empName, roleName, finalRefreshments });
+      try {
+        await sendBookingNotification({ isEdit: true, bookingId: editingBooking.id, modalRoom, bookingForm, empName, roleName, finalRefreshments });
+      } catch (err) {
+        console.warn("Notification error:", err);
+      }
       showToast("success", "Booking updated successfully!");
       state.setEditingBooking(null);
       state.setModalRoom(null);
@@ -105,9 +115,24 @@ export function useBookingMutations({
     }).select().single();
 
     setSaving(false);
-    if (error) return showToast("error", "Failed to book room.");
+    if (error) {
+      const isOverlap = error.code === "23P01" || error.message?.includes("room_bookings_no_overlap");
+      const isRls = error.code === "42501" || error.message?.includes("row-level security");
+      const msg = isOverlap
+        ? `${modalRoom.name} already has a conflicting reservation for this time slot.`
+        : isRls
+        ? "Permission error: Unable to create reservation with current employee account."
+        : (error.message ? `Failed to book room: ${error.message}` : "Failed to book room.");
+      return showToast("error", msg);
+    }
 
-    await sendBookingNotification({ isEdit: false, bookingId: data.id, modalRoom, bookingForm, empName, roleName, finalRefreshments });
+    try {
+      if (data?.id) {
+        await sendBookingNotification({ isEdit: false, bookingId: data.id, modalRoom, bookingForm, empName, roleName, finalRefreshments });
+      }
+    } catch (err) {
+      console.warn("Notification error:", err);
+    }
     showToast("success", `Booking submitted for ${modalRoom.name} (Pending Admin/HR Approval)!`);
     state.setModalRoom(null);
     loadBookings();
@@ -126,7 +151,7 @@ export function useBookingMutations({
     }).eq("id", booking.id);
 
     setProcessingAction(false);
-    if (error) return showToast("error", "Failed to cancel booking.");
+    if (error) return showToast("error", error.message ? `Failed to cancel booking: ${error.message}` : "Failed to cancel booking.");
 
     showToast("success", "Reservation cancelled.");
     state.setSelectedBooking(null);

@@ -164,6 +164,8 @@ export function useAttendance() {
 
   const mutations = useAttendanceMutations({
     employees: data.employees,
+    records: data.records,
+    todayYMD,
     fetchData: data.fetchData,
     setSelectedRecord,
     setEditingRecord,

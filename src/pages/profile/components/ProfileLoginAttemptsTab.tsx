@@ -161,12 +161,12 @@ export const ProfileLoginAttemptsTab = memo(function ProfileLoginAttemptsTab({
           {attempts.map((attempt) => (
             <div
               key={attempt.id}
-              className="border border-slate-200/80 dark:border-slate-800 rounded-[2px] p-3 sm:px-4 sm:py-3 bg-white dark:bg-slate-900 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors shadow-2xs"
+              className="border border-slate-200/80 dark:border-slate-800 rounded-[2px] p-3 sm:px-4 sm:py-3 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors shadow-2xs"
             >
               {/* Column 1: IP Address & Browser */}
-              <div className="flex-1 min-w-0 pr-4">
+              <div className="flex-1 min-w-0">
                 <div>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs truncate">
+                  <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs break-all sm:truncate">
                     {attempt.ip}
                   </p>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
@@ -185,7 +185,7 @@ export const ProfileLoginAttemptsTab = memo(function ProfileLoginAttemptsTab({
               </div>
 
               {/* Column 2: Date & Time */}
-              <div className="flex-1 min-w-0 px-4">
+              <div className="flex-1 min-w-0">
                 <div>
                   <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
                     {attempt.date}
@@ -206,7 +206,7 @@ export const ProfileLoginAttemptsTab = memo(function ProfileLoginAttemptsTab({
               </div>
 
               {/* Column 3: Status Badge */}
-              <div className="shrink-0 pl-2 self-start pt-1">
+              <div className="shrink-0 self-start sm:self-center">
                 <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-[2px] bg-[#20c997] text-white">
                   {attempt.status}
                 </span>

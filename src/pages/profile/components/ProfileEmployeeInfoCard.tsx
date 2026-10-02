@@ -61,7 +61,7 @@ export const ProfileEmployeeInfoCard = memo(function ProfileEmployeeInfoCard({
       </div>
 
       {/* Main Info Card Body matching Image 1 */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 sm:gap-8">
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 min-w-0">
         {/* Avatar with Golden Frame & Status Badge */}
         <div className="flex flex-col items-center shrink-0">
           <GoldFramedAvatar
@@ -77,12 +77,12 @@ export const ProfileEmployeeInfoCard = memo(function ProfileEmployeeInfoCard({
         </div>
 
         {/* Info Grid with Employee Details */}
-        <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-3 truncate">
+        <div className="flex-1 min-w-0 w-full">
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-3 text-center sm:text-left truncate">
             {displayName || `${e?.first_name || ""} ${e?.last_name || ""}`.trim() || "Yos Steven"}
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 lg:gap-x-12 gap-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 lg:gap-x-12 gap-y-4 text-xs">
             {/* Column 1 */}
             <div className="space-y-3">
               <div>

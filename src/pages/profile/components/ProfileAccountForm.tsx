@@ -6,7 +6,13 @@ interface ProfileAccountFormProps {
   displayName: string;
   setDisplayName: (name: string) => void;
   savingName: boolean;
-  onSaveName: (payload?: { firstName?: string; lastName?: string; username?: string }) => void;
+  onSaveName: (payload?: {
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+    email?: string;
+    timezone?: string;
+  }) => void;
   email?: string;
   employee: MyEmployee | null;
   phone: string;
@@ -20,6 +26,7 @@ interface ProfileAccountFormProps {
   savingPassword?: boolean;
   onChangePassword?: () => void;
   userRole?: string | null;
+  isSuperAdmin?: boolean;
 }
 
 export const ProfileAccountForm = memo(function ProfileAccountForm({
@@ -40,6 +47,7 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
   savingPassword = false,
   onChangePassword,
   userRole,
+  isSuperAdmin = false,
 }: ProfileAccountFormProps) {
   const [subTab, setSubTab] = useState<"personal_info" | "change_password">("personal_info");
 
@@ -62,6 +70,8 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
       firstName,
       lastName,
       username,
+      email: isSuperAdmin ? userEmail : undefined,
+      timezone: isSuperAdmin ? timezone : undefined,
     });
   };
 
@@ -80,7 +90,7 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
   return (
     <div className="w-full">
       {/* Sub Tabs: Personal Info | Change password matching Reference */}
-      <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 mb-6">
+      <div className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 dark:border-slate-800 mb-6 overflow-x-auto no-scrollbar">
         <button
           type="button"
           onClick={() => setSubTab("personal_info")}
@@ -163,12 +173,13 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
 
           {/* 5. Use Email Checkbox */}
           <div className="pt-1">
-            <label className="inline-flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+            <label className={`inline-flex items-center gap-2 text-xs ${!isSuperAdmin ? "text-slate-400 dark:text-slate-500 cursor-not-allowed" : "text-slate-700 dark:text-slate-300 cursor-pointer"}`}>
               <input
                 type="checkbox"
                 checked={useEmail}
+                disabled={!isSuperAdmin}
                 onChange={(e) => setUseEmail(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] cursor-pointer"
+                className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
               />
               <span>Use Email</span>
             </label>
@@ -176,26 +187,51 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
 
           {/* 6. Email */}
           <div>
-            <label className="text-xs font-normal text-slate-700 dark:text-slate-300 block mb-1">
-              Email
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-normal text-slate-700 dark:text-slate-300">
+                Email
+              </label>
+              {!isSuperAdmin && (
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                  (Super Admin only)
+                </span>
+              )}
+            </div>
             <input
               type="email"
               value={userEmail}
+              disabled={!isSuperAdmin}
+              readOnly={!isSuperAdmin}
               onChange={(e) => setUserEmail(e.target.value)}
-              className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#253C7D]"
+              className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${
+                !isSuperAdmin
+                  ? "bg-[#f0f4f8] dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                  : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:border-[#253C7D]"
+              }`}
             />
           </div>
 
           {/* 7. Timezone */}
           <div>
-            <label className="text-xs font-normal text-slate-700 dark:text-slate-300 block mb-1">
-              Timezone
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-normal text-slate-700 dark:text-slate-300">
+                Timezone
+              </label>
+              {!isSuperAdmin && (
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                  (Super Admin only)
+                </span>
+              )}
+            </div>
             <select
               value={timezone}
+              disabled={!isSuperAdmin}
               onChange={(e) => setTimezone(e.target.value)}
-              className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${
+                !isSuperAdmin
+                  ? "bg-[#f0f4f8] dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                  : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:border-[#253C7D] cursor-pointer"
+              }`}
             >
               <option value="(UTC+07:00) Bangkok, Hanoi, Jakarta">
                 (UTC+07:00) Bangkok, Hanoi, Jakarta

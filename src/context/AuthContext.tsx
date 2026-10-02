@@ -137,11 +137,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (signInError) throw new Error(signInError.message);
 
     recordUserActivity();
-    // Cache and persist session until the user explicitly logs out
-    setDeviceRemembered(resolvedEmail);
-    if (identifier) setDeviceRemembered(identifier);
-    if (!rememberDevice) {
-      // If user unchecks remember, will require OTP next time on different device
+    if (rememberDevice) {
+      setDeviceRemembered(resolvedEmail);
+      if (identifier) setDeviceRemembered(identifier);
+    } else {
+      clearDeviceRemembered(resolvedEmail);
+      if (identifier) clearDeviceRemembered(identifier);
     }
   }, []);
 

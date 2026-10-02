@@ -3,15 +3,27 @@ import { getPrivacyPin, setPrivacyPin, removePrivacyPin } from "@/lib/privacyPin
 
 interface ProfileSecurityTabProps {
   email?: string;
+  isSuperAdmin?: boolean;
 }
 
 export const ProfileSecurityTab = memo(function ProfileSecurityTab({
   email,
+  isSuperAdmin = false,
 }: ProfileSecurityTabProps) {
   const [turnOn, setTurnOn] = useState(false);
   const [pinCode, setPinCode] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="py-12 text-center text-slate-500 text-xs">
+        <i className="ri-shield-keyhole-line text-3xl mb-2 text-slate-400 block" />
+        <p className="font-semibold text-slate-700 dark:text-slate-200">Access Restricted</p>
+        <p className="text-slate-400 mt-1">Only Super Admins can view and update the Privacy PIN Code.</p>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const stored = getPrivacyPin(email);

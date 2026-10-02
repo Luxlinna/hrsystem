@@ -68,6 +68,8 @@ export function useClockInOutActions({
         late_minutes: lateMinutes,
         notes: notes || null,
         work_location_id: defaultWorkLocationId || null,
+        deleted_at: null,
+        deleted_by: null,
       },
       { onConflict: "employee_id,date" }
     );

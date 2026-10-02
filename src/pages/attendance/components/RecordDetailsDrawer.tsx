@@ -10,6 +10,14 @@ interface RecordDetailsDrawerProps {
   onDeleteRecord: (id: number) => void;
 }
 
+function isWithin24Hours(dateStr?: string): boolean {
+  if (!dateStr) return false;
+  const d = new Date(`${dateStr}T00:00:00`);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  return diffMs >= -86400000 && diffMs <= 86400000;
+}
+
 export const RecordDetailsDrawer = memo(function RecordDetailsDrawer({
   selectedRecord,
   onClose,
@@ -18,6 +26,8 @@ export const RecordDetailsDrawer = memo(function RecordDetailsDrawer({
   onDeleteRecord,
 }: RecordDetailsDrawerProps) {
   if (!selectedRecord) return null;
+
+  const isDeletableToday = selectedRecord.id > 0 && isWithin24Hours(selectedRecord.date);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -47,23 +57,26 @@ export const RecordDetailsDrawer = memo(function RecordDetailsDrawer({
 
         {/* Drawer Actions */}
         {canManage && (
-          <div className="p-6 border-t border-gray-100 bg-gray-50/50 grid grid-cols-2 gap-3">
+          <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex gap-3">
             <button
               type="button"
               onClick={() => onOpenEditModal(selectedRecord)}
-              className="px-4 py-2.5 bg-[#253C7D] text-white rounded-xl text-xs font-bold hover:bg-[#1E3064] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+              className="flex-1 px-4 py-2.5 bg-[#253C7D] text-white rounded-xl text-xs font-bold hover:bg-[#1E3064] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
             >
               <i className="ri-edit-line" />
-              Edit Record
+              {selectedRecord.id > 0 ? "Edit Record" : "Log Attendance"}
             </button>
-            <button
-              type="button"
-              onClick={() => onDeleteRecord(selectedRecord.id)}
-              className="px-4 py-2.5 border border-rose-200 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <i className="ri-delete-bin-line" />
-              Delete Record
-            </button>
+            {isDeletableToday && (
+              <button
+                type="button"
+                onClick={() => onDeleteRecord(selectedRecord.id)}
+                className="flex-1 px-4 py-2.5 border border-rose-200 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                title="Delete today's record to allow employee to check in/out again"
+              >
+                <i className="ri-delete-bin-line" />
+                Delete Record
+              </button>
+            )}
           </div>
         )}
       </div>

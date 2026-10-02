@@ -1,7 +1,11 @@
-import { isPhoneIdentifier, isPhoneSyntheticEmail, phoneToSyntheticEmail } from "./phoneUtils";
+import { isPhoneIdentifier, isPhoneSyntheticEmail, phoneToSyntheticEmail, normalizePhone, syntheticEmailToPhone } from "./phoneUtils";
 
 const THIRTY_DAYS_DAYS = 30;
 const THIRTY_DAYS_MS = THIRTY_DAYS_DAYS * 24 * 60 * 60 * 1000;
+
+const THREE_DAYS_DAYS = 3;
+const THREE_DAYS_MS = THREE_DAYS_DAYS * 24 * 60 * 60 * 1000;
+
 const LAST_ACTIVITY_KEY = "hrm_last_act_t";
 
 // 1. Native Cookie Helpers
@@ -35,7 +39,7 @@ export function deleteCookie(name: string): void {
   document.cookie = `${encodeURIComponent(name)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
 }
 
-// 2. Cookie + SessionStorage Adapter (Never uses localStorage for auth tokens)
+// 2. Cookie + SessionStorage Adapter
 export const authSessionStorage = {
   getItem: (key: string): string | null => {
     if (typeof window === "undefined") return null;
@@ -71,53 +75,97 @@ export const authSessionStorage = {
 function normalizeAuthIdentifier(identifier: string): string {
   const raw = (identifier || "").trim().toLowerCase();
   if (isPhoneIdentifier(raw) || isPhoneSyntheticEmail(raw)) {
-    return isPhoneSyntheticEmail(raw) ? raw : phoneToSyntheticEmail(raw);
+    const phone = isPhoneSyntheticEmail(raw) ? syntheticEmailToPhone(raw) : raw;
+    const cleanDigits = normalizePhone(phone);
+    return phoneToSyntheticEmail(cleanDigits);
   }
   return raw;
 }
 
 const DEVICE_KEY = (email: string) => `otp_dev_${normalizeAuthIdentifier(email)}`;
 
-// 4. Remember Token Management (Stored in Session / Cookie with 30-Day Inactivity Expiration)
+function clearDeviceKey(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+  deleteCookie(key);
+  authSessionStorage.removeItem(key);
+}
+
+// 4. Remember Token Management:
+// - Phone number accounts: 3 days of login inactivity (sliding window refreshed on every login).
+// - Email accounts: 30 days device trust.
+// - Tokens are persisted in localStorage & cookies so they survive user logout.
 export function checkDeviceRemembered(email: string): boolean {
   if (!email) return false;
-  const normalizedKey = DEVICE_KEY(email);
-  const val = authSessionStorage.getItem(normalizedKey) || authSessionStorage.getItem(`otp_dev_${email.trim().toLowerCase()}`);
-  if (!val) return false;
+  const canonicalKey = DEVICE_KEY(email);
+  const rawKey = `otp_dev_${email.trim().toLowerCase()}`;
 
-  try {
-    const data = JSON.parse(val);
-    if (typeof data === "object" && data?.expiresAt) {
-      if (Date.now() > data.expiresAt) {
-        clearDeviceRemembered(email);
-        return false;
-      }
-      return true;
+  const checkKey = (key: string): boolean => {
+    let val: string | null = null;
+    try {
+      val = localStorage.getItem(key);
+    } catch {
+      // ignore
     }
-  } catch {
-    if (val === "true") return true;
-  }
-  return false;
+    if (!val) {
+      val = authSessionStorage.getItem(key);
+    }
+    if (!val) return false;
+
+    try {
+      const data = JSON.parse(val);
+      if (typeof data === "object" && data?.expiresAt) {
+        if (Date.now() > data.expiresAt) {
+          clearDeviceKey(key);
+          return false;
+        }
+        return true;
+      }
+    } catch {
+      if (val === "true") return true;
+    }
+    return false;
+  };
+
+  return checkKey(canonicalKey) || checkKey(rawKey);
 }
 
 export function setDeviceRemembered(email: string): void {
   if (!email) return;
-  const normalizedKey = DEVICE_KEY(email);
-  const rawKey = `otp_dev_${email.trim().toLowerCase()}`;
+  const raw = (email || "").trim().toLowerCase();
+  const isPhone = isPhoneIdentifier(raw) || isPhoneSyntheticEmail(raw);
+  const durationMs = isPhone ? THREE_DAYS_MS : THIRTY_DAYS_MS;
+  const durationDays = isPhone ? THREE_DAYS_DAYS : THIRTY_DAYS_DAYS;
+
+  const canonicalKey = DEVICE_KEY(email);
+  const rawKey = `otp_dev_${raw}`;
   const payload = JSON.stringify({
     remembered: true,
-    expiresAt: Date.now() + THIRTY_DAYS_MS,
+    isPhone,
+    expiresAt: Date.now() + durationMs,
   });
-  authSessionStorage.setItem(normalizedKey, payload);
+
+  try {
+    localStorage.setItem(canonicalKey, payload);
+    localStorage.setItem(rawKey, payload);
+  } catch {
+    // ignore
+  }
+  setCookie(canonicalKey, payload, durationDays);
+  setCookie(rawKey, payload, durationDays);
+  authSessionStorage.setItem(canonicalKey, payload);
   authSessionStorage.setItem(rawKey, payload);
 }
 
 export function clearDeviceRemembered(email: string): void {
   if (!email) return;
-  const normalizedKey = DEVICE_KEY(email);
+  const canonicalKey = DEVICE_KEY(email);
   const rawKey = `otp_dev_${email.trim().toLowerCase()}`;
-  authSessionStorage.removeItem(normalizedKey);
-  authSessionStorage.removeItem(rawKey);
+  clearDeviceKey(canonicalKey);
+  clearDeviceKey(rawKey);
 }
 
 // 5. 30-Day Activity Tracker (Auto-Logout on 30 Days of Inactivity)
@@ -138,17 +186,19 @@ export function clearUserActivity(): void {
   authSessionStorage.removeItem(LAST_ACTIVITY_KEY);
 }
 
-// 6. Complete Session Wipe for Logout
+// 6. Complete Session Wipe for Logout (Preserving trusted device OTP tokens for skip-OTP)
 export function clearAllAuthSessionData(): void {
   clearUserActivity();
   if (typeof document !== "undefined") {
-    // Clear all cookies
+    // Clear session cookies, preserving trusted device tokens (otp_dev_)
     const cookies = document.cookie.split(";");
     for (let i = 0; i < cookies.length; i++) {
       const cookie = cookies[i];
       const eqPos = cookie.indexOf("=");
       const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-      deleteCookie(name);
+      if (!name.startsWith("otp_dev_")) {
+        deleteCookie(name);
+      }
     }
   }
   try {
@@ -157,11 +207,12 @@ export function clearAllAuthSessionData(): void {
     void err;
   }
   try {
-    // Clear any legacy localStorage auth tokens
+    // Clear Supabase session tokens (sb-...) and activity markers,
+    // while keeping trusted device tokens (otp_dev_...) across logout
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith("sb-") || k.startsWith("otp_") || k.startsWith("hrm_last_"))) {
+      if (k && (k.startsWith("sb-") || k.startsWith("hrm_last_"))) {
         keysToRemove.push(k);
       }
     }

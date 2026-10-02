@@ -10,6 +10,14 @@ interface AttendanceRowActionsProps {
   onLogTimeForEmployee?: (employeeId: string) => void;
 }
 
+function isWithin24Hours(dateStr?: string): boolean {
+  if (!dateStr) return false;
+  const d = new Date(`${dateStr}T00:00:00`);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  return diffMs >= -86400000 && diffMs <= 86400000;
+}
+
 export const AttendanceRowActions = memo(function AttendanceRowActions({
   record: r,
   canManage,
@@ -21,6 +29,7 @@ export const AttendanceRowActions = memo(function AttendanceRowActions({
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const actionMenuRef = useRef<HTMLDivElement>(null);
   const emp = r.employees;
+  const isDeletableToday = canManage && r.id > 0 && isWithin24Hours(r.date);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -90,7 +99,7 @@ export const AttendanceRowActions = memo(function AttendanceRowActions({
               <span>View Details</span>
             </button>
 
-            {canManage && (
+            {isDeletableToday && (
               <>
                 <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
                 <button
@@ -100,6 +109,7 @@ export const AttendanceRowActions = memo(function AttendanceRowActions({
                     onDeleteRecord(r.id);
                   }}
                   className="w-full px-3 py-1.5 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
+                  title="Delete today's record to allow employee to check in/out again"
                 >
                   <i className="ri-delete-bin-line" />
                   <span>Delete Record</span>

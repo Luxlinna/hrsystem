@@ -7,7 +7,7 @@ import type { MyEmployee, DirectReport } from "../types";
 
 export function useProfileData() {
   const { user } = useAuth();
-  const { role, loading: roleLoading, can } = usePermissions();
+  const { role, loading: roleLoading, can, isSuperAdmin } = usePermissions();
 
   const [displayName, setDisplayName] = useState(
     (user?.user_metadata?.display_name as string) || ""
@@ -163,6 +163,7 @@ export function useProfileData() {
     role,
     roleLoading,
     can,
+    isSuperAdmin,
     displayName,
     setDisplayName,
     employee,

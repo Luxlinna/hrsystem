@@ -44,10 +44,18 @@ export function useProfileAccountMutations({
     toast("Saved", "Your phone number has been updated.", "success");
   }, [employee, phone, setEmployee]);
 
-  const handleSaveName = useCallback(async (payload?: { firstName?: string; lastName?: string; username?: string }) => {
+  const handleSaveName = useCallback(async (payload?: {
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+    email?: string;
+    timezone?: string;
+  }) => {
     const fName = payload?.firstName !== undefined ? payload.firstName.trim() : (employee?.first_name || "");
     const lName = payload?.lastName !== undefined ? payload.lastName.trim() : (employee?.last_name || "");
     const empCode = payload?.username !== undefined ? payload.username.trim() : (employee?.employee_code || "");
+    const newEmail = payload?.email !== undefined ? payload.email.trim() : "";
+    const newTimezone = payload?.timezone !== undefined ? payload.timezone : undefined;
     
     const combined = `${fName} ${lName}`.trim() || displayName.trim();
     if (!combined) {
@@ -57,7 +65,10 @@ export function useProfileAccountMutations({
 
     setSavingName(true);
     try {
-      await updateProfile({ display_name: combined });
+      await updateProfile({
+        display_name: combined,
+        ...(newTimezone ? { timezone: newTimezone } : {}),
+      });
       if (setDisplayName) {
         setDisplayName(combined);
       }
@@ -69,6 +80,9 @@ export function useProfileAccountMutations({
         };
         if (empCode) {
           empUpdates.employee_code = empCode;
+        }
+        if (newEmail) {
+          empUpdates.email = newEmail;
         }
 
         const { error } = await supabase
@@ -83,6 +97,7 @@ export function useProfileAccountMutations({
           first_name: fName,
           last_name: lName,
           employee_code: empCode || prev.employee_code,
+          email: newEmail || prev.email,
         } : prev));
 
         invalidateMyEmployeeCache();

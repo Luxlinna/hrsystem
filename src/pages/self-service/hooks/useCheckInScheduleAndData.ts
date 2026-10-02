@@ -51,6 +51,7 @@ export function useCheckInScheduleAndData({ employeeId }: UseCheckInScheduleAndD
     const { data } = await supabase
       .from("attendance_records")
       .select("*")
+      .is("deleted_at", null)
       .eq("employee_id", employeeId)
       .gte("date", fromDate)
       .order("date", { ascending: false });

@@ -42,6 +42,7 @@ export const ROLE_CATEGORIES: RoleCategoryDefinition[] = [
       "Full view, create, edit & delete capabilities",
       "Full access to salary, compensation & payroll modules",
       "System administration, user account & permission management",
+      "Manage Privacy PIN Code, system email & timezone configurations",
     ],
     restrictions: [],
   },
@@ -68,6 +69,7 @@ export const ROLE_CATEGORIES: RoleCategoryDefinition[] = [
     restrictions: [
       "Blocked from salary & payroll modules (/payroll-module, /payroll-approval)",
       "Cannot view employee salary or compensation figures across the system",
+      "Cannot adjust system email, timezone, or manage Privacy PIN Code",
     ],
   },
   {
@@ -93,6 +95,7 @@ export const ROLE_CATEGORIES: RoleCategoryDefinition[] = [
     restrictions: [
       "Cannot edit or mutate records (system-wide view-only mode)",
       "Creation, edit, and deletion actions are disabled",
+      "Cannot adjust system email, timezone, or manage Privacy PIN Code",
     ],
   },
   {
@@ -119,6 +122,7 @@ export const ROLE_CATEGORIES: RoleCategoryDefinition[] = [
       "Excluded from viewing salary & compensation information",
       "Cannot edit employee master profiles or system configurations",
       "Cannot view staff outside your department or supervision chain",
+      "Cannot adjust email, timezone, or manage Privacy PIN Code",
     ],
   },
   {
@@ -144,6 +148,7 @@ export const ROLE_CATEGORIES: RoleCategoryDefinition[] = [
     restrictions: [
       "Cannot view other employees' records or directory details",
       "No administrative or editing permissions",
+      "Cannot adjust email, timezone, or manage Privacy PIN Code",
     ],
   },
 ];

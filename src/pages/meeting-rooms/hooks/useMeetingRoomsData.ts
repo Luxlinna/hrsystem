@@ -80,6 +80,7 @@ export function useMeetingRoomsData(selectedDate: string) {
     const { data, error } = await supabase
       .from("room_bookings")
       .select("*, employees:booked_by(id, first_name, last_name, department, role, avatar_url, email, branch_id)")
+      .is("deleted_at", null)
       .gte("date", from)
       .lte("date", to)
       .order("start_time");

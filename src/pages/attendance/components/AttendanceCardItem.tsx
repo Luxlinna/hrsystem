@@ -16,6 +16,14 @@ interface AttendanceCardItemProps {
   onLogTimeForEmployee?: (employeeId: string) => void;
 }
 
+function isWithin24Hours(dateStr?: string): boolean {
+  if (!dateStr) return false;
+  const d = new Date(`${dateStr}T00:00:00`);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  return diffMs >= -86400000 && diffMs <= 86400000;
+}
+
 export const AttendanceCardItem = memo(function AttendanceCardItem({
   record: r,
   holiday,
@@ -39,6 +47,7 @@ export const AttendanceCardItem = memo(function AttendanceCardItem({
   const emp = r.employees;
   const isWorkingNow = r.clock_in && !r.clock_out && r.date === todayYMD;
   const isCardFourPunch = isFourPunchMode && Boolean(r.work_location?.is_four_punch_enabled ?? true);
+  const isDeletableToday = canManage && r.id > 0 && isWithin24Hours(r.date);
 
   return (
     <div
@@ -183,11 +192,14 @@ export const AttendanceCardItem = memo(function AttendanceCardItem({
               onClick={() => onEditRecord(r)}
               className="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-[#253C7D] dark:hover:text-sky-400 transition-colors cursor-pointer"
             ><i className="ri-edit-line text-xs" /></button>
-            <button
-              type="button"
-              onClick={() => onDeleteRecord(r.id)}
-              className="w-7 h-7 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
-            ><i className="ri-delete-bin-line text-xs" /></button>
+            {isDeletableToday && (
+              <button
+                type="button"
+                onClick={() => onDeleteRecord(r.id)}
+                className="w-7 h-7 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+                title="Delete today's record to allow employee to check in/out again"
+              ><i className="ri-delete-bin-line text-xs" /></button>
+            )}
           </div>
         )}
       </div>
