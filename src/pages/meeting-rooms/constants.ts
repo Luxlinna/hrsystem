@@ -106,11 +106,11 @@ export const TIMELINE_HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8:
 export const INITIAL_BOOKING_FORM: BookingFormData = {
   title: "",
   date: "",
-  start_time: "14:00",
-  end_time: "16:00",
-  attendees_count: 5,
-  selected_requirements: ["IT Support Assistance", "4K Camera & Conf Mic"],
+  start_time: "",
+  end_time: "",
+  attendees_count: 1,
+  selected_requirements: [],
   custom_requirements: "",
-  selected_refreshments: ["Bottled Drinking Water"],
+  selected_refreshments: [],
   custom_refreshments: "",
 };

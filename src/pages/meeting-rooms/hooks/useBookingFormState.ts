@@ -63,8 +63,8 @@ export function useBookingFormState({
         return;
       }
       const targetRoom = room || rooms[0] || null;
-      const start = startTime || "14:00";
-      const end = addMinutesToTime(start, 120);
+      const start = startTime || "";
+      const end = startTime ? addMinutesToTime(startTime, 60) : "";
       setEditingBooking(null);
       setModalRoom(targetRoom);
       setBookingForm({
@@ -72,10 +72,10 @@ export function useBookingFormState({
         date: date || selectedDate,
         start_time: start,
         end_time: end,
-        attendees_count: targetRoom?.capacity ? Math.min(5, targetRoom.capacity) : 5,
-        selected_requirements: ["IT Support Assistance", "4K Camera & Conf Mic"],
+        attendees_count: 1,
+        selected_requirements: [],
         custom_requirements: "",
-        selected_refreshments: ["Bottled Drinking Water"],
+        selected_refreshments: [],
         custom_refreshments: "",
       });
     },
