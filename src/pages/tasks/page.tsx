@@ -52,66 +52,80 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-5 font-sans">
-      <TasksHeader onNewOutsideWork={() => setShowCreateModal(true)} />
-      <TasksStatsCards stats={stats} />
-
-      <TasksFilterBar
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        search={search}
-        setSearch={setSearch}
-        assigneeFilter={assigneeFilter}
-        setAssigneeFilter={setAssigneeFilter}
-        priorityFilter={priorityFilter}
-        setPriorityFilter={setPriorityFilter}
-        quickTab={quickTab}
-        setQuickTab={setQuickTab}
-        employees={managedEmployees || employees}
-        isManager={isManager}
-        hasSubordinates={hasSubordinates}
-      />
-
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-xs font-semibold text-gray-500">Loading tasks &amp; field records...</p>
+    <div className="w-full min-h-screen bg-slate-50/60 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans">
+      {/* Mobile Coming Soon View */}
+      <div className="block md:hidden min-h-[65vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-sky-50 dark:bg-sky-950/50 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-3xl mb-4 shadow-sm border border-sky-100 dark:border-sky-900/50">
+          <i className="ri-task-line" />
         </div>
-      ) : viewMode === "board" ? (
-        <TaskBoardView
-          tasks={filteredTasks}
-          onSelect={setSelectedTask}
-          onEdit={setEditingTask}
-          onDelete={setDeletingTask}
-          onStatusChange={handleStatusChange}
-          onCheckInOut={(task, mode) => setCheckInOutTask({ task, mode })}
-          onQuickCreate={() => setShowCreateModal(true)}
-        />
-      ) : viewMode === "list" ? (
-        <TaskTableView
-          tasks={filteredTasks}
-          onSelect={setSelectedTask}
-          onEdit={setEditingTask}
-          onDelete={setDeletingTask}
-          onStatusChange={handleStatusChange}
-        />
-      ) : viewMode === "calendar" ? (
-        <TaskCalendarView
-          tasks={filteredTasks}
-          onSelect={setSelectedTask}
-        />
-      ) : (
-        <TaskReportsView
-          tasks={tasks}
-          employees={managedEmployees || employees}
-          onSelectTask={setSelectedTask}
-          assigneeFilter={assigneeFilter}
-          priorityFilter={priorityFilter}
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Coming Soon</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 max-w-xs">
+          Task Management is currently under development for mobile and will be available soon.
+        </p>
+      </div>
+
+      {/* Desktop Portal View */}
+      <div className="hidden md:block space-y-5">
+        <TasksHeader onNewOutsideWork={() => setShowCreateModal(true)} />
+        <TasksStatsCards stats={stats} />
+
+        <TasksFilterBar
+          viewMode={viewMode}
+          setViewMode={setViewMode}
           search={search}
+          setSearch={setSearch}
+          assigneeFilter={assigneeFilter}
+          setAssigneeFilter={setAssigneeFilter}
+          priorityFilter={priorityFilter}
+          setPriorityFilter={setPriorityFilter}
           quickTab={quickTab}
-          currentEmployeeId={currentEmployeeId}
+          setQuickTab={setQuickTab}
+          employees={managedEmployees || employees}
+          isManager={isManager}
+          hasSubordinates={hasSubordinates}
         />
-      )}
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
+            <p className="text-xs font-semibold text-gray-500">Loading tasks &amp; field records...</p>
+          </div>
+        ) : viewMode === "board" ? (
+          <TaskBoardView
+            tasks={filteredTasks}
+            onSelect={setSelectedTask}
+            onEdit={setEditingTask}
+            onDelete={setDeletingTask}
+            onStatusChange={handleStatusChange}
+            onCheckInOut={(task, mode) => setCheckInOutTask({ task, mode })}
+            onQuickCreate={() => setShowCreateModal(true)}
+          />
+        ) : viewMode === "list" ? (
+          <TaskTableView
+            tasks={filteredTasks}
+            onSelect={setSelectedTask}
+            onEdit={setEditingTask}
+            onDelete={setDeletingTask}
+            onStatusChange={handleStatusChange}
+          />
+        ) : viewMode === "calendar" ? (
+          <TaskCalendarView
+            tasks={filteredTasks}
+            onSelect={setSelectedTask}
+          />
+        ) : (
+          <TaskReportsView
+            tasks={tasks}
+            employees={managedEmployees || employees}
+            onSelectTask={setSelectedTask}
+            assigneeFilter={assigneeFilter}
+            priorityFilter={priorityFilter}
+            search={search}
+            quickTab={quickTab}
+            currentEmployeeId={currentEmployeeId}
+          />
+        )}
+      </div>
 
       {(showCreateModal || editingTask) && (
         <TaskFormModal

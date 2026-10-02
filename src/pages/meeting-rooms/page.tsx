@@ -34,7 +34,7 @@ export default function MeetingRoomsPage() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="w-full min-h-screen bg-slate-50/60 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
       {m.toast && (
         <div
           className={`fixed top-4 left-4 right-4 sm:top-6 sm:right-6 sm:left-auto sm:max-w-sm z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border backdrop-blur-md text-[13px] font-medium transition-all transform animate-in slide-in-from-top-4 duration-200 ${
@@ -69,27 +69,28 @@ export default function MeetingRoomsPage() {
         onCreateRoom={() => setCreateRoomOpen(true)}
       />
 
-
-
-      <MeetingRoomsFilterBar
-        selectedDate={m.selectedDate}
-        onShiftDate={m.shiftDate}
-        onJumpToToday={m.jumpToToday}
-        branchFilter={m.branchFilter}
-        setBranchFilter={m.setBranchFilter}
-        availableBranches={m.isHrDivisionScope ? m.branches : undefined}
-        filterFloor={m.filterFloor}
-        setFilterFloor={m.setFilterFloor}
-        filterRoomId={m.filterRoomId}
-        setFilterRoomId={m.setFilterRoomId}
-        rooms={m.rooms}
-        statusTab={m.statusTab}
-        setStatusTab={m.setStatusTab}
-        pendingCount={m.pendingCount}
-        searchQuery={m.searchQuery}
-        setSearchQuery={m.setSearchQuery}
-        availableFloors={m.availableFloors}
-      />
+      {/* Filter Bar (Hidden on mobile screens for a cleaner, compact mobile experience) */}
+      <div className="hidden sm:block">
+        <MeetingRoomsFilterBar
+          selectedDate={m.selectedDate}
+          onShiftDate={m.shiftDate}
+          onJumpToToday={m.jumpToToday}
+          branchFilter={m.branchFilter}
+          setBranchFilter={m.setBranchFilter}
+          availableBranches={m.isHrDivisionScope ? m.branches : undefined}
+          filterFloor={m.filterFloor}
+          setFilterFloor={m.setFilterFloor}
+          filterRoomId={m.filterRoomId}
+          setFilterRoomId={m.setFilterRoomId}
+          rooms={m.rooms}
+          statusTab={m.statusTab}
+          setStatusTab={m.setStatusTab}
+          pendingCount={m.pendingCount}
+          searchQuery={m.searchQuery}
+          setSearchQuery={m.setSearchQuery}
+          availableFloors={m.availableFloors}
+        />
+      </div>
 
       {m.statusTab === "pending" ? (
         <PendingBookingsQueue
@@ -137,22 +138,7 @@ export default function MeetingRoomsPage() {
           )}
 
           {m.viewMode === "cards" && (
-            <RoomsCardsViewContent
-              rooms={m.filteredRooms}
-              bookings={m.bookings}
-              onOpenBookModal={(room) => m.openBookModal(room, m.selectedDate)}
-              onSelectBooking={m.setSelectedBooking}
-              canManageRooms={m.canApprove}
-              onDeleteRoom={m.deleteRoom}
-              onResetFilters={() => {
-                m.setBranchFilter("all");
-                m.setFilterFloor("all");
-                m.setFilterRoomId("all");
-                m.setSearchQuery("");
-              }}
-              onCreateRoom={() => setCreateRoomOpen(true)}
-              totalRoomsCount={m.rooms.length}
-            />
+            <RoomsCardsViewContent />
           )}
         </>
       )}

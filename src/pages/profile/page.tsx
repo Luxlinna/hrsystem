@@ -38,17 +38,18 @@ export default function Profile() {
       <div className="flex flex-col md:flex-row gap-5 lg:gap-6 items-start w-full max-w-7xl min-w-0">
         {/* ── LEFT SIDEBAR / TOP BAR ON MOBILE ── */}
         <div className="w-full md:w-64 lg:w-72 bg-white dark:bg-slate-900 rounded-md border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 sm:p-6 flex flex-col items-center shrink-0">
-          {/* Avatar with Golden Frame & AWS S3 Photo Upload Button */}
+          {/* Avatar with Super Admin Golden Frame & Photo Upload Button */}
           <div className="relative group cursor-pointer" onClick={() => profile.fileInputRef.current?.click()}>
             <GoldFramedAvatar
               avatarUrl={profile.avatarUrl}
               initials={profile.initials}
               size="lg"
+              isSuperAdmin={profile.isSuperAdmin}
             />
             {/* Quick edit badge overlay */}
             <div
               className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-[#253C7D] hover:bg-[#1D3066] text-white flex items-center justify-center text-xs shadow-md border-2 border-white dark:border-slate-900 transition-transform group-hover:scale-110"
-              title="Upload photo to AWS S3"
+              title="Upload photo"
             >
               <i className="ri-camera-fill text-xs" />
             </div>
@@ -66,8 +67,8 @@ export default function Profile() {
             {profile.displayName || "Yos Steven"}
           </h2>
 
-          {/* Navigation Menu (Responsive wrap / scroll) */}
-          <nav className="w-full mt-4 sm:mt-6 pt-3 space-y-1 sm:space-y-0.5 border-t border-slate-100 dark:border-slate-800 flex flex-row md:flex-col overflow-x-auto no-scrollbar gap-1 md:gap-0">
+          {/* Navigation Menu */}
+          <nav className="w-full mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-1.5">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -75,14 +76,17 @@ export default function Profile() {
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex-1 md:w-full flex items-center justify-center md:justify-start gap-2 px-3 py-2 sm:py-2.5 rounded text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     isActive
-                      ? "bg-slate-100 dark:bg-slate-800 text-[#253C7D] dark:text-sky-400 md:border-l-3 border-[#253C7D] dark:border-sky-400 font-semibold"
+                      ? "bg-slate-100 dark:bg-slate-800 text-[#253C7D] dark:text-sky-400 border border-slate-200/80 dark:border-slate-700 shadow-2xs font-bold"
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                   }`}
                 >
-                  <i className={`${item.icon} text-sm ${isActive ? "text-[#253C7D] dark:text-sky-400" : "text-slate-400"}`} />
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <i className={`${item.icon} text-base shrink-0 ${isActive ? "text-[#253C7D] dark:text-sky-400" : "text-slate-400"}`} />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  <i className={`ri-arrow-right-s-line text-sm shrink-0 ${isActive ? "text-[#253C7D] dark:text-sky-400 font-bold" : "text-slate-300 dark:text-slate-600"}`} />
                 </button>
               );
             })}
@@ -100,6 +104,7 @@ export default function Profile() {
               managerName={profile.managerName}
               employeeLoading={profile.employeeLoading}
               onAvatarClick={() => profile.fileInputRef.current?.click()}
+              isSuperAdmin={profile.isSuperAdmin}
             />
           )}
 
@@ -151,4 +156,3 @@ export default function Profile() {
     </div>
   );
 }
-

@@ -14,15 +14,15 @@ export function OutsideWorkStats({ totalDays, completedCount, totalHours }: Outs
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-3 gap-2 sm:gap-3">
       {stats.map((s) => (
-        <div key={s.label} className={`${s.bg} border border-slate-200/60 dark:border-slate-800 rounded-xl p-4 flex items-center gap-3`}>
-          <div className="w-8 h-8 flex items-center justify-center shrink-0">
-            <i className={`${s.icon} text-xl ${s.color}`} />
+        <div key={s.label} className={`${s.bg} border border-slate-200/60 dark:border-slate-800 rounded-2xl p-2.5 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-1 sm:gap-3 shadow-2xs`}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0">
+            <i className={`${s.icon} text-lg sm:text-xl ${s.color}`} />
           </div>
-          <div>
-            <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-[11px] text-gray-600 dark:text-slate-400 font-medium">{s.label}</p>
+          <div className="min-w-0">
+            <p className={`text-base sm:text-xl font-extrabold leading-tight ${s.color}`}>{s.value}</p>
+            <p className="text-[10px] sm:text-[11px] text-gray-600 dark:text-slate-400 font-semibold leading-tight mt-0.5 truncate">{s.label}</p>
           </div>
         </div>
       ))}

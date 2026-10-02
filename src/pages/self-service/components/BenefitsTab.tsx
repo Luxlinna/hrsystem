@@ -122,9 +122,9 @@ export default function BenefitsTab({ employeeId }: Props) {
 
       {/* Enrolled Plans */}
       {activeEnrollments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-40 bg-gray-50 rounded-xl text-gray-400">
+        <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-slate-800/40 rounded-xl text-gray-400 dark:text-slate-500">
           <i className="ri-heart-pulse-line text-3xl mb-2" />
-          <p className="text-sm">Not enrolled in any benefit plans yet</p>
+          <p className="text-sm font-medium">Coming Soon</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

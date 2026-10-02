@@ -1,18 +1,13 @@
 import { useState, useEffect, memo } from "react";
 import type { MyEmployee } from "../types";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
+import { ProfilePasswordForm } from "./ProfilePasswordForm";
 
-interface ProfileAccountFormProps {
+interface Props {
   displayName: string;
   setDisplayName: (name: string) => void;
   savingName: boolean;
-  onSaveName: (payload?: {
-    firstName?: string;
-    lastName?: string;
-    username?: string;
-    email?: string;
-    timezone?: string;
-  }) => void;
+  onSaveName: (payload?: { firstName?: string; lastName?: string; username?: string; email?: string; timezone?: string; }) => void;
   email?: string;
   employee: MyEmployee | null;
   phone: string;
@@ -30,16 +25,10 @@ interface ProfileAccountFormProps {
 }
 
 export const ProfileAccountForm = memo(function ProfileAccountForm({
-  displayName,
-  setDisplayName,
   savingName,
   onSaveName,
   email,
   employee,
-  phone,
-  setPhone,
-  savingPhone,
-  onSavePhone,
   newPassword = "",
   setNewPassword,
   confirmPassword = "",
@@ -48,13 +37,11 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
   onChangePassword,
   userRole,
   isSuperAdmin = false,
-}: ProfileAccountFormProps) {
+}: Props) {
   const [subTab, setSubTab] = useState<"personal_info" | "change_password">("personal_info");
-
   const [firstName, setFirstName] = useState(employee?.first_name || "");
   const [lastName, setLastName] = useState(employee?.last_name || "");
   const [username, setUsername] = useState(employee?.employee_code || "1");
-  const [useEmail, setUseEmail] = useState(true);
   const [userEmail, setUserEmail] = useState(email || "");
   const [timezone, setTimezone] = useState("(UTC+07:00) Bangkok, Hanoi, Jakarta");
 
@@ -66,13 +53,7 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
   }, [employee, email]);
 
   const handleSave = () => {
-    onSaveName({
-      firstName,
-      lastName,
-      username,
-      email: isSuperAdmin ? userEmail : undefined,
-      timezone: isSuperAdmin ? timezone : undefined,
-    });
+    onSaveName({ firstName, lastName, username, email: isSuperAdmin ? userEmail : undefined, timezone: isSuperAdmin ? timezone : undefined });
   };
 
   const handleDiscard = () => {
@@ -82,205 +63,145 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
     setUserEmail(email || "");
   };
 
-  // Derive role safely
   const roleName = typeof userRole === "string" ? userRole : (userRole as any)?.name;
-  const roles: string[] = roleName ? [roleName] : ["Employee"];
   const accountType = roleName || (employee ? "Employee" : "User");
+  const isPhone = isPhoneSyntheticEmail(userEmail);
+  const displayContact = isPhone ? formatDisplayPhone(syntheticEmailToPhone(userEmail)) : userEmail;
 
   return (
     <div className="w-full">
-      {/* Sub Tabs: Personal Info | Change password matching Reference */}
-      <div className="flex items-center gap-4 sm:gap-6 border-b border-slate-200 dark:border-slate-800 mb-6 overflow-x-auto no-scrollbar">
-        <button
-          type="button"
-          onClick={() => setSubTab("personal_info")}
-          className={`pb-2.5 text-xs font-semibold transition-all cursor-pointer relative ${
-            subTab === "personal_info"
-              ? "text-[#253C7D] dark:text-sky-400 border-b-2 border-[#253C7D] dark:border-sky-400"
-              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-          }`}
-        >
-          Personal Info
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setSubTab("change_password")}
-          className={`pb-2.5 text-xs font-semibold transition-all cursor-pointer relative ${
-            subTab === "change_password"
-              ? "text-[#253C7D] dark:text-sky-400 border-b-2 border-[#253C7D] dark:border-sky-400"
-              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-          }`}
-        >
-          Change password
-        </button>
+      {/* Sub Tabs Segmented Control */}
+      <div className="p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl inline-flex gap-1 mb-5">
+        {[
+          { id: "personal_info", label: "Personal Info", icon: "ri-user-line" },
+          { id: "change_password", label: "Change Password", icon: "ri-lock-password-line" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setSubTab(tab.id as any)}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              subTab === tab.id
+                ? "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-400 shadow-2xs"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+            }`}
+          >
+            <i className={`${tab.icon} text-xs`} />
+            <span>{tab.label}</span>
+          </button>
+        ))}
       </div>
 
       {subTab === "personal_info" ? (
-        <div className="space-y-4 max-w-4xl text-xs">
-          {/* 1. Account Type */}
-          <div>
-            <label className="text-xs font-normal text-slate-700 dark:text-slate-300 block mb-1">
-              Account Type
-            </label>
-            <div>
-              <span className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-[2px] ${
-                accountType === "Super Admin" ? "bg-[#253C7D] text-white" : "bg-[#20c997] text-white"
-              }`}>
-                {accountType}
-              </span>
+        <div className="space-y-4 max-w-2xl text-xs">
+          {/* Account Type Card */}
+          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-slate-50 to-slate-100/60 dark:from-slate-800/80 dark:to-slate-800/40 border border-slate-200/70 dark:border-slate-700/60 rounded-xl">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <i className="ri-shield-user-line text-sm" />
+              </div>
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Account Type & Roles</span>
             </div>
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-600 text-white tracking-wide shadow-2xs">
+              {accountType}
+            </span>
           </div>
 
-          {/* 2. First Name */}
+          {/* First Name & Last Name in 2-Col Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {[
+              { label: "First Name", val: firstName, set: setFirstName },
+              { label: "Last Name", val: lastName, set: setLastName },
+            ].map((f) => (
+              <div key={f.label}>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">{f.label}</label>
+                <div className="relative">
+                  <i className="ri-user-3-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                  <input
+                    type="text"
+                    value={f.val}
+                    onChange={(e) => f.set(e.target.value)}
+                    className="w-full pl-8 pr-3.5 py-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Username */}
           <div>
-            <label className="text-xs font-normal text-slate-700 dark:text-slate-300 block mb-1">
-              First Name
-            </label>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="w-full px-3 py-1.5 bg-[#f0f4f8] dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
-
-          {/* 3. Last Name */}
-          <div>
-            <label className="text-xs font-normal text-slate-700 dark:text-slate-300 block mb-1">
-              Last Name
-            </label>
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="w-full px-3 py-1.5 bg-[#f0f4f8] dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
-
-          {/* 4. Username */}
-          <div>
-            <label className="text-xs font-normal text-slate-700 dark:text-slate-300 block mb-1">
-              Username
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
-
-          {/* 5. Use Email Checkbox */}
-          <div className="pt-1">
-            <label className={`inline-flex items-center gap-2 text-xs ${!isSuperAdmin ? "text-slate-400 dark:text-slate-500 cursor-not-allowed" : "text-slate-700 dark:text-slate-300 cursor-pointer"}`}>
+            <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">Username / Employee Code</label>
+            <div className="relative">
+              <i className="ri-id-card-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
               <input
-                type="checkbox"
-                checked={useEmail}
-                disabled={!isSuperAdmin}
-                onChange={(e) => setUseEmail(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-slate-300 text-[#253C7D] focus:ring-[#253C7D] disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full pl-8 pr-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs"
               />
-              <span>Use Email</span>
-            </label>
+            </div>
           </div>
 
-          {/* 6. Email */}
+          {/* Contact / Email */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-normal text-slate-700 dark:text-slate-300">
-                Email
-              </label>
-              {!isSuperAdmin && (
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                  (Super Admin only)
-                </span>
-              )}
+              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">{isPhone ? "Phone Number" : "Email Address"}</label>
+              {!isSuperAdmin && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium inline-flex items-center gap-1"><i className="ri-lock-line text-[10px]" /> Read Only</span>}
             </div>
-            <input
-              type="email"
-              value={userEmail}
-              disabled={!isSuperAdmin}
-              readOnly={!isSuperAdmin}
-              onChange={(e) => setUserEmail(e.target.value)}
-              className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${
-                !isSuperAdmin
-                  ? "bg-[#f0f4f8] dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed"
-                  : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:border-[#253C7D]"
-              }`}
-            />
+            <div className="relative">
+              <i className={`${isPhone ? "ri-phone-line" : "ri-mail-line"} absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs`} />
+              <input
+                type="text"
+                value={displayContact}
+                disabled={!isSuperAdmin}
+                readOnly={!isSuperAdmin}
+                onChange={(e) => setUserEmail(e.target.value)}
+                className={`w-full pl-8 pr-3.5 py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none shadow-2xs ${
+                  !isSuperAdmin ? "bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 cursor-not-allowed" : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:border-[#253C7D]"
+                }`}
+              />
+            </div>
           </div>
 
-          {/* 7. Timezone */}
+          {/* Timezone */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-normal text-slate-700 dark:text-slate-300">
-                Timezone
-              </label>
-              {!isSuperAdmin && (
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                  (Super Admin only)
-                </span>
-              )}
+              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Timezone</label>
+              {!isSuperAdmin && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium inline-flex items-center gap-1"><i className="ri-lock-line text-[10px]" /> Read Only</span>}
             </div>
-            <select
-              value={timezone}
-              disabled={!isSuperAdmin}
-              onChange={(e) => setTimezone(e.target.value)}
-              className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${
-                !isSuperAdmin
-                  ? "bg-[#f0f4f8] dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed"
-                  : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:border-[#253C7D] cursor-pointer"
-              }`}
-            >
-              <option value="(UTC+07:00) Bangkok, Hanoi, Jakarta">
-                (UTC+07:00) Bangkok, Hanoi, Jakarta
-              </option>
-              <option value="(UTC+08:00) Singapore, Kuala Lumpur">
-                (UTC+08:00) Singapore, Kuala Lumpur
-              </option>
-              <option value="(UTC+00:00) UTC / London">
-                (UTC+00:00) UTC / London
-              </option>
-              <option value="(UTC-05:00) Eastern Time (US & Canada)">
-                (UTC-05:00) Eastern Time (US & Canada)
-              </option>
-            </select>
-          </div>
-
-          {/* 8. Roles */}
-          <div>
-            <label className="text-xs font-normal text-slate-700 dark:text-slate-300 block mb-1.5">
-              Roles
-            </label>
-            <div className="flex items-center gap-1.5">
-              {roles.map((role) => (
-                <span
-                  key={role}
-                  className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-[2px] bg-[#20c997] text-white"
-                >
-                  {role}
-                </span>
-              ))}
+            <div className="relative">
+              <i className="ri-global-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+              <select
+                value={timezone}
+                disabled={!isSuperAdmin}
+                onChange={(e) => setTimezone(e.target.value)}
+                className={`w-full pl-8 pr-3.5 py-2 rounded-xl text-xs font-semibold transition-colors focus:outline-none shadow-2xs ${
+                  !isSuperAdmin ? "bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 cursor-not-allowed" : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:border-[#253C7D] cursor-pointer"
+                }`}
+              >
+                <option value="(UTC+07:00) Bangkok, Hanoi, Jakarta">(UTC+07:00) Bangkok, Hanoi, Jakarta</option>
+                <option value="(UTC+08:00) Singapore, Kuala Lumpur">(UTC+08:00) Singapore, Kuala Lumpur</option>
+                <option value="(UTC+00:00) UTC / London">(UTC+00:00) UTC / London</option>
+                <option value="(UTC-05:00) Eastern Time (US & Canada)">(UTC-05:00) Eastern Time (US & Canada)</option>
+              </select>
             </div>
           </div>
 
-          {/* Bottom Action Buttons */}
-          <div className="flex items-center gap-2 pt-4">
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2.5 pt-3">
             <button
               type="button"
               onClick={handleSave}
               disabled={savingName}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#5b9bd5] hover:bg-[#4a8ac4] text-white text-xs font-medium rounded shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#253C7D] dark:bg-blue-600 hover:bg-[#1E3064] dark:hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
             >
               <i className="ri-save-line text-xs" />
-              <span>{savingName ? "Saving..." : "Save"}</span>
+              <span>{savingName ? "Saving..." : "Save Changes"}</span>
             </button>
-
             <button
               type="button"
               onClick={handleDiscard}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl shadow-2xs transition-all cursor-pointer active:scale-95"
             >
               <i className="ri-close-line text-xs" />
               <span>Discard</span>
@@ -288,60 +209,14 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
           </div>
         </div>
       ) : (
-        /* Change Password Sub-tab */
-        <form
-          autoComplete="off"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (onChangePassword) onChangePassword();
-          }}
-          className="space-y-4 max-w-sm text-xs"
-        >
-          {/* Hidden dummy input to catch stubborn browser autofill */}
-          <input type="text" name="prevent_autofill" className="hidden" tabIndex={-1} autoComplete="off" />
-          <input type="password" name="prevent_autofill_pwd" className="hidden" tabIndex={-1} autoComplete="off" />
-
-          <div>
-            <label className="text-xs font-normal text-slate-700 dark:text-slate-300 block mb-1">
-              New password
-            </label>
-            <input
-              type="password"
-              name="new_account_password"
-              autoComplete="new-password"
-              placeholder="Enter new password"
-              value={newPassword}
-              onChange={(e) => setNewPassword && setNewPassword(e.target.value)}
-              className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-normal text-slate-700 dark:text-slate-300 block mb-1">
-              Confirm new password
-            </label>
-            <input
-              type="password"
-              name="confirm_new_account_password"
-              autoComplete="new-password"
-              placeholder="Confirm new password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword && setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#253C7D]"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 pt-2">
-            <button
-              type="submit"
-              disabled={savingPassword || !newPassword}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#5b9bd5] hover:bg-[#4a8ac4] text-white text-xs font-medium rounded shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-            >
-              <i className="ri-save-line text-xs" />
-              <span>{savingPassword ? "Updating..." : "Update Password"}</span>
-            </button>
-          </div>
-        </form>
+        <ProfilePasswordForm
+          newPassword={newPassword}
+          setNewPassword={setNewPassword}
+          confirmPassword={confirmPassword}
+          setConfirmPassword={setConfirmPassword}
+          savingPassword={savingPassword}
+          onChangePassword={onChangePassword}
+        />
       )}
     </div>
   );

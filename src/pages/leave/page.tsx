@@ -189,149 +189,163 @@ export default function Leave() {
         </div>
       )}
 
-      <LeaveHeader
-        onLeaveTodayCount={l.stats.onLeaveToday}
-        filteredRequests={l.filteredRequests}
-        onToast={l.setToast}
-        canManage={l.canManage}
-        onOpenHolidaysModal={() => setShowHolidaysModal(true)}
-        holidayCount={l.holidays?.length || 0}
-        canManageSettings={canModifyLeaveSettings}
-        onOpenLeaveSettings={() => setViewMode("settings")}
-        onCreateNewLeave={() => {
-          settings.setEditingType(null);
-          setViewMode("create_type");
-        }}
-        onOpenLeaveDeductions={() => {
-          l.setActiveTab("balances");
-        }}
-        onOpenApproverFlow={() => setShowApproverFlowModal(true)}
-        onRequestLeave={() => {
-          setFormMode("self");
-          l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: l.myEmployee?.id || "" });
-          l.setShowForm(true);
-        }}
-        onRequestLeaveFor={() => {
-          setFormMode("for_employee");
-          l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: "" });
-          l.setShowForm(true);
-        }}
-      />
+      {/* Mobile Coming Soon Display */}
+      <div className="block md:hidden min-h-[65vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-sky-50 dark:bg-sky-950/50 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-3xl mb-4 shadow-sm border border-sky-100 dark:border-sky-900/50">
+          <i className="ri-calendar-event-line" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Coming Soon</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 max-w-xs">
+          Leave Management is currently under development for mobile and will be available soon.
+        </p>
+      </div>
 
-      <LeaveStatsRow stats={l.stats} onSelectTab={l.setActiveTab} onFilterStatus={l.setStatusFilter} />
-
-      <LeaveTabsBar
-        activeTab={l.activeTab}
-        setActiveTab={l.setActiveTab}
-        pendingCount={l.stats.pending}
-        onLeaveTodayCount={l.stats.onLeaveToday}
-        onOpenHolidaysModal={() => setShowHolidaysModal(true)}
-        holidayCount={l.holidays?.length || 0}
-      />
-
-      {l.activeTab === "requests" && (
-        <LeaveRequestsTabContent
-          searchQuery={l.searchQuery}
-          setSearchQuery={l.setSearchQuery}
-          statusFilter={l.statusFilter}
-          setStatusFilter={l.setStatusFilter}
-          leaveTypeFilter={l.leaveTypeFilter}
-          setLeaveTypeFilter={l.setLeaveTypeFilter}
-          departmentFilter={l.departmentFilter}
-          setDepartmentFilter={l.setDepartmentFilter}
-          departments={l.departments}
-          pageSize={l.pageSize}
-          setPageSize={l.setPageSize}
-          page={l.page}
-          setPage={l.setPage}
-          pagedRows={l.pagedRows}
-          totalRows={l.filteredRequests.length}
-          pageStart={l.pageStart}
-          pageEnd={l.pageEnd}
-          safePage={l.safePage}
-          totalPages={l.totalPages}
-          canApproveLeave={l.canApproveLeave}
-          myEmployeeId={l.myEmployee?.id || ""}
-          myDepartment={l.myEmployee?.department || ""}
-          actorRole={l.actorRole}
-          isSuperAdmin={l.isSuperAdmin}
-          isBranchAdmin={l.isBranchAdmin}
-          hasRoleApprovalAccess={!!l.role?.leave_approve || !!l.role?.is_admin}
-          hasManagerEndorseAccess={!!l.role?.leave_manager_endorse}
-          hasBuAdminEndorseAccess={!!l.role?.leave_bu_admin_endorse}
+      {/* Desktop Portal View */}
+      <div className="hidden md:block space-y-6">
+        <LeaveHeader
+          onLeaveTodayCount={l.stats.onLeaveToday}
+          filteredRequests={l.filteredRequests}
+          onToast={l.setToast}
+          canManage={l.canManage}
+          onOpenHolidaysModal={() => setShowHolidaysModal(true)}
+          holidayCount={l.holidays?.length || 0}
+          canManageSettings={canModifyLeaveSettings}
+          onOpenLeaveSettings={() => setViewMode("settings")}
+          onCreateNewLeave={() => {
+            settings.setEditingType(null);
+            setViewMode("create_type");
+          }}
+          onOpenLeaveDeductions={() => {
+            l.setActiveTab("balances");
+          }}
+          onOpenApproverFlow={() => setShowApproverFlowModal(true)}
           onRequestLeave={() => {
+            setFormMode("self");
             l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: l.myEmployee?.id || "" });
             l.setShowForm(true);
           }}
-          onOpenApprovalModal={handleOpenApprovalModal}
-          onOpenCancelModal={handleOpenCancelModal}
-          onInspectRequest={l.setInspectRequest}
-          onDeleteRequest={l.handleDeleteRequest}
-          onBulkDelete={l.handleBulkDelete}
-          onBulkApprove={l.handleBulkApprove}
+          onRequestLeaveFor={() => {
+            setFormMode("for_employee");
+            l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: "" });
+            l.setShowForm(true);
+          }}
         />
-      )}
 
-      {l.activeTab === "balances" && (
-        <LeaveBalancesTabContent
-          employees={l.employees}
-          myEmployee={l.myEmployee}
-          canViewAll={l.canViewAll}
-          canViewOwnBranch={l.canViewOwnBranch}
-          leaveTypePolicies={l.leaveTypePolicies}
-          getEntitlement={l.getEntitlement}
-          getUsedDays={l.getUsedDays}
-          getPendingDays={l.getPendingDays}
-          getRemaining={l.getRemaining}
-          onRequestLeaveForEmp={handleOpenRequestModalForEmp}
-        />
-      )}
+        <LeaveStatsRow stats={l.stats} onSelectTab={l.setActiveTab} onFilterStatus={l.setStatusFilter} />
 
-      {l.activeTab === "calendar" && (
-        <LeaveCalendarTabContent
-          calendarYear={l.calendarYear}
-          calendarMonth={l.calendarMonth}
-          selectedCalendarDay={l.selectedCalendarDay}
-          setSelectedCalendarDay={l.setSelectedCalendarDay}
-          calDeptFilter={l.calDeptFilter}
-          setCalDeptFilter={l.setCalDeptFilter}
-          departments={l.departments}
-          calendarDays={l.calendarDays}
-          firstDayOfWeek={l.firstDayOfWeek}
-          prevMonth={l.prevMonth}
-          nextMonth={l.nextMonth}
-          todayMonth={l.todayMonth}
-          selectedDayDateStr={l.selectedDayDateStr}
-          selectedDayLeaves={l.selectedDayLeaves}
-          selectedDayHoliday={l.selectedDayHoliday}
-          onInspectRequest={l.setInspectRequest}
+        <LeaveTabsBar
+          activeTab={l.activeTab}
+          setActiveTab={l.setActiveTab}
+          pendingCount={l.stats.pending}
+          onLeaveTodayCount={l.stats.onLeaveToday}
           onOpenHolidaysModal={() => setShowHolidaysModal(true)}
           holidayCount={l.holidays?.length || 0}
         />
-      )}
 
-      <LeaveModalsContainer
-        {...l}
-        onOpenApprovalModal={handleOpenApprovalModal}
-        onOpenCancelModal={handleOpenCancelModal}
-        showApproverFlowModal={showApproverFlowModal}
-        setShowApproverFlowModal={setShowApproverFlowModal}
-        onApproverFlowSuccess={(msg) => l.setToast({ type: "success", message: msg })}
-      />
+        {l.activeTab === "requests" && (
+          <LeaveRequestsTabContent
+            searchQuery={l.searchQuery}
+            setSearchQuery={l.setSearchQuery}
+            statusFilter={l.statusFilter}
+            setStatusFilter={l.setStatusFilter}
+            leaveTypeFilter={l.leaveTypeFilter}
+            setLeaveTypeFilter={l.setLeaveTypeFilter}
+            departmentFilter={l.departmentFilter}
+            setDepartmentFilter={l.setDepartmentFilter}
+            departments={l.departments}
+            pageSize={l.pageSize}
+            setPageSize={l.setPageSize}
+            page={l.page}
+            setPage={l.setPage}
+            pagedRows={l.pagedRows}
+            totalRows={l.filteredRequests.length}
+            pageStart={l.pageStart}
+            pageEnd={l.pageEnd}
+            safePage={l.safePage}
+            totalPages={l.totalPages}
+            canApproveLeave={l.canApproveLeave}
+            myEmployeeId={l.myEmployee?.id || ""}
+            myDepartment={l.myEmployee?.department || ""}
+            actorRole={l.actorRole}
+            isSuperAdmin={l.isSuperAdmin}
+            isBranchAdmin={l.isBranchAdmin}
+            hasRoleApprovalAccess={!!l.role?.leave_approve || !!l.role?.is_admin}
+            hasManagerEndorseAccess={!!l.role?.leave_manager_endorse}
+            hasBuAdminEndorseAccess={!!l.role?.leave_bu_admin_endorse}
+            onRequestLeave={() => {
+              l.setFormData({ ...INITIAL_LEAVE_FORM, employee_id: l.myEmployee?.id || "" });
+              l.setShowForm(true);
+            }}
+            onOpenApprovalModal={handleOpenApprovalModal}
+            onOpenCancelModal={handleOpenCancelModal}
+            onInspectRequest={l.setInspectRequest}
+            onDeleteRequest={l.handleDeleteRequest}
+            onBulkDelete={l.handleBulkDelete}
+            onBulkApprove={l.handleBulkApprove}
+          />
+        )}
 
-      <HolidaysModal
-        isOpen={showHolidaysModal}
-        onClose={() => setShowHolidaysModal(false)}
-        year={l.holidaysState.year}
-        setYear={l.holidaysState.setYear}
-        holidays={l.holidaysState.holidays}
-        loading={l.holidaysState.loading}
-        syncing={l.holidaysState.syncing}
-        onSync={l.holidaysState.syncYear}
-        onAddHoliday={l.holidaysState.addHoliday}
-        onDeleteHoliday={l.holidaysState.removeHoliday}
-        canManage={l.canManage}
-      />
+        {l.activeTab === "balances" && (
+          <LeaveBalancesTabContent
+            employees={l.employees}
+            myEmployee={l.myEmployee}
+            canViewAll={l.canViewAll}
+            canViewOwnBranch={l.canViewOwnBranch}
+            leaveTypePolicies={l.leaveTypePolicies}
+            getEntitlement={l.getEntitlement}
+            getUsedDays={l.getUsedDays}
+            getPendingDays={l.getPendingDays}
+            getRemaining={l.getRemaining}
+            onRequestLeaveForEmp={handleOpenRequestModalForEmp}
+          />
+        )}
+
+        {l.activeTab === "calendar" && (
+          <LeaveCalendarTabContent
+            calendarYear={l.calendarYear}
+            calendarMonth={l.calendarMonth}
+            selectedCalendarDay={l.selectedCalendarDay}
+            setSelectedCalendarDay={l.setSelectedCalendarDay}
+            calDeptFilter={l.calDeptFilter}
+            setCalDeptFilter={l.setCalDeptFilter}
+            departments={l.departments}
+            calendarDays={l.calendarDays}
+            firstDayOfWeek={l.firstDayOfWeek}
+            prevMonth={l.prevMonth}
+            nextMonth={l.nextMonth}
+            todayMonth={l.todayMonth}
+            selectedDayDateStr={l.selectedDayDateStr}
+            selectedDayLeaves={l.selectedDayLeaves}
+            selectedDayHoliday={l.selectedDayHoliday}
+            onInspectRequest={l.setInspectRequest}
+            onOpenHolidaysModal={() => setShowHolidaysModal(true)}
+            holidayCount={l.holidays?.length || 0}
+          />
+        )}
+
+        <LeaveModalsContainer
+          {...l}
+          onOpenApprovalModal={handleOpenApprovalModal}
+          onOpenCancelModal={handleOpenCancelModal}
+          showApproverFlowModal={showApproverFlowModal}
+          setShowApproverFlowModal={setShowApproverFlowModal}
+          onApproverFlowSuccess={(msg) => l.setToast({ type: "success", message: msg })}
+        />
+
+        <HolidaysModal
+          isOpen={showHolidaysModal}
+          onClose={() => setShowHolidaysModal(false)}
+          year={l.holidaysState.year}
+          setYear={l.holidaysState.setYear}
+          holidays={l.holidaysState.holidays}
+          loading={l.holidaysState.loading}
+          syncing={l.holidaysState.syncing}
+          onSync={l.holidaysState.syncYear}
+          onAddHoliday={l.holidaysState.addHoliday}
+          onDeleteHoliday={l.holidaysState.removeHoliday}
+          canManage={l.canManage}
+        />
+      </div>
     </div>
   );
 }

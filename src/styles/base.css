@@ -65,119 +65,121 @@
 
   @media screen and (max-width: 768px) {
     #_oc_widget_root {
-      bottom: 74px !important;
-      right: 12px !important;
+      bottom: 80px !important;
+      right: 14px !important;
     }
 
     #_ocw_panel {
-      width: min(285px, calc(100vw - 24px)) !important;
-      max-width: min(285px, calc(100vw - 24px)) !important;
-      height: min(330px, calc(100dvh - 180px)) !important;
-      max-height: min(330px, calc(100dvh - 180px)) !important;
-      border-radius: 16px !important;
-      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.28) !important;
+      width: min(340px, calc(100vw - 28px)) !important;
+      max-width: min(340px, calc(100vw - 28px)) !important;
+      height: min(440px, calc(100dvh - 150px)) !important;
+      max-height: min(440px, calc(100dvh - 150px)) !important;
+      border-radius: 20px !important;
+      box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.35) !important;
+      right: 0 !important;
+      bottom: 58px !important;
     }
 
     #_ocw_hdr {
-      padding: 7px 10px !important;
-      gap: 6px !important;
+      padding: 10px 12px !important;
+      gap: 8px !important;
     }
 
     #_ocw_ava {
-      width: 26px !important;
-      height: 26px !important;
-      font-size: 11px !important;
+      width: 30px !important;
+      height: 30px !important;
+      font-size: 12px !important;
     }
 
     #_ocw_info strong {
-      font-size: 12px !important;
-      line-height: 1.2 !important;
+      font-size: 13.5px !important;
+      line-height: 1.25 !important;
     }
 
     #_ocw_sublbl {
-      font-size: 9px !important;
-      margin-top: 0px !important;
+      font-size: 10px !important;
+      margin-top: 1px !important;
     }
 
     #_ocw_close {
-      font-size: 18px !important;
+      font-size: 20px !important;
     }
 
     #_ocw_hdr_lang {
-      padding: 2px !important;
+      padding: 3px !important;
     }
 
     #_ocw_hdr_lang svg {
-      width: 15px !important;
-      height: 15px !important;
+      width: 16px !important;
+      height: 16px !important;
     }
 
     #_ocw_sb {
-      width: 36px !important;
-      padding: 4px 0 !important;
-      gap: 1px !important;
+      width: 40px !important;
+      padding: 6px 0 !important;
+      gap: 3px !important;
     }
 
     ._ocw_sbi {
-      width: 26px !important;
-      height: 26px !important;
-      border-radius: 7px !important;
+      width: 28px !important;
+      height: 28px !important;
+      border-radius: 8px !important;
     }
 
     ._ocw_sbi svg {
-      width: 13px !important;
-      height: 13px !important;
+      width: 14px !important;
+      height: 14px !important;
     }
 
     ._ocw_sbd {
-      width: 20px !important;
-      margin: 3px 0 !important;
+      width: 22px !important;
+      margin: 4px 0 !important;
     }
 
     ._ocw_msgs {
-      padding: 8px !important;
-      gap: 5px !important;
+      padding: 10px 12px !important;
+      gap: 8px !important;
     }
 
     ._ocw_bot,
     ._ocw_usr {
-      padding: 5px 9px !important;
-      font-size: 11px !important;
-      line-height: 1.35 !important;
-      border-radius: 12px !important;
-      max-width: 92% !important;
+      padding: 8px 12px !important;
+      font-size: 12.5px !important;
+      line-height: 1.4 !important;
+      border-radius: 14px !important;
+      max-width: 88% !important;
     }
 
     ._ocw_ftr {
-      padding: 6px 8px !important;
-      gap: 6px !important;
+      padding: 8px 10px !important;
+      gap: 8px !important;
     }
 
     ._ocw_inp {
-      padding: 5px 10px !important;
-      font-size: 12px !important;
-      border-radius: 16px !important;
+      padding: 7px 12px !important;
+      font-size: 13px !important;
+      border-radius: 20px !important;
     }
 
     ._ocw_snd {
-      width: 28px !important;
-      height: 28px !important;
+      width: 32px !important;
+      height: 32px !important;
     }
 
     ._ocw_snd svg {
-      width: 13px !important;
-      height: 13px !important;
+      width: 15px !important;
+      height: 15px !important;
     }
 
     #_ocw_btn {
-      width: 44px !important;
-      height: 44px !important;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2) !important;
+      width: 48px !important;
+      height: 48px !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
     }
 
     #_ocw_btn svg {
-      width: 20px !important;
-      height: 20px !important;
+      width: 22px !important;
+      height: 22px !important;
     }
   }
 

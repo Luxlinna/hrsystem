@@ -87,11 +87,11 @@ export default function WorkOutsideTab({ employeeId }: Props) {
       {/* Active outside work banner */}
       {activeRecord && <OutsideWorkActiveBanner activeRecord={activeRecord} />}
 
-      {/* Header + Month filter */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Header + Month filter (Desktop/Tablet only) */}
+      <div className="hidden sm:flex sm:flex-wrap sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <i className="ri-map-pin-user-line text-[#253C7D] dark:text-blue-400" />
-          <span className="text-sm font-semibold text-gray-800 dark:text-slate-100">Outside Work History</span>
+          <span className="text-sm font-bold text-gray-800 dark:text-slate-100">Outside Work History</span>
         </div>
         <select
           value={filterMonth}
@@ -113,9 +113,10 @@ export default function WorkOutsideTab({ employeeId }: Props) {
 
       {/* Records */}
       {records.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-slate-800/40 rounded-xl text-gray-400 dark:text-slate-500 border border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col items-center justify-center py-10 bg-slate-50/80 dark:bg-slate-800/40 rounded-2xl text-slate-400 dark:text-slate-500 border border-slate-100 dark:border-slate-800">
           <i className="ri-map-pin-user-line text-3xl mb-2 text-slate-300 dark:text-slate-600" />
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">No outside work records for this period</p>
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Coming Soon</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">No outside work records found for this period</p>
         </div>
       ) : (
         <div className="space-y-3">
