@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 
@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const handleApprovedRedirect = (link: string) => {
+  const handleApprovedRedirect = useCallback((link: string) => {
     setRequestStatus("approved");
     if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     if (link.includes("token_hash=")) {
@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
     } else {
       navigate(link, { replace: true });
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     if (!requestId || requestStatus !== "pending") return;
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
       supabase.removeChannel(channel);
     };
-  }, [requestId, requestStatus, navigate]);
+  }, [requestId, requestStatus, handleApprovedRedirect]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0] p-4 font-sans">
