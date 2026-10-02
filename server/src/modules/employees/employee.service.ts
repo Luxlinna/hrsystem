@@ -2,6 +2,7 @@ import { EmployeeRepository, employeeRepository } from './employee.repository.js
 import { CreateEmployeeDTO } from './dtos/create-employee.dto.js';
 import { ConflictError, NotFoundError } from '../../core/errors/app.error.js';
 import { PageRequest } from '../../core/domain/pagination.js';
+import { cacheService } from '../../core/infrastructure/cache/cache.service.js';
 
 export class EmployeeService {
   constructor(private employeeRepo: EmployeeRepository = employeeRepository) {}
@@ -39,7 +40,7 @@ export class EmployeeService {
       }
     }
 
-    return this.employeeRepo.create({
+    const created = await this.employeeRepo.create({
       employee_code: dto.employeeCode,
       first_name: dto.firstName,
       last_name: dto.lastName,
@@ -48,6 +49,11 @@ export class EmployeeService {
       branch_id: dto.branchId,
       department_id: dto.departmentId,
     } as any);
+
+    // Invalidate cached employee lists
+    cacheService.invalidatePrefix('http:');
+
+    return created;
   }
 }
 
