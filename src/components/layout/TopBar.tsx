@@ -47,6 +47,12 @@ export default function TopBar() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
+  useEffect(() => {
+    const handleToggle = () => setMenuOpen((prev) => !prev);
+    window.addEventListener("toggle-mobile-drawer", handleToggle);
+    return () => window.removeEventListener("toggle-mobile-drawer", handleToggle);
+  }, [setMenuOpen]);
+
   const textColor = "text-gray-600 hover:text-gray-900 dark:text-slate-300 dark:hover:text-white";
 
   return (
@@ -68,15 +74,8 @@ export default function TopBar() {
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 transition-all duration-300">
         <div className="flex items-center justify-between px-4 lg:px-8 py-3">
 
-          {/* Left — hamburger + desktop nav links */}
+          {/* Left — desktop nav links */}
           <div className="flex items-center gap-4">
-            <button
-              className="lg:hidden p-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Open menu"
-            >
-              <i className="ri-menu-line text-lg text-gray-700 dark:text-slate-200" />
-            </button>
 
             <nav className="hidden md:flex items-center gap-5" aria-label="Primary">
               {can("employees") && (

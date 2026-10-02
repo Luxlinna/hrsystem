@@ -3,19 +3,17 @@ import { createRoot } from "react-dom/client";
 import "remixicon/fonts/remixicon.css";
 import "./index.css";
 import App from "./App";
+import { initAssistiveTouchChat } from "./lib/assistiveTouchChat";
+
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
     .register("/firebase-messaging-sw.js")
     .catch((err) => console.error("Service worker registration failed:", err));
 }
 
-// Ensure clean widget position without conflicting overrides
+// Initialize Android Messenger style draggable floating chat bubble
 if (typeof window !== "undefined") {
-  try {
-    localStorage.removeItem("chat_widget_assistive_pos");
-  } catch {
-    // Ignore storage errors
-  }
+  initAssistiveTouchChat();
 }
 
 createRoot(document.getElementById("root")!).render(

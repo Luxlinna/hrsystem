@@ -1,9 +1,11 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Employee } from "../types";
 import { useCheckInData } from "../hooks/useCheckInData";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MobileAttendanceHeader } from "./MobileAttendanceHeader";
+import { CheckoutReasonModal } from "./checkin/CheckoutReasonModal";
+import { MobileQuickShortcutsCard } from "./MobileQuickShortcutsCard";
 
 interface MobilePresenceAttendanceProps {
   employee: Employee;
@@ -17,16 +19,21 @@ interface MobilePresenceAttendanceProps {
 export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
   employee,
   setActiveTab,
-  unreadCount = 0,
 }: MobilePresenceAttendanceProps) {
   const navigate = useNavigate();
   const employeeName = `${employee.first_name} ${employee.last_name}`.trim();
   const { can } = usePermissions();
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
 
   const d = useCheckInData({
     employeeId: employee.id,
     employeeName,
   });
+
+  const handleConfirmModalClockOut = async () => {
+    await d.handleClockOut();
+    setShowCheckoutModal(false);
+  };
 
   const dateInfo = useMemo(() => {
     const now = new Date();
@@ -73,24 +80,38 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
     });
   }, [d.records, d.isCheckedIn]);
 
-  const quickShortcuts = [
-    { id: "leave", label: "Ask Leave", icon: "ri-calendar-event-line", action: () => setActiveTab("leave"), hasDot: false },
-    { id: "leaderboard", label: "Leaderboard", icon: "ri-medal-line", action: () => (can("performance") ? navigate("/performance") : setActiveTab("overview")), hasDot: false },
-    { id: "news", label: "News", icon: "ri-newspaper-line", action: () => (can("announcements") ? navigate("/announcements") : setActiveTab("overview")), hasDot: true },
-    { id: "predictor", label: "Predictor", icon: "ri-line-chart-line", action: () => setActiveTab("attendance"), hasDot: false },
-    { id: "friends", label: "Friends", icon: "ri-group-line", action: () => (can("employees") ? navigate("/employees") : setActiveTab("overview")), hasDot: false },
-    { id: "assignments", label: "Assignments", icon: "ri-edit-box-line", action: () => setActiveTab("daily-report"), hasDot: true },
-  ];
-
   return (
     <div className="space-y-4 pb-20 font-sans text-slate-800 antialiased selection:bg-blue-100">
+      {/* Toast Notification */}
+      {d.toast && (
+        <div
+          className={`fixed top-4 left-4 right-4 z-50 px-4 py-3 rounded-2xl text-xs font-bold text-white shadow-xl flex items-center justify-between transition-all ${
+            d.toast.type === "success" ? "bg-[#253C7D]" : "bg-rose-600"
+          }`}
+        >
+          <span>{d.toast.message}</span>
+        </div>
+      )}
+
       {/* 1. Curved Primary Logo Header */}
       <MobileAttendanceHeader
         isCheckedIn={d.isCheckedIn}
         isCheckedOut={d.isCheckedOut}
         clockInTime={d.todayRecord?.clock_in}
-        onClockOut={d.handleClockOut}
+        onClockOut={() => setShowCheckoutModal(true)}
         onGoToCheckIn={() => setActiveTab("checkin")}
+      />
+
+      {/* Early / Regular Check Out Reason Modal */}
+      <CheckoutReasonModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        reason={d.earlyCheckoutReason}
+        onReasonChange={d.setEarlyCheckoutReason}
+        onConfirm={handleConfirmModalClockOut}
+        processing={d.processing}
+        earlyMinutes={d.earlyCheckoutMinutesNow}
+        isEarly={d.isEarlyCheckoutNow}
       />
 
       {/* Main Content Area */}
@@ -131,7 +152,7 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
                     </div>
                   )}
                   {day.status === "late" && (
-                    <div className="w-7 h-7 rounded-full bg-[#F59E0B] text-white flex items-center justify-center text-[10px] font-extrabold shadow-xs">L</div>
+                    <div className="w-7 h-7 rounded-full bg-[#3B62AC] text-white flex items-center justify-center text-[10px] font-extrabold shadow-xs">L</div>
                   )}
                   {day.status === "absent" && (
                     <div className="w-7 h-7 rounded-full bg-[#FF5C77] text-white flex items-center justify-center text-[10px] font-extrabold shadow-xs">A</div>
@@ -146,27 +167,13 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
         </div>
 
         {/* 3. 3x2 Grid Shortcuts Card */}
-        <div className="bg-white rounded-[24px] border border-[#E7ECF5] shadow-[0_4px_20px_rgba(37,60,125,0.04)] grid grid-cols-3 divide-x divide-y divide-[#EDF2FA] overflow-hidden">
-          {quickShortcuts.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={item.action}
-              className="flex flex-col items-center justify-center py-4 px-2 hover:bg-[#F5F8FD] transition-colors text-center cursor-pointer group active:scale-95"
-            >
-              <div className="w-11 h-11 rounded-2xl bg-[#EEF3FA] flex items-center justify-center text-xl text-[#253C7D] mb-2 transition-transform group-hover:scale-105 relative">
-                <i className={item.icon} />
-                {item.hasDot && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#FF5C77] rounded-full ring-1 ring-white" />
-                )}
-              </div>
-              <span className="text-[11.5px] font-semibold text-[#14234B] group-hover:text-[#253C7D] transition-colors flex items-center gap-1">
-                {item.label}
-                {item.hasDot && <span className="w-1 h-1 rounded-full bg-[#FF5C77]" />}
-              </span>
-            </button>
-          ))}
-        </div>
+        <MobileQuickShortcutsCard
+          onNavigateTab={setActiveTab}
+          onNavigatePath={navigate}
+          canAnnouncements={can("announcements")}
+          canPerformance={can("performance")}
+          canEmployees={can("employees")}
+        />
       </div>
     </div>
   );

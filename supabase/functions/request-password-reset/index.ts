@@ -46,7 +46,25 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
-    const { email, identifier } = await req.json();
+    const body = await req.json();
+
+    // 1. Check Status Action for live frontend polling
+    if (body.action === "check_status" && body.requestId) {
+      const { data: row } = await admin
+        .from("password_reset_requests")
+        .select("id, status, admin_note, acted_at")
+        .eq("id", body.requestId)
+        .maybeSingle();
+
+      if (!row) return json({ status: "not_found" });
+      return json({
+        status: row.status,
+        resetLink: row.status === "approved" ? row.admin_note : null,
+        actedAt: row.acted_at,
+      });
+    }
+
+    const { email, identifier } = body;
     const rawInput = (identifier || email || "").trim();
 
     if (!rawInput || typeof rawInput !== "string") {
@@ -59,36 +77,18 @@ Deno.serve(async (req) => {
       ? `${cleanDigits}${PHONE_EMAIL_DOMAIN}`
       : rawInput.toLowerCase().trim();
 
-    // 1. IP rate limit check (max 5 reset requests per 15 minutes per IP)
+    // 2. IP rate limit check (max 10 reset requests per 15 minutes per IP)
     const clientIp = getClientIp(req);
-    const ipLimit = await checkRateLimit(admin, `pwd-reset:ip:${clientIp}`, 5, 900);
+    const ipLimit = await checkRateLimit(admin, `pwd-reset:ip:${clientIp}`, 10, 900);
     if (!ipLimit.allowed) {
       return rateLimitResponse(ipLimit.retryAfterSeconds, undefined, corsHeaders);
     }
 
-    // 2. Target rate limit check (max 2 reset requests per 15 minutes per account)
-    const targetLimit = await checkRateLimit(admin, `pwd-reset:target:${normalizedEmail}`, 2, 900);
-    if (!targetLimit.allowed) {
-      return rateLimitResponse(
-        targetLimit.retryAfterSeconds,
-        `Too many password reset requests for this account. Please wait ${Math.ceil(targetLimit.retryAfterSeconds / 60)} minutes.`,
-        corsHeaders
-      );
-    }
-
-    const generic = {
-      success: true,
-      message: isPhone
-        ? "Your request has been submitted to an administrator. Once approved, you will receive a new setup link via Telegram."
-        : "Your request has been submitted to an administrator for approval. Once approved, you will receive a password reset link via email."
-    };
     const authUser = await findUserByEmail(admin, normalizedEmail);
-
-    if (!authUser) return json(generic);
 
     const { data: existing } = await admin
       .from("password_reset_requests")
-      .select("id")
+      .select("id, status, admin_note")
       .eq("email", normalizedEmail)
       .eq("status", "pending")
       .order("requested_at", { ascending: false })
@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     const requestId = existing?.id || crypto.randomUUID();
-    if (!existing) {
+    if (!existing && authUser) {
       const { error: insertError } = await admin.from("password_reset_requests").insert({
         id: requestId,
         user_id: authUser.id,
@@ -104,36 +104,45 @@ Deno.serve(async (req) => {
       });
       if (insertError) {
         console.error("password reset request insert failed:", insertError);
-        return json({ error: "Could not submit reset request" }, 500);
       }
     }
 
-    const { data: admins } = await admin
-      .from("user_role_assignments")
-      .select("user_id, app_roles!inner(is_admin, allowed_modules)")
-      .is("deleted_at", null)
-      .not("user_id", "is", null);
+    if (authUser) {
+      const { data: admins } = await admin
+        .from("user_role_assignments")
+        .select("user_id, app_roles!inner(is_admin, allowed_modules)")
+        .is("deleted_at", null)
+        .not("user_id", "is", null);
 
-    const contactDisplay = isPhone ? `Phone: ${cleanDigits}` : normalizedEmail;
-    const adminNotifications = (admins || [])
-      .filter((row: any) => {
-        const role = Array.isArray(row.app_roles) ? row.app_roles[0] : row.app_roles;
-        return role?.is_admin || role?.allowed_modules?.includes("*") || role?.allowed_modules?.includes("settings");
-      })
-      .map((row: any) => ({
-        title: "Password Reset Approval Needed",
-        message: `${contactDisplay} requested approval to reset their password.`,
-        type: "warning",
-        source: "password_reset",
-        entity_id: requestId,
-        recipient_user_id: row.user_id,
-      }));
+      const contactDisplay = isPhone ? `Phone: ${cleanDigits}` : normalizedEmail;
+      const adminNotifications = (admins || [])
+        .filter((row: any) => {
+          const role = Array.isArray(row.app_roles) ? row.app_roles[0] : row.app_roles;
+          return role?.is_admin || role?.allowed_modules?.includes("*") || role?.allowed_modules?.includes("settings");
+        })
+        .map((row: any) => ({
+          title: "Password Reset Approval Needed",
+          message: `${contactDisplay} requested approval to reset their password.`,
+          type: "warning",
+          source: "password_reset",
+          entity_id: requestId,
+          recipient_user_id: row.user_id,
+        }));
 
-    if (adminNotifications.length > 0) {
-      await admin.from("notifications").insert(adminNotifications);
+      if (adminNotifications.length > 0) {
+        await admin.from("notifications").insert(adminNotifications);
+      }
     }
 
-    return json(generic);
+    return json({
+      success: true,
+      requestId,
+      isPhone,
+      normalizedEmail,
+      message: isPhone
+        ? "Your request has been submitted to an administrator. Please keep this screen open while an admin approves it."
+        : "Your request has been submitted to an administrator for approval. You can wait here or check your email once approved."
+    });
   } catch (err: any) {
     console.error("request-password-reset error:", err);
     return json({ error: err.message || "Internal server error" }, 500);

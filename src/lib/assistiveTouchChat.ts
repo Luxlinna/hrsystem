@@ -1,11 +1,11 @@
 /**
- * AssistiveTouch Draggable Controller for Floating Live Chat Widget
- * Enables free dragging, touch support, edge-snapping, and viewport boundary protection.
+ * Android Messenger-style Floating Draggable Chat Head Controller
+ * Supports smooth touch/mouse drag, edge-snapping, and viewport boundary protection.
  */
 
-const STORAGE_KEY = "chat_widget_assistive_pos";
+const STORAGE_KEY = "chat_head_position";
 const MARGIN = 12;
-const BOTTOM_NAV_HEIGHT = 76; // Mobile bottom navigation buffer
+const BOTTOM_NAV_BUFFER = 78;
 
 interface Position {
   x: number;
@@ -22,7 +22,6 @@ export function initAssistiveTouchChat(): () => void {
   let targetEl: HTMLElement | null = null;
   let attached = false;
 
-  // Load saved position
   const getSavedPosition = (): Position | null => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -46,12 +45,12 @@ export function initAssistiveTouchChat(): () => void {
     const width = rect.width || 56;
     const height = rect.height || 56;
     const isMobile = window.innerWidth < 1024;
-    const bottomBuffer = isMobile ? BOTTOM_NAV_HEIGHT : 20;
+    const bottomBuffer = isMobile ? BOTTOM_NAV_BUFFER : 20;
 
     return {
       minX: MARGIN,
       maxX: Math.max(MARGIN, window.innerWidth - width - MARGIN),
-      minY: 60, // Safe distance from top bar / notch
+      minY: 60,
       maxY: Math.max(80, window.innerHeight - height - bottomBuffer),
       width,
       height,
@@ -68,11 +67,11 @@ export function initAssistiveTouchChat(): () => void {
     el.style.right = "auto";
     el.style.left = `${clampedX}px`;
     el.style.top = `${clampedY}px`;
-    el.style.zIndex = "99999";
+    el.style.zIndex = "45";
     el.style.touchAction = "none";
-    el.style.cursor = isDragging ? "grabbing" : "grab";
+    el.style.userSelect = "none";
     el.style.transition = animate
-      ? "left 0.35s cubic-bezier(0.25, 1, 0.5, 1), top 0.35s cubic-bezier(0.25, 1, 0.5, 1)"
+      ? "left 0.35s cubic-bezier(0.22, 1, 0.36, 1), top 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s ease"
       : "none";
 
     return { x: clampedX, y: clampedY };
@@ -81,22 +80,22 @@ export function initAssistiveTouchChat(): () => void {
   const snapToEdge = (el: HTMLElement, currentX: number, currentY: number) => {
     const bounds = getSafeBounds(el);
     const midX = window.innerWidth / 2;
-    // Snap to nearest left or right edge like iOS AssistiveTouch
+    // Snap to nearest left or right edge like Android Messenger Chat Heads
     const targetX = currentX + bounds.width / 2 < midX ? bounds.minX : bounds.maxX;
     const finalPos = applyPosition(el, targetX, currentY, true);
+    el.style.transform = "scale(1)";
     savePosition(finalPos);
   };
 
   const onPointerDown = (e: PointerEvent) => {
     if (!targetEl) return;
-    // Only drag primary pointer (touch or left mouse)
     if (e.button !== 0 && e.pointerType === "mouse") return;
 
-    // Check if clicking inside an expanded chat dialog or close button
-    const isInsideDialog = (e.target as HTMLElement)?.closest(
-      '#_ocw_panel, #_ocw_hdr, #_ocw_body, #_ocw_main, iframe, [role="dialog"], [class*="modal"], [class*="window"], [class*="chat-box"]'
+    // Do not drag if user is interacting with an expanded chat dialog or text input
+    const isDialog = (e.target as HTMLElement)?.closest(
+      '#_ocw_panel, #_ocw_body, #_ocw_main, iframe, [role="dialog"], input, textarea'
     );
-    if (isInsideDialog) return;
+    if (isDialog) return;
 
     const rect = targetEl.getBoundingClientRect();
     isDragging = true;
@@ -107,8 +106,6 @@ export function initAssistiveTouchChat(): () => void {
     initialY = rect.top;
 
     targetEl.style.transition = "none";
-    targetEl.style.cursor = "grab";
-
     let captureAcquired = false;
 
     const onPointerMove = (moveEvent: PointerEvent) => {
@@ -116,15 +113,15 @@ export function initAssistiveTouchChat(): () => void {
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
 
-      if (!hasMoved && Math.hypot(dx, dy) > 6) {
+      if (!hasMoved && Math.hypot(dx, dy) > 5) {
         hasMoved = true;
-        targetEl.style.cursor = "grabbing";
+        targetEl.style.transform = "scale(1.08)";
         if (!captureAcquired) {
           try {
             targetEl.setPointerCapture(moveEvent.pointerId);
             captureAcquired = true;
           } catch {
-            // Fallback
+            // Ignore capture error
           }
         }
       }
@@ -145,31 +142,25 @@ export function initAssistiveTouchChat(): () => void {
         try {
           targetEl.releasePointerCapture(upEvent.pointerId);
         } catch {
-          // Fallback
+          // Ignore
         }
       }
 
       if (hasMoved) {
-        // Suppress the click only if the user actually dragged the bubble
         const suppressClick = (clickEvent: MouseEvent) => {
           clickEvent.stopPropagation();
           clickEvent.preventDefault();
         };
         targetEl.addEventListener("click", suppressClick, { capture: true, once: true });
-        setTimeout(() => targetEl?.removeEventListener("click", suppressClick, { capture: true }), 200);
+        setTimeout(() => targetEl?.removeEventListener("click", suppressClick, { capture: true }), 250);
 
         const currentRect = targetEl.getBoundingClientRect();
         snapToEdge(targetEl, currentRect.left, currentRect.top);
       } else {
-        // Direct tap: ensure click triggers the widget button
-        const btn = (upEvent.target as HTMLElement)?.closest('#_ocw_btn, #_ocw_close, #_ocw_tab_ai, #_ocw_tab_lv, #_ocw_hdr_lang, button, a') as HTMLElement | null;
-        if (btn && typeof btn.click === "function") {
-          // Let native event bubble normally
-        }
+        targetEl.style.transform = "scale(1)";
       }
 
       isDragging = false;
-      targetEl.style.cursor = "grab";
     };
 
     window.addEventListener("pointermove", onPointerMove, { passive: false });
@@ -182,7 +173,6 @@ export function initAssistiveTouchChat(): () => void {
     targetEl = el;
     attached = true;
 
-    // Restore saved position or position nicely above mobile bottom navigation
     const saved = getSavedPosition();
     if (saved) {
       applyPosition(targetEl, saved.x, saved.y, false);
@@ -192,8 +182,6 @@ export function initAssistiveTouchChat(): () => void {
     }
 
     targetEl.addEventListener("pointerdown", onPointerDown);
-
-    // Handle window resize/orientation change
     window.addEventListener("resize", handleResize);
   };
 
@@ -203,80 +191,52 @@ export function initAssistiveTouchChat(): () => void {
     snapToEdge(targetEl, rect.left, rect.top);
   };
 
-  // Find widget element in DOM
   const findWidgetElement = (): HTMLElement | null => {
-    // Look for common widget container identifiers or floating elements
     const selectors = [
+      "#_ocw_btn",
+      "#_ocw_container",
       "#chat-widget-button",
-      "#chat-widget-container",
-      "#chat-button",
       '[class*="chat-widget-button"]',
       '[class*="chat-widget-launcher"]',
-      '[class*="chat_widget"]',
-      '[id*="chat-widget"]',
       'div[style*="position: fixed"][style*="z-index"]',
     ];
 
     for (const sel of selectors) {
       const el = document.querySelector(sel);
       if (el instanceof HTMLElement && !el.closest("#root")) {
-        // Verify it looks like the launcher button
         const rect = el.getBoundingClientRect();
-        if (rect.width > 30 && rect.width < 120 && rect.height > 30 && rect.height < 120) {
+        if (rect.width > 28 && rect.width < 140 && rect.height > 28 && rect.height < 140) {
           return el;
         }
       }
     }
-
-    // Generic fallback: check all fixed elements in body not inside #root
-    const fixedEls = Array.from(document.body.children).filter(
-      (c): c is HTMLElement =>
-        c instanceof HTMLElement &&
-        c.id !== "root" &&
-        window.getComputedStyle(c).position === "fixed"
-    );
-
-    for (const el of fixedEls) {
-      const rect = el.getBoundingClientRect();
-      if (rect.width > 30 && rect.width < 120 && rect.height > 30 && rect.height < 120) {
-        return el;
-      }
-    }
-
     return null;
   };
 
-  // Observe DOM for widget injection
   const observer = new MutationObserver(() => {
     const el = findWidgetElement();
-    if (el) {
-      attachToElement(el);
-    }
+    if (el) attachToElement(el);
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
 
-  // Initial check and periodic poll during first 10 seconds of script load
   const initialEl = findWidgetElement();
   if (initialEl) attachToElement(initialEl);
 
-  const intervalId = setInterval(() => {
+  const pollInterval = setInterval(() => {
     const el = findWidgetElement();
     if (el) {
       attachToElement(el);
-      clearInterval(intervalId);
+      clearInterval(pollInterval);
     }
-  }, 500);
+  }, 400);
 
-  setTimeout(() => clearInterval(intervalId), 15000);
+  setTimeout(() => clearInterval(pollInterval), 12000);
 
-  // Return cleanup function
   return () => {
     observer.disconnect();
-    clearInterval(intervalId);
+    clearInterval(pollInterval);
     window.removeEventListener("resize", handleResize);
-    if (targetEl) {
-      targetEl.removeEventListener("pointerdown", onPointerDown);
-    }
+    if (targetEl) targetEl.removeEventListener("pointerdown", onPointerDown);
   };
 }

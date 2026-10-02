@@ -16,21 +16,27 @@ export default function ResetPasswordPage() {
     handleSubmit,
   } = useResetPassword();
 
+  const isRecovery = window.location.search.includes("type=recovery") || window.location.hash.includes("type=recovery");
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0]">
+    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0] p-4">
       <div className="w-full max-w-md bg-white rounded-2xl p-8 md:p-10 border border-gray-100 shadow-xs">
         <div className="text-center mb-8">
           <img src="/logo-mark.png" alt="HRM_OPS Logo" className="w-14 h-14 object-contain mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-[#1A1A1A]">Sign Up Account</h1>
+          <h1 className="text-2xl font-bold text-[#1A1A1A]">
+            {isRecovery ? "Set New Password" : "Sign Up Account"}
+          </h1>
           <p className="text-[13px] text-gray-500 mt-1">
-            Create a password to activate your account
+            {isRecovery
+              ? "Create a new password to access your account"
+              : "Create a password to activate your account"}
           </p>
         </div>
 
         {checking ? (
           <div className="flex flex-col items-center py-8 text-gray-400">
             <span className="w-6 h-6 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
-            <p className="text-[12px] mt-3">Verifying your invitation...</p>
+            <p className="text-[12px] mt-3">Verifying your reset authorization...</p>
           </div>
         ) : !hasSession ? (
           <ExpiredInvitePanel />

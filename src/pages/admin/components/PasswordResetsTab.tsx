@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { PasswordResetRequest } from "../types";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 
 interface PasswordResetsTabProps {
   passwordResetRequests: PasswordResetRequest[];
@@ -21,7 +22,9 @@ export const PasswordResetsTab = memo(function PasswordResetsTab({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Password Reset Requests</p>
-          <p className="text-xs text-gray-500 dark:text-slate-400">Approve a request to email the user a secure reset link.</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Approve a request to let the user set a new password.
+          </p>
         </div>
         <button
           onClick={onRefresh}
@@ -43,11 +46,16 @@ export const PasswordResetsTab = memo(function PasswordResetsTab({
             {passwordResetRequests.map((request) => {
               const isPending = request.status === "pending";
               const isActing = actingResetId === request.id;
+              const isPhone = isPhoneSyntheticEmail(request.email);
+              const displayContact = isPhone
+                ? `${formatDisplayPhone(syntheticEmailToPhone(request.email))} (Phone Account)`
+                : request.email;
+
               return (
                 <div key={request.id} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-bold text-gray-900 dark:text-slate-100">{request.email}</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-slate-100">{displayContact}</p>
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                           request.status === "pending"
@@ -90,7 +98,7 @@ export const PasswordResetsTab = memo(function PasswordResetsTab({
                       onClick={() => onPasswordResetAction(request.id, "approve")}
                       className="px-3 py-2 rounded-xl bg-[#253C7D] text-white text-xs font-bold hover:bg-[#1F336A] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
                     >
-                      {isActing ? "Working..." : "Approve & Send Link"}
+                      {isActing ? "Working..." : isPhone ? "Approve Request" : "Approve & Send Link"}
                     </button>
                   </div>
                 </div>

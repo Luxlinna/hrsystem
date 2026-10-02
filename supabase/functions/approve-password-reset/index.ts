@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
       .eq("user_id", callerUser.id)
       .is("deleted_at", null)
       .maybeSingle();
+
     interface AppRole {
       is_admin?: boolean;
       allowed_modules?: string[];
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
       : rawRoles
       ? (rawRoles as unknown as AppRole)
       : null;
-    const canApprove = role?.is_admin || role?.allowed_modules?.includes("*") || role?.allowed_modules?.includes("settings");
+    const canApprove = role?.is_admin || role?.allowed_modules?.includes("*") || role?.allowed_modules?.includes("settings") || role?.allowed_modules?.includes("admin");
     if (!canApprove) return json({ error: "Not authorized to approve password resets" }, 403);
 
     const { request_id, action, note, redirect_to } = await req.json();
@@ -90,7 +91,7 @@ Deno.serve(async (req) => {
     if (action === "reject") {
       await admin
         .from("password_reset_requests")
-        .update({ status: "rejected", acted_at: new Date().toISOString(), acted_by: callerUser.id, admin_note: note || null })
+        .update({ status: "rejected", acted_at: new Date().toISOString(), acted_by: callerUser.id, admin_note: note || "Declined by administrator" })
         .eq("id", request_id);
       await admin.from("notifications").update({ is_read: true }).eq("source", "password_reset").eq("entity_id", request_id);
       return json({ success: true });
@@ -116,7 +117,11 @@ Deno.serve(async (req) => {
       ? `${cleanBase}?token_hash=${linkData.properties.hashed_token}&type=recovery`
       : linkData.properties.action_link;
 
-    const resetHtml = `<!DOCTYPE html>
+    const isPhoneAccount = resetRequest.email.endsWith("@phone.hrmsystem.local");
+
+    if (!isPhoneAccount) {
+      try {
+        const resetHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -140,13 +145,17 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    const transporter = getTransporter();
-    await transporter.sendMail({
-      from: Deno.env.get("EMAIL_FROM") || "HRSystem <hrmsystem.ops@gmail.com>",
-      to: resetRequest.email,
-      subject: "Password Reset Approved — HR System",
-      html: resetHtml,
-    });
+        const transporter = getTransporter();
+        await transporter.sendMail({
+          from: Deno.env.get("EMAIL_FROM") || "HRSystem <hrmsystem.ops@gmail.com>",
+          to: resetRequest.email,
+          subject: "Password Reset Approved — HR System",
+          html: resetHtml,
+        });
+      } catch (mailErr) {
+        console.warn("Mail send skipped/failed for email:", mailErr);
+      }
+    }
 
     await admin
       .from("password_reset_requests")
@@ -154,13 +163,18 @@ Deno.serve(async (req) => {
         status: "approved",
         acted_at: new Date().toISOString(),
         acted_by: callerUser.id,
-        admin_note: note || null,
+        admin_note: safeDirectResetLink,
         reset_link_sent_at: new Date().toISOString(),
       })
       .eq("id", request_id);
     await admin.from("notifications").update({ is_read: true }).eq("source", "password_reset").eq("entity_id", request_id);
 
-    return json({ success: true });
+    return json({
+      success: true,
+      resetLink: safeDirectResetLink,
+      isPhone: isPhoneAccount,
+      message: isPhoneAccount ? "Password reset approved for phone account" : "Reset link emailed to user"
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     console.error("approve-password-reset error:", err);

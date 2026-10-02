@@ -16,15 +16,22 @@ export const MobileAttendanceHeader = memo(function MobileAttendanceHeader({
   onGoToCheckIn,
 }: MobileAttendanceHeaderProps) {
   return (
-    <div className="relative bg-gradient-to-br from-[#1B3066] via-[#253C7D] to-[#2E54A8] text-white px-5 pt-7 pb-10 rounded-b-[40px] shadow-[0_16px_36px_rgba(37,60,125,0.22)]">
+    <div className="relative overflow-hidden bg-[#0F2D6B] text-white px-5 pt-7 pb-10 rounded-b-[40px] shadow-[0_16px_36px_rgba(15,45,107,0.32)]">
+      {/* Dynamic World Map & Cyan Wave Banner Background */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-95"
+        style={{ backgroundImage: "url('/presence-banner-bg.png')" }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0A2256]/30 via-transparent to-[#071942]/60 pointer-events-none" />
+
       {/* Top App Bar Header */}
       <div className="flex items-center justify-between relative z-10 mb-6">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-white/15 backdrop-blur-xs p-1 flex items-center justify-center shadow-xs border border-white/20">
+          <div className="w-8 h-8 rounded-xl bg-white/95 backdrop-blur-md p-1.5 flex items-center justify-center shadow-md border border-white/90">
             <img src="/logo-mark.png" alt="HRM_OPS" className="w-full h-full object-contain" />
           </div>
           <span
-            className="text-[24px] text-white font-normal drop-shadow-sm tracking-wide select-none"
+            className="text-[24px] text-white font-normal drop-shadow-md tracking-wide select-none"
             style={{ fontFamily: "'Pacifico', cursive, sans-serif" }}
           >
             Presence
@@ -33,7 +40,7 @@ export const MobileAttendanceHeader = memo(function MobileAttendanceHeader({
       </div>
 
       {/* Floating Attendance Status Card */}
-      <div className="bg-white rounded-2xl p-3.5 px-4 shadow-[0_10px_28px_rgba(15,25,60,0.12)] border border-white/80 flex items-center justify-between text-slate-800">
+      <div className="relative z-10 bg-white rounded-2xl p-3.5 px-4 shadow-[0_10px_28px_rgba(10,25,60,0.18)] border border-white/90 flex items-center justify-between text-slate-800">
         <div className="flex items-center gap-3.5 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-[#EEF3FA] text-[#253C7D] flex items-center justify-center shrink-0 shadow-xs">
             <i className="ri-calendar-2-line text-lg" />
@@ -57,15 +64,15 @@ export const MobileAttendanceHeader = memo(function MobileAttendanceHeader({
         <button
           type="button"
           onClick={isCheckedIn && !isCheckedOut ? onClockOut : onGoToCheckIn}
-          className={`px-5 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all active:scale-95 cursor-pointer shrink-0 shadow-md ${
+          className={`px-6 py-3 min-w-[112px] text-center rounded-2xl text-[14px] font-bold text-white tracking-wide transition-all active:scale-95 cursor-pointer shrink-0 shadow-lg ${
             isCheckedIn && !isCheckedOut
-              ? "bg-[#F59E0B] hover:bg-[#D97706] shadow-[#F59E0B]/30"
+              ? "bg-[#29ABE2] hover:bg-[#2096C7] active:bg-[#1984B2] shadow-[#29ABE2]/35"
               : isCheckedOut
-              ? "bg-emerald-600 cursor-default shadow-emerald-600/20"
+              ? "bg-emerald-600 cursor-default shadow-emerald-600/25"
               : "bg-[#253C7D] hover:bg-[#1D3066] shadow-[#253C7D]/35"
           }`}
         >
-          {isCheckedIn && !isCheckedOut ? "Check Out" : isCheckedOut ? "Done ✓" : "Submit"}
+          {isCheckedIn && !isCheckedOut ? "Check Out" : isCheckedOut ? "Done ✓" : "Check In"}
         </button>
       </div>
     </div>

@@ -31,7 +31,7 @@ export default function BottomNav() {
       path: "/self-service?tab=attendance",
       label: "My Attendance",
       icon: "ri-fingerprint-line",
-      activeIcon: "ri-fingerprint-line",
+      activeIcon: "ri-fingerprint-fill",
       visible: true,
       isActive: location.pathname === "/self-service" && currentTab === "attendance",
     },
@@ -55,42 +55,45 @@ export default function BottomNav() {
     },
   ].filter((item) => item.visible);
 
+  const handleOpenMore = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.dispatchEvent(new CustomEvent("toggle-mobile-drawer"));
+  };
+
   return (
-    <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-100 dark:border-slate-800 transition-colors"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-    >
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
+    <div className="lg:hidden fixed bottom-4 sm:bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none px-4" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <nav
+        className="pointer-events-auto flex items-center gap-1.5 sm:gap-3 bg-gradient-to-r from-[#0B2358]/85 via-[#143987]/90 to-[#0D2866]/85 backdrop-blur-2xl border border-sky-300/30 shadow-[0_16px_36px_rgba(10,32,85,0.45),0_0_24px_rgba(41,171,226,0.2)] rounded-full px-2.5 py-1.5 transition-all"
+        role="navigation"
+        aria-label="Mobile Navigation"
+      >
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.id}
             to={item.path}
-            className="flex-1 flex flex-col items-center justify-center gap-1 relative transition-all"
+            aria-label={item.label}
+            title={item.label}
+            className={`flex items-center justify-center transition-all duration-300 active:scale-80 ${
+              item.isActive
+                ? "bg-white/25 text-white border border-white/35 rounded-full px-4 sm:px-5 py-2 sm:py-2.5 shadow-[inset_0_1px_4px_rgba(255,255,255,0.35),0_2px_10px_rgba(41,171,226,0.3)] scale-105"
+                : "text-sky-100/70 hover:text-white p-2 sm:p-2.5 rounded-full hover:bg-white/10"
+            }`}
           >
-            {/* Pill Container */}
-            <div
-              className={`w-12 h-7 rounded-full flex items-center justify-center transition-all ${
-                item.isActive
-                  ? "bg-[#EEF3FA] dark:bg-indigo-950/70 text-[#253C7D] dark:text-sky-400 font-bold"
-                  : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
-              }`}
-            >
-              <i className={`${item.isActive ? item.activeIcon : item.icon} text-lg leading-none`} />
-            </div>
-
-            {/* Label */}
-            <span
-              className={`text-[10px] leading-none tracking-tight whitespace-nowrap ${
-                item.isActive
-                  ? "text-[#253C7D] dark:text-sky-400 font-bold"
-                  : "text-slate-400 dark:text-slate-500 font-medium"
-              }`}
-            >
-              {item.label}
-            </span>
+            <i className={`${item.isActive ? item.activeIcon : item.icon} text-lg sm:text-xl leading-none transition-transform duration-200`} />
           </Link>
         ))}
-      </div>
-    </nav>
+
+        {/* More / All Modules Drawer Button */}
+        <button
+          type="button"
+          onClick={handleOpenMore}
+          aria-label="More Apps & Modules"
+          title="More Apps & Modules"
+          className="flex items-center justify-center text-sky-100/70 hover:text-white p-2 sm:p-2.5 rounded-full hover:bg-white/10 active:scale-80 transition-all duration-200 cursor-pointer"
+        >
+          <i className="ri-apps-2-line text-lg sm:text-xl leading-none" />
+        </button>
+      </nav>
+    </div>
   );
 }
