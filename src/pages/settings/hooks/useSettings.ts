@@ -14,7 +14,7 @@ export function useSettings() {
   const actorName =
     (user?.user_metadata?.display_name as string) || user?.email || "Unknown";
 
-  const [section, setSection] = useState("general");
+  const [section, setSection] = useState("appearance");
   const [settings, setSettings] = useState<Record<string, Setting>>();
   const [loading, setLoading] = useState(true);
   const [edited, setEdited] = useState<Record<string, string>>({});

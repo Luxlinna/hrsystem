@@ -138,7 +138,7 @@ export const LiveClockActions = memo(function LiveClockActions(props: Props) {
 
       {!hasOutsideToday && isCheckedIn && !isCheckedOut && (
         <div className="space-y-2">
-          {isEarlyCheckoutNow && (
+          {isEarlyCheckoutNow ? (
             <div className="space-y-1.5">
               <div className="bg-amber-50 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-400/30 rounded-lg px-2.5 py-1.5">
                 <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-200 flex items-center gap-1">
@@ -155,15 +155,30 @@ export const LiveClockActions = memo(function LiveClockActions(props: Props) {
                 className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#253C7D] resize-none"
               />
             </div>
+          ) : (
+            <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border border-amber-400/50 dark:border-amber-400/30 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+              <p className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                <i className="ri-alarm-warning-fill text-xs text-amber-500 animate-bounce" />
+                <span>Shift Complete • On Time</span>
+              </p>
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+              </span>
+            </div>
           )}
           <button
             type="button"
             onClick={onClockOut}
             disabled={processing}
-            className="w-full flex items-center justify-center gap-2 bg-[#253C7D] hover:bg-[#1E3066] active:bg-[#172554] text-white font-bold py-2.5 px-4 rounded-lg text-xs transition-all disabled:opacity-60 cursor-pointer active:scale-98 shadow-sm"
+            className={`w-full flex items-center justify-center gap-2 text-white font-bold py-2.5 px-4 rounded-lg text-xs transition-all disabled:opacity-60 cursor-pointer active:scale-98 shadow-sm ${
+              !isEarlyCheckoutNow
+                ? "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 active:from-amber-700 ring-2 ring-amber-400/40 shadow-amber-500/25 animate-pulse"
+                : "bg-[#253C7D] hover:bg-[#1E3066] active:bg-[#172554]"
+            }`}
           >
-            <i className="ri-logout-box-r-line text-base text-[#29ABE2]" />
-            <span>{processing ? "Checking Out..." : "Check Out"}</span>
+            <i className={`text-base ${!isEarlyCheckoutNow ? "ri-alarm-warning-fill text-white" : "ri-logout-box-r-line text-[#29ABE2]"}`} />
+            <span>{processing ? "Checking Out..." : !isEarlyCheckoutNow ? "Check Out Now" : "Check Out"}</span>
           </button>
         </div>
       )}

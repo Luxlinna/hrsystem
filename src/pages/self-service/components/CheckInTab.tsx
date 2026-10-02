@@ -28,9 +28,10 @@ export default function CheckInTab({ employeeId, employeeName, autoStart, autoCh
     <div className="space-y-6">
       {d.toast && (
         <div
-          className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl text-[13px] font-semibold text-white shadow-lg border border-slate-700/40 ${
+          className={`fixed left-4 right-4 sm:left-auto sm:right-5 sm:max-w-sm z-50 px-5 py-3 rounded-2xl text-[13px] font-semibold text-white shadow-xl border border-slate-700/40 ${
             d.toast.type === "success" ? "bg-[#253C7D]" : "bg-[#1E3066] border-[#29ABE2]/50"
           }`}
+          style={{ top: "calc(env(safe-area-inset-top, 0px) + 14px)" }}
         >
           {d.toast.message}
         </div>

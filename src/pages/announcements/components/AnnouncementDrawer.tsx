@@ -42,7 +42,7 @@ export const AnnouncementDrawer = memo(function AnnouncementDrawer({
   const isUrgent = selectedItem.priority === "urgent";
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-[80] flex justify-end">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs transition-opacity" onClick={onClose} />
       <div className="relative w-full sm:w-[520px] bg-white h-full shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-200 overflow-hidden">
         {/* Drawer Top Bar */}

@@ -85,9 +85,10 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
       {/* Toast Notification */}
       {d.toast && (
         <div
-          className={`fixed top-4 left-4 right-4 z-50 px-4 py-3 rounded-2xl text-xs font-bold text-white shadow-xl flex items-center justify-between transition-all ${
+          className={`fixed left-4 right-4 z-50 px-4 py-3 rounded-2xl text-xs font-bold text-white shadow-xl flex items-center justify-between transition-all ${
             d.toast.type === "success" ? "bg-[#253C7D] dark:bg-sky-600" : "bg-rose-600"
           }`}
+          style={{ top: "calc(env(safe-area-inset-top, 0px) + 14px)" }}
         >
           <span>{d.toast.message}</span>
         </div>
@@ -98,11 +99,19 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
         isCheckedIn={d.isCheckedIn}
         isCheckedOut={d.isCheckedOut}
         clockInTime={d.todayRecord?.clock_in}
-        onClockOut={() => setShowCheckoutModal(true)}
+        isOnTimeToCheckout={d.isCheckedIn && !d.isCheckedOut && !d.isEarlyCheckoutNow}
+        processing={d.processing}
+        onClockOut={() => {
+          if (d.isEarlyCheckoutNow) {
+            setShowCheckoutModal(true);
+          } else {
+            d.handleClockOut();
+          }
+        }}
         onGoToCheckIn={() => setActiveTab("checkin")}
       />
 
-      {/* Early / Regular Check Out Reason Modal */}
+      {/* Early Check Out Reason Modal (Only shown if leaving before shift end time) */}
       <CheckoutReasonModal
         isOpen={showCheckoutModal}
         onClose={() => setShowCheckoutModal(false)}

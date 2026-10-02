@@ -2,7 +2,6 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useSettings } from "./hooks/useSettings";
 import { SettingsNav } from "./components/SettingsNav";
 import { AppearanceSettings } from "./components/AppearanceSettings";
-import { GeneralSettings } from "./components/GeneralSettings";
 import { NotificationsSettings } from "./components/NotificationsSettings";
 import { PermissionsSection } from "./components/PermissionsSection";
 import { BranchesSection } from "./components/BranchesSection";
@@ -20,7 +19,6 @@ export default function Settings() {
     hasChanges,
     updateValue,
     saveSetting,
-    saveAllGeneral,
     saveAllNotifications,
   } = useSettings();
 
@@ -46,18 +44,6 @@ export default function Settings() {
       <SettingsNav active={section} onChange={setSection} />
 
       {section === "appearance" && <AppearanceSettings />}
-
-      {section === "general" && (
-        <GeneralSettings
-          getVal={getVal}
-          updateValue={updateValue}
-          saveSetting={saveSetting}
-          hasChanges={hasChanges}
-          saveAllGeneral={saveAllGeneral}
-          saving={saving}
-          edited={edited}
-        />
-      )}
 
       {section === "notifications" && (
         <NotificationsSettings
