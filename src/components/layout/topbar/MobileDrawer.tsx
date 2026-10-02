@@ -86,7 +86,10 @@ const MobileDrawer = memo(function MobileDrawer({
         {/* Top Header */}
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-sky-400/20 bg-white/10 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-6 h-6 rounded-md bg-white/95 backdrop-blur-md p-0.5 flex items-center justify-center shadow-sm border border-white/80 shrink-0 overflow-hidden">
+            <div
+              className="w-6 h-6 rounded-md p-0.5 flex items-center justify-center shadow-sm border border-white/80 shrink-0 overflow-hidden"
+              style={{ backgroundColor: "#ffffff" }}
+            >
               <img src="/logo-mark.png" alt="HRSystem" className="w-full h-full object-contain block" />
             </div>
             <span className="text-xs font-bold tracking-wide text-white truncate">HRSystem</span>

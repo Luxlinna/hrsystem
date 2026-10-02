@@ -81,7 +81,10 @@ export default function TopBar() {
           <div className="flex items-center gap-3">
             {/* Mobile Brand */}
             <div className="flex md:hidden items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#253C7D] p-1 flex items-center justify-center shadow-2xs">
+              <div
+                className="w-7 h-7 rounded-lg p-1 flex items-center justify-center shadow-xs border border-gray-200 dark:border-white/20 shrink-0"
+                style={{ backgroundColor: "#ffffff" }}
+              >
                 <img src="/logo-mark.png" alt="HRSystem" className="w-full h-full object-contain" />
               </div>
               <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">

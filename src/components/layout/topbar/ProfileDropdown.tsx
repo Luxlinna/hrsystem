@@ -49,7 +49,7 @@ const ProfileDropdown = memo(function ProfileDropdown({
       <button
         id="topbar-profile-btn"
         onClick={() => onOpenChange(!open)}
-        className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-black/5 transition-colors cursor-pointer"
+        className="flex items-center gap-2 p-1 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer text-slate-700 dark:text-slate-200"
         aria-label="Profile menu"
         aria-expanded={open}
       >
@@ -57,16 +57,16 @@ const ProfileDropdown = memo(function ProfileDropdown({
           ? <img src={avatarUrl} alt={displayName} className="w-8 h-8 rounded-lg object-cover" />
           : <div className="w-8 h-8 rounded-lg bg-[#253C7D] flex items-center justify-center text-white text-[12px] font-bold">{initials}</div>
         }
-        <span className="hidden md:block text-[13px] font-medium text-gray-700">{displayName}</span>
-        <i className="ri-arrow-down-s-line text-sm text-gray-700" />
+        <span className="hidden md:block text-[13px] font-medium text-gray-700 dark:text-slate-200">{displayName}</span>
+        <i className="ri-arrow-down-s-line text-sm text-gray-400 dark:text-slate-400" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
           {/* User header */}
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-[13px] font-semibold text-gray-900">{displayName}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5 truncate">{displayContact}</p>
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-800">
+            <p className="text-[13px] font-bold text-gray-900 dark:text-white truncate">{displayName}</p>
+            <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 truncate">{displayContact}</p>
           </div>
 
           {/* Menu items */}
@@ -74,18 +74,18 @@ const ProfileDropdown = memo(function ProfileDropdown({
             <Link
               to="/profile"
               onClick={close}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/80 transition-colors"
             >
-              <i className="ri-user-line text-sm text-gray-400" /> My Profile
+              <i className="ri-user-line text-sm text-gray-400 dark:text-slate-500" /> My Profile
             </Link>
 
             {can("settings") && (
               <Link
                 to="/settings"
                 onClick={close}
-                className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/80 transition-colors"
               >
-                <i className="ri-settings-3-line text-sm text-gray-400" /> Settings
+                <i className="ri-settings-3-line text-sm text-gray-400 dark:text-slate-500" /> Settings
               </Link>
             )}
 
@@ -93,9 +93,9 @@ const ProfileDropdown = memo(function ProfileDropdown({
               <Link
                 to="/admin"
                 onClick={close}
-                className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/80 transition-colors"
               >
-                <i className="ri-admin-line text-sm text-gray-400" /> Admin Portal
+                <i className="ri-admin-line text-sm text-gray-400 dark:text-slate-500" /> Admin Portal
               </Link>
             )}
 
@@ -103,9 +103,9 @@ const ProfileDropdown = memo(function ProfileDropdown({
               <Link
                 to="/recycle-bin"
                 onClick={close}
-                className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/80 transition-colors"
               >
-                <i className="ri-delete-bin-6-line text-sm text-gray-400" /> Recycle Bin
+                <i className="ri-delete-bin-6-line text-sm text-gray-400 dark:text-slate-500" /> Recycle Bin
               </Link>
             )}
 
@@ -113,18 +113,18 @@ const ProfileDropdown = memo(function ProfileDropdown({
               <Link
                 to="/analytics"
                 onClick={close}
-                className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/80 transition-colors"
               >
-                <i className="ri-bar-chart-2-line text-sm text-gray-400" /> Analytics
+                <i className="ri-bar-chart-2-line text-sm text-gray-400 dark:text-slate-500" /> Analytics
               </Link>
             )}
           </div>
 
           {/* Sign out */}
-          <div className="border-t border-gray-100 py-1">
+          <div className="border-t border-gray-100 dark:border-slate-800 py-1">
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-600 hover:bg-red-50 transition-colors w-full text-left cursor-pointer"
+              className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors w-full text-left cursor-pointer"
             >
               <i className="ri-logout-box-r-line text-sm" /> Sign Out
             </button>
