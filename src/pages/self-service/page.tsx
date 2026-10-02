@@ -84,7 +84,7 @@ export default function SelfServicePage() {
             employee={selectedEmployee}
             managerName={managerName}
             todayAttendance={todayAttendance}
-            onGoToCheckIn={() => setActiveTab("checkin")}
+            onGoToCheckIn={activeTab !== "checkin" ? () => setActiveTab("checkin") : undefined}
           />
         )}
 
