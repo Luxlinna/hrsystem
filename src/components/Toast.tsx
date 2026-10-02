@@ -115,8 +115,12 @@ export function ToastContainer() {
 
   return (
     <div
-      className="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"
-      style={{ maxWidth: "340px", width: "100%" }}
+      className="fixed left-3 right-3 sm:left-auto sm:right-5 z-[9999] flex flex-col gap-2 pointer-events-none items-center sm:items-end"
+      style={{
+        top: "calc(env(safe-area-inset-top, 0px) + 14px)",
+        maxWidth: "400px",
+        margin: "0 auto",
+      }}
     >
       {toasts.map((t) => {
         const cfg = typeConfig[t.type];
@@ -125,22 +129,24 @@ export function ToastContainer() {
         return (
           <div
             key={t.id}
-            className="pointer-events-auto bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-lg shadow-lg py-2.5 px-3.5 flex items-start gap-2.5 transition-all"
+            className="pointer-events-auto w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.15)] py-3 px-3.5 flex items-start gap-2.5 transition-all"
             style={{
               animation: "toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
             {/* Status Icon */}
-            <i className={`${cfg.icon} ${cfg.iconColor} text-base shrink-0 mt-0.5`} />
+            <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
+              <i className={`${cfg.icon} ${cfg.iconColor} text-sm`} />
+            </div>
 
             {/* Content */}
             <div className="flex-1 min-w-0 pr-1">
               {hasTitle && (
-                <p className="text-[12.5px] font-semibold text-slate-900 dark:text-slate-100 leading-tight mb-0.5">
+                <p className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-tight mb-0.5">
                   {t.title}
                 </p>
               )}
-              <p className="text-[12px] text-slate-600 dark:text-slate-300 leading-relaxed break-words">
+              <p className="text-[12.5px] text-slate-700 dark:text-slate-200 leading-snug break-words">
                 {t.message || t.title}
               </p>
             </div>
@@ -149,10 +155,10 @@ export function ToastContainer() {
             <button
               type="button"
               onClick={() => dismissToast(t.id)}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-0.5 -mr-1 shrink-0 cursor-pointer"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 -mr-1 shrink-0 cursor-pointer rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
               title="Close"
             >
-              <i className="ri-close-line text-sm" />
+              <i className="ri-close-line text-base" />
             </button>
           </div>
         );
@@ -162,7 +168,7 @@ export function ToastContainer() {
         @keyframes toastSlideIn {
           from {
             opacity: 0;
-            transform: translateY(-8px) scale(0.97);
+            transform: translateY(-12px) scale(0.96);
           }
           to {
             opacity: 1;

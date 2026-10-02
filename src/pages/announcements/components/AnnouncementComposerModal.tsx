@@ -40,11 +40,11 @@ export const AnnouncementComposerModal = memo(function AnnouncementComposerModal
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/50 backdrop-blur-xs overflow-y-auto no-scrollbar"
+      className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-6 pb-20 sm:pb-6 bg-slate-950/60 backdrop-blur-xs overflow-y-auto no-scrollbar"
       onClick={() => !submitting && onClose()}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100/90 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150 max-h-[92vh]"
+        className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100/90 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150 max-h-[88vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
