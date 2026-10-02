@@ -175,7 +175,7 @@ export const LeaveRequestsTabContent = memo(function LeaveRequestsTabContent({
       )}
 
       {/* Main Table / Cards Box */}
-      <div className="bg-white rounded-3xl border border-gray-200/80 shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-3xl border border-gray-200/80 shadow-2xs">
         {totalRows === 0 ? (
           <div className="text-center py-20">
             <div className="w-14 h-14 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3">

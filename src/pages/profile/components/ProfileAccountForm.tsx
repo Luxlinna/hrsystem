@@ -289,13 +289,26 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
         </div>
       ) : (
         /* Change Password Sub-tab */
-        <div className="space-y-4 max-w-sm text-xs">
+        <form
+          autoComplete="off"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (onChangePassword) onChangePassword();
+          }}
+          className="space-y-4 max-w-sm text-xs"
+        >
+          {/* Hidden dummy input to catch stubborn browser autofill */}
+          <input type="text" name="prevent_autofill" className="hidden" tabIndex={-1} autoComplete="off" />
+          <input type="password" name="prevent_autofill_pwd" className="hidden" tabIndex={-1} autoComplete="off" />
+
           <div>
             <label className="text-xs font-normal text-slate-700 dark:text-slate-300 block mb-1">
               New password
             </label>
             <input
               type="password"
+              name="new_account_password"
+              autoComplete="new-password"
               placeholder="Enter new password"
               value={newPassword}
               onChange={(e) => setNewPassword && setNewPassword(e.target.value)}
@@ -309,6 +322,8 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
             </label>
             <input
               type="password"
+              name="confirm_new_account_password"
+              autoComplete="new-password"
               placeholder="Confirm new password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword && setConfirmPassword(e.target.value)}
@@ -318,8 +333,7 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
 
           <div className="flex items-center gap-2 pt-2">
             <button
-              type="button"
-              onClick={onChangePassword}
+              type="submit"
               disabled={savingPassword || !newPassword}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#5b9bd5] hover:bg-[#4a8ac4] text-white text-xs font-medium rounded shadow-xs transition-colors cursor-pointer disabled:opacity-50"
             >
@@ -327,7 +341,7 @@ export const ProfileAccountForm = memo(function ProfileAccountForm({
               <span>{savingPassword ? "Updating..." : "Update Password"}</span>
             </button>
           </div>
-        </div>
+        </form>
       )}
     </div>
   );

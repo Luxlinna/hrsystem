@@ -38,7 +38,7 @@ export default function Profile() {
       <div className="flex flex-col md:flex-row gap-5 lg:gap-6 items-start w-full max-w-7xl min-w-0">
         {/* ── LEFT SIDEBAR / TOP BAR ON MOBILE ── */}
         <div className="w-full md:w-64 lg:w-72 bg-white dark:bg-slate-900 rounded-md border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 sm:p-6 flex flex-col items-center shrink-0">
-          {/* Avatar with Golden Frame */}
+          {/* Avatar with Golden Frame & AWS S3 Photo Upload Button */}
           <div className="relative group cursor-pointer" onClick={() => profile.fileInputRef.current?.click()}>
             <GoldFramedAvatar
               avatarUrl={profile.avatarUrl}
@@ -46,15 +46,18 @@ export default function Profile() {
               size="lg"
             />
             {/* Quick edit badge overlay */}
-            <div className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-[#253C7D] text-white flex items-center justify-center text-xs shadow-md border-2 border-white dark:border-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
-              <i className="ri-camera-line" />
+            <div
+              className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-[#253C7D] hover:bg-[#1D3066] text-white flex items-center justify-center text-xs shadow-md border-2 border-white dark:border-slate-900 transition-transform group-hover:scale-110"
+              title="Upload photo to AWS S3"
+            >
+              <i className="ri-camera-fill text-xs" />
             </div>
             <input
               ref={profile.fileInputRef}
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={profile.handleEditAvatar}
+              onChange={profile.handleAvatarSelect}
             />
           </div>
 
@@ -96,6 +99,7 @@ export default function Profile() {
               initials={profile.initials}
               managerName={profile.managerName}
               employeeLoading={profile.employeeLoading}
+              onAvatarClick={() => profile.fileInputRef.current?.click()}
             />
           )}
 

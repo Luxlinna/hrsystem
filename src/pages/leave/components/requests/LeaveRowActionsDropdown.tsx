@@ -54,7 +54,7 @@ export const LeaveRowActionsDropdown = memo(function LeaveRowActionsDropdown({
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute right-0 mt-1 w-44 bg-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.14)] border border-slate-100 py-1.5 z-[60] animate-in fade-in zoom-in-95 duration-100">
           <button
             type="button"
             onClick={() => {

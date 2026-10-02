@@ -10,6 +10,7 @@ interface ProfileEmployeeInfoCardProps {
   initials?: string;
   managerName: string | null;
   employeeLoading: boolean;
+  onAvatarClick?: () => void;
 }
 
 const formatDate = (d?: string | null) => {
@@ -32,6 +33,7 @@ export const ProfileEmployeeInfoCard = memo(function ProfileEmployeeInfoCard({
   initials,
   managerName,
   employeeLoading,
+  onAvatarClick,
 }: ProfileEmployeeInfoCardProps) {
   const statusBadge = getJobStatusBadge(e?.status);
   const employeeCode = e?.employee_code || "1";
@@ -64,11 +66,22 @@ export const ProfileEmployeeInfoCard = memo(function ProfileEmployeeInfoCard({
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 min-w-0">
         {/* Avatar with Golden Frame & Status Badge */}
         <div className="flex flex-col items-center shrink-0">
-          <GoldFramedAvatar
-            avatarUrl={avatarUrl || e?.avatar_url}
-            initials={initials}
-            size="md"
-          />
+          <div
+            className={`relative group ${onAvatarClick ? "cursor-pointer" : ""}`}
+            onClick={onAvatarClick}
+            title={onAvatarClick ? "Change photo" : undefined}
+          >
+            <GoldFramedAvatar
+              avatarUrl={avatarUrl || e?.avatar_url}
+              initials={initials}
+              size="md"
+            />
+            {onAvatarClick && (
+              <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#253C7D] text-white flex items-center justify-center text-[10px] shadow-sm border border-white dark:border-slate-900 transition-transform group-hover:scale-110">
+                <i className="ri-camera-fill" />
+              </div>
+            )}
+          </div>
           <span
             className={`mt-2 inline-block text-[10px] font-medium px-2 py-0.5 rounded-[2px] text-white whitespace-nowrap leading-tight ${statusBadge.jobColor}`}
           >

@@ -39,32 +39,30 @@ export const MobileAttendanceHeader = memo(function MobileAttendanceHeader({
             <i className="ri-calendar-2-line text-lg" />
           </div>
           <div className="min-w-0">
-            <p className="text-[13px] font-bold text-[#14234B] truncate leading-tight">
-              {isCheckedIn
-                ? isCheckedOut
-                  ? "Attendance Completed"
-                  : `Checked in at ${clockInTime || "08:18:26"}`
-                : "Take attendance today"}
-            </p>
-            <p className="text-[11px] text-[#6B7B9E] mt-0.5 truncate leading-tight">
-              {isCheckedIn
-                ? isCheckedOut
-                  ? "Shift ended for today"
-                  : "Shift in progress · Tap to check out"
-                : "Start your daily work shift"}
-            </p>
+            {isCheckedIn && !isCheckedOut ? (
+              <div>
+                <p className="text-[12px] font-semibold text-[#6B7B9E] leading-tight">Checked in at</p>
+                <p className="text-[14px] font-extrabold text-[#14234B] mt-0.5 leading-tight tracking-tight">
+                  {clockInTime || "08:18:26"}
+                </p>
+              </div>
+            ) : (
+              <p className="text-[13px] font-bold text-[#14234B] truncate leading-tight">
+                {isCheckedOut ? "Attendance Completed" : "Take attendance today"}
+              </p>
+            )}
           </div>
         </div>
 
         <button
           type="button"
           onClick={isCheckedIn && !isCheckedOut ? onClockOut : onGoToCheckIn}
-          className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-all active:scale-95 cursor-pointer shrink-0 shadow-sm ${
+          className={`px-5 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all active:scale-95 cursor-pointer shrink-0 shadow-md ${
             isCheckedIn && !isCheckedOut
-              ? "bg-[#F59E0B] hover:bg-[#D97706] shadow-[#F59E0B]/25"
+              ? "bg-[#F59E0B] hover:bg-[#D97706] shadow-[#F59E0B]/30"
               : isCheckedOut
               ? "bg-emerald-600 cursor-default shadow-emerald-600/20"
-              : "bg-[#253C7D] hover:bg-[#1D3066] shadow-[#253C7D]/30"
+              : "bg-[#253C7D] hover:bg-[#1D3066] shadow-[#253C7D]/35"
           }`}
         >
           {isCheckedIn && !isCheckedOut ? "Check Out" : isCheckedOut ? "Done ✓" : "Submit"}

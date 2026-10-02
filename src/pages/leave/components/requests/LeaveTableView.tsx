@@ -47,7 +47,7 @@ export const LeaveTableView = memo(function LeaveTableView({
   const allSelected = requests.length > 0 && selectedIds.size === requests.length;
 
   return (
-    <div className="hidden lg:block overflow-x-auto">
+    <div className="hidden lg:block overflow-x-auto min-h-[220px]">
       <table className="w-full text-left text-xs border-collapse">
         <LeaveTableHeader
           allSelected={allSelected}

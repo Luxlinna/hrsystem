@@ -29,7 +29,7 @@ export default function SelfServicePage() {
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam && tabParam !== "attendance" && tabParam !== "overview") {
+    if (tabParam) {
       setMobileViewMode("tab");
     } else {
       setMobileViewMode("presence");
@@ -78,9 +78,7 @@ export default function SelfServicePage() {
             activeTab={activeTab}
             setActiveTab={(tab) => {
               setActiveTab(tab);
-              if (tab !== "attendance" && tab !== "overview") {
-                setMobileViewMode("tab");
-              }
+              setMobileViewMode("tab");
             }}
             unreadCount={unreadCount}
             pendingLeaveCount={pendingLeaveCount}
