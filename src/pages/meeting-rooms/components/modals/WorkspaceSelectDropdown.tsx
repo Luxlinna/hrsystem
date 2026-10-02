@@ -40,7 +40,7 @@ export const WorkspaceSelectDropdown = memo(function WorkspaceSelectDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-2 py-1 h-7 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 border rounded-lg text-xs text-left font-bold flex items-center justify-between gap-1.5 transition-all cursor-pointer shadow-2xs ${
+        className={`w-full px-2 py-0.5 h-7 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 border rounded-lg text-xs text-left font-medium flex items-center justify-between gap-1.5 transition-all cursor-pointer shadow-2xs ${
           isOpen
             ? "border-[#253C7D] ring-1 ring-[#253C7D]/20 bg-white"
             : "border-slate-200 dark:border-slate-700"
@@ -51,7 +51,7 @@ export const WorkspaceSelectDropdown = memo(function WorkspaceSelectDropdown({
             <i className="ri-door-open-line" />
           </div>
           <div className="min-w-0 flex items-center gap-1">
-            <p className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">{selectedRoom.name}</p>
+            <p className="text-[11px] font-semibold text-slate-900 dark:text-slate-100 truncate">{selectedRoom.name}</p>
             <span className="text-[9.5px] text-slate-400 font-normal">
               (F{selectedFloor} &middot; {selectedRoom.capacity || "—"} ppl)
             </span>

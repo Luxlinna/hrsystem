@@ -71,12 +71,25 @@ export default function TopBar() {
         canOpenRecycleBin={canOpenRecycleBin}
       />
 
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 transition-all duration-300">
-        <div className="flex items-center justify-between px-4 lg:px-8 py-3">
+      <header
+        className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 transition-all duration-300"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
+        <div className="flex items-center justify-between px-3 sm:px-4 lg:px-8 py-2.5 sm:py-3">
 
-          {/* Left — desktop nav links */}
-          <div className="flex items-center gap-4">
+          {/* Left — Mobile Brand & Desktop Nav Links */}
+          <div className="flex items-center gap-3">
+            {/* Mobile Brand */}
+            <div className="flex md:hidden items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#253C7D] p-1 flex items-center justify-center shadow-2xs">
+                <img src="/logo-mark.png" alt="HRSystem" className="w-full h-full object-contain" />
+              </div>
+              <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
+                HRSystem
+              </span>
+            </div>
 
+            {/* Desktop Nav Links */}
             <nav className="hidden md:flex items-center gap-5" aria-label="Primary">
               {can("employees") && (
                 <Link to="/employees" className={`text-[13px] font-medium ${textColor} transition-colors`}>
@@ -91,8 +104,8 @@ export default function TopBar() {
             </nav>
           </div>
 
-          {/* Centre — global search */}
-          <div ref={searchContainerRef} className="flex-1 min-w-0">
+          {/* Centre — global search (Desktop only) */}
+          <div ref={searchContainerRef} className="hidden md:block flex-1 min-w-0">
             <GlobalSearch
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
