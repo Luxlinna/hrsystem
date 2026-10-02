@@ -76,7 +76,11 @@ const MobileDrawer = memo(function MobileDrawer({
       <div className={`fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-300 ease-out ${open ? "opacity-100" : "opacity-0"}`} onClick={handleDrawerClose} />
       <div
         className={`fixed top-0 right-0 h-full w-1/2 min-w-[190px] max-w-[55vw] flex flex-col overflow-hidden shadow-[-16px_0_40px_rgba(10,30,80,0.5)] transition-transform duration-300 ease-out bg-gradient-to-b from-[#0B2358]/95 via-[#0F2D6B]/95 to-[#071942]/98 backdrop-blur-2xl text-white border-l border-sky-400/30 ${open ? "translate-x-0" : "translate-x-full"}`}
-        style={dragX > 0 ? { transform: `translateX(${dragX}px)`, transition: isDragging.current ? "none" : undefined } : undefined}
+        style={{
+          ...(dragX > 0 ? { transform: `translateX(${dragX}px)`, transition: isDragging.current ? "none" : undefined } : {}),
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
         onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
       >
         {/* Top Header */}

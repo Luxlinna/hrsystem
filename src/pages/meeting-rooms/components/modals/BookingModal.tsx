@@ -129,7 +129,7 @@ export const BookingModal = memo(function BookingModal({
                 value={bookingForm.title}
                 onChange={(e) => setBookingForm({ ...bookingForm, title: e.target.value })}
                 placeholder="e.g. Team Sync"
-                className="w-full px-2 py-1 h-7 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-semibold text-slate-900 dark:text-slate-100 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs"
+                className="w-full px-2 py-0.5 h-7 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs"
               />
             </div>
 
@@ -143,7 +143,7 @@ export const BookingModal = memo(function BookingModal({
                 max={modalRoom.capacity || 100}
                 value={bookingForm.attendees_count}
                 onChange={(e) => setBookingForm({ ...bookingForm, attendees_count: Number(e.target.value) || 1 })}
-                className="w-full px-1.5 py-1 h-7 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-semibold text-slate-900 dark:text-slate-100 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs text-center"
+                className="w-full px-1.5 py-0.5 h-7 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-medium text-slate-900 dark:text-slate-100 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 shadow-2xs text-center"
               />
             </div>
           </div>

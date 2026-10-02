@@ -29,7 +29,7 @@ export const BookingModalDateTimeInputs = memo(function BookingModalDateTimeInpu
           required
           value={bookingForm.date}
           onChange={(e) => setBookingForm((prev) => ({ ...prev, date: e.target.value }))}
-          className="w-full px-2.5 py-1 h-8 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs"
+          className="w-full px-2 py-0.5 h-7 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-medium text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs"
         />
       </div>
 
@@ -44,7 +44,7 @@ export const BookingModalDateTimeInputs = memo(function BookingModalDateTimeInpu
             required
             value={bookingForm.start_time}
             onChange={(e) => setBookingForm((prev) => ({ ...prev, start_time: e.target.value }))}
-            className="w-full px-2 py-1 h-8 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs text-center"
+            className="w-full px-2 py-0.5 h-7 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-medium text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs text-center"
           />
         </div>
 
@@ -57,7 +57,7 @@ export const BookingModalDateTimeInputs = memo(function BookingModalDateTimeInpu
             required
             value={bookingForm.end_time}
             onChange={(e) => setBookingForm((prev) => ({ ...prev, end_time: e.target.value }))}
-            className="w-full px-2 py-1 h-8 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs text-center"
+            className="w-full px-2 py-0.5 h-7 bg-slate-50/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-medium text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs text-center"
           />
         </div>
       </div>
