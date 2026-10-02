@@ -7,8 +7,12 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n \"FRONTEND,BACKEND\" -c \"cyan,magenta\" \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "vite",
+    "dev:backend": "npm --prefix server run dev",
+    "dev:all": "npm run dev",
     "build": "vite build",
+    "build:backend": "npm --prefix server run build",
     "preview": "vite preview",
     "start": "node serve.mjs",
     "backup:s3": "node scripts/backup-db-to-s3.mjs",
@@ -47,6 +51,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^10.0.5",
     "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
