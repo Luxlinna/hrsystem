@@ -21,6 +21,8 @@ export function validateBody(schema: ZodSchema) {
   };
 }
 
+export const validate = validateBody;
+
 export function validateQuery(schema: ZodSchema) {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {

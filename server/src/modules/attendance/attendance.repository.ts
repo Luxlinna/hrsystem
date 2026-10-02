@@ -1,5 +1,7 @@
 import { attendance_records, Prisma } from '@prisma/client';
 import { BaseRepository, TransactionClient } from '../../core/infrastructure/database/base.repository.js';
+import { prisma } from '../../core/infrastructure/database/prisma.client.js';
+import { EmployeeWithRelations } from './attendance.types.js';
 
 export class AttendanceRepository extends BaseRepository<
   attendance_records,
@@ -13,18 +15,108 @@ export class AttendanceRepository extends BaseRepository<
     super('attendance_records');
   }
 
-  async findTodayRecord(employeeId: string, targetDate: Date, tx?: TransactionClient): Promise<attendance_records | null> {
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
+  /**
+   * Find today's attendance record for an employee by date
+   */
+  async findTodayRecord(
+    employeeId: string,
+    targetDate: Date | string,
+    tx?: TransactionClient
+  ): Promise<attendance_records | null> {
+    const client = tx || prisma;
+    const dateObj = typeof targetDate === 'string' ? new Date(`${targetDate}T00:00:00.000Z`) : targetDate;
 
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    return client.attendance_records.findFirst({
+      where: {
+        employee_id: employeeId,
+        date: dateObj,
+        deleted_at: null,
+      },
+    });
+  }
 
-    return this.findOne({
-      employee_id: employeeId,
-      date: { gte: startOfDay, lte: endOfDay },
-      deleted_at: null,
-    } as any, tx);
+  /**
+   * Upsert an attendance record by composite unique key (employee_id, date)
+   */
+  async upsertAttendance(
+    employeeId: string,
+    date: Date,
+    data: Prisma.attendance_recordsUncheckedUpdateInput & Prisma.attendance_recordsUncheckedCreateInput,
+    tx?: TransactionClient
+  ): Promise<attendance_records> {
+    const client = tx || prisma;
+
+    return client.attendance_records.upsert({
+      where: {
+        employee_id_date: {
+          employee_id: employeeId,
+          date,
+        },
+      },
+      update: {
+        ...data,
+        deleted_at: null,
+      },
+      create: {
+        ...data,
+        employee_id: employeeId,
+        date,
+      },
+    });
+  }
+
+  /**
+   * Fetch all active employees along with their branch and work location shift rules for in-memory caching
+   */
+  async findEmployeeDirectory(tx?: TransactionClient): Promise<EmployeeWithRelations[]> {
+    const client = tx || prisma;
+
+    const employees = await client.employees.findMany({
+      where: {
+        deleted_at: null,
+      },
+      include: {
+        branches: {
+          select: {
+            name: true,
+            work_start_time: true,
+            work_end_time: true,
+            late_grace_minutes: true,
+            early_leave_grace_minutes: true,
+            morning_check_in_start: true,
+            morning_check_in_end: true,
+            morning_check_out_start: true,
+            morning_check_out_end: true,
+            afternoon_check_in_start: true,
+            afternoon_check_in_end: true,
+            afternoon_check_out_start: true,
+            afternoon_check_out_end: true,
+          },
+        },
+        work_locations: {
+          select: {
+            name: true,
+            work_start_time: true,
+            break_start_time: true,
+            break_end_time: true,
+            work_end_time: true,
+            late_grace_minutes: true,
+            early_leave_grace_minutes: true,
+            is_four_punch_enabled: true,
+            morning_check_in_start: true,
+            morning_check_in_end: true,
+            morning_check_out_start: true,
+            morning_check_out_end: true,
+            afternoon_check_in_start: true,
+            afternoon_check_in_end: true,
+            afternoon_check_out_start: true,
+            afternoon_check_out_end: true,
+          },
+        },
+      },
+    });
+
+    return employees as unknown as EmployeeWithRelations[];
   }
 }
 

@@ -3,13 +3,14 @@ import type { ApiResponse } from '../types/api.types';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export class ApiClientError extends Error {
-  constructor(
-    public message: string,
-    public statusCode: number = 500,
-    public details?: any
-  ) {
+  statusCode: number;
+  details?: any;
+
+  constructor(message: string, statusCode: number = 500, details?: any) {
     super(message);
     this.name = 'ApiClientError';
+    this.statusCode = statusCode;
+    this.details = details;
   }
 }
 

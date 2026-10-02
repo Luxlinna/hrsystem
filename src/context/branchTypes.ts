@@ -37,6 +37,7 @@ export interface BranchContextType {
   selectedSiteId: string | null;
   targetBranch: string | null;
   isPartnerBranchBlocked: boolean;
+  isPartnerBranch?: boolean;
   isSuperAdmin: boolean;
   isAdmin: boolean;
   isBranchAdmin: boolean;

@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { createClient, type User } from "@supabase/supabase-js";
+import { type User } from "@supabase/supabase-js";
 import { supabase, markSessionAlive } from "@/lib/supabase";
 import type { AuthContextType } from "./authTypes";
 import {
@@ -14,20 +14,21 @@ import {
 } from "./authTypes";
 import { isPhoneIdentifier } from "@/lib/phoneUtils";
 import { resolveAuthEmail, sendOTPService, verifyOTPService } from "./authOtpService";
+import { api } from "@/shared/lib/apiClient";
 
 export type { AuthContextType };
 
-const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY || "";
-
-const authVerifierClient = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false,
-    storage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
-  },
-});
+interface BackendLoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt?: number;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+  };
+  employee: any;
+}
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -107,34 +108,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const sendOTP = useCallback(async (id: string) => { await sendOTPService(id); }, []);
 
+  /**
+   * Backend-First Login Flow with rate limiting & server validation
+   */
   const login = async (identifier: string, password: string): Promise<{ otpRequired: boolean }> => {
     const isPhone = isPhoneIdentifier((identifier || "").trim());
     const resolvedEmail = resolveAuthEmail(identifier);
 
-    if (checkDeviceRemembered(resolvedEmail) || checkDeviceRemembered(identifier)) {
-      const { error } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
-      if (error) {
-        throw new Error(isPhone && (error.message.includes("Invalid login credentials") || error.status === 400) ? "Invalid phone number or password" : error.message);
+    try {
+      // 1. Call Express Backend first (checks brute-force rate limiter & credentials)
+      const res = await api.post<BackendLoginResponse>('/auth/login', {
+        email: resolvedEmail,
+        password,
+      });
+
+      if (checkDeviceRemembered(resolvedEmail) || checkDeviceRemembered(identifier)) {
+        // Device is trusted: set Supabase session in browser immediately
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: res.accessToken,
+          refresh_token: res.refreshToken,
+        });
+
+        if (sessionError) {
+          throw new Error(sessionError.message);
+        }
+
+        recordUserActivity();
+        setDeviceRemembered(resolvedEmail);
+        setDeviceRemembered(identifier);
+        return { otpRequired: false };
       }
-      recordUserActivity();
-      setDeviceRemembered(resolvedEmail);
-      setDeviceRemembered(identifier);
-      return { otpRequired: false };
-    }
 
-    const { error } = await authVerifierClient.auth.signInWithPassword({ email: resolvedEmail, password });
-    if (error) {
-      throw new Error(isPhone && (error.message.includes("Invalid login credentials") || error.status === 400) ? "Invalid phone number or password" : error.message);
+      // Untrusted device: Send 2FA/OTP code
+      await sendOTP(resolvedEmail);
+      return { otpRequired: true };
+    } catch (err: any) {
+      const errMsg = err?.message || 'Invalid login credentials';
+      throw new Error(isPhone && (errMsg.includes('Invalid login credentials') || errMsg.includes('400')) ? 'Invalid phone number or password' : errMsg);
     }
-
-    await sendOTP(resolvedEmail);
-    return { otpRequired: true };
   };
 
+  /**
+   * Backend-First OTP Verification Flow
+   */
   const verifyOTP = useCallback(async (identifier: string, otp: string, password: string, rememberDevice: boolean) => {
     const resolvedEmail = await verifyOTPService(identifier, otp);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email: resolvedEmail, password });
-    if (signInError) throw new Error(signInError.message);
+
+    // Call Backend to verify and get new session tokens
+    const res = await api.post<BackendLoginResponse>('/auth/login', {
+      email: resolvedEmail,
+      password,
+    });
+
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: res.accessToken,
+      refresh_token: res.refreshToken,
+    });
+
+    if (sessionError) throw new Error(sessionError.message);
 
     recordUserActivity();
     if (rememberDevice) {
@@ -152,10 +183,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  /**
+   * Backend-First Password Reset with rate limiter
+   */
   const resetPassword = async (email: string) => {
-    const { data, error } = await supabase.functions.invoke("request-password-reset", { body: { email } });
-    if (error) throw new Error((data as any)?.error || error.message || "Failed to request password reset");
-    if ((data as any)?.error) throw new Error((data as any).error);
+    try {
+      await api.post('/auth/forgot-password', { email });
+    } catch (err: any) {
+      throw new Error(err?.message || 'Failed to request password reset');
+    }
   };
 
   const updateProfile = async (updates: { display_name?: string; avatar_url?: string }) => {
