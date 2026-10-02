@@ -27,7 +27,10 @@ export const MobileAttendanceHeader = memo(function MobileAttendanceHeader({
       {/* Top App Bar Header */}
       <div className="flex items-center justify-between relative z-10 mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-white/95 backdrop-blur-md p-1.5 flex items-center justify-center shadow-md border border-white/90 shrink-0">
+          <div
+            className="w-10 h-10 rounded-2xl p-1.5 flex items-center justify-center shadow-md border border-white/90 shrink-0"
+            style={{ backgroundColor: "#ffffff" }}
+          >
             <img src="/logo-mark.png" alt="HRSystem" className="w-full h-full object-contain" />
           </div>
           <span className="text-[22px] font-bold text-white tracking-tight drop-shadow-sm select-none">
