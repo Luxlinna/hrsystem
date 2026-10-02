@@ -118,8 +118,8 @@ export default function AttendanceTab({ employeeId, employee }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Month filter & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+      {/* Month filter & Actions (Desktop/Tablet only) */}
+      <div className="hidden sm:flex sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
         <div className="flex items-center gap-1.5">
           <i className="ri-calendar-check-line text-slate-500 dark:text-slate-400 text-sm" />
           <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">Attendance Log</span>
@@ -165,11 +165,11 @@ export default function AttendanceTab({ employeeId, employee }: Props) {
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
-          <div className="bg-slate-50/80 dark:bg-slate-800/80 px-3.5 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          <div className="bg-slate-100/80 dark:bg-slate-800 px-4 py-2.5 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
               Daily Attendance Records
             </span>
-            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-700/60 px-1.5 py-0.2 rounded-full">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">
               {records.length}
             </span>
           </div>

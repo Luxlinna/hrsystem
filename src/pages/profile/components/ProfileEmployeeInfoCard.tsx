@@ -11,6 +11,7 @@ interface ProfileEmployeeInfoCardProps {
   managerName: string | null;
   employeeLoading: boolean;
   onAvatarClick?: () => void;
+  isSuperAdmin?: boolean;
 }
 
 const formatDate = (d?: string | null) => {
@@ -34,6 +35,7 @@ export const ProfileEmployeeInfoCard = memo(function ProfileEmployeeInfoCard({
   managerName,
   employeeLoading,
   onAvatarClick,
+  isSuperAdmin = false,
 }: ProfileEmployeeInfoCardProps) {
   const statusBadge = getJobStatusBadge(e?.status);
   const employeeCode = e?.employee_code || "1";
@@ -53,19 +55,36 @@ export const ProfileEmployeeInfoCard = memo(function ProfileEmployeeInfoCard({
     );
   }
 
+  const infoFields = [
+    { label: "Employee Code", value: employeeCode, icon: "ri-hashtag" },
+    { label: "Designation", value: designation, icon: "ri-briefcase-line" },
+    { label: "Department", value: department, icon: "ri-building-line" },
+    { label: "Supervisor", value: supervisor, icon: "ri-user-star-line" },
+    { label: "Employee Type", value: empType, icon: "ri-time-line" },
+    { label: "Contract Type", value: contractType, icon: "ri-file-text-line" },
+    { label: "Work Site", value: site, icon: "ri-map-pin-line" },
+    { label: "Joining Date", value: joinDate, icon: "ri-calendar-line" },
+  ];
+
   return (
     <div className="w-full">
-      {/* Header Label */}
-      <div className="pb-3 mb-6 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-[#0284c7] dark:text-sky-400">
+      {/* Top Header */}
+      <div className="flex items-center justify-between pb-3 mb-4 sm:mb-5 border-b border-slate-100 dark:border-slate-800">
+        <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#0284c7] dark:text-sky-400 flex items-center gap-1.5">
+          <i className="ri-id-card-line text-sm" />
           EMPLOYEE INFO
         </h3>
+        <span
+          className={`text-[10.5px] font-bold px-2.5 py-0.5 rounded-full text-white whitespace-nowrap shadow-2xs ${statusBadge.jobColor}`}
+        >
+          {statusBadge.jobStatus}
+        </span>
       </div>
 
-      {/* Main Info Card Body matching Image 1 */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 min-w-0">
-        {/* Avatar with Golden Frame & Status Badge */}
-        <div className="flex flex-col items-center shrink-0">
+      {/* Main Info Card Body */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 min-w-0">
+        {/* Desktop Golden Avatar (Hidden on mobile to eliminate duplication) */}
+        <div className="hidden sm:flex flex-col items-center shrink-0">
           <div
             className={`relative group ${onAvatarClick ? "cursor-pointer" : ""}`}
             onClick={onAvatarClick}
@@ -75,6 +94,7 @@ export const ProfileEmployeeInfoCard = memo(function ProfileEmployeeInfoCard({
               avatarUrl={avatarUrl || e?.avatar_url}
               initials={initials}
               size="md"
+              isSuperAdmin={isSuperAdmin}
             />
             {onAvatarClick && (
               <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#253C7D] text-white flex items-center justify-center text-[10px] shadow-sm border border-white dark:border-slate-900 transition-transform group-hover:scale-110">
@@ -82,100 +102,27 @@ export const ProfileEmployeeInfoCard = memo(function ProfileEmployeeInfoCard({
               </div>
             )}
           </div>
-          <span
-            className={`mt-2 inline-block text-[10px] font-medium px-2 py-0.5 rounded-[2px] text-white whitespace-nowrap leading-tight ${statusBadge.jobColor}`}
-          >
-            {statusBadge.jobStatus}
-          </span>
         </div>
 
-        {/* Info Grid with Employee Details */}
+        {/* 2-Column / 3-Column Info Card Grid */}
         <div className="flex-1 min-w-0 w-full">
-          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-3 text-center sm:text-left truncate">
-            {displayName || `${e?.first_name || ""} ${e?.last_name || ""}`.trim() || "Yos Steven"}
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 lg:gap-x-12 gap-y-4 text-xs">
-            {/* Column 1 */}
-            <div className="space-y-3">
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                  {employeeCode}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
+            {infoFields.map((f) => (
+              <div
+                key={f.label}
+                className="bg-slate-50/80 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center transition-colors hover:border-slate-200 dark:hover:border-slate-700 shadow-2xs"
+              >
+                <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 mb-1">
+                  <i className={`${f.icon} text-xs text-sky-600 dark:text-sky-400`} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider truncate">
+                    {f.label}
+                  </span>
+                </div>
+                <p className="font-bold text-slate-800 dark:text-slate-100 text-xs sm:text-[13px] leading-tight truncate" title={String(f.value)}>
+                  {f.value}
                 </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                  Employee Code
-                </span>
               </div>
-
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                  {designation}
-                </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                  Designation
-                </span>
-              </div>
-
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs uppercase">
-                  {department}
-                </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                  Department
-                </span>
-              </div>
-            </div>
-
-            {/* Column 2 */}
-            <div className="space-y-3">
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                  {supervisor}
-                </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                  Supervisor
-                </span>
-              </div>
-
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs uppercase">
-                  {empType}
-                </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                  Employee Type
-                </span>
-              </div>
-
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs uppercase">
-                  {contractType}
-                </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                  Contract Type
-                </span>
-              </div>
-            </div>
-
-            {/* Column 3 */}
-            <div className="space-y-3">
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs uppercase">
-                  {site}
-                </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                  Site
-                </span>
-              </div>
-
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                  {joinDate}
-                </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                  Joining Date
-                </span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>

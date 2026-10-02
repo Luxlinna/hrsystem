@@ -61,9 +61,9 @@ export default function BottomNav() {
   };
 
   return (
-    <div className="lg:hidden fixed bottom-4 sm:bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none px-4" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+    <div className="lg:hidden fixed bottom-4 sm:bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none px-3" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <nav
-        className="pointer-events-auto flex items-center gap-1.5 sm:gap-3 bg-gradient-to-r from-[#0B2358]/85 via-[#143987]/90 to-[#0D2866]/85 backdrop-blur-2xl border border-sky-300/30 shadow-[0_16px_36px_rgba(10,32,85,0.45),0_0_24px_rgba(41,171,226,0.2)] rounded-full px-2.5 py-1.5 transition-all"
+        className="pointer-events-auto flex items-center gap-2 sm:gap-3.5 bg-gradient-to-r from-[#0B2358]/90 via-[#143987]/95 to-[#0D2866]/90 backdrop-blur-2xl border border-sky-300/40 shadow-[0_20px_40px_rgba(10,32,85,0.5),0_0_28px_rgba(41,171,226,0.25)] rounded-full px-3.5 py-2 sm:px-4 sm:py-2.5 transition-all"
         role="navigation"
         aria-label="Mobile Navigation"
       >
@@ -75,11 +75,11 @@ export default function BottomNav() {
             title={item.label}
             className={`flex items-center justify-center transition-all duration-300 active:scale-80 ${
               item.isActive
-                ? "bg-white/25 text-white border border-white/35 rounded-full px-4 sm:px-5 py-2 sm:py-2.5 shadow-[inset_0_1px_4px_rgba(255,255,255,0.35),0_2px_10px_rgba(41,171,226,0.3)] scale-105"
-                : "text-sky-100/70 hover:text-white p-2 sm:p-2.5 rounded-full hover:bg-white/10"
+                ? "bg-white/25 text-white border border-white/40 rounded-full px-5 sm:px-6 py-2.5 sm:py-3 shadow-[inset_0_1px_4px_rgba(255,255,255,0.4),0_2px_12px_rgba(41,171,226,0.35)] scale-105"
+                : "text-sky-100/75 hover:text-white p-2.5 sm:p-3 rounded-full hover:bg-white/10"
             }`}
           >
-            <i className={`${item.isActive ? item.activeIcon : item.icon} text-lg sm:text-xl leading-none transition-transform duration-200`} />
+            <i className={`${item.isActive ? item.activeIcon : item.icon} text-[22px] sm:text-[24px] leading-none transition-transform duration-200`} />
           </Link>
         ))}
 
@@ -89,9 +89,9 @@ export default function BottomNav() {
           onClick={handleOpenMore}
           aria-label="More Apps & Modules"
           title="More Apps & Modules"
-          className="flex items-center justify-center text-sky-100/70 hover:text-white p-2 sm:p-2.5 rounded-full hover:bg-white/10 active:scale-80 transition-all duration-200 cursor-pointer"
+          className="flex items-center justify-center text-sky-100/75 hover:text-white p-2.5 sm:p-3 rounded-full hover:bg-white/10 active:scale-80 transition-all duration-200 cursor-pointer"
         >
-          <i className="ri-apps-2-line text-lg sm:text-xl leading-none" />
+          <i className="ri-apps-2-line text-[22px] sm:text-[24px] leading-none" />
         </button>
       </nav>
     </div>

@@ -85,22 +85,6 @@ export default function SelfServicePage() {
           />
         ) : (
           <div className="space-y-4">
-            {/* Mobile Tab Header with Back Button */}
-            <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-              <button
-                type="button"
-                onClick={() => setMobileViewMode("presence")}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#253C7D] dark:text-sky-400 hover:underline"
-              >
-                <i className="ri-arrow-left-s-line text-base font-bold" />
-                Presence Hub
-              </button>
-
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 capitalize">
-                {activeTab}
-              </span>
-            </div>
-
             {/* Tab Navigation Strip */}
             <TabsNav activeTab={activeTab} onTabChange={setActiveTab} />
 

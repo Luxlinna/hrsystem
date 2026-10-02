@@ -44,131 +44,135 @@ export const MeetingRoomsFilterBar = memo(function MeetingRoomsFilterBar({
   const distinctFloors = availableFloors && availableFloors.length > 0 ? availableFloors : [3, 5];
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 shadow-2xs space-y-3 transition-colors">
-      {/* Top Row: Date Navigation & Booking Status Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Date Navigator */}
-        <div className="flex items-center gap-2">
-          <div className="inline-flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-200/80 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => onShiftDate(-1)}
-              className="p-1 rounded text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
-              title="Previous Day"
-            >
-              <i className="ri-arrow-left-s-line text-xs" />
-            </button>
-            <button
-              type="button"
-              onClick={onJumpToToday}
-              className="px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 rounded transition-all cursor-pointer"
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              onClick={() => onShiftDate(1)}
-              className="p-1 rounded text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
-              title="Next Day"
-            >
-              <i className="ri-arrow-right-s-line text-xs" />
-            </button>
-          </div>
-          <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 ml-1">
-            {formatDateDisplay(selectedDate)}
-          </span>
+    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-2xs space-y-3.5 transition-colors">
+      {/* 1. Date Navigation Row */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="inline-flex items-center bg-slate-100/90 dark:bg-slate-800/90 rounded-xl p-1 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => onShiftDate(-1)}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
+            title="Previous Day"
+          >
+            <i className="ri-arrow-left-s-line text-sm" />
+          </button>
+          <button
+            type="button"
+            onClick={onJumpToToday}
+            className="px-3 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all cursor-pointer"
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            onClick={() => onShiftDate(1)}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
+            title="Next Day"
+          >
+            <i className="ri-arrow-right-s-line text-sm" />
+          </button>
         </div>
 
-        {/* Status Tabs Segment */}
-        <div className="inline-flex items-center bg-slate-100/90 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/70 dark:border-slate-700 self-start sm:self-auto">
-          {(["all", "pending", "my"] as const).map((tab) => {
-            const isActive = statusTab === tab;
-            const label = tab === "all" ? "All Bookings" : tab === "pending" ? "Pending" : "My Bookings";
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setStatusTab(tab)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                  isActive
-                    ? tab === "pending"
-                      ? "bg-amber-500 text-white shadow-xs font-bold"
-                      : "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-xs font-bold"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-                }`}
-              >
-                <span>{label}</span>
-                {tab === "pending" && pendingCount > 0 && (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${isActive ? "bg-amber-700 text-white" : "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300"}`}>
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+          {formatDateDisplay(selectedDate)}
+        </span>
       </div>
 
-      {/* Bottom Row: Clean Filter Controls */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
-        {/* Search */}
-        <div className="relative flex-1 sm:max-w-xs">
-          <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search bookings or rooms..."
-            className="w-full pl-8 pr-7 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 font-medium transition-colors"
-          />
-          {searchQuery && (
+      {/* 2. Status Segmented Tabs */}
+      <div className="grid grid-cols-3 bg-slate-100/90 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/80 w-full">
+        {(["all", "pending", "my"] as const).map((tab) => {
+          const isActive = statusTab === tab;
+          const label = tab === "all" ? "All Bookings" : tab === "pending" ? "Pending" : "My Bookings";
+          return (
             <button
+              key={tab}
               type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              onClick={() => setStatusTab(tab)}
+              className={`py-2 px-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                isActive
+                  ? "bg-white dark:bg-slate-700 text-[#253C7D] dark:text-sky-300 shadow-2xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
             >
-              <i className="ri-close-circle-fill text-xs" />
+              <span>{label}</span>
+              {tab === "pending" && pendingCount > 0 && (
+                <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300/60 dark:border-amber-700/60">
+                  {pendingCount}
+                </span>
+              )}
             </button>
-          )}
-        </div>
+          );
+        })}
+      </div>
 
-        {/* Filters Group */}
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="border-t border-slate-100 dark:border-slate-800/80" />
+
+      {/* 3. Search Bar */}
+      <div className="relative w-full">
+        <i className="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search bookings or rooms..."
+          className="w-full pl-9 pr-8 py-2.5 bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/90 rounded-2xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 font-medium transition-colors shadow-2xs"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+          >
+            <i className="ri-close-circle-fill text-sm" />
+          </button>
+        )}
+      </div>
+
+      {/* 4. Dropdowns Grid */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <div className="relative">
           <select
             value={filterFloor}
             onChange={(e) => setFilterFloor(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer"
+            className="w-full appearance-none pl-3.5 pr-8 py-2.5 bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/90 rounded-2xl text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs truncate"
           >
             <option value="all">All Floors</option>
             {distinctFloors.map((fl) => (
               <option key={fl} value={String(fl)}>Floor {fl}</option>
             ))}
           </select>
+          <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none" />
+        </div>
 
+        <div className="relative">
           <select
             value={filterRoomId}
             onChange={(e) => setFilterRoomId(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer max-w-[180px] truncate"
+            className="w-full appearance-none pl-3.5 pr-8 py-2.5 bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/90 rounded-2xl text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none focus:border-[#253C7D] dark:focus:border-sky-400 cursor-pointer shadow-2xs truncate"
           >
             <option value="all">All Rooms</option>
             {rooms.map((r) => (
               <option key={r.id} value={r.id}>{r.name} (F{r.floor || 3})</option>
             ))}
           </select>
+          <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none" />
+        </div>
 
-          {availableBranches && availableBranches.length > 1 && setBranchFilter && (
+        {availableBranches && availableBranches.length > 1 && setBranchFilter && (
+          <div className="col-span-2 relative">
             <select
               value={branchFilter}
               onChange={(e) => setBranchFilter(e.target.value)}
-              className="px-3 py-1.5 bg-blue-50 dark:bg-sky-950/60 border border-blue-200 dark:border-sky-800/60 rounded-xl text-xs text-[#253C7D] dark:text-sky-300 font-semibold focus:outline-none focus:border-[#253C7D] cursor-pointer"
+              className="w-full appearance-none pl-3.5 pr-8 py-2.5 bg-blue-50 dark:bg-sky-950/60 border border-blue-200 dark:border-sky-800/60 rounded-2xl text-xs text-[#253C7D] dark:text-sky-300 font-bold focus:outline-none focus:border-[#253C7D] cursor-pointer shadow-2xs"
             >
               <option value="all">All Branches ({availableBranches.length})</option>
               {availableBranches.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
-          )}
-        </div>
+            <i className="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none" />
+          </div>
+        )}
       </div>
     </div>
   );

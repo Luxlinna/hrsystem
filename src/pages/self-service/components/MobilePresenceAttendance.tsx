@@ -81,12 +81,12 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
   }, [d.records, d.isCheckedIn]);
 
   return (
-    <div className="space-y-4 pb-20 font-sans text-slate-800 antialiased selection:bg-blue-100">
+    <div className="space-y-4 pb-28 font-sans text-slate-800 dark:text-slate-100 antialiased selection:bg-blue-100">
       {/* Toast Notification */}
       {d.toast && (
         <div
           className={`fixed top-4 left-4 right-4 z-50 px-4 py-3 rounded-2xl text-xs font-bold text-white shadow-xl flex items-center justify-between transition-all ${
-            d.toast.type === "success" ? "bg-[#253C7D]" : "bg-rose-600"
+            d.toast.type === "success" ? "bg-[#253C7D] dark:bg-sky-600" : "bg-rose-600"
           }`}
         >
           <span>{d.toast.message}</span>
@@ -117,23 +117,23 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
       {/* Main Content Area */}
       <div className="px-4 space-y-3.5">
         {/* 2. Date & Weekly Status Card */}
-        <div className="bg-white rounded-[24px] p-5 border border-[#E7ECF5] shadow-[0_4px_20px_rgba(37,60,125,0.04)]">
+        <div className="bg-white dark:bg-slate-900/90 rounded-[24px] p-5 border border-[#E7ECF5] dark:border-white/10 shadow-[0_4px_20px_rgba(37,60,125,0.04)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-start gap-2.5">
-              <div className="flex items-start leading-none text-[#253C7D]">
+              <div className="flex items-start leading-none text-[#253C7D] dark:text-sky-400">
                 <span className="text-[32px] font-extrabold tracking-tight">{dateInfo.dayNum}</span>
                 <span className="text-xs font-bold -mt-0.5 ml-0.5">{dateInfo.suffix}</span>
               </div>
               <div className="leading-tight pt-0.5">
-                <h2 className="text-sm font-bold text-[#14234B]">{dateInfo.dayOfWeek}</h2>
-                <p className="text-xs text-[#6B7B9E] mt-0.5 font-normal">{dateInfo.monthYear}</p>
+                <h2 className="text-sm font-bold text-[#14234B] dark:text-white">{dateInfo.dayOfWeek}</h2>
+                <p className="text-xs text-[#6B7B9E] dark:text-slate-400 mt-0.5 font-normal">{dateInfo.monthYear}</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={() => setActiveTab("attendance")}
-              className="w-8 h-8 rounded-full bg-[#EEF3FA] text-[#253C7D] hover:bg-[#E2ECFA] flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+              className="w-8 h-8 rounded-full bg-[#EEF3FA] dark:bg-white/10 text-[#253C7D] dark:text-sky-300 hover:bg-[#E2ECFA] dark:hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
               title="View full calendar"
             >
               <i className="ri-arrow-right-s-line text-lg" />
@@ -141,24 +141,24 @@ export const MobilePresenceAttendance = memo(function MobilePresenceAttendance({
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-[#6B7B9E] mb-3">This week status</p>
+            <p className="text-xs font-semibold text-[#6B7B9E] dark:text-slate-400 mb-3">This week status</p>
             <div className="flex items-center justify-between px-1">
               {currentWeekDays.map((day) => (
                 <div key={day.ymd} className="flex flex-col items-center gap-2">
-                  <span className="text-[11px] font-semibold text-[#6B7B9E]">{day.label}</span>
+                  <span className="text-[11px] font-semibold text-[#6B7B9E] dark:text-slate-400">{day.label}</span>
                   {day.status === "present" && (
-                    <div className="w-7 h-7 rounded-full bg-[#253C7D] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                    <div className="w-7 h-7 rounded-full bg-[#253C7D] dark:bg-sky-600 text-white flex items-center justify-center text-xs font-bold shadow-xs">
                       <i className="ri-check-line text-sm" />
                     </div>
                   )}
                   {day.status === "late" && (
-                    <div className="w-7 h-7 rounded-full bg-[#3B62AC] text-white flex items-center justify-center text-[10px] font-extrabold shadow-xs">L</div>
+                    <div className="w-7 h-7 rounded-full bg-[#3B62AC] dark:bg-blue-500 text-white flex items-center justify-center text-[10px] font-extrabold shadow-xs">L</div>
                   )}
                   {day.status === "absent" && (
                     <div className="w-7 h-7 rounded-full bg-[#FF5C77] text-white flex items-center justify-center text-[10px] font-extrabold shadow-xs">A</div>
                   )}
                   {day.status === "upcoming" && (
-                    <div className="w-7 h-7 rounded-full border-2 border-[#DCE4F2] bg-transparent" />
+                    <div className="w-7 h-7 rounded-full border-2 border-[#DCE4F2] dark:border-slate-700 bg-transparent" />
                   )}
                 </div>
               ))}

@@ -1,6 +1,59 @@
 import type { Booking, MeetingRoom } from "../types";
 import { getRoomFloor } from "../roomUtils";
 
+function printHtmlDocument(html: string): boolean {
+  try {
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (doc) {
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch {
+          // Fallback handled below
+        } finally {
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 1500);
+        }
+      }, 350);
+
+      return true;
+    }
+  } catch {
+    // Fallback if iframe fails
+  }
+
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 400);
+    return true;
+  }
+  return false;
+}
+
 export function exportMeetingRoomsPDF(
   bookings: Booking[],
   rooms: MeetingRoom[],
@@ -34,7 +87,7 @@ export function exportMeetingRoomsPDF(
         <td style="font-weight:700;color:#111">${b.date}</td>
         <td><span style="font-weight:600">${b.start_time} - ${b.end_time}</span></td>
         <td style="font-weight:700;color:#253C7D">${roomName} <small style="color:#64748b">(${floor})</small></td>
-        <td style="font-weight:600">${b.title}</td>
+        <td style="font-weight:600">${b.title || "Meeting"}</td>
         <td>${booker} <br/><span style="font-size:10px;color:#64748b">${dept}</span></td>
         <td style="text-align:center;font-weight:700">${b.attendees_count || 0}</td>
         <td>
@@ -45,7 +98,7 @@ export function exportMeetingRoomsPDF(
         <td style="font-size:10px;color:#64748b">${reqs}</td>
       </tr>`;
     })
-    .join("") : `<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b;font-weight:600">No scheduled reservations logged for this period.</td></tr>`;
+    .join("") : `<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b;font-weight:600">No scheduled reservations logged for this period (${selectedDate || "All dates"}).</td></tr>`;
 
   const html = `<!DOCTYPE html>
   <html>
@@ -122,11 +175,5 @@ export function exportMeetingRoomsPDF(
   </body>
   </html>`;
 
-  const w = window.open("", "_blank");
-  if (w) {
-    w.document.write(html);
-    w.document.close();
-    setTimeout(() => w.print(), 400);
-  }
-  return true;
+  return printHtmlDocument(html);
 }

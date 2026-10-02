@@ -69,7 +69,7 @@ export default function PayslipTab({ employeeId, employeeName }: Props) {
   if (payslips.length === 0) return (
     <div className="flex flex-col items-center justify-center h-40 text-gray-400 dark:text-slate-500">
       <i className="ri-file-list-3-line text-3xl mb-2" />
-      <p className="text-sm">No payslips found</p>
+      <p className="text-sm font-medium">Coming Soon</p>
     </div>
   );
 

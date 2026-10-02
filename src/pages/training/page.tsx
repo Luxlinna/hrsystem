@@ -58,81 +58,95 @@ export default function TrainingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F8F7] p-6 font-sans">
-      <TrainingHeader
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        totalEnrolled={totalEnrolled}
-        totalCompleted={totalCompleted}
-        totalCerts={totalCerts}
-        avgProgress={avgProgress}
-        canManage={canManage}
-        onNewCourse={openNewCourse}
-        onOpenEnroll={() => openEnroll()}
-        courses={filteredCourses.length > 0 ? filteredCourses : courses}
-        enrollments={filteredEnrollments.length > 0 ? filteredEnrollments : enrollments}
-        certificates={certificates}
-        activeBranchName={activeBranchName}
-      />
-
-      <TrainingFilterBar
-        activeTab={activeTab}
-        categories={categories}
-        filterCategory={filterCategory}
-        setFilterCategory={setFilterCategory}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        filterMonth={filterMonth}
-        setFilterMonth={setFilterMonth}
-        availableMonths={availableMonths}
-        filterScope={filterScope}
-        setFilterScope={setFilterScope}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-      />
-
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-xs font-semibold text-gray-500">Loading course curriculum &amp; learner progress...</p>
+    <div className="min-h-screen bg-[#F8F8F7] dark:bg-slate-950 p-4 sm:p-6 font-sans">
+      {/* Mobile Coming Soon View */}
+      <div className="block md:hidden min-h-[65vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-sky-50 dark:bg-sky-950/50 text-[#253C7D] dark:text-sky-400 flex items-center justify-center text-3xl mb-4 shadow-sm border border-sky-100 dark:border-sky-900/50">
+          <i className="ri-graduation-cap-line" />
         </div>
-      ) : activeTab === "courses" ? (
-        <CoursesGridView
-          courses={filteredCourses}
-          enrollments={enrollments}
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Coming Soon</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 max-w-xs">
+          Training & Development is currently under development for mobile and will be available soon.
+        </p>
+      </div>
+
+      {/* Desktop View */}
+      <div className="hidden md:block">
+        <TrainingHeader
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          totalEnrolled={totalEnrolled}
+          totalCompleted={totalCompleted}
+          totalCerts={totalCerts}
+          avgProgress={avgProgress}
           canManage={canManage}
-          onSelect={setSelectedCourse}
-          onEnroll={openEnroll}
-          onEdit={openEditCourse}
-          onDelete={deleteCourse}
-        />
-      ) : activeTab === "calendar" ? (
-        <TrainingCalendarView
+          onNewCourse={openNewCourse}
+          onOpenEnroll={() => openEnroll()}
           courses={filteredCourses.length > 0 ? filteredCourses : courses}
           enrollments={filteredEnrollments.length > 0 ? filteredEnrollments : enrollments}
-          canManage={canManage}
-          onSelectCourse={setSelectedCourse}
-          onEnroll={openEnroll}
-          onNewCourse={(initialDate) => openNewCourse(initialDate)}
+          certificates={certificates}
+          activeBranchName={activeBranchName}
         />
-      ) : activeTab === "enrollments" ? (
-        <EnrollmentsTableView
-          totalFiltered={filteredEnrollments.length}
-          pagedEnrollments={pagedEnrollments}
-          page={page}
-          totalPages={enrollTotalPages}
-          pageStart={enrollPageStart}
-          pageEnd={enrollPageEnd}
-          canManage={canManage}
-          setPage={setPage}
-          onUpdate={(id, updates) => {
-            updateEnrollment(id, updates);
-          }}
-          onDelete={deleteEnrollment}
+
+        <TrainingFilterBar
+          activeTab={activeTab}
+          categories={categories}
+          filterCategory={filterCategory}
+          setFilterCategory={setFilterCategory}
+          filterStatus={filterStatus}
+          setFilterStatus={setFilterStatus}
+          filterMonth={filterMonth}
+          setFilterMonth={setFilterMonth}
+          availableMonths={availableMonths}
+          filterScope={filterScope}
+          setFilterScope={setFilterScope}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
         />
-      ) : (
-        <CertificatesGridView certificates={certificates} />
-      )}
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin mb-3" />
+            <p className="text-xs font-semibold text-gray-500">Loading course curriculum &amp; learner progress...</p>
+          </div>
+        ) : activeTab === "courses" ? (
+          <CoursesGridView
+            courses={filteredCourses}
+            enrollments={enrollments}
+            canManage={canManage}
+            onSelect={setSelectedCourse}
+            onEnroll={openEnroll}
+            onEdit={openEditCourse}
+            onDelete={deleteCourse}
+          />
+        ) : activeTab === "calendar" ? (
+          <TrainingCalendarView
+            courses={filteredCourses.length > 0 ? filteredCourses : courses}
+            enrollments={filteredEnrollments.length > 0 ? filteredEnrollments : enrollments}
+            canManage={canManage}
+            onSelectCourse={setSelectedCourse}
+            onEnroll={openEnroll}
+            onNewCourse={(initialDate) => openNewCourse(initialDate)}
+          />
+        ) : activeTab === "enrollments" ? (
+          <EnrollmentsTableView
+            totalFiltered={filteredEnrollments.length}
+            pagedEnrollments={pagedEnrollments}
+            page={page}
+            totalPages={enrollTotalPages}
+            pageStart={enrollPageStart}
+            pageEnd={enrollPageEnd}
+            canManage={canManage}
+            setPage={setPage}
+            onUpdate={(id, updates) => {
+              updateEnrollment(id, updates);
+            }}
+            onDelete={deleteEnrollment}
+          />
+        ) : (
+          <CertificatesGridView certificates={certificates} />
+        )}
+      </div>
 
       <CourseModal
         open={showCourseModal}

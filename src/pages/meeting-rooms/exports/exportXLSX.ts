@@ -1,15 +1,12 @@
 import type { Booking, MeetingRoom } from "../types";
 import { getRoomFloor } from "../roomUtils";
+import { utils, writeFile } from "@/lib/xlsx";
 
-const getXLSX = async () => {
-  return await import("xlsx");
-};
-
-export async function exportMeetingRoomsXLSX(
+export function exportMeetingRoomsXLSX(
   bookings: Booking[],
   rooms: MeetingRoom[],
   selectedDate?: string
-): Promise<boolean> {
+): boolean {
   const roomMap = new Map<string, MeetingRoom>();
   rooms.forEach((r) => roomMap.set(r.id, r));
 
@@ -27,7 +24,7 @@ export async function exportMeetingRoomsXLSX(
       "Time Window": `${b.start_time} - ${b.end_time}`,
       "Meeting Room": roomName,
       Floor: floor,
-      "Meeting Title": b.title,
+      "Meeting Title": b.title || "Meeting",
       "Booked By": booker,
       Department: dept,
       Attendees: b.attendees_count || 0,
@@ -51,8 +48,7 @@ export async function exportMeetingRoomsXLSX(
     }
   ];
 
-  const XLSX = await getXLSX();
-  const ws = XLSX.utils.json_to_sheet(data);
+  const ws = utils.json_to_sheet(data);
   ws["!cols"] = [
     { wch: 14 },
     { wch: 16 },
@@ -67,9 +63,9 @@ export async function exportMeetingRoomsXLSX(
     { wch: 25 },
   ];
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Meeting Reservations");
-  XLSX.writeFile(
+  const wb = utils.book_new();
+  utils.book_append_sheet(wb, ws, "Meeting Reservations");
+  writeFile(
     wb,
     `meeting_rooms_schedule_${selectedDate || new Date().toISOString().slice(0, 10)}.xlsx`
   );
