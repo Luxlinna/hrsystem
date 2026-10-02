@@ -33,16 +33,6 @@ export const AnnouncementContentEditor = memo(function AnnouncementContentEditor
     setForm((prev) => ({ ...prev, content: prev.content + " " + emoji }));
   };
 
-  const formatUrgentDuration = (hours: number | null | undefined) => {
-    const hVal = Number(hours) || 0;
-    if (hVal <= 0) return "24 hours";
-    const totalMins = Math.round(hVal * 60);
-    if (totalMins < 60) return `${totalMins} minute${totalMins !== 1 ? "s" : ""}`;
-    const hrs = Math.floor(totalMins / 60);
-    const mins = totalMins % 60;
-    return mins === 0 ? `${hrs} hour${hrs !== 1 ? "s" : ""}` : `${hrs} hr ${mins} min`;
-  };
-
   return (
     <div className="space-y-4">
       {/* Title */}
@@ -60,26 +50,23 @@ export const AnnouncementContentEditor = memo(function AnnouncementContentEditor
         />
       </div>
 
-      {/* Urgent duration slider */}
+      {/* Urgent notice indicator */}
       {form.priority === "urgent" && (
-        <div className="p-3.5 bg-rose-50/70 border border-rose-200/80 rounded-2xl space-y-2 animate-in fade-in duration-150">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
-              <i className="ri-alarm-warning-line text-rose-600" />
-              Acknowledgment Window
+        <div className="p-3.5 bg-rose-50/70 border border-rose-200/80 rounded-2xl flex items-center justify-between gap-3 animate-in fade-in duration-150">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-sm font-bold shrink-0">
+              <i className="ri-alarm-warning-fill" />
             </span>
-            <span className="text-xs font-black text-rose-700 bg-rose-100 px-2 py-0.5 rounded-lg">
-              {formatUrgentDuration(form.urgent_alert_hours)}
-            </span>
+            <div className="min-w-0">
+              <span className="text-xs font-bold text-rose-950 block">Urgent Broadcast</span>
+              <span className="text-[11px] text-rose-700/80 block truncate">
+                Uses the alert presentation style &amp; sound tone configured in Settings → Notifications
+              </span>
+            </div>
           </div>
-          <input
-            type="range"
-            min="1"
-            max="72"
-            value={form.urgent_alert_hours || 24}
-            onChange={(e) => setForm((prev) => ({ ...prev, urgent_alert_hours: Number(e.target.value) }))}
-            className="w-full h-1.5 bg-rose-200 rounded-lg appearance-none cursor-pointer accent-rose-600"
-          />
+          <span className="text-[10px] font-extrabold px-2 py-1 rounded-lg bg-rose-600 text-white uppercase tracking-wider shrink-0 shadow-2xs">
+            Mandatory Sign-off
+          </span>
         </div>
       )}
 

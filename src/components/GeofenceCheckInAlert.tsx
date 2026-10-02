@@ -415,12 +415,12 @@ export default function GeofenceCheckInAlert() {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-[70] w-[92%] sm:w-auto sm:max-w-md animate-in fade-in slide-in-from-bottom-3 duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-xl p-3.5 flex items-start gap-3 text-slate-800 dark:text-slate-100">
-        <i className={`${getIcon()} text-lg shrink-0 mt-0.5`} />
+    <div className="fixed bottom-24 lg:bottom-5 right-4 lg:right-5 left-4 sm:left-auto z-[70] sm:w-auto sm:max-w-md animate-in fade-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-2xl p-4 flex items-start gap-3 text-slate-800 dark:text-slate-100 backdrop-blur-md">
+        <i className={`${getIcon()} text-xl shrink-0 mt-0.5`} />
 
         <div className="flex-1 min-w-0 pr-1">
-          <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 leading-tight">
+          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
             {alertState.title}
           </p>
           <p className="text-[11.5px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">
@@ -435,19 +435,24 @@ export default function GeofenceCheckInAlert() {
               setAlertState(null);
               navigate(link);
             }}
-            className="px-3 py-1.5 bg-[#2b8de3] hover:bg-[#2272b8] text-white text-xs font-semibold rounded shadow-2xs transition-colors cursor-pointer shrink-0"
+            className={`px-3.5 py-2 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer shrink-0 active:scale-95 flex items-center gap-1 ${
+              alertState.mode === "checkout"
+                ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 ring-2 ring-amber-400/40 animate-pulse shadow-amber-500/25"
+                : "bg-[#29ABE2] hover:bg-[#2096C7]"
+            }`}
           >
-            {isCheckin ? "Check In" : "Check Out"}
+            {alertState.mode === "checkout" && <i className="ri-alarm-warning-fill text-xs" />}
+            <span>{isCheckin ? "Check In" : "Check Out"}</span>
           </button>
         )}
 
         <button
           type="button"
           onClick={() => setAlertState(null)}
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0 p-0.5 cursor-pointer -mr-1"
+          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0 p-1 cursor-pointer -mr-1"
           title="Close"
         >
-          <i className="ri-close-line text-sm" />
+          <i className="ri-close-line text-base" />
         </button>
       </div>
     </div>

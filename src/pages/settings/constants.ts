@@ -6,7 +6,6 @@ export const PERMISSION_COLUMNS = [
 ];
 
 export const SETTINGS_SECTIONS = [
-  { key: "general", label: "General" },
   { key: "appearance", label: "Appearance" },
   { key: "notifications", label: "Notifications" },
   { key: "permissions", label: "Permissions" },
