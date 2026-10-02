@@ -93,7 +93,9 @@ export function initAssistiveTouchChat(): () => void {
     if (e.button !== 0 && e.pointerType === "mouse") return;
 
     // Check if clicking inside an expanded chat dialog or close button
-    const isInsideDialog = (e.target as HTMLElement)?.closest('iframe, [role="dialog"], [class*="modal"], [class*="window"], [class*="chat-box"]');
+    const isInsideDialog = (e.target as HTMLElement)?.closest(
+      '#_ocw_panel, #_ocw_hdr, #_ocw_body, #_ocw_main, iframe, [role="dialog"], [class*="modal"], [class*="window"], [class*="chat-box"]'
+    );
     if (isInsideDialog) return;
 
     const rect = targetEl.getBoundingClientRect();
@@ -105,21 +107,26 @@ export function initAssistiveTouchChat(): () => void {
     initialY = rect.top;
 
     targetEl.style.transition = "none";
-    targetEl.style.cursor = "grabbing";
+    targetEl.style.cursor = "grab";
 
-    try {
-      targetEl.setPointerCapture(e.pointerId);
-    } catch {
-      // Fallback
-    }
+    let captureAcquired = false;
 
     const onPointerMove = (moveEvent: PointerEvent) => {
       if (!isDragging || !targetEl) return;
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
 
-      if (!hasMoved && Math.hypot(dx, dy) > 4) {
+      if (!hasMoved && Math.hypot(dx, dy) > 6) {
         hasMoved = true;
+        targetEl.style.cursor = "grabbing";
+        if (!captureAcquired) {
+          try {
+            targetEl.setPointerCapture(moveEvent.pointerId);
+            captureAcquired = true;
+          } catch {
+            // Fallback
+          }
+        }
       }
 
       if (hasMoved) {
@@ -134,14 +141,16 @@ export function initAssistiveTouchChat(): () => void {
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointercancel", onPointerUp);
 
-      try {
-        targetEl.releasePointerCapture(upEvent.pointerId);
-      } catch {
-        // Fallback
+      if (captureAcquired) {
+        try {
+          targetEl.releasePointerCapture(upEvent.pointerId);
+        } catch {
+          // Fallback
+        }
       }
 
       if (hasMoved) {
-        // Suppress the click so it doesn't open the chat window when dragged
+        // Suppress the click only if the user actually dragged the bubble
         const suppressClick = (clickEvent: MouseEvent) => {
           clickEvent.stopPropagation();
           clickEvent.preventDefault();
@@ -151,6 +160,12 @@ export function initAssistiveTouchChat(): () => void {
 
         const currentRect = targetEl.getBoundingClientRect();
         snapToEdge(targetEl, currentRect.left, currentRect.top);
+      } else {
+        // Direct tap: ensure click triggers the widget button
+        const btn = (upEvent.target as HTMLElement)?.closest('#_ocw_btn, #_ocw_close, #_ocw_tab_ai, #_ocw_tab_lv, #_ocw_hdr_lang, button, a') as HTMLElement | null;
+        if (btn && typeof btn.click === "function") {
+          // Let native event bubble normally
+        }
       }
 
       isDragging = false;

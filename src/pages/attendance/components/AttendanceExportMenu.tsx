@@ -123,7 +123,7 @@ export const AttendanceExportMenu = memo(function AttendanceExportMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-64 max-w-[calc(100vw-2rem)] bg-white border border-gray-100 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
           <div className="px-3 py-1.5 border-b border-gray-100 mb-1 flex items-center justify-between">
             <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
               {getScopeLabel()}

@@ -15,6 +15,16 @@ export const ProfileSecurityTab = memo(function ProfileSecurityTab({
   const [confirmPin, setConfirmPin] = useState("");
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    const stored = getPrivacyPin(email);
+    if (stored) {
+      setTurnOn(true);
+      setPinCode(stored);
+      setConfirmPin(stored);
+    }
+  }, [email, isSuperAdmin]);
+
   if (!isSuperAdmin) {
     return (
       <div className="py-12 text-center text-slate-500 text-xs">
@@ -24,15 +34,6 @@ export const ProfileSecurityTab = memo(function ProfileSecurityTab({
       </div>
     );
   }
-
-  useEffect(() => {
-    const stored = getPrivacyPin(email);
-    if (stored) {
-      setTurnOn(true);
-      setPinCode(stored);
-      setConfirmPin(stored);
-    }
-  }, [email]);
 
   const handleToggle = (checked: boolean) => {
     setTurnOn(checked);

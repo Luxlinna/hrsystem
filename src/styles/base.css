@@ -49,6 +49,148 @@
     color: #e5e7eb;
   }
 
+  /* Prevent iOS Safari auto-zoom on input focus */
+  @media screen and (max-width: 768px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Live Chat Widget Sleek Mini Sizing & Mobile Responsiveness */
+  #_oc_widget_root {
+    z-index: 99999 !important;
+  }
+
+  @media screen and (max-width: 768px) {
+    #_oc_widget_root {
+      bottom: 74px !important;
+      right: 12px !important;
+    }
+
+    #_ocw_panel {
+      width: min(285px, calc(100vw - 24px)) !important;
+      max-width: min(285px, calc(100vw - 24px)) !important;
+      height: min(330px, calc(100dvh - 180px)) !important;
+      max-height: min(330px, calc(100dvh - 180px)) !important;
+      border-radius: 16px !important;
+      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.28) !important;
+    }
+
+    #_ocw_hdr {
+      padding: 7px 10px !important;
+      gap: 6px !important;
+    }
+
+    #_ocw_ava {
+      width: 26px !important;
+      height: 26px !important;
+      font-size: 11px !important;
+    }
+
+    #_ocw_info strong {
+      font-size: 12px !important;
+      line-height: 1.2 !important;
+    }
+
+    #_ocw_sublbl {
+      font-size: 9px !important;
+      margin-top: 0px !important;
+    }
+
+    #_ocw_close {
+      font-size: 18px !important;
+    }
+
+    #_ocw_hdr_lang {
+      padding: 2px !important;
+    }
+
+    #_ocw_hdr_lang svg {
+      width: 15px !important;
+      height: 15px !important;
+    }
+
+    #_ocw_sb {
+      width: 36px !important;
+      padding: 4px 0 !important;
+      gap: 1px !important;
+    }
+
+    ._ocw_sbi {
+      width: 26px !important;
+      height: 26px !important;
+      border-radius: 7px !important;
+    }
+
+    ._ocw_sbi svg {
+      width: 13px !important;
+      height: 13px !important;
+    }
+
+    ._ocw_sbd {
+      width: 20px !important;
+      margin: 3px 0 !important;
+    }
+
+    ._ocw_msgs {
+      padding: 8px !important;
+      gap: 5px !important;
+    }
+
+    ._ocw_bot,
+    ._ocw_usr {
+      padding: 5px 9px !important;
+      font-size: 11px !important;
+      line-height: 1.35 !important;
+      border-radius: 12px !important;
+      max-width: 92% !important;
+    }
+
+    ._ocw_ftr {
+      padding: 6px 8px !important;
+      gap: 6px !important;
+    }
+
+    ._ocw_inp {
+      padding: 5px 10px !important;
+      font-size: 12px !important;
+      border-radius: 16px !important;
+    }
+
+    ._ocw_snd {
+      width: 28px !important;
+      height: 28px !important;
+    }
+
+    ._ocw_snd svg {
+      width: 13px !important;
+      height: 13px !important;
+    }
+
+    #_ocw_btn {
+      width: 44px !important;
+      height: 44px !important;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    #_ocw_btn svg {
+      width: 20px !important;
+      height: 20px !important;
+    }
+  }
+
+  /* Optimize touch responsiveness and disable double-tap zoom delay */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+
   /* Modern, subtle scrollbar across the whole application */
   ::-webkit-scrollbar {
     width: 5px;

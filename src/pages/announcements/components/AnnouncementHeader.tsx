@@ -19,18 +19,18 @@ export const AnnouncementHeader = memo(function AnnouncementHeader({
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+        <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 flex-wrap">
           <span>Corporate Communications</span>
           <i className="ri-arrow-right-s-line text-xs" />
           <span className="text-[#253C7D] font-bold">Broadcast Center</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
-          Company Announcements
-          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D]">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2.5 flex-wrap">
+          <span>Company Announcements</span>
+          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#253C7D]/10 text-[#253C7D] shrink-0">
             {publishedCount} Published
           </span>
         </h1>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
           Official company broadcasts, executive updates, operational policies, and corporate events.
         </p>
       </div>

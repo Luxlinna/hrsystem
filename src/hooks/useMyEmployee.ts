@@ -7,6 +7,7 @@ export interface MyEmployee {
   id: string;
   first_name: string;
   last_name: string;
+  email?: string | null;
   role: string | null;
   department: string | null;
   avatar_url: string | null;
