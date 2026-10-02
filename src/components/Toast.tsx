@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect } from "react";
-import { stripEmojis } from "@/pages/notifications/notificationUtils";
+import { stripEmojis } from "@/features/system-admin/notifications/notificationUtils";
 
 interface Toast {
   id: string;

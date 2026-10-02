@@ -79,6 +79,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(import.meta.dirname || process.cwd(), "./src"),
+      "@shared": resolve(import.meta.dirname || process.cwd(), "./src/shared"),
+      "@features": resolve(import.meta.dirname || process.cwd(), "./src/features"),
       "xlsx": resolve(import.meta.dirname || process.cwd(), "./src/lib/xlsx.ts"),
     },
   },
@@ -86,6 +88,12 @@ export default defineConfig({
     port,
     host: "0.0.0.0",
     allowedHosts: [".opssolution.tech", "hrsystem.opssolution.tech"],
+    proxy: {
+      "/api": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+    },
   },
   optimizeDeps: {
     include: ["react", "react-dom", "react-router-dom", "react-easy-crop", "@supabase/supabase-js"],

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { matchEmployeeSearch } from "@/pages/employees/searchUtils";
+import { matchEmployeeSearch } from "@/features/workforce/employees/searchUtils";
 import type { SearchResult } from "./types";
 import { MODULE_SEARCH_RESULTS, pathToModule } from "./constants";
 

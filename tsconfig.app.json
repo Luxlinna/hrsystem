@@ -33,6 +33,8 @@
     "noUncheckedSideEffectImports": false,
     "paths": {
       "@/*": ["./src/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@features/*": ["./src/features/*"],
       "xlsx": ["./src/lib/xlsx.ts"]
     }
   },

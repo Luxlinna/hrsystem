@@ -1,6 +1,6 @@
 import { dispatchNotification } from "./notificationEngine";
-import type { OfferLetter } from "@/pages/hire/types";
-import type { EmploymentContract } from "@/pages/hire/types/contractTypes";
+import type { OfferLetter } from "@/features/talent-recruitment/hire/types";
+import type { EmploymentContract } from "@/features/talent-recruitment/hire/types/contractTypes";
 
 /**
  * Event 10: Salary approval required

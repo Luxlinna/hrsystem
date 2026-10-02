@@ -7,7 +7,7 @@ import { DEFAULT_WORK_SCHEDULE, getScheduleForDate, settingsFromRows, computeHou
 import { useAuth } from "@/context/AuthContext";
 import { notifyGeofenceEvent } from "@/lib/attendanceNotify";
 import { applyUserEmployeeFilter } from "@/lib/phoneUtils";
-import { syncMultiDayOutsideWorkAttendance } from "@/pages/tasks/hooks/taskAttendanceSync";
+import { syncMultiDayOutsideWorkAttendance } from "@/features/operations/tasks/hooks/taskAttendanceSync";
 
 interface BranchGeofence {
   name: string;

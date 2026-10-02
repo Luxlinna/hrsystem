@@ -1,5 +1,5 @@
 import { dispatchNotification } from "./notificationEngine";
-import type { HiringRequest } from "@/pages/hire/types";
+import type { HiringRequest } from "@/features/talent-recruitment/hire/types";
 
 /**
  * Event 1: Requisition submitted

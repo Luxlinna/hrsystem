@@ -2,7 +2,7 @@ import { memo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useClickOutside } from "./useClickOutside";
 import type { NotificationRow } from "./types";
-import { stripEmojis } from "@/pages/notifications/notificationUtils";
+import { stripEmojis } from "@/features/system-admin/notifications/notificationUtils";
 
 interface NotificationDropdownProps {
   open: boolean;

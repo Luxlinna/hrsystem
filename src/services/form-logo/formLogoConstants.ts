@@ -1,5 +1,5 @@
-import { UNI_LOGO_BASE64 } from "@/pages/hire/exports/templates/uniLogoBase64";
-import { OPS_LOGO_BASE64 } from "@/pages/hire/exports/opsLogoBase64";
+import { UNI_LOGO_BASE64 } from "@/features/talent-recruitment/hire/exports/templates/uniLogoBase64";
+import { OPS_LOGO_BASE64 } from "@/features/talent-recruitment/hire/exports/opsLogoBase64";
 
 export const DEFAULT_FORM_LOGO = UNI_LOGO_BASE64;
 export const DEFAULT_OPS_LOGO = OPS_LOGO_BASE64;
