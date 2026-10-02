@@ -60,11 +60,16 @@ export default function Sidebar() {
       {/* Logo */}
       <div className={`flex items-center shrink-0 transition-all duration-300 ${isExpanded ? "justify-start px-5 pt-6 pb-4" : "justify-center pt-5 pb-3"}`}>
         <Link to="/self-service" className="flex items-center gap-2">
-          <img
-            src="/logo-mark.png"
-            alt="HRM_OPS Logo"
-            className="w-8 h-8 object-contain shrink-0"
-          />
+          <div
+            className="w-8 h-8 rounded-lg p-1 flex items-center justify-center shadow-xs border border-gray-200/80 dark:border-white/20 shrink-0"
+            style={{ backgroundColor: "#ffffff" }}
+          >
+            <img
+              src="/logo-mark.png"
+              alt="HRM_OPS Logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
           {isExpanded && (
             <span className={`text-[13px] font-semibold tracking-wide whitespace-nowrap ${isDark ? "text-white" : "text-gray-900"}`}>
               HRM_OPS
