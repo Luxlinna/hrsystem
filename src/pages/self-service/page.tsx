@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useSelfServiceData } from "./hooks/useSelfServiceData";
 import { ProfileBanner } from "./components/ProfileBanner";
 import { TabsNav } from "./components/TabsNav";
@@ -8,6 +9,7 @@ import { MobilePresenceAttendance } from "./components/MobilePresenceAttendance"
 import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 
 export default function SelfServicePage() {
+  const [searchParams] = useSearchParams();
   const {
     selectedEmployee,
     activeTab,
@@ -24,6 +26,15 @@ export default function SelfServicePage() {
   } = useSelfServiceData();
 
   const [mobileViewMode, setMobileViewMode] = useState<"presence" | "tab">("presence");
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && tabParam !== "attendance" && tabParam !== "overview") {
+      setMobileViewMode("tab");
+    } else {
+      setMobileViewMode("presence");
+    }
+  }, [searchParams]);
 
   if (loading) {
     return (

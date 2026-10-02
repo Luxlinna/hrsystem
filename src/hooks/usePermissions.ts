@@ -196,47 +196,40 @@ export function usePermissions(): UsePermissionsReturn {
       if (loading || !role) return false;
       const cat = getRoleCategory(role, user?.email);
 
-      // Super Admin: all function of system
+      // Super Admin: all function of system unrestricted
       if (cat === "super_admin") return true;
 
-      // Base dashboard access for any active user
-      if (module === "dashboard" || module === "home") return true;
+      // If the role has an explicit allowed_modules array from database, respect it 100%
+      if (Array.isArray(role.allowed_modules)) {
+        const allowed = role.allowed_modules;
+        if (module === "home") return allowed.includes("dashboard") || allowed.includes("home");
+        if (module === "dashboard") return allowed.includes("dashboard") || allowed.includes("home");
+        if (module === "leave-calendar") return allowed.includes("leave-calendar") || allowed.includes("leave");
+        if (module === "leave") return allowed.includes("leave") || allowed.includes("leave-calendar");
+        if (module === "assets") return allowed.includes("it-management") || allowed.includes("assets");
+        return allowed.includes(module);
+      }
 
-      // Admin: all function, except salary
+      // Fallback only when allowed_modules is not defined
       if (cat === "admin") {
         if (module === "payroll" || module === "payroll-approval") return false;
         return true;
       }
 
-      // Chairwoman and Chairman: all function of system except edit (view-only)
       if (cat === "chairperson") {
         return true;
       }
 
-      // Line Manager: view staff under supervisor/division/dept, check staff attendance, leave endorse, tasks, performance, training, meeting rooms, etc.
       if (cat === "line_manager") {
-        if (module === "payroll" || module === "payroll-approval") return false;
-        if (module === "admin" || module === "settings" || module === "branches") return false;
-        const managerModules = [
-          "dashboard", "home", "employees", "attendance", "leave",
-          "leave-calendar", "tasks", "performance", "training",
-          "meeting-rooms", "announcements", "notifications",
-          "documents", "self-service", "org-chart"
-        ];
-        return managerModules.includes(module) || (role.allowed_modules || []).includes(module);
+        if (module === "payroll" || module === "payroll-approval" || module === "admin" || module === "settings" || module === "branches") return false;
+        return true;
       }
 
-      // Employee: can only your information, can check attendance yourself
       if (cat === "employee") {
-        const employeeModules = [
-          "dashboard", "home", "self-service", "attendance",
-          "leave", "leave-calendar", "notifications",
-          "announcements", "training", "meeting-rooms", "tasks"
-        ];
-        return employeeModules.includes(module);
+        return module === "self-service" || module === "notifications";
       }
 
-      return (role.allowed_modules || []).includes(module);
+      return false;
     },
     [loading, role, user?.email]
   );
