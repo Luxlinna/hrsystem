@@ -3,6 +3,7 @@ import { NotificationsFilterBar } from "./components/NotificationsFilterBar";
 import { NotificationsBulkActionBar } from "./components/NotificationsBulkActionBar";
 import { NotificationsGroupList } from "./components/NotificationsGroupList";
 import { NotificationsEmptyState } from "./components/NotificationsEmptyState";
+import { MobileNotificationsView } from "./components/MobileNotificationsView";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 import { useNotifications } from "./hooks/useNotifications";
 
@@ -76,63 +77,79 @@ export default function Notifications() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
-      {/* Header */}
-      <NotificationsHeader
-        realtimeEnabled={realtimeEnabled}
-        unreadCount={unreadCount}
-        onRefresh={loadNotifications}
-        onMarkAllRead={markAllRead}
-      />
-
-      {/* Filters & Search Bar */}
-      <NotificationsFilterBar
-        search={search}
-        setSearch={setSearchQuery}
-        filter={filter}
-        setFilter={setFilter}
-        sourceFilter={sourceFilter}
-        setSourceFilter={setSourceFilter}
-        sources={sources}
-        unreadCount={unreadCount}
-      />
-
-      {/* Bulk Selection & Action Toolbar (like Recycle Bin) */}
-      <NotificationsBulkActionBar
-        totalCount={filtered.length}
-        selectedCount={selectedCount}
-        allSelected={allSelected}
-        isIndeterminate={isIndeterminate}
-        onToggleSelectAll={toggleSelectAll}
-        onClearSelection={clearSelection}
-        onMarkSelectedRead={() => {
-          markSelectedRead(Array.from(selectedIds));
-          clearSelection();
-        }}
-        onDeleteSelected={() => {
-          deleteSelected(Array.from(selectedIds));
-          clearSelection();
-        }}
-      />
-
-      {/* Chronological Notifications List */}
-      <NotificationsGroupList
-        groups={groups}
-        isNavigable={isNavigable}
-        selectedIds={selectedIds}
-        onToggleSelect={toggleSelect}
-        onOpenNotification={openNotification}
-        onMarkRead={markRead}
-        onDeleteNotification={deleteNotification}
-      />
-
-      {/* Empty State */}
-      {groups.length === 0 && (
-        <NotificationsEmptyState
-          filtersActive={filtersActive}
-          onResetFilters={resetFilters}
+    <>
+      {/* ── Mobile View: Clean iOS/Android style matching Mockup (< md) ── */}
+      <div className="block md:hidden">
+        <MobileNotificationsView
+          notifications={filtered}
+          unreadCount={unreadCount}
+          onRefresh={loadNotifications}
+          onMarkAllRead={markAllRead}
+          onMarkRead={markRead}
+          onDeleteNotification={deleteNotification}
+          onOpenNotification={openNotification}
         />
-      )}
-    </div>
+      </div>
+
+      {/* ── Desktop View (>= md) ── */}
+      <div className="hidden md:block min-h-screen bg-[#F8F9FB] p-5 sm:p-7 lg:p-8 font-sans">
+        {/* Header */}
+        <NotificationsHeader
+          realtimeEnabled={realtimeEnabled}
+          unreadCount={unreadCount}
+          onRefresh={loadNotifications}
+          onMarkAllRead={markAllRead}
+        />
+
+        {/* Filters & Search Bar */}
+        <NotificationsFilterBar
+          search={search}
+          setSearch={setSearchQuery}
+          filter={filter}
+          setFilter={setFilter}
+          sourceFilter={sourceFilter}
+          setSourceFilter={setSourceFilter}
+          sources={sources}
+          unreadCount={unreadCount}
+        />
+
+        {/* Bulk Selection & Action Toolbar (like Recycle Bin) */}
+        <NotificationsBulkActionBar
+          totalCount={filtered.length}
+          selectedCount={selectedCount}
+          allSelected={allSelected}
+          isIndeterminate={isIndeterminate}
+          onToggleSelectAll={toggleSelectAll}
+          onClearSelection={clearSelection}
+          onMarkSelectedRead={() => {
+            markSelectedRead(Array.from(selectedIds));
+            clearSelection();
+          }}
+          onDeleteSelected={() => {
+            deleteSelected(Array.from(selectedIds));
+            clearSelection();
+          }}
+        />
+
+        {/* Chronological Notifications List */}
+        <NotificationsGroupList
+          groups={groups}
+          isNavigable={isNavigable}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onOpenNotification={openNotification}
+          onMarkRead={markRead}
+          onDeleteNotification={deleteNotification}
+        />
+
+        {/* Empty State */}
+        {groups.length === 0 && (
+          <NotificationsEmptyState
+            filtersActive={filtersActive}
+            onResetFilters={resetFilters}
+          />
+        )}
+      </div>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import { memo, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useClickOutside } from "./useClickOutside";
 import type { NotificationRow } from "./types";
 import { stripEmojis } from "@/pages/notifications/notificationUtils";
@@ -31,21 +31,32 @@ const NotificationDropdown = memo(function NotificationDropdown({
   unreadCount,
   onOpen,
 }: NotificationDropdownProps) {
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   useClickOutside([containerRef], () => onOpenChange(false));
+
+  const handleButtonClick = () => {
+    // On mobile screens (< 768px), navigate directly to the full notification screen
+    if (window.innerWidth < 768) {
+      navigate("/notifications");
+      onOpenChange(false);
+    } else {
+      onOpenChange(!open);
+    }
+  };
 
   return (
     <div className="relative" ref={containerRef}>
       <button
         id="topbar-notif-btn"
-        onClick={() => onOpenChange(!open)}
-        className="p-2 rounded-full hover:bg-black/5 transition-colors relative cursor-pointer text-gray-700"
+        onClick={handleButtonClick}
+        className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors relative cursor-pointer text-gray-700 dark:text-slate-200"
         aria-label="Notifications"
         aria-expanded={open}
       >
         <i className="ri-notification-3-line text-lg" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}

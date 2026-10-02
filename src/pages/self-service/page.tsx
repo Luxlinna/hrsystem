@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useSelfServiceData } from "./hooks/useSelfServiceData";
 import { ProfileBanner } from "./components/ProfileBanner";
 import { TabsNav } from "./components/TabsNav";
 import { TabContent } from "./components/TabContent";
 import { SelfServiceExportMenu } from "./components/SelfServiceExportMenu";
+import { MobilePresenceAttendance } from "./components/MobilePresenceAttendance";
 import { isPhoneSyntheticEmail, syntheticEmailToPhone, formatDisplayPhone } from "@/lib/phoneUtils";
 
 export default function SelfServicePage() {
@@ -17,7 +19,11 @@ export default function SelfServicePage() {
     managerName,
     todayAttendance,
     user,
+    pendingLeaveCount,
+    unreadCount,
   } = useSelfServiceData();
+
+  const [mobileViewMode, setMobileViewMode] = useState<"presence" | "tab">("presence");
 
   if (loading) {
     return (
@@ -51,8 +57,62 @@ export default function SelfServicePage() {
     : "";
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 px-3.5 sm:px-6 lg:px-8 pt-5 sm:pt-8 pb-24 font-sans">
-      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-5">
+    <div className="min-h-screen bg-[#F4F7FB] dark:bg-slate-950 px-0 md:px-6 lg:px-8 pt-0 md:pt-8 pb-24 font-sans">
+      {/* ── Mobile View: Presence Structure (< md) ── */}
+      <div className="block md:hidden max-w-md mx-auto">
+        {selectedEmployee && mobileViewMode === "presence" ? (
+          <MobilePresenceAttendance
+            employee={selectedEmployee}
+            managerName={managerName}
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              setActiveTab(tab);
+              if (tab !== "attendance" && tab !== "overview") {
+                setMobileViewMode("tab");
+              }
+            }}
+            unreadCount={unreadCount}
+            pendingLeaveCount={pendingLeaveCount}
+          />
+        ) : (
+          <div className="space-y-4">
+            {/* Mobile Tab Header with Back Button */}
+            <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setMobileViewMode("presence")}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#253C7D] dark:text-sky-400 hover:underline"
+              >
+                <i className="ri-arrow-left-s-line text-base font-bold" />
+                Presence Hub
+              </button>
+
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 capitalize">
+                {activeTab}
+              </span>
+            </div>
+
+            {/* Tab Navigation Strip */}
+            <TabsNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+            {/* Tab Content Container */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xs p-4">
+              {selectedEmployee && (
+                <TabContent
+                  activeTab={activeTab}
+                  employee={selectedEmployee}
+                  employeeName={employeeName}
+                  quickCheckIn={quickCheckIn}
+                  quickCheckOut={quickCheckOut}
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Desktop View (>= md) ── */}
+      <div className="hidden md:block max-w-6xl mx-auto space-y-4 sm:space-y-5">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
           <div>

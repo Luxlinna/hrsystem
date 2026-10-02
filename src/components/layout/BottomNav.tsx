@@ -35,7 +35,7 @@ export default function BottomNav() {
               <div
                 className={`w-12 h-7 rounded-full flex items-center justify-center transition-all ${
                   isActive
-                    ? "bg-blue-50 dark:bg-sky-950/70 text-[#253C7D] dark:text-sky-400 font-bold"
+                    ? "bg-[#F0EFFF] dark:bg-indigo-950/70 text-[#523CDD] dark:text-indigo-400 font-bold"
                     : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
                 }`}
               >
@@ -46,7 +46,7 @@ export default function BottomNav() {
               <span
                 className={`text-[10px] leading-none tracking-tight whitespace-nowrap ${
                   isActive
-                    ? "text-[#253C7D] dark:text-sky-400 font-bold"
+                    ? "text-[#523CDD] dark:text-indigo-400 font-bold"
                     : "text-slate-400 dark:text-slate-500 font-medium"
                 }`}
               >

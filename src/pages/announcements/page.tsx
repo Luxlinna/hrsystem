@@ -7,6 +7,7 @@ import { AnnouncementTableView } from "./components/AnnouncementTableView";
 import { Pagination } from "./components/Pagination";
 import { AnnouncementDrawer } from "./components/AnnouncementDrawer";
 import { AnnouncementComposerModal } from "./components/AnnouncementComposerModal";
+import { MobileAnnouncementsView } from "./components/MobileAnnouncementsView";
 import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
 
 export default function Announcements() {
@@ -37,13 +38,30 @@ export default function Announcements() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
-      <AnnouncementHeader
-        publishedCount={data.announcements.length}
-        canManage={canManage}
-        onOpenCreateModal={openCreateModal}
-        announcements={filters.filtered}
-      />
+    <>
+      {/* ── Mobile View: Clean iOS/Android Feed (< md) ── */}
+      <div className="block md:hidden">
+        <MobileAnnouncementsView
+          announcements={filters.filtered}
+          canManage={canManage}
+          timeAgo={filters.timeAgo}
+          onOpen={mutations.openAnnouncement}
+          onOpenCreateModal={openCreateModal}
+          onOpenEditModal={openEditModal}
+          onTogglePin={mutations.handleTogglePin}
+          onCopyLink={filters.handleCopyLink}
+          onDelete={mutations.deleteAnnouncement}
+        />
+      </div>
+
+      {/* ── Desktop View (>= md) ── */}
+      <div className="hidden md:block min-h-screen bg-[#F8F9FB] dark:bg-slate-900 p-5 sm:p-7 lg:p-8 font-sans">
+        <AnnouncementHeader
+          publishedCount={data.announcements.length}
+          canManage={canManage}
+          onOpenCreateModal={openCreateModal}
+          announcements={filters.filtered}
+        />
 
       <MetricCards
         activeCount={data.activeCount}
@@ -120,37 +138,38 @@ export default function Announcements() {
         setPage={filters.setPage}
         totalPages={filters.totalPages}
       />
-
-      <AnnouncementDrawer
-        selectedItem={selectedItem}
-        onClose={() => setSelectedId(null)}
-        canManage={canManage}
-        mustAcceptUrgentAnnouncements={data.mustAcceptUrgentAnnouncements}
-        acceptedUrgentIds={data.acceptedUrgentIds}
-        acceptingUrgent={mutations.acceptingUrgent}
-        acceptUrgentError={mutations.acceptUrgentError}
-        timeAgo={filters.timeAgo}
-        onAcceptUrgent={mutations.acceptUrgentAnnouncement}
-        onTogglePin={mutations.handleTogglePin}
-        onCopyLink={filters.handleCopyLink}
-        onOpenEditModal={openEditModal}
-        onDeleteAnnouncement={mutations.deleteAnnouncement}
-      />
-
-      <AnnouncementComposerModal
-        isOpen={showCreateModal}
-        onClose={() => { setShowCreateModal(false); setEditingId(null); }}
-        editingId={editingId}
-        form={form}
-        setForm={setForm}
-        submitting={mutations.submitting}
-        composerMode={composerMode}
-        setComposerMode={setComposerMode}
-        onSubmit={handleFormSubmit}
-        isSuperAdmin={isSuperAdmin}
-        userBranchName={userBranchName}
-        userBranchId={userBranchId}
-      />
     </div>
-  );
+
+    <AnnouncementDrawer
+      selectedItem={selectedItem}
+      onClose={() => setSelectedId(null)}
+      canManage={canManage}
+      mustAcceptUrgentAnnouncements={data.mustAcceptUrgentAnnouncements}
+      acceptedUrgentIds={data.acceptedUrgentIds}
+      acceptingUrgent={mutations.acceptingUrgent}
+      acceptUrgentError={mutations.acceptUrgentError}
+      timeAgo={filters.timeAgo}
+      onAcceptUrgent={mutations.acceptUrgentAnnouncement}
+      onTogglePin={mutations.handleTogglePin}
+      onCopyLink={filters.handleCopyLink}
+      onOpenEditModal={openEditModal}
+      onDeleteAnnouncement={mutations.deleteAnnouncement}
+    />
+
+    <AnnouncementComposerModal
+      isOpen={showCreateModal}
+      onClose={() => { setShowCreateModal(false); setEditingId(null); }}
+      editingId={editingId}
+      form={form}
+      setForm={setForm}
+      submitting={mutations.submitting}
+      composerMode={composerMode}
+      setComposerMode={setComposerMode}
+      onSubmit={handleFormSubmit}
+      isSuperAdmin={isSuperAdmin}
+      userBranchName={userBranchName}
+      userBranchId={userBranchId}
+    />
+  </>
+);
 }
