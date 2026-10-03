@@ -11,6 +11,7 @@
     "type": "tsc --noEmit",
     "type-check": "tsc --noEmit",
     "start": "node dist/server.js",
+    "make:resource": "tsx scripts/make-resource.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
