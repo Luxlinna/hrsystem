@@ -73,7 +73,8 @@ export default defineConfig({
   base,
   build: {
     sourcemap: true,
-    outDir: 'out',
+    outDir: resolve(import.meta.dirname || process.cwd(), "../out"),
+    emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
   },
   resolve: {
