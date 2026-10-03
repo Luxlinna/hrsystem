@@ -6,11 +6,14 @@ export const PERMISSION_COLUMNS = [
 ];
 
 export const SETTINGS_SECTIONS = [
-  { key: "appearance", label: "Appearance" },
-  { key: "notifications", label: "Notifications" },
-  { key: "permissions", label: "Permissions" },
-  { key: "branches", label: "Organization" },
-  { key: "integrations", label: "Integrations" },
+  { key: "appearance", label: "Appearance", icon: "ri-palette-line" },
+  { key: "notifications", label: "Notifications", icon: "ri-notification-3-line" },
+  { key: "otp_rate_limit", label: "OTP Limits", icon: "ri-shield-keyhole-line" },
+  { key: "password_reset_limit", label: "Reset Password", icon: "ri-key-2-line" },
+  { key: "email_smtp", label: "Email (SMTP)", icon: "ri-mail-settings-line" },
+  { key: "permissions", label: "Permissions", icon: "ri-lock-2-line" },
+  { key: "branches", label: "Organization", icon: "ri-building-line" },
+  { key: "integrations", label: "Integrations", icon: "ri-apps-2-line" },
 ];
 
 export const keyLabels: Record<string, string> = {
@@ -51,6 +54,26 @@ export const keyLabels: Record<string, string> = {
   official_form_logo: "Official Documents Form Logo",
   company_khmer_name: "Company Khmer Name",
   company_english_name: "Company English Name",
+  // SMTP email settings
+  smtp_host: "SMTP Host",
+  smtp_port: "SMTP Port",
+  smtp_secure: "SMTP Secure (SSL/TLS)",
+  smtp_user: "SMTP Username",
+  smtp_pass: "SMTP Password",
+  smtp_from_name: "Sender Name",
+  smtp_from_email: "Sender Email",
+  smtp_send_on_signup: "Send Sign-up Code by Email",
+  smtp_send_on_invite: "Send User Invitation by Email",
+  // OTP rate limit settings
+  otp_code_lifetime_minutes: "OTP Code Lifetime (minutes)",
+  otp_codes_per_hour: "OTP Codes Per Hour",
+  otp_wrong_tries_per_code: "OTP Wrong Tries Per Code",
+  otp_resend_wait_seconds: "OTP Resend Wait (seconds)",
+  // Password reset rate limit settings
+  password_reset_lifetime_minutes: "Password Reset Link Lifetime (minutes)",
+  password_reset_per_hour: "Max Password Reset Requests Per Hour",
+  password_reset_resend_wait_seconds: "Password Reset Resend Wait (seconds)",
+  password_reset_max_daily: "Max Daily Password Reset Requests",
 };
 
 export const notificationKeys = [

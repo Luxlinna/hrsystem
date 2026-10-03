@@ -4,7 +4,7 @@ export function AppearanceSettings() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="max-w-xl space-y-5">
+    <div className="w-full space-y-6">
       <div>
         <label className="text-[12px] font-semibold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
           Display Mode

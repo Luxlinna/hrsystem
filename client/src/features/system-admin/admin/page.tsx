@@ -58,8 +58,9 @@ export default function AdminPortal() {
               onDeleteRole={admin.roles.deleteRole}
               onNavigateToUsers={(roleName) => {
                 admin.setActiveTab("users");
-                admin.setSearchQuery(roleName);
+                if (roleName) admin.setSearchQuery(roleName);
               }}
+              showToast={admin.showToast}
             />
           )}
 

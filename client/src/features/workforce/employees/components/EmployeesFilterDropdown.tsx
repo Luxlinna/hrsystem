@@ -69,15 +69,8 @@ export const EmployeesFilterDropdown = memo(function EmployeesFilterDropdown({
   );
 
   const siteOptions = useMemo<FilterOptionItem[]>(() => {
-    const list: FilterOptionItem[] = [];
-    branches.forEach((b) => {
-      list.push({ id: b.id, label: b.name });
-      workSites.filter((s) => s.branch_id === b.id).forEach((s) => {
-        list.push({ id: `site:${s.id}`, label: `${b.name} - ${s.name}` });
-      });
-    });
-    return list;
-  }, [branches, workSites]);
+    return branches.map((b) => ({ id: b.id, label: b.name }));
+  }, [branches]);
 
   const deptOptions = useMemo<FilterOptionItem[]>(
     () => depts.filter(Boolean).map((d) => ({ id: d as string, label: d as string })),

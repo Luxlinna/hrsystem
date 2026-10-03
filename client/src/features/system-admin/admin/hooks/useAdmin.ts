@@ -118,6 +118,7 @@ export function useAdmin() {
     searchQuery,
     setSearchQuery,
     toast,
+    showToast,
     scopedBranches,
     data,
     roles,

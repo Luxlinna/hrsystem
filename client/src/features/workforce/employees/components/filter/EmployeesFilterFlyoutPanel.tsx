@@ -56,7 +56,7 @@ export const EmployeesFilterFlyoutPanel = memo(function EmployeesFilterFlyoutPan
   const hasMore = items.length > displayLimit;
 
   return (
-    <div className="w-52 py-2 px-2.5 flex flex-col bg-white border-r border-slate-200">
+    <div className="w-64 py-2 px-2.5 flex flex-col bg-white border-r border-slate-200">
       {/* Scrollable Checkbox List */}
       <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 text-xs text-slate-700">
         {/* 'All' Checkbox */}

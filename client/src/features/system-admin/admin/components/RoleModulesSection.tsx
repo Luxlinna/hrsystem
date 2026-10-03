@@ -32,62 +32,71 @@ export const RoleModulesSection = memo(function RoleModulesSection({
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <label className="text-xs font-semibold text-gray-600 dark:text-slate-300">Module Permissions</label>
-        <div className="flex gap-2">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-2">
+        <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">
+          Module Access Permissions ({roleForm.allowed_modules.length}/{ALL_MODULES.length})
+        </span>
+        <div className="flex items-center gap-2 text-xs">
           <button
             type="button"
             onClick={() => setRoleForm((p) => ({ ...p, allowed_modules: ALL_MODULES.map((m) => m.key) }))}
-            className="text-[11px] text-[#253C7D] dark:text-sky-400 font-medium cursor-pointer hover:underline"
+            className="text-[#253C7D] dark:text-sky-400 font-medium cursor-pointer hover:underline text-[11px]"
           >
             Select All
           </button>
-          <span className="text-gray-300 dark:text-slate-600">|</span>
+          <span className="text-gray-300 dark:text-slate-700">·</span>
           <button
             type="button"
             onClick={() => setRoleForm((p) => ({ ...p, allowed_modules: [] }))}
-            className="text-[11px] text-gray-400 dark:text-slate-400 font-medium cursor-pointer hover:underline"
+            className="text-gray-400 dark:text-slate-500 font-medium cursor-pointer hover:underline text-[11px]"
           >
             Clear
           </button>
         </div>
       </div>
-      <div className="space-y-4 max-h-64 overflow-y-auto">
+
+      <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
         {MODULE_GROUPS.map((group) => {
           const groupModules = ALL_MODULES.filter((m) => m.group === group);
           const allSelected = groupModules.every((m) => roleForm.allowed_modules.includes(m.key));
           return (
-            <div key={group}>
-              <div className="flex items-center gap-2 mb-2">
+            <div key={group} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                  {group}
+                </span>
                 <button
                   type="button"
                   onClick={() => toggleAllInGroup(group)}
-                  className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                    allSelected ? "bg-[#253C7D] border-[#253C7D] dark:bg-blue-600 dark:border-blue-600" : "border-gray-300 dark:border-slate-600"
-                  }`}
+                  className="text-[10px] text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 cursor-pointer"
                 >
-                  {allSelected && <i className="ri-check-line text-white text-[10px]" />}
+                  {allSelected ? "Deselect group" : "Select group"}
                 </button>
-                <span className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">{group}</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pl-2">
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {groupModules.map((mod) => {
                   const selected = roleForm.allowed_modules.includes(mod.key);
                   return (
-                    <button
+                    <label
                       key={mod.key}
-                      type="button"
                       onClick={() => toggleModule(mod.key)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium transition-all cursor-pointer text-left ${
+                      className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border text-xs font-medium transition-colors cursor-pointer select-none ${
                         selected
-                          ? "bg-[#253C7D]/10 text-[#253C7D] dark:bg-blue-950/60 dark:text-blue-300"
-                          : "bg-gray-50 text-gray-600 hover:bg-gray-100 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-800"
+                          ? "bg-slate-50 dark:bg-slate-800 border-[#253C7D]/40 dark:border-sky-500 text-gray-900 dark:text-white"
+                          : "bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-600 dark:text-slate-400 hover:border-gray-300"
                       }`}
                     >
-                      <i className={`${mod.icon} text-sm shrink-0`} />
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => {}}
+                        className="rounded border-gray-300 text-[#253C7D] focus:ring-0 cursor-pointer"
+                      />
+                      <i className={`${mod.icon} text-sm text-gray-500 dark:text-slate-400 shrink-0`} />
                       <span className="truncate">{mod.label}</span>
-                    </button>
+                    </label>
                   );
                 })}
               </div>

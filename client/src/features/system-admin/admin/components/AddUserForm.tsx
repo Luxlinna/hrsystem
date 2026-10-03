@@ -78,22 +78,21 @@ export const AddUserForm = memo(function AddUserForm({
       (!newUser.phone?.trim() || (!newUser.sendInvite && (newUser.password || "").length < 6)));
 
   return (
-    <div className="bg-gradient-to-b from-[#253C7D]/8 to-white dark:from-[#253C7D]/20 dark:to-slate-900 border border-[#253C7D]/20 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-1 duration-200">
+    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-[#253C7D]/10 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#253C7D] text-white flex items-center justify-center text-base shadow-xs">
-            <i className="ri-user-add-line" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-gray-900 dark:text-slate-100">Provision User Account</h4>
-            <p className="text-xs text-gray-500 dark:text-slate-400">Pick an employee from directory for instant autofill, or enter account details manually.</p>
-          </div>
+      <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-800">
+        <div>
+          <h4 className="text-sm font-bold text-gray-900 dark:text-slate-100">
+            Provision User Account
+          </h4>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+            Select an employee from the directory or manually assign login credentials and roles.
+          </p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
         >
           <i className="ri-close-line text-lg" />
         </button>

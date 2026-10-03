@@ -21,16 +21,33 @@ function isPhoneSyntheticEmail(email?: string | null): boolean {
   return email.toLowerCase().endsWith(PHONE_EMAIL_DOMAIN);
 }
 
-function getTransporter() {
-  return nodemailer.createTransport({
-    host: Deno.env.get("SMTP_HOST") || "smtp.gmail.com",
-    port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
-    secure: Deno.env.get("SMTP_SECURE") === "true",
-    auth: {
-      user: Deno.env.get("SMTP_USER"),
-      pass: Deno.env.get("SMTP_PASS"),
-    },
-  });
+async function getDynamicTransporter(supabaseAdmin: any) {
+  const { data } = await supabaseAdmin
+    .from("system_settings")
+    .select("key, value")
+    .in("key", ["smtp_host", "smtp_port", "smtp_secure", "smtp_user", "smtp_pass", "smtp_from_name", "smtp_from_email"]);
+
+  const map: Record<string, string> = {};
+  (data || []).forEach((d: { key: string; value: string }) => { map[d.key] = d.value || ""; });
+
+  const host = map.smtp_host || Deno.env.get("SMTP_HOST") || "smtp.gmail.com";
+  const port = parseInt(map.smtp_port || Deno.env.get("SMTP_PORT") || "587");
+  const secure = port === 465 ? true : (port === 587 || port === 25 ? false : (map.smtp_secure === "true" || Deno.env.get("SMTP_SECURE") === "true"));
+  const user = map.smtp_user || map.smtp_from_email || Deno.env.get("SMTP_USER");
+  const pass = map.smtp_pass || Deno.env.get("SMTP_PASS");
+  const fromName = map.smtp_from_name || "HRSystem";
+  const fromEmail = map.smtp_from_email || user || "hrmsystem.ops@gmail.com";
+
+  return {
+    transporter: nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false },
+    }),
+    from: `${fromName} <${fromEmail}>`,
+  };
 }
 
 function buildInviteEmail(name: string, inviteLink: string): string {
@@ -226,9 +243,9 @@ Deno.serve(async (req) => {
       let emailSent = false;
       let emailError: string | null = null;
       try {
-        const transporter = getTransporter();
+        const { transporter, from } = await getDynamicTransporter(supabaseAdmin);
         await transporter.sendMail({
-          from: Deno.env.get("EMAIL_FROM") || "HRSystem <hrmsystem.ops@gmail.com>",
+          from,
           to: email,
           subject: "Your HR System invitation — new setup link",
           html: emailHtml,
@@ -371,9 +388,9 @@ Deno.serve(async (req) => {
     let emailError: string | null = null;
 
     try {
-      const transporter = getTransporter();
+      const { transporter, from } = await getDynamicTransporter(supabaseAdmin);
       await transporter.sendMail({
-        from: Deno.env.get("EMAIL_FROM") || "HRSystem <hrmsystem.ops@gmail.com>",
+        from,
         to: email,
         subject: "You're invited to HR System — Set up your account (link valid 24 hrs)",
         html: emailHtml,

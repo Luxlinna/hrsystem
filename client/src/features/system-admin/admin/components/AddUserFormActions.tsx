@@ -18,11 +18,11 @@ export function AddUserFormActions({
   onSaveUser,
 }: AddUserFormActionsProps) {
   return (
-    <div className="flex items-center justify-end gap-3 pt-2">
+    <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
       <button
         type="button"
         onClick={onClose}
-        className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-slate-300 hover:text-gray-800 dark:hover:text-white bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+        className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors"
       >
         Cancel
       </button>
@@ -30,7 +30,7 @@ export function AddUserFormActions({
         type="button"
         onClick={onSaveUser}
         disabled={isSubmitDisabled}
-        className="px-5 py-2 text-xs font-semibold text-white bg-[#253C7D] hover:bg-[#1F336A] rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
+        className="flex items-center gap-1.5 px-4 py-2 bg-[#253C7D] dark:bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-[#1F336A] dark:hover:bg-blue-700 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed shadow-xs transition-colors"
       >
         {savingUser ? (
           <>
@@ -39,26 +39,14 @@ export function AddUserFormActions({
           </>
         ) : accountType === "phone" ? (
           newUser.sendInvite ? (
-            <>
-              <i className="ri-telegram-fill text-sm" />
-              <span>Invite via Telegram</span>
-            </>
+            <span>Send Telegram Setup Link</span>
           ) : (
-            <>
-              <i className="ri-shield-keyhole-line text-sm" />
-              <span>Create Phone Account</span>
-            </>
+            <span>Create Phone Account</span>
           )
         ) : newUser.sendInvite ? (
-          <>
-            <i className="ri-check-line text-sm" />
-            <span>Send Invite &amp; Save</span>
-          </>
+          <span>Send Invitation &amp; Save</span>
         ) : (
-          <>
-            <i className="ri-check-line text-sm" />
-            <span>Save User</span>
-          </>
+          <span>Create User</span>
         )}
       </button>
     </div>

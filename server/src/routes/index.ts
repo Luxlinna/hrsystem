@@ -5,6 +5,7 @@ import { attendanceRoutes } from './attendance.routes.js';
 import { leaveRoutes } from './leave.routes.js';
 import { biometricRoutes } from './biometric.routes.js';
 import { healthRoutes } from './health.routes.js';
+import { settingsRoutes } from './settings.routes.js';
 import { generalApiLimiter } from '../middleware/rate-limit.middleware.js';
 
 const apiRouter = Router();
@@ -25,5 +26,8 @@ apiRouter.use('/leaves', leaveRoutes);
 
 // Hardware device routes
 apiRouter.use('/iclock', biometricRoutes);
+
+// System settings (SMTP test, etc.)
+apiRouter.use('/settings', settingsRoutes);
 
 export const routes = apiRouter;

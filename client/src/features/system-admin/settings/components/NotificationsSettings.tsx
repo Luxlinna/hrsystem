@@ -119,7 +119,7 @@ export function NotificationsSettings({
   ];
 
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="w-full space-y-8">
       {/* Section 1: Event Notification Matrix */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-2xs space-y-5">
         <div className="flex items-center justify-between">

@@ -169,8 +169,8 @@ export const UsersFilterBar = memo(function UsersFilterBar({
   }, [hasActiveFilter, selectedIds, flyoutItems]);
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-2xs space-y-3">
-      {/* Row 1: Search + Filter flyout button */}
+    <div className="bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-2xs">
+      {/* Search + Filter flyout button */}
       <div className="flex flex-col sm:flex-row items-center gap-3">
         {/* Search */}
         <div className="relative flex-1 w-full">
@@ -242,62 +242,6 @@ export const UsersFilterBar = memo(function UsersFilterBar({
           </div>
         )}
       </div>
-
-      {/* Row 2: BU-only quick pill tabs */}
-      {isSuperAdmin && pureBranches.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none">
-          {/* All pill */}
-          <button
-            type="button"
-            onClick={() => setFilterBranch("all")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-              !hasActiveFilter
-                ? "bg-[#253C7D] text-white shadow-2xs font-semibold"
-                : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-200/80 dark:hover:bg-slate-700"
-            }`}
-          >
-            <span>All</span>
-            <span
-              className={`text-[10px] px-1.5 rounded-full font-bold ${
-                !hasActiveFilter
-                  ? "bg-white/20 text-white"
-                  : "bg-gray-200/80 dark:bg-slate-700 text-gray-500 dark:text-slate-300"
-              }`}
-            >
-              {scopedTotal}
-            </span>
-          </button>
-
-          {/* BU-only pills (no sites here) */}
-          {pureBranches.map((b) => {
-            const isSelected = selectedIds.includes(b.id);
-            const count = branchCounts[b.id] || 0;
-            return (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => setFilterBranch(isSelected ? "all" : b.id)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                  isSelected
-                    ? "bg-[#253C7D] text-white shadow-2xs font-semibold"
-                    : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-200/80 dark:hover:bg-slate-700"
-                }`}
-              >
-                <span>{b.name}</span>
-                <span
-                  className={`text-[10px] px-1.5 rounded-full font-bold ${
-                    isSelected
-                      ? "bg-white/20 text-white"
-                      : "bg-gray-200/80 dark:bg-slate-700 text-gray-500 dark:text-slate-300"
-                  }`}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 });

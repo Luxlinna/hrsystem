@@ -68,33 +68,24 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-        <span>Autofill Employee</span>
+      <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+        <span>Autofill from Employee</span>
         <span className="text-[11px] font-normal text-gray-400 dark:text-slate-400">
           ({employees.length} {accountType === "phone" ? "with phone" : "with email"})
         </span>
       </label>
 
       {selectedEmployee ? (
-        <div className="flex items-center justify-between px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-[#253C7D]/30 dark:border-slate-700 rounded-xl text-xs shadow-2xs h-[42px]">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-white dark:bg-slate-800 border border-[#253C7D]/30 dark:border-slate-700 rounded-lg text-xs h-[36px]">
           <div className="min-w-0 pr-2">
             <p className="font-semibold text-gray-900 dark:text-slate-100 truncate text-xs">
               {selectedEmployee.first_name} {selectedEmployee.last_name}
-            </p>
-            <p className="text-[10px] text-[#253C7D] dark:text-sky-300 truncate font-medium flex items-center gap-1">
-              <span>{selectedEmployee.branch_name || "Headquarters"}</span>
-              {selectedEmployee.site_name && (
-                <>
-                  <span>•</span>
-                  <span className="text-emerald-700 dark:text-emerald-300">{selectedEmployee.site_name}</span>
-                </>
-              )}
             </p>
           </div>
           <button
             type="button"
             onClick={onClearSelection}
-            className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-rose-950/40 text-gray-400 dark:text-slate-400 hover:text-red-500 dark:hover:text-rose-400 transition-colors cursor-pointer shrink-0"
+            className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer shrink-0"
             title="Clear selected employee"
           >
             <i className="ri-close-line text-sm" />
@@ -102,7 +93,7 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
         </div>
       ) : (
         <div className="relative">
-          <i className="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400 text-sm pointer-events-none" />
+          <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400 text-xs pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
@@ -116,14 +107,14 @@ export const EmployeeAutofillSelect = memo(function EmployeeAutofillSelect({
                 ? "Search name, phone, site..."
                 : "Search name, email, branch..."
             }
-            className="w-full pl-10 pr-9 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 focus:border-[#253C7D] dark:focus:border-sky-500 transition-all h-[42px]"
+            className="w-full pl-8 pr-7 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#253C7D] h-[36px]"
           />
           <button
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 p-0.5 cursor-pointer"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 cursor-pointer"
           >
-            <i className={`${isDropdownOpen ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} text-sm`} />
+            <i className={`${isDropdownOpen ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} text-xs`} />
           </button>
         </div>
       )}

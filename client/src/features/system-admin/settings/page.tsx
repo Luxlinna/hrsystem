@@ -6,6 +6,9 @@ import { NotificationsSettings } from "./components/NotificationsSettings";
 import { PermissionsSection } from "./components/PermissionsSection";
 import { BranchesSection } from "./components/BranchesSection";
 import { IntegrationsSection } from "./components/IntegrationsSection";
+import { EmailSmtpSection } from "./components/EmailSmtpSection";
+import { OtpRateLimitSection } from "./components/OtpRateLimitSection";
+import { PasswordResetLimitSection } from "./components/PasswordResetLimitSection";
 
 export default function Settings() {
   const { isAdmin, can } = usePermissions();
@@ -60,6 +63,9 @@ export default function Settings() {
       {section === "permissions" && isAdmin && <PermissionsSection />}
       {section === "branches" && can("branches") && <BranchesSection />}
       {section === "integrations" && <IntegrationsSection />}
+      {section === "email_smtp" && <EmailSmtpSection />}
+      {section === "otp_rate_limit" && <OtpRateLimitSection />}
+      {section === "password_reset_limit" && <PasswordResetLimitSection />}
     </div>
   );
 }

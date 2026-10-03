@@ -29,7 +29,8 @@ export function AddUserInputFields({
   onClearSelection,
 }: AddUserInputFieldsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+      {/* Autofill Employee */}
       <EmployeeAutofillSelect
         employees={filteredEmployees}
         selectedEmployeeEmail={selectedEmployeeEmail}
@@ -38,9 +39,10 @@ export function AddUserInputFields({
         onClearSelection={onClearSelection}
       />
 
+      {/* Email / Phone */}
       <div>
-        <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1.5 block">
-          {accountType === "email" ? "Email *" : "Phone Number *"}
+        <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1 block">
+          {accountType === "email" ? "Email Address" : "Phone Number"} <span className="text-red-500">*</span>
         </label>
         <input
           value={(accountType === "email" ? newUser.email : newUser.phone) || ""}
@@ -50,25 +52,31 @@ export function AddUserInputFields({
             )
           }
           placeholder={accountType === "email" ? "user@company.com" : "012 345 678"}
-          className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 focus:border-[#253C7D] dark:focus:border-sky-500 transition-all h-[42px]"
+          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#253C7D] h-[36px]"
         />
       </div>
 
+      {/* Display Name */}
       <div>
-        <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1.5 block">Display Name</label>
+        <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1 block">
+          Display Name
+        </label>
         <input
           value={newUser.display_name || ""}
           onChange={(e) => setNewUser((p) => ({ ...p, display_name: e.target.value }))}
           placeholder="Full Name"
-          className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 focus:border-[#253C7D] dark:focus:border-sky-500 transition-all h-[42px]"
+          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#253C7D] h-[36px]"
         />
       </div>
 
+      {/* Role Selector */}
       <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 block">Assign Role</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 block">
+            Assign Role Position
+          </label>
           {selectedEmpObj?.branch_name && (
-            <span className="text-[10px] text-blue-600 dark:text-sky-400 font-semibold">
+            <span className="text-[10px] text-[#253C7D] dark:text-sky-400 font-medium">
               Filtered: {selectedEmpObj.branch_name}
             </span>
           )}
@@ -76,7 +84,7 @@ export function AddUserInputFields({
         <select
           value={newUser.role_id || ""}
           onChange={(e) => setNewUser((p) => ({ ...p, role_id: e.target.value }))}
-          className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#253C7D]/20 dark:focus:ring-sky-500/20 focus:border-[#253C7D] dark:focus:border-sky-500 transition-all cursor-pointer h-[42px]"
+          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#253C7D] cursor-pointer h-[36px]"
         >
           <option value="">No role (no access until assigned)</option>
           {formBuRoles.length > 0 && (
