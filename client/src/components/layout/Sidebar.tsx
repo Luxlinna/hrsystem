@@ -16,34 +16,23 @@ export default function Sidebar() {
   const { user } = useAuth();
   const { can, isAdmin, isBranchAdmin, role } = usePermissions();
   const { employee: myEmployee } = useMyEmployee();
-  const canOpenAdminPortal = isAdmin || isBranchAdmin || isBootstrapAdminEmail(user?.email);
-  const canOpenRecycleBin = canOpenAdminPortal;
+  const canOpenRecycleBin = isAdmin || isBranchAdmin || isBootstrapAdminEmail(user?.email);
   const [hovered, setHovered] = useState(false);
   const { unreadCount } = useUnreadNotifications();
-
   const { isDark, toggleTheme } = useTheme();
+
   const visibleGroups = navGroups
-    .map((group) => ({ ...group, items: group.items.filter((item) => can(item.module)) }))
-    .filter((group) => group.items.length > 0);
+    .map((g) => ({ ...g, items: g.items.filter((i) => can(i.module)) }))
+    .filter((g) => g.items.length > 0);
 
   const isExpanded = !collapsed || hovered;
-  // Prefer the real HR employee record over Supabase Auth's user_metadata,
-  // which can drift independently (e.g. an invite flow that stored a role
-  // title as display_name instead of the person's actual name).
-  const displayName =
-    (myEmployee && `${myEmployee.first_name} ${myEmployee.last_name}`.trim()) ||
-    (user?.user_metadata?.display_name as string) ||
-    user?.email?.split("@")[0] ||
-    "HR Admin";
+  const displayName = (myEmployee && `${myEmployee.first_name} ${myEmployee.last_name}`.trim()) || (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "HR Admin";
   const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const avatarUrl = myEmployee?.avatar_url || (user?.user_metadata?.avatar_url as string | undefined);
 
   const handleMouseEnter = useCallback(() => setHovered(true), []);
   const handleMouseLeave = useCallback(() => setHovered(false), []);
 
-  // Every color below branches on isDark — previously the toggle button
-  // changed its own icon but the sidebar's background/text stayed hardcoded
-  // dark regardless of theme, so "Light Mode" never actually applied here.
   const activeClass = isDark ? "bg-[#29ABE2]/20 text-[#29ABE2]" : "bg-[#253C7D]/10 text-[#253C7D] font-semibold";
   const inactiveClass = isDark ? "text-gray-400 hover:bg-white/5 hover:text-white" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
   const tooltipClass = "absolute left-full ml-3 px-2.5 py-1 bg-gray-800 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity shadow-lg border border-gray-700";
@@ -60,15 +49,8 @@ export default function Sidebar() {
       {/* Logo */}
       <div className={`flex items-center shrink-0 transition-all duration-300 ${isExpanded ? "justify-start px-5 pt-6 pb-4" : "justify-center pt-5 pb-3"}`}>
         <Link to="/self-service" className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 rounded-lg p-1 flex items-center justify-center shadow-xs border border-gray-200/80 dark:border-white/20 shrink-0"
-            style={{ backgroundColor: "#ffffff" }}
-          >
-            <img
-              src="/logo-mark.png"
-              alt="HRM_OPS Logo"
-              className="w-full h-full object-contain"
-            />
+          <div className="w-8 h-8 rounded-lg p-1 flex items-center justify-center shadow-xs border border-gray-200/80 dark:border-white/20 shrink-0 bg-white">
+            <img src="/logo-mark.png" alt="HRM_OPS Logo" className="w-full h-full object-contain" />
           </div>
           {isExpanded && (
             <span className={`text-[13px] font-semibold tracking-wide whitespace-nowrap ${isDark ? "text-white" : "text-gray-900"}`}>
@@ -83,7 +65,7 @@ export default function Sidebar() {
         {visibleGroups.map((group) => (
           <div key={group.label}>
             {isExpanded && (
-              <span className={`text-[10px] font-medium uppercase tracking-wider px-5 mb-1.5 block ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              <span className={`text-[10px] font-medium uppercase tracking-wider px-4 mb-1.5 block ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                 {group.label}
               </span>
             )}
@@ -97,21 +79,19 @@ export default function Sidebar() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center rounded-lg transition-all duration-200 group relative ${
-                      isExpanded ? "gap-3 px-3 py-2.5 mx-3" : "justify-center py-3 mx-2"
-                    } ${isActive ? activeClass : inactiveClass}`}
+                    className={`flex items-center rounded-lg transition-colors duration-150 group relative px-3 py-2 mx-2 select-none ${
+                      isActive ? activeClass : inactiveClass
+                    }`}
                   >
-                    <div className="relative flex items-center justify-center">
-                      <i className={`${item.icon} text-lg w-5 h-5 flex items-center justify-center shrink-0`} />
+                    <div className="relative w-5 h-5 flex items-center justify-center shrink-0">
+                      <i className={`${item.icon} text-lg w-5 h-5 flex items-center justify-center`} />
                       {isNotifications && unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1.5 min-w-3.5 h-3.5 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                           {unreadCount > 9 ? "9+" : unreadCount}
                         </span>
                       )}
                     </div>
-                    {isExpanded && (
-                      <span className="text-[13px] whitespace-nowrap">{item.label}</span>
-                    )}
+                    {isExpanded && <span className="text-[13px] ml-3 whitespace-nowrap truncate">{item.label}</span>}
                     {!isExpanded && <span className={tooltipClass}>{item.label}</span>}
                   </Link>
                 );
@@ -120,17 +100,19 @@ export default function Sidebar() {
           </div>
         ))}
 
-        {/* Recycle Bin — Super Admins only */}
+        {/* Recycle Bin */}
         {canOpenRecycleBin && (
-          <div className={`${isExpanded ? "mx-3" : "mx-2"}`}>
+          <div className="mx-2">
             <Link
               to="/recycle-bin"
-              className={`flex items-center rounded-lg transition-all duration-200 group relative ${
-                isExpanded ? "gap-3 px-3 py-2.5" : "justify-center py-3"
-              } ${location.pathname === "/recycle-bin" ? activeClass : inactiveClass}`}
+              className={`flex items-center rounded-lg transition-colors duration-150 group relative px-3 py-2 select-none ${
+                location.pathname === "/recycle-bin" ? activeClass : inactiveClass
+              }`}
             >
-              <i className="ri-delete-bin-6-line text-lg w-5 h-5 flex items-center justify-center shrink-0" />
-              {isExpanded && <span className="text-[13px] whitespace-nowrap">Recycle Bin</span>}
+              <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                <i className="ri-delete-bin-6-line text-lg w-5 h-5 flex items-center justify-center" />
+              </div>
+              {isExpanded && <span className="text-[13px] ml-3 whitespace-nowrap truncate">Recycle Bin</span>}
               {!isExpanded && <span className={tooltipClass}>Recycle Bin</span>}
             </Link>
           </div>
@@ -148,11 +130,9 @@ export default function Sidebar() {
           {avatarUrl ? (
             <img src={avatarUrl} alt={displayName} className={`w-9 h-9 rounded-lg object-cover shrink-0 border ${borderClass}`} />
           ) : (
-            <div
-              className={`w-9 h-9 rounded-lg flex items-center justify-center text-[12px] font-bold shrink-0 border ${
-                isDark ? "bg-white/10 text-white border-white/10" : "bg-[#253C7D]/10 text-[#253C7D] border-[#253C7D]/15"
-              }`}
-            >
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-[12px] font-bold shrink-0 border ${
+              isDark ? "bg-white/10 text-white border-white/10" : "bg-[#253C7D]/10 text-[#253C7D] border-[#253C7D]/15"
+            }`}>
               {initials}
             </div>
           )}
@@ -160,11 +140,9 @@ export default function Sidebar() {
             <div className="min-w-0">
               <p className={`text-[13px] font-semibold truncate ${isDark ? "text-white" : "text-gray-900"}`}>{displayName}</p>
               {role?.name ? (
-                <span
-                  className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded truncate max-w-full ${
-                    isDark ? "bg-white/10 text-gray-300" : "bg-gray-100 text-gray-600"
-                  }`}
-                >
+                <span className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded truncate max-w-full ${
+                  isDark ? "bg-white/10 text-gray-300" : "bg-gray-100 text-gray-600"
+                }`}>
                   {role.name}
                 </span>
               ) : (
@@ -175,7 +153,7 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {/* Theme toggle & Sidebar Collapse */}
+      {/* Theme toggle & Collapse */}
       <div className={`shrink-0 flex items-center justify-between border-t ${borderClass} px-3 py-2`}>
         <button
           onClick={toggleTheme}
@@ -183,13 +161,8 @@ export default function Sidebar() {
             isDark ? "text-gray-400 hover:text-white hover:bg-white/10" : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
           } ${!isExpanded ? "w-full justify-center" : ""}`}
           title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          aria-label="Toggle Theme"
         >
-          {isDark ? (
-            <i className="ri-sun-line text-lg text-amber-400" />
-          ) : (
-            <i className="ri-moon-line text-lg text-gray-500" />
-          )}
+          {isDark ? <i className="ri-sun-line text-lg text-amber-400" /> : <i className="ri-moon-line text-lg text-gray-500" />}
           {isExpanded && <span className="text-[12px] font-medium">{isDark ? "Light Mode" : "Dark Mode"}</span>}
         </button>
         {isExpanded && (

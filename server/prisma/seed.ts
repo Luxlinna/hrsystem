@@ -1,4 +1,4 @@
-import { prisma } from '../src/config/database.js';
+import { prisma } from '../config/database.js';
 
 async function main() {
   console.log('Testing database connection and seeding initial system settings...');
