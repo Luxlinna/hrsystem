@@ -5,6 +5,7 @@ dist-ssr/
 out/
 build/
 *.local
+scratch/
 .temp-backups/
 *.sql.gz
 *.sql.bak

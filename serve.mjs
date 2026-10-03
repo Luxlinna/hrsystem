@@ -106,7 +106,7 @@ function proxyToBackend(req, res) {
   );
 
   proxyReq.on("error", (err) => {
-    console.error(`[Proxy] Error forwarding ${req.method} ${req.url} to backend:`, err.message);
+    console.error("[Proxy] Error forwarding request to backend:", req.method, req.url, err.message);
     res.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
     res.end("502 Bad Gateway: Backend server unavailable");
   });

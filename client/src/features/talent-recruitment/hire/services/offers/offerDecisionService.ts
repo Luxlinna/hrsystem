@@ -144,7 +144,7 @@ export async function recordCandidateDecision(
       })
       .eq("id", offer.candidate_id);
   } catch (err) {
-    console.warn(`Could not sync candidate stage to '${decision}':`, err);
+    console.warn("Could not sync candidate stage to decision:", decision, err);
   }
 
   try {

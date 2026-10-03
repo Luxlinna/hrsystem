@@ -161,8 +161,9 @@ export function heuristicExtractCv(rawText: string): ExtractedCvData {
     "Sales", "Marketing", "SEO", "Accounting", "QuickBooks", "Human Resources", "Recruitment",
     "Payroll", "Leadership", "Communication", "Excel", "Data Analysis", "Graphic Design"
   ];
+  const rawTextLower = rawText.toLowerCase();
   const matchedSkills = commonSkills.filter((skill) =>
-    new RegExp(`\\b${skill.replace(/[.+*?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(rawText)
+    rawTextLower.includes(skill.toLowerCase())
   );
 
   // 5. Clean Education detection (short, structured degree & school entries only)
@@ -214,7 +215,8 @@ export function heuristicExtractCv(rawText: string): ExtractedCvData {
   ];
 
   for (const phrase of projectPhrases) {
-    if (new RegExp(phrase, "i").test(rawText) && !cleanExpLines.some((l) => l.toLowerCase().includes(phrase.toLowerCase()))) {
+    const phraseLower = phrase.toLowerCase();
+    if (rawTextLower.includes(phraseLower) && !cleanExpLines.some((l) => l.toLowerCase().includes(phraseLower))) {
       cleanExpLines.push(`Project: ${phrase}`);
       previous_positions.push(phrase);
     }
@@ -225,8 +227,8 @@ export function heuristicExtractCv(rawText: string): ExtractedCvData {
       continue;
     }
     const lower = line.toLowerCase();
-    const hasJobTitle = titleKeywords.some((tk) => new RegExp(`\\b${tk}\\b`, "i").test(line));
-    const hasProject = projectKeywords.some((pk) => new RegExp(`\\b${pk}\\b`, "i").test(line));
+    const hasJobTitle = titleKeywords.some((tk) => lower.includes(tk));
+    const hasProject = projectKeywords.some((pk) => lower.includes(pk));
 
     if ((hasJobTitle || hasProject) && line.length >= 6 && line.length <= 110) {
       if (!cleanExpLines.some((e) => e.toLowerCase() === lower || lower.includes(e.toLowerCase()))) {

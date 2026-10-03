@@ -53,15 +53,15 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
       return next(new UnauthorizedError(authError?.message || 'Invalid or expired session token'));
     }
 
-    const authUser = userData.user;
-    const userEmail = authUser.email || '';
+    const userEmail = typeof authUser.email === 'string' ? authUser.email : '';
+    const userId = typeof authUser.id === 'string' ? authUser.id : '';
 
     // Enrich with employee profile and role
     const employee = await prisma.employees.findFirst({
       where: {
         OR: [
-          { email: userEmail },
-          { id: authUser.id },
+          ...(userEmail ? [{ email: { equals: userEmail } }] : []),
+          ...(userId ? [{ id: { equals: userId } }] : []),
         ],
         deleted_at: null,
       },

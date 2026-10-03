@@ -25,7 +25,7 @@ function makeProxyServer(port) {
     );
 
     proxyReq.on("error", (err) => {
-      console.error(`[Local ADMS Proxy :${port}] Backend connection error:`, err.message);
+      console.error("[Local ADMS Proxy]", port, "Backend connection error:", err.message);
       res.writeHead(502, { "Content-Type": "text/plain" });
       res.end("502 Bad Gateway");
     });
@@ -34,11 +34,11 @@ function makeProxyServer(port) {
   });
 
   server.on("error", (err) => {
-    console.warn(`[Local ADMS] Could not listen on port ${port}:`, err.message);
+    console.warn("[Local ADMS] Could not listen on port:", port, err.message);
   });
 
   server.listen(port, "0.0.0.0", () => {
-    console.log(`🚀 ZKTeco ADMS Proxy listening on http://0.0.0.0:${port} -> forwarding to backend :${BACKEND_PORT}`);
+    console.log("[Local ADMS Proxy] listening on port:", port, "forwarding to backend:", BACKEND_PORT);
   });
 
   return server;

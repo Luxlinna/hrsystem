@@ -83,7 +83,7 @@ export class AuthService {
       });
 
       if (linkError) {
-        console.warn(`[Auth] Failed to generate recovery link for ${email}:`, linkError.message);
+        console.warn('[Auth] Failed to generate recovery link for email:', email, linkError.message);
       }
 
       // Send alert to admin via Telegram

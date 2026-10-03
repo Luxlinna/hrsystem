@@ -322,7 +322,7 @@ export class BiometricService {
    * Handles POST /iclock/devicecmd for command acknowledgment
    */
   async handleCommandAck(deviceSerial: string, rawBody: string): Promise<void> {
-    console.log(`[ZKTeco ADMS] Devicecmd ACK from SN: ${deviceSerial}:`, rawBody.trim());
+    console.log('[ZKTeco ADMS] Devicecmd ACK from SN:', deviceSerial, rawBody.trim());
     const lines = rawBody.split('\n');
     for (const line of lines) {
       const match = line.match(/ID=(\d+)&Return=(-?\d+)/);

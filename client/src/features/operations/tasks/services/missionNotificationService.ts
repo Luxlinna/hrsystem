@@ -106,7 +106,7 @@ export async function notifyMissionInvitation(payload: MissionNotificationPayloa
           });
         }
       } catch (err) {
-        console.warn(`Could not send system notification to employee ${emp.id}:`, err);
+        console.warn("Could not send system notification to employee:", emp.id, err);
       }
     })
   );
