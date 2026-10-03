@@ -37,7 +37,7 @@ export default function Profile() {
 
       <div className="flex flex-col md:flex-row gap-5 lg:gap-6 items-start w-full max-w-7xl min-w-0">
         {/* ── LEFT SIDEBAR / TOP BAR ON MOBILE ── */}
-        <div className="w-full md:w-64 lg:w-72 bg-white dark:bg-slate-900 rounded-md border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 sm:p-6 flex flex-col items-center shrink-0">
+        <div className="w-full md:w-64 lg:w-72 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 sm:p-6 flex flex-col items-center shrink-0">
           {/* Avatar with Super Admin Golden Frame & Photo Upload Button */}
           <div className="relative group cursor-pointer" onClick={() => profile.fileInputRef.current?.click()}>
             <GoldFramedAvatar
@@ -94,7 +94,7 @@ export default function Profile() {
         </div>
 
         {/* ── RIGHT MAIN PANEL ── */}
-        <div className="flex-1 w-full min-w-0 bg-white dark:bg-slate-900 rounded-md border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 sm:p-6 min-h-[420px]">
+        <div className="flex-1 w-full min-w-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 sm:p-6 min-h-[420px]">
           {activeTab === "overview" && (
             <ProfileEmployeeInfoCard
               employee={profile.employee}
