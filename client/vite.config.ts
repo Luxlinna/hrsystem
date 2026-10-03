@@ -10,6 +10,8 @@ const isPreview = process.env.IS_PREVIEW ? true : false;
 //const proxyPlugins = isPreview ? [readdyJsxRuntimeProxyPlugin()] : [];
 // https://vite.dev/config/
 export default defineConfig({
+  // Load .env from the monorepo root so VITE_* vars defined in root .env are available
+  envDir: resolve(process.cwd(), ".."),
   define: {
     __BASE_PATH__: JSON.stringify(base),
     __IS_PREVIEW__: JSON.stringify(isPreview),
@@ -21,50 +23,9 @@ export default defineConfig({
     react() as any,
     AutoImport({
       imports: [
-        {
-          react: [
-            ["default", "React"],
-            "useState",
-            "useEffect",
-            "useContext",
-            "useReducer",
-            "useCallback",
-            "useMemo",
-            "useRef",
-            "useImperativeHandle",
-            "useLayoutEffect",
-            "useDebugValue",
-            "useDeferredValue",
-            "useId",
-            "useInsertionEffect",
-            "useSyncExternalStore",
-            "useTransition",
-            "startTransition",
-            "lazy",
-            "memo",
-            "forwardRef",
-            "createContext",
-            "createElement",
-            "cloneElement",
-            "isValidElement",
-          ],
-        },
-        {
-          "react-router-dom": [
-            "useNavigate",
-            "useLocation",
-            "useParams",
-            "useSearchParams",
-            "Link",
-            "NavLink",
-            "Navigate",
-            "Outlet",
-          ],
-        },
-        // React i18n
-        {
-          "react-i18next": ["useTranslation", "Trans"],
-        },
+        'react',
+        'react-router-dom',
+        'react-i18next',
       ],
       dts: true,
     }) as any,
