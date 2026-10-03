@@ -20,7 +20,7 @@ export const ReportViewerTable = memo(function ReportViewerTable({
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs border-collapse">
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+          <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
             {columns.map((c) => (
               <th key={c} className={`px-4 ${py} whitespace-nowrap`}>
                 {c}
@@ -28,7 +28,7 @@ export const ReportViewerTable = memo(function ReportViewerTable({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50 text-gray-700 font-medium">
+        <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
           {pagedRows.map((row, idx) => {
             const rowKey = (row as any).id ? `${(row as any).id}-${idx}` : `row-${idx}`;
             const isDeletedRow =
@@ -48,7 +48,7 @@ export const ReportViewerTable = memo(function ReportViewerTable({
                   if (isStatusCol) {
                     const st = String(val || "").toLowerCase();
                     const badgeClass =
-                      STATUS_COLOR[st] || "bg-gray-100 text-gray-600 border border-gray-200/70";
+                      STATUS_COLOR[st] || "bg-slate-100 text-slate-600 border border-slate-200";
                     return (
                       <td key={col} className={`px-4 ${py} whitespace-nowrap`}>
                         <span
@@ -60,7 +60,27 @@ export const ReportViewerTable = memo(function ReportViewerTable({
                     );
                   }
 
-                  let display = val !== undefined && val !== null && val !== "" ? String(val) : "—";
+                  const rawStr = String(val ?? "").trim();
+                  if (rawStr.includes("(Open / Needs Staff)") || rawStr === "Needs Staff") {
+                    return (
+                      <td key={col} className={`px-4 ${py} whitespace-nowrap`}>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          <i className="ri-user-unfollow-line text-xs text-amber-500" />
+                          <span>Open Slot</span>
+                        </span>
+                      </td>
+                    );
+                  }
+
+                  if (val === undefined || val === null || val === "" || val === "—") {
+                    return (
+                      <td key={col} className={`px-4 ${py} whitespace-nowrap text-slate-300 font-normal`}>
+                        —
+                      </td>
+                    );
+                  }
+
+                  let display = String(val);
                   if (
                     typeof val === "number" &&
                     (col.includes("Salary") ||
@@ -75,9 +95,9 @@ export const ReportViewerTable = memo(function ReportViewerTable({
                   return (
                     <td
                       key={col}
-                      className={`px-4 ${py} whitespace-nowrap text-gray-800 ${
+                      className={`px-4 ${py} whitespace-nowrap text-slate-800 ${
                         col === "Employee" || col === "Candidate" || col === "Task Name"
-                          ? "font-bold text-gray-900"
+                          ? "font-semibold text-slate-900"
                           : ""
                       }`}
                     >

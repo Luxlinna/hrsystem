@@ -24,6 +24,8 @@ export function BranchPositionsSection({
     handleSavePosition,
     handleToggleStatus,
     handleDeletePosition,
+    handleBulkDeletePositions,
+    handleImportPositions,
   } = usePositions(branchId);
 
   if (currentView === "create" || currentView === "edit" || currentView === "view") {
@@ -51,6 +53,9 @@ export function BranchPositionsSection({
       onEdit={openEdit}
       onToggleStatus={handleToggleStatus}
       onDelete={handleDeletePosition}
+      onBulkDelete={handleBulkDeletePositions}
+      onImport={handleImportPositions}
     />
   );
 }
+

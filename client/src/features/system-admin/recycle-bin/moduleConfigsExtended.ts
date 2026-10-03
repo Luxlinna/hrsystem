@@ -1,4 +1,10 @@
 import type { ModuleConfig } from "./types";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
+
+const formatEmailOrPhone = (email?: string | null) => {
+  if (!email) return "";
+  return isPhoneSyntheticEmail(email) ? syntheticEmailToPhone(email) : email;
+};
 
 export const EXTENDED_MODULES: ModuleConfig[] = [
   {
@@ -49,7 +55,7 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     icon: "ri-team-line",
     select: "id, first_name, last_name, email, role, department, deleted_at, deleted_by, branch_id",
     label: (r) => `${r.first_name} ${r.last_name}`,
-    detail: (r) => `${r.role || "Employee"} · ${r.department || "No department"} · ${r.email}`,
+    detail: (r) => `${r.role || "Employee"} · ${r.department || "No department"}${r.email ? ` · ${formatEmailOrPhone(r.email)}` : ""}`,
     applyBranchFilter: (q, b) => q.eq("branch_id", b),
   },
   {
@@ -75,7 +81,10 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     name: "User Roles & Accounts",
     icon: "ri-user-settings-line",
     select: "id, email, display_name, deleted_at, deleted_by, app_roles(name)",
-    label: (r) => r.display_name ? `${r.display_name} (${r.email})` : r.email,
+    label: (r) => {
+      const contact = formatEmailOrPhone(r.email);
+      return r.display_name ? `${r.display_name} (${contact})` : contact;
+    },
     detail: (r) => `User Account · ${r.app_roles?.name || "No role"}`,
   },
   {
@@ -119,7 +128,7 @@ export const EXTENDED_MODULES: ModuleConfig[] = [
     name: "Password Resets",
     icon: "ri-lock-password-line",
     select: "id, email, status, requested_at, deleted_at, deleted_by",
-    label: (r) => r.email,
+    label: (r) => formatEmailOrPhone(r.email),
     detail: (r) => `Password Reset · ${r.status} · requested ${r.requested_at ? new Date(r.requested_at).toLocaleString() : "—"}`,
   },
   {

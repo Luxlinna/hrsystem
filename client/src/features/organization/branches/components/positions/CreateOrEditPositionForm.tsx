@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FormRow } from "../profile/FormRow";
 import type { Position, PositionFormState } from "../../types";
-import { DEFAULT_TAX_POSITIONS } from "../../hooks/usePositions";
 
 interface CreateOrEditPositionFormProps {
   editingPosition: Position | null;
@@ -52,9 +51,7 @@ export function CreateOrEditPositionForm({
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
       {/* Top Header Bar */}
       <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-        <h2 className="text-base font-medium text-slate-700 dark:text-slate-200">
-          {title}
-        </h2>
+        <h2 className="text-base font-medium text-slate-700 dark:text-slate-200">{title}</h2>
         <div className="flex items-center gap-2">
           {isReadOnly && onSwitchToEdit && (
             <button
@@ -86,20 +83,8 @@ export function CreateOrEditPositionForm({
             </h3>
             <div className="space-y-3 text-xs">
               <div className="flex items-center py-1">
-                <span className="w-48 sm:w-64 text-slate-600 dark:text-slate-400 font-normal">
-                  Position Name
-                </span>
-                <span className="text-slate-900 dark:text-slate-100 font-normal">
-                  {editingPosition?.name || form.name || "—"}
-                </span>
-              </div>
-              <div className="flex items-center py-1">
-                <span className="w-48 sm:w-64 text-slate-600 dark:text-slate-400 font-normal">
-                  Tax Position
-                </span>
-                <span className="text-slate-900 dark:text-slate-100 font-normal">
-                  {editingPosition?.tax_position || form.tax_position || "—"}
-                </span>
+                <span className="w-48 sm:w-64 text-slate-600 dark:text-slate-400 font-normal">Position Name</span>
+                <span className="text-slate-900 dark:text-slate-100 font-normal">{editingPosition?.name || form.name || "—"}</span>
               </div>
             </div>
           </div>
@@ -107,11 +92,8 @@ export function CreateOrEditPositionForm({
       ) : (
         /* CREATE / EDIT FORM MODE */
         <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
-          {/* POSITION INFO */}
           <div className="space-y-1">
-            <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider mb-3">
-              Position Info
-            </h3>
+            <h3 className="text-xs font-bold text-[#0088cc] uppercase tracking-wider mb-3">Position Info</h3>
 
             {/* Position Name */}
             <FormRow label="Position Name" required>
@@ -123,34 +105,6 @@ export function CreateOrEditPositionForm({
                 placeholder="Position Name"
                 className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#2b8de3]"
               />
-            </FormRow>
-
-            {/* Tax Position */}
-            <FormRow label="Tax Position">
-              <div className="relative flex items-center w-full">
-                <select
-                  value={form.tax_position || ""}
-                  onChange={(e) => setForm((prev) => ({ ...prev, tax_position: e.target.value }))}
-                  className="w-full px-3 py-1.5 pr-8 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#2b8de3] cursor-pointer"
-                >
-                  <option value="">Select</option>
-                  {DEFAULT_TAX_POSITIONS.map((tax) => (
-                    <option key={tax} value={tax}>
-                      {tax}
-                    </option>
-                  ))}
-                </select>
-                {form.tax_position && (
-                  <button
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, tax_position: "" }))}
-                    className="absolute right-6 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                    title="Clear"
-                  >
-                    <i className="ri-close-line text-xs" />
-                  </button>
-                )}
-              </div>
             </FormRow>
           </div>
 

@@ -1,6 +1,8 @@
 import { memo } from "react";
 import type { BinItem } from "../types";
 import { getModuleConfig } from "../recycleBinUtils";
+import { isPhoneSyntheticEmail, syntheticEmailToPhone } from "@/lib/phoneUtils";
+import { RecycleBinActionMenu } from "./RecycleBinActionMenu";
 
 interface RecycleBinItemRowProps {
   item: BinItem;
@@ -22,64 +24,67 @@ export const RecycleBinItemRow = memo(function RecycleBinItemRow({
   onConfirmDelete,
 }: RecycleBinItemRowProps) {
   const cfg = getModuleConfig(item.table);
+  const deletedDate = new Date(item.deleted_at).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 
   return (
-    <div
-      className={`rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center gap-3 transition-all duration-150 ${
-        selected
-          ? "bg-blue-50/40 border-blue-200 shadow-xs ring-1 ring-blue-200"
-          : "bg-white border-gray-100 shadow-2xs hover:border-gray-200"
-      }`}
-    >
-      <div className="flex items-center gap-3 shrink-0">
+    <tr className={`transition-colors text-xs ${selected ? "bg-blue-50/50" : "hover:bg-slate-50/80"}`}>
+      {/* Checkbox */}
+      <td className="py-3 px-4 text-center w-10">
         <input
           type="checkbox"
           checked={selected}
           onChange={() => onToggleSelect(item)}
           disabled={working}
-          className="w-4 h-4 rounded text-[#253C7D] border-gray-300 focus:ring-[#253C7D] cursor-pointer"
+          className="w-3.5 h-3.5 rounded border-slate-300 text-[#0088cc] cursor-pointer"
           aria-label={`Select ${item.label}`}
         />
-        <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-          <i className="ri-delete-bin-line text-lg" />
+      </td>
+
+      {/* Record Title & Detail */}
+      <td className="py-3 px-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="font-semibold text-slate-900 text-[13px]">{item.label}</span>
+          {item.detail && <span className="text-slate-500 text-xs">{item.detail}</span>}
         </div>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap mb-0.5">
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 flex items-center gap-1">
-            <i className={cfg?.icon || "ri-file-line"} />
-            {cfg?.name || item.table}
-          </span>
+      </td>
+
+      {/* Module */}
+      <td className="py-3 px-4">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+          <i className={`${cfg?.icon || "ri-folder-line"} text-xs text-slate-500`} />
+          <span>{cfg?.name || item.table}</span>
+        </span>
+      </td>
+
+      {/* Deleted When & By */}
+      <td className="py-3 px-4 text-slate-600">
+        <div className="flex flex-col">
+          <span className="font-medium text-slate-800">{deletedDate}</span>
+          {item.deleted_by && (
+            <span className="text-[11px] text-slate-400 truncate max-w-[180px]">
+              by {isPhoneSyntheticEmail(item.deleted_by) ? syntheticEmailToPhone(item.deleted_by) : item.deleted_by}
+            </span>
+          )}
         </div>
-        <p className="text-sm font-semibold text-gray-900 truncate">{item.label}</p>
-        <p className="text-xs text-gray-500 truncate">{item.detail}</p>
-      </div>
-      <div className="text-right shrink-0">
-        <p className="text-xs text-gray-500">
-          Deleted {new Date(item.deleted_at).toLocaleString()}
-          {item.deleted_by ? ` by ${item.deleted_by}` : ""}
-        </p>
-      </div>
-      <div className="flex gap-2 shrink-0">
-        <button
-          onClick={() => onRestore(item)}
-          disabled={working}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 cursor-pointer whitespace-nowrap disabled:opacity-50 transition-colors"
-        >
-          <i className="ri-refresh-line" />
-          Restore
-        </button>
-        {isAdmin && (
-          <button
-            onClick={() => onConfirmDelete(item)}
-            disabled={working}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 cursor-pointer whitespace-nowrap disabled:opacity-50 transition-colors"
-          >
-            <i className="ri-delete-bin-2-line" />
-            Delete forever
-          </button>
-        )}
-      </div>
-    </div>
+      </td>
+
+      {/* Row Action Menu */}
+      <td className="py-3 px-4 text-right w-24">
+        <RecycleBinActionMenu
+          item={item}
+          isAdmin={isAdmin}
+          working={working}
+          onRestore={onRestore}
+          onConfirmDelete={onConfirmDelete}
+        />
+      </td>
+    </tr>
   );
 });
