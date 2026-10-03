@@ -6,8 +6,8 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "dev": "tsx watch server.ts",
+    "build": "tsc -p tsconfig.build.json",
     "type": "tsc --noEmit",
     "type-check": "tsc --noEmit",
     "start": "node dist/server.js",
