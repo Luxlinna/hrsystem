@@ -18,8 +18,7 @@ export default defineConfig({
     __READDY_AI_DOMAIN__: JSON.stringify(process.env.READDY_AI_DOMAIN || ""),
   },
   plugins: [
-    // ...proxyPlugins,
-    react(),
+    react() as any,
     AutoImport({
       imports: [
         {
@@ -68,21 +67,21 @@ export default defineConfig({
         },
       ],
       dts: true,
-    }),
+    }) as any,
   ],
   base,
   build: {
     sourcemap: true,
-    outDir: resolve(import.meta.dirname || process.cwd(), "../out"),
+    outDir: resolve(process.cwd(), "../out"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
   },
   resolve: {
     alias: {
-      "@": resolve(import.meta.dirname || process.cwd(), "./src"),
-      "@shared": resolve(import.meta.dirname || process.cwd(), "./src/shared"),
-      "@features": resolve(import.meta.dirname || process.cwd(), "./src/features"),
-      "xlsx": resolve(import.meta.dirname || process.cwd(), "./src/lib/xlsx.ts"),
+      "@": resolve(process.cwd(), "./src"),
+      "@shared": resolve(process.cwd(), "./src/shared"),
+      "@features": resolve(process.cwd(), "./src/features"),
+      "xlsx": resolve(process.cwd(), "./src/lib/xlsx.ts"),
     },
   },
   server: {
@@ -91,6 +90,14 @@ export default defineConfig({
     allowedHosts: [".opssolution.tech", "hrsystem.opssolution.tech"],
     proxy: {
       "/api": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/health": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/iclock": {
         target: "http://localhost:4000",
         changeOrigin: true,
       },

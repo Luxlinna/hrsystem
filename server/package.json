@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "HRMS Backend API using Express, Prisma, MVC, and Repository Pattern",
+  "type": "module",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
