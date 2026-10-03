@@ -29,7 +29,11 @@
     "restore:s3": "node scripts/restore-db-from-s3.mjs",
     "zkteco:sync": "node scripts/zkteco-sync-agent.mjs",
     "lint": "npm --prefix client run lint",
-    "type-check": "npm --prefix client run type-check"
+    "type": "npm run type:all",
+    "type:all": "npm --prefix client run type-check && npm --prefix server run type-check",
+    "type:client": "npm --prefix client run type-check",
+    "type:server": "npm --prefix server run type-check",
+    "type-check": "npm run type:all"
   },
   "dependencies": {
     "dotenv": "^17.4.2"
@@ -37,5 +41,11 @@
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1123.0",
     "concurrently": "^10.0.5"
+  },
+  "overrides": {
+    "braces": ">=3.0.3",
+    "micromatch": ">=4.0.8",
+    "protobufjs": ">=7.4.0",
+    "@grpc/grpc-js": ">=1.13.6"
   }
 }

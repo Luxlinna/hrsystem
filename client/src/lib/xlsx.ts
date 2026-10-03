@@ -303,7 +303,7 @@ export function generateXlsxBuffer(wb: WorkBook): Uint8Array {
 
 export function downloadXlsx(wb: WorkBook, filename = "export.xlsx"): void {
   const bytes = generateXlsxBuffer(wb);
-  const blob = new Blob([bytes], {
+  const blob = new Blob([bytes as unknown as BlobPart], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
   const url = URL.createObjectURL(blob);
@@ -397,7 +397,7 @@ async function parseZipEntries(buffer: ArrayBuffer | Uint8Array): Promise<Record
       try {
         const ds = new DecompressionStream("deflate-raw");
         const writer = ds.writable.getWriter();
-        writer.write(compData);
+        writer.write(compData as unknown as BufferSource);
         writer.close();
         const reader = ds.readable.getReader();
         const chunks: Uint8Array[] = [];

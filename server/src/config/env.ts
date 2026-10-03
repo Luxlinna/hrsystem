@@ -11,5 +11,6 @@ export const env = {
   SUPABASE_ANON_KEY: process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY || '',
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID || '',
-  CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
+  FRONTEND_URL: process.env.FRONTEND_URL || process.env.VITE_APP_URL || process.env.CLIENT_URL || process.env.APP_URL || '',
+  CORS_ORIGIN: process.env.CORS_ORIGIN || '',
 };
