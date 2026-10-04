@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { NewHiringRequestFormState } from "../../types";
+import type { NewHiringRequestFormState } from "../types";
 
 const DRAFT_STORAGE_KEY = "hr_hiring_request_draft";
 const AUTOSAVE_PREF_KEY = "hr_hiring_request_autosave";
