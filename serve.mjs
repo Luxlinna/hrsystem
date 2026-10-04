@@ -1,21 +1,17 @@
-import { createServer } from "node:http";
+import { createServer, request as httpRequest } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import dotenv from "dotenv";
 dotenv.config();
-import { handleZkAdmsRequest, checkBiometricDeviceHealth } from "./zkteco-adms-handler.mjs";
 
 const ROOT = join(import.meta.dirname, "out");
 const PORT = Number(process.env.PORT) || 3000;
-
-// Biometric Device Health & Telegram Offline Watchdog (Runs every 5 minutes)
-const WATCHDOG_INTERVAL_MS = 5 * 60 * 1000;
-setInterval(checkBiometricDeviceHealth, WATCHDOG_INTERVAL_MS);
-setTimeout(checkBiometricDeviceHealth, 10000);
+const BACKEND_PORT = Number(process.env.BACKEND_PORT) || 4000;
+const BACKEND_HOST = process.env.BACKEND_HOST || "127.0.0.1";
 
 // --- In-Memory Rate Limiter ---
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-const MAX_REQUESTS_PER_WINDOW = 200; // Max 200 requests/min per IP (ample for loading SPA assets)
+const MAX_REQUESTS_PER_WINDOW = 200; // Max 200 requests/min per IP
 const ipRequestHistory = new Map();
 
 function isRateLimited(ip) {
@@ -89,8 +85,37 @@ async function resolveFile(urlPath) {
   return null;
 }
 
+// --- Proxy Helper for Backend API & Hardware Requests ---
+function proxyToBackend(req, res) {
+  const proxyReq = httpRequest(
+    {
+      hostname: BACKEND_HOST,
+      port: BACKEND_PORT,
+      path: req.url,
+      method: req.method,
+      headers: {
+        ...req.headers,
+        "x-forwarded-for": getRequestIp(req),
+        host: `${BACKEND_HOST}:${BACKEND_PORT}`,
+      },
+    },
+    (proxyRes) => {
+      res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+      proxyRes.pipe(res);
+    }
+  );
+
+  proxyReq.on("error", (err) => {
+    console.error("[Proxy] Error forwarding request to backend:", req.method, req.url, err.message);
+    res.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("502 Bad Gateway: Backend server unavailable");
+  });
+
+  req.pipe(proxyReq);
+}
+
 // --- Bad Request Detection Middleware ---
-const ALLOWED_METHODS = new Set(["GET", "HEAD", "POST", "OPTIONS"]);
+const ALLOWED_METHODS = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
 const MAX_PAYLOAD_BYTES = 15 * 1024 * 1024; // 15MB limit for device batch logs
 const SUSPICIOUS_PATH_PATTERN = /(\/\.\.|\.\.\/|%2e%2e|\0|%00|\.(env|git|svn|htaccess|php|asp|aspx|jsp|sh|bak|config)($|[/?#]))/i;
 
@@ -136,9 +161,11 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    // 2. Rate limiting check
+    // 2. Rate limiting check (bypass for hardware push /iclock)
     const clientIp = getRequestIp(req);
-    if (isRateLimited(clientIp)) {
+    const isHardwareOrApi = req.url.startsWith("/iclock") || req.url.startsWith("/api");
+
+    if (!isHardwareOrApi && isRateLimited(clientIp)) {
       res.writeHead(429, {
         "Content-Type": "text/plain; charset=utf-8",
         "Retry-After": "60",
@@ -147,11 +174,13 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    // 3. Biometric device handler
-    const isAdms = await handleZkAdmsRequest(req, res);
-    if (isAdms) return;
+    // 3. Proxy Hardware & API routes to Express Backend
+    if (isHardwareOrApi) {
+      proxyToBackend(req, res);
+      return;
+    }
 
-    // 4. Safe URL parsing & decoding
+    // 4. Safe URL parsing & decoding for SPA static assets
     const host = req.headers.host || "localhost";
     let url;
     try {
@@ -183,5 +212,6 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Serving ${ROOT} on http://0.0.0.0:${PORT}`);
+  console.log(`[Frontend SPA Server] Serving ${ROOT} on http://0.0.0.0:${PORT}`);
+  console.log(`[Proxy] Forwarding /api/* and /iclock/* to Backend at http://${BACKEND_HOST}:${BACKEND_PORT}`);
 });

@@ -1,0 +1,178 @@
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { MeetingRoomsHeader } from "./components/MeetingRoomsHeader";
+import { MeetingRoomsFilterBar } from "./components/MeetingRoomsFilterBar";
+import { TimelineViewContent } from "./components/timeline/TimelineViewContent";
+import { MonthViewContent } from "./components/month/MonthViewContent";
+import { PendingBookingsQueue } from "./components/PendingBookingsQueue";
+import { MeetingRoomsModalsContainer } from "./components/modals/MeetingRoomsModalsContainer";
+import { PartnerBranchPrivacyShield } from "@/components/PartnerBranchPrivacyShield";
+import { useMeetingRooms } from "./hooks/useMeetingRooms";
+import type { MeetingRoom, BookingFormData } from "./types";
+
+const VIEW_ORDER: Record<string, number> = {
+  timeline: 0,
+  month: 1,
+  cards: 2,
+};
+
+export default function MeetingRoomsPage() {
+  const m = useMeetingRooms();
+  const [createRoomOpen, setCreateRoomOpen] = useState(false);
+  const [selectedRoomDetails, setSelectedRoomDetails] = useState<MeetingRoom | null>(null);
+  const [successBooking, setSuccessBooking] = useState<{ room: MeetingRoom; form: BookingFormData } | null>(null);
+  const [slideDirection, setSlideDirection] = useState<"next" | "prev">("next");
+  const prevViewRef = useRef(m.viewMode);
+
+  useEffect(() => {
+    const prevIdx = VIEW_ORDER[prevViewRef.current] ?? 0;
+    const curIdx = VIEW_ORDER[m.viewMode] ?? 0;
+    if (curIdx < prevIdx) {
+      setSlideDirection("prev");
+    } else if (curIdx > prevIdx) {
+      setSlideDirection("next");
+    }
+    prevViewRef.current = m.viewMode;
+  }, [m.viewMode]);
+
+  const resetFilters = useCallback(() => {
+    m.setBranchFilter("all");
+    m.setFilterFloor("all");
+    m.setFilterRoomId("all");
+    m.setSearchQuery("");
+  }, [m]);
+
+  if (m.loading && m.rooms.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-2 border-[#253C7D] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (m.isPartnerBranchBlocked) {
+    return (
+      <div className="w-full min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-8 space-y-6">
+        <PartnerBranchPrivacyShield moduleName="Meeting Rooms & Reservations" userBranchName={m.userBranchName} hasNoBranch={!m.userBranchId} />
+      </div>
+    );
+  }
+
+  const handleBookWithSuccess = async () => {
+    const targetRoom = m.modalRoom;
+    const targetForm = { ...m.bookingForm };
+    await m.handleBook();
+    if (targetRoom && targetForm.title.trim()) {
+      setSuccessBooking({ room: targetRoom, form: targetForm });
+    }
+  };
+
+  return (
+    <div className="w-full min-h-screen bg-slate-50/60 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+      {m.toast && (
+        <div className={`fixed top-4 left-4 right-4 sm:top-6 sm:right-6 sm:left-auto sm:max-w-sm z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border backdrop-blur-md text-[13px] font-medium transition-all transform animate-in slide-in-from-top-4 duration-200 ${
+          m.toast.type === "success" ? "bg-emerald-950/90 border-emerald-700/50 text-emerald-100" : m.toast.type === "error" ? "bg-rose-950/90 border-rose-700/50 text-rose-100" : "bg-slate-900/90 border-slate-700/50 text-white"
+        }`}>
+          <i className={`${m.toast.type === "success" ? "ri-checkbox-circle-fill text-emerald-400" : m.toast.type === "error" ? "ri-error-warning-fill text-rose-400" : "ri-information-fill text-sky-400"} text-lg`} />
+          <span>{m.toast.message}</span>
+        </div>
+      )}
+
+      <MeetingRoomsHeader
+        viewMode={m.viewMode}
+        setViewMode={m.setViewMode}
+        bookings={m.bookings}
+        rooms={m.rooms}
+        selectedDate={m.selectedDate}
+        onOpenBookModal={() => m.openBookModal()}
+        canManageRooms={m.canApprove}
+        onCreateRoom={() => setCreateRoomOpen(true)}
+      />
+
+      <div className="hidden sm:block">
+        <MeetingRoomsFilterBar
+          selectedDate={m.selectedDate}
+          onShiftDate={m.shiftDate}
+          onJumpToToday={m.jumpToToday}
+          branchFilter={m.branchFilter}
+          setBranchFilter={m.setBranchFilter}
+          availableBranches={m.isHrDivisionScope ? m.branches : undefined}
+          filterFloor={m.filterFloor}
+          setFilterFloor={m.setFilterFloor}
+          filterRoomId={m.filterRoomId}
+          setFilterRoomId={m.setFilterRoomId}
+          rooms={m.rooms}
+          statusTab={m.statusTab}
+          setStatusTab={m.setStatusTab}
+          pendingCount={m.pendingCount}
+          searchQuery={m.searchQuery}
+          setSearchQuery={m.setSearchQuery}
+          availableFloors={m.availableFloors}
+        />
+      </div>
+
+      {m.statusTab === "pending" ? (
+        <PendingBookingsQueue
+          bookings={m.bookings}
+          rooms={m.rooms}
+          onSelectBooking={m.setSelectedBooking}
+          onJumpToBookingDate={(dateStr) => {
+            m.setSelectedDate(dateStr);
+            m.setStatusTab("all");
+            m.setViewMode("timeline");
+          }}
+          canApprove={m.canApprove}
+        />
+      ) : (
+        <div
+          key={m.viewMode}
+          className={slideDirection === "prev" ? "animate-cover-prev" : "animate-cover-next"}
+        >
+          {(m.viewMode === "timeline" || m.viewMode === "cards") && (
+            <TimelineViewContent
+              rooms={m.filteredRooms}
+              bookings={m.activeDateBookings}
+              selectedDate={m.selectedDate}
+              onSelectDate={m.setSelectedDate}
+              searchQuery={m.searchQuery}
+              setSearchQuery={m.setSearchQuery}
+              onOpenBookModal={(room, start) => m.openBookModal(room, m.selectedDate, start)}
+              onSelectBooking={m.setSelectedBooking}
+              onResetFilters={resetFilters}
+              onCreateRoom={() => setCreateRoomOpen(true)}
+              canManageRooms={m.canApprove}
+              totalRoomsCount={m.rooms.length}
+              onSelectRoomDetails={setSelectedRoomDetails}
+              mobileViewStyle={m.viewMode === "timeline" ? "timeline" : "cards"}
+            />
+          )}
+
+          {m.viewMode === "month" && (
+            <MonthViewContent
+              selectedDate={m.selectedDate}
+              setSelectedDate={m.setSelectedDate}
+              onShiftMonth={m.shiftMonth}
+              onJumpToToday={m.jumpToToday}
+              bookings={m.bookings}
+              rooms={m.rooms}
+              onSelectBooking={m.setSelectedBooking}
+              onOpenBookModal={() => m.openBookModal(undefined, m.selectedDate)}
+              onViewAll={() => m.setViewMode("timeline")}
+            />
+          )}
+        </div>
+      )}
+
+      <MeetingRoomsModalsContainer
+        {...m}
+        handleBook={handleBookWithSuccess}
+        createRoomOpen={createRoomOpen}
+        setCreateRoomOpen={setCreateRoomOpen}
+        selectedRoomDetails={selectedRoomDetails}
+        setSelectedRoomDetails={setSelectedRoomDetails}
+        successBooking={successBooking}
+        setSuccessBooking={setSuccessBooking}
+        bookings={m.bookings}
+      />
+    </div>
+  );
+}
