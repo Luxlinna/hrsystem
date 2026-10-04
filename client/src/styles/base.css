@@ -212,6 +212,15 @@
   }
 }
 
+/* Prevent iOS Safari Auto-Zoom on Form Input Focus */
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 @keyframes powerpointFullScreenCover {
   0% {
     transform: translateX(100%);

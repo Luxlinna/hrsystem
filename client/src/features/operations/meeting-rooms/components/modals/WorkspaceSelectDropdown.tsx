@@ -41,7 +41,7 @@ export const WorkspaceSelectDropdown = memo(function WorkspaceSelectDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-3 py-2 h-10 sm:h-9 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 border rounded-xl text-xs text-left font-medium flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs ${
+        className={`w-full px-3 py-2 h-10 sm:h-9 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 border rounded-xl text-sm sm:text-xs text-left font-medium flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs ${
           isOpen
             ? "border-[#253C7D] ring-2 ring-[#253C7D]/20 bg-white dark:bg-slate-800"
             : "border-slate-200 dark:border-slate-700"
